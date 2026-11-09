@@ -29,7 +29,7 @@ describe('agentArgv', () => {
     expect(Object.keys(hooksSettings().hooks).sort()).toEqual(['Notification', 'Stop', 'UserPromptSubmit'])
   })
 
-  it('claude keeps the person\'s own skills', () => {
+  it("claude keeps the person's own skills", () => {
     const argv = agentArgv()
     for (const drop of ['--setting-sources', '--bare', '--strict-mcp-config']) expect(argv).not.toContain(drop)
   })
