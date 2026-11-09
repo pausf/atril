@@ -1,7 +1,15 @@
 import { contextBridge, ipcRenderer } from 'electron'
-import type { AgentState, AtrilApi, FlowStage, UsageResult } from './api'
+import type { AgentState, AtrilApi, FlowStage, MenuAction, UsageResult } from './api'
 
 const api: AtrilApi = {
+  menu: {
+    setState: (selected, count) => ipcRenderer.send('atril:menu:state', selected, count),
+    onAction: (cb) => {
+      const h = (_e: Electron.IpcRendererEvent, a: MenuAction): void => cb(a)
+      ipcRenderer.on('atril:menu:action', h)
+      return () => ipcRenderer.removeListener('atril:menu:action', h)
+    }
+  },
   usage: {
     get: () => ipcRenderer.invoke('atril:usage:get'),
     onChange: (cb) => {

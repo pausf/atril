@@ -1,3 +1,4 @@
+import { realpathSync } from 'node:fs'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanTmp, killTmux, makeRegisteredRepo, tmp, tmuxOut, tmuxSock } from './test-helpers'
 
@@ -50,5 +51,27 @@ describe('tmux', () => {
     expect(list[0]?.id).toBe(r.workspace.id)
     expect(list[0]?.alive).toBe(true)
     expect(tmuxOut(sock, 'list-sessions', '-F', '#{session_name}').trim().split('\n')).toEqual(before)
+  })
+
+  it('split adds a pane to the session', async () => {
+    makeRegisteredRepo(home)
+    const { openWorktree } = await import('./workspaces')
+    const r = await openWorktree({ repoId: 'demo', branch: 'feat/z', agent: 'claude', argv: SLEEP })
+    if (!('workspace' in r)) throw new Error(r.error)
+    const ws = r.workspace
+    const panes = (): string[] => tmuxOut(sock, 'list-panes', '-t', ws.session, '-F', '#{pane_current_path}').trim().split('\n')
+    expect(panes()).toHaveLength(1)
+    // A decoy opened later is tmux's "most recent" session: a sloppy target would split it instead.
+    const d = await openWorktree({ repoId: 'demo', branch: 'feat/decoy', agent: 'claude', argv: SLEEP })
+    if (!('workspace' in d)) throw new Error(d.error)
+    const decoyPanes = (): number => tmuxOut(sock, 'list-panes', '-t', d.workspace.session, '-F', '#{pane_id}').trim().split('\n').length
+
+    const { splitPane } = await import('./tmux')
+    await splitPane(ws.id, 'h', ws.path)
+
+    expect(panes()).toHaveLength(2)
+    expect(decoyPanes()).toBe(1)
+    expect(panes().map((p) => realpathSync(p))).toEqual([realpathSync(ws.path), realpathSync(ws.path)])
+    expect(tmuxOut(sock, 'list-panes', '-t', ws.session, '-F', '#{pane_id}').split('\n')).toContain(ws.paneId)
   })
 })

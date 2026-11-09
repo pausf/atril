@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import type { Agent, DoctorReport, Model, WorkspaceView } from '../preload/api'
-import { DoctorBanner } from './components/DoctorBanner'
 import { FlowPanel } from './flow/FlowPanel'
 import { Footer } from './components/Footer'
 import { Rail, type Screen } from './components/Rail'
@@ -46,6 +45,22 @@ export function App() {
 
   useEffect(() => window.atril.status.onOpen(setSelected), [])
 
+  useEffect(() => window.atril.menu.setState(selected, workspaces.length), [selected, workspaces.length])
+  useEffect(
+    () =>
+      window.atril.menu.onAction((a) => {
+        if (a.kind === 'select') {
+          const ws = workspaces[a.index]
+          if (ws) setSelected(ws.id)
+          return
+        }
+        document.querySelector<HTMLElement>(a.target === 'sidebar' ? '.col.left' : '.col.right')
+          ?.querySelector<HTMLElement>('button, input, [tabindex]')
+          ?.focus()
+      }),
+    [workspaces]
+  )
+
   const openWorkspace = (id: string): void => {
     setSelected(id)
     setScreen('work')
@@ -77,9 +92,8 @@ export function App() {
 
   return (
     <div className="win">
-      <TopBar problems={problems.length} />
-      <DoctorBanner problems={problems} />
       <NavigationContext.Provider value={{ openSettings: () => setScreen('settings') }}>
+        <TopBar problems={problems} screen={screen} />
         <div className="shell">
           <Rail screen={screen} onChange={setScreen} />
           {/* Hidden, not unmounted: the terminals must survive a visit to Ajustes. */}

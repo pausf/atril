@@ -103,6 +103,8 @@ PTYs and worktrees, and pieces reused with attribution — but Atril does not ru
 - Q: ¿Qué hace Empezar con una tarea que ya está «En curso»? → A: no la mueve en Jira y lo dice («ya está en curso») (assumed, casilla 12). Si es falso: I8 intentaría la transición siempre.
 - Q: ¿Cuándo se recuerda el repo de un proyecto de Jira? → A: solo cuando el trabajo se abre bien (assumed, casilla 12). Si es falso: un fallo al abrir también lo recordaría.
 - Q: ¿El pie muestra el reinicio de las 5 h? → A: solo el de los 7 días, redondeado al minuto (assumed, casilla 8).
+- Q: ¿Cómo evita Atril la pregunta de confianza de Claude? → A: Claude Code 2.1.319 no tiene flag para eso; Atril escribe `projects[<ruta>].hasTrustDialogAccepted` en `~/.claude.json` de forma atómica, con reintento y copia por arranque, solo en carpetas que crea Atril (assumed, casilla 14). Comprobado: sin la clave sale la pregunta, con ella no.
+- Q: ¿El avatar de Jira lleva el token? → A: solo si la imagen está en el mismo dominio que Jira; el CDN de avatares de Atlassian es público (assumed, casilla 14).
 
 ## Vocabulary
 
@@ -504,6 +506,8 @@ or in tmux itself, never in the window.
 | Reopening Atril would notify for every agent already waiting | the first refresh after launch only records state; notifications start from the next transition (box 7 choice) |
 | Libretto's find-work branches when it writes the proposal; Start already put the agent on branch `<KEY>` | Libretto's rule is "ensure, not create" off the base branch; checked in the Start box with one real run that the change stays on `<KEY>` |
 | The `/rest/api/3/search/jql` response shape was proved only against invented fixtures | closed 9 nov: with Pau's real token the Tareas screen showed his 24 open tasks grouped 1 / 8 / 15 |
+| Trust entries stay in `~/.claude.json` after a workspace is closed | accepted for phase 1: one small key per path Atril created; clean them on removal if they pile up |
+| `~/.claude.json` is rewritten by every running Claude process | trust writes are atomic (temp + rename) and retried when the file changed between read and rename; a write that cannot parse the file is skipped, never forced |
 | `Stop` fires at the end of every turn, so `needs-you` may be noisy | accepted for phase 1; one notification per transition (W15) bounds it |
 
 ### Validation and rollback
@@ -537,7 +541,7 @@ or in tmux itself, never in the window.
 - [x] "Nuevo trabajo" opens a workspace in worktree mode on a new branch with claude in an `atril-<id>` tmux session recorded in workspaces.json, shown live in the centre terminal; relaunching Atril reattaches without starting agents; a dirty worktree is never removed · waits on box 2 · Closes: W5, W6, W10, W11, W12
 - [x] Libretto bundled: the script copies the pinned payload with its licences into resources/libretto as a Claude Code plugin, and every Claude agent starts with --plugin-dir pointing at it · waits on box 3 · Closes: W29, W30, W33
 - [x] in-place workspaces: refuse a dirty checkout, refuse a second one per repo, restore the previous branch on close, and refuse to close when the branch was changed by hand · waits on box 3 · Closes: W7, W8, W9, W36
-- [ ] ⌘D and ⌘⇧D split the focused workspace through tmux · waits on box 3 · Closes: W13
+- [x] ⌘D and ⌘⇧D split the focused workspace through tmux · waits on box 3 · Closes: W13
 - [x] agent state from Claude hooks passed by --settings and from the agent's dead pane, with one macOS notification per needs-you transition that opens the workspace · waits on box 3 · Closes: W14, W15, W16, W26, W27
 - [x] usage footer: Claude 5 h and 7 d from the Keychain token and the usage endpoint, "—" with a reason when unreadable, the token never leaving main · waits on box 1 · Closes: W17, W18, W20
 - [x] the right panel shows the Libretto stage and checklist of the selected workspace and follows file changes · waits on box 3 · Closes: F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12
@@ -545,4 +549,4 @@ or in tmux itself, never in the window.
 - [x] "Mis Jira" lists the person's open sprint tasks through the Jira REST API with the token from Ajustes, grouped by status in its own Tareas screen with a sidebar summary, and links to Ajustes when there is none · waits on box 10 · Closes: I1, I2, I3, I11, I12
 - [x] Start, and a Modelo selector in Start and Nuevo trabajo: repo memory, branch slug, validated key, claude running /libretto-flow <KEY> in a new workspace, In Progress transition whose failure keeps the workspace, and the task showing its workspace afterwards · waits on boxes 3, 4, 7, 11 · Closes: I4, I5, I6, I7, I8, I9, I10, W34
 - [ ] keyboard reachability and text labels everywhere, foldable sidebar sections, the Claro/Oscuro/Automático theme, and the first-launch tutorial over every element, skippable, reopenable from Help, keyboard-only · waits on boxes 3, 8, 9, 11 · Closes: W22, W23, W24, W25, W28, W35
-- [ ] Claude agents in Atril workspaces start without the folder-trust prompt, tool problems collapse into one top-bar chip, and the top bar shows who is signed in · waits on boxes 3, 10 · Closes: W31, W32, S8
+- [x] Claude agents in Atril workspaces start without the folder-trust prompt, tool problems collapse into one top-bar chip, and the top bar shows who is signed in · waits on boxes 3, 10 · Closes: W31, W32, S8

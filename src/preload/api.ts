@@ -126,6 +126,8 @@ export interface JiraSettingsStatus {
   saved: boolean
   account?: string
   site?: string
+  /** data: URL, fetched by main. */
+  avatar?: string
 }
 
 export type JiraSaveResult = { account: string } | { error: string }
@@ -188,7 +190,17 @@ export interface UsageApi {
   onChange(cb: (u: UsageResult) => void): () => void
 }
 
+export type MenuAction = { kind: 'focus'; target: 'sidebar' | 'flow' } | { kind: 'select'; index: number }
+
+export interface MenuApi {
+  /** Tells main which workspace the menu's split items act on, and how many exist. */
+  setState(selected: string | null, count: number): void
+  /** Returns the unsubscribe function. */
+  onAction(cb: (a: MenuAction) => void): () => void
+}
+
 export interface AtrilApi {
+  menu: MenuApi
   usage: UsageApi
   flow: FlowApi
   status: StatusApi

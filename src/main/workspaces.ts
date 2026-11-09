@@ -6,6 +6,7 @@ import type { Agent, Model, RemoveResult, WorkspaceRecord, WorkspaceResult, Work
 import { agentArgv } from './agent'
 import { detectMode, effectiveMode, type Repo } from './repos'
 import { run as defaultRun, type Runner } from './run'
+import { trustFolder } from './trust'
 import { hasSession, killSession, newSession, sessionName } from './tmux'
 
 export interface OpenInput {
@@ -83,6 +84,7 @@ export async function openWorktree(input: OpenInput, run: Runner = defaultRun): 
 
   const head = await run('git', ['-C', repo.path, 'rev-parse', 'HEAD'])
   const id = newId()
+  if (!input.argv) await trustFolder(path)
   const paneId = await newSession(id, path, input.argv ?? agentArgv({ model: input.model, prompt: input.prompt }), run)
 
   const record: WorkspaceRecord = {

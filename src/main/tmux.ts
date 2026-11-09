@@ -30,3 +30,10 @@ export async function hasSession(id: string, run: Runner = defaultRun): Promise<
 export async function killSession(id: string, run: Runner = defaultRun): Promise<void> {
   await tmux(run, ['kill-session', '-t', `=${sessionName(id)}`])
 }
+
+/** Adds a shell pane in the workspace directory: a split never starts another agent. */
+export async function splitPane(id: string, direction: 'h' | 'v', cwd: string, run: Runner = defaultRun): Promise<void> {
+  const shell = process.env['SHELL'] || '/bin/zsh'
+  const r = await tmux(run, ['split-window', `-${direction}`, '-t', `=${sessionName(id)}:`, '-c', cwd, shell, '-l'])
+  if (r.code !== 0) throw new Error(`tmux split-window falló: ${r.stderr.trim()}`)
+}

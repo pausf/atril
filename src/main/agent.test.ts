@@ -1,9 +1,11 @@
 import { existsSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
+import { mkdirSync, writeFileSync } from 'node:fs'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { agentArgv, hooksSettings } from './agent'
 import { run } from './run'
 import { agentSpy, cleanTmp, killTmux, makeRegisteredRepo, tmp, tmuxSock } from './test-helpers'
+import { updateClaudeConfig, withTrust } from './trust'
 import { openWorktree } from './workspaces'
 
 describe('agentArgv', () => {
@@ -63,5 +65,42 @@ describe('model', () => {
     expect(argv.slice(argv.indexOf('--model'), argv.indexOf('--model') + 2)).toEqual(['--model', 'haiku'])
     const stored = JSON.parse(readFileSync(join(home, 'workspaces.json'), 'utf8')).workspaces[0]
     expect(stored.model).toBe('haiku')
+  })
+})
+
+describe('trust prompt', () => {
+  const base = {
+    numStartups: 7,
+    projects: { '/other': { hasTrustDialogAccepted: false, allowedTools: ['x'] }, '/wt/a': { history: [1] } }
+  }
+
+  it('claude in an atril workspace skips the trust prompt', () => {
+    const next = withTrust(base, '/wt/a') as typeof base
+    expect(next.projects['/wt/a']).toEqual({ history: [1], hasTrustDialogAccepted: true })
+    expect(next.projects['/other']).toEqual(base.projects['/other'])
+    expect(next.numStartups).toBe(7)
+    expect(withTrust(next, '/wt/a')).toEqual(next)
+    expect((withTrust({}, '/new') as { projects: object }).projects).toEqual({ '/new': { hasTrustDialogAccepted: true } })
+    expect(base.projects['/wt/a']).toEqual({ history: [1] })
+  })
+
+  it('trust write keeps a change made by another process while it runs', async () => {
+    const dir = tmp()
+    mkdirSync(dir, { recursive: true })
+    const file = join(dir, '.claude.json')
+    writeFileSync(file, JSON.stringify({ a: 1 }))
+    let first = true
+    const ok = await updateClaudeConfig((c) => {
+      if (first) {
+        first = false
+        // Another Claude process rewrites the file between our read and our rename.
+        writeFileSync(file, JSON.stringify({ a: 1, theirs: true, pad: 'x'.repeat(10) }))
+      }
+      return withTrust(c, '/wt/b')
+    }, file)
+    expect(ok).toBe(true)
+    const saved = JSON.parse(readFileSync(file, 'utf8'))
+    expect(saved.theirs).toBe(true)
+    expect(saved.projects['/wt/b'].hasTrustDialogAccepted).toBe(true)
   })
 })

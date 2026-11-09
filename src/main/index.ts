@@ -17,6 +17,8 @@ import { run } from './run'
 import { createUsage } from './usage'
 import { listWorkspaces, openWorktree, removeWorkspace } from './workspaces'
 import { createFlowHub } from './flow/watch'
+import { installMenu } from './menu'
+import { splitPane } from './tmux'
 import type { Agent } from '../preload/api'
 
 function createWindow(): void {
@@ -125,6 +127,26 @@ app.whenReady().then(() => {
   ipcMain.on('atril:term:detach', (_e, id: string) => pty.detach(id))
   ipcMain.handle('atril:snapshot-view', () => (process.env['ATRIL_SNAPSHOT'] ? (process.env['ATRIL_SNAPSHOT_VIEW'] ?? null) : null))
   ipcMain.handle('atril:snapshot-ws', () => Boolean(process.env['ATRIL_SNAPSHOT']))
+  const menu = { selected: null as string | null, count: 0 }
+  const refreshMenu = (): void =>
+    installMenu({
+      ...menu,
+      split: (dir) => {
+        const id = menu.selected
+        if (!id) return
+        void listWorkspaces(run).then((all) => {
+          const ws = all.find((w) => w.id === id)
+          if (ws?.alive) void splitPane(id, dir, ws.path, run).catch(() => undefined)
+        })
+      },
+      send: (a) => BrowserWindow.getAllWindows().forEach((w) => w.webContents.send('atril:menu:action', a))
+    })
+  ipcMain.on('atril:menu:state', (_e, selected: string | null, count: number) => {
+    menu.selected = selected
+    menu.count = count
+    refreshMenu()
+  })
+  refreshMenu()
   createWindow()
 
   const shown = new Set<Notification>()

@@ -6,11 +6,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { AtrilApi } from '../../preload/api'
 import { Ajustes } from './Ajustes'
 import { ConnectInSettings } from './ConnectInSettings'
+import { TopBar } from '../components/TopBar'
 import { NavigationContext } from './navigation'
 
 const TOKEN = 'ATATT-super-secret-token'
 
-function mockApi(status: { saved: boolean; account?: string; site?: string }) {
+function mockApi(status: { saved: boolean; account?: string; site?: string; avatar?: string }) {
   const settings = {
     jira: {
       status: vi.fn().mockResolvedValue(status),
@@ -72,5 +73,37 @@ describe('settings screen', () => {
     expect(api.openTokenPage).toHaveBeenCalledWith()
     expect(api.jira.save).not.toHaveBeenCalled()
     expect(api.jira.delete).not.toHaveBeenCalled()
+  })
+})
+
+describe('session chip', () => {
+  const PNG = 'data:image/png;base64,iVBORw0KGgo='
+
+  it('top bar shows who is signed in', async () => {
+    mockApi({ saved: true, account: 'Pau Sánchez', site: 'https://x.atlassian.net', avatar: PNG })
+    const openSettings = vi.fn()
+    const user = userEvent.setup()
+    const { container } = render(
+      createElement(NavigationContext.Provider, { value: { openSettings } }, createElement(TopBar, { problems: [] }))
+    )
+
+    const chip = await screen.findByRole('button', { name: /Pau Sánchez/ })
+    expect(chip.textContent).toContain('Jira')
+    expect(container.querySelector('img')?.getAttribute('src')).toBe(PNG)
+    expect(document.body.innerHTML).not.toContain(TOKEN)
+
+    await user.click(chip)
+    expect(openSettings).toHaveBeenCalledTimes(1)
+  })
+
+  it('top bar falls back to initials, and says when nothing is connected', async () => {
+    const api = mockApi({ saved: true, account: 'Pau Sánchez', site: 'https://x.atlassian.net' })
+    const first = render(createElement(TopBar, { problems: [] }))
+    expect((await screen.findByRole('button', { name: /Pau Sánchez/ })).textContent).toContain('PS')
+    first.unmount()
+
+    api.jira.status.mockResolvedValue({ saved: false })
+    render(createElement(TopBar, { problems: [] }))
+    expect(await screen.findByRole('button', { name: 'Sin conectar' })).toBeTruthy()
   })
 })

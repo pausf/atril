@@ -4,7 +4,28 @@ export interface JiraCreds {
   token: string
 }
 
-export type CheckResult = { account: string } | { error: string }
+export type CheckResult = { account: string; avatar?: string } | { error: string }
+
+const MAX_AVATAR = 200 * 1024
+
+/** The image as a data URL, so the renderer never talks to Atlassian. Any failure means no avatar. */
+async function fetchAvatar(url: string, site: URL, auth: string, fetchImpl: typeof fetch): Promise<string | undefined> {
+  try {
+    const u = new URL(url)
+    if (u.protocol !== 'https:') return undefined
+    // The token only goes to the Jira site itself; Atlassian's avatar CDN is public.
+    const res = await fetchImpl(u, {
+      headers: u.origin === site.origin ? { Authorization: `Basic ${auth}` } : {},
+      signal: AbortSignal.timeout(5_000)
+    })
+    const type = res.headers.get('content-type')?.split(';')[0]?.trim() || 'image/png'
+    if (!res.ok || !type.startsWith('image/')) return undefined
+    const bytes = Buffer.from(await res.arrayBuffer())
+    return bytes.length > 0 && bytes.length <= MAX_AVATAR ? `data:${type};base64,${bytes.toString('base64')}` : undefined
+  } catch {
+    return undefined
+  }
+}
 
 export async function checkJira(
   { site, email, token }: JiraCreds,
@@ -25,8 +46,10 @@ export async function checkJira(
       signal: AbortSignal.timeout(10_000)
     })
     if (!res.ok) return { error: `Jira ha rechazado el token (${res.status}). No se ha guardado.` }
-    const me = (await res.json()) as { displayName?: string; emailAddress?: string }
-    return { account: me.displayName || me.emailAddress || email }
+    const me = (await res.json()) as { displayName?: string; emailAddress?: string; avatarUrls?: Record<string, string> }
+    const url = me.avatarUrls?.['48x48']
+    const avatar = url ? await fetchAvatar(url, base, auth, fetchImpl) : undefined
+    return { account: me.displayName || me.emailAddress || email, ...(avatar && { avatar }) }
   } catch (err) {
     // Network errors can echo the request; never pass err.message through. Codes are an
     // enumeration (ENOTFOUND, CERT_HAS_EXPIRED…), safe to show and the only way to debug.

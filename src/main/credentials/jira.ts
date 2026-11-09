@@ -11,7 +11,7 @@ export const jiraSettings = (store: SecretStore, fetchImpl?: typeof fetch) => ({
     const checked = await checkJira(creds, fetchImpl)
     if ('error' in checked) return checked
     const site = new URL(creds.site.trim()).origin
-    const saved = await store.saveSecret('jira', { ...creds, site }, { account: checked.account, site })
+    const saved = await store.saveSecret('jira', { ...creds, site }, { account: checked.account, site, ...(checked.avatar && { avatar: checked.avatar }) })
     return 'error' in saved ? saved : { account: checked.account }
   },
 

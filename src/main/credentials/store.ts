@@ -13,6 +13,8 @@ export interface SecretStatus {
   saved: boolean
   account?: string
   site?: string
+  /** data: URL of the account picture; not secret. */
+  avatar?: string
 }
 
 export type SaveResult = { ok: true } | { error: string }
@@ -21,6 +23,7 @@ interface Entry {
   cipher: string
   account?: string
   site?: string
+  avatar?: string
 }
 
 const file = (): string => join(process.env['ATRIL_HOME'] ?? join(homedir(), '.atril'), 'secrets.bin')
@@ -48,7 +51,7 @@ export function createSecretStore(enc: Encryptor) {
     async saveSecret(
       service: string,
       fields: Record<string, string>,
-      meta: { account?: string; site?: string } = {}
+      meta: { account?: string; site?: string; avatar?: string } = {}
     ): Promise<SaveResult> {
       if (!enc.isAvailable())
         return { error: 'El Llavero de macOS no está disponible: Atril no guarda tokens sin cifrarlos.' }
@@ -60,7 +63,7 @@ export function createSecretStore(enc: Encryptor) {
 
     async hasSecret(service: string): Promise<SecretStatus> {
       const e = (await readAll())[service]
-      return e ? { saved: true, account: e.account, site: e.site } : { saved: false }
+      return e ? { saved: true, account: e.account, site: e.site, avatar: e.avatar } : { saved: false }
     },
 
     async deleteSecret(service: string): Promise<void> {

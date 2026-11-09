@@ -1,13 +1,14 @@
-export function TopBar({ problems }: { problems: number }) {
+import type { ToolReport } from '../../preload/api'
+import { DoctorChip } from './DoctorChip'
+import { SessionChip } from './SessionChip'
+
+export function TopBar({ problems, screen }: { problems: ToolReport[]; screen?: string }) {
   return (
     <header className="bar">
       <span className="name">Atril</span>
       <span className="sp" />
-      <span className="nag">
-        {problems > 0
-          ? `${problems} ${problems === 1 ? 'herramienta' : 'herramientas'} por instalar`
-          : 'Sin agentes trabajando'}
-      </span>
+      <DoctorChip problems={problems} />
+      <SessionChip refreshOn={screen} />
     </header>
   )
 }
