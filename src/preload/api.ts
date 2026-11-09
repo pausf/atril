@@ -90,6 +90,25 @@ export interface JiraApi {
   inbox(): Promise<InboxResult>
 }
 
+export interface JiraSettingsStatus {
+  saved: boolean
+  account?: string
+  site?: string
+}
+
+export type JiraSaveResult = { account: string } | { error: string }
+
+/** Nothing here ever returns a token: it goes in once and never comes back. */
+export interface SettingsApi {
+  jira: {
+    status(): Promise<JiraSettingsStatus>
+    save(creds: { site: string; email: string; token: string }): Promise<JiraSaveResult>
+    delete(): Promise<void>
+  }
+  /** Opens Atlassian's API token page in the default browser; nothing else. */
+  openTokenPage(): Promise<void>
+}
+
 export type AgentState = 'working' | 'needs-you' | 'stopped'
 
 export interface StatusApi {
@@ -107,6 +126,9 @@ export interface AtrilApi {
   workspaces: WorkspacesApi
   term: TermApi
   jira: JiraApi
+  settings: SettingsApi
   /** Dev snapshot only: the workspace to select on startup. */
   snapshotWorkspace(): Promise<boolean>
+  /** Dev snapshot only: the screen to show on startup. */
+  snapshotView(): Promise<string | null>
 }

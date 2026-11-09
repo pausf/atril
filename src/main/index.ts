@@ -1,8 +1,10 @@
-import { app, BrowserWindow, dialog, ipcMain, Notification } from 'electron'
+import { app, BrowserWindow, dialog, ipcMain, Notification, safeStorage, shell } from 'electron'
 import { writeHooksFile } from './agent'
 import { createStatus } from './status'
 import { writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
+import { createSecretStore } from './credentials/store'
+import { jiraSettings } from './credentials/jira'
 import { doctor } from './doctor'
 import type { Mode } from '../preload/api'
 import { readInbox } from './jira/inbox'
@@ -66,6 +68,21 @@ app.whenReady().then(() => {
     await setOverride(id, mode)
     return listRepos(run)
   })
+  const jiraCreds = jiraSettings(
+    createSecretStore({
+      isAvailable: () => safeStorage.isEncryptionAvailable(),
+      encrypt: (s) => safeStorage.encryptString(s),
+      decrypt: (b) => safeStorage.decryptString(b)
+    })
+  )
+  ipcMain.handle('atril:settings:jira:status', () => jiraCreds.status())
+  ipcMain.handle('atril:settings:jira:save', (_e, creds: { site: string; email: string; token: string }) =>
+    jiraCreds.save({ site: String(creds.site), email: String(creds.email), token: String(creds.token) })
+  )
+  ipcMain.handle('atril:settings:jira:delete', () => jiraCreds.delete())
+  ipcMain.handle('atril:settings:openTokenPage', () =>
+    shell.openExternal('https://id.atlassian.com/manage-profile/security/api-tokens')
+  )
   ipcMain.handle('atril:jira:inbox', () => readInbox(run))
   ipcMain.handle('atril:ws:list', () => listWorkspaces(run))
   ipcMain.handle('atril:ws:open', (_e, repoId: string, branch: string, agent: Agent) =>
@@ -85,6 +102,7 @@ app.whenReady().then(() => {
   ipcMain.on('atril:term:input', (_e, id: string, data: string) => pty.input(id, data))
   ipcMain.on('atril:term:resize', (_e, id: string, c: number, r: number) => pty.resize(id, c, r))
   ipcMain.on('atril:term:detach', (_e, id: string) => pty.detach(id))
+  ipcMain.handle('atril:snapshot-view', () => (process.env['ATRIL_SNAPSHOT'] ? (process.env['ATRIL_SNAPSHOT_VIEW'] ?? null) : null))
   ipcMain.handle('atril:snapshot-ws', () => Boolean(process.env['ATRIL_SNAPSHOT']))
   createWindow()
 

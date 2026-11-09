@@ -3,9 +3,12 @@ import type { Agent, DoctorReport, WorkspaceView } from '../preload/api'
 import { DoctorBanner } from './components/DoctorBanner'
 import { FlowPanel } from './components/FlowPanel'
 import { Footer } from './components/Footer'
+import { Rail, type Screen } from './components/Rail'
 import { Sidebar } from './components/Sidebar'
 import { TopBar } from './components/TopBar'
 import { Workspace } from './components/Workspace'
+import { Ajustes } from './settings/Ajustes'
+import { NavigationContext } from './settings/navigation'
 
 export function App() {
   const [report, setReport] = useState<DoctorReport | null>(null)
@@ -21,6 +24,13 @@ export function App() {
 
   const [workspaces, setWorkspaces] = useState<WorkspaceView[]>([])
   const [selected, setSelected] = useState<string | null>(null)
+  const [screen, setScreen] = useState<Screen>('work')
+
+  useEffect(() => {
+    void window.atril.snapshotView().then((v) => {
+      if (v === 'settings') setScreen('settings')
+    })
+  }, [])
 
   useEffect(() => {
     void (async () => {
@@ -55,11 +65,18 @@ export function App() {
     <div className="win">
       <TopBar problems={problems.length} />
       <DoctorBanner problems={problems} />
-      <div className="body">
-        <Sidebar workspaces={workspaces} selected={selected} onSelect={setSelected} onRemove={remove} onCreate={create} />
-        <Workspace ws={workspaces.find((w) => w.id === selected)} />
-        <FlowPanel />
-      </div>
+      <NavigationContext.Provider value={{ openSettings: () => setScreen('settings') }}>
+        <div className="shell">
+          <Rail screen={screen} onChange={setScreen} />
+          {/* Hidden, not unmounted: the terminals must survive a visit to Ajustes. */}
+          <div className="body" hidden={screen !== 'work'}>
+            <Sidebar workspaces={workspaces} selected={selected} onSelect={setSelected} onRemove={remove} onCreate={create} />
+            <Workspace ws={workspaces.find((w) => w.id === selected)} />
+            <FlowPanel />
+          </div>
+          {screen === 'settings' && <Ajustes />}
+        </div>
+      </NavigationContext.Provider>
       <Footer />
     </div>
   )

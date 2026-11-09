@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { InboxResult, JiraIssue } from '../../preload/api'
+import { ConnectInSettings } from '../settings/ConnectInSettings'
 
 const REFRESH_MS = 5 * 60_000
 
@@ -55,9 +56,7 @@ function Body({ result, issues }: { result: InboxResult | null; issues: JiraIssu
             Falta la herramienta <b>jira</b>. Instálala con <code>{result.install}</code>
           </>
         ) : result.error === 'unconfigured' ? (
-          <>
-            Jira no está configurado. Ejecuta <code>jira init</code> en tu terminal.
-          </>
+          <ConnectInSettings service="Jira" />
         ) : (
           <>No se pudo leer Jira: {result.message}</>
         )}

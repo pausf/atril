@@ -15,6 +15,14 @@ const api: AtrilApi = {
     remove: (id) => ipcRenderer.invoke('atril:ws:remove', id)
   },
   jira: { inbox: () => ipcRenderer.invoke('atril:jira:inbox') },
+  settings: {
+    jira: {
+      status: () => ipcRenderer.invoke('atril:settings:jira:status'),
+      save: (creds) => ipcRenderer.invoke('atril:settings:jira:save', creds),
+      delete: () => ipcRenderer.invoke('atril:settings:jira:delete')
+    },
+    openTokenPage: () => ipcRenderer.invoke('atril:settings:openTokenPage')
+  },
   status: {
     list: () => ipcRenderer.invoke('atril:status:list'),
     onChange: (cb) => {
@@ -39,7 +47,8 @@ const api: AtrilApi = {
       return () => ipcRenderer.removeListener('atril:term:data', h)
     }
   },
-  snapshotWorkspace: () => ipcRenderer.invoke('atril:snapshot-ws')
+  snapshotWorkspace: () => ipcRenderer.invoke('atril:snapshot-ws'),
+  snapshotView: () => ipcRenderer.invoke('atril:snapshot-view')
 }
 
 contextBridge.exposeInMainWorld('atril', api)
