@@ -40,6 +40,8 @@ Governs: `src/main/credentials/** src/renderer/settings/**`
 - {**S6** If a feature needs a service with no token, it shall show "Conecta <servicio> en Ajustes" with a link to that card. src/renderer/settings/settings.test.ts missing}
 - {**S7** When the person presses «Crear token en Atlassian», Atril shall open Atlassian's API token page in the default browser and nothing else. src/renderer/settings/settings.test.ts create}
 - {**S8** While a Jira token is saved, the top bar shall show the account's avatar and display name from `/rest/api/3/myself`; the avatar is fetched by the main process and reaches the renderer as image data only, never with the token; clicking the chip opens Ajustes. src/renderer/settings/settings.test.ts top}
+- {**S9** When the person searches and picks a board in Ajustes, Atril shall store its id and name, and show it on the Jira card. src/renderer/settings/settings.test.ts picks}
+- {**S10** When the Jira token is replaced, Atril shall keep the picked board; when it is deleted, Atril shall forget the board too. src/main/credentials/store.test.ts board}
 
 [full spec](settings/spec.md)
 
@@ -59,6 +61,13 @@ Governs: `src/main/jira/** src/renderer/inbox/**`
 - {**I10** If the proposed branch already exists in the repo, or its worktree path exists, then the dialog shall say so and propose the key with the first free letter suffix: `B`, `C`, `D`… (`WEB-3535B`), as the team does. src/main/jira/start.test.ts proposes}
 - {**I11** When the inbox shows tasks, Atril shall group them: status category `new` → Por empezar; `indeterminate` whose status name says in progress → En curso; any other `indeterminate` → En revisión y despliegue, folded by default. src/main/jira/inbox.test.ts groups}
 - {**I12** While the Trabajo screen is shown, the sidebar shall show the running work first and the Jira tasks only as a one-line summary of counts that opens the Tareas screen. src/renderer/inbox/inbox.test.ts sidebar}
+- {**I13** When a board is picked, the inbox shall group the tasks by its columns, in the board's order, matching each task's status id to the column that lists it, every column unfolded; empty columns shall not appear. (One proof holds both promises: main computes the order and the filtering in one pass, and the test asserts both on one result.) src/main/jira/board.test.ts groups}
+- {**I14** If a task's status is in no column of the picked board, then it shall go to «Fuera del tablero», after every column, folded. src/main/jira/board.test.ts tasks}
+- {**I15** While no board is picked, the Tareas screen shall keep the status-category groups and show «Elige tu tablero en Ajustes para ver sus columnas» with a link to Ajustes. src/renderer/inbox/inbox.test.ts no}
+- {**I16** If the board id is not a positive integer, then Atril shall refuse it before any request. src/main/jira/board.test.ts refuses}
+- {**I17** While a board is picked, the sidebar summary shall count the first column's tasks as "por empezar" and the tasks of every other column as "en curso" («Fuera del tablero» counts in neither). src/renderer/inbox/inbox.test.ts summary}
+- {**I18** If reading the picked board fails (timeout, 403, 404), then the inbox shall fall back to the status-category groups and show «No se pudo leer el tablero (<status>)». src/main/jira/board.test.ts board}
+- {**I19** Whether or not a board is picked, the inbox shall list only issues from the search with `assignee = currentUser()`, and shall never request the board's own issues. src/main/jira/inbox.test.ts only}
 
 [full spec](work-inbox/spec.md)
 

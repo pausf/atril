@@ -20,6 +20,16 @@ Governs: src/main/jira/** src/renderer/inbox/**
 - If Jira cannot be reached, the inbox says why and what the person runs; the rest of Atril
   keeps working.
 
+### Board columns (use-jira-board-columns, 9 nov 2026)
+
+- With a board picked, the Tareas screen groups the person's open tasks by **that board's
+  columns, in the board's order**, each with its count; empty columns are not shown.
+- Tasks whose status is in no column of the board go to **«Fuera del tablero»**, last, folded.
+- With no board picked, the current status-category groups stay, under a notice «Elige tu
+  tablero en Ajustes para ver sus columnas» that opens Ajustes.
+- The sidebar summary keeps working: it counts the first column as "por empezar" and every
+  other column as "en curso" when a board is picked.
+
 ## Scope boundaries
 
 **In:** reading tasks, the Jira→repo memory, Start, the In Progress transition.
@@ -32,6 +42,20 @@ through MCP. (The REST API is IN, with the token from Ajustes — decision log, 
 command; the Jira token lives only in Atril's main process, encrypted at rest, and never reaches
 the renderer, a log or an agent (the settings spec).
 
+### Board columns (use-jira-board-columns, 9 nov 2026)
+
+**In:** reading one board's column configuration; grouping by it; the Ajustes board picker
+(the settings spec).
+
+**Out:** several boards at once; moving a task between columns from Atril (only Start's In
+Progress transition stays); swimlanes, quick filters, WIP limits; the board's own JQL filter
+(the list is still "assigned to me, not Done").
+
+**Never scoped out:** only the person's own tasks — the list is always `assignee =
+currentUser()`, whoever owns the saved token; the board contributes columns, never issues;
+the Jira token stays in main; the board id is validated as a positive
+integer before it reaches a URL.
+
 ## Constraints
 
 - The Jira REST API with the site, email and token saved in Ajustes (`.agents/specs/settings/spec.md`):
@@ -41,6 +65,15 @@ the renderer, a log or an agent (the settings spec).
   sprint filter: observed 9 nov, the person has 0 tasks in open sprints and 24 open ones.
 - The command Start runs goes through the primary spec's agent session, with Claude's hooks
   passed by `--settings` (the workspaces spec, W14).
+
+### Board columns (use-jira-board-columns, 9 nov 2026)
+
+- `GET /rest/agile/1.0/board/{boardId}/configuration` → `columnConfig.columns[]` with `name`
+  and `statuses[].id`; matched against each issue's `status.id` (add `id` to the fields the
+  search reads).
+- Same basic auth and 10 s timeout as the inbox; one extra request per refresh.
+- The work-inbox spec's grouping by status category (I11) becomes the fallback when no board is
+  picked; it is not removed.
 
 ## Prior decisions
 
@@ -61,6 +94,34 @@ the renderer, a log or an agent (the settings spec).
 - **The task→workspace link is the Jira key in the workspace record** (the workspaces spec
   vocabulary); it survives restarts with the record.
 - **"Unconfigured" means no Jira token in Ajustes, or `/myself` rejects it.**
+
+### Board columns (use-jira-board-columns, 9 nov 2026)
+
+- **The flow comes from the board** — Pau, 9 nov: «los flujos de tareas del Jira, cógelas del
+  tablero».
+- **The person picks the board** — the project filter of the boards list does not narrow it
+  (observed 9 nov), so it is chosen in Ajustes; one board (assumed, decision log).
+- **«Fuera del tablero» last and folded; no board → old groups + notice** (assumed, decision log).
+
+#### Alternatives that lost
+
+| Considered | Why it lost |
+|---|---|
+| Infer the board from the projects of the tasks | the boards list does not narrow by project here (observed); a guess would be wrong silently |
+| Group in the renderer | main already owns the Jira data; one shape for both groupings keeps the renderer dumb |
+
+#### Decision log, answers as given (2026-11-09)
+- Q: «No le preguntes, tú sigue» stands → decisions below are taken with the recommended option and marked (assumed).
+- Q: ¿Qué tablero? → A: el que la persona elige en Ajustes, con un buscador por nombre; uno solo (assumed). Si es falso: varios tableros a la vez o uno por proyecto.
+- Q: ¿Y las tareas que no están en ninguna columna del tablero? → A: grupo «Fuera del tablero», al final y plegado (assumed).
+- Q: ¿Qué columna viene plegada? → A: la primera columna desplegada; las que el tablero llama Done/Hecho no salen (la consulta ya excluye lo terminado); el resto desplegadas salvo «Fuera del tablero» (assumed).
+- Q: (spec-reviewer) ¿Y si falla la lectura del tablero? → A: vuelve a los grupos por categoría y avisa «No se pudo leer el tablero (…)» (assumed). Si es falso: I18 mostraría un error en lugar de grupos.
+- Q: (spec-reviewer) ¿Qué columnas vienen plegadas? → A: todas abiertas; solo «Fuera del tablero» plegada (assumed).
+- Q: (spec-reviewer) ¿Borrar el token de Jira olvida el tablero? → A: sí; Reemplazar lo conserva (assumed).
+- Q: (spec-reviewer) ¿Dónde vive la búsqueda de tableros y cómo se busca? → A: `src/main/credentials/boards.ts`; desde 2 letras, 300 ms tras dejar de escribir, «Ningún tablero coincide» si no hay resultados (assumed).
+- Q: ¿Qué tareas salen? → A: «solo debería salir las tareas que me estén asignadas a mí. a desarrollar utilizaremos cualquiera, pero cuando esté el producto final solamente tiene que salir las que están relacionadas a mí» — el tablero solo da las columnas; las tareas son siempre las asignadas a quien tiene el token; los datos inventados solo existen en las capturas de desarrollo y nunca en la app empaquetada.
+- Q: (work-reviewer) ¿«primera columna» es la del tablero aunque esté vacía? → A: sí, la primera columna del tablero; vacía significa nada por empezar (assumed).
+- Q: ¿Sin tablero elegido? → A: la agrupación actual por categoría, con un aviso «Elige tu tablero en Ajustes para ver sus columnas» (assumed).
 
 ## Task breakdown
 
@@ -112,3 +173,33 @@ the renderer, a log or an agent (the settings spec).
 - **I12** While the Trabajo screen is shown, the sidebar shall show the running work first and
   the Jira tasks only as a one-line summary of counts that opens the Tareas screen.
   Proof: src/renderer/inbox/inbox.test.ts sidebar shows a jira summary that opens tareas
+
+### Board columns (use-jira-board-columns, 9 nov 2026)
+
+- **I13** When a board is picked, the inbox shall group the tasks by its columns, in the
+  board's order, matching each task's status id to the column that lists it, every column
+  unfolded; empty columns shall not appear. (One proof holds both promises: main computes the
+  order and the filtering in one pass, and the test asserts both on one result.)
+  Proof: src/main/jira/board.test.ts groups tasks by the board columns in order
+- **I14** If a task's status is in no column of the picked board, then it shall go to «Fuera
+  del tablero», after every column, folded.
+  Proof: src/main/jira/board.test.ts tasks outside the board go last
+- **I15** While no board is picked, the Tareas screen shall keep the status-category groups and
+  show «Elige tu tablero en Ajustes para ver sus columnas» with a link to Ajustes.
+  Proof: src/renderer/inbox/inbox.test.ts no board keeps the status groups and asks to pick one
+- **I16** If the board id is not a positive integer, then Atril shall refuse it before any
+  request.
+  Proof: src/main/jira/board.test.ts refuses a board id that is not a positive integer
+
+- **I17** While a board is picked, the sidebar summary shall count the first column's tasks as
+  "por empezar" and the tasks of every other column as "en curso" («Fuera del tablero» counts
+  in neither).
+  Proof: src/renderer/inbox/inbox.test.ts summary follows the board columns
+- **I18** If reading the picked board fails (timeout, 403, 404), then the inbox shall fall back
+  to the status-category groups and show «No se pudo leer el tablero (<status>)».
+  Proof: src/main/jira/board.test.ts board failure falls back to the status groups
+
+- **I19** Whether or not a board is picked, the inbox shall list only issues from the search
+  with `assignee = currentUser()`, and shall never request the board's own issues.
+  Proof: src/main/jira/inbox.test.ts only my tasks even with a board
+

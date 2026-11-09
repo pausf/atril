@@ -17,6 +17,11 @@ Governs: src/main/credentials/** src/renderer/settings/**
 - **Once saved, a token is never shown again** — not in Ajustes, not anywhere. The card shows
   "Guardado · <cuenta>" with **Reemplazar** and **Borrar**. Replacing means pasting a new one.
 
+### Board columns (use-jira-board-columns, 9 nov 2026)
+
+- The Jira card in Ajustes gains **Tablero**: a search field that lists the boards whose name
+  matches, and the chosen one shown as "Tablero: <nombre>" with Cambiar.
+
 ## Scope boundaries
 
 **In:** storing, checking, replacing and deleting the Jira token, through a store and a card
@@ -32,6 +37,10 @@ agent uses stays the person's own (the workspaces spec W21).
 **Never scoped out:** tokens encrypted at rest with the OS keychain; never in a log, a plain
 file, or a message to the renderer; inputs are password fields.
 
+### Board columns (use-jira-board-columns, 9 nov 2026)
+
+**In:** searching boards by name, picking one, remembering it. **Out:** several boards.
+
 ## Constraints
 
 - Electron `safeStorage` (macOS Keychain-backed key) encrypts each token; the ciphertext lives
@@ -41,6 +50,11 @@ file, or a message to the renderer; inputs are password fields.
   whether one exists and for whom; no IPC returns a token.
 - Network: only the Jira site URL the person entered (`https://…`, refused otherwise).
 - Check: Jira `GET /rest/api/3/myself` with basic auth `email:token`.
+
+### Board columns (use-jira-board-columns, 9 nov 2026)
+
+- `GET /rest/agile/1.0/board?name=<q>&maxResults=50`, in main, with the saved Jira creds.
+- The board id and name are stored with the account metadata, never inside the token blob.
 
 ## Prior decisions
 
@@ -59,6 +73,10 @@ file, or a message to the renderer; inputs are password fields.
   cards move to add-mr-review.
 - **Write-only once saved** — Pau, 9 nov: «donde pongan los tokens, pero ocultos … una vez que
   lo ponen, que ya no se puede visualizar».
+
+### Board columns (use-jira-board-columns, 9 nov 2026)
+
+- **One board, picked by the person** — work-inbox spec, decision log (assumed).
 
 ## Task breakdown
 
@@ -94,3 +112,13 @@ file, or a message to the renderer; inputs are password fields.
   name from `/rest/api/3/myself`; the avatar is fetched by the main process and reaches the
   renderer as image data only, never with the token; clicking the chip opens Ajustes.
   Proof: src/renderer/settings/settings.test.ts top bar shows who is signed in
+
+### Board columns (use-jira-board-columns, 9 nov 2026)
+
+- **S9** When the person searches and picks a board in Ajustes, Atril shall store its id and
+  name, and show it on the Jira card.
+  Proof: src/renderer/settings/settings.test.ts picks a board and keeps it
+- **S10** When the Jira token is replaced, Atril shall keep the picked board; when it is
+  deleted, Atril shall forget the board too.
+  Proof: src/main/credentials/store.test.ts board survives replacing the token and is forgotten on delete
+
