@@ -32,9 +32,15 @@ the dialog.
 
 ## Verification criteria
 
-- **I27** When the person opens «Nuevo trabajo», leaves the text empty, picks a repo and writes a
-  branch, Empezar shall open a workspace with no task, so the agent is plain Claude.
+- **I23** (amended) While the dialog is «Nueva tarea» and the text is empty or only spaces,
+  Empezar shall be disabled; in both dialogs the text area shall accept at most 2000 characters.
+  Proof: src/renderer/inbox/owntask.test.ts own task needs text
+- **I27** When the person starts from «Nuevo trabajo», Atril shall open the workspace with the
+  text as its task when the text is not blank (as I22), and with no task — plain Claude — when it
+  is blank; Empezar needs only a repo and a branch there.
+  (One proof holds both: the test starts one with text and one without and checks each call.)
   Proof: src/renderer/inbox/owntask.test.ts new work without text opens plain claude
 - **I25** (amended) If no repo is registered, then the dialog shall say «Añade un repo en
-  Ajustes → Repos», offer «Ir a Ajustes» which opens Ajustes, and Empezar shall be disabled.
+  Ajustes → Repos», offer «Ir a Ajustes» which closes the dialog and shows Ajustes, and Empezar
+  shall be disabled.
   Proof: src/renderer/inbox/owntask.test.ts own task needs a repo

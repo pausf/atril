@@ -27,6 +27,11 @@ Libretto flow; no text → plain Claude); with no repos, that dialog points to A
 - Q: «No le preguntes, tú sigue» stands → the rest taken with the recommended option, marked (assumed).
 - Q: ¿Cómo se llama el diálogo cuando se abre desde Trabajo? → A: «Nuevo trabajo», el mismo diálogo que «Nueva tarea» con el texto opcional (assumed).
 - Q: ¿Y sin texto? → A: Claude a secas, sin `/libretto:libretto-flow`, como hacía «+ trabajo»; la rama hay que escribirla (assumed).
+- Q: (spec-reviewer) ¿«Auto» guarda el modo detectado? → A: no: Auto quita lo forzado (`setOverride(id, null)`), así la detección sigue mandando (W4) (assumed).
+- Q: (spec-reviewer) ¿Qué pasa al pulsar «Ir a Ajustes»? → A: el diálogo se cierra y se ve Ajustes; al volver se abre de nuevo y relee los repos (assumed).
+- Q: (spec-reviewer) ¿Qué dice el diálogo sin texto obligatorio? → A: etiqueta «¿Qué hay que hacer? (opcional)»; la fila «Lanza» muestra `claude` sin texto y `/libretto:libretto-flow «tu texto»` con texto (assumed).
+- Q: (spec-reviewer) ¿Y el boceto? → A: `bocetos/repos.html` queda como registro de la decisión; `fase1-nucleo.html` se actualiza para verse igual (tarjeta en Ajustes, botón en la barra) (assumed).
+- Q: (spec-reviewer) ¿El tutorial? → A: no tiene paso de repos; no cambia (assumed).
 - Q: ¿Dónde se ve el motivo del modo? → A: como `title` del desplegable y, en texto, bajo el nombre cuando el modo es in-place, que es el que conviene entender (assumed).
 
 ## Outcomes
@@ -42,8 +47,10 @@ section and its per-repo «+ trabajo» form, the sidebar button (`spec-workspace
 dialog's optional text and the no-repo pointer (`spec-work-inbox.md`). **Out:** removing a repo
 (not possible today either), renaming a repo, editing its path.
 
-**Never scoped out:** the card is keyboard-reachable like the other cards (W22); the add flow
-keeps its validation (id pattern, not a git folder).
+**Never scoped out:** the card uses only native `<select>`, `<input>` and `<button>` controls, so
+it is keyboard-reachable like the other cards (W22) — a ceiling named: no test drives it by
+keyboard; add one if a custom control ever replaces a native one. The add flow keeps its
+validation (id pattern, not a git folder).
 
 ## Constraints
 
@@ -65,12 +72,16 @@ keeps its validation (id pattern, not a git folder).
 
 - **S11** While Ajustes is shown, the Repos card shall list every registered repo with its id,
   its path and a mode select offering «Auto · <detected mode>», «Worktree» and «In-place»;
-  choosing one shall store it as the repo's mode (W4) and the select shall show it.
+  choosing «Worktree» or «In-place» shall store it as the repo's mode (W4), choosing «Auto» shall
+  clear it, and the select shall show the choice; a repo detected as in-place shall show the
+  reason under its path.
   Proof: src/renderer/settings/repos.test.ts repos card lists and sets the mode
 - **S12** When the person adds a repo from the card and its id is taken, the card shall ask for
-  another id and register it with the one given; if the folder is not a git repository, it shall
-  say «Esa carpeta no es un repositorio git.»
+  another id and register it with the one given.
   Proof: src/renderer/settings/repos.test.ts adding a repo asks for a free id
+- **S13** If the folder the person picks is not a git repository, then the card shall say «Esa
+  carpeta no es un repositorio git.» and register nothing.
+  Proof: src/renderer/settings/repos.test.ts a folder that is not git is refused
 
 ## Approach
 
@@ -97,7 +108,12 @@ typecheck, lint, test.
   text under the path.
 - The id prompt and its errors move with the component unchanged.
 - `OwnTaskDialog({ textOptional, onOpenSettings })`: title «Nuevo trabajo» when `textOptional`;
-  `ready` drops the text condition then; submit passes the text only when it is not blank.
+  `ready` drops the text condition then; submit passes the text only when it is not blank. The
+  label gains «(opcional)» and the «Lanza» row shows `claude` while the text is blank.
+- App keeps `dialog: 'task' | 'work' | null`; Sidebar loses `onCreate` (and App its `create`) and
+  gains `onNewWork`; «Ir a Ajustes» closes the dialog and sets the screen to Ajustes.
+- The sketch `fase1-nucleo.html` gets the Repos card in its Ajustes view and the sidebar button,
+  as in `bocetos/repos.html`, which stays as the record of the decision.
 
 ### The alternatives it beat
 
@@ -124,4 +140,4 @@ None.
 
 ## Checklist
 
-- [ ] repos as a card in Ajustes, «＋ Nuevo trabajo» in the sidebar with the optional text, the no-repo pointer, the sketch · Closes: S11, S12, W43, W28, I27, I25
+- [ ] repos as a card in Ajustes, «＋ Nuevo trabajo» in the sidebar with the optional text, the no-repo pointer, the sketch · Closes: S11, S12, S13, W43, W28, I23, I27, I25

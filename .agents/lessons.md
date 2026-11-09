@@ -64,3 +64,6 @@ Queued add-language rode on this branch, an hour after logging the same lesson. 
 
 ## 2026-11-09 · fix-test-home-leak · 6
 A tmux test that timed out under load kept writing after afterEach deleted ATRIL_HOME, so its workspace record landed in the person's real ~/.atril (seen as a ghost «feat/q1 · demo» in the app). Fixed at the root: under vitest a missing path env throws (W42), and every module resolves the home through one function. The guard then caught four argv tests resolving against the real home.
+
+## 2026-11-09 · move-repos-to-settings · 4→5
+spec-reviewer caught I23 (empty text disables Empezar, unscoped) contradicting the new I27 (empty text allowed in «Nuevo trabajo»), plus Auto's meaning, the «Ir a Ajustes» behaviour, the dialog copy without text and S12 holding two promises. Lesson: when a delta loosens a rule, amend the old criterion's scope in the same delta instead of only adding the new one.
