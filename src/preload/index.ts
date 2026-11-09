@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron'
-import type { AgentState, AtrilApi, FlowStage, MenuAction, UsageResult } from './api'
+import type { ActivityLine, AgentState, AtrilApi, FlowStage, MenuAction, UsageResult } from './api'
 
 const api: AtrilApi = {
   menu: {
@@ -28,6 +28,15 @@ const api: AtrilApi = {
       const h = (_e: Electron.IpcRendererEvent, id: string, stage: FlowStage): void => cb(id, stage)
       ipcRenderer.on('atril:flow:changed', h)
       return () => ipcRenderer.removeListener('atril:flow:changed', h)
+    }
+  },
+  activity: {
+    get: (id) => ipcRenderer.invoke('atril:activity:get', id),
+    latest: () => ipcRenderer.invoke('atril:activity:latest'),
+    onChange: (cb) => {
+      const h = (_e: Electron.IpcRendererEvent, id: string, lines: ActivityLine[]): void => cb(id, lines)
+      ipcRenderer.on('atril:activity:changed', h)
+      return () => ipcRenderer.removeListener('atril:activity:changed', h)
     }
   },
   doctor: () => ipcRenderer.invoke('atril:doctor'),

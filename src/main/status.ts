@@ -13,14 +13,24 @@ export const stateDir = (): string => join(atrilHome(), 'state')
 export const shouldNotify = (prev: AgentState | undefined, next: AgentState): boolean =>
   next === 'needs-you' && prev !== 'needs-you'
 
-async function hookState(session: string): Promise<AgentState> {
+async function hookFile(session: string): Promise<{ state?: string; text?: string }> {
   try {
-    const { state } = JSON.parse(await readFile(join(stateDir(), `${session}.json`), 'utf8')) as { state?: string }
-    if (state === 'needs-you' || state === 'working') return state
+    return JSON.parse(await readFile(join(stateDir(), `${session}.json`), 'utf8'))
   } catch {
     /* no hook has fired yet, or the file is mid-replace */
+    return {}
   }
-  return 'working'
+}
+
+async function hookState(session: string): Promise<AgentState> {
+  const { state } = await hookFile(session)
+  return state === 'needs-you' || state === 'working' ? state : 'working'
+}
+
+/** The agent's own words written with the state change (A4), else today's body. */
+export async function notificationBody(ws: WorkspaceView): Promise<string> {
+  const { text } = await hookFile(ws.session)
+  return typeof text === 'string' && text ? text : `${ws.branch} te necesita`
 }
 
 // Only the agent's own pane counts (W16); a failing display means the pane or the server is gone.
@@ -37,7 +47,7 @@ export async function agentState(ws: WorkspaceView, run: Runner = defaultRun): P
 export interface StatusOptions {
   run?: Runner
   onChange: (id: string, state: AgentState) => void
-  notify: (ws: WorkspaceView) => void
+  notify: (ws: WorkspaceView, body: string) => void
 }
 
 export function createStatus({ run = defaultRun, onChange, notify }: StatusOptions) {
@@ -59,7 +69,7 @@ export function createStatus({ run = defaultRun, onChange, notify }: StatusOptio
         known.set(ws.id, next)
         onChange(ws.id, next)
         // The first pass only records: reopening Atril must not announce what was already waiting.
-        if (seeded && shouldNotify(prev, next)) notify(ws)
+        if (seeded && shouldNotify(prev, next)) notify(ws, await notificationBody(ws))
       }
       for (const id of known.keys()) if (!list.some((w) => w.id === id)) known.delete(id)
       seeded = true

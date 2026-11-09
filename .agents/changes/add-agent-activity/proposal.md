@@ -96,7 +96,7 @@ hook process; lines are capped at 200 characters and 200 lines per session.
   «Claude dice: …». The hook writes that text into the state file it writes, so the body always
   belongs to the event that changed the state.
   Proof: src/main/activity.test.ts notification carries the agent's message
-- **A5** When a Stop hook fires, the line shall quote the first 200 characters of the last
+- **A5** When a Stop hook fires, the line shall quote, within A1's 200-character cap, the start of the last
   assistant text in the transcript as «Claude dice: …».
   Proof: src/main/activity.test.ts stop quotes the last thing claude said
 - **A6** The activity file shall keep at most its last 200 lines.
@@ -147,6 +147,9 @@ the hook through a plain .mjs import or duplicated pure function tested once), s
 | Risk | What catches it |
 |---|---|
 | A hook slower than Claude's hook timeout | one small file read/write; Claude ignores a failed hook |
+| Every tool call now starts Electron as Node twice (Pre + Post) | measured 9 nov: 50–110 ms per hook, ~0.2 s per tool call next to seconds of model time; accepted |
+| Two hooks of one session at the same instant can drop an activity line (read, rewrite, rename, no lock) | accepted: a lost line is cosmetic; the state file is unaffected |
+| A newer event can replace the notification body before it is shown | accepted: the body still describes the latest state |
 | Transcript format changes | A5 falls back to «Claude ha terminado» when no text is found |
 
 ### Validation and rollback
@@ -160,4 +163,4 @@ None.
 
 ## Checklist
 
-- [ ] agent activity: the Electron-as-Node hook summarising every event into a bounded activity file, main watching it, the Actividad tab, the row line and the notification body · Closes: A1, A2, A3, A4, A5, A6, A7, A8
+- [x] agent activity: the Electron-as-Node hook summarising every event into a bounded activity file, main watching it, the Actividad tab, the row line and the notification body · Closes: A1, A2, A3, A4, A5, A6, A7, A8

@@ -1,5 +1,6 @@
 import { app, BrowserWindow, dialog, ipcMain, Notification, safeStorage, shell } from 'electron'
 import { MODELS, writeHooksFile } from './agent'
+import { createActivity } from './activity'
 import { createStatus } from './status'
 import { writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
@@ -219,8 +220,8 @@ app.whenReady().then(() => {
   const status = createStatus({
     run,
     onChange: (id, state) => BrowserWindow.getAllWindows().forEach((w) => w.webContents.send('atril:status:change', id, state)),
-    notify: (ws) => {
-      const n = new Notification({ title: 'Atril', body: `${ws.branch} te necesita` })
+    notify: (ws, body) => {
+      const n = new Notification({ title: 'Atril', subtitle: ws.branch, body })
       n.on('click', () => {
         const win = BrowserWindow.getAllWindows()[0]
         if (!win) return
@@ -241,6 +242,13 @@ app.whenReady().then(() => {
   })
   ipcMain.handle('atril:usage:get', () => usage.get())
   usage.start()
+  const activity = createActivity({
+    run,
+    emit: (id, lines) => BrowserWindow.getAllWindows().forEach((w) => w.webContents.send('atril:activity:changed', id, lines))
+  })
+  ipcMain.handle('atril:activity:get', (_e, id: string) => activity.get(String(id)))
+  ipcMain.handle('atril:activity:latest', () => activity.latest())
+  void activity.start()
   ipcMain.handle('atril:status:list', () => status.states())
   void writeHooksFile().then(() => status.start())
   app.on('activate', () => {

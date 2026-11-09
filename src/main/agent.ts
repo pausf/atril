@@ -6,15 +6,16 @@ import { atrilHome, resourcesDir } from './paths'
 const librettoDir = (): string => join(resourcesDir(), 'libretto')
 export const hooksFile = (): string => join(atrilHome(), 'hooks.json')
 
-const HOOK_STATES = { Notification: 'needs-you', Stop: 'needs-you', UserPromptSubmit: 'working' } as const
+const HOOK_EVENTS = ['Notification', 'Stop', 'UserPromptSubmit', 'PreToolUse', 'PostToolUse'] as const
 
+/** Atril's own binary runs the hook as Node (ELECTRON_RUN_AS_NODE): a Finder-launched app has no node on PATH. */
 export function hooksSettings(): { hooks: Record<string, { hooks: { type: 'command'; command: string }[] }[]> } {
-  const script = join(resourcesDir(), 'claude-hook.sh')
+  const script = join(resourcesDir(), 'claude-hook.mjs')
   return {
     hooks: Object.fromEntries(
-      Object.entries(HOOK_STATES).map(([event, state]) => [
+      HOOK_EVENTS.map((event) => [
         event,
-        [{ hooks: [{ type: 'command', command: `sh "${script}" ${state}` }] }]
+        [{ hooks: [{ type: 'command', command: `ELECTRON_RUN_AS_NODE=1 "${process.execPath}" "${script}" ${event}` }] }]
       ])
     )
   }

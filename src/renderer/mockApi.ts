@@ -1,5 +1,5 @@
 import { vi } from 'vitest'
-import type { AgentState, AtrilApi, FlowStage, JiraIssue, MenuAction, RepoView, UiState, WorkspaceView } from '../preload/api'
+import type { ActivityLine, AgentState, AtrilApi, FlowStage, JiraIssue, MenuAction, RepoView, UiState, WorkspaceView } from '../preload/api'
 
 export const workspace = (id: string, branch: string, alive = true): WorkspaceView => ({
   id,
@@ -32,6 +32,8 @@ interface Options {
   issues?: JiraIssue[]
   repos?: RepoView[]
   flow?: FlowStage
+  /** Newest first, per workspace id. */
+  activity?: Record<string, ActivityLine[]>
 }
 
 /** ui.json lives in `stored`; pass the same object to a second mock to simulate a restart. */
@@ -75,6 +77,11 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
         notified = cb
         return off
       }
+    },
+    activity: {
+      get: async (id: string) => o.activity?.[id] ?? [],
+      latest: async () => Object.fromEntries(Object.entries(o.activity ?? {}).flatMap(([id, l]) => (l[0] ? [[id, l[0]]] : []))),
+      onChange: () => off
     },
     flow: { get: async () => o.flow ?? null, onChange: () => off },
     usage: {

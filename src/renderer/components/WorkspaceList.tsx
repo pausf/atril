@@ -1,6 +1,6 @@
 import { Icon } from './Icon'
 import { useEffect, useState } from 'react'
-import type { AgentState, WorkspaceView } from '../../preload/api'
+import type { ActivityLine, AgentState, WorkspaceView } from '../../preload/api'
 
 const LABEL: Record<AgentState, string> = { working: 'trabajando', 'needs-you': 'te necesita', stopped: 'parado' }
 
@@ -14,6 +14,20 @@ interface Props {
 export function WorkspaceList({ workspaces, selected, onSelect, onRemove }: Props) {
   const [refusal, setRefusal] = useState<{ id: string; text: string } | null>(null)
   const [states, setStates] = useState<Record<string, AgentState>>({})
+
+  const [latest, setLatest] = useState<Record<string, ActivityLine>>({})
+
+  useEffect(() => {
+    void window.atril.activity.latest().then(setLatest)
+    return window.atril.activity.onChange((id, lines) =>
+      setLatest((l) => {
+        const next = { ...l }
+        if (lines[0]) next[id] = lines[0]
+        else delete next[id]
+        return next
+      })
+    )
+  }, [])
 
   useEffect(() => {
     void window.atril.status.list().then(setStates)
@@ -41,6 +55,11 @@ export function WorkspaceList({ workspaces, selected, onSelect, onRemove }: Prop
                 </span>
               )
             })()}
+            {latest[w.id] && (
+              <span className="ws-act" title={latest[w.id]?.text}>
+                {latest[w.id]?.text}
+              </span>
+            )}
           </button>
           <button
             type="button"

@@ -1,6 +1,13 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import type { FlowStage, StageName } from '../../preload/api'
 import { Icon, type IconName } from '../components/Icon'
+import { ActivityFeed } from './ActivityFeed'
+
+const TABS = [
+  { id: 'libretto', label: 'Libretto', title: 'Flujo de Libretto' },
+  { id: 'activity', label: 'Actividad', title: 'Actividad' }
+] as const
+type TabId = (typeof TABS)[number]['id']
 
 const STAGES: { name: Exclude<StageName, 'sin-libretto'>; label: string; icon: IconName }[] = [
   { name: 'entrada', label: 'Entrada', icon: 's-entrada' },
@@ -13,6 +20,22 @@ const STAGES: { name: Exclude<StageName, 'sin-libretto'>; label: string; icon: I
 
 export function FlowPanel({ workspaceId }: { workspaceId: string | null }) {
   const [flow, setFlow] = useState<FlowStage | null>(null)
+  const [tab, setTab] = useState<TabId>('libretto')
+  const tabs = useRef<Record<string, HTMLButtonElement | null>>({})
+
+  // ponytail: dev-only, ATRIL_SNAPSHOT_VIEW=activity photographs the Actividad tab.
+  useEffect(() => {
+    void window.atril.snapshotView().then((v) => v === 'activity' && setTab('activity'))
+  }, [])
+
+  const onTabKey = (e: KeyboardEvent): void => {
+    const step = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0
+    if (!step) return
+    e.preventDefault()
+    const next = TABS[(TABS.findIndex((t) => t.id === tab) + step + TABS.length) % TABS.length]!
+    setTab(next.id)
+    tabs.current[next.id]?.focus()
+  }
 
   useEffect(() => {
     let live = true
@@ -25,12 +48,39 @@ export function FlowPanel({ workspaceId }: { workspaceId: string | null }) {
     }
   }, [workspaceId])
 
-  const current = STAGES.findIndex((s) => s.name === flow?.stage)
-  const c = flow?.checklist
-
   return (
     <aside className="col right" data-tour="flow">
-      <h2 tabIndex={-1}>Flujo de Libretto</h2>
+      <h2 tabIndex={-1}>{TABS.find((t) => t.id === tab)?.title}</h2>
+      <div className="tabs" role="tablist" aria-label="Panel derecho" onKeyDown={onTabKey}>
+        {TABS.map((t) => (
+          <button
+            type="button"
+            role="tab"
+            key={t.id}
+            id={`tab-${t.id}`}
+            aria-selected={tab === t.id}
+            aria-controls={`panel-${t.id}`}
+            ref={(el) => {
+              tabs.current[t.id] = el
+            }}
+            onClick={() => setTab(t.id)}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+      <div role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`}>
+        {tab === 'activity' ? <ActivityFeed workspaceId={workspaceId} /> : <LibrettoFlow flow={flow} />}
+      </div>
+    </aside>
+  )
+}
+
+function LibrettoFlow({ flow }: { flow: FlowStage | null }) {
+  const current = STAGES.findIndex((s) => s.name === flow?.stage)
+  const c = flow?.checklist
+  return (
+    <>
       <p className="lead">Dónde va cada trabajo, leído de sus archivos.</p>
       {flow?.stage === 'sin-libretto' ? (
         <div className="empty">sin Libretto: este trabajo no tiene carpeta .agents</div>
@@ -84,6 +134,6 @@ export function FlowPanel({ workspaceId }: { workspaceId: string | null }) {
           )}
         </>
       )}
-    </aside>
+    </>
   )
 }

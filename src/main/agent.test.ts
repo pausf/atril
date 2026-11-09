@@ -3,6 +3,7 @@ import { join } from 'node:path'
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { agentArgv, hooksSettings } from './agent'
+import { resourcesDir } from './paths'
 import { run } from './run'
 import { agentSpy, cleanTmp, killTmux, makeRegisteredRepo, tmp, tmuxSock } from './test-helpers'
 import { updateClaudeConfig, withTrust } from './trust'
@@ -26,7 +27,9 @@ describe('agentArgv', () => {
     expect(flag).toBeGreaterThan(0)
     expect(flag).toBeLessThan(argv.indexOf('--plugin-dir'))
     expect(argv[flag + 1]).toMatch(/hooks\.json$/)
-    expect(Object.keys(hooksSettings().hooks).sort()).toEqual(['Notification', 'Stop', 'UserPromptSubmit'])
+    expect(Object.keys(hooksSettings().hooks).sort()).toEqual(['Notification', 'PostToolUse', 'PreToolUse', 'Stop', 'UserPromptSubmit'])
+    const command = hooksSettings().hooks['Stop']?.[0]?.hooks[0]?.command ?? ''
+    expect(command).toBe(`ELECTRON_RUN_AS_NODE=1 "${process.execPath}" "${join(resourcesDir(), 'claude-hook.mjs')}" Stop`)
   })
 
   it("claude keeps the person's own skills", () => {

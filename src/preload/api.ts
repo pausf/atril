@@ -180,6 +180,24 @@ export interface StatusApi {
   onOpen(cb: (id: string) => void): () => void
 }
 
+export type ActivityKind = 'prompt' | 'read' | 'edit' | 'run' | 'fail' | 'search' | 'agent' | 'tool' | 'says' | 'asks'
+
+export interface ActivityLine {
+  /** Epoch seconds. */
+  at: number
+  kind: ActivityKind
+  text: string
+}
+
+export interface ActivityApi {
+  /** Newest first. */
+  get(workspaceId: string): Promise<ActivityLine[]>
+  /** The newest line of every workspace that has one. */
+  latest(): Promise<Record<string, ActivityLine>>
+  /** Returns the unsubscribe function; `lines` is newest first. */
+  onChange(cb: (workspaceId: string, lines: ActivityLine[]) => void): () => void
+}
+
 export type StageName = 'sin-libretto' | 'entrada' | 'spec' | 'plan' | 'construir' | 'terminado' | 'aterrizado'
 
 export interface Checklist {
@@ -253,6 +271,7 @@ export interface AtrilApi {
   usage: UsageApi
   flow: FlowApi
   status: StatusApi
+  activity: ActivityApi
   doctor(): Promise<DoctorReport>
   repos: ReposApi
   workspaces: WorkspacesApi
