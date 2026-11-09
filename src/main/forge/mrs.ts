@@ -120,7 +120,9 @@ async function details(forge: ForgeId, get: Get, row: Row): Promise<void> {
   }
   const p = r.body as GhPull
   Object.assign(row, { added: p.additions, removed: p.deletions, files: p.changed_files })
-  const runs = await get(`${row.ref.replace(/\/pulls\/\d+$/, '')}/commits/${p.head?.sha}/check-runs?per_page=100`)
+  // No head sha, no check runs to ask for: CI stays unknown rather than a false forge error.
+  if (!p.head?.sha) return
+  const runs = await get(`${row.ref.replace(/\/pulls\/\d+$/, '')}/commits/${p.head.sha}/check-runs?per_page=100`)
   if (runs) row.ci = ciGithub((runs.body as { check_runs?: [] }).check_runs ?? [])
 }
 

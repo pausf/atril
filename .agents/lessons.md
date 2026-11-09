@@ -109,3 +109,6 @@ work-reviewer: the public confirmation lived only in the window; forge:open took
 
 ## 2026-11-09 · add-mr-lists · 4→5
 spec-reviewer: M3 contradicted W52 (open only created links), GitLab gives no per-MR line counts, CI states had no mapping, the rail counter needed data before the screen was opened, and the GitLab reviewer filter needed an id the store never kept. Settled before code; W52 amended, reviewer_username used.
+
+## 2026-11-09 · add-mr-lists · 6→7
+work-reviewer: M6's network text lacked the period the shared catalog key has (contract aligned with the key); a GitHub pull without head.sha asked /commits/undefined/check-runs and could raise a false forge error (now skipped, CI unknown).

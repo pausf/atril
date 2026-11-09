@@ -111,7 +111,7 @@ the lists use the foldable sections every screen uses (W28).
   Proof: src/renderer/mr/mrs.test.ts the mr screen shows three lists with their rows
 - **M6** If one of a forge's requests fails, then the screen shall show for that forge «{forge} ha
   rechazado el token: reemplázalo en Ajustes» on 401, «{forge} ha respondido {status}» on another
-  status, or «No se ha podido conectar con {forge} ({detail})» on a network failure, keep every MR
+  status, or «No se ha podido conectar con {forge} ({detail}).» on a network failure, keep every MR
   that forge did return, and keep the other forge's MRs.
   Proof: src/main/forge/mrs.test.ts one forge failing keeps the other
 - **M7** While no forge is connected the screen shall say «Conecta GitHub o GitLab en Ajustes» with
