@@ -91,6 +91,7 @@ PTYs and worktrees, and pieces reused with attribution — but Atril does not ru
 - Q: «Pero Claude tiene que cargar las propias skills que se le vayan metiendo también, aparte del libreto. ¿Eso lo hace?» → A: sí, observado en la casilla 4 (`(user)` y `(libretto)` a la vez); queda como criterio W33 y se prohíbe saltarse las del usuario
 - Q: ¿Tokens propios en vez de gh/glab/jira? → A: «Pensaba poner los tokens, o sea, los tokens de GitLab, GitHub y de Jira, no utilizar los GH y cosas de estas» → propuesta híbrida → A: «Yo lo haría. Yo lo haría, vale, híbrido, pero si no encuentra nada de token ni nada, una sección de ajustes donde pongan el token … pero ocultos, ¿sabes? O sea, cuando una vez que lo ponen, que ya no se puede visualizar.» (sustituye la decisión «Jira solo por el CLI» para lo que lee Atril; el agente de Libretto sigue usando el `jira` CLI)
 - Q: ¿GitLab y GitHub en la fase 1? → A: «Y hacemos solo la fase 1 núcleo»
+- Q: «Cuando se crea una nueva tarea, que se pueda elegir qué modelo utilizar … Cuando haces empezar … utiliza este modelo» → A: selector Modelo en Empezar y Nuevo trabajo: Por defecto · Opus · Sonnet · Haiku (sin Fable, por gasto); el modelo se guarda en el workspace record
 
 ## Vocabulary
 
@@ -101,7 +102,7 @@ Shared by every spec of this change, one name per concept.
 | **repo** | a git repository the person registered in Atril; its **repo id** is the folder's basename, lowercased with `-` for anything outside `[a-z0-9-]`, and registering a second repo with the same basename asks for another id (`[a-z0-9-]+`) |
 | **mode** | how a repo hosts work: `worktree` (one worktree per piece of work) or `in-place` (the main checkout switches branch; one piece of work at a time) |
 | **workspace** | where one piece of work happens: a worktree, or the main checkout on a branch in `in-place` mode |
-| **workspace record** | one entry in `~/.atril/workspaces.json`: workspace id, repo id, branch, mode, path, base commit, previous branch (in-place only), agent (`claude`), Jira key (if started from a task), tmux session name, the agent's pane id |
+| **workspace record** | one entry in `~/.atril/workspaces.json`: workspace id, repo id, branch, mode, path, base commit, previous branch (in-place only), agent (`claude`), model (`default`, `opus`, `sonnet` or `haiku`), Jira key (if started from a task), tmux session name, the agent's pane id |
 | **agent session** | a tmux session named `atril-<workspace id>`, where the workspace id is `[a-z0-9]{8}`; everything else about it is read from its workspace record, never parsed from the name |
 | **pane** | a tmux pane of an agent session, shown as a terminal in the centre column |
 | **agent state** | `working`, `needs-you` or `stopped` |
@@ -344,6 +345,10 @@ it; keyboard reachability and text labels for every state.
   `--plugin-dir` and never passes `--setting-sources`, `--bare` or anything else that drops
   them.
   Proof: src/main/agent.test.ts  claude keeps the person's own skills
+- **W34** Where the person picks a model in Start or in "Nuevo trabajo", Atril shall launch
+  Claude with `--model <alias>` (`opus`, `sonnet`, `haiku`; no flag for "Por defecto"), store it
+  in the workspace record, and show it on the workspace row. Fable is not offered.
+  Proof: src/main/agent.test.ts  chosen model reaches claude and the record
 - **W26** When a Claude hook reports `Stop` for a session, Atril shall set its agent state to
   `needs-you`; when it reports `UserPromptSubmit`, to `working`.
   Proof: src/main/status.test.ts  stop marks needs-you and prompt submit marks working
@@ -515,6 +520,6 @@ or in tmux itself, never in the window.
 - [ ] the right panel shows the Libretto stage and checklist of the selected workspace and follows file changes · waits on box 3 · Closes: F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12
 - [ ] Ajustes: the Jira token card, encrypted with safeStorage, checked on save, write-only once saved, and the "Conecta X en Ajustes" state · waits on box 1 · Closes: S1, S2, S3, S4, S5, S6, S7
 - [ ] "Mis Jira" lists the person's open sprint tasks through the Jira REST API with the token from Ajustes, and links to Ajustes when there is none · waits on box 10 · Closes: I1, I2, I3
-- [ ] Start: repo memory, branch slug, validated key, claude running /libretto-flow <KEY> in a new workspace, In Progress transition whose failure keeps the workspace, and the task showing its workspace afterwards · waits on boxes 3, 4, 7, 11 · Closes: I4, I5, I6, I7, I8, I9, I10
+- [ ] Start, and a Modelo selector in Start and Nuevo trabajo: repo memory, branch slug, validated key, claude running /libretto-flow <KEY> in a new workspace, In Progress transition whose failure keeps the workspace, and the task showing its workspace afterwards · waits on boxes 3, 4, 7, 11 · Closes: I4, I5, I6, I7, I8, I9, I10, W34
 - [ ] keyboard reachability and text labels everywhere, foldable sidebar sections, and the first-launch tutorial over every element, skippable, reopenable from Help, keyboard-only · waits on boxes 3, 8, 9, 11 · Closes: W22, W23, W24, W25, W28
 - [ ] Claude agents in Atril workspaces start without the folder-trust prompt, and tool problems collapse into one top-bar chip · waits on box 3 · Closes: W31, W32
