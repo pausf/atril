@@ -1,3 +1,5 @@
+import { Repos } from './Repos'
+
 export function Sidebar() {
   return (
     <aside className="col left">
@@ -18,6 +20,7 @@ export function Sidebar() {
         <div className="empty">
           Aquí verás cada trabajo con su estado: trabajando, te necesita o parado.
         </div>
+        <Repos />
       </section>
     </aside>
   )

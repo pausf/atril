@@ -1,7 +1,9 @@
-import { app, BrowserWindow, ipcMain } from 'electron'
+import { app, BrowserWindow, dialog, ipcMain } from 'electron'
 import { writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { doctor } from './doctor'
+import type { Mode } from '../preload/api'
+import { listRepos, registerRepo, setOverride } from './repos'
 import { run } from './run'
 
 function createWindow(): void {
@@ -46,6 +48,18 @@ function createWindow(): void {
 
 app.whenReady().then(() => {
   ipcMain.handle('atril:doctor', () => doctor(run))
+  ipcMain.handle('atril:repos:list', () => listRepos(run))
+  ipcMain.handle('atril:repos:add', async () => {
+    const picked = await dialog.showOpenDialog({ properties: ['openDirectory'] })
+    const path = picked.filePaths[0]
+    if (picked.canceled || !path) return null
+    return { ...(await registerRepo(path, run)), path }
+  })
+  ipcMain.handle('atril:repos:addWithId', (_e, path: string, id: string) => registerRepo(path, run, { id }))
+  ipcMain.handle('atril:repos:setOverride', async (_e, id: string, mode: Mode | null) => {
+    await setOverride(id, mode)
+    return listRepos(run)
+  })
   createWindow()
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()

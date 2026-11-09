@@ -84,6 +84,7 @@ PTYs and worktrees, and pieces reused with attribution — but Atril does not ru
 - Q: El revisor encontró huecos que romperían el código; ¿cómo seguimos? → A: Corregir y luego casilla 1
 - Q: (W10) ¿Qué pasa al quitar un worktree con trabajo sin commitear? → A: nunca se borra, ni confirmando; Atril dice que commitees o descartes antes (assumed, por la regla «nothing is deleted with uncommitted work»). Si es falso: cambia W10.
 - Q: (build, casilla 1) tmux y jira no aceptan `--version` → A: cada herramienta con su comando: `tmux -V`, `jira version`, `--version` el resto (corrección de la spec: el contrato estaba mal, observado al renderizar)
+- Q: (build, casilla 2) tus dos repos salían in-place por carpetas ignoradas (`out/`, `.atl/`, `.claude/`, `bin/`) → A: solo cuentan archivos ignorados, nunca carpetas (corrección de la spec, observada en los repos reales); el id del repo es el basename en minúsculas y con guiones
 
 ## Vocabulary
 
@@ -91,7 +92,7 @@ Shared by every spec of this change, one name per concept.
 
 | Term | Meaning |
 |---|---|
-| **repo** | a git repository the person registered in Atril; its **repo id** is the folder's basename, and registering a second repo with the same basename asks for another id (`[a-z0-9-]+`) |
+| **repo** | a git repository the person registered in Atril; its **repo id** is the folder's basename, lowercased with `-` for anything outside `[a-z0-9-]`, and registering a second repo with the same basename asks for another id (`[a-z0-9-]+`) |
 | **mode** | how a repo hosts work: `worktree` (one worktree per piece of work) or `in-place` (the main checkout switches branch; one piece of work at a time) |
 | **workspace** | where one piece of work happens: a worktree, or the main checkout on a branch in `in-place` mode |
 | **workspace record** | one entry in `~/.atril/workspaces.json`: workspace id, repo id, branch, mode, path, base commit, previous branch (in-place only), agent (`claude`/`codex`), Jira key (if started from a task), tmux session name, the agent's pane id |
@@ -231,8 +232,9 @@ it; keyboard reachability and text labels for every state.
 - **W2** If the checkout holds a git-ignored file outside dependency, build and editor
   noise (`node_modules`, `vendor`, `dist`, `build`, `.cache`, `.next`, `coverage`, `tmp`,
   `.idea`, `.vscode`, `.DS_Store`, `*.log`), then Atril shall set the mode to `in-place` and
-  name that file as the reason. "File" means any entry `git ls-files --others --ignored
-  --exclude-standard --directory` prints, file or directory; noise names match at any depth.
+  name that file as the reason. Only files count — entries of `git ls-files --others
+  --ignored --exclude-standard --directory` that do not end in `/`; ignored folders (build
+  output, tool caches) are never a signal. Noise names match at any depth.
   Proof: src/main/repos.test.ts  chooses in-place when an ignored config file exists
 - **W3** If every `node_modules` and `vendor` directory, at any depth, together exceed 2 GB, then Atril shall set the mode to
   `in-place` and say so.
@@ -457,7 +459,7 @@ or in tmux itself, never in the window.
 ## Checklist
 
 - [x] the app opens: Electron + React shell with the three columns and footer of boceto 8, the runner, and the doctor naming each missing tool with its install command · Closes: W21
-- [ ] register a repo by folder; the sidebar shows its mode with the reason, and the person's override persists · waits on box 1 · Closes: W1, W2, W3, W4
+- [x] register a repo by folder; the sidebar shows its mode with the reason, and the person's override persists · waits on box 1 · Closes: W1, W2, W3, W4
 - [ ] "Nuevo trabajo" opens a workspace in worktree mode on a new branch with claude or codex in an `atril-<id>` tmux session recorded in workspaces.json, shown live in the centre terminal; relaunching Atril reattaches without starting agents; a dirty worktree is never removed · waits on box 2 · Closes: W5, W6, W10, W11, W12
 - [ ] in-place workspaces: refuse a dirty checkout, refuse a second one per repo, restore the previous branch on close · waits on box 3 · Closes: W7, W8, W9
 - [ ] ⌘D and ⌘⇧D split the focused workspace through tmux · waits on box 3 · Closes: W13
