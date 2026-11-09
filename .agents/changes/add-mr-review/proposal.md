@@ -19,7 +19,11 @@ Pau, 9 nov 2026:
 
 > como se ven los comentrios de gitbuh gitlab
 
+> Pero no debería revisar todas, porque yo no voy a revisar todas las MRs. Entonces, solo debería revisar como mucho las que son reviewer o las mías, pero ya está.
+
 ## The reading
+
+**What gets scored (Pau, 9 nov):** only MRs you authored or where you are a reviewer get metrics, AI scores and Libretto lenses. MRs in subscribed projects ("Sigo") are listed only — title, author, CI status, size — with no AI, no metrics and no checkout.
 
 **Comments (Pau, 9 nov):** the MR view shows the GitLab/GitHub discussion threads — file and line, the code, replies, resolved / needs-your-answer — with replies sent back to the forge; Libretto lens findings appear as drafts to publish on the MR, send to the agent, or discard. Sketch: boceto 8, MR view, "Hilos".
 
