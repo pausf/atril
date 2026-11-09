@@ -85,6 +85,7 @@ PTYs and worktrees, and pieces reused with attribution — but Atril does not ru
 - Q: (W10) ¿Qué pasa al quitar un worktree con trabajo sin commitear? → A: nunca se borra, ni confirmando; Atril dice que commitees o descartes antes (assumed, por la regla «nothing is deleted with uncommitted work»). Si es falso: cambia W10.
 - Q: (build, casilla 1) tmux y jira no aceptan `--version` → A: cada herramienta con su comando: `tmux -V`, `jira version`, `--version` el resto (corrección de la spec: el contrato estaba mal, observado al renderizar)
 - Q: (build, casilla 2) tus dos repos salían in-place por carpetas ignoradas (`out/`, `.atl/`, `.claude/`, `bin/`) → A: solo cuentan archivos ignorados, nunca carpetas (corrección de la spec, observada en los repos reales); el id del repo es el basename en minúsculas y con guiones
+- Q: ¿Libretto viene dentro de la app? → A: «Libreto estará puesto directamente en la aplicación, ¿no? Es decir, la gente no se tendrá que bajar el libreto oficial, sino que ya estará oficialmente metido dentro del sistema.»
 
 ## Vocabulary
 
@@ -194,6 +195,10 @@ it; keyboard reachability and text labels for every state.
   (decision log). Read per request from `Claude Code-credentials`, sent only to
   `api.anthropic.com`, cached 60 s in memory, never written anywhere.
 - **AI through the Claude Code CLI on the subscription, never an API key** — agreed 9 nov.
+- **Libretto ships inside Atril** — Pau, 9 nov (decision log). A pinned copy of
+  libretto-automata's payload (MIT, with its vendored MIT items) lives in `resources/libretto/`
+  as a Claude Code plugin; every Claude agent is launched with `--plugin-dir` pointing at it,
+  for that session only. Nobody installs Libretto, and the person's `~/.claude` is untouched.
 - **`/libretto-flow` runs only on Claude** — `libretto --help` (v0.44.2): «codex cannot run
   the flow». Codex is offered as a plain agent session.
 - **Worktree unless the repo cannot take one** — Pau, 9 nov: «worktree si pero en alguno
@@ -316,6 +321,12 @@ it; keyboard reachability and text labels for every state.
 - **W28** When the person clicks a sidebar section's title, Atril shall fold or unfold that
   section, keep its count visible, and remember the state across restarts.
   Proof: src/renderer/sidebar.test.ts  section title folds the section and keeps its count
+- **W29** When Atril starts a Claude agent, it shall pass `--plugin-dir` with the Libretto
+  copy bundled in the app, so the flow works on a machine where Libretto was never installed.
+  Proof: src/main/agent.test.ts  claude starts with the bundled libretto plugin
+- **W30** The bundled Libretto shall carry its `LICENSE`, `THIRD-PARTY.md` and every licence
+  file under `licenses/`, and the version it was copied from.
+  Proof: src/main/libretto-bundle.test.ts  bundle carries every licence and its version
 - **W26** When a Claude hook reports `Stop` for a session, Atril shall set its agent state to
   `needs-you`; when it reports `UserPromptSubmit`, to `working`.
   Proof: src/main/status.test.ts  stop marks needs-you and prompt submit marks working
@@ -408,6 +419,13 @@ or in tmux itself, never in the window.
   sees the key, so focus can always leave the terminal (W22).
 - **Flow** (F1–F12): `fs.watch` on each workspace's `.agents/changes/` (debounced 500 ms)
   → checklist reader with Libretto's rule → stage → IPC to the right panel.
+- **Libretto bundled** (W29, W30): `scripts/bundle-libretto.mjs <ref>` copies `skills/`,
+  `agents/`, `commands/`, `LICENSE`, `THIRD-PARTY.md` and `licenses/` from
+  `~/gitrepos/libretto-automata` at a git ref into `resources/libretto/`, and writes
+  `.claude-plugin/plugin.json` (`name: "libretto"`, the ref as version). The copy is committed;
+  updating Libretto is re-running the script with a new ref. The exact name the flow command
+  takes once loaded as a plugin (`/libretto-flow` or a namespaced form) is checked in that box
+  with one real `claude` start, and I6 uses whatever it observed.
 - **Tutorial** (W23–W25): React overlay with a spotlight over each `data-tour` element, 8
   steps as in boceto 8; `ui.json` records it as seen; Help → Tutorial reopens it.
 
@@ -438,6 +456,8 @@ or in tmux itself, never in the window.
 | pnpm 11 skips Electron's install script on a fresh clone, so `pnpm dev` says "Electron uninstall" | not solved: `allowBuilds` and `onlyBuiltDependencies` in `pnpm-workspace.yaml` were both tried on a fresh install and neither ran it; until found, run `node node_modules/electron/install.js` once after `pnpm install` |
 | Launched from Finder, a macOS app does not inherit the shell's PATH, so tmux, claude and jira look missing | not hit while Atril runs from source with `pnpm dev`; a packaged build must resolve PATH from the login shell first |
 | The runner has no timeout, so a tool that hangs on its version command blocks the doctor | accepted for phase 1; add a timeout to `run` the first time it is seen |
+| The person also has Libretto installed globally, so the agent sees two copies of each skill | accepted for phase 1: the plugin's are namespaced; if the duplicates confuse the agent, Atril passes `--setting-sources` to skip the user's skills for its agents |
+| Libretto's own `libretto` CLI (loop, metrics, init) is not bundled | accepted: the flow's skills do not need it to run; bundle it with the app when a feature calls it |
 | `Stop` fires at the end of every turn, so `needs-you` may be noisy | accepted for phase 1; one notification per transition (W15) bounds it |
 
 ### Validation and rollback
@@ -469,11 +489,12 @@ or in tmux itself, never in the window.
 - [x] the app opens: Electron + React shell with the three columns and footer of boceto 8, the runner, and the doctor naming each missing tool with its install command · Closes: W21
 - [x] register a repo by folder; the sidebar shows its mode with the reason, and the person's override persists · waits on box 1 · Closes: W1, W2, W3, W4
 - [x] "Nuevo trabajo" opens a workspace in worktree mode on a new branch with claude or codex in an `atril-<id>` tmux session recorded in workspaces.json, shown live in the centre terminal; relaunching Atril reattaches without starting agents; a dirty worktree is never removed · waits on box 2 · Closes: W5, W6, W10, W11, W12
+- [ ] Libretto bundled: the script copies the pinned payload with its licences into resources/libretto as a Claude Code plugin, and every Claude agent starts with --plugin-dir pointing at it · waits on box 3 · Closes: W29, W30
 - [ ] in-place workspaces: refuse a dirty checkout, refuse a second one per repo, restore the previous branch on close · waits on box 3 · Closes: W7, W8, W9
 - [ ] ⌘D and ⌘⇧D split the focused workspace through tmux · waits on box 3 · Closes: W13
 - [ ] agent state from Claude hooks passed by --settings and from the agent's dead pane, with one macOS notification per needs-you transition that opens the workspace · waits on box 3 · Closes: W14, W15, W16, W26, W27
 - [ ] usage footer: Claude 5 h and 7 d from the Keychain token and the usage endpoint, Codex from its newest session file, "—" with a reason when unreadable, the token never leaving main · waits on box 1 · Closes: W17, W18, W19, W20
 - [ ] the right panel shows the Libretto stage and checklist of the selected workspace and follows file changes · waits on box 3 · Closes: F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12
 - [ ] "Mis Jira" lists the person's open sprint tasks via the jira CLI, and explains an unconfigured CLI · waits on box 1 · Closes: I1, I2, I3
-- [ ] Start: repo memory, branch slug, validated key, claude running /libretto-flow <KEY> in a new workspace, In Progress transition whose failure keeps the workspace, and the task showing its workspace afterwards · waits on boxes 3, 6, 9 · Closes: I4, I5, I6, I7, I8, I9, I10
-- [ ] keyboard reachability and text labels everywhere, foldable sidebar sections, and the first-launch tutorial over every element, skippable, reopenable from Help, keyboard-only · waits on boxes 3, 7, 8, 9 · Closes: W22, W23, W24, W25, W28
+- [ ] Start: repo memory, branch slug, validated key, claude running /libretto-flow <KEY> in a new workspace, In Progress transition whose failure keeps the workspace, and the task showing its workspace afterwards · waits on boxes 3, 4, 7, 10 · Closes: I4, I5, I6, I7, I8, I9, I10
+- [ ] keyboard reachability and text labels everywhere, foldable sidebar sections, and the first-launch tutorial over every element, skippable, reopenable from Help, keyboard-only · waits on boxes 3, 8, 9, 10 · Closes: W22, W23, W24, W25, W28
