@@ -105,6 +105,11 @@ The `workspaces` capability, phase 1. Its siblings in this change: `.agents/spec
 - `ui.json` keeps the language choice beside the theme; main resolves it and owns the result for
   the menu, notifications, its messages and the window.
 
+### Create repos (add-create-repo, 9 nov 2026)
+
+- A repo created on GitHub or GitLab under the person's account, optionally cloned over SSH and
+  registered as an Atril repo.
+
 ## Scope boundaries
 
 **In:** the three columns and footer of `bocetos/fase1-nucleo.html` (boceto 8), the
@@ -178,6 +183,11 @@ and the note never carries file contents.
 
 **In:** storing, resolving, the menu rebuild, `t()` in main. **Out:** anything in the window.
 
+### Create repos (add-create-repo, 9 nov 2026)
+
+**In:** validation, the create request, the clone and the registration. **Out:** the cards and
+the dialog (proposal.md).
+
 ## Constraints
 
 - Electron (current stable) + TypeScript in strict mode, pnpm, Node 24 (installed:
@@ -233,6 +243,10 @@ and the note never carries file contents.
 ### Language (add-language, 9 nov 2026)
 
 - Same `ui.json` and `atril:ui:*` IPC as the theme (W35).
+
+### Create repos (add-create-repo, 9 nov 2026)
+
+- The tokens come from the secret store in main only; registration is `registerRepo` (W1–W4).
 
 ## Prior decisions
 
@@ -420,6 +434,10 @@ and the note never carries file contents.
 ### Language (add-language, 9 nov 2026)
 
 - **One source for Sistema** (assumed, proposal.md decision log): main.
+
+### Create repos (add-create-repo, 9 nov 2026)
+
+- **SSH, never a token URL** (proposal.md).
 
 ## Task breakdown
 
@@ -674,3 +692,29 @@ and the note never carries file contents.
   preferred language does not start with `es` — main shall build the menu, the notification texts
   and its own messages in English, keeping any `{detail}` as it came.
   Proof: src/main/i18n.test.ts main speaks the chosen language
+
+### Create repos (add-create-repo, 9 nov 2026)
+
+- **W49** If the repo name is empty, longer than 100 characters, has a character other than
+  letters, digits, `.`, `-` or `_`, or is `.` or `..`, then Atril shall answer «Nombre de repo no
+  válido» and send no request; a name the forge refuses anyway shall come back as its `{detail}`.
+  Proof: src/main/forge/create.test.ts an invalid name sends nothing
+- **W50** When a repo is created, Atril shall send the forge's create request for the person's
+  account with the name, description, visibility (private unless public was confirmed) and a
+  README, and answer with the web link and the forge's own path for the repo; a refusal shall
+  answer «{forge} no ha creado el repo: {detail}». A public request without `confirmPublic`
+  shall be refused in main with «Un repo público necesita tu confirmación.» and send nothing, and
+  no request to a forge shall follow a redirect.
+  Proof: src/main/forge/create.test.ts creates a private repo with a readme
+- **W51** When cloning is asked, Atril shall refuse before cloning if `<folder>/<path>` exists;
+  otherwise clone the SSH URL there and register it (with the suggested id when the derived one is
+  taken); if the clone fails it shall register nothing and answer with the `git clone` command to
+  run by hand; no command Atril runs, nor its environment, shall contain the token or any
+  variable from the person's shell beyond PATH, HOME, USER, LANG, SSH_AUTH_SOCK and TMPDIR.
+  (One proof per path: success, failed clone, existing folder; the token check runs on all.)
+  Proof: src/main/forge/create.test.ts clones over ssh and registers the repo
+  Proof: src/main/forge/create.test.ts a failed clone registers nothing
+  Proof: src/main/forge/create.test.ts an existing folder is not overwritten
+- **W52** Main shall open in the browser only a link it returned from a create, and clone only into
+  the folder its own picker returned last; anything else from the window shall be ignored.
+  Proof: src/main/forge/guards.test.ts only links and folders main handed out are accepted
