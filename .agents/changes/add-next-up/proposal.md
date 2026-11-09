@@ -128,6 +128,7 @@ Inbox fast path + test, sketch.
 | Risk | What catches it |
 |---|---|
 | The reply arrives after the agent moved on | it lands as the next message to Claude, like typing it in the terminal |
+| macOS may fire a click right after a reply | a click within 1 s of a reply is ignored (unverified on a real notification) |
 | ⌘↩ clashes with a terminal shortcut | it is a menu accelerator, handled before xterm; only when Trabajo or Tareas is shown |
 
 ### Validation and rollback
@@ -141,4 +142,4 @@ None.
 
 ## Checklist
 
-- [ ] next up: the ordered list and strip with ⌘↩, the reply notification into the agent pane, one-click Start for remembered tasks · Closes: N1, N2, N3, I20, I21
+- [x] next up: the ordered list and strip with ⌘↩, the reply notification into the agent pane, one-click Start for remembered tasks · Closes: N1, N2, N3, I20, I21

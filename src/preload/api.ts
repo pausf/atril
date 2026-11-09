@@ -237,8 +237,18 @@ export interface UsageApi {
   onChange(cb: (u: UsageResult) => void): () => void
 }
 
+/** One entry of «Qué me toca», already ordered by main. */
+export type NextItem = { kind: 'agent'; id: string } | { kind: 'task'; key: string }
+
+export interface NextUpApi {
+  get(): Promise<NextItem[]>
+  /** Returns the unsubscribe function. */
+  onChange(cb: (items: NextItem[]) => void): () => void
+}
+
 export type MenuAction =
   | { kind: 'focus'; target: 'sidebar' | 'flow' }
+  | { kind: 'next' }
   | { kind: 'select'; index: number }
   | { kind: 'tutorial' }
 
@@ -261,6 +271,8 @@ export interface UiApi {
 export interface MenuApi {
   /** Tells main which workspace the menu's split items act on, and how many exist. */
   setState(selected: string | null, count: number): void
+  /** Whether «Siguiente» (⌘↩) is enabled: Trabajo or Tareas shown and something waiting. */
+  setNext(enabled: boolean): void
   /** Returns the unsubscribe function. */
   onAction(cb: (a: MenuAction) => void): () => void
 }
@@ -271,6 +283,7 @@ export interface AtrilApi {
   usage: UsageApi
   flow: FlowApi
   status: StatusApi
+  nextup: NextUpApi
   activity: ActivityApi
   doctor(): Promise<DoctorReport>
   repos: ReposApi

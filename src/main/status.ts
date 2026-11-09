@@ -4,7 +4,8 @@ import { join } from 'node:path'
 import type { AgentState, WorkspaceView } from '../preload/api'
 import { atrilHome } from './paths'
 import { run as defaultRun, type Runner } from './run'
-import { tmuxArgs } from './tmux'
+import { sendText, tmuxArgs } from './tmux'
+import type { AgentSnapshot } from './nextup'
 import { listWorkspaces } from './workspaces'
 
 export const stateDir = (): string => join(atrilHome(), 'state')
@@ -13,7 +14,7 @@ export const stateDir = (): string => join(atrilHome(), 'state')
 export const shouldNotify = (prev: AgentState | undefined, next: AgentState): boolean =>
   next === 'needs-you' && prev !== 'needs-you'
 
-async function hookFile(session: string): Promise<{ state?: string; text?: string }> {
+async function hookFile(session: string): Promise<{ state?: string; text?: string; at?: number }> {
   try {
     return JSON.parse(await readFile(join(stateDir(), `${session}.json`), 'utf8'))
   } catch {
@@ -44,6 +45,29 @@ export async function agentState(ws: WorkspaceView, run: Runner = defaultRun): P
   return hookState(ws.session)
 }
 
+export const REPLY_PLACEHOLDER = 'Responde a Claude…'
+export const REPLY_GONE = 'No se pudo enviar: ese trabajo ya no está'
+
+export type ReplyPlan = { kind: 'send'; paneId: string; text: string } | { kind: 'ignore' } | { kind: 'gone' }
+
+/** N3: what a notification reply does, decided from the record and the pane alone. */
+export function planReply(text: string, ws: Pick<WorkspaceView, 'paneId' | 'alive'> | undefined, paneIsDead: boolean): ReplyPlan {
+  // One line: a newline typed into the pane would submit it before the Enter we send.
+  const line = text.replace(/[\r\n]+/g, ' ').trim()
+  if (line === '') return { kind: 'ignore' }
+  if (!ws?.alive || !/^%\d+$/.test(ws.paneId) || paneIsDead) return { kind: 'gone' }
+  return { kind: 'send', paneId: ws.paneId, text: line }
+}
+
+/** Resolves the workspace's own pane from its record and types the reply there; nothing else is touched. */
+export async function replyToAgent(id: string, text: string, run: Runner = defaultRun): Promise<'sent' | 'ignored' | 'gone'> {
+  if (text.trim() === '') return 'ignored'
+  const ws = (await listWorkspaces(run)).find((w) => w.id === id)
+  const plan = planReply(text, ws, ws ? await paneDead(ws.paneId, run) : true)
+  if (plan.kind !== 'send') return plan.kind === 'gone' ? 'gone' : 'ignored'
+  return (await sendText(plan.paneId, plan.text, run)) ? 'sent' : 'gone'
+}
+
 export interface StatusOptions {
   run?: Runner
   onChange: (id: string, state: AgentState) => void
@@ -52,6 +76,7 @@ export interface StatusOptions {
 
 export function createStatus({ run = defaultRun, onChange, notify }: StatusOptions) {
   const known = new Map<string, AgentState>()
+  const since = new Map<string, number>()
   let busy = false
   let seeded = false
   let timer: NodeJS.Timeout | undefined
@@ -67,11 +92,16 @@ export function createStatus({ run = defaultRun, onChange, notify }: StatusOptio
         const prev = known.get(ws.id)
         if (prev === next) continue
         known.set(ws.id, next)
+        since.set(ws.id, (await hookFile(ws.session)).at ?? 0)
         onChange(ws.id, next)
         // The first pass only records: reopening Atril must not announce what was already waiting.
         if (seeded && shouldNotify(prev, next)) notify(ws, await notificationBody(ws))
       }
-      for (const id of known.keys()) if (!list.some((w) => w.id === id)) known.delete(id)
+      for (const id of known.keys())
+        if (!list.some((w) => w.id === id)) {
+          known.delete(id)
+          since.delete(id)
+        }
       seeded = true
     } finally {
       busy = false
@@ -81,6 +111,7 @@ export function createStatus({ run = defaultRun, onChange, notify }: StatusOptio
   return {
     refresh,
     states: (): Record<string, AgentState> => Object.fromEntries(known),
+    snapshot: (): AgentSnapshot[] => [...known].map(([id, state]) => ({ id, state, at: since.get(id) ?? 0 })),
     async start(): Promise<void> {
       await mkdir(stateDir(), { recursive: true })
       watcher = watch(stateDir(), () => void refresh())

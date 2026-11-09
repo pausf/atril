@@ -1,7 +1,8 @@
 import { app, BrowserWindow, dialog, ipcMain, Notification, safeStorage, shell } from 'electron'
 import { MODELS, writeHooksFile } from './agent'
 import { createActivity } from './activity'
-import { createStatus } from './status'
+import { createStatus, REPLY_GONE, REPLY_PLACEHOLDER, replyToAgent } from './status'
+import { nextUp } from './nextup'
 import { writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { createSecretStore } from './credentials/store'
@@ -13,7 +14,7 @@ import type { Mode } from '../preload/api'
 import { readInbox } from './jira/inbox'
 import { inboxGroups } from './jira/board'
 import { proposeStart, start } from './jira/start'
-import type { InboxGroup, JiraIssue, Model, StartIssue, StartRequest } from '../preload/api'
+import type { InboxGroup, InboxResult, JiraIssue, Model, NextItem, StartIssue, StartRequest } from '../preload/api'
 import { listRepos, registerRepo, setOverride } from './repos'
 import * as pty from './pty'
 import { run } from './run'
@@ -139,7 +140,17 @@ app.whenReady().then(() => {
     const c = await secretStore.readSecret('jira').catch(() => null)
     return c?.['site'] && c['email'] && c['token'] ? (c as unknown as JiraCreds) : null
   }
+  let lastInbox: InboxResult | null = null
+  let lastNext: NextItem[] = []
+  // Defined below, once the status watcher exists; every path that changes its inputs calls it.
+  let pushNext = async (): Promise<void> => {}
   ipcMain.handle('atril:jira:inbox', async () => {
+    const result = await readInboxResult()
+    lastInbox = result
+    void pushNext()
+    return result
+  })
+  const readInboxResult = async (): Promise<InboxResult> => {
     // ponytail: dev-only, ATRIL_SNAPSHOT_VIEW=tasks|tasks-board|tour|tourN (N = step) photographs a believable list without Jira.
     const view = process.env['ATRIL_SNAPSHOT_VIEW'] ?? ''
     if (SNAPSHOT && /^(tasks|tour)/.test(view)) {
@@ -150,11 +161,15 @@ app.whenReady().then(() => {
     }
     const creds = await savedJira()
     return readInbox(creds, fetch, await listWorkspaces(run), (await secretStore.hasSecret('jira')).board)
-  })
+  }
   ipcMain.handle('atril:jira:proposeStart', (_e, issue: StartIssue, repoId?: string, model?: Model) =>
     proposeStart(issue, { repoId, model }, run)
   )
-  ipcMain.handle('atril:jira:start', async (_e, req: StartRequest) => start(req, { run, creds: await savedJira() }))
+  ipcMain.handle('atril:jira:start', async (_e, req: StartRequest) => {
+    const r = await start(req, { run, creds: await savedJira() })
+    void pushNext()
+    return r
+  })
   const flow = createFlowHub({
     run,
     find: async (id) => (await listWorkspaces(run)).find((w) => w.id === id),
@@ -163,12 +178,12 @@ app.whenReady().then(() => {
   ipcMain.handle('atril:flow:get', (_e, id: string | null) => flow.select(id))
   ipcMain.handle('atril:ws:list', () => listWorkspaces(run))
   ipcMain.handle('atril:ws:open', (_e, repoId: string, branch: string, agent: Agent, model?: Model) =>
-    openWorktree({ repoId, branch, agent, ...(model && MODELS.includes(model) && { model }) }, run)
+    openWorktree({ repoId, branch, agent, ...(model && MODELS.includes(model) && { model }) }, run).finally(() => void pushNext())
   )
   ipcMain.handle('atril:ws:remove', async (e, id: string) => {
     pty.detach(id)
     flow.forget(id)
-    return removeWorkspace(id, run)
+    return removeWorkspace(id, run).finally(() => void pushNext())
   })
   ipcMain.handle('atril:term:attach', async (e, id: string, cols: number, rows: number) => {
     const ws = (await listWorkspaces(run)).find((w) => w.id === id)
@@ -194,7 +209,7 @@ app.whenReady().then(() => {
   })
   ipcMain.handle('atril:ui:set', (_e, patch: unknown) => patchUi(patch))
   ipcMain.handle('atril:snapshot-ws', () => Boolean(SNAPSHOT))
-  const menu = { selected: null as string | null, count: 0 }
+  const menu = { selected: null as string | null, count: 0, nextEnabled: false }
   const refreshMenu = (): void =>
     installMenu({
       ...menu,
@@ -208,6 +223,10 @@ app.whenReady().then(() => {
       },
       send: (a) => BrowserWindow.getAllWindows().forEach((w) => w.webContents.send('atril:menu:action', a))
     })
+  ipcMain.on('atril:menu:next', (_e, enabled: boolean) => {
+    menu.nextEnabled = enabled === true
+    refreshMenu()
+  })
   ipcMain.on('atril:menu:state', (_e, selected: string | null, count: number) => {
     menu.selected = selected
     menu.count = count
@@ -219,10 +238,23 @@ app.whenReady().then(() => {
   const shown = new Set<Notification>()
   const status = createStatus({
     run,
-    onChange: (id, state) => BrowserWindow.getAllWindows().forEach((w) => w.webContents.send('atril:status:change', id, state)),
+    onChange: (id, state) => {
+      BrowserWindow.getAllWindows().forEach((w) => w.webContents.send('atril:status:change', id, state))
+      void pushNext()
+    },
     notify: (ws, body) => {
-      const n = new Notification({ title: 'Atril', subtitle: ws.branch, body })
+      const n = new Notification({ title: 'Atril', subtitle: ws.branch, body, hasReply: true, replyPlaceholder: REPLY_PLACEHOLDER })
+      // W38: only a click brings Atril forward; a reply types into the pane and leaves the window alone.
+      // ponytail: macOS may follow a reply with a click; one within 1 s of a reply is ignored (N3).
+      let repliedAt = 0
+      n.on('reply', (_e, text) => {
+        repliedAt = Date.now()
+        void replyToAgent(ws.id, text, run).then((r) => {
+          if (r === 'gone') new Notification({ title: 'Atril', body: REPLY_GONE }).show()
+        })
+      })
       n.on('click', () => {
+        if (Date.now() - repliedAt < 1000) return
         const win = BrowserWindow.getAllWindows()[0]
         if (!win) return
         if (win.isMinimized()) win.restore()
@@ -235,6 +267,14 @@ app.whenReady().then(() => {
       n.on('close', () => shown.delete(n))
       n.show()
     }
+  })
+  pushNext = async (): Promise<void> => {
+    lastNext = nextUp(status.snapshot(), lastInbox, await listWorkspaces(run))
+    BrowserWindow.getAllWindows().forEach((w) => w.webContents.send('atril:nextup:changed', lastNext))
+  }
+  ipcMain.handle('atril:nextup:get', async () => {
+    await pushNext()
+    return lastNext
   })
   const usage = createUsage({
     run,

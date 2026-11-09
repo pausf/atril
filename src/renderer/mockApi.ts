@@ -1,5 +1,5 @@
 import { vi } from 'vitest'
-import type { ActivityLine, AgentState, AtrilApi, FlowStage, JiraIssue, MenuAction, RepoView, UiState, WorkspaceView } from '../preload/api'
+import type { ActivityLine, AgentState, AtrilApi, FlowStage, JiraIssue, MenuAction, NextItem, StartProposalResult, StartRequest, StartResult, RepoView, UiState, WorkspaceView } from '../preload/api'
 
 export const workspace = (id: string, branch: string, alive = true): WorkspaceView => ({
   id,
@@ -31,6 +31,9 @@ interface Options {
   states?: Record<string, AgentState>
   issues?: JiraIssue[]
   repos?: RepoView[]
+  nextup?: NextItem[]
+  /** What proposeStart answers; start answers with a workspace named after the key. */
+  proposal?: StartProposalResult
   flow?: FlowStage
   /** Newest first, per workspace id. */
   activity?: Record<string, ActivityLine[]>
@@ -54,6 +57,7 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
     ui,
     menu: {
       setState: vi.fn(),
+      setNext: vi.fn(),
       onAction: (cb: (a: MenuAction) => void) => {
         menu = cb
         return off
@@ -62,7 +66,10 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
     doctor: async () => [],
     workspaces: { list: async () => o.workspaces ?? [] },
     repos: { list: async () => o.repos ?? [] },
+    nextup: { get: async () => o.nextup ?? [], onChange: () => off },
     jira: {
+      proposeStart: vi.fn(async () => o.proposal ?? { command: 'claude' }),
+      start: vi.fn(async (req: StartRequest): Promise<StartResult> => ({ workspace: workspace('started1', req.branch) })),
       inbox: async () => {
         const issues = o.issues ?? []
         const titles = { todo: 'Por empezar', doing: 'En curso', review: 'En revisión y despliegue' }
@@ -96,7 +103,8 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
     snapshotView: async () => null,
     snapshotWorkspace: async () => false
   } as unknown as AtrilApi
-  return { ui, stored, menu: (a: MenuAction) => menu?.(a), clickNotification: (id: string) => notified?.(id),
+  const { menu: menuApi, jira } = window.atril
+  return { ui, stored, menuApi, jira, menu: (a: MenuAction) => menu?.(a), clickNotification: (id: string) => notified?.(id),
     pushActivity: (id: string, lines: ActivityLine[]) => activityListeners.forEach((cb) => cb(id, lines))
   }
 }

@@ -1259,3 +1259,54 @@ kbd {
 }
 
 .stale{color:var(--sub)}
+
+.work {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.work[hidden] {
+  display: none;
+}
+.nextup {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px 22px;
+  border-bottom: 1px solid var(--line);
+  font-size: 12.5px;
+}
+.nextup > b {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--sub);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  margin-right: 4px;
+}
+.nx {
+  font: inherit;
+  font-weight: 600;
+  padding: 5px 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--text);
+  cursor: pointer;
+}
+.nx:hover {
+  background: var(--hover);
+}
+.nx.agent {
+  color: var(--you-text);
+  border-color: var(--you);
+}
+.nextup .more,
+.nextup .hint-key {
+  color: var(--sub);
+}
+.nextup .hint-key {
+  margin-left: auto;
+}

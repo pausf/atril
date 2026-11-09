@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import type { Agent, DoctorReport, Model, WorkspaceView } from '../preload/api'
+import { useEffect, useRef, useState } from 'react'
+import type { Agent, DoctorReport, JiraIssue, Model, NextItem, WorkspaceView } from '../preload/api'
 import { FlowPanel } from './flow/FlowPanel'
 import { Footer } from './components/Footer'
 import { Rail, type Screen } from './components/Rail'
@@ -8,6 +8,9 @@ import { TopBar } from './components/TopBar'
 import { Workspace } from './components/Workspace'
 import { Ajustes } from './settings/Ajustes'
 import { Inbox, useInbox } from './inbox/Inbox'
+import { StartDialog } from './inbox/StartDialog'
+import { NextUpStrip } from './components/NextUpStrip'
+import { startOrAsk, useNextUp } from './nextup'
 import { NavigationContext } from './settings/navigation'
 import { Appearance } from './components/Appearance'
 import { focusRegion } from './focus'
@@ -50,13 +53,21 @@ function Shell() {
   const [selected, setSelected] = useState<string | null>(null)
   const [screen, setScreen] = useState<Screen>('work')
   const inbox = useInbox()
+  const next = useNextUp()
+  const [starting, setStarting] = useState<JiraIssue | null>(null)
+  const [startError, setStartError] = useState<string | null>(null)
+  const quickBusy = useRef(false)
 
   useEffect(() => {
     void window.atril.snapshotView().then((v) => {
       if (v === 'settings' || v === 'tasks') setScreen(v)
       if (v === 'tasks-board') setScreen('tasks')
       if (v === 'settings-board') setScreen('settings')
-      if (v === 'start') setScreen('tasks')
+      if (v === 'start') {
+        setScreen('tasks')
+        // ponytail: dev-only, ATRIL_SNAPSHOT_VIEW=start opens the dialog on a fake issue so it can be photographed without Jira.
+        setStarting({ key: 'PF-4870', summary: 'Filtro de laboratorios en el listado', type: 'Story', status: 'To Do', statusId: '2', project: 'PF', components: [], group: 'todo' })
+      }
       const at = /^tour(\d+)$/.exec(v ?? '')
       if (at) setTourStart(Number(at[1]))
     })
@@ -82,9 +93,23 @@ function Shell() {
   )
 
   useEffect(() => window.atril.menu.setState(selected, workspaces.length), [selected, workspaces.length])
+  // N2: ⌘↩ only where the list is on screen or one click away.
+  useEffect(() => window.atril.menu.setNext((screen === 'work' || screen === 'tasks') && next.length > 0), [screen, next.length])
+
+  const openWorkspace = (id: string): void => {
+    setSelected(id)
+    setScreen('work')
+  }
+
+  const openNext = (item: NextItem | undefined): void => {
+    if (item?.kind === 'agent') openWorkspace(item.id)
+    else if (item) setStarting(inbox.issues.find((i) => i.key === item.key) ?? null)
+  }
+
   useEffect(
     () =>
       window.atril.menu.onAction((a) => {
+        if (a.kind === 'next') return openNext(next[0])
         if (a.kind === 'select') {
           const ws = workspaces[a.index]
           if (ws) setSelected(ws.id)
@@ -93,18 +118,32 @@ function Shell() {
         if (a.kind === 'tutorial') setTourOpen(true)
         else focusRegion(a.target)
       }),
-    [workspaces]
+    [workspaces, next, inbox.issues]
   )
-
-  const openWorkspace = (id: string): void => {
-    setSelected(id)
-    setScreen('work')
-  }
 
   // Start already created the workspace in main: only the list and the inbox links are stale.
   const started = async (ws: WorkspaceView): Promise<void> => {
     setWorkspaces(await window.atril.workspaces.list())
     setSelected(ws.id)
+  }
+
+  const beginStart = async (issue: JiraIssue, optionClick: boolean): Promise<void> => {
+    if (quickBusy.current) return
+    quickBusy.current = true
+    setStartError(null)
+    try {
+      const r = await startOrAsk(issue, optionClick)
+      if (r.kind === 'dialog') return setStarting(issue)
+      if (r.kind === 'error') return setStartError(r.error)
+      await started(r.workspace)
+      void inbox.refresh()
+      if (r.transitionError) setStartError(`El trabajo está en marcha, pero ${r.transitionError.charAt(0).toLowerCase()}${r.transitionError.slice(1)}`)
+      else openWorkspace(r.workspace.id)
+    } catch (e) {
+      setStartError(String(e))
+    } finally {
+      quickBusy.current = false
+    }
   }
 
   const create = async (repoId: string, branch: string, agent: Agent, model: Model): Promise<string | null> => {
@@ -132,20 +171,23 @@ function Shell() {
         <div className="shell">
           <Rail screen={screen} onChange={setScreen} />
           {/* Hidden, not unmounted: the terminals must survive a visit to Ajustes. */}
-          <div className="body" hidden={screen !== 'work'}>
-            <Sidebar
-              workspaces={workspaces}
-              selected={selected}
-              onSelect={setSelected}
-              onRemove={remove}
-              onCreate={create}
-              inbox={inbox}
-              onOpenTasks={() => setScreen('tasks')}
-            />
-            <Workspace ws={workspaces.find((w) => w.id === selected)} />
-            <FlowPanel workspaceId={selected} />
+          <div className="work" hidden={screen !== 'work'}>
+            <NextUpStrip items={next} workspaces={workspaces} issues={inbox.issues} onOpen={openNext} />
+            <div className="body">
+              <Sidebar
+                workspaces={workspaces}
+                selected={selected}
+                onSelect={setSelected}
+                onRemove={remove}
+                onCreate={create}
+                inbox={inbox}
+                onOpenTasks={() => setScreen('tasks')}
+              />
+              <Workspace ws={workspaces.find((w) => w.id === selected)} />
+              <FlowPanel workspaceId={selected} />
+            </div>
           </div>
-          {screen === 'tasks' && <Inbox inbox={inbox} onStarted={started} onOpenWorkspace={openWorkspace} />}
+          {screen === 'tasks' && <Inbox inbox={inbox} onStart={(i, alt) => void beginStart(i, alt)} startError={startError} onOpenWorkspace={openWorkspace} />}
           {screen === 'settings' && (
             <Ajustes>
               <Appearance />
@@ -153,6 +195,20 @@ function Shell() {
           )}
         </div>
       </NavigationContext.Provider>
+      {starting && (
+        <StartDialog
+          issue={starting}
+          onClose={() => setStarting(null)}
+          onStarted={async (ws) => {
+            await started(ws)
+            void inbox.refresh()
+          }}
+          onOpenWorkspace={(id) => {
+            setStarting(null)
+            openWorkspace(id)
+          }}
+        />
+      )}
       {tourOpen && <Tour startAt={tourStart} screen={screen} goTo={setScreen} onClose={closeTour} />}
       <Footer />
     </div>

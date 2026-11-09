@@ -1,10 +1,9 @@
 import { useCallback, useContext, useEffect, useRef, useState } from 'react'
-import type { InboxResult, JiraIssue, WorkspaceView } from '../../preload/api'
+import type { InboxResult, JiraIssue } from '../../preload/api'
 import { ConnectInSettings } from '../settings/ConnectInSettings'
 import { NavigationContext } from '../settings/navigation'
 import { FoldSection } from '../components/Fold'
 import { Icon } from '../components/Icon'
-import { StartDialog } from './StartDialog'
 
 const REFRESH_MS = 5 * 60_000
 
@@ -46,21 +45,17 @@ export function useInbox(): InboxState {
 
 interface InboxProps {
   inbox: InboxState
-  onStarted: (ws: WorkspaceView) => Promise<void>
+  /** Empezar: the app decides between one click and the dialog (I20, I21). */
+  onStart: (issue: JiraIssue, optionClick: boolean) => void
+  /** Why a one-click Start did not finish. */
+  startError?: string | null
   onOpenWorkspace: (id: string) => void
 }
 
-export function Inbox({ inbox, onStarted, onOpenWorkspace }: InboxProps) {
+export function Inbox({ inbox, onStart, startError, onOpenWorkspace }: InboxProps) {
   const { result, issues, loading, refresh } = inbox
-  const [starting, setStarting] = useState<JiraIssue | null>(null)
-  // ponytail: dev-only, ATRIL_SNAPSHOT_VIEW=start opens the dialog on a fake issue so it can be photographed without Jira.
   // A board picked in Ajustes must show up the next time Tareas opens, not five minutes later.
   useEffect(() => void refresh(), [refresh])
-  useEffect(() => {
-    void window.atril.snapshotView().then((v) => {
-      if (v === 'start') setStarting({ key: 'PF-4870', summary: 'Filtro de laboratorios en el listado', type: 'Story', status: 'To Do', statusId: '2', project: 'PF', components: [], group: 'todo' })
-    })
-  }, [])
   return (
     <section className="tasks-screen" data-tour="tasks">
       <h1>
@@ -70,21 +65,12 @@ export function Inbox({ inbox, onStarted, onOpenWorkspace }: InboxProps) {
         </button>
       </h1>
       <p className="lead">Tus tareas abiertas de Jira en todos los proyectos.</p>
-      <Body result={result} issues={issues} onStart={setStarting} onOpenWorkspace={onOpenWorkspace} />
-      {starting && (
-        <StartDialog
-          issue={starting}
-          onClose={() => setStarting(null)}
-          onStarted={async (ws) => {
-            await onStarted(ws)
-            void refresh()
-          }}
-          onOpenWorkspace={(id) => {
-            setStarting(null)
-            onOpenWorkspace(id)
-          }}
-        />
+      {startError && (
+        <p className="notice" role="alert">
+          {startError}
+        </p>
       )}
+      <Body result={result} issues={issues} onStart={onStart} onOpenWorkspace={onOpenWorkspace} />
     </section>
   )
 }
@@ -110,7 +96,7 @@ export function JiraSummary({ inbox, onOpen }: { inbox: InboxState; onOpen: () =
 }
 
 interface TaskActions {
-  onStart: (i: JiraIssue) => void
+  onStart: (i: JiraIssue, optionClick: boolean) => void
   onOpenWorkspace: (id: string) => void
 }
 
@@ -171,7 +157,7 @@ function Task({ i, onStart, onOpenWorkspace }: { i: JiraIssue } & TaskActions) {
           Abrir trabajo ▸
         </button>
       ) : (
-        <button className="go" aria-label={`Empezar ${i.key}`} onClick={() => onStart(i)}>
+        <button className="go" aria-label={`Empezar ${i.key}`} onClick={(e) => onStart(i, e.altKey)}>
           Empezar ▸
         </button>
       )}

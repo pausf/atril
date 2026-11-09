@@ -36,7 +36,7 @@ describe('jira summary', () => {
       createElement(
         NavigationContext.Provider,
         { value: { openSettings } },
-        createElement(Inbox, { inbox, onStarted: async () => {}, onOpenWorkspace: () => {} })
+        createElement(Inbox, { inbox, onStart: () => {}, onOpenWorkspace: () => {} })
       )
     )
     expect(screen.getByRole('alert').textContent).toContain('Conecta Jira en Ajustes')
@@ -58,7 +58,7 @@ describe('jira summary', () => {
       createElement(
         NavigationContext.Provider,
         { value: { openSettings } },
-        createElement(Inbox, { inbox, onStarted: async () => {}, onOpenWorkspace: () => {} })
+        createElement(Inbox, { inbox, onStart: () => {}, onOpenWorkspace: () => {} })
       )
     )
 

@@ -4,6 +4,8 @@ import type { MenuAction } from '../preload/api'
 export interface MenuDeps {
   selected: string | null
   count: number
+  /** Trabajo or Tareas shown and something waiting (N2). */
+  nextEnabled: boolean
   split(direction: 'h' | 'v'): void
   send(action: MenuAction): void
 }
@@ -19,6 +21,7 @@ export function menuTemplate(d: MenuDeps): MenuItemConstructorOptions[] {
       submenu: [
         { label: 'Dividir a la derecha', accelerator: 'CmdOrCtrl+D', enabled: !none, click: () => d.split('h') },
         { label: 'Dividir abajo', accelerator: 'CmdOrCtrl+Shift+D', enabled: !none, click: () => d.split('v') },
+        { label: 'Siguiente', accelerator: 'CmdOrCtrl+Return', enabled: d.nextEnabled, click: () => d.send({ kind: 'next' }) },
         { type: 'separator' },
         { label: 'Ir a la barra lateral', accelerator: 'CmdOrCtrl+L', click: () => d.send({ kind: 'focus', target: 'sidebar' }) },
         { label: 'Ir al panel de Libretto', accelerator: 'CmdOrCtrl+J', click: () => d.send({ kind: 'focus', target: 'flow' }) },

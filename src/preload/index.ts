@@ -1,9 +1,10 @@
 import { contextBridge, ipcRenderer } from 'electron'
-import type { ActivityLine, AgentState, AtrilApi, FlowStage, MenuAction, UsageResult } from './api'
+import type { ActivityLine, AgentState, AtrilApi, FlowStage, MenuAction, NextItem, UsageResult } from './api'
 
 const api: AtrilApi = {
   menu: {
     setState: (selected, count) => ipcRenderer.send('atril:menu:state', selected, count),
+    setNext: (enabled) => ipcRenderer.send('atril:menu:next', enabled),
     onAction: (cb) => {
       const h = (_e: Electron.IpcRendererEvent, a: MenuAction): void => cb(a)
       ipcRenderer.on('atril:menu:action', h)
@@ -77,6 +78,14 @@ const api: AtrilApi = {
       const h = (_e: Electron.IpcRendererEvent, id: string): void => cb(id)
       ipcRenderer.on('atril:status:open', h)
       return () => ipcRenderer.removeListener('atril:status:open', h)
+    }
+  },
+  nextup: {
+    get: () => ipcRenderer.invoke('atril:nextup:get'),
+    onChange: (cb) => {
+      const h = (_e: Electron.IpcRendererEvent, items: NextItem[]): void => cb(items)
+      ipcRenderer.on('atril:nextup:changed', h)
+      return () => ipcRenderer.removeListener('atril:nextup:changed', h)
     }
   },
   term: {

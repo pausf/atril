@@ -42,3 +42,10 @@ export async function splitPane(id: string, direction: 'h' | 'v', cwd: string, r
   const r = await tmux(run, ['split-window', `-${direction}`, '-t', `=${sessionName(id)}:`, '-c', cwd, shell, '-l'])
   if (r.code !== 0) throw new Error(`tmux split-window falló: ${r.stderr.trim()}`)
 }
+
+/** Types `text` into one pane as literal characters, then Enter. `-l` keeps `C-c` or `Enter` from being read as key names. */
+export async function sendText(paneId: string, text: string, run: Runner = defaultRun): Promise<boolean> {
+  // `--` so text that starts with a dash is not parsed as a flag.
+  const typed = await tmux(run, ['send-keys', '-t', paneId, '-l', '--', text])
+  return typed.code === 0 && (await tmux(run, ['send-keys', '-t', paneId, 'Enter'])).code === 0
+}
