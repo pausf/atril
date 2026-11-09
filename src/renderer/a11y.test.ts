@@ -79,4 +79,17 @@ describe('keyboard and labels', () => {
     expect(document.activeElement).toBe(document.querySelector('.col.right h2'))
     expect(document.activeElement?.closest('.col.right')).not.toBeNull()
   })
+
+  it('notification click opens the workspace from any screen', async () => {
+    const user = userEvent.setup()
+    const api = await boot()
+    await user.click(screen.getByRole('button', { name: /Ajustes/ }))
+    expect(within(screen.getByRole('navigation', { name: 'Pantallas' })).getByRole('button', { name: /Trabajo/ }).getAttribute('aria-current')).toBeNull()
+
+    // The stopped workspace: a live one would mount xterm, which jsdom cannot run.
+    act(() => api.clickNotification('aaaaaaa3'))
+
+    expect(within(screen.getByRole('navigation', { name: 'Pantallas' })).getByRole('button', { name: /Trabajo/ }).getAttribute('aria-current')).toBe('page')
+    expect(await screen.findByRole('heading', { name: 'PF-3' })).toBeTruthy()
+  })
 })

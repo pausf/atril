@@ -69,7 +69,15 @@ function Shell() {
     })()
   }, [])
 
-  useEffect(() => window.atril.status.onOpen(setSelected), [])
+  // A notification click must show the workspace, not just select it behind another screen (W38).
+  useEffect(
+    () =>
+      window.atril.status.onOpen((id) => {
+        setSelected(id)
+        setScreen('work')
+      }),
+    []
+  )
 
   useEffect(() => window.atril.menu.setState(selected, workspaces.length), [selected, workspaces.length])
   useEffect(

@@ -1,7 +1,6 @@
-import { copyFile, mkdir, readFile, rename, stat, writeFile } from 'node:fs/promises'
+import { readFile, rename, stat, writeFile } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
-import { atrilHome } from './paths'
 
 // Claude Code has no flag or setting that pre-trusts a folder (`claude --help` only skips the
 // dialog in -p mode), so the dialog's own record is written: projects[path].hasTrustDialogAccepted.
@@ -64,20 +63,9 @@ export async function updateClaudeConfig(
   return false
 }
 
-let backedUp = false
-/** One copy per Atril launch, before the first write. */
-async function backupOnce(file: string): Promise<void> {
-  if (backedUp) return
-  backedUp = true
-  const dir = join(atrilHome(), 'backups')
-  await mkdir(dir, { recursive: true })
-  await copyFile(file, join(dir, `claude.json.${new Date().toISOString().replace(/[:.]/g, '-')}`)).catch(() => undefined)
-}
-
 /** Best effort: a failure here means the person sees the trust prompt, not that the workspace fails. */
 export async function trustFolder(path: string, file = claudeConfigPath()): Promise<boolean> {
   try {
-    await backupOnce(file)
     return await updateClaudeConfig((c) => withTrust(c, path), file)
   } catch (err) {
     console.error(`[atril] trust failed: ${err instanceof Error ? err.name : 'Error'}`)

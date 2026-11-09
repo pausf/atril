@@ -3,7 +3,9 @@ import { describe, expect, it, vi } from 'vitest'
 import { createElement } from 'react'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { JiraSummary, type InboxState } from './Inbox'
+import { Inbox, JiraSummary, type InboxState } from './Inbox'
+import { NavigationContext } from '../settings/navigation'
+import { mockApi } from '../mockApi'
 
 const issue = (key: string, group: 'todo' | 'doing' | 'review') => ({
   key, summary: key, type: 'Story', status: '', project: 'PF', components: [], group
@@ -22,5 +24,21 @@ describe('jira summary', () => {
     expect(screen.queryByText('PF-1')).toBeNull()
     await userEvent.setup().click(button)
     expect(onOpen).toHaveBeenCalledTimes(1)
+  })
+
+  it('inbox without a jira token links to ajustes', async () => {
+    mockApi()
+    const inbox: InboxState = { result: { error: 'unconfigured' }, issues: [], loading: false, refresh: async () => {} }
+    const openSettings = vi.fn()
+    render(
+      createElement(
+        NavigationContext.Provider,
+        { value: { openSettings } },
+        createElement(Inbox, { inbox, onStarted: async () => {}, onOpenWorkspace: () => {} })
+      )
+    )
+    expect(screen.getByRole('alert').textContent).toContain('Conecta Jira en Ajustes')
+    await userEvent.setup().click(screen.getByRole('button', { name: /Ajustes/ }))
+    expect(openSettings).toHaveBeenCalledTimes(1)
   })
 })

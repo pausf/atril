@@ -84,7 +84,8 @@ export async function openWorktree(input: OpenInput, run: Runner = defaultRun): 
 
   const head = await run('git', ['-C', repo.path, 'rev-parse', 'HEAD'])
   const id = newId()
-  if (!input.argv) await trustFolder(path)
+  // Only folders Atril created: in-place runs in the person's own checkout, never touched (W31).
+  if (!inPlace) await trustFolder(path)
   const paneId = await newSession(id, path, input.argv ?? agentArgv({ model: input.model, prompt: input.prompt }), run)
 
   const record: WorkspaceRecord = {

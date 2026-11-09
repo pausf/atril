@@ -28,11 +28,12 @@ Vocabulary, decision log and the primary contract: `proposal.md` beside this fil
 **In:** reading tasks, the Jira→repo memory, Start, the In Progress transition.
 
 **Out:** creating, editing or commenting on Jira issues; any transition other than In
-Progress (Done belongs to phase 2, with the MR); boards, epics, other people's tasks; Jira's
-REST API or MCP.
+Progress (Done belongs to phase 2, with the MR); boards, epics, other people's tasks; Jira
+through MCP. (The REST API is IN, with the token from Ajustes — decision log, 9 nov.)
 
 **Never scoped out:** the issue key and the branch are validated before they reach a
-command; the Jira token never passes through Atril.
+command; the Jira token lives only in Atril's main process, encrypted at rest, and never reaches
+the renderer, a log or an agent (spec-settings.md).
 
 ## Constraints
 
@@ -83,7 +84,7 @@ command; the Jira token never passes through Atril.
   Proof: src/main/jira/inbox.test.ts  parses issues from raw json
 - **I3** If no Jira token is saved, or the API rejects it, then the inbox shall show "Conecta
   Jira en Ajustes" with a link, and shall never ask for the token anywhere but Ajustes.
-  Proof: src/main/jira/inbox.test.ts  unconfigured jira asks the person to run jira init
+  Proof: src/renderer/inbox/inbox.test.ts  inbox without a jira token links to ajustes
 - **I4** When the person starts a task whose project and component have no remembered repo,
   Atril shall ask for one and remember it for the next task of that project and component.
   Proof: src/main/jira/start.test.ts  remembers the repo per project and component

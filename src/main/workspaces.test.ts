@@ -1,4 +1,4 @@
-import { existsSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -63,9 +63,32 @@ describe('workspaces', () => {
     expect(vi.isMockFunction(removeWorkspace)).toBe(false)
   })
 
+  it('trusts its own worktree without copying the claude config', async () => {
+    makeRegisteredRepo(home)
+    const cfg = process.env['ATRIL_CLAUDE_JSON'] as string
+    writeFileSync(cfg, JSON.stringify({ keep: 1, projects: {} }))
+    const r = await openWorktree({ repoId: 'demo', branch: 'feat/own', agent: 'claude', argv: SLEEP })
+    if (!('workspace' in r)) throw new Error(r.error)
+    const after = JSON.parse(readFileSync(cfg, 'utf8')) as { keep: number; projects: Record<string, { hasTrustDialogAccepted?: boolean }> }
+    expect(after.keep).toBe(1)
+    expect(after.projects[r.workspace.path]?.hasTrustDialogAccepted).toBe(true)
+    expect(existsSync(join(home, 'backups'))).toBe(false)
+  })
+
   describe('in-place', () => {
     beforeEach(() => {
       writeFileSync(join(home, 'repos.json'), JSON.stringify({ repos: [{ id: 'demo', path: repo, override: 'in-place' }] }))
+    })
+
+    it('never trusts the person\'s own checkout', async () => {
+      const cfg = process.env['ATRIL_CLAUDE_JSON'] as string
+      writeFileSync(cfg, JSON.stringify({ keep: 1, projects: {} }))
+      const r = await openWorktree({ repoId: 'demo', branch: 'feat/trust', agent: 'claude', argv: SLEEP })
+      if (!('workspace' in r)) throw new Error(r.error)
+      const after = JSON.parse(readFileSync(cfg, 'utf8')) as { projects: Record<string, unknown> }
+      expect(Object.keys(after.projects)).toEqual([])
+      // No copy of ~/.claude.json may land in Atril's home: it can hold other secrets.
+      expect(existsSync(join(home, 'backups'))).toBe(false)
     })
 
     it('refuses a second in-place workspace', async () => {

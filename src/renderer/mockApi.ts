@@ -37,6 +37,7 @@ interface Options {
 export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true, theme: 'auto', folded: {} }) {
   Object.assign(stored, o.ui)
   let menu: ((a: MenuAction) => void) | undefined
+  let notified: ((id: string) => void) | undefined
   const ui = {
     get: vi.fn(async () => ({ ...stored, folded: { ...stored.folded } })),
     set: vi.fn(async (p: Partial<UiState>) => {
@@ -59,16 +60,24 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
     repos: { list: async () => o.repos ?? [] },
     jira: { inbox: async () => ({ issues: o.issues ?? [] }) },
     settings: { jira: { status: async () => ({ saved: true, account: 'Pau Sánchez', site: 'https://x.atlassian.net' }) } },
-    status: { list: async () => o.states ?? {}, onChange: () => off, onOpen: () => off },
+    status: {
+      list: async () => o.states ?? {},
+      onChange: () => off,
+      onOpen: (cb: (id: string) => void) => {
+        notified = cb
+        return off
+      }
+    },
     flow: { get: async () => o.flow ?? null, onChange: () => off },
     usage: {
       get: async () => ({ fiveHour: { pct: 20, resetsAt: null }, sevenDay: { pct: 40, resetsAt: null } }),
       onChange: () => off
     },
+    term: { onData: () => off, input: vi.fn(), attach: vi.fn(async () => undefined), resize: vi.fn(), detach: vi.fn() },
     snapshotView: async () => null,
     snapshotWorkspace: async () => false
   } as unknown as AtrilApi
-  return { ui, stored, menu: (a: MenuAction) => menu?.(a) }
+  return { ui, stored, menu: (a: MenuAction) => menu?.(a), clickNotification: (id: string) => notified?.(id) }
 }
 
 /** jsdom has no matchMedia: this one reports `dark` and fires `change` like the system does. */
@@ -81,7 +90,10 @@ export function mockSystemTheme(dark: boolean): { setDark(v: boolean): void } {
     },
     media: q,
     addEventListener: (_: string, cb: (e: MediaQueryListEvent) => void) => listeners.add(cb),
-    removeEventListener: (_: string, cb: (e: MediaQueryListEvent) => void) => listeners.delete(cb)
+    removeEventListener: (_: string, cb: (e: MediaQueryListEvent) => void) => listeners.delete(cb),
+    // xterm.js still uses the legacy API.
+    addListener: (cb: (e: MediaQueryListEvent) => void) => listeners.add(cb),
+    removeListener: (cb: (e: MediaQueryListEvent) => void) => listeners.delete(cb)
   })) as unknown as typeof window.matchMedia
   return {
     setDark(v) {

@@ -69,7 +69,7 @@ describe('inbox', () => {
     })
   })
 
-  it('unconfigured jira asks the person to run jira init', async () => {
+  it('no jira token or a rejected one is unconfigured', async () => {
     let called = false
     const never = (async () => {
       called = true

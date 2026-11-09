@@ -106,6 +106,7 @@ PTYs and worktrees, and pieces reused with attribution — but Atril does not ru
 - Q: ¿Cómo evita Atril la pregunta de confianza de Claude? → A: Claude Code 2.1.319 no tiene flag para eso; Atril escribe `projects[<ruta>].hasTrustDialogAccepted` en `~/.claude.json` de forma atómica, con reintento y copia por arranque, solo en carpetas que crea Atril (assumed, casilla 14). Comprobado: sin la clave sale la pregunta, con ella no.
 - Q: ¿El avatar de Jira lleva el token? → A: solo si la imagen está en el mismo dominio que Jira; el CDN de avatares de Atlassian es público (assumed, casilla 14).
 - Q: el pie mostraba «api.anthropic.com respondió 429» (bug observado 9 nov: Atril y la statusline consultan la misma API) → A: mantener el último valor bueno con su antigüedad y espaciar los reintentos (assumed, W37)
+- Q: ¿Se guarda copia de `~/.claude.json` antes de escribir la confianza? → A: no; puede contener otros secretos (claves de servidores MCP). Protege la escritura atómica con reintento y no escribir nunca un archivo ilegible (assumed, revisión en frío 9 nov). Si es falso: vuelve una copia, pero fuera de `~/.atril` y cifrada.
 
 ## Vocabulary
 
@@ -375,6 +376,9 @@ it; keyboard reachability and text labels for every state.
   showing the last good values marked with their age, and double the wait before the next try
   (up to 10 min); the first success returns to every 60 s.
   Proof: src/main/usage.test.ts  rate limit keeps the last value and backs off
+- **W38** When the person clicks a needs-you notification, Atril shall show the Trabajo screen
+  with that workspace selected, whatever screen was open.
+  Proof: src/renderer/a11y.test.ts  notification click opens the workspace from any screen
 - **W26** When a Claude hook reports `Stop` for a session, Atril shall set its agent state to
   `needs-you`; when it reports `UserPromptSubmit`, to `working`.
   Proof: src/main/status.test.ts  stop marks needs-you and prompt submit marks working
@@ -531,6 +535,12 @@ or in tmux itself, never in the window.
   remove` for each worktree, `tmux kill-session` for each `atril-*` session. Nothing in the
   person's repos changes except branches Atril created.
 
+- **Dev evidence hooks** (review finding, 9 nov): `ATRIL_SNAPSHOT*` env vars let a session
+  photograph a screen for review — `ATRIL_SNAPSHOT`, `_VIEW` (settings, tasks, start, tour),
+  `_THEME`, `_DELAY_MS`, and a fake 24-task inbox for the tasks/tour views. All read one
+  constant that is `undefined` when `app.isPackaged`, so a packaged Atril has none of them.
+
+### Complexity deliberately kept
 ### Complexity deliberately kept
 
 - **tmux**, an extra dependency, because it is what makes agents outlive the app.
@@ -555,4 +565,5 @@ or in tmux itself, never in the window.
 - [x] Start, and a Modelo selector in Start and Nuevo trabajo: repo memory, branch slug, validated key, claude running /libretto-flow <KEY> in a new workspace, In Progress transition whose failure keeps the workspace, and the task showing its workspace afterwards · waits on boxes 3, 4, 7, 11 · Closes: I4, I5, I6, I7, I8, I9, I10, W34
 - [x] keyboard reachability and text labels everywhere, foldable sidebar sections, the Claro/Oscuro/Automático theme, and the first-launch tutorial over every element, skippable, reopenable from Help, keyboard-only · waits on boxes 3, 8, 9, 11 · Closes: W22, W23, W24, W25, W28, W35
 - [x] Claude agents in Atril workspaces start without the folder-trust prompt, tool problems collapse into one top-bar chip, and the top bar shows who is signed in · waits on boxes 3, 10 · Closes: W31, W32, S8
+- [x] review fixes: trust only Atril's own worktrees and copy nothing of ~/.claude.json, notification click shows the workspace, I3 proved in the inbox UI, dev hooks off when packaged · waits on boxes 6, 7, 11, 14 · Closes: W38
 - [x] usage survives rate limits: the last good values stay with their age and retries back off up to 10 min · waits on box 8 · Closes: W37

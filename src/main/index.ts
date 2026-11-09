@@ -22,6 +22,10 @@ import { patchUi, readUi } from './ui'
 import { splitPane } from './tmux'
 import type { Agent } from '../preload/api'
 
+// Dev-only evidence hooks (screenshots for review). A packaged app ignores them all, so no
+// environment variable can swap real data for fake data in front of the person.
+const SNAPSHOT = app.isPackaged ? undefined : process.env['ATRIL_SNAPSHOT']
+
 function fakeIssues(): JiraIssue[] {
   const groups = ['todo', 'doing', 'review'] as const
   const status = { todo: 'Por empezar', doing: 'En curso', review: 'Code Review' }
@@ -67,7 +71,7 @@ function createWindow(): void {
 
   // ponytail: dev-only hook so a session can see the render. ATRIL_SNAPSHOT=/abs/path.png
   // captures the page once doctor has rendered, writes the PNG and quits.
-  const snapshot = process.env['ATRIL_SNAPSHOT']
+  const snapshot = SNAPSHOT
   if (snapshot) {
     win.webContents.once('did-finish-load', () => {
       setTimeout(async () => {
@@ -115,7 +119,7 @@ app.whenReady().then(() => {
   }
   ipcMain.handle('atril:jira:inbox', async () =>
     // ponytail: dev-only, ATRIL_SNAPSHOT_VIEW=tasks|tour|tourN (N = step) photographs a believable list without Jira.
-    process.env['ATRIL_SNAPSHOT'] && /^(tasks|tour)/.test(process.env['ATRIL_SNAPSHOT_VIEW'] ?? '')
+    SNAPSHOT && /^(tasks|tour)/.test(process.env['ATRIL_SNAPSHOT_VIEW'] ?? '')
       ? { issues: fakeIssues() }
       : readInbox(await savedJira(), fetch, await listWorkspaces(run)))
   ipcMain.handle('atril:jira:proposeStart', (_e, issue: StartIssue, repoId?: string, model?: Model) =>
@@ -147,11 +151,11 @@ app.whenReady().then(() => {
   ipcMain.on('atril:term:input', (_e, id: string, data: string) => pty.input(id, data))
   ipcMain.on('atril:term:resize', (_e, id: string, c: number, r: number) => pty.resize(id, c, r))
   ipcMain.on('atril:term:detach', (_e, id: string) => pty.detach(id))
-  ipcMain.handle('atril:snapshot-view', () => (process.env['ATRIL_SNAPSHOT'] ? (process.env['ATRIL_SNAPSHOT_VIEW'] ?? null) : null))
+  ipcMain.handle('atril:snapshot-view', () => (SNAPSHOT ? (process.env['ATRIL_SNAPSHOT_VIEW'] ?? null) : null))
   ipcMain.handle('atril:ui:get', async () => {
     const ui = await readUi()
     // ponytail: dev snapshots force the theme and skip the tutorial unless the view is the tour.
-    if (!process.env['ATRIL_SNAPSHOT']) return ui
+    if (!SNAPSHOT) return ui
     const theme = process.env['ATRIL_SNAPSHOT_THEME']
     return {
       ...ui,
@@ -160,7 +164,7 @@ app.whenReady().then(() => {
     }
   })
   ipcMain.handle('atril:ui:set', (_e, patch: unknown) => patchUi(patch))
-  ipcMain.handle('atril:snapshot-ws', () => Boolean(process.env['ATRIL_SNAPSHOT']))
+  ipcMain.handle('atril:snapshot-ws', () => Boolean(SNAPSHOT))
   const menu = { selected: null as string | null, count: 0 }
   const refreshMenu = (): void =>
     installMenu({

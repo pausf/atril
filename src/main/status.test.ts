@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process'
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { WorkspaceView } from '../preload/api'
@@ -136,5 +136,18 @@ describe('status', () => {
     }
 
     expect(notify).toHaveBeenCalledTimes(2)
+  })
+
+  it('hook writes the state of its own session when several exist', async () => {
+    // A's hook fires after B exists, so B is tmux's most recent session when the hook asks.
+    const a = await open(['sh', '-c', `sleep 1; ${hookCommand('Notification')} </dev/null; sleep 300`], 'feat/a')
+    const b = await open(['sh', '-c', 'sleep 300'], 'feat/b')
+    const fileA = join(home, 'state', `${a.session}.json`)
+    const fileB = join(home, 'state', `${b.session}.json`)
+
+    await until(() => existsSync(fileA) || existsSync(fileB), (v) => v, 5000)
+
+    expect(existsSync(fileB)).toBe(false)
+    expect(JSON.parse(readFileSync(fileA, 'utf8')).state).toBe('needs-you')
   })
 })
