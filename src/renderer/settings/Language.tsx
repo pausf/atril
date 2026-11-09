@@ -7,7 +7,7 @@ export function Language() {
   const t = useT()
   const current = ui?.language ?? 'system'
   const choices: ReadonlyArray<{ value: LangChoice; label: string }> = [
-    { value: 'es', label: 'Español' },
+    { value: 'es', label: 'Español' }, // i18n-ignore
     { value: 'en', label: 'English' },
     { value: 'system', label: t('Sistema') }
   ]

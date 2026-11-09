@@ -1,13 +1,15 @@
 import type { WorkspaceView } from '../../preload/api'
+import { useT } from '../ui'
 import { Terminal } from './Terminal'
 
 export function Workspace({ ws }: { ws: WorkspaceView | undefined }) {
+  const t = useT()
   return (
     <main className="col center">
       <div className="whead">
         <div>
-          <div className="m">{ws ? `${ws.repoId} · ${ws.agent}` : 'Ningún trabajo abierto'}</div>
-          <h1>{ws ? ws.branch : 'Elige un trabajo'}</h1>
+          <div className="m">{ws ? `${ws.repoId} · ${ws.agent}` : t('Ningún trabajo abierto')}</div>
+          <h1>{ws ? ws.branch : t('Elige un trabajo')}</h1>
         </div>
       </div>
       <div className="panes">
@@ -22,15 +24,15 @@ export function Workspace({ ws }: { ws: WorkspaceView | undefined }) {
             <div className="term">
               <div className="s">
                 {ws
-                  ? 'Este trabajo está parado: su sesión de tmux ya no existe.'
-                  : 'Aquí saldrá la terminal de tu agente, dentro de tmux.'}
+                  ? t('Este trabajo está parado: su sesión de tmux ya no existe.')
+                  : t('Aquí saldrá la terminal de tu agente, dentro de tmux.')}
               </div>
             </div>
           )}
         </div>
       </div>
       <div className="hint">
-        <span>Escribe en la terminal como siempre: será tu Claude Code.</span>
+        <span>{t('Escribe en la terminal como siempre: será tu Claude Code.')}</span>
       </div>
     </main>
   )

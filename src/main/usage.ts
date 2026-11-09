@@ -1,5 +1,6 @@
 import type { UsageResult, UsageWindow } from '../preload/api'
 import type { Runner } from './run'
+import { t } from './lang'
 
 const ENDPOINT = 'https://api.anthropic.com/api/oauth/usage'
 
@@ -18,7 +19,7 @@ export function parseUsage(body: unknown): UsageResult {
   const b = body as { five_hour?: unknown; seven_day?: unknown } | null
   const fiveHour = windowOf(b?.five_hour)
   const sevenDay = windowOf(b?.seven_day)
-  if (!fiveHour || !sevenDay) return { error: 'respuesta de uso con formato desconocido' }
+  if (!fiveHour || !sevenDay) return { error: t('respuesta de uso con formato desconocido') }
   return { fiveHour, sevenDay }
 }
 
@@ -26,15 +27,15 @@ export function parseUsage(body: unknown): UsageResult {
 // Every error reason is a fixed string, so none can carry it.
 export async function readUsage(run: Runner, doFetch: Fetch = fetch): Promise<UsageResult> {
   const kc = await run('security', ['find-generic-password', '-s', 'Claude Code-credentials', '-w'], { secret: true })
-  if (kc.code !== 0 || !kc.stdout.trim()) return { error: 'no hay sesión de Claude Code en el llavero' }
+  if (kc.code !== 0 || !kc.stdout.trim()) return { error: t('no hay sesión de Claude Code en el llavero') }
 
   let token: unknown
   try {
     token = (JSON.parse(kc.stdout) as { claudeAiOauth?: { accessToken?: unknown } }).claudeAiOauth?.accessToken
   } catch {
-    return { error: 'las credenciales de Claude Code no son JSON válido' }
+    return { error: t('las credenciales de Claude Code no son JSON válido') }
   }
-  if (typeof token !== 'string' || !token) return { error: 'las credenciales de Claude Code no traen token' }
+  if (typeof token !== 'string' || !token) return { error: t('las credenciales de Claude Code no traen token') }
 
   let res: Response
   try {
@@ -43,14 +44,14 @@ export async function readUsage(run: Runner, doFetch: Fetch = fetch): Promise<Us
       signal: AbortSignal.timeout(10_000)
     })
   } catch {
-    return { error: 'no se pudo consultar api.anthropic.com' }
+    return { error: t('no se pudo consultar api.anthropic.com') }
   }
-  if (res.status === 401) return { error: 'Claude rechazó el token (401); abre Claude Code para renovarlo' }
-  if (!res.ok) return { error: `api.anthropic.com respondió ${res.status}` }
+  if (res.status === 401) return { error: t('Claude rechazó el token (401); abre Claude Code para renovarlo') }
+  if (!res.ok) return { error: t('api.anthropic.com respondió {status}', { status: res.status }) }
   try {
     return parseUsage(await res.json())
   } catch {
-    return { error: 'respuesta de uso ilegible' }
+    return { error: t('respuesta de uso ilegible') }
   }
 }
 
@@ -58,7 +59,7 @@ const POLL_MS = 60_000
 const MAX_WAIT_MS = 10 * 60_000
 
 export function createUsage(deps: { run: Runner; emit: (u: UsageResult) => void; fetch?: Fetch }) {
-  let last: UsageResult = { error: 'aún sin leer' }
+  let last: UsageResult = { error: t('aún sin leer') }
   let good: { value: UsageResult; at: number } | undefined
   let wait = POLL_MS
   let timer: NodeJS.Timeout | undefined

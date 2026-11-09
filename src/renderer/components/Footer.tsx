@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { UsageResult } from '../../preload/api'
+import { useLocale, useT, type T } from '../ui'
 
 const BARS = 3
 
@@ -14,25 +15,29 @@ function Bar({ pct }: { pct: number }) {
 }
 
 // "hoy 14:00", "mañana 09:00", "el jueves 09:00": relative while it is near, a weekday after.
-function resetLabel(iso: string | null, now = new Date()): string | null {
+function resetLabel(t: T, locale: string, iso: string | null, now = new Date()): string | null {
   if (!iso) return null
   const at = new Date(iso)
   if (Number.isNaN(at.getTime())) return null
   // The endpoint resets at hh:59:59.x; show the hour the window really reopens.
   at.setTime(Math.round(at.getTime() / 60_000) * 60_000)
-  const time = at.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
+  const time = at.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })
   const days = Math.round((new Date(at).setHours(0, 0, 0, 0) - new Date(now).setHours(0, 0, 0, 0)) / 86_400_000)
-  if (days === 0) return `hoy ${time}`
-  if (days === 1) return `mañana ${time}`
-  return `el ${at.toLocaleDateString('es-ES', { weekday: 'long' })} ${time}`
+  if (days === 0) return t('hoy {time}', { time })
+  if (days === 1) return t('mañana {time}', { time })
+  return t('el {day} {time}', { day: at.toLocaleDateString(locale, { weekday: 'long' }), time })
 }
 
 export function Footer() {
+  const t = useT()
+  const locale = useLocale()
   const [usage, setUsage] = useState<UsageResult | null>(null)
   useEffect(() => {
     void window.atril.usage.get().then(setUsage)
     return window.atril.usage.onChange(setUsage)
   }, [])
+
+  const reset = usage && !('error' in usage) ? resetLabel(t, locale, usage.sevenDay.resetsAt) : null
 
   return (
     <footer className="foot" data-tour="usage">
@@ -44,13 +49,13 @@ export function Footer() {
           <span title={usage.error}>— {usage.error}</span>
         ) : (
           <>
-            5 h <Bar pct={usage.fiveHour.pct} /> {usage.fiveHour.pct} % · 7 días <Bar pct={usage.sevenDay.pct} />{' '}
+            {t('5 h')} <Bar pct={usage.fiveHour.pct} /> {usage.fiveHour.pct} % · {t('7 días')} <Bar pct={usage.sevenDay.pct} />{' '}
             {usage.sevenDay.pct} %
-            {resetLabel(usage.sevenDay.resetsAt) && <> · se reinicia {resetLabel(usage.sevenDay.resetsAt)}</>}
+            {reset && <> · {t('se reinicia {when}', { when: reset })}</>}
             {usage.stale && (
-              <span className="stale" title="La API de uso no responde ahora mismo; Atril reintentará más tarde">
+              <span className="stale" title={t('La API de uso no responde ahora mismo; Atril reintentará más tarde')}>
                 {' '}
-                · dato de hace {Math.max(1, Math.round((Date.now() - usage.stale.since) / 60_000))} min
+                {t('· dato de hace {n} min', { n: Math.max(1, Math.round((Date.now() - usage.stale.since) / 60_000)) })}
               </span>
             )}
           </>

@@ -3,6 +3,7 @@ import { basename, join } from 'node:path'
 import type { AddRepoResult, Mode, RepoView } from '../preload/api'
 import type { Runner } from './run'
 import { atrilHome } from './paths'
+import { t } from './lang'
 
 export interface Repo {
   id: string
@@ -66,7 +67,7 @@ export async function detectMode(path: string, run: Runner): Promise<Detected> {
 
   // Only files are a signal (.env, web/config.local); ignored folders are build output and caches.
   const survivor = ignored.find((e) => !e.endsWith('/') && !segments(e).some((s) => NOISE.has(s)) && !e.endsWith('.log'))
-  if (survivor) return { mode: 'in-place', reason: `${survivor} no está versionado` }
+  if (survivor) return { mode: 'in-place', reason: t('{path} no está versionado', { path: survivor }) }
 
   const depDirs = ignored.filter((e) => DEP_DIRS.has(segments(e).at(-1) ?? '')).map((e) => join(path, e))
   if (depDirs.length > 0) {
@@ -77,14 +78,14 @@ export async function detectMode(path: string, run: Runner): Promise<Detected> {
       .filter(Boolean)
       .reduce((sum, line) => sum + (parseInt(line, 10) || 0), 0)
     if (kb > HEAVY_DEPS_KB) {
-      return { mode: 'in-place', reason: `node_modules y vendor pesan ${(kb / 1024 / 1024).toFixed(1)} GB` }
+      return { mode: 'in-place', reason: t('node_modules y vendor pesan {gb} GB', { gb: (kb / 1024 / 1024).toFixed(1) }) }
     }
   }
-  return { mode: 'worktree', reason: 'ninguna señal: cada trabajo en su propio worktree' }
+  return { mode: 'worktree', reason: t('ninguna señal: cada trabajo en su propio worktree') }
 }
 
 export function effectiveMode(repo: Repo, detected: Detected): Detected {
-  return repo.override ? { mode: repo.override, reason: 'elegido por ti' } : detected
+  return repo.override ? { mode: repo.override, reason: t('elegido por ti') } : detected
 }
 
 async function view(repo: Repo, run: Runner): Promise<RepoView> {

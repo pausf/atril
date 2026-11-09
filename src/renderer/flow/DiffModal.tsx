@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import type { FileChange } from '../../preload/api'
+import { useLocale, useT } from '../ui'
 import { useModalKeys } from './modalKeys'
 
 interface Props {
@@ -29,6 +30,8 @@ function diffLine(l: string, i: number): ReactNode {
 
 /** F21: a read-only snapshot of one file's diff, with the other changed files beside it. */
 export function DiffModal({ workspaceId, files, start, onClose }: Props) {
+  const t = useT()
+  const locale = useLocale()
   const dialog = useRef<HTMLDivElement>(null)
   const [file, setFile] = useState(start)
   const [diff, setDiff] = useState<string | null>(null)
@@ -55,16 +58,16 @@ export function DiffModal({ workspaceId, files, start, onClose }: Props) {
     <div className="modal" onKeyDown={(e) => void keys(e)}>
       <div className="dlg edmodal" role="dialog" aria-modal="true" aria-labelledby="diff-title" ref={dialog} tabIndex={-1}>
         <div className="edhead">
-          <h3 id="diff-title">Cambios</h3>
+          <h3 id="diff-title">{t('Cambios')}</h3>
           <span className="docchange">{file}</span>
           <span className="sp" />
           <button type="button" className="btn" onClick={onClose}>
-            Cerrar
+            {t('Cerrar')}
           </button>
         </div>
         <div className="doc-editor">
-          <nav className="outline" aria-label="Archivos cambiados">
-            <span className="olh">Archivos</span>
+          <nav className="outline" aria-label={t('Archivos cambiados')}>
+            <span className="olh">{t('Archivos')}</span>
             {files.map((f) => (
               <button key={f.path} type="button" className={f.path === file ? 'on' : undefined} title={f.path} onClick={() => setFile(f.path)}>
                 <span className={`fst ${f.status}`}>{f.status}</span> {f.path.split('/').pop()}
@@ -76,23 +79,23 @@ export function DiffModal({ workspaceId, files, start, onClose }: Props) {
               {lines.map((_, i) => i + 1).join('\n')}
             </div>
             <div className="ed">
-              <pre className="hl diffview" tabIndex={0} aria-label={`Diff de ${file}`}>
-                {diff === null ? 'Cargando…' : diff === '' ? 'Este archivo ya no tiene cambios.' : lines.map(diffLine)}
+              <pre className="hl diffview" tabIndex={0} aria-label={t('Diff de {file}', { file })}>
+                {diff === null ? t('Cargando…') : diff === '' ? t('Este archivo ya no tiene cambios.') : lines.map(diffLine)}
               </pre>
             </div>
           </div>
         </div>
         <div className="edstatus">
-          <span className="ro">solo lectura · diff contra la rama base</span>
+          <span className="ro">{t('solo lectura · diff contra la rama base')}</span>
           {current && (
             <span>
               <span className="fa">+{current.added}</span> <span className="fd">−{current.removed}</span>
             </span>
           )}
           <span className="sp" />
-          {at && <span>instantánea de las {at.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}</span>}
-          <button type="button" onClick={() => setTick((t) => t + 1)}>
-            Actualizar
+          {at && <span>{t('instantánea de las {time}', { time: at.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' }) })}</span>}
+          <button type="button" onClick={() => setTick((n) => n + 1)}>
+            {t('Actualizar')}
           </button>
         </div>
       </div>

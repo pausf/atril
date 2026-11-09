@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import type { Model, RepoView, WorkspaceView } from '../../preload/api'
-import { MODEL_OPTIONS } from '../components/models'
+import { modelOptions } from '../components/models'
+import { useT } from '../ui'
 import { slugBranch } from './branch'
 
 interface Props {
@@ -14,6 +15,7 @@ interface Props {
 const FOCUSABLE = 'button:not(:disabled), select:not(:disabled), input:not(:disabled), textarea:not(:disabled)'
 
 export function OwnTaskDialog({ textOptional = false, onClose, onOpenSettings, onStarted }: Props) {
+  const t = useT()
   const dialog = useRef<HTMLDivElement>(null)
   const [repos, setRepos] = useState<RepoView[] | null>(null)
   const [text, setText] = useState('')
@@ -35,7 +37,7 @@ export function OwnTaskDialog({ textOptional = false, onClose, onOpenSettings, o
   }, [])
 
   const blank = text.trim() === ''
-  const title = textOptional ? 'Nuevo trabajo' : 'Nueva tarea'
+  const title = textOptional ? t('Nuevo trabajo') : t('Nueva tarea')
   const ready = (textOptional || !blank) && repoId !== '' && branch.trim() !== '' && !busy
 
   const submit = async (): Promise<void> => {
@@ -80,19 +82,19 @@ export function OwnTaskDialog({ textOptional = false, onClose, onOpenSettings, o
         <h3 id="own-title">{title}</h3>
         <p>
           {textOptional
-            ? 'Con texto, Libretto lo toma como petición y empieza por la spec; sin texto, abre Claude a secas.'
-            : 'Escribe lo que hay que hacer: Libretto lo toma como petición y empieza por la spec.'}
+            ? t('Con texto, Libretto lo toma como petición y empieza por la spec; sin texto, abre Claude a secas.')
+            : t('Escribe lo que hay que hacer: Libretto lo toma como petición y empieza por la spec.')}
         </p>
 
         <div className="f stack">
-          <label htmlFor="own-text">¿Qué hay que hacer?{textOptional && ' (opcional)'}</label>
-          <textarea id="own-text" rows={5} maxLength={2000} value={text} onChange={(e) => setText(e.target.value)} placeholder="Añadir filtro de laboratorios al listado…" />
+          <label htmlFor="own-text">{textOptional ? t('¿Qué hay que hacer? (opcional)') : t('¿Qué hay que hacer?')}</label>
+          <textarea id="own-text" rows={5} maxLength={2000} value={text} onChange={(e) => setText(e.target.value)} placeholder={t('Añadir filtro de laboratorios al listado…')} />
         </div>
 
         <div className="f">
-          <label htmlFor="own-repo">Repo</label>
+          <label htmlFor="own-repo">{t('Repo')}</label>
           <select id="own-repo" value={repoId} onChange={(e) => setRepoId(e.target.value)} disabled={!repos?.length}>
-            {repoId === '' && <option value="">{repos?.length === 0 ? 'No hay repos registrados' : 'Elige un repo…'}</option>}
+            {repoId === '' && <option value="">{repos?.length === 0 ? t('No hay repos registrados') : t('Elige un repo…')}</option>}
             {(repos ?? []).map((r) => (
               <option key={r.id} value={r.id}>
                 {r.id}
@@ -102,22 +104,22 @@ export function OwnTaskDialog({ textOptional = false, onClose, onOpenSettings, o
         </div>
         {repos?.length === 0 && (
           <div className="f-note">
-            Añade un repo en Ajustes → Repos{' '}
+            {t('Añade un repo en Ajustes → Repos')}{' '}
             <button type="button" className="linklike" onClick={onOpenSettings}>
-              Ir a Ajustes
+              {t('Ir a Ajustes')}
             </button>
           </div>
         )}
 
         <div className="f">
-          <label htmlFor="own-branch">Rama</label>
+          <label htmlFor="own-branch">{t('Rama')}</label>
           <input id="own-branch" value={branch} onChange={(e) => setEdited(e.target.value)} spellCheck={false} />
         </div>
 
         <div className="f">
-          <label htmlFor="own-model">Modelo</label>
+          <label htmlFor="own-model">{t('Modelo')}</label>
           <select id="own-model" value={model} onChange={(e) => setModel(e.target.value as Model)}>
-            {MODEL_OPTIONS.map((m) => (
+            {modelOptions(t).map((m) => (
               <option key={m.value} value={m.value}>
                 {m.label}
               </option>
@@ -126,8 +128,8 @@ export function OwnTaskDialog({ textOptional = false, onClose, onOpenSettings, o
         </div>
 
         <div className="f">
-          <span className="lbl">Lanza</span>
-          <code aria-label="Comando que se ejecutará">{blank && textOptional ? 'claude' : '/libretto:libretto-flow «tu texto»'}</code>
+          <span className="lbl">{t('Lanza')}</span>
+          <code aria-label={t('Comando que se ejecutará')}>{blank && textOptional ? 'claude' : t('/libretto:libretto-flow «tu texto»')}</code>
         </div>
 
         {error && (
@@ -138,10 +140,10 @@ export function OwnTaskDialog({ textOptional = false, onClose, onOpenSettings, o
 
         <div className="btns">
           <button type="button" className="btn" onClick={onClose}>
-            Cancelar
+            {t('Cancelar')}
           </button>
           <button type="button" className="btn p" disabled={!ready} onClick={() => void submit()}>
-            {busy ? 'Empezando…' : 'Empezar'}
+            {busy ? t('Empezando…') : t('Empezar')}
           </button>
         </div>
       </div>

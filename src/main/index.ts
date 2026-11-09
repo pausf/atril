@@ -2,7 +2,7 @@ import { app, BrowserWindow, dialog, ipcMain, Notification, safeStorage, shell }
 import { MODELS, writeHooksFile } from './agent'
 import { createActivity } from './activity'
 import { agentState, createStatus, replyGone, replyPlaceholder, replyToAgent } from './status'
-import { getLang, setLang } from './lang'
+import { getLang, setLang, t } from './lang'
 import { resolveLang } from '../preload/i18n'
 import { readDocs, saveDoc } from './flow/document'
 import { fileDiff, listChanges } from './flow/changes'
@@ -36,12 +36,12 @@ const SNAPSHOT = app.isPackaged ? undefined : process.env['ATRIL_SNAPSHOT']
 
 function fakeIssues(): JiraIssue[] {
   const groups = ['todo', 'doing', 'review'] as const
-  const status = { todo: 'Por empezar', doing: 'En curso', review: 'Code Review' }
+  const status = { todo: 'Por empezar', doing: 'En curso', review: 'Code Review' } // i18n-ignore
   return Array.from({ length: 24 }, (_, i) => {
     const group = groups[i < 10 ? 0 : i < 18 ? 1 : 2]
     return {
       key: `APP-${4800 + i}`,
-      summary: i % 3 === 0 ? 'Filtro de laboratorios en el listado de categoría con paginación y orden por precio' : 'Corregir el cálculo del envío',
+      summary: i % 3 === 0 ? 'Filtro de laboratorios en el listado de categoría con paginación y orden por precio' : 'Corregir el cálculo del envío', // i18n-ignore
       type: i % 4 === 1 ? 'Bug' : 'Story',
       status: status[group],
       statusId: String(i),
@@ -54,7 +54,7 @@ function fakeIssues(): JiraIssue[] {
 
 // ponytail: dev-only fake board for ATRIL_SNAPSHOT_VIEW=tasks-board; status ids are the fake issue indexes.
 function fakeBoardGroups(): InboxGroup[] {
-  const cols: Array<[string, number, number]> = [['Backlog', 0, 4], ['To Do', 4, 10], ['In Progress', 10, 18], ['Code Review', 18, 21], ['Testing', 21, 23], ['Ready to Deploy', 23, 24]]
+  const cols: Array<[string, number, number]> = [['Backlog', 0, 4], ['To Do', 4, 10], ['In Progress', 10, 18], ['Code Review', 18, 21], ['Testing', 21, 23], ['Ready to Deploy', 23, 24]] // i18n-ignore
   return cols.map(([title, from, to], n) => ({ id: `col-${n}`, title, folded: false, keys: Array.from({ length: to - from }, (_, k) => `APP-${4800 + from + k}`) }))
 }
 
@@ -123,7 +123,7 @@ app.whenReady().then(async () => {
   // ponytail: dev-only, ATRIL_SNAPSHOT_VIEW=settings-board photographs the Jira card with a picked board.
   ipcMain.handle('atril:settings:jira:status', () =>
     SNAPSHOT && process.env['ATRIL_SNAPSHOT_VIEW'] === 'settings-board'
-      ? { saved: true, account: 'Pau Sánchez', site: 'https://shop.atlassian.net', board: { id: 7, name: 'TEAM' } }
+      ? { saved: true, account: 'Pau Sánchez', site: 'https://shop.atlassian.net', board: { id: 7, name: 'TEAM' } } // i18n-ignore
       : jiraCreds.status()
   )
   ipcMain.handle('atril:settings:jira:save', (_e, creds: { site: string; email: string; token: string }) =>
@@ -132,7 +132,7 @@ app.whenReady().then(async () => {
   ipcMain.handle('atril:settings:jira:delete', () => jiraCreds.delete())
   ipcMain.handle('atril:settings:jira:searchBoards', async (_e, query: unknown) => {
     const creds = await savedJira()
-    return creds ? searchBoards(creds, String(query).trim(), fetch) : { error: 'Conecta Jira en Ajustes.' }
+    return creds ? searchBoards(creds, String(query).trim(), fetch) : { error: t('Conecta Jira en Ajustes.') }
   })
   ipcMain.handle('atril:settings:jira:pickBoard', (_e, board: { id: unknown; name: unknown } | null) =>
     jiraCreds.pickBoard(board && { id: Number(board.id), name: String(board.name) })
@@ -195,7 +195,7 @@ app.whenReady().then(async () => {
   ipcMain.handle('atril:flow:save', async (_e, id: string, change: unknown, name: unknown, text: unknown, mtimeMs: unknown) => {
     const ws = (await listWorkspaces(run)).find((w) => w.id === id)
     if (!ws || typeof change !== 'string' || typeof name !== 'string' || typeof text !== 'string' || typeof mtimeMs !== 'number') {
-      return { error: 'Ese archivo no se puede editar desde Atril' }
+      return { error: t('Ese archivo no se puede editar desde Atril') }
     }
     return saveDoc(ws.path, await agentState(ws, run), change, name, text, mtimeMs)
   })

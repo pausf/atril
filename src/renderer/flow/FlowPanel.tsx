@@ -1,28 +1,32 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import type { FileChange, FlowStage, StageName } from '../../preload/api'
 import { Icon, type IconName } from '../components/Icon'
+import { useT, type T } from '../ui'
 import { ActivityFeed } from './ActivityFeed'
 import { DocModal } from './DocModal'
 import { DiffModal } from './DiffModal'
 import type { Part } from './highlight'
 import { WARN_AT } from './warn'
 
-const TABS = [
-  { id: 'libretto', label: 'Libretto', title: 'Flujo de Libretto' },
-  { id: 'activity', label: 'Actividad', title: 'Actividad' }
-] as const
-type TabId = (typeof TABS)[number]['id']
+const tabsOf = (t: T) =>
+  [
+    { id: 'libretto', label: 'Libretto', title: t('Flujo de Libretto') },
+    { id: 'activity', label: t('Actividad'), title: t('Actividad') }
+  ] as const
+type TabId = ReturnType<typeof tabsOf>[number]['id']
 
-const STAGES: { name: Exclude<StageName, 'sin-libretto'>; label: string; icon: IconName }[] = [
-  { name: 'entrada', label: 'Entrada', icon: 's-entrada' },
-  { name: 'spec', label: 'Spec', icon: 's-spec' },
-  { name: 'plan', label: 'Plan', icon: 's-plan' },
-  { name: 'construir', label: 'Construir', icon: 's-build' },
-  { name: 'terminado', label: 'Terminado', icon: 's-done' },
-  { name: 'aterrizado', label: 'Aterrizado', icon: 's-landed' }
+const stagesOf = (t: T): { name: Exclude<StageName, 'sin-libretto'>; label: string; icon: IconName }[] => [
+  { name: 'entrada', label: t('Entrada'), icon: 's-entrada' },
+  { name: 'spec', label: t('Spec'), icon: 's-spec' },
+  { name: 'plan', label: t('Plan'), icon: 's-plan' },
+  { name: 'construir', label: t('Construir'), icon: 's-build' },
+  { name: 'terminado', label: t('Terminado'), icon: 's-done' },
+  { name: 'aterrizado', label: t('Aterrizado'), icon: 's-landed' }
 ]
 
 export function FlowPanel({ workspaceId }: { workspaceId: string | null }) {
+  const t = useT()
+  const TABS = tabsOf(t)
   const [flow, setFlow] = useState<FlowStage | null>(null)
   const [tab, setTab] = useState<TabId>('libretto')
   const [doc, setDoc] = useState<Part | null>(null)
@@ -46,10 +50,10 @@ export function FlowPanel({ workspaceId }: { workspaceId: string | null }) {
       })
     }
     load()
-    const t = setInterval(load, 3000)
+    const timer = setInterval(load, 3000)
     return () => {
       live = false
-      clearInterval(t)
+      clearInterval(timer)
     }
   }, [workspaceId, building])
   const tabs = useRef<Record<string, HTMLButtonElement | null>>({})
@@ -69,7 +73,7 @@ export function FlowPanel({ workspaceId }: { workspaceId: string | null }) {
     const step = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0
     if (!step) return
     e.preventDefault()
-    const next = TABS[(TABS.findIndex((t) => t.id === tab) + step + TABS.length) % TABS.length]!
+    const next = TABS[(TABS.findIndex((x) => x.id === tab) + step + TABS.length) % TABS.length]!
     setTab(next.id)
     tabs.current[next.id]?.focus()
   }
@@ -88,22 +92,22 @@ export function FlowPanel({ workspaceId }: { workspaceId: string | null }) {
 
   return (
     <aside className="col right" data-tour="flow">
-      <h2 tabIndex={-1}>{TABS.find((t) => t.id === tab)?.title}</h2>
-      <div className="tabs" role="tablist" aria-label="Panel derecho" onKeyDown={onTabKey}>
-        {TABS.map((t) => (
+      <h2 tabIndex={-1}>{TABS.find((x) => x.id === tab)?.title}</h2>
+      <div className="tabs" role="tablist" aria-label={t('Panel derecho')} onKeyDown={onTabKey}>
+        {TABS.map((x) => (
           <button
             type="button"
             role="tab"
-            key={t.id}
-            id={`tab-${t.id}`}
-            aria-selected={tab === t.id}
-            aria-controls={`panel-${t.id}`}
+            key={x.id}
+            id={`tab-${x.id}`}
+            aria-selected={tab === x.id}
+            aria-controls={`panel-${x.id}`}
             ref={(el) => {
-              tabs.current[t.id] = el
+              tabs.current[x.id] = el
             }}
-            onClick={() => setTab(t.id)}
+            onClick={() => setTab(x.id)}
           >
-            {t.label}
+            {x.label}
           </button>
         ))}
       </div>
@@ -128,13 +132,15 @@ interface FlowProps {
 }
 
 function LibrettoFlow({ flow, onOpen, changes, onDiff }: FlowProps) {
+  const t = useT()
+  const STAGES = stagesOf(t)
   const current = STAGES.findIndex((s) => s.name === flow?.stage)
   const c = flow?.checklist
   return (
     <>
-      <p className="lead">Dónde va cada trabajo, leído de sus archivos.</p>
+      <p className="lead">{t('Dónde va cada trabajo, leído de sus archivos.')}</p>
       {flow?.stage === 'sin-libretto' ? (
-        <div className="empty">sin Libretto: este trabajo no tiene carpeta .agents</div>
+        <div className="empty">{t('sin Libretto: este trabajo no tiene carpeta .agents')}</div>
       ) : (
         <>
           <div className="stages">
@@ -144,22 +150,22 @@ function LibrettoFlow({ flow, onOpen, changes, onDiff }: FlowProps) {
                 <>
                   <Icon name={s.icon} size={22} />
                   <span>
-                    {s.label} <small>{i < current ? 'hecho' : i === current ? 'ahora' : 'pendiente'}</small>
+                    {s.label} <small>{i < current ? t('hecho') : i === current ? t('ahora') : t('pendiente')}</small>
                   </span>
                 </>
               )
               const part = DOC_OF[s.name]
               if (s.name === 'construir' && i <= current && changes.length > 0)
                 return (
-                  <button type="button" className={`${cls} stgbtn`} key={s.name} onClick={() => onDiff(changes[0]!.path)} title="Ver los cambios de código">
+                  <button type="button" className={`${cls} stgbtn`} key={s.name} onClick={() => onDiff(changes[0]!.path)} title={t('Ver los cambios de código')}>
                     <Icon name={s.icon} size={22} />
                     <span>
-                      {s.label} <small>ver {changes.length} archivos</small>
+                      {s.label} <small>{t('ver {n} archivos', { n: changes.length })}</small>
                     </span>
                   </button>
                 )
               return part && i <= current && flow?.change ? (
-                <button type="button" className={`${cls} stgbtn`} key={s.name} onClick={() => onOpen(part)} title="Ver y editar lo que ha escrito Claude">
+                <button type="button" className={`${cls} stgbtn`} key={s.name} onClick={() => onOpen(part)} title={t('Ver y editar lo que ha escrito Claude')}>
                   {body}
                 </button>
               ) : (
@@ -171,15 +177,15 @@ function LibrettoFlow({ flow, onOpen, changes, onDiff }: FlowProps) {
           </div>
           {flow?.change && (
             <p className="fmeta">
-              Cambio: <b>{flow.change}</b>
+              {t('Cambio:')} <b>{flow.change}</b>
             </p>
           )}
           {c && (
             <div className="sec">
-              <h2>Checklist</h2>
+              <h2>{t('Checklist')}</h2>
               <p className="fmeta">
                 <b>
-                  {c.closed} de {c.total}
+                  {t('{closed} de {total}', { closed: c.closed, total: c.total })}
                 </b>
               </p>
               <div className="prog">
@@ -187,21 +193,21 @@ function LibrettoFlow({ flow, onOpen, changes, onDiff }: FlowProps) {
               </div>
               {c.firstOpen && (
                 <p className="fmeta">
-                  Siguiente: <b>{c.firstOpen}</b>
+                  {t('Siguiente:')} <b>{c.firstOpen}</b>
                 </p>
               )}
               <p className="fmeta">
-                Leído de <code>{c.file}</code>
+                {t('Leído de')} <code>{c.file}</code>
               </p>
               <button type="button" className="btn" onClick={() => onOpen('checklist')}>
-                Ver checklist
+                {t('Ver checklist')}
               </button>
             </div>
           )}
           {changes.length > 0 && (
             <section className="sec" aria-labelledby="changes-h">
               <h2 id="changes-h">
-                Cambios <span className="n">{changes.length}</span>
+                {t('Cambios')} <span className="n">{changes.length}</span>
               </h2>
               <ChangeTotal lines={changes.reduce((n, f) => n + f.added + f.removed, 0)} />
               <ul className="fchanges">
@@ -210,7 +216,7 @@ function LibrettoFlow({ flow, onOpen, changes, onDiff }: FlowProps) {
                   const total = f.added + f.removed || 1
                   return (
                     <li key={f.path}>
-                      <button type="button" onClick={() => onDiff(f.path)} title={`Ver el diff de ${f.path}`}>
+                      <button type="button" onClick={() => onDiff(f.path)} title={t('Ver el diff de {path}', { path: f.path })}>
                         <span className={`fst ${f.status}`}>{f.status}</span>
                         <span className="fpath">
                           <span className="fdir">{f.path.slice(0, slash + 1)}</span>
@@ -232,7 +238,7 @@ function LibrettoFlow({ flow, onOpen, changes, onDiff }: FlowProps) {
           )}
           {flow && flow.others.length > 0 && (
             <div className="sec">
-              <h2>Otros cambios</h2>
+              <h2>{t('Otros cambios')}</h2>
               {flow.others.map((o) => (
                 <p className="fmeta" key={o}>
                   {o}
@@ -248,10 +254,11 @@ function LibrettoFlow({ flow, onOpen, changes, onDiff }: FlowProps) {
 
 /** F25: past the hook's threshold the total turns into a warning that says what Atril already did. */
 function ChangeTotal({ lines }: { lines: number }) {
-  if (lines <= WARN_AT) return <p className="fmeta">{lines} líneas</p>
+  const t = useT()
+  if (lines <= WARN_AT) return <p className="fmeta">{t('{lines} líneas', { lines })}</p>
   return (
     <p className="fbig" role="status">
-      ⚠ {lines} líneas: rama grande (más de {WARN_AT}). Atril le ha pedido a Claude que te proponga separarla en MRs más pequeñas.
+      {t('⚠ {lines} líneas: rama grande (más de {max}). Atril le ha pedido a Claude que te proponga separarla en MRs más pequeñas.', { lines, max: WARN_AT })}
     </p>
   )
 }

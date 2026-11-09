@@ -1,10 +1,9 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import type { AgentState, FlowDocs } from '../../preload/api'
 import { DocEditor } from './DocEditor'
+import { useT } from '../ui'
 import { useModalKeys } from './modalKeys'
 import { partOffset, type Part } from './highlight'
-
-const TITLES: Record<Part, string> = { spec: 'Spec', plan: 'Plan', checklist: 'Checklist' }
 
 interface Props {
   workspaceId: string
@@ -16,6 +15,8 @@ interface Props {
 type Draft = { text: string; mtimeMs: number }
 
 export function DocModal({ workspaceId, part, onClose }: Props) {
+  const t = useT()
+  const titles: Record<Part, string> = { spec: t('Spec'), plan: t('Plan'), checklist: t('Checklist') }
   const dialog = useRef<HTMLDivElement>(null)
   const [docs, setDocs] = useState<FlowDocs | null>(null)
   const [file, setFile] = useState('proposal.md')
@@ -77,7 +78,7 @@ export function DocModal({ workspaceId, part, onClose }: Props) {
   }
 
   const close = (): void => {
-    if (files.some((f) => dirty(f.name)) && !window.confirm('Tienes cambios sin guardar. ¿Cerrar y descartarlos?')) return
+    if (files.some((f) => dirty(f.name)) && !window.confirm(t('Tienes cambios sin guardar. ¿Cerrar y descartarlos?'))) return
     onClose()
   }
 
@@ -94,16 +95,16 @@ export function DocModal({ workspaceId, part, onClose }: Props) {
     <div className="modal" onKeyDown={onKeyDown}>
       <div className="dlg edmodal" role="dialog" aria-modal="true" aria-labelledby="doc-title" ref={dialog} tabIndex={-1}>
         <div className="edhead">
-          <h3 id="doc-title">{TITLES[part]}</h3>
+          <h3 id="doc-title">{titles[part]}</h3>
           <span className="docchange">{docs?.change ?? ''}</span>
-          <div className="ftabs" role="tablist" aria-label="Archivos">
+          <div className="ftabs" role="tablist" aria-label={t('Archivos')}>
             {files.map((f) => (
               <button
                 key={f.name}
                 type="button"
                 role="tab"
                 aria-selected={f.name === file}
-                aria-label={`${f.name}${dirty(f.name) ? ' sin guardar' : ''}`}
+                aria-label={dirty(f.name) ? t('{name} sin guardar', { name: f.name }) : f.name}
                 onClick={() => setFile(f.name)}
               >
                 {f.name}
@@ -113,7 +114,7 @@ export function DocModal({ workspaceId, part, onClose }: Props) {
           </div>
           <span className="sp" />
           <button type="button" className="btn" onClick={close}>
-            Cerrar
+            {t('Cerrar')}
           </button>
         </div>
         {error && (
@@ -122,19 +123,19 @@ export function DocModal({ workspaceId, part, onClose }: Props) {
           </div>
         )}
         {docs === null ? (
-          <div className="empty">Este trabajo aún no tiene documentos de Libretto.</div>
+          <div className="empty">{t('Este trabajo aún no tiene documentos de Libretto.')}</div>
         ) : (
           <DocEditor text={text} readOnly={readOnly} onChange={edit} cursor={cursor} />
         )}
         <div className="edstatus">
           {readOnly ? (
-            <span className="ro">🔒 solo lectura · Claude está escribiendo</span>
+            <span className="ro">{t('🔒 solo lectura · Claude está escribiendo')}</span>
           ) : (
-            <span className="rw">✎ editable · {state === 'stopped' ? 'agente parado' : 'Claude te espera'}</span>
+            <span className="rw">{state === 'stopped' ? t('✎ editable · agente parado') : t('✎ editable · Claude te espera')}</span>
           )}
           <span className="sp" />
           <button type="button" onClick={() => void save()} disabled={readOnly || !dirty(file)}>
-            Guardar ⌘S
+            {t('Guardar ⌘S')}
           </button>
         </div>
       </div>

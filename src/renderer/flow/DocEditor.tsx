@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { useT } from '../ui'
 import { headings, highlight } from './highlight'
 
 interface Props {
@@ -11,28 +12,29 @@ interface Props {
 
 /** A textarea over a coloured <pre>: same font, same scroll, no wrapping, so the gutter always matches. */
 export function DocEditor({ text, readOnly, onChange, cursor }: Props) {
+  const t = useT()
   const area = useRef<HTMLTextAreaElement>(null)
   const pre = useRef<HTMLPreElement>(null)
   const gutter = useRef<HTMLDivElement>(null)
 
   const sync = (): void => {
-    const t = area.current
-    if (!t) return
+    const a = area.current
+    if (!a) return
     if (pre.current) {
-      pre.current.scrollTop = t.scrollTop
-      pre.current.scrollLeft = t.scrollLeft
+      pre.current.scrollTop = a.scrollTop
+      pre.current.scrollLeft = a.scrollLeft
     }
-    if (gutter.current) gutter.current.scrollTop = t.scrollTop
+    if (gutter.current) gutter.current.scrollTop = a.scrollTop
   }
 
   const go = (at: number): void => {
-    const t = area.current
-    if (!t) return
-    t.focus()
-    t.setSelectionRange(at, at)
+    const a = area.current
+    if (!a) return
+    a.focus()
+    a.setSelectionRange(at, at)
     const line = text.slice(0, at).split('\n').length - 1
-    const lh = parseFloat(getComputedStyle(t).lineHeight)
-    if (Number.isFinite(lh)) t.scrollTop = Math.max(0, line * lh - 8)
+    const lh = parseFloat(getComputedStyle(a).lineHeight)
+    if (Number.isFinite(lh)) a.scrollTop = Math.max(0, line * lh - 8)
     sync()
   }
 
@@ -44,8 +46,8 @@ export function DocEditor({ text, readOnly, onChange, cursor }: Props) {
   const lines = text.split('\n').length
   return (
     <div className="doc-editor">
-      <nav className="outline" aria-label="Esquema">
-        <span className="olh">Esquema</span>
+      <nav className="outline" aria-label={t('Esquema')}>
+        <span className="olh">{t('Esquema')}</span>
         {headings(text).map((h) => (
           <button key={h.offset} type="button" className={h.level === 3 ? 'l3' : undefined} onClick={() => go(h.offset)}>
             {h.title}
@@ -63,7 +65,7 @@ export function DocEditor({ text, readOnly, onChange, cursor }: Props) {
           <textarea
             ref={area}
             className="src"
-            aria-label="Contenido del archivo"
+            aria-label={t('Contenido del archivo')}
             spellCheck={false}
             wrap="off"
             readOnly={readOnly}

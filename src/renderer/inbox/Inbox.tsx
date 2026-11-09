@@ -4,6 +4,7 @@ import { ConnectInSettings } from '../settings/ConnectInSettings'
 import { NavigationContext } from '../settings/navigation'
 import { FoldSection } from '../components/Fold'
 import { Icon } from '../components/Icon'
+import { useT } from '../ui'
 
 const REFRESH_MS = 5 * 60_000
 
@@ -56,20 +57,21 @@ interface InboxProps {
 
 export function Inbox({ inbox, onStart, startError, onOpenWorkspace, onNewTask }: InboxProps) {
   const { result, issues, loading, refresh } = inbox
+  const t = useT()
   // A board picked in Ajustes must show up the next time Tareas opens, not five minutes later.
   useEffect(() => void refresh(), [refresh])
   return (
     <section className="tasks-screen" data-tour="tasks">
       <h1>
-        Tareas <span className="n">{issues.length}</span>
+        {t('Tareas')} <span className="n">{issues.length}</span>
         <button className="refresh" onClick={() => void refresh()} disabled={loading}>
-          {loading ? 'Actualizando…' : 'Actualizar'}
+          {loading ? t('Actualizando…') : t('Actualizar')}
         </button>
         <button className="refresh" onClick={onNewTask}>
-          Nueva tarea
+          {t('Nueva tarea')}
         </button>
       </h1>
-      <p className="lead">Tus tareas abiertas de Jira en todos los proyectos.</p>
+      <p className="lead">{t('Tus tareas abiertas de Jira en todos los proyectos.')}</p>
       {startError && (
         <p className="notice" role="alert">
           {startError}
@@ -81,6 +83,7 @@ export function Inbox({ inbox, onStart, startError, onOpenWorkspace, onNewTask }
 }
 
 export function JiraSummary({ inbox, onOpen }: { inbox: InboxState; onOpen: () => void }) {
+  const t = useT()
   const groups = inbox.result && 'groups' in inbox.result ? inbox.result.groups : []
   const board = groups.some((g) => g.id.startsWith('col-'))
   const count = (g: JiraIssue['group']): number => inbox.issues.filter((i) => i.group === g).length
@@ -88,10 +91,12 @@ export function JiraSummary({ inbox, onOpen }: { inbox: InboxState; onOpen: () =
   const inColumns = (first: boolean): number =>
     groups.filter((g) => g.id.startsWith('col-') && (g.id === 'col-0') === first).reduce((n, g) => n + g.keys.length, 0)
   const label = !inbox.result
-    ? 'Jira: cargando…'
+    ? t('Jira: cargando…')
     : 'error' in inbox.result
-      ? 'Jira: sin conectar'
-      : board ? `Jira: ${inColumns(false)} en curso · ${inColumns(true)} por empezar` : `Jira: ${count('doing')} en curso · ${count('todo')} por empezar`
+      ? t('Jira: sin conectar')
+      : board
+        ? t('Jira: {doing} en curso · {todo} por empezar', { doing: inColumns(false), todo: inColumns(true) })
+        : t('Jira: {doing} en curso · {todo} por empezar', { doing: count('doing'), todo: count('todo') })
   return (
     <button className="jira-summary" onClick={onOpen}>
       <Icon name="ticket" size={18} />
@@ -107,7 +112,8 @@ interface TaskActions {
 
 function Body({ result, issues, onStart, onOpenWorkspace }: { result: InboxResult | null; issues: JiraIssue[] } & TaskActions) {
   const { openSettings } = useContext(NavigationContext)
-  if (!result) return <div className="empty">Cargando tus Jira…</div>
+  const t = useT()
+  if (!result) return <div className="empty">{t('Cargando tus Jira…')}</div>
   if ('error' in result) {
     return (
       <div className="empty" role="alert">
@@ -117,12 +123,12 @@ function Body({ result, issues, onStart, onOpenWorkspace }: { result: InboxResul
             <ConnectInSettings service="Jira" />
           </>
         ) : (
-          <>No se pudo leer Jira: {result.message}</>
+          <>{t('No se pudo leer Jira: {detail}', { detail: result.message })}</>
         )}
       </div>
     )
   }
-  if (issues.length === 0) return <div className="empty">No tienes tareas abiertas.</div>
+  if (issues.length === 0) return <div className="empty">{t('No tienes tareas abiertas.')}</div>
   const byKey = new Map(issues.map((i) => [i.key, i]))
   return (
     <>
@@ -133,7 +139,7 @@ function Body({ result, issues, onStart, onOpenWorkspace }: { result: InboxResul
             <>
               {' '}
               <button className="linklike" onClick={openSettings}>
-                Ajustes
+                {t('Ajustes')}
               </button>
             </>
           )}
@@ -149,6 +155,7 @@ function Body({ result, issues, onStart, onOpenWorkspace }: { result: InboxResul
 }
 
 function Task({ i, onStart, onOpenWorkspace }: { i: JiraIssue } & TaskActions) {
+  const t = useT()
   return (
     <article className="task">
       <span className="k">{i.key}</span>
@@ -158,12 +165,12 @@ function Task({ i, onStart, onOpenWorkspace }: { i: JiraIssue } & TaskActions) {
       </span>
       <span className="tag">{i.status}</span>
       {i.workspaceId ? (
-        <button className="go" aria-label={`Abrir trabajo de ${i.key}`} onClick={() => onOpenWorkspace(i.workspaceId!)}>
-          Abrir trabajo ▸
+        <button className="go" aria-label={t('Abrir trabajo de {key}', { key: i.key })} onClick={() => onOpenWorkspace(i.workspaceId!)}>
+          {t('Abrir trabajo ▸')}
         </button>
       ) : (
-        <button className="go" aria-label={`Empezar ${i.key}`} onClick={(e) => onStart(i, e.altKey)}>
-          Empezar ▸
+        <button className="go" aria-label={t('Empezar {key}', { key: i.key })} onClick={(e) => onStart(i, e.altKey)}>
+          {t('Empezar ▸')}
         </button>
       )}
     </article>

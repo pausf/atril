@@ -1,3 +1,5 @@
+import { t } from '../lang'
+
 export interface JiraCreds {
   site: string
   email: string
@@ -35,9 +37,9 @@ export async function checkJira(
   try {
     base = new URL(site.trim())
   } catch {
-    return { error: 'La dirección de Jira no es válida. Usa algo como https://tuempresa.atlassian.net' }
+    return { error: t('La dirección de Jira no es válida. Usa algo como https://tuempresa.atlassian.net') }
   }
-  if (base.protocol !== 'https:') return { error: 'La dirección de Jira debe empezar por https://' }
+  if (base.protocol !== 'https:') return { error: t('La dirección de Jira debe empezar por https://') }
 
   const auth = Buffer.from(`${email}:${token}`).toString('base64')
   try {
@@ -45,7 +47,7 @@ export async function checkJira(
       headers: { Authorization: `Basic ${auth}`, Accept: 'application/json' },
       signal: AbortSignal.timeout(10_000)
     })
-    if (!res.ok) return { error: `Jira ha rechazado el token (${res.status}). No se ha guardado.` }
+    if (!res.ok) return { error: t('Jira ha rechazado el token ({status}). No se ha guardado.', { status: res.status }) }
     const me = (await res.json()) as { displayName?: string; emailAddress?: string; avatarUrls?: Record<string, string> }
     const url = me.avatarUrls?.['48x48']
     const avatar = url ? await fetchAvatar(url, base, auth, fetchImpl) : undefined
@@ -57,6 +59,6 @@ export async function checkJira(
     const cause = (err as { cause?: { code?: unknown } }).cause?.code
     const code = typeof cause === 'string' && /^[A-Z0-9_]+$/.test(cause) ? cause : err instanceof Error ? err.name : 'Error'
     console.error(`[atril] Jira check failed: ${code}`)
-    return { error: timeout ? 'Jira no ha respondido en 10 s.' : `No se ha podido conectar con Jira (${code}).` }
+    return { error: timeout ? t('Jira no ha respondido en 10 s.') : t('No se ha podido conectar con Jira ({code}).', { code }) }
   }
 }

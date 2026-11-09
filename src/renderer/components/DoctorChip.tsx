@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ToolReport } from '../../preload/api'
+import { useT } from '../ui'
 
 export function DoctorChip({ problems }: { problems: ToolReport[] }) {
+  const t = useT()
   const [open, setOpen] = useState(false)
   const [copied, setCopied] = useState<string | null>(null)
   const root = useRef<HTMLSpanElement>(null)
@@ -31,10 +33,10 @@ export function DoctorChip({ problems }: { problems: ToolReport[] }) {
   return (
     <span className="doctor-chip" ref={root}>
       <button className="chip bad" aria-haspopup="dialog" aria-expanded={open} onClick={() => setOpen(!open)}>
-        {problems.length} {problems.length === 1 ? 'herramienta' : 'herramientas'} por instalar
+        {problems.length === 1 ? t('{n} herramienta por instalar', { n: 1 }) : t('{n} herramientas por instalar', { n: problems.length })}
       </button>
       {open && (
-        <div className="popover" role="dialog" aria-label="Herramientas que faltan">
+        <div className="popover" role="dialog" aria-label={t('Herramientas que faltan')}>
           {problems.map((p) => (
             <div className="doctor-item" key={p.tool}>
               <b>{p.tool}</b>
@@ -43,7 +45,7 @@ export function DoctorChip({ problems }: { problems: ToolReport[] }) {
                 <span className="doctor-cmd">
                   <code>{p.install}</code>
                   <button className="btn" onClick={() => copy(p.install)}>
-                    {copied === p.install ? 'Copiado' : 'Copiar'}
+                    {copied === p.install ? t('Copiado') : t('Copiar')}
                   </button>
                 </span>
               )}

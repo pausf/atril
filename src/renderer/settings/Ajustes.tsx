@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
+import { useT } from '../ui'
 import { Repos } from './Repos'
 import type { BoardSearchResult, JiraBoard, JiraSettingsStatus } from '../../preload/api'
 
@@ -8,6 +9,7 @@ const MIN_LETTERS = 2
 const DEBOUNCE_MS = 300
 
 function BoardField({ board, onPicked }: { board?: JiraBoard; onPicked: () => Promise<void> }) {
+  const t = useT()
   const [changing, setChanging] = useState(!board)
   const [query, setQuery] = useState('')
   const [found, setFound] = useState<BoardSearchResult | null>(null)
@@ -19,17 +21,17 @@ function BoardField({ board, onPicked }: { board?: JiraBoard; onPicked: () => Pr
       return
     }
     let live = true
-    const t = setTimeout(() => {
+    const timer = setTimeout(() => {
       window.atril.settings.jira.searchBoards(q).then(
         (r) => live && setFound(r),
-        () => live && setFound({ error: 'No se pudo buscar tableros.' })
+        () => live && setFound({ error: t('No se pudo buscar tableros.') })
       )
     }, DEBOUNCE_MS)
     return () => {
       live = false
-      clearTimeout(t)
+      clearTimeout(timer)
     }
-  }, [query])
+  }, [query, t])
 
   const pick = async (b: JiraBoard): Promise<void> => {
     const r = await window.atril.settings.jira.pickBoard({ id: b.id, name: b.name })
@@ -46,22 +48,22 @@ function BoardField({ board, onPicked }: { board?: JiraBoard; onPicked: () => Pr
   if (board && !changing)
     return (
       <div className="board-field">
-        <span>Tablero: {board.name}</span>
+        <span>{t('Tablero: {name}', { name: board.name })}</span>
         <button className="btn" onClick={() => setChanging(true)}>
-          Cambiar
+          {t('Cambiar')}
         </button>
       </div>
     )
   return (
     <div className="board-field">
       <div className="srow">
-        <label htmlFor="jira-board">Tablero</label>
+        <label htmlFor="jira-board">{t('Tablero')}</label>
         <input
           id="jira-board"
           type="search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Busca por nombre"
+          placeholder={t('Busca por nombre')}
           autoComplete="off"
           spellCheck={false}
         />
@@ -71,7 +73,7 @@ function BoardField({ board, onPicked }: { board?: JiraBoard; onPicked: () => Pr
           ✕ {found.error}
         </div>
       )}
-      {found && Array.isArray(found) && found.length === 0 && <div className="lockn">Ningún tablero coincide</div>}
+      {found && Array.isArray(found) && found.length === 0 && <div className="lockn">{t('Ningún tablero coincide')}</div>}
       {found && Array.isArray(found) && found.length > 0 && (
         <ul className="board-list">
           {found.map((b) => (
@@ -83,7 +85,7 @@ function BoardField({ board, onPicked }: { board?: JiraBoard; onPicked: () => Pr
       )}
       {board && (
         <button className="btn" onClick={() => setChanging(false)}>
-          Mantener {board.name}
+          {t('Mantener {name}', { name: board.name })}
         </button>
       )}
     </div>
@@ -91,6 +93,7 @@ function BoardField({ board, onPicked }: { board?: JiraBoard; onPicked: () => Pr
 }
 
 function JiraCard() {
+  const t = useT()
   const [status, setStatus] = useState<JiraSettingsStatus | null>(null)
   const [replacing, setReplacing] = useState(false)
   const [phase, setPhase] = useState<Phase>('idle')
@@ -149,8 +152,8 @@ function JiraCard() {
   return (
     <section className="scard" aria-labelledby="jira-h">
       <h3 id="jira-h">Jira</h3>
-      <p className="hint2">Para leer tus tareas del sprint.</p>
-      {status === null && <div className="lockn">Cargando…</div>}
+      <p className="hint2">{t('Para leer tus tareas del sprint.')}</p>
+      {status === null && <div className="lockn">{t('Cargando…')}</div>}
       {status?.saved && !replacing && (
         <>
           <div className="saved">
@@ -158,18 +161,18 @@ function JiraCard() {
               🔒
             </span>
             <span>
-              <b>Guardado</b> · {status.account} · {status.site?.replace(/^https:\/\//, '')}
+              <b>{t('Guardado')}</b> · {status.account} · {status.site?.replace(/^https:\/\//, '')}
             </span>
             <span className="sp" />
             <button className="btn" onClick={startReplacing}>
-              Reemplazar
+              {t('Reemplazar')}
             </button>
             <button className="btn" onClick={() => void remove()}>
-              Borrar
+              {t('Borrar')}
             </button>
           </div>
           <div className="lockn">
-            El token no se muestra nunca. Si lo pierdes, crea uno nuevo en Atlassian y pulsa Reemplazar.
+            {t('El token no se muestra nunca. Si lo pierdes, crea uno nuevo en Atlassian y pulsa Reemplazar.')}
           </div>
           <BoardField key={status.board?.id ?? 'none'} board={status.board} onPicked={refresh} />
         </>
@@ -177,18 +180,18 @@ function JiraCard() {
       {showForm && (
         <form onSubmit={(e) => void save(e)}>
           <div className="srow">
-            <label htmlFor="jira-site">Dirección</label>
+            <label htmlFor="jira-site">{t('Dirección')}</label>
             <input
               id="jira-site"
               value={site}
               onChange={(e) => setSite(e.target.value)}
-              placeholder="https://tuempresa.atlassian.net"
+              placeholder={t('https://tuempresa.atlassian.net')}
               autoComplete="off"
               spellCheck={false}
             />
           </div>
           <div className="srow">
-            <label htmlFor="jira-email">Correo</label>
+            <label htmlFor="jira-email">{t('Correo')}</label>
             <input
               id="jira-email"
               type="email"
@@ -198,7 +201,7 @@ function JiraCard() {
             />
           </div>
           <div className="srow">
-            <label htmlFor="jira-token">Token</label>
+            <label htmlFor="jira-token">{t('Token')}</label>
             <input
               id="jira-token"
               type="password"
@@ -214,16 +217,16 @@ function JiraCard() {
           )}
           <div className="sactions">
             <button type="button" className="btn" onClick={() => void window.atril.settings.openTokenPage()}>
-              Crear token en Atlassian
+              {t('Crear token en Atlassian')}
             </button>
             <span className="sp" />
             {replacing && (
               <button type="button" className="btn" onClick={() => setReplacing(false)}>
-                Cancelar
+                {t('Cancelar')}
               </button>
             )}
             <button type="submit" className="btn p" disabled={phase === 'checking' || !site || !email || !token}>
-              {phase === 'checking' ? 'Comprobando…' : 'Guardar y comprobar'}
+              {phase === 'checking' ? t('Comprobando…') : t('Guardar y comprobar')}
             </button>
           </div>
         </form>
@@ -233,12 +236,13 @@ function JiraCard() {
 }
 
 export function Ajustes({ children }: { children?: ReactNode }) {
+  const t = useT()
   return (
     <main className="ajustes">
-      <h1>Ajustes</h1>
+      <h1>{t('Ajustes')}</h1>
       <p className="intro">
-        Tus tokens se guardan cifrados en el Llavero de tu Mac. <b>Una vez guardados no se pueden volver a ver</b>:
-        solo reemplazar o borrar. Tus agentes nunca los reciben.
+        {t('Tus tokens se guardan cifrados en el Llavero de tu Mac.')} <b>{t('Una vez guardados no se pueden volver a ver')}</b>
+        {t(': solo reemplazar o borrar. Tus agentes nunca los reciben.')}
       </p>
       <JiraCard />
       <Repos />

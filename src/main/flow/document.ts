@@ -1,6 +1,7 @@
 import { readdir, readFile, rename, stat, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import type { AgentState, FlowDocs } from '../../preload/api'
+import { t } from '../lang'
 import { changeFolders } from './stage'
 
 const CHANGE_RE = /^[a-z0-9][a-z0-9-]*$/
@@ -35,13 +36,13 @@ export async function saveDoc(
   text: string,
   mtimeMs: number
 ): Promise<{ mtimeMs: number } | { error: string }> {
-  if (state === 'working') return { error: 'Claude está escribiendo: no se ha guardado' }
+  if (state === 'working') return { error: t('Claude está escribiendo: no se ha guardado') }
   const dir = join(workspacePath, '.agents', 'changes', change)
   const isDir = await stat(dir).then((s) => s.isDirectory(), () => false)
-  if (!CHANGE_RE.test(change) || !DOC_RE.test(name) || !isDir) return { error: 'Ese archivo no se puede editar desde Atril' }
+  if (!CHANGE_RE.test(change) || !DOC_RE.test(name) || !isDir) return { error: t('Ese archivo no se puede editar desde Atril') }
   const file = join(dir, name)
   const current = await stat(file).catch(() => null)
-  if (!current || current.mtimeMs !== mtimeMs) return { error: 'Claude ha cambiado el archivo mientras editabas: copia tu texto y vuelve a abrirlo' }
+  if (!current || current.mtimeMs !== mtimeMs) return { error: t('Claude ha cambiado el archivo mientras editabas: copia tu texto y vuelve a abrirlo') }
   // ponytail: a crash between write and rename leaves this hidden file; the next save replaces it.
   const tmpFile = join(dir, `.${name}.atril-tmp`)
   await writeFile(tmpFile, text)

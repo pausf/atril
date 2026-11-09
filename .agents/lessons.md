@@ -94,3 +94,6 @@ work-reviewer: the approach said the renderer imports the hook's THRESHOLD while
 
 ## 2026-11-09 · add-language · 4→5
 spec-reviewer: the default ("Sistema") contradicted the test default ("es"), Sistema had two sources (window vs main), "every text" had no closing proof, and module constants would freeze the language at load. Settled: main is the one source, the mock is a Spanish Mac, S19 scans for Spanish literals outside t(), constants become functions.
+
+## 2026-11-09 · add-language · 6
+Committed the language proofs while red (4acae03), outside the all-green guard adopted earlier today. Labelled as such and followed by the extraction, but the guard exists so the history never holds a red tree; next time keep red tests uncommitted until the code that turns them green.

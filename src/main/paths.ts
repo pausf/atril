@@ -6,7 +6,7 @@ import { join } from 'node:path'
 export function envPath(name: string, fallback: () => string): string {
   const value = process.env[name]
   if (value) return value
-  if (process.env['VITEST']) throw new Error(`${name} no está fijado en este test`)
+  if (process.env['VITEST']) throw new Error(`${name} no está fijado en este test`) // i18n-ignore
   return fallback()
 }
 

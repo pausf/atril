@@ -2,9 +2,9 @@ import { lstat, readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import type { FileChange } from '../../preload/api'
 import type { Runner } from '../run'
+import { t } from '../lang'
 
 const MAX_DIFF = 1024 * 1024
-const CUT_NOTE = 'Diff recortado a 1 MB'
 
 type Entry = FileChange & { untracked: boolean }
 
@@ -69,5 +69,5 @@ export async function fileDiff(path: string, base: string, file: string, run: Ru
   if (bytes.length <= MAX_DIFF) return r.stdout
   // ponytail: the runner buffers the whole output first; stream it if a diff ever threatens memory.
   const head = bytes.subarray(0, MAX_DIFF).toString('utf8')
-  return `${head.slice(0, head.lastIndexOf('\n') + 1)}${CUT_NOTE}`
+  return `${head.slice(0, head.lastIndexOf('\n') + 1)}${t('Diff recortado a 1 MB')}`
 }

@@ -1,6 +1,7 @@
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { atrilHome } from '../paths'
+import { t } from '../lang'
 
 /** safeStorage in the app; a fake reversible one in tests. */
 export interface Encryptor {
@@ -56,7 +57,7 @@ export function createSecretStore(enc: Encryptor) {
       meta: Omit<Entry, 'cipher'> = {}
     ): Promise<SaveResult> {
       if (!enc.isAvailable())
-        return { error: 'El Llavero de macOS no está disponible: Atril no guarda tokens sin cifrarlos.' }
+        return { error: t('El Llavero de macOS no está disponible: Atril no guarda tokens sin cifrarlos.') }
       const all = await readAll()
       all[service] = { cipher: enc.encrypt(JSON.stringify(fields)).toString('base64'), ...meta }
       await writeAll(all)

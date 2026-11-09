@@ -1,16 +1,17 @@
+import { useT } from '../ui'
 import { Icon, type IconName } from './Icon'
 
 export type Screen = 'work' | 'tasks' | 'settings'
 
-const ITEMS: { id: Screen; icon: IconName; label: string }[] = [
-  { id: 'work', icon: 'work', label: 'Trabajo' },
-  { id: 'tasks', icon: 'tasks', label: 'Tareas' },
-  { id: 'settings', icon: 'settings', label: 'Ajustes' }
-]
-
 export function Rail({ screen, onChange }: { screen: Screen; onChange: (s: Screen) => void }) {
+  const t = useT()
+  const ITEMS: { id: Screen; icon: IconName; label: string }[] = [
+    { id: 'work', icon: 'work', label: t('Trabajo') },
+    { id: 'tasks', icon: 'tasks', label: t('Tareas') },
+    { id: 'settings', icon: 'settings', label: t('Ajustes') }
+  ]
   return (
-    <nav className="rail" aria-label="Pantallas" data-tour="rail">
+    <nav className="rail" aria-label={t('Pantallas')} data-tour="rail">
       {ITEMS.map((i) => (
         <button
           key={i.id}

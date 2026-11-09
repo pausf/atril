@@ -1,5 +1,6 @@
 import type { DoctorReport, ToolReport } from '../preload/api'
 import type { Runner } from './run'
+import { t } from './lang'
 
 export type { DoctorReport, ToolReport }
 
@@ -19,7 +20,9 @@ async function check({ tool, versionArgs, install }: (typeof TOOLS)[number], run
   return {
     tool,
     ok: false,
-    problem: detail ? `no responde a ${versionArgs.join(' ')}: ${detail}` : `${versionArgs.join(' ')} falló con código ${r.code}`,
+    problem: detail
+      ? t('no responde a {args}: {detail}', { args: versionArgs.join(' '), detail })
+      : t('{args} falló con código {code}', { args: versionArgs.join(' '), code: r.code }),
     install
   }
 }

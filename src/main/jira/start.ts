@@ -5,9 +5,10 @@ import type { Model, StartIssue, StartProposalResult, StartRequest, StartResult 
 import { listRepos, rememberedRepo, rememberRepo } from '../repos'
 import { run as defaultRun, type Runner } from '../run'
 import { openWorktree, worktreePath } from '../workspaces'
+import { t } from '../lang'
 
 export const KEY_RE = /^[A-Z][A-Z0-9]+-[0-9]+$/
-const BAD_KEY = (key: string): string => `«${key}» no es una clave de Jira válida (por ejemplo PF-123)`
+const BAD_KEY = (key: string): string => t('«{key}» no es una clave de Jira válida (por ejemplo PF-123)', { key })
 
 const flowPrompt = (key: string): string => `/libretto:libretto-flow ${key}`
 const memoryKey = ({ key, components }: StartIssue): string => `${key.slice(0, key.lastIndexOf('-'))}|${components[0] ?? ''}`
@@ -22,7 +23,7 @@ async function freeBranch(repo: { id: string; path: string }, key: string, run: 
   if (!(await taken(key))) return { branch: key }
   for (const letter of 'BCDEFGHIJKLMNOPQRSTUVWXYZ') {
     const b = `${key}${letter}`
-    if (!(await taken(b))) return { branch: b, note: `«${key}» ya existe en este repo: se propone «${b}»` }
+    if (!(await taken(b))) return { branch: b, note: t('«{key}» ya existe en este repo: se propone «{branch}»', { key, branch: b }) }
   }
   return null
 }
@@ -39,7 +40,7 @@ export async function proposeStart(
   const repo = repos.find((r) => r.id === wanted)
   if (!repo) return { command }
   const free = await freeBranch(repo, issue.key, run)
-  if (!free) return { error: `Todas las ramas ${issue.key}, ${issue.key}B… ${issue.key}Z están ocupadas` }
+  if (!free) return { error: t('Todas las ramas {key}, {key}B… {key}Z están ocupadas', { key: issue.key }) }
   return { repoId: repo.id, branch: free.branch, mode: repo.mode, reason: repo.reason, command, ...(free.note && { note: free.note }) }
 }
 
@@ -53,7 +54,7 @@ interface Deps {
 export async function start(req: StartRequest, deps: Deps): Promise<StartResult> {
   const { run = defaultRun } = deps
   if (!KEY_RE.test(req.key)) return { error: BAD_KEY(req.key) }
-  if (!MODELS.includes(req.model)) return { error: `«${String(req.model)}» no es un modelo disponible` }
+  if (!MODELS.includes(req.model)) return { error: t('«{model}» no es un modelo disponible', { model: String(req.model) }) }
 
   const opened = await openWorktree(
     { repoId: req.repoId, branch: req.branch, agent: 'claude', model: req.model, jiraKey: req.key, prompt: flowPrompt(req.key) },
@@ -76,7 +77,7 @@ interface Transition {
 
 // Returns an error message, or null when the issue moved. Never echoes network errors (they can carry the token).
 async function moveToInProgress(key: string, creds: JiraCreds | null, fetchImpl: typeof fetch = fetch): Promise<string | null> {
-  if (!creds) return 'No se pudo pasar a In Progress: conecta Jira en Ajustes.'
+  if (!creds) return t('No se pudo pasar a In Progress: conecta Jira en Ajustes.')
   const url = new URL(`/rest/api/3/issue/${key}/transitions`, new URL(creds.site.trim()).origin)
   const headers = {
     Authorization: `Basic ${Buffer.from(`${creds.email}:${creds.token}`).toString('base64')}`,
@@ -84,11 +85,11 @@ async function moveToInProgress(key: string, creds: JiraCreds | null, fetchImpl:
   }
   try {
     const list = await fetchImpl(url, { method: 'GET', headers, signal: AbortSignal.timeout(10_000) })
-    if (!list.ok) return `No se pudo pasar a In Progress: Jira respondió ${list.status}.`
+    if (!list.ok) return t('No se pudo pasar a In Progress: Jira respondió {status}.', { status: list.status })
     const options = ((await list.json()) as { transitions?: Transition[] }).transitions ?? []
-    const open = options.filter((t) => t.to?.statusCategory?.key === 'indeterminate')
-    const pick = open.find((t) => typeof t.name === 'string' && /progress|curso/i.test(t.name)) ?? open[0]
-    if (typeof pick?.id !== 'string') return 'No se pudo pasar a In Progress: Jira no ofrece esa transición desde su estado actual.'
+    const open = options.filter((tr) => tr.to?.statusCategory?.key === 'indeterminate')
+    const pick = open.find((tr) => typeof tr.name === 'string' && /progress|curso/i.test(tr.name)) ?? open[0]
+    if (typeof pick?.id !== 'string') return t('No se pudo pasar a In Progress: Jira no ofrece esa transición desde su estado actual.')
 
     const res = await fetchImpl(url, {
       method: 'POST',
@@ -96,10 +97,10 @@ async function moveToInProgress(key: string, creds: JiraCreds | null, fetchImpl:
       body: JSON.stringify({ transition: { id: pick.id } }),
       signal: AbortSignal.timeout(10_000)
     })
-    return res.ok ? null : `No se pudo pasar a In Progress: Jira respondió ${res.status}.`
+    return res.ok ? null : t('No se pudo pasar a In Progress: Jira respondió {status}.', { status: res.status })
   } catch (err) {
     return err instanceof Error && err.name === 'TimeoutError'
-      ? 'No se pudo pasar a In Progress: Jira no ha respondido en 10 s.'
-      : 'No se pudo pasar a In Progress: no se ha podido conectar con Jira.'
+      ? t('No se pudo pasar a In Progress: Jira no ha respondido en 10 s.')
+      : t('No se pudo pasar a In Progress: no se ha podido conectar con Jira.')
   }
 }

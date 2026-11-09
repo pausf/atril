@@ -17,7 +17,7 @@ import { Appearance } from './components/Appearance'
 import { Language } from './settings/Language'
 import { focusRegion } from './focus'
 import { Tour } from './tour/Tour'
-import { UiProvider, useUi } from './ui'
+import { UiProvider, useT, useUi } from './ui'
 
 export function App() {
   return (
@@ -29,6 +29,7 @@ export function App() {
 
 function Shell() {
   const { ui, markTutorialSeen } = useUi()
+  const t = useT()
   const [tourOpen, setTourOpen] = useState(false)
   const [tourStart, setTourStart] = useState(-1)
   const unseen = ui !== null && !ui.tutorialSeen
@@ -47,7 +48,7 @@ function Shell() {
       .doctor()
       .then(setReport)
       .catch((err: unknown) =>
-        setReport([{ tool: 'doctor', ok: false, problem: `no se pudo comprobar: ${String(err)}`, install: '' }])
+        setReport([{ tool: 'doctor', ok: false, problem: t('no se pudo comprobar: {detail}', { detail: String(err) }), install: '' }])
       )
   }, [])
 
@@ -73,7 +74,7 @@ function Shell() {
       if (v === 'start') {
         setScreen('tasks')
         // ponytail: dev-only, ATRIL_SNAPSHOT_VIEW=start opens the dialog on a fake issue so it can be photographed without Jira.
-        setStarting({ key: 'PF-4870', summary: 'Filtro de laboratorios en el listado', type: 'Story', status: 'To Do', statusId: '2', project: 'PF', components: [], group: 'todo' })
+        setStarting({ key: 'PF-4870', summary: 'Filtro de laboratorios en el listado', type: 'Story', status: 'To Do', statusId: '2', project: 'PF', components: [], group: 'todo' }) // i18n-ignore
       }
       const at = /^tour(\d+)$/.exec(v ?? '')
       if (at) setTourStart(Number(at[1]))
@@ -149,7 +150,7 @@ function Shell() {
       if (r.kind === 'error') return setStartError(r.error)
       await started(r.workspace)
       void inbox.refresh()
-      if (r.transitionError) setStartError(`El trabajo está en marcha, pero ${r.transitionError.charAt(0).toLowerCase()}${r.transitionError.slice(1)}`)
+      if (r.transitionError) setStartError(t('El trabajo está en marcha, pero {detail}', { detail: `${r.transitionError.charAt(0).toLowerCase()}${r.transitionError.slice(1)}` }))
       else openWorkspace(r.workspace.id)
     } catch (e) {
       setStartError(String(e))

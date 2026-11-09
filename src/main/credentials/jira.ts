@@ -1,5 +1,6 @@
 import { checkJira, type JiraCreds } from './check'
 import type { SecretStatus, SecretStore } from './store'
+import { t } from '../lang'
 
 export type JiraSaveResult = { account: string } | { error: string }
 
@@ -24,8 +25,8 @@ export const jiraSettings = (store: SecretStore, fetchImpl?: typeof fetch) => ({
   // Board id and name sit beside the account metadata, never in the token blob.
   async pickBoard(board: { id: number; name: string } | null): Promise<{ ok: true } | { error: string }> {
     if (board && !(Number.isInteger(board.id) && board.id > 0 && typeof board.name === 'string'))
-      return { error: 'Tablero no válido.' }
-    return (await store.setBoard('jira', board && { id: board.id, name: board.name })) ? { ok: true } : { error: 'Conecta Jira antes de elegir un tablero.' }
+      return { error: t('Tablero no válido.') }
+    return (await store.setBoard('jira', board && { id: board.id, name: board.name })) ? { ok: true } : { error: t('Conecta Jira antes de elegir un tablero.') }
   },
 
   delete: (): Promise<void> => store.deleteSecret('jira')

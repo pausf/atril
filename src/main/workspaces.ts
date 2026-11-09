@@ -8,6 +8,7 @@ import { run as defaultRun, type Runner } from './run'
 import { trustFolder } from './trust'
 import { hasSession, killSession, newSession, sessionName } from './tmux'
 import { atrilHome } from './paths'
+import { t } from './lang'
 
 export interface OpenInput {
   repoId: string
@@ -57,15 +58,15 @@ export function taskPrompt(task: unknown): string | null {
 export async function openWorktree(input: OpenInput, run: Runner = defaultRun): Promise<WorkspaceResult> {
   const { repoId, branch, agent } = input
   const prompt = input.task === undefined ? input.prompt : taskPrompt(input.task)
-  if (prompt === null) return { error: 'El texto de la tarea no es válido (máx. 2000 caracteres).' }
+  if (prompt === null) return { error: t('El texto de la tarea no es válido (máx. 2000 caracteres).') }
   // W6: nothing else runs before the branch name is validated.
   if ((await run('git', ['check-ref-format', '--branch', branch])).code !== 0) {
-    return { error: `«${branch}» no es un nombre de rama válido` }
+    return { error: t('«{branch}» no es un nombre de rama válido', { branch }) }
   }
 
   const repos = (await readJson<{ repos: Repo[] }>(join(home(), 'repos.json'), { repos: [] })).repos
   const repo = repos.find((r) => r.id === repoId)
-  if (!repo) return { error: `No hay ningún repo «${repoId}»` }
+  if (!repo) return { error: t('No hay ningún repo «{id}»', { id: repoId }) }
 
   const detected = repo.override ? { mode: repo.override, reason: '' } : await detectMode(repo.path, run)
   const inPlace = effectiveMode(repo, detected).mode === 'in-place'
@@ -74,25 +75,25 @@ export async function openWorktree(input: OpenInput, run: Runner = defaultRun): 
   let previousBranch: string | undefined
   if (inPlace) {
     if ((await readRecords()).some((r) => r.repoId === repoId && r.mode === 'in-place')) {
-      return { error: 'Este repo trabaja in-place y ya tiene un trabajo abierto: ciérralo antes' }
+      return { error: t('Este repo trabaja in-place y ya tiene un trabajo abierto: ciérralo antes') }
     }
     const status = await run('git', ['-C', repo.path, 'status', '--porcelain'])
-    if (status.code !== 0) return { error: status.stderr.trim() || 'git status falló' }
+    if (status.code !== 0) return { error: status.stderr.trim() || t('git status falló') }
     if (status.stdout.trim() !== '') {
-      return { error: 'La copia principal tiene cambios sin commitear: haz commit o descártalos antes' }
+      return { error: t('La copia principal tiene cambios sin commitear: haz commit o descártalos antes') }
     }
     const current = (await run('git', ['-C', repo.path, 'branch', '--show-current'])).stdout.trim()
     // Detached HEAD has no branch name: the sha is what close switches back to.
     previousBranch = current || (await run('git', ['-C', repo.path, 'rev-parse', 'HEAD'])).stdout.trim()
     const exists = (await run('git', ['-C', repo.path, 'rev-parse', '--verify', '--quiet', `refs/heads/${branch}`])).code === 0
     const sw = await run('git', ['-C', repo.path, 'switch', ...(exists ? [] : ['-c']), branch])
-    if (sw.code !== 0) return { error: sw.stderr.trim() || 'git switch falló' }
+    if (sw.code !== 0) return { error: sw.stderr.trim() || t('git switch falló') }
     path = repo.path
   } else {
     path = worktreePath(repoId, branch)
     await mkdir(join(path, '..'), { recursive: true })
     const add = await run('git', ['-C', repo.path, 'worktree', 'add', '-b', branch, path])
-    if (add.code !== 0) return { error: add.stderr.trim() || 'git worktree add falló' }
+    if (add.code !== 0) return { error: add.stderr.trim() || t('git worktree add falló') }
   }
 
   const head = await run('git', ['-C', repo.path, 'rev-parse', 'HEAD'])
@@ -127,19 +128,19 @@ export async function listWorkspaces(run: Runner = defaultRun): Promise<Workspac
 export async function removeWorkspace(id: string, run: Runner = defaultRun): Promise<RemoveResult> {
   const records = await readRecords()
   const rec = records.find((r) => r.id === id)
-  if (!rec) return { error: 'Ese trabajo ya no existe' }
+  if (!rec) return { error: t('Ese trabajo ya no existe') }
   const repo = (await readJson<{ repos: Repo[] }>(join(home(), 'repos.json'), { repos: [] })).repos.find((r) => r.id === rec.repoId)
-  if (!repo) return { error: `No hay ningún repo «${rec.repoId}»` }
+  if (!repo) return { error: t('No hay ningún repo «{id}»', { id: rec.repoId }) }
 
   const status = await run('git', ['-C', rec.path, 'status', '--porcelain'])
-  if (status.code !== 0) return { error: status.stderr.trim() || 'git status falló' }
-  if (status.stdout.trim() !== '') return { error: 'Tiene cambios sin commitear: haz commit o descártalos antes' }
+  if (status.code !== 0) return { error: status.stderr.trim() || t('git status falló') }
+  if (status.stdout.trim() !== '') return { error: t('Tiene cambios sin commitear: haz commit o descártalos antes') }
 
   if (rec.mode === 'in-place') {
     // The main checkout is shared with the person: never switch them off a branch they chose by hand.
     const current = (await run('git', ['-C', rec.path, 'branch', '--show-current'])).stdout.trim()
     if (current !== rec.branch)
-      return { error: `El repo está en la rama «${current || 'HEAD suelto'}», no en «${rec.branch}»: vuelve a «${rec.branch}» antes de cerrar` }
+      return { error: t('El repo está en la rama «{current}», no en «{branch}»: vuelve a «{branch}» antes de cerrar', { current: current || t('HEAD suelto'), branch: rec.branch }) }
   }
 
   await killSession(id, run)
@@ -147,13 +148,13 @@ export async function removeWorkspace(id: string, run: Runner = defaultRun): Pro
     // Never delete the branch: the person's commits live there.
     const prev = rec.previousBranch ?? ''
     const back = await run('git', ['-C', rec.path, 'switch', ...(/^[0-9a-f]{40}$/.test(prev) ? ['--detach'] : []), prev])
-    if (back.code !== 0) return { error: back.stderr.trim() || 'git switch falló' }
+    if (back.code !== 0) return { error: back.stderr.trim() || t('git switch falló') }
     await writeRecords(records.filter((r) => r.id !== id))
     return { ok: true }
   }
   // No --force: git itself refuses anything the status check missed.
   const rm = await run('git', ['-C', repo.path, 'worktree', 'remove', rec.path])
-  if (rm.code !== 0) return { error: rm.stderr.trim() || 'git worktree remove falló' }
+  if (rm.code !== 0) return { error: rm.stderr.trim() || t('git worktree remove falló') }
   await writeRecords(records.filter((r) => r.id !== id))
   return { ok: true }
 }

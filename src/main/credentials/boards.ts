@@ -1,4 +1,5 @@
 import type { JiraCreds } from './check'
+import { t } from '../lang'
 
 export interface BoardMatch {
   id: number
@@ -20,13 +21,13 @@ export async function searchBoards(creds: JiraCreds, query: string, fetchImpl: t
       },
       signal: AbortSignal.timeout(10_000)
     })
-    if (!res.ok) return { error: `Jira respondió ${res.status}` }
+    if (!res.ok) return { error: t('Jira respondió {status}', { status: res.status }) }
     const body = (await res.json()) as { values?: Array<{ id?: unknown; name?: unknown; type?: unknown }> }
     return (body.values ?? []).flatMap((b) =>
       typeof b.id === 'number' && typeof b.name === 'string' ? [{ id: b.id, name: b.name, type: typeof b.type === 'string' ? b.type : '' }] : []
     )
   } catch (err) {
     // Network errors can echo the request; never pass err.message through.
-    return { error: err instanceof Error && err.name === 'TimeoutError' ? 'Jira no ha respondido en 10 s.' : 'No se ha podido conectar con Jira.' }
+    return { error: err instanceof Error && err.name === 'TimeoutError' ? t('Jira no ha respondido en 10 s.') : t('No se ha podido conectar con Jira.') }
   }
 }

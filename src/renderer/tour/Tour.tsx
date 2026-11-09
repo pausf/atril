@@ -1,5 +1,6 @@
-import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import type { Screen } from '../components/Rail'
+import { useT, type T } from '../ui'
 
 export interface Step {
   /** Value of the `data-tour` attribute on the real element. */
@@ -11,66 +12,68 @@ export interface Step {
 
 const kbd = (k: string): ReactNode => <kbd>{k}</kbd>
 
-export const STEPS: readonly Step[] = [
+export const stepsOf = (t: T): readonly Step[] => [
   {
     target: 'rail',
     screen: 'work',
-    title: 'Tus pantallas',
-    text: 'Trabajo es donde viven tus agentes, Tareas tiene tu Jira y Ajustes guarda tus tokens y la apariencia.'
+    title: t('Tus pantallas'),
+    text: t('Trabajo es donde viven tus agentes, Tareas tiene tu Jira y Ajustes guarda tus tokens y la apariencia.')
   },
   {
     target: 'tasks',
     screen: 'tasks',
-    title: 'Tus tareas de Jira',
-    text: 'Todas tus tareas abiertas, agrupadas por estado. «Empezar» crea un trabajo con su propia rama y lanza /libretto-flow con la clave.'
+    title: t('Tus tareas de Jira'),
+    text: t('Todas tus tareas abiertas, agrupadas por estado. «Empezar» crea un trabajo con su propia rama y lanza /libretto-flow con la clave.')
   },
   {
     target: 'workspaces',
     screen: 'work',
-    title: 'Trabajo en marcha',
-    text: 'Cada trabajo con su agente y su estado escrito: trabajando, te necesita o parado. Cuando te necesita, Atril te avisa con una notificación.'
+    title: t('Trabajo en marcha'),
+    text: t('Cada trabajo con su agente y su estado escrito: trabajando, te necesita o parado. Cuando te necesita, Atril te avisa con una notificación.')
   },
   {
     target: 'terminal',
     screen: 'work',
-    title: 'La terminal de tu agente',
+    title: t('La terminal de tu agente'),
     text: (
       <>
-        Es tu Claude Code de verdad, dentro de tmux: escribe como siempre. {kbd('⌘D')} divide el panel a la derecha y{' '}
-        {kbd('⌘⇧D')} hacia abajo. Si cierras Atril, el agente sigue vivo.
+        {t('Es tu Claude Code de verdad, dentro de tmux: escribe como siempre.')} {kbd('⌘D')} {t('divide el panel a la derecha y')} {kbd('⌘⇧D')}{' '}
+        {t('hacia abajo. Si cierras Atril, el agente sigue vivo.')}
       </>
     )
   },
   {
     target: 'flow',
     screen: 'work',
-    title: 'El flujo de Libretto',
+    title: t('El flujo de Libretto'),
     text: (
       <>
-        La etapa y el checklist del trabajo elegido, leídos de sus archivos. {kbd('⌘J')} te lleva aquí y {kbd('⌘L')} a la barra
-        lateral.
+        {t('La etapa y el checklist del trabajo elegido, leídos de sus archivos.')} {kbd('⌘J')} {t('te lleva aquí y')} {kbd('⌘L')} {t('a la barra lateral.')}
       </>
     )
   },
   {
     target: 'usage',
     screen: 'work',
-    title: 'Tu cuota de Claude',
-    text: 'Cuánto llevas en las últimas 5 horas y en 7 días, y cuándo se reinicia. Así sabes si te da para otro agente.'
+    title: t('Tu cuota de Claude'),
+    text: t('Cuánto llevas en las últimas 5 horas y en 7 días, y cuándo se reinicia. Así sabes si te da para otro agente.')
   },
   {
     target: 'session',
     screen: 'work',
-    title: 'Tu sesión',
-    text: 'Quién eres en Jira. Púlsalo para ir a Ajustes y conectar, reemplazar o borrar tu token.'
+    title: t('Tu sesión'),
+    text: t('Quién eres en Jira. Púlsalo para ir a Ajustes y conectar, reemplazar o borrar tu token.')
   },
   {
     target: 'appearance',
     screen: 'settings',
-    title: 'Apariencia',
-    text: 'Claro, Oscuro o Automático, que sigue a tu Mac. Para volver a ver este tutorial: Ayuda → Tutorial.'
+    title: t('Apariencia'),
+    text: t('Claro, Oscuro o Automático, que sigue a tu Mac. Para volver a ver este tutorial: Ayuda → Tutorial.')
   }
 ]
+
+/** Spanish, as written: what tests and the dev snapshots count; the window renders `stepsOf(t)`. */
+export const STEPS = stepsOf((es) => es)
 
 interface Box {
   left: number
@@ -110,6 +113,8 @@ interface Props {
 }
 
 export function Tour({ screen, goTo, onClose, startAt = -1 }: Props) {
+  const t = useT()
+  const STEPS = useMemo(() => stepsOf(t), [t])
   // -1 is the welcome card.
   const [i, setI] = useState(startAt)
   const [box, setBox] = useState<Box | null>(null)
@@ -196,7 +201,7 @@ export function Tour({ screen, goTo, onClose, startAt = -1 }: Props) {
         {step ? (
           <>
             <div className="stepn">
-              Paso {i + 1} de {STEPS.length}
+              {t('Paso {n} de {total}', { n: i + 1, total: STEPS.length })}
             </div>
             <h4 id="tour-title">{step.title}</h4>
             <p>{step.text}</p>
@@ -207,32 +212,31 @@ export function Tour({ screen, goTo, onClose, startAt = -1 }: Props) {
             </div>
             <div className="nav">
               <button type="button" className="skip" onClick={onClose}>
-                Saltar
+                {t('Saltar')}
               </button>
               <span className="sp" />
               <button type="button" className="btn" disabled={i === 0} onClick={prev}>
-                Atrás
+                {t('Atrás')}
               </button>
               <button type="button" className="btn p" data-primary onClick={next}>
-                {last ? 'Terminar' : 'Siguiente'}
+                {last ? t('Terminar') : t('Siguiente')}
               </button>
             </div>
-            <div className="kb">{kbd('←')} {kbd('→')} para moverte · {kbd('Enter')} siguiente · {kbd('Esc')} salir</div>
+            <div className="kb">{kbd('←')} {kbd('→')} {t('para moverte')} · {kbd('Enter')} {t('siguiente')} · {kbd('Esc')} {t('salir')}</div>
           </>
         ) : (
           <>
-            <h4 id="tour-title">Bienvenido a Atril</h4>
+            <h4 id="tour-title">{t('Bienvenido a Atril')}</h4>
             <p>
-              Tus tareas de Jira, tus agentes de Claude y el flujo de Libretto, en una sola ventana. Te enseño cada pieza en un
-              minuto.
+              {t('Tus tareas de Jira, tus agentes de Claude y el flujo de Libretto, en una sola ventana. Te enseño cada pieza en un minuto.')}
             </p>
             <div className="nav">
               <button type="button" className="btn" onClick={onClose}>
-                Saltar
+                {t('Saltar')}
               </button>
               <span className="sp" />
               <button type="button" className="btn p" data-primary onClick={() => setI(0)}>
-                Enséñamelo · 1 min
+                {t('Enséñamelo · 1 min')}
               </button>
             </div>
           </>

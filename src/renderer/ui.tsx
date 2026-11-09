@@ -31,6 +31,9 @@ export function useT(): T {
   return useCallback((es: string, vars?: Record<string, string | number>) => translate(lang, es, vars), [lang])
 }
 
+/** The locale dates and weekdays are written in. */
+export const useLocale = (): string => (useContext(UiContext).ui?.lang === 'en' ? 'en-GB' : 'es-ES')
+
 const DARK = '(prefers-color-scheme: dark)'
 
 /** The theme the page really wears: Automático asks the system. */

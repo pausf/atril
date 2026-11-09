@@ -1,8 +1,7 @@
+import { useT } from '../ui'
 import { Icon } from './Icon'
 import { useEffect, useState } from 'react'
 import type { ActivityLine, AgentState, WorkspaceView } from '../../preload/api'
-
-const LABEL: Record<AgentState, string> = { working: 'trabajando', 'needs-you': 'te necesita', stopped: 'parado' }
 
 interface Props {
   workspaces: WorkspaceView[]
@@ -12,6 +11,8 @@ interface Props {
 }
 
 export function WorkspaceList({ workspaces, selected, onSelect, onRemove }: Props) {
+  const t = useT()
+  const LABEL: Record<AgentState, string> = { working: t('trabajando'), 'needs-you': t('te necesita'), stopped: t('parado') }
   const [refusal, setRefusal] = useState<{ id: string; text: string } | null>(null)
   const [states, setStates] = useState<Record<string, AgentState>>({})
 
@@ -35,7 +36,7 @@ export function WorkspaceList({ workspaces, selected, onSelect, onRemove }: Prop
   }, [])
 
   if (workspaces.length === 0) {
-    return <div className="empty">Aquí verás cada trabajo con su estado. Crea uno con «＋ Nuevo trabajo», arriba.</div>
+    return <div className="empty">{t('Aquí verás cada trabajo con su estado. Crea uno con «＋ Nuevo trabajo», arriba.')}</div>
   }
   return (
     <div className="ws-list">
@@ -64,10 +65,10 @@ export function WorkspaceList({ workspaces, selected, onSelect, onRemove }: Prop
           <button
             type="button"
             className="ws-remove"
-            aria-label={`Quitar ${w.branch}`}
+            aria-label={t('Quitar {branch}', { branch: w.branch })}
             onClick={() => void onRemove(w.id).then((text) => setRefusal(text ? { id: w.id, text } : null))}
           >
-            Quitar
+            {t('Quitar')}
           </button>
           {refusal?.id === w.id && <div className="bad">{refusal.text}</div>}
         </div>

@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import type { JiraIssue, Model, RepoView, StartProposal, WorkspaceView } from '../../preload/api'
 import { Icon } from '../components/Icon'
-import { MODEL_OPTIONS } from '../components/models'
+import { modelOptions } from '../components/models'
+import { useT } from '../ui'
 
 interface Props {
   issue: JiraIssue
@@ -14,6 +15,7 @@ interface Props {
 const FOCUSABLE = 'button:not(:disabled), select:not(:disabled), input:not(:disabled)'
 
 export function StartDialog({ issue, onClose, onStarted, onOpenWorkspace }: Props) {
+  const t = useT()
   const dialog = useRef<HTMLDivElement>(null)
   const lastRepo = useRef<string | undefined>(undefined)
   const [repos, setRepos] = useState<RepoView[] | null>(null)
@@ -85,13 +87,13 @@ export function StartDialog({ issue, onClose, onStarted, onOpenWorkspace }: Prop
   return (
     <div className="modal" onKeyDown={onKeyDown}>
       <div className="dlg" role="dialog" aria-modal="true" aria-labelledby="start-title" ref={dialog}>
-        <h3 id="start-title">Empezar {issue.key}</h3>
+        <h3 id="start-title">{t('Empezar {key}', { key: issue.key })}</h3>
         <p>{issue.summary}</p>
 
         <div className="f">
-          <label htmlFor="start-repo">Repo</label>
+          <label htmlFor="start-repo">{t('Repo')}</label>
           <select id="start-repo" value={repoId} onChange={(e) => setRepoId(e.target.value)} disabled={!repos?.length || !!warning}>
-            {repoId === '' && <option value="">{repos?.length === 0 ? 'No hay repos registrados' : 'Elige un repo…'}</option>}
+            {repoId === '' && <option value="">{repos?.length === 0 ? t('No hay repos registrados') : t('Elige un repo…')}</option>}
             {(repos ?? []).map((r) => (
               <option key={r.id} value={r.id}>
                 {r.id}
@@ -99,19 +101,19 @@ export function StartDialog({ issue, onClose, onStarted, onOpenWorkspace }: Prop
             ))}
           </select>
         </div>
-        {repos?.length === 0 && <div className="f-note">Registra un repo con «Añadir repo…» en Trabajo y vuelve a empezar.</div>}
+        {repos?.length === 0 && <div className="f-note">{t('Registra un repo con «Añadir repo…» en Trabajo y vuelve a empezar.')}</div>}
         {repos && repos.length > 0 && !proposal?.repoId && repoId === '' && (
-          <div className="f-note">Es la primera tarea de {issue.key.slice(0, issue.key.lastIndexOf('-'))}{issue.components[0] ? ` / ${issue.components[0]}` : ''}: elige repo y Atril lo recordará.</div>
+          <div className="f-note">{t('Es la primera tarea de {project}: elige repo y Atril lo recordará.', { project: `${issue.key.slice(0, issue.key.lastIndexOf('-'))}${issue.components[0] ? ` / ${issue.components[0]}` : ''}` })}</div>
         )}
 
         <div className="f">
-          <label htmlFor="start-branch">Rama</label>
+          <label htmlFor="start-branch">{t('Rama')}</label>
           <input id="start-branch" value={branch} onChange={(e) => setBranch(e.target.value)} disabled={!!warning} spellCheck={false} />
         </div>
         {proposal?.note && <div className="f-note">{proposal.note}</div>}
 
         <div className="f">
-          <span className="lbl">Dónde</span>
+          <span className="lbl">{t('Dónde')}</span>
           <span>
             {proposal?.mode ? (
               <>
@@ -121,15 +123,15 @@ export function StartDialog({ issue, onClose, onStarted, onOpenWorkspace }: Prop
                 <span className="why-inline">{proposal.reason}</span>
               </>
             ) : (
-              <span className="why-inline">Depende del repo</span>
+              <span className="why-inline">{t('Depende del repo')}</span>
             )}
           </span>
         </div>
 
         <div className="f">
-          <label htmlFor="start-model">Modelo</label>
+          <label htmlFor="start-model">{t('Modelo')}</label>
           <select id="start-model" value={model} onChange={(e) => setModel(e.target.value as Model)} disabled={!!warning}>
-            {MODEL_OPTIONS.map((m) => (
+            {modelOptions(t).map((m) => (
               <option key={m.value} value={m.value}>
                 {m.label}
               </option>
@@ -138,12 +140,12 @@ export function StartDialog({ issue, onClose, onStarted, onOpenWorkspace }: Prop
         </div>
 
         <div className="f">
-          <span className="lbl">Lanza</span>
-          <code aria-label="Comando que se ejecutará">{proposal?.command ?? '…'}</code>
+          <span className="lbl">{t('Lanza')}</span>
+          <code aria-label={t('Comando que se ejecutará')}>{proposal?.command ?? '…'}</code>
         </div>
         <div className="f">
           <span className="lbl">Jira</span>
-          <span className="why-inline">{issue.group === 'doing' ? 'ya está en curso' : 'pasará a In Progress'}</span>
+          <span className="why-inline">{issue.group === 'doing' ? t('ya está en curso') : t('pasará a In Progress')}</span>
         </div>
 
         {error && (
@@ -153,22 +155,22 @@ export function StartDialog({ issue, onClose, onStarted, onOpenWorkspace }: Prop
         )}
         {warning && (
           <div className="bad" role="alert">
-            El trabajo está en marcha, pero {warning.text.charAt(0).toLowerCase() + warning.text.slice(1)}
+            {t('El trabajo está en marcha, pero {detail}', { detail: warning.text.charAt(0).toLowerCase() + warning.text.slice(1) })}
           </div>
         )}
 
         <div className="btns">
           {warning ? (
             <button type="button" className="btn p" onClick={() => onOpenWorkspace(warning.ws.id)}>
-              Ir al trabajo
+              {t('Ir al trabajo')}
             </button>
           ) : (
             <>
               <button type="button" className="btn" onClick={onClose}>
-                Cancelar
+                {t('Cancelar')}
               </button>
               <button type="button" className="btn p" disabled={!ready} onClick={() => void submit()}>
-                {busy ? 'Empezando…' : 'Empezar'}
+                {busy ? t('Empezando…') : t('Empezar')}
               </button>
             </>
           )}
