@@ -49,3 +49,6 @@ N3's "ignore a click within 1 s of a reply" is proven only against the event ord
 
 ## 2026-11-09 · add-next-up · 6→7
 ⌘↩ on a task the renderer had not loaded yet did nothing, silently (`setStarting(null)`). Fixed: it falls back to Tareas, which refetches on mount; N2 amended, case added to its proof and seen red first.
+
+## 2026-11-09 · add-own-tasks · 4→5
+spec-reviewer found six gaps the contract left to the builder: what a slug "word" is, the Nueva tarea button without Jira, the agent of an own task, three promises on one proof (I23), the argv shape of W40 and a proof that could not tell a newline from a second argument, and a refactor of StartDialog with no proof. All settled in the document before code.

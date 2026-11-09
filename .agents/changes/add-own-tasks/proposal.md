@@ -27,6 +27,11 @@ from the first words (editable); own tasks listed with the workspace they starte
 - Q: ¿Qué recibe el agente? → A: `/libretto:libretto-flow <texto>` como un único argumento; Libretto ya toma «lo que dijo el usuario» como fuente y lo guarda literal en su proposal (assumed).
 - Q: ¿Y la rama? → A: se propone a partir de las primeras palabras (minúsculas, sin acentos, guiones, máx. 40) y se puede editar; deja de seguir al texto en cuanto la tocas (assumed).
 - Q: ¿Límite del texto? → A: 2000 caracteres; Libretto escribe el resto en la spec, no hace falta más en una línea de comandos (assumed).
+- Q: (spec-reviewer) ¿Qué es una «palabra» para la rama? → A: un tramo de `[a-z0-9]` tras quitar acentos y pasar a minúsculas; la puntuación separa palabras. «Editada» = cualquier cambio tuyo en el campo, aunque lo vacíes (assumed).
+- Q: (spec-reviewer) ¿«Nueva tarea» sin Jira conectado? → A: sí, se ve y funciona: la cabecera de Tareas queda fuera del estado «Conecta…» (assumed, I25).
+- Q: (spec-reviewer) ¿Qué agente? → A: siempre `claude` (assumed).
+- Q: (spec-reviewer) ¿Dónde se nota el límite de 2000? → A: el área de texto no deja escribir más (`maxLength`, unidades UTF-16, igual que `.length` en main) (assumed).
+- Q: (spec-reviewer) ¿Se extrae el atrapado de foco del diálogo de Empezar? → A: no: el diálogo nuevo lleva el suyo y el de Empezar no se toca, así no puede romperse sin prueba (assumed).
 - Q: ¿Se listan las tareas propias aparte? → A: no: cada una es un trabajo más en Trabajo, con su rama; una lista aparte sería una segunda fuente de verdad (assumed).
 
 ## Outcomes
@@ -67,15 +72,22 @@ keyboard-reachable (Tab cycles inside it, Escape closes, ⌘↩ submits from the
 ## Verification criteria
 
 - **I22** When the person writes a task in «Nueva tarea», picks a repo and presses Empezar, Atril
-  shall open a workspace on the shown branch with the chosen model, passing the text as the task,
+  shall open a workspace on the shown branch with the chosen model, passing the text as the task with agent `claude`,
   and show it in Trabajo.
   Proof: src/renderer/inbox/owntask.test.ts own task opens a workspace with its text
-- **I23** While the text is empty or only spaces, or no repo is picked, Empezar shall be
-  disabled; with no repo registered the dialog shall say to add one in Trabajo.
-  Proof: src/renderer/inbox/owntask.test.ts own task needs text and a repo
+- **I23** While the text is empty or only spaces, Empezar shall be disabled, and the text area
+  shall accept at most 2000 characters (UTF-16 units).
+  Proof: src/renderer/inbox/owntask.test.ts own task needs text
+- **I25** If no repo is registered, then the dialog shall say «Añade un repo en Trabajo para
+  empezar» and Empezar shall be disabled.
+  Proof: src/renderer/inbox/owntask.test.ts own task needs a repo
+- **I26** While Jira is not connected (I3), «Nueva tarea» shall still be shown and open the dialog.
+  Proof: src/renderer/inbox/owntask.test.ts own task works without jira
 - **I24** While the person has not edited the branch, the branch shall be the first five words of
-  the text in lower case, without accents, joined by hyphens, at most 40 characters
-  («Añadir filtro de Laboratorios» → `anadir-filtro-de-laboratorios`); once edited it shall stay.
+  the text, a word being a run of `[a-z0-9]` after lower-casing and removing accents, joined by
+  hyphens, at most 40 characters with no trailing hyphen («Añadir filtro de Laboratorios» →
+  `anadir-filtro-de-laboratorios`; «fix: bug-in api, ya» → `fix-bug-in-api`); once the person
+  changes the field in any way, it shall stay as they left it.
   Proof: src/renderer/inbox/owntask.test.ts branch follows the text until edited
 
 ## Approach
@@ -85,14 +97,14 @@ keyboard-reachable (Tab cycles inside it, Escape closes, ⌘↩ submits from the
 The `atril:ws:open` IPC gains an optional fifth argument, the task text. Main validates it and
 passes `prompt: '/libretto:libretto-flow ' + text` to the existing `openWorktree`/in-place open,
 which already hands the argv to tmux without a shell. The renderer adds a «Nueva tarea» button in
-the Tareas header and an `OwnTaskDialog` next to `StartDialog`, sharing its focus trap.
+the Tareas header, outside the «Conecta…» state, and an `OwnTaskDialog` next to `StartDialog`
+with its own focus trap; `StartDialog` is not touched.
 
 ### Technical context
 
 TypeScript, Electron, React, vitest (jsdom for the renderer). Files: `src/main/index.ts` (IPC),
 `src/main/workspaces.ts` (`taskPrompt` validation), `src/preload/{index,api}.ts` (signature),
-`src/renderer/inbox/{Inbox,OwnTaskDialog}.tsx`, a shared `useDialogKeys` extracted from
-`StartDialog.tsx`, `src/renderer/inbox/branch.ts` (slug), tests `src/main/tmux.test.ts`,
+`src/renderer/inbox/{Inbox,OwnTaskDialog}.tsx`, `src/renderer/inbox/branch.ts` (slug), tests `src/main/tmux.test.ts`,
 `src/main/workspaces.test.ts`, `src/renderer/inbox/owntask.test.ts`, the sketch
 `bocetos/fase1-nucleo.html`. Gates: typecheck, lint, test.
 
@@ -105,8 +117,9 @@ TypeScript, Electron, React, vitest (jsdom for the renderer). Files: `src/main/i
 - `slugBranch(text)`: NFD, drop combining marks, lower case, non `[a-z0-9]` → `-`, first five
   words, trim hyphens, cut at 40 then trim a trailing hyphen.
 - The dialog keeps `branchEdited`; while false, the branch is `slugBranch(text)`.
-- W40's proof runs real tmux on the private test socket with a fake agent (`/bin/sh -c 'printf
-  "%s\n" "$@" > out' sh`) in place of `claude`, so what arrives is observed, not assumed.
+- W40's proof runs real tmux on the private test socket with a fake agent in place of `claude`
+  that writes its argument count and each argument NUL-terminated, so a newline inside the text
+  cannot pass for a second argument; what arrives is observed, not assumed.
 
 ### The alternatives it beat
 
@@ -135,4 +148,4 @@ None.
 
 ## Checklist
 
-- [ ] own task: main validates the text and starts the flow with it, the «Nueva tarea» dialog in Tareas with the branch proposal, the sketch · Closes: W40, W41, I22, I23, I24
+- [ ] own task: main validates the text and starts the flow with it, the «Nueva tarea» dialog in Tareas with the branch proposal, the sketch · Closes: W40, W41, I22, I23, I24, I25, I26
