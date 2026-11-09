@@ -11,13 +11,13 @@ const exists = (p: string): Promise<boolean> =>
   )
 
 // A folder's own mtime only moves when entries come and go, so the newest file counts too.
-async function lastModified(dir: string): Promise<number> {
+export async function lastModified(dir: string): Promise<number> {
   let latest = (await stat(dir)).mtimeMs
   for (const f of await readdir(dir)) latest = Math.max(latest, (await stat(join(dir, f)).catch(() => null))?.mtimeMs ?? 0)
   return latest
 }
 
-async function changeFolders(changes: string): Promise<string[]> {
+export async function changeFolders(changes: string): Promise<string[]> {
   const entries = await readdir(changes, { withFileTypes: true }).catch(() => [])
   const dirs = await Promise.all(
     entries.filter((e) => e.isDirectory()).map(async (e) => ({ name: e.name, at: await lastModified(join(changes, e.name)) }))

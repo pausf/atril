@@ -2,7 +2,7 @@ import { existsSync, watch, type FSWatcher } from 'node:fs'
 import { join } from 'node:path'
 import type { FlowStage } from '../../preload/api'
 import type { Runner } from '../run'
-import { stageOf } from './stage'
+import { lastModified, stageOf } from './stage'
 
 export interface FlowWatcher {
   close(): void
@@ -41,11 +41,15 @@ export async function watchFlow(o: Options): Promise<FlowWatcher> {
     }
   }
 
+  // F14: an edit that keeps the stage must still notify, so the folder's newest mtime is part of the key.
+  const keyOf = async (stage: FlowStage): Promise<string> =>
+    JSON.stringify(stage) + (stage.change ? `@${await lastModified(join(changes, stage.change)).catch(() => 0)}` : '')
+
   const refresh = async (): Promise<void> => {
     const stage = await stageOf(o.path, o.baseCommit, o.run)
     if (closed) return
     arm()
-    const key = JSON.stringify(stage)
+    const key = await keyOf(stage)
     if (key === last) return
     last = key
     o.onChange(stage)
@@ -61,7 +65,7 @@ export async function watchFlow(o: Options): Promise<FlowWatcher> {
   })
   root.on('error', () => undefined)
   arm()
-  last = JSON.stringify(await stageOf(o.path, o.baseCommit, o.run))
+  last = await keyOf(await stageOf(o.path, o.baseCommit, o.run))
 
   return {
     close() {

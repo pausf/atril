@@ -217,4 +217,15 @@ describe('activity', () => {
     }
     expect(existsSync(join(home, 'state'))).toBe(true)
   })
+
+  it('a question from claude means it needs you', async () => {
+    const ask = { tool_name: 'AskUserQuestion', tool_input: { questions: [{ question: '¿Seguimos con la casilla 1?', header: 'Stop', options: [] }] } }
+    const asking = await open(fire([['PreToolUse', ask]]), 'feat/ask')
+    await until(() => stateFile(asking.session)?.state, (s) => s === 'needs-you')
+    expect(stateFile(asking.session)).toMatchObject({ state: 'needs-you', text: 'Te pregunta: ¿Seguimos con la casilla 1?' })
+
+    const answered = await open(fire([['PreToolUse', ask], ['PostToolUse', { tool_name: 'AskUserQuestion', tool_response: {} }]]), 'feat/answered')
+    await until(() => stateFile(answered.session)?.state, (s) => s === 'working')
+    expect(stateFile(answered.session)?.state).toBe('working')
+  })
 })

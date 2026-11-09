@@ -215,11 +215,26 @@ export interface FlowStage {
   checklist?: Checklist
 }
 
+export interface FlowDoc {
+  name: string
+  text: string
+  mtimeMs: number
+}
+
+export interface FlowDocs {
+  change: string
+  files: FlowDoc[]
+}
+
 export interface FlowApi {
   /** Also starts watching that workspace (and stops watching any other); null stops all. */
   get(workspaceId: string | null): Promise<FlowStage | null>
   /** Returns the unsubscribe function. */
   onChange(cb: (workspaceId: string, stage: FlowStage) => void): () => void
+  /** The current change's proposal.md and spec-*.md (F13). */
+  docs(workspaceId: string): Promise<FlowDocs | null>
+  /** F16: main re-reads the agent state and the file's mtime before writing. */
+  save(workspaceId: string, change: string, name: string, text: string, mtimeMs: number): Promise<{ mtimeMs: number } | { error: string }>
 }
 
 export interface UsageWindow {

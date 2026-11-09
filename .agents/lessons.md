@@ -70,3 +70,6 @@ spec-reviewer caught I23 (empty text disables Empezar, unscoped) contradicting t
 
 ## 2026-11-09 · add-flow-documents · 4→5
 spec-reviewer found that the approach leaned on a signal that does not fire: the flow watcher only emits when the stage changes, so a live document view would go stale on every in-stage edit. Settled by carrying the folder's newest mtime in FlowStage. Lesson: before an approach says "the existing X already does Y", read X — the review read watch.ts, the author had not.
+
+## 2026-11-09 · add-flow-documents · 2
+Pau asked what happens if he dislikes the spec, since «it goes straight to build». Checking found the real gap: Libretto does stop before code, but its question is a tool call and the hook marked every PreToolUse as working, so Atril would hide the stop and lock the editor exactly when it mattered. W44 fixes the hook. Lesson: when the user describes behaviour that the flow says cannot happen, look for what makes it look that way.

@@ -13,6 +13,7 @@ const done = (kind, text) => ({ kind, text: clip(text, LINE) })
 const file = (input) => basename(flat(input?.file_path ?? input?.notebook_path))
 
 const TOOLS = {
+  AskUserQuestion: (i) => ({ kind: 'asks', text: `Te pregunta: ${flat(i?.questions?.[0]?.question) || 'Claude te necesita'}` }),
   Read: (i) => ({ kind: 'read', text: `Leyendo ${file(i)}` }),
   Edit: (i) => ({ kind: 'edit', text: `Editando ${file(i)}` }),
   MultiEdit: (i) => ({ kind: 'edit', text: `Editando ${file(i)}` }),

@@ -40,6 +40,7 @@ two never write the same file at once.
 
 - Q: (Pau, tras el boceto) «lo de espec y plan que sea visualmente mas omo un editor para poder editar etc...» → A: pestañas en la zona central junto a la terminal, un editor con números de línea, colores de markdown y esquema de secciones; se escribe directamente (sin botón Editar), solo lectura mientras Claude trabaja, ⌘S guarda, punto en la pestaña con cambios sin guardar; boceto en `fase1-nucleo.html?doc=plan`.
 - Q: (Pau) «que se vea mas grande ahora mismo todo se ve minuculo lo de spec y plan» → A: al abrir un documento el editor ocupa todo el ancho (se ocultan la barra lateral y el panel de Libretto; «⤡ Salir de pantalla completa» o Esc vuelven), letra de 15 px.
+- Q: (Pau) «si la spec y plan no nos gusta como lo hacemos ya que pasa directamente a construir» → A: no pasa directo: Libretto se para antes de código con una pregunta; pero el hook marcaba esa pregunta como «trabajando» y Atril la escondía; se arregla en `spec-workspaces.md` (W44).
 - Q: (Pau) «no me sterminal de convencer no cabe todo en el la parte de la terminal, yo pensaba mas como un modal» → A: un modal grande (94 % del ancho, 88 % del alto), oscuro, por encima de la app: título de la etapa, el cambio, pestañas por archivo y Cerrar; dentro el mismo editor (esquema, números de línea, colores, barra de estado, ⌘S); Esc o Cerrar salen y, con cambios sin guardar, preguntan antes. La terminal no se toca.
 
 ## Outcomes
@@ -195,4 +196,4 @@ revert.
 
 ## Checklist
 
-- [ ] flow documents: main reads and saves the current change's files safely, the panel opens them by stage, live, with edit while the agent waits, the sketch · Closes: F13, F14, F15, F16, F17
+- [ ] flow documents: main reads and saves the current change's files safely, the panel opens them by stage, live, with edit while the agent waits, the sketch · Closes: F13, F14, F15, F16, F17, W44

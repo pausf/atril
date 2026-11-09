@@ -1,5 +1,5 @@
 import { vi } from 'vitest'
-import type { ActivityLine, AddRepoResult, Mode, AgentState, AtrilApi, FlowStage, JiraIssue, MenuAction, NextItem, StartProposalResult, StartRequest, StartResult, RepoView, UiState, WorkspaceResult, WorkspaceView } from '../preload/api'
+import type { ActivityLine, AddRepoResult, FlowDocs, Mode, AgentState, AtrilApi, FlowStage, JiraIssue, MenuAction, NextItem, StartProposalResult, StartRequest, StartResult, RepoView, UiState, WorkspaceResult, WorkspaceView } from '../preload/api'
 
 export const workspace = (id: string, branch: string, alive = true): WorkspaceView => ({
   id,
@@ -32,6 +32,8 @@ interface Options {
   issues?: JiraIssue[]
   /** Jira not connected: the inbox answers «unconfigured» (I3). */
   noJira?: boolean
+  /** What flow.docs answers; tests mutate it and call pushFlow to simulate the agent writing. */
+  docs?: FlowDocs | null
   /** What the folder picker answers when the person adds a repo. */
   addRepo?: (AddRepoResult & { path: string }) | null
   repos?: RepoView[]
@@ -49,6 +51,7 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
   let menu: ((a: MenuAction) => void) | undefined
   let notified: ((id: string) => void) | undefined
   const activityListeners = new Set<(id: string, lines: ActivityLine[]) => void>()
+  const flowListeners = new Set<(id: string, stage: FlowStage) => void>()
   const ui = {
     get: vi.fn(async () => ({ ...stored, folded: { ...stored.folded } })),
     set: vi.fn(async (p: Partial<UiState>) => {
@@ -109,7 +112,15 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
         return () => activityListeners.delete(cb)
       }
     },
-    flow: { get: async () => o.flow ?? null, onChange: () => off },
+    flow: {
+      get: async () => o.flow ?? null,
+      onChange: (cb: (id: string, stage: FlowStage) => void) => {
+        flowListeners.add(cb)
+        return () => flowListeners.delete(cb)
+      },
+      docs: vi.fn(async () => o.docs ?? null),
+      save: vi.fn(async (): Promise<{ mtimeMs: number } | { error: string }> => ({ mtimeMs: 2 }))
+    },
     usage: {
       get: async () => ({ fiveHour: { pct: 20, resetsAt: null }, sevenDay: { pct: 40, resetsAt: null } }),
       onChange: () => off
@@ -120,7 +131,8 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
   } as unknown as AtrilApi
   const { menu: menuApi, jira, workspaces: ws, repos: reposApi } = window.atril
   return { ui, stored, menuApi, jira, ws, reposApi, menu: (a: MenuAction) => menu?.(a), clickNotification: (id: string) => notified?.(id),
-    pushActivity: (id: string, lines: ActivityLine[]) => activityListeners.forEach((cb) => cb(id, lines))
+    pushActivity: (id: string, lines: ActivityLine[]) => activityListeners.forEach((cb) => cb(id, lines)),
+    pushFlow: (id: string, stage: FlowStage) => flowListeners.forEach((cb) => cb(id, stage))
   }
 }
 

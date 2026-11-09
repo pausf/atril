@@ -1,7 +1,8 @@
 import { app, BrowserWindow, dialog, ipcMain, Notification, safeStorage, shell } from 'electron'
 import { MODELS, writeHooksFile } from './agent'
 import { createActivity } from './activity'
-import { createStatus, REPLY_GONE, REPLY_PLACEHOLDER, replyToAgent } from './status'
+import { agentState, createStatus, REPLY_GONE, REPLY_PLACEHOLDER, replyToAgent } from './status'
+import { readDocs, saveDoc } from './flow/document'
 import { nextUp } from './nextup'
 import { writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
@@ -176,6 +177,17 @@ app.whenReady().then(() => {
     emit: (id, stage) => BrowserWindow.getAllWindows().forEach((w) => w.webContents.send('atril:flow:changed', id, stage))
   })
   ipcMain.handle('atril:flow:get', (_e, id: string | null) => flow.select(id))
+  ipcMain.handle('atril:flow:docs', async (_e, id: string) => {
+    const ws = (await listWorkspaces(run)).find((w) => w.id === id)
+    return ws ? readDocs(ws.path) : null
+  })
+  ipcMain.handle('atril:flow:save', async (_e, id: string, change: unknown, name: unknown, text: unknown, mtimeMs: unknown) => {
+    const ws = (await listWorkspaces(run)).find((w) => w.id === id)
+    if (!ws || typeof change !== 'string' || typeof name !== 'string' || typeof text !== 'string' || typeof mtimeMs !== 'number') {
+      return { error: 'Ese archivo no se puede editar desde Atril' }
+    }
+    return saveDoc(ws.path, await agentState(ws, run), change, name, text, mtimeMs)
+  })
   ipcMain.handle('atril:ws:list', () => listWorkspaces(run))
   ipcMain.handle('atril:ws:open', (_e, repoId: string, branch: string, agent: Agent, model?: Model, task?: unknown) =>
     openWorktree(

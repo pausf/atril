@@ -47,8 +47,7 @@ function session() {
 
 try {
   const event = process.argv[2] ?? ''
-  const state = STATES[event]
-  if (!state) process.exit(0)
+  if (!STATES[event]) process.exit(0)
 
   let payload = {}
   try {
@@ -56,6 +55,8 @@ try {
   } catch {
     /* no stdin or not JSON: the state still counts */
   }
+  // W44: Claude's question tool is a stop (Libretto's before code is one): it waits for the person.
+  const state = event === 'PreToolUse' && payload?.tool_name === 'AskUserQuestion' ? 'needs-you' : STATES[event]
 
   const name = session()
   if (!name) process.exit(0)
