@@ -91,4 +91,19 @@ describe('file changes', () => {
     await act(() => vi.advanceTimersByTimeAsync(9000))
     expect(changesMock.mock.calls.length).toBe(stuck)
   })
+
+  it('a large branch warns in cambios', async () => {
+    const big: FileChange[] = [{ path: 'src/Big.php', status: 'A', added: 380, removed: 0 }, { path: 'src/Old.php', status: 'M', added: 70, removed: 50 }]
+    mockApi({ workspaces: [workspace('aaaaaaa1', 'PF-1', false)], states: { aaaaaaa1: 'working' }, flow: building, changes: big })
+    render(createElement(App))
+    await userEvent.setup().click(await screen.findByRole('button', { name: /^PF-1/ }))
+    const section = await screen.findByRole('region', { name: /Cambios/ })
+    const warn = await vi.waitFor(() => {
+      const el = section.querySelector('.fbig')
+      if (!el) throw new Error('no warning yet')
+      return el
+    })
+    expect(warn.textContent).toBe('⚠ 500 líneas: rama grande (más de 400). Atril le ha pedido a Claude que te proponga separarla en MRs más pequeñas.')
+    expect(within(section).queryByText('500 líneas')).toBeNull()
+  })
 })

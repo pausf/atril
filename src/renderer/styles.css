@@ -1760,3 +1760,14 @@ button.stg.stgbtn:focus-visible {
 .hl .dmeta {
   color: var(--ed-5);
 }
+
+/* F25: a branch past the hook's threshold. */
+.fbig {
+  margin: 4px 0 6px;
+  padding: 7px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--you);
+  color: var(--you-text);
+  font-size: 12.5px;
+  line-height: 1.4;
+}

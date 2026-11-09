@@ -5,6 +5,7 @@ import { ActivityFeed } from './ActivityFeed'
 import { DocModal } from './DocModal'
 import { DiffModal } from './DiffModal'
 import type { Part } from './highlight'
+import { WARN_AT } from './warn'
 
 const TABS = [
   { id: 'libretto', label: 'Libretto', title: 'Flujo de Libretto' },
@@ -202,7 +203,7 @@ function LibrettoFlow({ flow, onOpen, changes, onDiff }: FlowProps) {
               <h2 id="changes-h">
                 Cambios <span className="n">{changes.length}</span>
               </h2>
-              <p className="fmeta">{changes.reduce((n, f) => n + f.added + f.removed, 0)} líneas</p>
+              <ChangeTotal lines={changes.reduce((n, f) => n + f.added + f.removed, 0)} />
               <ul className="fchanges">
                 {changes.map((f) => {
                   const slash = f.path.lastIndexOf('/')
@@ -242,5 +243,15 @@ function LibrettoFlow({ flow, onOpen, changes, onDiff }: FlowProps) {
         </>
       )}
     </>
+  )
+}
+
+/** F25: past the hook's threshold the total turns into a warning that says what Atril already did. */
+function ChangeTotal({ lines }: { lines: number }) {
+  if (lines <= WARN_AT) return <p className="fmeta">{lines} líneas</p>
+  return (
+    <p className="fbig" role="status">
+      ⚠ {lines} líneas: rama grande (más de {WARN_AT}). Atril le ha pedido a Claude que te proponga separarla en MRs más pequeñas.
+    </p>
   )
 }

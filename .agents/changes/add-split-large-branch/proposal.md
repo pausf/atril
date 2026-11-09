@@ -150,4 +150,4 @@ W45 and F25 seen red first. Rollback: one revert.
 ## Checklist
 
 - [x] branchsize.mjs counts like F18 and claims each threshold once; the hook prints the note · Closes: W45, W46
-- [ ] the warning in Cambios with the shared threshold; the sketch's copy · waits on box 1 · Closes: F25
+- [x] the warning in Cambios with the shared threshold; the sketch's copy · waits on box 1 · Closes: F25
