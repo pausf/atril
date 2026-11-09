@@ -29,6 +29,10 @@ Governs: src/main/flow/** src/renderer/flow/**
   button; both open a read-only **diff modal**: the files on the left, the selected file's diff
   in green and red with line numbers, the counts in the status bar.
 
+### Large branches (add-split-large-branch, 9 nov 2026)
+
+- «Cambios» shows the total as a warning past 400 lines, saying Atril asked Claude to propose a split.
+
 ## Scope boundaries
 
 **In:** reading `.agents/changes/*/` in a workspace and deriving the stage.
@@ -60,6 +64,10 @@ from Atril, comments on lines (phase 2's MR review), word-level diffs, renames s
 **Never scoped out:** main reads only paths that git lists as changed in that workspace; the diff
 text is rendered as text, never markup; the modal holds the keyboard like the document modal.
 
+### Large branches (add-split-large-branch, 9 nov 2026)
+
+**In:** the warning. **Out:** anything else in the panel.
+
 ## Constraints
 
 - Libretto's layout and checklist rule exactly as `find-work` defines them: the checklist is
@@ -84,6 +92,10 @@ text is rendered as text, never markup; the modal holds the keyboard like the do
 
 - git only, through the runner (W-criteria); no new dependency.
 - Reuses the document modal's look (F13–F17) and the workspace's `baseCommit` (W5).
+
+### Large branches (add-split-large-branch, 9 nov 2026)
+
+- Uses the total F20 already shows.
 
 ## Prior decisions
 
@@ -162,6 +174,10 @@ text is rendered as text, never markup; the modal holds the keyboard like the do
 - Q: (spec-reviewer) ¿Desde qué etapa? → A: Construir, Terminado y Aterrizado; antes, Construir no es botón y no hay sección (assumed).
 - Q: (spec-reviewer) ¿El modal se actualiza solo? → A: no: es una instantánea con su hora y un botón «Actualizar»; la lista del panel sí se refresca cada 3 s, sin pedir otra vez mientras una petición sigue en marcha (assumed).
 - Q: (spec-reviewer) ¿Binario sin seguimiento? → A: un byte cero en los primeros 8000 bytes, la regla de git; cuenta 0 y 0 (assumed).
+
+### Large branches (add-split-large-branch, 9 nov 2026)
+
+- **400 lines** (proposal.md).
 
 ## Task breakdown
 
@@ -267,3 +283,10 @@ Aterrizado**.
 - **F22** While the stage is Construir or later, Atril shall ask for the list again every 3 seconds,
   skipping a tick while the previous request has not answered.
   Proof: src/renderer/flow/changes.test.ts the list refreshes while claude works
+
+### Large branches (add-split-large-branch, 9 nov 2026)
+
+- **F25** While the change list totals more than the hook's threshold (400), «Cambios» shall show,
+  in place of the plain total, a warning element (class `fbig`) reading «⚠ N líneas: rama grande
+  (más de 400). Atril le ha pedido a Claude que te proponga separarla en MRs más pequeñas.»
+  Proof: src/renderer/flow/changes.test.ts a large branch warns in cambios

@@ -91,6 +91,15 @@ The `workspaces` capability, phase 1. Its siblings in this change: `.agents/spec
   one — the workspace shows «te necesita», notifies with the question, and the documents become
   editable (F15); once the person answers, it shows «trabajando» again.
 
+### Large branches (add-split-large-branch, 9 nov 2026)
+
+- When a workspace's branch passes 400 changed lines against its base — and again at 800,
+  1200… — Claude is told once, through its hook, to ask the person at its next natural stop
+  whether to split the work into smaller chained MRs; its question reaches Atril as «te
+  necesita» (W44).
+- The «Cambios» section shows the total as a warning past 400 lines: «⚠ N líneas: rama grande (más
+  de 400). Atril le ha pedido a Claude que te proponga separarla en MRs más pequeñas.»
+
 ## Scope boundaries
 
 **In:** the three columns and footer of `bocetos/fase1-nucleo.html` (boceto 8), the
@@ -150,6 +159,16 @@ never become a `claude` flag or reach a shell; the renderer cannot choose the co
 
 **In:** the hook's state for `AskUserQuestion`. **Out:** any other tool.
 
+### Large branches (add-split-large-branch, 9 nov 2026)
+
+**In:** measuring after file-changing tools, the once-per-threshold note to Claude, the warning in
+Cambios (`spec-flow-status.md`). **Out:** splitting the branch (Claude does it, with
+`chained-pr`), a configurable threshold, counting lines Claude has not written yet.
+
+**Never scoped out:** the hook never blocks a tool, adds at most two git calls (numstat and the
+untracked list) per file-changing event, never prints anything when it cannot find its workspace,
+and the note never carries file contents.
+
 ## Constraints
 
 - Electron (current stable) + TypeScript in strict mode, pnpm, Node 24 (installed:
@@ -194,6 +213,13 @@ never become a `claude` flag or reach a shell; the renderer cannot choose the co
 ### Flow documents (add-flow-documents, 9 nov 2026)
 
 - Same hook, same state file (W14–W16, W26, A1–A8).
+
+### Large branches (add-split-large-branch, 9 nov 2026)
+
+- The hook already runs on PostToolUse (W14–W16, A1–A8); it finds its workspace in
+  `$ATRIL_HOME/workspaces.json` by its tmux session name.
+- Claude Code reads `hookSpecificOutput.additionalContext` from a PostToolUse hook's stdout and
+  gives it to Claude on its next request (verified 9 nov, code.claude.com/docs/en/hooks).
 
 ## Prior decisions
 
@@ -350,6 +376,33 @@ never become a `claude` flag or reach a shell; the renderer cannot choose the co
 - **The stop must be visible** — Pau, 9 nov: «si la spec y plan no nos gusta como lo hacemos ya que
   pasa directamente a construir»: it does not — Libretto stops before code with a question — but
   the hook marked every tool as working, so Atril hid that stop (found 9 nov).
+
+### Large branches (add-split-large-branch, 9 nov 2026)
+
+- **Smaller MRs, asked by Claude** — Pau, 9 nov: «si una rama se esta haciendo muy grande que el
+  propio claude te pida si quiere separar esta tarea en mas MR pequeñas».
+- **400 lines** (assumed): the `chained-pr` skill's own threshold for a reviewable MR.
+
+#### Alternatives that lost
+
+| Considered | Why it lost |
+|---|---|
+| Atril shows a button that types the suggestion into the terminal | Pau asked for Claude itself to ask; the hook note does that without the person acting |
+| Measuring on every tool | Read, Grep and the like change nothing; one git call per edit is enough |
+| Libretto deciding the split up front | it already can, at write-tasks; this catches the branch that grew past the plan |
+
+#### Decision log, answers as given (2026-11-09)
+- Q: «tu desarrollo todo sin parar … te dejo solo» stands → decisions taken with the recommended option, marked (assumed).
+- Q: ¿Cuánto es «grande»? → A: más de 400 líneas cambiadas (añadidas + borradas) contra la base del trabajo, el umbral de `chained-pr`; y de nuevo a 800, 1200… (assumed).
+- Q: ¿Qué cuenta? → A: lo mismo que «Cambios» (F18): lo commiteado, lo no commiteado y lo nuevo sin seguimiento que git no ignora; un binario cuenta 0 (assumed).
+- Q: ¿Cuándo se mira? → A: después de cada Edit, Write, MultiEdit o Bash (PostToolUse); otras herramientas no cambian archivos (assumed).
+- Q: ¿Qué se le dice a Claude? → A: un `additionalContext` en español: el tamaño, el umbral, y que en su siguiente parada natural pregunte con AskUserQuestion si separar en MRs encadenadas (`chained-pr` si está) o seguir; que no separe sin preguntar (assumed).
+- Q: ¿Y si Atril no encuentra el trabajo? → A: el hook no dice nada; nunca molesta a Claude (assumed).
+
+- Q: (spec-reviewer) ¿Un salto de 0 a 900? → A: una sola nota; quedan avisados los umbrales hasta el alcanzado; solo un umbral más alto vuelve a avisar (assumed).
+- Q: (spec-reviewer) ¿El número es exacto? → A: sí, el total de F18, sin cortar la cuenta (assumed).
+- Q: (spec-reviewer) ¿Dos hooks a la vez? → A: cada umbral se reclama creando un archivo en exclusiva (`wx`); como mucho una nota por umbral (assumed).
+- Q: (spec-reviewer) ¿El aviso promete una pregunta que ya no vendrá? → A: el texto dice lo que ya pasó: «Atril le ha pedido a Claude que te proponga separarla» (assumed).
 
 ## Task breakdown
 
@@ -578,3 +631,19 @@ never become a `claude` flag or reach a shell; the renderer cannot choose the co
   with «Te pregunta: <its first question>» as the text, and when that call returns (PostToolUse)
   it shall set `working`.
   Proof: src/main/activity.test.ts a question from claude means it needs you
+
+### Large branches (add-split-large-branch, 9 nov 2026)
+
+- **W45** When a PostToolUse for Edit, Write, MultiEdit or Bash ends and the workspace's branch
+  has more than 400 × k changed lines against its base, with k higher than any k already claimed
+  in that session, the hook shall claim k and print one `additionalContext` naming the exact total
+  and asking Claude to offer a split into chained MRs at its next stop; otherwise — at or below
+  400, k not higher than one claimed, another tool, or no workspace record for the session — it
+  shall print nothing.
+  (One proof holds all: it runs `sizeNotice` over a real repo through 300 lines, 500, 500 again,
+  1300, 1400, Read at 2000, an unknown session, PreToolUse, and a second session jumping from
+  nothing to 1300 and back to 500, and checks each result.)
+  Proof: src/main/activity.test.ts a large branch asks claude to offer a split
+- **W46** The hook's count shall equal F18's total for the same tree, and the renderer's warning
+  threshold shall be the hook's.
+  Proof: src/main/activity.test.ts the hook counts like the change list
