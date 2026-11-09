@@ -17,7 +17,11 @@ Pau, 9 nov 2026:
 
 > Hubhub, GitLab deberían ser tus MRs y MRs donde estés tú como suscrito en el proyecto, ¿vale? O que te hayan puesto como reviewer.
 
+> como se ven los comentrios de gitbuh gitlab
+
 ## The reading
+
+**Comments (Pau, 9 nov):** the MR view shows the GitLab/GitHub discussion threads — file and line, the code, replies, resolved / needs-your-answer — with replies sent back to the forge; Libretto lens findings appear as drafts to publish on the MR, send to the agent, or discard. Sketch: boceto 8, MR view, "Hilos".
 
 **Which MRs appear (Pau, 9 nov, supersedes "favoritos"):** three lists, GitHub and GitLab
 alike — the MRs you authored; the MRs where you are a reviewer; and other people's MRs in
