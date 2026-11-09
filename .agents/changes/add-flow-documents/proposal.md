@@ -39,6 +39,7 @@ two never write the same file at once.
 - Q: (spec-reviewer) ¿En qué cambio se guarda? → A: en el que se leyó: el guardado lleva el nombre del cambio, validado (`^[a-z0-9-]+$`, carpeta existente) (assumed).
 
 - Q: (Pau, tras el boceto) «lo de espec y plan que sea visualmente mas omo un editor para poder editar etc...» → A: pestañas en la zona central junto a la terminal, un editor con números de línea, colores de markdown y esquema de secciones; se escribe directamente (sin botón Editar), solo lectura mientras Claude trabaja, ⌘S guarda, punto en la pestaña con cambios sin guardar; boceto en `fase1-nucleo.html?doc=plan`.
+- Q: (Pau) «que se vea mas grande ahora mismo todo se ve minuculo lo de spec y plan» → A: al abrir un documento el editor ocupa todo el ancho (se ocultan la barra lateral y el panel de Libretto; «⤡ Salir de pantalla completa» o Esc vuelven), letra de 15 px.
 
 ## Outcomes
 
@@ -91,7 +92,8 @@ native).
   `spec-*.md`), with the cursor at that part's heading — Spec: the first level-2 heading; Plan:
   `## Approach`; Checklist: `## Checklist`, found outside code fences as in F1–F7 — and each shall
   be a button only from its stage on: Spec from Spec, Plan from Plan, Checklist once a checklist
-  exists.
+  exists; opening it shall widen the centre to the whole window (sidebar and Libretto panel hidden)
+  until the person leaves full screen, presses Escape or goes back to the terminal tab.
   Proof: src/renderer/flow/documents.test.ts stage opens what the agent wrote
 - **F14** While a document tab is open with no unsaved changes, it shall show the file's new
   text within one second of the agent changing it, even when the stage does not change.
