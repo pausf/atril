@@ -103,7 +103,12 @@ function Shell() {
 
   const openNext = (item: NextItem | undefined): void => {
     if (item?.kind === 'agent') openWorkspace(item.id)
-    else if (item) setStarting(inbox.issues.find((i) => i.key === item.key) ?? null)
+    else if (item) {
+      const issue = inbox.issues.find((i) => i.key === item.key)
+      // Not loaded here yet: Tareas refetches on mount, so the task shows up there.
+      if (issue) setStarting(issue)
+      else setScreen('tasks')
+    }
   }
 
   useEffect(

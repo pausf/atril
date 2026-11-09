@@ -84,7 +84,8 @@ shell; an empty reply sends nothing.
   from «Por empezar» when there is no board or it cannot be read (I18) — in Jira's order.
   Proof: src/main/nextup.test.ts orders waiting agents before tasks
 - **N2** While Trabajo or Tareas is shown and the list is not empty, ⌘↩ shall open its first
-  item — the workspace for an agent, the Start for a task; otherwise the menu item is disabled.
+  item — the workspace for an agent, the Start for a task, or Tareas when that task is not loaded
+  yet; otherwise the menu item is disabled.
   Proof: src/renderer/nextup.test.ts command enter opens the next item
 - **N3** When the person replies to a needs-you notification, Atril shall type the reply into
   that workspace's agent pane as literal text followed by Enter, without bringing Atril to the

@@ -47,6 +47,15 @@ describe('next up', () => {
     act(() => task.menu({ kind: 'next' }))
     expect((await screen.findByRole('dialog')).textContent).toContain('Empezar WEB-10')
 
+    // A task not loaded yet in the renderer falls back to Tareas instead of doing nothing.
+    cleanup()
+    const stale = mockApi({ nextup: [{ kind: 'task', key: 'WEB-11' }], repos })
+    render(createElement(App))
+    await vi.waitFor(() => expect(vi.mocked(stale.menuApi.setNext)).toHaveBeenLastCalledWith(true))
+    act(() => stale.menu({ kind: 'next' }))
+    await vi.waitFor(() => expect(rail(/Tareas/).getAttribute('aria-current')).toBe('page'))
+    expect(screen.queryByRole('dialog')).toBeNull()
+
     // An empty list disables it.
     cleanup()
     const none = mockApi({ repos })
