@@ -91,3 +91,6 @@ spec-reviewer: the hook's printout had no way to be observed by the proof, a 0�
 
 ## 2026-11-09 · add-split-large-branch · 6→7
 work-reviewer: the approach said the renderer imports the hook's THRESHOLD while the code pins a copy by test (text fixed); the hook's git calls had no timeout (5 s added, a timeout means no note); claim files are never cleaned (ceiling named — session ids are random).
+
+## 2026-11-09 · add-language · 4→5
+spec-reviewer: the default ("Sistema") contradicted the test default ("es"), Sistema had two sources (window vs main), "every text" had no closing proof, and module constants would freeze the language at load. Settled: main is the one source, the mock is a Spanish Mac, S19 scans for Spanish literals outside t(), constants become functions.

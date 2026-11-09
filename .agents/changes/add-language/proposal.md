@@ -26,6 +26,11 @@ language. Libretto's own output (the agent's terminal) is out of reach: it is Cl
 - Q: ¿Qué se traduce? → A: todo lo que escribe Atril: ventana, menú, avisos del Mac y mensajes de error; nunca lo que no escribe Atril: la terminal, lo que dice Claude, títulos de Jira, nombres de archivo ni el contenido de los documentos (assumed).
 - Q: ¿Hace falta reiniciar? → A: no: cambia al momento, menú incluido (assumed).
 - Q: ¿Librería de i18n? → A: no: un diccionario español → inglés y una función `t()` con `{variables}`; el texto en español es la clave, así que nada se queda sin texto si falta una traducción (assumed).
+- Q: (spec-reviewer) ¿Quién decide qué es «Sistema»? → A: main, con el idioma preferido de macOS; la ventana recibe el idioma ya resuelto, así ventana y menú nunca discrepan (assumed).
+- Q: (spec-reviewer) ¿Qué guarda `ui.json`? → A: `language: 'system' | 'es' | 'en'`, por defecto `system`; lo inválido se descarta (assumed).
+- Q: (spec-reviewer) ¿Qué cierra el «todo»? → A: un test que busca, fuera de los tests y del catálogo, literales con letras propias del español (á é í ó ú ñ ü ¿ ¡ «) que no pasen por `t()`; un texto sin tildes se le escapa: límite nombrado (assumed).
+- Q: (spec-reviewer) ¿Un error de Atril con texto de git o Jira dentro? → A: se traduce lo de Atril y lo ajeno viaja intacto en `{detail}` (assumed).
+- Q: (spec-reviewer) ¿Y los criterios que citan frases en español? → A: describen el texto en español; en inglés vale su entrada del catálogo (assumed).
 
 ## Outcomes
 
@@ -46,6 +51,7 @@ keyboard-reachable like Apariencia.
 ## Constraints
 
 - The setting lives in `ui.json` beside the theme (W35); no new dependency.
+- Main owns the resolved language and the window takes it from main (`spec-workspaces.md`).
 - Spanish stays the source of every text: it is the key.
 
 ## Prior decisions
@@ -64,33 +70,35 @@ keyboard-reachable like Apariencia.
 
 ## Verification criteria
 
-- **S14** While Ajustes is shown, the Idioma card shall offer Español, English and Sistema, with
-  Sistema chosen until the person picks another, and the choice shall be the one shown after a
-  restart.
+- **S14** While Ajustes is shown, the Idioma card shall offer Español, English and Sistema, show
+  the stored choice selected — Sistema when none was made — and store a new choice when picked.
   Proof: src/renderer/settings/language.test.ts language choice persists
 - **S15** When the person picks English, the window shall show Atril's own texts in English at
-  once — the rail, Ajustes, Tareas and the dialogs — and with Sistema it shall follow macOS:
-  Spanish when the preferred language starts with `es`, English otherwise.
+  once — the rail, Trabajo, Tareas, Ajustes and the Nueva tarea dialog — without a restart.
   Proof: src/renderer/settings/language.test.ts the window switches language at once
-- **S16** Every literal text passed to `t()` in `src/` shall have an English entry, and the
-  catalog shall hold no entry that no `t()` uses.
+- **S16** Every literal key passed to `t()` or `translate()` in `src/` shall have an English entry,
+  no key shall be a template literal, and the catalog shall hold no entry that no call uses.
   Proof: src/preload/i18n.test.ts every text has its english
 - **S17** While the language is English, texts Atril did not write — an activity line, a Jira
-  title, a file name — shall be shown exactly as they came.
+  title, a file name, the detail inside an error — shall be shown exactly as they came.
   Proof: src/renderer/settings/language.test.ts claude and jira text stay as written
-- **S18** When the language changes, main shall rebuild the app menu in it and use it for later
-  notifications and for the messages it returns.
-  Proof: src/main/i18n.test.ts main speaks the chosen language
+- **S19** Outside tests and the catalog, no string literal or JSX text in `src/` containing á, é,
+  í, ó, ú, ñ, ü, ¿, ¡ or « shall reach the person without going through `t()` or `translate()`.
+  (Ceiling named: a Spanish text with none of these letters is caught only by S15's screens or by
+  reading.)
+  Proof: src/preload/i18n.test.ts no spanish text skips t
 
 ## Approach
 
 ### Summary
 
-`src/preload/i18n.ts` exports `type Lang = 'es' | 'en'`, `resolveLang(choice, locale)` and
-`translate(lang, es, vars?)`; `src/preload/i18n-en.ts` holds the catalog (Spanish → English).
-The window gets `useT()` from the existing `UiProvider`, which already owns `ui.json`; main keeps
-the current language in `src/main/lang.ts` (`setLang`, `t`) and rebuilds the menu when it changes.
-The extraction of every literal is mechanical and is done after the mechanism is proven.
+`src/preload/i18n.ts` exports `type Lang = 'es' | 'en'`, `type LangChoice = Lang | 'system'`,
+`resolveLang(choice, systemLocale)` and `translate(lang, es, vars?)`; `src/preload/i18n-en.ts`
+holds the catalog (Spanish → English). Main stores `language` in `ui.json`, resolves Sistema with
+`app.getPreferredSystemLanguages()[0]`, keeps the result in `src/main/lang.ts` (`setLang`, `t`),
+rebuilds the menu and answers `ui.get()` with the resolved `lang` beside the stored choice; the
+window's `useT()` (from `UiProvider`) uses that `lang`. The extraction of every literal is
+mechanical and comes after the mechanism is proven.
 
 ### Technical context
 
@@ -103,12 +111,15 @@ main module that returns text. Gates: typecheck, lint, test.
 ### The approach
 
 - `translate`: `en` → `EN[es] ?? es`, then `{name}` replaced from `vars`.
-- Sistema in the window: `navigator.language`; in main: `app.getPreferredSystemLanguages()[0]`.
-- Main messages: modules call `t()` from `lang.ts`; the language is set at startup and on change
-  (IPC `atril:ui:set` already carries the UI state).
-- Tests: the mock's stored UI state defaults to `language: 'es'`, and main's default is `es`, so
-  every existing Spanish assertion stays valid; the English path is proven by S15–S18.
-- S16's proof scans `src/**/*.{ts,tsx}` (not tests) for `t('…')` and `t("…")` literals.
+- Sistema is resolved once, in main; the window never reads `navigator.language`.
+- Main messages: modules call `t()` from `lang.ts` at the moment they build the message — module
+  constants such as `REPLY_GONE` become functions; a message with foreign text puts it in
+  `{detail}`, which `translate` never touches.
+- On `atril:ui:set` with a `language`, main resolves it, calls `setLang`, rebuilds the menu and
+  returns the new state with `lang`; the window re-renders from it.
+- Tests: main's `lang` defaults to `es` until set; the mock answers `ui.get()` with
+  `language: 'system'` and `lang: 'es'` (a Spanish Mac), so existing Spanish assertions stay valid.
+- S16 and S19 scan `src/**/*.{ts,tsx}` except tests, `i18n-en.ts` and `mockApi.ts`.
 
 ### The alternatives it beat
 
@@ -135,5 +146,5 @@ S14–S18 seen red first; S16 is the gate that keeps the catalog honest later. R
 
 ## Checklist
 
-- [ ] the language mechanism: translate and the catalog, the setting and its resolution, the Idioma card, main's language and menu · Closes: S14, S16, S18
-- [ ] every Atril text in the window and in main through t() with its English · waits on box 1 · Closes: S15, S17
+- [ ] the language mechanism: translate, the setting in ui.json and its resolution in main, main's language and menu, the window's useT and the Idioma card · Closes: S14, W47, W48
+- [ ] every Atril text in the window and in main through t() with its English · waits on box 1 · Closes: S15, S16, S17, S19
