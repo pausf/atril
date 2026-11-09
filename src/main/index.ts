@@ -56,6 +56,8 @@ function createWindow(): void {
 }
 
 app.whenReady().then(() => {
+  // Packaged builds take build/icon.icns from the bundle; in dev the Dock needs telling.
+  if (!app.isPackaged) app.dock?.setIcon(join(__dirname, '../../build/icon.png'))
   ipcMain.handle('atril:doctor', () => doctor(run))
   ipcMain.handle('atril:repos:list', () => listRepos(run))
   ipcMain.handle('atril:repos:add', async () => {
