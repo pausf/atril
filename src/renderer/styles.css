@@ -2063,3 +2063,62 @@ button.stg.stgbtn:focus-visible {
   background: var(--mode-bg);
   color: var(--mode-text);
 }
+
+.modal.palette-scrim {
+  align-items: flex-start;
+  padding-top: 14vh;
+}
+.dlg.palette {
+  width: min(620px, 94vw);
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  max-height: 64vh;
+}
+.dlg.palette input {
+  font: inherit;
+  font-size: 17px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  padding: 10px 12px 12px;
+  margin-bottom: 6px;
+  background: transparent;
+  color: var(--text);
+  outline: none;
+}
+.pl-list {
+  overflow: auto;
+}
+.pl-item {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-size: 14px;
+  cursor: pointer;
+}
+.pl-item:hover {
+  background: var(--hover);
+}
+.pl-item[aria-selected='true'] {
+  background: var(--mode-bg);
+  color: var(--mode-text);
+  box-shadow: inset 3px 0 0 var(--run);
+}
+.pl-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pl-kind {
+  color: var(--sub);
+  font-size: 12px;
+}
+.pl-empty {
+  margin: 8px 12px 12px;
+  color: var(--sub);
+  font-size: 14px;
+}

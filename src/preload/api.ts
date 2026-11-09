@@ -455,6 +455,7 @@ export type MenuAction =
   | { kind: 'next' }
   | { kind: 'select'; index: number }
   | { kind: 'tutorial' }
+  | { kind: 'palette' }
 
 export type Theme = 'light' | 'dark' | 'auto'
 

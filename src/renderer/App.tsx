@@ -20,6 +20,8 @@ import { Appearance } from './components/Appearance'
 import { Language } from './settings/Language'
 import { focusRegion } from './focus'
 import { Tour } from './tour/Tour'
+import { Palette } from './palette/Palette'
+import { paletteItems } from './palette/items'
 import { UiProvider, useT, useUi } from './ui'
 
 export function App() {
@@ -66,6 +68,8 @@ function Shell() {
   const [starting, setStarting] = useState<JiraIssue | null>(null)
   const [dialog, setDialog] = useState<'task' | 'work' | null>(null)
   const [startError, setStartError] = useState<string | null>(null)
+  /** The palette's starting query; null while it is closed. */
+  const [palette, setPalette] = useState<string | null>(null)
   const quickBusy = useRef(false)
 
   useEffect(() => {
@@ -78,6 +82,8 @@ function Shell() {
         setScreen('tasks')
         setDialog('task')
       }
+      // ponytail: dev-only, ATRIL_SNAPSHOT_VIEW=palette opens it with a query typed for a photo.
+      if (v === 'palette') setPalette('listado')
       if (v === 'start') {
         setScreen('tasks')
         // ponytail: dev-only, ATRIL_SNAPSHOT_VIEW=start opens the dialog on a fake issue so it can be photographed without Jira.
@@ -154,6 +160,11 @@ function Shell() {
           if (ws) setSelected(ws.id)
           return
         }
+        // W54: ⌘K does nothing while any dialog, the palette included, is open.
+        if (a.kind === 'palette') {
+          if (!document.querySelector('[aria-modal="true"]')) setPalette('')
+          return
+        }
         if (a.kind === 'tutorial') setTourOpen(true)
         else focusRegion(a.target)
       }),
@@ -194,6 +205,31 @@ function Shell() {
   }
 
   const problems = (report ?? []).filter((r) => !r.ok)
+
+  const items = () =>
+    paletteItems({
+      t,
+      workspaces,
+      mrs: mrs.result,
+      issues: inbox.issues,
+      go,
+      openWorkspace,
+      openMr: (url) => {
+        setOpenUrl(url)
+        setScreen('mr')
+      },
+      // Tareas' own button: Abrir trabajo when it already has one, Empezar otherwise (I20/I21).
+      startTask: (issue) => {
+        if (issue.workspaceId) return openWorkspace(issue.workspaceId)
+        setScreen('tasks')
+        void beginStart(issue, false)
+      },
+      newWork: () => setDialog('work'),
+      newTask: () => setDialog('task'),
+      refreshMrs: () => void mrs.refresh(),
+      markAllRead: () => avisos.markRead('all'),
+      tutorial: () => setTourOpen(true)
+    })
 
   return (
     <div className="win">
@@ -258,6 +294,7 @@ function Shell() {
           }}
         />
       )}
+      {palette !== null && <Palette items={items()} initialQuery={palette} onClose={() => setPalette(null)} />}
       {tourOpen && <Tour startAt={tourStart} screen={screen} goTo={setScreen} onClose={closeTour} />}
       <Footer />
     </div>

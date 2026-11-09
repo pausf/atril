@@ -261,8 +261,8 @@ app.whenReady().then(async () => {
     if (typeof url === 'string' && guards.openable(url)) return shell.openExternal(url)
   })
   ipcMain.handle('atril:mr:list', async () => {
-    // ponytail: dev-only, ATRIL_SNAPSHOT_VIEW=mr photographs believable lists without any forge.
-    const fake = SNAPSHOT && /^(mr|avisos)/.test(process.env['ATRIL_SNAPSHOT_VIEW'] ?? '')
+    // ponytail: dev-only, ATRIL_SNAPSHOT_VIEW=mr|avisos|palette photographs believable lists without any forge.
+    const fake = SNAPSHOT && /^(mr|avisos|palette)/.test(process.env['ATRIL_SNAPSHOT_VIEW'] ?? '')
     const r = fake ? fakeMrs() : await listMrs(secretStore, fetch, guards.scorable, guards.threadable)
     guards.listed([...r.mine, ...r.review, ...r.following].map((m) => m.url))
     // Avisos come from comparing listings; a failure there must never break the listing itself.
@@ -329,9 +329,9 @@ app.whenReady().then(async () => {
     return result
   })
   const readInboxResult = async (): Promise<InboxResult> => {
-    // ponytail: dev-only, ATRIL_SNAPSHOT_VIEW=tasks|tasks-board|tour|tourN (N = step) photographs a believable list without Jira.
+    // ponytail: dev-only, ATRIL_SNAPSHOT_VIEW=tasks|tasks-board|tour|tourN (N = step)|palette photographs a believable list without Jira.
     const view = process.env['ATRIL_SNAPSHOT_VIEW'] ?? ''
-    if (SNAPSHOT && /^(tasks|tour)/.test(view)) {
+    if (SNAPSHOT && /^(tasks|tour|palette)/.test(view)) {
       const issues = fakeIssues()
       return view === 'tasks-board'
         ? { issues, groups: fakeBoardGroups() }

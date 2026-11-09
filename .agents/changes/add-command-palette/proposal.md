@@ -132,4 +132,4 @@ None.
 
 ## Checklist
 
-- [ ] ⌘K in the menu, the palette with its items, filter, keyboard and actions, the tutorial line · Closes: W54, W55, W56, W57
+- [x] ⌘K in the menu, the palette with its items, filter, keyboard and actions, the tutorial line · Closes: W54, W55, W56, W57

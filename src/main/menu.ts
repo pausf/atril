@@ -23,6 +23,7 @@ export function menuTemplate(d: MenuDeps): MenuItemConstructorOptions[] {
         { label: t('Dividir a la derecha'), accelerator: 'CmdOrCtrl+D', enabled: !none, click: () => d.split('h') },
         { label: t('Dividir abajo'), accelerator: 'CmdOrCtrl+Shift+D', enabled: !none, click: () => d.split('v') },
         { label: t('Siguiente'), accelerator: 'CmdOrCtrl+Return', enabled: d.nextEnabled, click: () => d.send({ kind: 'next' }) },
+        { label: t('Buscar…'), accelerator: 'CmdOrCtrl+K', click: () => d.send({ kind: 'palette' }) },
         { type: 'separator' },
         { label: t('Ir a la barra lateral'), accelerator: 'CmdOrCtrl+L', click: () => d.send({ kind: 'focus', target: 'sidebar' }) },
         { label: t('Ir al panel de Libretto'), accelerator: 'CmdOrCtrl+J', click: () => d.send({ kind: 'focus', target: 'flow' }) },

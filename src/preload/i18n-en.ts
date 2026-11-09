@@ -5,6 +5,7 @@ export const EN: Record<string, string> = {
   'Dividir a la derecha': 'Split right',
   'Dividir abajo': 'Split down',
   'Siguiente': 'Next',
+  'Buscar…': 'Search…',
   'Ir a la barra lateral': 'Go to the sidebar',
   'Ir al panel de Libretto': 'Go to the Libretto panel',
   'Trabajo {n}': 'Work {n}',
@@ -400,5 +401,15 @@ export const EN: Record<string, string> = {
   "La etapa y el checklist del trabajo elegido, leídos de sus archivos. Pulsa Spec o Plan para leerlos y corregirlos mientras Claude te espera, y Construir para ver los cambios de código.": "The stage and checklist of the chosen workspace, read from its files. Press Spec or Plan to read and correct them while Claude waits for you, and Build to see the code changes.",
   "Tus MR": "Your MRs",
   "Las tuyas, las que te toca revisar y las de los proyectos que sigues en GitHub y GitLab. Pulsa una para ver sus hilos y responder, o Puntuar para que Claude te diga su dificultad y su riesgo.": "Yours, the ones you review and the ones in projects you follow on GitHub and GitLab. Open one to see its threads and reply, or Score to have Claude tell you its difficulty and risk.",
-  "Lo que ha cambiado desde la última vez: revisiones pedidas, comentarios, CI rota, MRs nuevas y agentes que te necesitan.": "What changed since last time: review requests, comments, broken CI, new MRs and agents that need you."
+  "Lo que ha cambiado desde la última vez: revisiones pedidas, comentarios, CI rota, MRs nuevas y agentes que te necesitan.": "What changed since last time: review requests, comments, broken CI, new MRs and agents that need you.",
+  "Actualizar MR": "Refresh MRs",
+  "Marcar avisos leídos": "Mark notices read",
+  "Pantalla": "Screen",
+  "Acción": "Action",
+  "Tarea": "Task",
+  "Buscar": "Search",
+  "Buscar en Atril": "Search Atril",
+  "Pantallas, trabajos, MR, tareas o acciones": "Screens, workspaces, MRs, tasks or actions",
+  "Resultados": "Results",
+  "Nada coincide con «{query}»": "Nothing matches “{query}”"
 }

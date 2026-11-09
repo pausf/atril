@@ -34,7 +34,7 @@ describe('main language', () => {
     const labels = (): string[] => menuTemplate(deps).flatMap((m) => [m.label ?? '', ...((m.submenu as { label?: string }[] | undefined) ?? []).map((s) => s.label ?? '')]).filter(Boolean)
 
     setLang('en')
-    expect(labels()).toEqual(expect.arrayContaining(['Edit', 'Work', 'Split right', 'Next', 'Work 1', 'Tutorial']))
+    expect(labels()).toEqual(expect.arrayContaining(['Edit', 'Work', 'Split right', 'Next', 'Search…', 'Work 1', 'Tutorial']))
     expect(labels().some((l) => /[áéíóúñ]|Dividir|Trabajo/.test(l))).toBe(false)
     expect(replyGone()).toBe('Could not send: that workspace is gone')
     expect(replyPlaceholder()).toBe('Reply to Claude…')
