@@ -10,7 +10,7 @@ import { doctor } from './doctor'
 import type { Mode } from '../preload/api'
 import { readInbox } from './jira/inbox'
 import { proposeStart, start } from './jira/start'
-import type { Model, StartIssue, StartRequest } from '../preload/api'
+import type { JiraIssue, Model, StartIssue, StartRequest } from '../preload/api'
 import { listRepos, registerRepo, setOverride } from './repos'
 import * as pty from './pty'
 import { run } from './run'
@@ -18,8 +18,26 @@ import { createUsage } from './usage'
 import { listWorkspaces, openWorktree, removeWorkspace } from './workspaces'
 import { createFlowHub } from './flow/watch'
 import { installMenu } from './menu'
+import { patchUi, readUi } from './ui'
 import { splitPane } from './tmux'
 import type { Agent } from '../preload/api'
+
+function fakeIssues(): JiraIssue[] {
+  const groups = ['todo', 'doing', 'review'] as const
+  const status = { todo: 'Por empezar', doing: 'En curso', review: 'Code Review' }
+  return Array.from({ length: 24 }, (_, i) => {
+    const group = groups[i < 10 ? 0 : i < 18 ? 1 : 2]
+    return {
+      key: `APP-${4800 + i}`,
+      summary: i % 3 === 0 ? 'Filtro de laboratorios en el listado de categoría con paginación y orden por precio' : 'Corregir el cálculo del envío',
+      type: i % 4 === 1 ? 'Bug' : 'Story',
+      status: status[group],
+      project: 'APP',
+      components: [],
+      group
+    }
+  })
+}
 
 function createWindow(): void {
   const win = new BrowserWindow({
@@ -95,7 +113,11 @@ app.whenReady().then(() => {
     const c = await secretStore.readSecret('jira').catch(() => null)
     return c?.['site'] && c['email'] && c['token'] ? (c as unknown as JiraCreds) : null
   }
-  ipcMain.handle('atril:jira:inbox', async () => readInbox(await savedJira(), fetch, await listWorkspaces(run)))
+  ipcMain.handle('atril:jira:inbox', async () =>
+    // ponytail: dev-only, ATRIL_SNAPSHOT_VIEW=tasks|tour|tourN (N = step) photographs a believable list without Jira.
+    process.env['ATRIL_SNAPSHOT'] && /^(tasks|tour)/.test(process.env['ATRIL_SNAPSHOT_VIEW'] ?? '')
+      ? { issues: fakeIssues() }
+      : readInbox(await savedJira(), fetch, await listWorkspaces(run)))
   ipcMain.handle('atril:jira:proposeStart', (_e, issue: StartIssue, repoId?: string, model?: Model) =>
     proposeStart(issue, { repoId, model }, run)
   )
@@ -126,6 +148,18 @@ app.whenReady().then(() => {
   ipcMain.on('atril:term:resize', (_e, id: string, c: number, r: number) => pty.resize(id, c, r))
   ipcMain.on('atril:term:detach', (_e, id: string) => pty.detach(id))
   ipcMain.handle('atril:snapshot-view', () => (process.env['ATRIL_SNAPSHOT'] ? (process.env['ATRIL_SNAPSHOT_VIEW'] ?? null) : null))
+  ipcMain.handle('atril:ui:get', async () => {
+    const ui = await readUi()
+    // ponytail: dev snapshots force the theme and skip the tutorial unless the view is the tour.
+    if (!process.env['ATRIL_SNAPSHOT']) return ui
+    const theme = process.env['ATRIL_SNAPSHOT_THEME']
+    return {
+      ...ui,
+      ...(theme === 'light' || theme === 'dark' ? { theme } : {}),
+      tutorialSeen: !process.env['ATRIL_SNAPSHOT_VIEW']?.startsWith('tour')
+    }
+  })
+  ipcMain.handle('atril:ui:set', (_e, patch: unknown) => patchUi(patch))
   ipcMain.handle('atril:snapshot-ws', () => Boolean(process.env['ATRIL_SNAPSHOT']))
   const menu = { selected: null as string | null, count: 0 }
   const refreshMenu = (): void =>

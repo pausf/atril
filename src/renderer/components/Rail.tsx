@@ -10,7 +10,7 @@ const ITEMS: { id: Screen; icon: IconName; label: string }[] = [
 
 export function Rail({ screen, onChange }: { screen: Screen; onChange: (s: Screen) => void }) {
   return (
-    <nav className="rail" aria-label="Pantallas">
+    <nav className="rail" aria-label="Pantallas" data-tour="rail">
       {ITEMS.map((i) => (
         <button
           key={i.id}

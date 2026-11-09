@@ -1,5 +1,6 @@
 import type { Agent, Model, WorkspaceView } from '../../preload/api'
 import { JiraSummary, type InboxState } from '../inbox/Inbox'
+import { FoldSection } from './Fold'
 import { Repos } from './Repos'
 import { WorkspaceList } from './WorkspaceList'
 
@@ -17,14 +18,11 @@ export function Sidebar({ workspaces, selected, onSelect, onRemove, onCreate, in
   return (
     <aside className="col left">
       <JiraSummary inbox={inbox} onOpen={onOpenTasks} />
-      <section>
-        <h2>
-          Trabajo en marcha <span className="n">{workspaces.length}</span>
-        </h2>
+      <FoldSection id="work" title="Trabajo en marcha" count={workspaces.length} tour="workspaces">
         <p className="lead">Cada trabajo, con su agente.</p>
         <WorkspaceList workspaces={workspaces} selected={selected} onSelect={onSelect} onRemove={onRemove} />
-        <Repos onCreate={onCreate} />
-      </section>
+      </FoldSection>
+      <Repos onCreate={onCreate} />
     </aside>
   )
 }

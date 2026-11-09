@@ -31,7 +31,8 @@ export function menuTemplate(d: MenuDeps): MenuItemConstructorOptions[] {
         }))
       ]
     },
-    { role: 'windowMenu' }
+    { role: 'windowMenu' },
+    { role: 'help', submenu: [{ label: 'Tutorial', click: () => d.send({ kind: 'tutorial' }) }] }
   ]
 }
 

@@ -35,7 +35,7 @@ export function Footer() {
   }, [])
 
   return (
-    <footer className="foot">
+    <footer className="foot" data-tour="usage">
       <span className="meter">
         <b>Claude</b>{' '}
         {!usage ? (

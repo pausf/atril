@@ -1,6 +1,7 @@
 import { Icon } from './Icon'
 import { useEffect, useState } from 'react'
 import type { AddRepoResult, Agent, Mode, Model, RepoView } from '../../preload/api'
+import { FoldSection } from './Fold'
 import { MODEL_OPTIONS } from './models'
 
 const ID_RE = /^[a-z0-9-]+$/
@@ -120,8 +121,7 @@ export function Repos({ onCreate }: { onCreate: CreateFn }) {
   const idValid = pending ? ID_RE.test(pending.id) : true
 
   return (
-    <div className="repos">
-      <h3>Repos</h3>
+    <FoldSection id="repos" title="Repos" count={repos.length} className="repos">
       {repos.length === 0 && (
         <div className="empty">Registra la carpeta de un repo y Atril decidirá si cada trabajo va en un worktree o en su rama.</div>
       )}
@@ -174,6 +174,6 @@ export function Repos({ onCreate }: { onCreate: CreateFn }) {
       <button type="button" className="pill add" onClick={() => void add()}>
         ＋ Añadir repo…
       </button>
-    </div>
+    </FoldSection>
   )
 }

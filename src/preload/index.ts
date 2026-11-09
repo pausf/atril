@@ -10,6 +10,10 @@ const api: AtrilApi = {
       return () => ipcRenderer.removeListener('atril:menu:action', h)
     }
   },
+  ui: {
+    get: () => ipcRenderer.invoke('atril:ui:get'),
+    set: (patch) => ipcRenderer.invoke('atril:ui:set', patch)
+  },
   usage: {
     get: () => ipcRenderer.invoke('atril:usage:get'),
     onChange: (cb) => {

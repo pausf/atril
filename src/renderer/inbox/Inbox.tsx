@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { InboxResult, JiraIssue, WorkspaceView } from '../../preload/api'
 import { ConnectInSettings } from '../settings/ConnectInSettings'
+import { FoldSection } from '../components/Fold'
 import { Icon } from '../components/Icon'
 import { StartDialog } from './StartDialog'
 
@@ -58,7 +59,7 @@ export function Inbox({ inbox, onStarted, onOpenWorkspace }: InboxProps) {
     })
   }, [])
   return (
-    <section className="tasks-screen">
+    <section className="tasks-screen" data-tour="tasks">
       <h1>
         Tareas <span className="n">{issues.length}</span>
         <button className="refresh" onClick={() => void refresh()} disabled={loading}>
@@ -127,12 +128,9 @@ function Body({ result, issues, onStart, onOpenWorkspace }: { result: InboxResul
       {GROUPS.map(([group, title, folded]) => {
         const list = issues.filter((i) => i.group === group)
         return list.length === 0 ? null : (
-          <details key={group} className="tgroup" open={!folded}>
-            <summary>
-              {title} <span className="n">{list.length}</span>
-            </summary>
+          <FoldSection key={group} id={`tasks-${group}`} title={title} count={list.length} defaultFolded={folded} className="tgroup">
             {list.map((i) => <Task key={i.key} i={i} onStart={onStart} onOpenWorkspace={onOpenWorkspace} />)}
-          </details>
+          </FoldSection>
         )
       })}
     </>
@@ -148,22 +146,21 @@ const GROUPS: ReadonlyArray<[JiraIssue['group'], string, boolean]> = [
 function Task({ i, onStart, onOpenWorkspace }: { i: JiraIssue } & TaskActions) {
   return (
     <article className="task">
-      <div className="k">
-        {i.key} <span className={`tag${/bug/i.test(i.type) ? ' bug' : ''}`}>{i.type}</span>
-      </div>
-      <div className="s">{i.summary}</div>
-      <div className="row">
-        {i.workspaceId ? (
-          <button className="go" onClick={() => onOpenWorkspace(i.workspaceId!)}>
-            Abrir trabajo ▸
-          </button>
-        ) : (
-          <button className="go" onClick={() => onStart(i)}>
-            Empezar ▸
-          </button>
-        )}
-        <span className="tag">{i.status}</span>
-      </div>
+      <span className="k">{i.key}</span>
+      <span className={`tag${/bug/i.test(i.type) ? ' bug' : ''}`}>{i.type}</span>
+      <span className="s" title={i.summary}>
+        {i.summary}
+      </span>
+      <span className="tag">{i.status}</span>
+      {i.workspaceId ? (
+        <button className="go" aria-label={`Abrir trabajo de ${i.key}`} onClick={() => onOpenWorkspace(i.workspaceId!)}>
+          Abrir trabajo ▸
+        </button>
+      ) : (
+        <button className="go" aria-label={`Empezar ${i.key}`} onClick={() => onStart(i)}>
+          Empezar ▸
+        </button>
+      )}
     </article>
   )
 }

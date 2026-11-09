@@ -29,8 +29,8 @@ export function FlowPanel({ workspaceId }: { workspaceId: string | null }) {
   const c = flow?.checklist
 
   return (
-    <aside className="col right">
-      <h2>Flujo de Libretto</h2>
+    <aside className="col right" data-tour="flow">
+      <h2 tabIndex={-1}>Flujo de Libretto</h2>
       <p className="lead">Dónde va cada trabajo, leído de sus archivos.</p>
       {flow?.stage === 'sin-libretto' ? (
         <div className="empty">sin Libretto: este trabajo no tiene carpeta .agents</div>
@@ -40,7 +40,9 @@ export function FlowPanel({ workspaceId }: { workspaceId: string | null }) {
             {STAGES.map((s, i) => (
               <div className={`stg ${i < current ? 'd' : i === current ? 'c' : 'p'}`} key={s.name}>
                 <Icon name={s.icon} size={22} />
-                <span>{s.label}</span>
+                <span>
+                  {s.label} <small>{i < current ? 'hecho' : i === current ? 'ahora' : 'pendiente'}</small>
+                </span>
               </div>
             ))}
           </div>

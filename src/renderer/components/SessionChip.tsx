@@ -25,7 +25,7 @@ export function SessionChip({ refreshOn }: { refreshOn?: unknown }) {
   if (status === null) return null
   const label = status.saved ? status.account || 'Jira' : 'Sin conectar'
   return (
-    <button className="chip session" onClick={openSettings} title="Tu sesión · Ajustes">
+    <button className="chip session" data-tour="session" onClick={openSettings} title="Tu sesión · Ajustes">
       {status.saved && (
         <span className="avatar" aria-hidden>
           {status.avatar ? <img src={status.avatar} alt="" /> : initials(label)}

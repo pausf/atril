@@ -190,7 +190,26 @@ export interface UsageApi {
   onChange(cb: (u: UsageResult) => void): () => void
 }
 
-export type MenuAction = { kind: 'focus'; target: 'sidebar' | 'flow' } | { kind: 'select'; index: number }
+export type MenuAction =
+  | { kind: 'focus'; target: 'sidebar' | 'flow' }
+  | { kind: 'select'; index: number }
+  | { kind: 'tutorial' }
+
+export type Theme = 'light' | 'dark' | 'auto'
+
+/** What the app remembers about itself in ~/.atril/ui.json. */
+export interface UiState {
+  tutorialSeen: boolean
+  theme: Theme
+  /** Section id to folded; a missing id means the section's own default. */
+  folded: Record<string, boolean>
+}
+
+export interface UiApi {
+  get(): Promise<UiState>
+  /** `folded` merges key by key; returns the stored state. */
+  set(patch: Partial<UiState>): Promise<UiState>
+}
 
 export interface MenuApi {
   /** Tells main which workspace the menu's split items act on, and how many exist. */
@@ -201,6 +220,7 @@ export interface MenuApi {
 
 export interface AtrilApi {
   menu: MenuApi
+  ui: UiApi
   usage: UsageApi
   flow: FlowApi
   status: StatusApi

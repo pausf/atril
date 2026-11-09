@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import type { JiraSettingsStatus } from '../../preload/api'
 
 type Phase = 'idle' | 'checking'
@@ -144,7 +144,7 @@ function JiraCard() {
   )
 }
 
-export function Ajustes() {
+export function Ajustes({ children }: { children?: ReactNode }) {
   return (
     <main className="ajustes">
       <h1>Ajustes</h1>
@@ -153,6 +153,7 @@ export function Ajustes() {
         solo reemplazar o borrar. Tus agentes nunca los reciben.
       </p>
       <JiraCard />
+      {children}
     </main>
   )
 }

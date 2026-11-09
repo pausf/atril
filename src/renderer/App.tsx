@@ -9,8 +9,32 @@ import { Workspace } from './components/Workspace'
 import { Ajustes } from './settings/Ajustes'
 import { Inbox, useInbox } from './inbox/Inbox'
 import { NavigationContext } from './settings/navigation'
+import { Appearance } from './components/Appearance'
+import { focusRegion } from './focus'
+import { Tour } from './tour/Tour'
+import { UiProvider, useUi } from './ui'
 
 export function App() {
+  return (
+    <UiProvider>
+      <Shell />
+    </UiProvider>
+  )
+}
+
+function Shell() {
+  const { ui, markTutorialSeen } = useUi()
+  const [tourOpen, setTourOpen] = useState(false)
+  const [tourStart, setTourStart] = useState(-1)
+  const unseen = ui !== null && !ui.tutorialSeen
+  useEffect(() => {
+    if (unseen) setTourOpen(true)
+  }, [unseen])
+  const closeTour = (): void => {
+    setTourOpen(false)
+    setScreen('work')
+    markTutorialSeen()
+  }
   const [report, setReport] = useState<DoctorReport | null>(null)
 
   useEffect(() => {
@@ -31,6 +55,8 @@ export function App() {
     void window.atril.snapshotView().then((v) => {
       if (v === 'settings' || v === 'tasks') setScreen(v)
       if (v === 'start') setScreen('tasks')
+      const at = /^tour(\d+)$/.exec(v ?? '')
+      if (at) setTourStart(Number(at[1]))
     })
   }, [])
 
@@ -54,9 +80,8 @@ export function App() {
           if (ws) setSelected(ws.id)
           return
         }
-        document.querySelector<HTMLElement>(a.target === 'sidebar' ? '.col.left' : '.col.right')
-          ?.querySelector<HTMLElement>('button, input, [tabindex]')
-          ?.focus()
+        if (a.kind === 'tutorial') setTourOpen(true)
+        else focusRegion(a.target)
       }),
     [workspaces]
   )
@@ -111,9 +136,14 @@ export function App() {
             <FlowPanel workspaceId={selected} />
           </div>
           {screen === 'tasks' && <Inbox inbox={inbox} onStarted={started} onOpenWorkspace={openWorkspace} />}
-          {screen === 'settings' && <Ajustes />}
+          {screen === 'settings' && (
+            <Ajustes>
+              <Appearance />
+            </Ajustes>
+          )}
         </div>
       </NavigationContext.Provider>
+      {tourOpen && <Tour startAt={tourStart} screen={screen} goTo={setScreen} onClose={closeTour} />}
       <Footer />
     </div>
   )

@@ -11,7 +11,7 @@ export function Workspace({ ws }: { ws: WorkspaceView | undefined }) {
         </div>
       </div>
       <div className="panes">
-        <div className="pane">
+        <div className="pane" data-tour="terminal">
           <div className="ph">
             <b>terminal</b>
             {ws && <span>tmux · {ws.session}</span>}

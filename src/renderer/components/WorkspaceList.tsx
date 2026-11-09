@@ -45,6 +45,7 @@ export function WorkspaceList({ workspaces, selected, onSelect, onRemove }: Prop
           <button
             type="button"
             className="ws-remove"
+            aria-label={`Quitar ${w.branch}`}
             onClick={() => void onRemove(w.id).then((text) => setRefusal(text ? { id: w.id, text } : null))}
           >
             Quitar
