@@ -50,128 +50,142 @@ no scores, no threads.
 - Q: ¿Qué es «seguir» un proyecto? → A: lo que ya marca cada forja: en GitHub los repos que vigilas («Watch»), en GitLab los proyectos con estrella; así no hay nada que configurar (assumed).
 - Q: ¿Dónde viven? → A: en su propia pantalla «MR» en el carril, no en la barra lateral — Pau, 9 nov: «debería haber como una sub pantalla … porque si no, toda la barra lateral se llena».
 - Q: ¿Qué muestra cada fila? → A: título, proyecto, autor, CI (pasa, falla, en curso, sin CI), tamaño (+/− y archivos) y antigüedad; pulsarla abre la MR en el navegador (assumed).
-- Q: ¿Límites? → A: como mucho 10 proyectos seguidos y 50 MRs con detalle por lista; se refresca al abrir, cada 5 minutos con la pantalla a la vista y con «Actualizar» (assumed).
+- Q: ¿Límites? → A: los 10 proyectos seguidos con actividad más reciente por forja; cada lista cortada en 50 con «Hay más: ábrelas en {forja}»; como mucho 60 detalles por forja y refresco (assumed).
+- Q: (spec-reviewer) ¿Tamaño en GitLab? → A: su API no da líneas por MR: GitLab muestra archivos; GitHub, +/− y archivos (assumed).
+- Q: (spec-reviewer) ¿Cuándo se carga para el contador del carril? → A: al arrancar Atril, cada 5 minutos, al abrir la pantalla y con «Actualizar» (assumed).
+- Q: (spec-reviewer) ¿W52 solo deja abrir enlaces de repos creados? → A: se amplía a «creados o de la última lista»; la lista se reemplaza en cada carga (assumed).
+- Q: (spec-reviewer) ¿El revisor en GitLab? → A: `reviewer_username` con la cuenta guardada; nada cambia en el almacén (assumed).
 
 ## Outcomes
 
-- The rail has an **MR** screen with three foldable lists — **Mías**, **Me toca revisar**, **Sigo**
-  — mixing GitHub and GitLab, each row with title, project, author, CI, size and age; a row opens
-  the MR in the browser. The rail shows how many MRs wait for your review.
-- With no forge connected the screen says so and links to Ajustes; one forge failing shows its
-  error in its place while the other's MRs still show.
+- The rail has an **MR** screen with three lists — **Mías**, **Me toca revisar**, **Sigo** — mixing
+  GitHub and GitLab, each row with title, project, author, CI, size and age; a row opens the MR in
+  the browser. The rail shows how many MRs wait for your review.
+- With no forge connected the screen says so and opens Ajustes; a forge that fails shows its error
+  while what it did return, and the other forge, still show.
 
 ## Scope boundaries
 
-**In:** listing, the row fields, opening in the browser, refresh, the rail counter. **Out:** scores
-(add-mr-scores), threads and replies (add-mr-threads), notifications (add-avisos), closed or
-merged MRs, organisations' MRs you neither wrote, review nor follow, configuring which projects
-you follow inside Atril.
+**In:** listing, the row fields, opening in the browser, refresh, the rail counter.
+**Out:** scores (add-mr-scores), threads and replies (add-mr-threads), notifications (add-avisos),
+closed or merged MRs, choosing followed projects inside Atril, line counts for GitLab MRs.
 
 **Never scoped out:** tokens stay in main (S25); forge requests never follow redirects (W50); main
-opens only URLs it listed; the screen is keyboard-operable (rows are buttons).
+opens only URLs it listed or created (W52, amended in `spec-workspaces.md`); rows are buttons and
+the lists use the foldable sections every screen uses (W28).
 
 ## Constraints
 
-- REST only, with the stored tokens: GitHub `search/issues` and `pulls`, GitLab
-  `merge_requests` and `projects?starred=true`.
-- No new dependency; same fetch timeout and error-code rules as the forge check (S20).
+- REST only, with the stored tokens; no new dependency; 10 s per request; error codes, never
+  messages, from network failures (S20).
 
 ## Prior decisions
 
-- **Three lists** — Pau, 9 nov (decision log).
-- **Own screen** — Pau, 9 nov (decision log).
+- **Three lists** and **own screen** — Pau, 9 nov (decision log).
 - **«Sigo» = Watch / star** (assumed): what the forges already record.
 
 ## Task breakdown
 
-- Main: fetch, normalise and cap the three lists per forge; the open-URL guard.
-- Renderer: the MR screen, the rail entry and counter, refresh.
+- Main: the lists per forge (fetch, normalise, dedupe, cap), the CI mapping, the listed-URL guard.
+- Renderer: the MR screen, the rail entry and counter, the app-level refresh.
 
 ## Verification criteria
 
-- **M1** When the MR screen loads, Atril shall list as **Mías** the open MRs you authored, as **Me
-  toca revisar** the open MRs where your review is requested, and as **Sigo** other people's open
-  MRs in the repos you watch on GitHub and the projects you starred on GitLab — an MR appearing
-  in an earlier list shall not repeat in a later one.
+- **M1** When the lists load, Atril shall put in **Mías** the open MRs you authored, in **Me toca
+  revisar** the open MRs where your review is requested, and in **Sigo** other people's open MRs in
+  your followed projects.
   Proof: src/main/forge/mrs.test.ts lists mine, to review and followed from both forges
-- **M2** Each row shall show the title, the project, the author, the CI state as one of «Pasa»,
-  «Falla», «En curso» or «Sin CI», the size as +added −removed and files, and the age.
-  Proof: src/main/forge/mrs.test.ts lists mine, to review and followed from both forges
+- **M2** An MR that belongs to an earlier list shall not repeat in a later one (order: Mías, Me toca
+  revisar, Sigo).
+  Proof: src/main/forge/mrs.test.ts an mr shows once
+- **M3** Each row shall show the title, the project, the author, the CI state, the size — «+added
+  −removed · N archivos» on GitHub, «N archivos» on GitLab — and the age («hace 3 h», «hace 2 d»).
   Proof: src/renderer/mr/mrs.test.ts the mr screen shows three lists with their rows
-- **M3** When the person activates a row, Atril shall open that MR in the browser, and main shall
-  open only URLs present in its last listing.
+- **M4** The CI state shall be «Falla» for GitHub check-run conclusions failure, timed_out,
+  cancelled or action_required and GitLab pipelines failed or canceled; «En curso» for check runs
+  queued or in progress and pipelines running, pending, created, preparing, waiting_for_resource or
+  scheduled; «Pasa» when every check run concluded success, neutral or skipped and for pipelines
+  success, skipped or manual; and «Sin CI» with no check runs or no pipeline.
+  Proof: src/main/forge/mrs.test.ts ci states map to four words
+- **M5** When the person activates a row, Atril shall open that MR in the browser.
   Proof: src/renderer/mr/mrs.test.ts the mr screen shows three lists with their rows
-  Proof: src/main/forge/guards.test.ts only links and folders main handed out are accepted
-- **M4** If a forge's request fails, then that forge's error shall show in its place while the other
-  forge's MRs still show; while no forge is connected the screen shall say «Conecta GitHub o GitLab
-  en Ajustes» with a button that opens Ajustes.
+- **M6** If one of a forge's requests fails, then the screen shall show for that forge «{forge} ha
+  rechazado el token: reemplázalo en Ajustes» on 401, «{forge} ha respondido {status}» on another
+  status, or «No se ha podido conectar con {forge} ({detail})» on a network failure, keep every MR
+  that forge did return, and keep the other forge's MRs.
   Proof: src/main/forge/mrs.test.ts one forge failing keeps the other
+- **M7** While no forge is connected the screen shall say «Conecta GitHub o GitLab en Ajustes» with
+  a button that opens Ajustes.
   Proof: src/renderer/mr/mrs.test.ts no forge connected points to ajustes
-- **M5** Atril shall follow at most 10 projects per forge and fetch details for at most 50 MRs per
-  list, and shall refresh the lists when the screen opens, every 5 minutes while it is shown, and
-  on «Actualizar».
-  Proof: src/main/forge/mrs.test.ts lists mine, to review and followed from both forges
-  Proof: src/renderer/mr/mrs.test.ts the mr screen shows three lists with their rows
-- **M6** The rail shall show an «MR» entry with the number of MRs in «Me toca revisar» when it is
-  not zero.
-  Proof: src/renderer/mr/mrs.test.ts the mr screen shows three lists with their rows
+- **M8** Atril shall follow per forge the 10 followed projects with the most recent activity, cut
+  each list at 50 rows with «Hay más: ábrelas en {forge}» when more existed, and fetch at most 60 MR
+  details per forge and refresh.
+  Proof: src/main/forge/mrs.test.ts caps keep a refresh bounded
+- **M9** Atril shall load the lists when it starts, every 5 minutes, when the MR screen opens and on
+  «Actualizar», and the rail shall show the «MR» entry with the number of MRs in «Me toca revisar»
+  from the latest load whenever it is not zero.
+  Proof: src/renderer/mr/mrs.test.ts the lists refresh and the rail counts reviews
 
 ## Approach
 
 ### Summary
 
-`src/main/forge/mrs.ts` exposes `listMrs(store, fetch)` → `{ mine, review, following, errors }`
-with one normalised `MrItem` shape per row (forge, url, title, project, author, ci, added,
-removed, files, updatedAt, draft). GitHub: `GET /search/issues?q=is:pr+is:open+author:@me`,
-`…+review-requested:@me`, `GET /user/subscriptions` then `GET /repos/{o}/{r}/pulls?state=open`
-for up to 10 repos; details from `GET /repos/{o}/{r}/pulls/{n}` and the head commit's
-`/check-runs` (or combined `/status`). GitLab: `GET /merge_requests?scope=created_by_me&state=opened`,
-`?scope=all&reviewer_id=<me>&state=opened`, `GET /projects?starred=true` then each project's
-open MRs; details from `GET /projects/:id/merge_requests/:iid` (`head_pipeline`,
-`changes_count`) and `/diffs` stats only when cheap. Details are fetched six at a time. The
-IPC `atril:mr:list` returns the lists; `atril:mr:open` is guarded like W52. The renderer adds
-`src/renderer/mr/MrScreen.tsx` and the rail entry.
+`src/main/forge/mrs.ts` exposes `listMrs(store, fetch)` → `{ connected, mine, review, following,
+more, errors }` with one `MrItem` per row (forge, url, title, project, author, ci, added?,
+removed?, files?, updatedAt). It replaces the guard's listed-URL set on every call. The renderer
+holds the result in an app-level hook that loads at start, every 5 minutes and on demand; the MR
+screen and the rail read it.
 
 ### Technical context
 
-Files: `src/main/forge/mrs.ts` (+test), `src/main/forge/guards.ts` (listed URLs), `src/main/index.ts`,
-`src/preload/{api,index}.ts`, `src/renderer/mr/MrScreen.tsx` (+ `mrs.test.ts`),
-`src/renderer/components/Rail.tsx`, `src/renderer/App.tsx`, `mockApi.ts`, catalog entries (S16),
-`styles.css`, the sketch. Gates: typecheck, lint, test.
+Files: `src/main/forge/mrs.ts` (+test), `src/main/forge/guards.ts` (+ the listed set),
+`src/main/index.ts` (`atril:mr:list`, `atril:mr:open`), `src/preload/{api,index}.ts`,
+`src/renderer/mr/{MrScreen,useMrs}.tsx` (+ `mrs.test.ts`), `src/renderer/components/Rail.tsx`
+(entry and badge), `src/renderer/App.tsx`, `mockApi.ts`, the catalog (S16), `styles.css`, the
+sketch. Gates: typecheck, lint, test.
 
 ### The approach
 
-- Normalising: GitHub `additions`, `deletions`, `changed_files`; GitLab `changes_count` as files and
-  the diff stats' additions and deletions when the detail call gives them, else unknown (shown «—»).
-- CI: GitHub check runs → any failure «Falla», any in progress «En curso», all success «Pasa», none
-  «Sin CI»; GitLab `head_pipeline.status` mapped the same way.
-- Dedupe by URL in list order (Mías, then Me toca revisar, then Sigo).
-- Age from `updated_at`, shown as «hace 3 h» / «hace 2 d».
+- GitHub (`api.github.com`, Bearer): Mías `GET /search/issues?q=is:pr+is:open+author:@me&per_page=50`;
+  Me toca revisar `…+review-requested:@me`; Sigo `GET /user/subscriptions?per_page=100`, sorted by
+  `pushed_at` desc, first 10, then `GET /repos/{o}/{r}/pulls?state=open&per_page=50` each, minus your
+  own. Details per MR: `GET /repos/{o}/{r}/pulls/{n}` (additions, deletions, changed_files, head sha,
+  user, updated_at) and `GET /repos/{o}/{r}/commits/{sha}/check-runs`.
+- GitLab (`<site>/api/v4`, PRIVATE-TOKEN): Mías `GET /merge_requests?scope=created_by_me&state=opened&per_page=50`;
+  Me toca revisar `GET /merge_requests?scope=all&state=opened&reviewer_username=<account>&per_page=50`;
+  Sigo `GET /projects?starred=true&order_by=last_activity_at&per_page=10`, then
+  `GET /projects/:id/merge_requests?state=opened&per_page=50` each, minus your own. Details per MR:
+  `GET /projects/:id/merge_requests/:iid` (`changes_count`, `head_pipeline.status`).
+- Order of work: dedupe by URL across lists first, then fetch details six at a time up to 60 per
+  forge; rows past that keep the list fields and show size and CI as «—».
+- `ciState(...)` is one pure function per forge, tested by table (M4).
+- Rail: a new `mr` screen with a badge prop; the no-forge state comes from `connected`.
 
 ### The alternatives it beat
 
 | Considered | Why it lost |
 |---|---|
 | `gh` / `glab` CLIs | Pau chose tokens (add-create-repo) |
-| GraphQL (one GitHub query for everything) | fewer calls but a second API shape to maintain for GitHub only; REST works for both |
-| Choosing followed projects inside Atril | a second list to keep in sync with what the forges already record |
+| GraphQL | a second API shape for GitHub only; REST serves both |
+| Polling only while the screen is open | the rail counter would be wrong until the first visit |
+| Combined commit status on GitHub | misses Actions, which report as check runs |
 
 ### Risks
 
 | Risk | What catches it |
 |---|---|
-| Rate limits with many followed projects | caps of 10 projects and 50 details (M5); a 403/429 shows as that forge's error (M4) |
-| GitLab diff stats unavailable on large MRs | size shows «—» rather than a wrong number |
+| Rate limits | the caps (M8); a 403/429 shows as that forge's status (M6) |
+| GitHub watches every repo you can push to | only the 10 most recently pushed are followed (M8) |
 
 ### Validation and rollback
 
-M1–M6 seen red first. Rollback: one revert.
+M1–M9 seen red first. Rollback: one revert.
 
 ### Complexity deliberately kept
 
-- A six-at-a-time detail fetch: forty sequential calls would take seconds per refresh.
+- Six-at-a-time detail fetch: sixty sequential calls would take seconds per refresh.
 
 ## Checklist
 
-- [ ] main lists the three MR lists from both forges, normalised, deduped and capped, with the open guard · Closes: M1, M2, M3, M4, M5
-- [ ] the MR screen, its rail entry and counter, refresh and the no-forge state · waits on box 1 · Closes: M2, M3, M4, M5, M6
+- [ ] main lists the three MR lists from both forges, deduped, capped, with the CI mapping, the errors and the listed-URL guard · Closes: M1, M2, M4, M6, M8, W52
+- [ ] the MR screen, the app-level refresh, the rail entry and counter, the no-forge state · waits on box 1 · Closes: M3, M5, M7, M9

@@ -106,3 +106,6 @@ spec-reviewer: the create/clone code sat in workspaces' Governs while its criter
 
 ## 2026-11-09 · add-create-repo · 6→7
 work-reviewer: the public confirmation lived only in the window; forge:open took any https URL; the clone folder took any absolute path; forge requests followed redirects with the token header; git inherited the whole shell environment. All fixed in main (confirmPublic, guards for links and folders, redirect 'error', an env allowlist), W50–W52 amended, tests red first. Also: a reviewer was launched on a red tree (fixture missing snapshotView) — run the gates before launching it.
+
+## 2026-11-09 · add-mr-lists · 4→5
+spec-reviewer: M3 contradicted W52 (open only created links), GitLab gives no per-MR line counts, CI states had no mapping, the rail counter needed data before the screen was opened, and the GitLab reviewer filter needed an id the store never kept. Settled before code; W52 amended, reviewer_username used.
