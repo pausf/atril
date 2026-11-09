@@ -110,4 +110,19 @@ describe('flow documents', () => {
     await vi.waitFor(() => expect(dialog.textContent).toContain('<script>alert(1)</script>'))
     expect(dialog.querySelector('script, img, b')).toBeNull()
   })
+
+  it('the modal holds the keyboard before its documents arrive', async () => {
+    const { api, user } = await boot()
+    vi.mocked(api.flowApi.docs).mockReturnValue(new Promise(() => undefined))
+    await user.click(await screen.findByRole('button', { name: /^Plan/ }))
+    const dialog = await screen.findByRole('dialog', { name: /Plan/ })
+    expect(dialog.contains(document.activeElement)).toBe(true)
+    // Tab never leaves the modal.
+    for (let i = 0; i < 6; i++) {
+      await user.tab()
+      expect(dialog.contains(document.activeElement)).toBe(true)
+    }
+    await user.keyboard('{Escape}')
+    expect(screen.queryByRole('dialog')).toBeNull()
+  })
 })

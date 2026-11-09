@@ -3,6 +3,8 @@ import type { AgentState, FlowDocs } from '../../preload/api'
 import { DocEditor } from './DocEditor'
 import { partOffset, type Part } from './highlight'
 
+const FOCUSABLE = 'button:not(:disabled), textarea, select:not(:disabled), input:not(:disabled)'
+
 const TITLES: Record<Part, string> = { spec: 'Spec', plan: 'Plan', checklist: 'Checklist' }
 
 interface Props {
@@ -36,6 +38,13 @@ export function DocModal({ workspaceId, part, onClose }: Props) {
       offState()
     }
   }, [workspaceId])
+
+  // The keyboard belongs to the modal from the first frame, before any document arrives.
+  useEffect(() => {
+    const opener = document.activeElement as HTMLElement | null
+    dialog.current?.focus()
+    return () => opener?.focus?.()
+  }, [])
 
   // The cursor goes to the stage's section once, when the proposal first arrives.
   const placed = useRef(false)
@@ -85,6 +94,20 @@ export function DocModal({ workspaceId, part, onClose }: Props) {
       e.preventDefault()
       return close()
     }
+    if (e.key === 'Tab') {
+      const items = Array.from(dialog.current?.querySelectorAll<HTMLElement>(FOCUSABLE) ?? [])
+      const first = items[0]
+      const last = items.at(-1)
+      if (!first || !last) return
+      const active = document.activeElement
+      const outside = !items.includes(active as HTMLElement)
+      const wrap = e.shiftKey ? (active === first || outside) && last : (active === last || outside) && first
+      if (wrap) {
+        e.preventDefault()
+        wrap.focus()
+      }
+      return
+    }
     if (e.metaKey && e.key === 's') {
       e.preventDefault()
       void save()
@@ -93,7 +116,7 @@ export function DocModal({ workspaceId, part, onClose }: Props) {
 
   return (
     <div className="modal" onKeyDown={onKeyDown}>
-      <div className="dlg edmodal" role="dialog" aria-modal="true" aria-labelledby="doc-title" ref={dialog}>
+      <div className="dlg edmodal" role="dialog" aria-modal="true" aria-labelledby="doc-title" ref={dialog} tabIndex={-1}>
         <div className="edhead">
           <h3 id="doc-title">{TITLES[part]}</h3>
           <span className="docchange">{docs?.change ?? ''}</span>

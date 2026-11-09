@@ -73,3 +73,9 @@ spec-reviewer found that the approach leaned on a signal that does not fire: the
 
 ## 2026-11-09 · add-flow-documents · 2
 Pau asked what happens if he dislikes the spec, since «it goes straight to build». Checking found the real gap: Libretto does stop before code, but its question is a tool call and the hook marked every PreToolUse as working, so Atril would hide the stop and lock the editor exactly when it mattered. W44 fixes the hook. Lesson: when the user describes behaviour that the flow says cannot happen, look for what makes it look that way.
+
+## 2026-11-09 · add-flow-documents · 6→7
+The document modal never took focus: until the documents loaded, Escape did nothing and Tab left the aria-modal dialog. Fixed: the dialog focuses itself on mount, traps Tab and gives focus back on close; the new test was red first.
+
+## 2026-11-09 · add-flow-documents · 6→7
+saveDoc's mtime check and rename are not one atomic step. Not fixed: the contract never promised a lock; the ceiling is now named in the approach's risks.

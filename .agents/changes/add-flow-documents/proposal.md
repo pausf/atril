@@ -183,6 +183,7 @@ lint, test. No new dependency.
 | A needs-you from a mid-turn permission prompt allows an edit the agent never re-reads | accepted: the edit is on disk for Libretto's next read; the person can say so in the terminal |
 | A crafted name escapes the folder (`../`, absolute) | the name pattern plus the parent-folder check (F16 proof uses both) |
 | A huge file freezes the view | ceiling named: no cap; Libretto documents are a few hundred lines |
+| The agent writes in the instant between the mtime check and the rename | ceiling named (work-reviewer, 9 nov): the check and the rename are not one atomic step; the window is microseconds and the agent only writes while working, which the fresh state read refuses first. A lock file Libretto honours would close it |
 
 ### Validation and rollback
 
