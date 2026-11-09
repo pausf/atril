@@ -133,9 +133,11 @@ modes, workspaces, agent sessions, panes, agent state, notifications, usage; and
 sibling specs.
 
 **Out, named so it is not added quietly:**
-- every phase 2–4 feature: diff view, inline comments to the agent, MR/PR review, scores,
-  GitLab/GitHub APIs, previews, dictation, chat UI, SSH hosts, automations, embedded
-  browser, mobile app, model per stage
+- the phase 2–4 features not yet built: inline comments sent to the agent (queued as
+  add-mr-lens-drafts), previews, dictation, chat UI, SSH hosts, automations, embedded browser,
+  mobile app, model per stage. (Built since, in their own capabilities: the diff view — flow-status
+  F18–F24 —, MR lists, scores and threads — mr —, GitHub/GitLab connections — settings —, Avisos and
+  the ⌘K palette — W54–W57.)
 - a team view, a server, accounts, sync
 - Windows and Linux builds
 - editing files inside Atril (the agent and the person's editor do that)
