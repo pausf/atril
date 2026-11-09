@@ -4,11 +4,27 @@
 
 | Capability | Governs | What it promises |
 |---|---|---|
+| [avisos](avisos/spec.md) | `src/main/avisos.ts src/renderer/avisos/**` | A feed of what changed in your MRs and agents, derived from successive MR listings and agent states, with no extra forge request. |
 | [flow-status](flow-status/spec.md) | `src/main/flow/** src/renderer/flow/**` |  |
 | [mr](mr/spec.md) | `src/main/forge/mrs.ts src/main/forge/scores.ts src/main/forge/threads.ts src/renderer/mr/**` | The MR screen: your merge requests on GitHub and GitLab, the ones you review, and the ones in the projects you follow. |
 | [settings](settings/spec.md) | `src/main/credentials/** src/renderer/settings/**` |  |
 | [work-inbox](work-inbox/spec.md) | `src/main/jira/** src/renderer/inbox/**` |  |
-| [workspaces](workspaces/spec.md) | `src/main/** src/preload/** src/renderer/** resources/** !src/main/jira/** !src/renderer/inbox/** !src/main/flow/** !src/renderer/flow/** !src/main/credentials/** !src/renderer/settings/** !src/main/forge/mrs.ts !src/renderer/mr/** !src/main/forge/scores.ts !src/main/forge/threads.ts` |  |
+| [workspaces](workspaces/spec.md) | `src/main/** src/preload/** src/renderer/** resources/** !src/main/jira/** !src/renderer/inbox/** !src/main/flow/** !src/renderer/flow/** !src/main/credentials/** !src/renderer/settings/** !src/main/forge/mrs.ts !src/renderer/mr/** !src/main/forge/scores.ts !src/main/forge/threads.ts !src/main/avisos.ts !src/renderer/avisos/**` |  |
+
+## avisos
+
+A feed of what changed in your MRs and agents, derived from successive MR listings and agent states, with no extra forge request.
+
+Governs: `src/main/avisos.ts src/renderer/avisos/**`
+
+- {**V1** When an MR listing completes after a previous one, Atril shall add, with the MR title as detail: «Te piden revisión» for an URL in Me toca revisar that was not there before; «Comentario nuevo» when the `notes` count of an MR in Mías or Me toca revisar is higher than before; «La CI falla» when an MR in Mías was known with a CI state other than «Falla» and is now «Falla»; «MR nueva en lo que sigues» for an URL in Sigo that was in no list before; «Has abierto una MR» for an URL in Mías that was in no list before; and «Ya no está abierta» for an URL that was in Mías and is now in no list. A forge with an error in either listing, or a list cut at its cap (`more`), shall produce no notice of «new» or «gone» for that forge's rows of that list. (The proof asserts each of the six kinds, one input that triggers none, the failed-forge rule and the capped-list rule.) src/main/avisos.test.ts listings}
+- {**V2** The first listing after Atril starts with no stored baseline shall produce no notice. src/main/avisos.test.ts the}
+- {**V3** When an agent enters «te necesita» — once per entry, where the needs-you Mac notification fires — Atril shall add «{branch} te necesita» linked to its workspace. src/main/avisos.test.ts an}
+- {**V4** Atril shall keep the newest 200 notices — dropping the oldest, read or not — and the baseline in `$ATRIL_HOME/avisos.json` across restarts. src/main/avisos.test.ts notices}
+- {**V5** The rail shall show «Avisos» with the number of unread stored notices when it is not zero; the screen shall list them newest first with kind, title and time, filter by kind, and «Marcar todo leído» shall clear the count. (The proof asserts the badge, the order, a filter hiding other kinds, and the count going to zero.) src/renderer/avisos/avisos.test.ts the}
+- {**V6** Opening a notice shall mark it read and open its MR view when the MR is in the latest listing (held app-wide, M9), otherwise say «Esta MR ya no está en la lista»; an agent notice shall open its workspace, or say «Ese trabajo ya no está» when it is gone. src/renderer/avisos/avisos.test.ts a}
+
+[full spec](avisos/spec.md)
 
 ## flow-status
 
@@ -142,7 +158,7 @@ Governs: `src/main/jira/** src/renderer/inbox/**`
 
 ## workspaces
 
-Governs: `src/main/** src/preload/** src/renderer/** resources/** !src/main/jira/** !src/renderer/inbox/** !src/main/flow/** !src/renderer/flow/** !src/main/credentials/** !src/renderer/settings/** !src/main/forge/mrs.ts !src/renderer/mr/** !src/main/forge/scores.ts !src/main/forge/threads.ts`
+Governs: `src/main/** src/preload/** src/renderer/** resources/** !src/main/jira/** !src/renderer/inbox/** !src/main/flow/** !src/renderer/flow/** !src/main/credentials/** !src/renderer/settings/** !src/main/forge/mrs.ts !src/renderer/mr/** !src/main/forge/scores.ts !src/main/forge/threads.ts !src/main/avisos.ts !src/renderer/avisos/**`
 
 - {**W1** When a repo is registered and none of the three signals is found, Atril shall set its mode to `worktree`. src/main/repos.test.ts chooses}
 - {**W2** If the checkout holds a git-ignored file outside dependency, build and editor noise (`node_modules`, `vendor`, `dist`, `build`, `.cache`, `.next`, `coverage`, `tmp`, `.idea`, `.vscode`, `.DS_Store`, `*.log`), then Atril shall set the mode to `in-place` and name that file as the reason. Only files count — entries of `git ls-files --others --ignored --exclude-standard --directory` that do not end in `/`; ignored folders (build output, tool caches) are never a signal. Noise names match at any depth. src/main/repos.test.ts chooses}
