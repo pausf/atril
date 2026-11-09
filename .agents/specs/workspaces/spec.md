@@ -1,6 +1,6 @@
 # Workspaces
 
-Governs: src/main/** src/preload/** src/renderer/** resources/** !src/main/jira/** !src/renderer/inbox/** !src/main/flow/** !src/renderer/flow/** !src/main/credentials/** !src/renderer/settings/**
+Governs: src/main/** src/preload/** src/renderer/** resources/** !src/main/jira/** !src/renderer/inbox/** !src/main/flow/** !src/renderer/flow/** !src/main/credentials/** !src/renderer/settings/** !src/main/forge/mrs.ts !src/renderer/mr/**
 
 ## Vocabulary
 
@@ -110,6 +110,10 @@ The `workspaces` capability, phase 1. Its siblings in this change: `.agents/spec
 - A repo created on GitHub or GitLab under the person's account, optionally cloned over SSH and
   registered as an Atril repo.
 
+### MR lists (add-mr-lists, 9 nov 2026)
+
+- Main also opens the MR links of the latest listing.
+
 ## Scope boundaries
 
 **In:** the three columns and footer of `bocetos/fase1-nucleo.html` (boceto 8), the
@@ -188,6 +192,10 @@ and the note never carries file contents.
 **In:** validation, the create request, the clone and the registration. **Out:** the cards and
 the dialog (proposal.md).
 
+### MR lists (add-mr-lists, 9 nov 2026)
+
+**In:** the guard. **Out:** everything else.
+
 ## Constraints
 
 - Electron (current stable) + TypeScript in strict mode, pnpm, Node 24 (installed:
@@ -247,6 +255,10 @@ the dialog (proposal.md).
 ### Create repos (add-create-repo, 9 nov 2026)
 
 - The tokens come from the secret store in main only; registration is `registerRepo` (W1–W4).
+
+### MR lists (add-mr-lists, 9 nov 2026)
+
+- Same guard module as W52.
 
 ## Prior decisions
 
@@ -438,6 +450,10 @@ the dialog (proposal.md).
 ### Create repos (add-create-repo, 9 nov 2026)
 
 - **SSH, never a token URL** (proposal.md).
+
+### MR lists (add-mr-lists, 9 nov 2026)
+
+- **Listed links count** (assumed, proposal.md decision log).
 
 ## Task breakdown
 
@@ -715,6 +731,7 @@ the dialog (proposal.md).
   Proof: src/main/forge/create.test.ts clones over ssh and registers the repo
   Proof: src/main/forge/create.test.ts a failed clone registers nothing
   Proof: src/main/forge/create.test.ts an existing folder is not overwritten
-- **W52** Main shall open in the browser only a link it returned from a create, and clone only into
+- **W52** Main shall open in the browser only a link it returned from a create or that is
+  in its latest MR listing — a link from an earlier listing no longer counts — and clone only into
   the folder its own picker returned last; anything else from the window shall be ignored.
   Proof: src/main/forge/guards.test.ts only links and folders main handed out are accepted

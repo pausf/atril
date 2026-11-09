@@ -5,9 +5,10 @@
 | Capability | Governs | What it promises |
 |---|---|---|
 | [flow-status](flow-status/spec.md) | `src/main/flow/** src/renderer/flow/**` |  |
+| [mr](mr/spec.md) | `src/main/forge/mrs.ts src/renderer/mr/**` | The MR screen: your merge requests on GitHub and GitLab, the ones you review, and the ones in the projects you follow. |
 | [settings](settings/spec.md) | `src/main/credentials/** src/renderer/settings/**` |  |
 | [work-inbox](work-inbox/spec.md) | `src/main/jira/** src/renderer/inbox/**` |  |
-| [workspaces](workspaces/spec.md) | `src/main/** src/preload/** src/renderer/** resources/** !src/main/jira/** !src/renderer/inbox/** !src/main/flow/** !src/renderer/flow/** !src/main/credentials/** !src/renderer/settings/**` |  |
+| [workspaces](workspaces/spec.md) | `src/main/** src/preload/** src/renderer/** resources/** !src/main/jira/** !src/renderer/inbox/** !src/main/flow/** !src/renderer/flow/** !src/main/credentials/** !src/renderer/settings/** !src/main/forge/mrs.ts !src/renderer/mr/**` |  |
 
 ## flow-status
 
@@ -40,6 +41,24 @@ Governs: `src/main/flow/** src/renderer/flow/**`
 - {**F25** While the change list totals more than the hook's threshold (400), «Cambios» shall show, in place of the plain total, a warning element (class `fbig`) reading «⚠ N líneas: rama grande (más de 400). Atril le ha pedido a Claude que te proponga separarla en MRs más pequeñas.» src/renderer/flow/changes.test.ts a}
 
 [full spec](flow-status/spec.md)
+
+## mr
+
+The MR screen: your merge requests on GitHub and GitLab, the ones you review, and the ones in the projects you follow. Phase 2 of Atril; scores, threads and notifications build on it.
+
+Governs: `src/main/forge/mrs.ts src/renderer/mr/**`
+
+- {**M1** When the lists load, Atril shall put in **Mías** the open MRs you authored, in **Me toca revisar** the open MRs where your review is requested, and in **Sigo** other people's open MRs in your followed projects. src/main/forge/mrs.test.ts lists}
+- {**M2** An MR that belongs to an earlier list shall not repeat in a later one (order: Mías, Me toca revisar, Sigo). src/main/forge/mrs.test.ts an}
+- {**M3** Each row shall show the title, the project, the author, the CI state, the size — «+added −removed · N archivos» on GitHub, «N archivos» on GitLab — and the age («hace 3 h», «hace 2 d»). src/renderer/mr/mrs.test.ts the}
+- {**M4** The CI state shall be «Falla» for GitHub check-run conclusions failure, timed_out, cancelled or action_required and GitLab pipelines failed or canceled; «En curso» for check runs queued or in progress and pipelines running, pending, created, preparing, waiting_for_resource or scheduled; «Pasa» when every check run concluded success, neutral or skipped and for pipelines success, skipped or manual; and «Sin CI» with no check runs or no pipeline. src/main/forge/mrs.test.ts ci}
+- {**M5** When the person activates a row, Atril shall open that MR in the browser. src/renderer/mr/mrs.test.ts the}
+- {**M6** If one of a forge's requests fails, then the screen shall show for that forge «{forge} ha rechazado el token: reemplázalo en Ajustes» on 401, «{forge} ha respondido {status}» on another status, or «No se ha podido conectar con {forge} ({detail}).» on a network failure, keep every MR that forge did return, and keep the other forge's MRs. src/main/forge/mrs.test.ts one}
+- {**M7** While no forge is connected the screen shall say «Conecta GitHub o GitLab en Ajustes» with a button that opens Ajustes. src/renderer/mr/mrs.test.ts no}
+- {**M8** Atril shall follow per forge the 10 followed projects with the most recent activity, cut each list at 50 rows with «Hay más: ábrelas en {forge}» when more existed, and fetch at most 60 MR details per forge and refresh. src/main/forge/mrs.test.ts caps}
+- {**M9** Atril shall load the lists when it starts, every 5 minutes, when the MR screen opens and on «Actualizar», and the rail shall show the «MR» entry with the number of MRs in «Me toca revisar» from the latest load whenever it is not zero. src/renderer/mr/mrs.test.ts the}
+
+[full spec](mr/spec.md)
 
 ## settings
 
@@ -108,7 +127,7 @@ Governs: `src/main/jira/** src/renderer/inbox/**`
 
 ## workspaces
 
-Governs: `src/main/** src/preload/** src/renderer/** resources/** !src/main/jira/** !src/renderer/inbox/** !src/main/flow/** !src/renderer/flow/** !src/main/credentials/** !src/renderer/settings/**`
+Governs: `src/main/** src/preload/** src/renderer/** resources/** !src/main/jira/** !src/renderer/inbox/** !src/main/flow/** !src/renderer/flow/** !src/main/credentials/** !src/renderer/settings/** !src/main/forge/mrs.ts !src/renderer/mr/**`
 
 - {**W1** When a repo is registered and none of the three signals is found, Atril shall set its mode to `worktree`. src/main/repos.test.ts chooses}
 - {**W2** If the checkout holds a git-ignored file outside dependency, build and editor noise (`node_modules`, `vendor`, `dist`, `build`, `.cache`, `.next`, `coverage`, `tmp`, `.idea`, `.vscode`, `.DS_Store`, `*.log`), then Atril shall set the mode to `in-place` and name that file as the reason. Only files count — entries of `git ls-files --others --ignored --exclude-standard --directory` that do not end in `/`; ignored folders (build output, tool caches) are never a signal. Noise names match at any depth. src/main/repos.test.ts chooses}
@@ -171,6 +190,6 @@ Governs: `src/main/** src/preload/** src/renderer/** resources/** !src/main/jira
 - {**W49** If the repo name is empty, longer than 100 characters, has a character other than letters, digits, `.`, `-` or `_`, or is `.` or `..`, then Atril shall answer «Nombre de repo no válido» and send no request; a name the forge refuses anyway shall come back as its `{detail}`. src/main/forge/create.test.ts an}
 - {**W50** When a repo is created, Atril shall send the forge's create request for the person's account with the name, description, visibility (private unless public was confirmed) and a README, and answer with the web link and the forge's own path for the repo; a refusal shall answer «{forge} no ha creado el repo: {detail}». A public request without `confirmPublic` shall be refused in main with «Un repo público necesita tu confirmación.» and send nothing, and no request to a forge shall follow a redirect. src/main/forge/create.test.ts creates}
 - {**W51** When cloning is asked, Atril shall refuse before cloning if `<folder>/<path>` exists; otherwise clone the SSH URL there and register it (with the suggested id when the derived one is taken); if the clone fails it shall register nothing and answer with the `git clone` command to run by hand; no command Atril runs, nor its environment, shall contain the token or any variable from the person's shell beyond PATH, HOME, USER, LANG, SSH_AUTH_SOCK and TMPDIR. (One proof per path: success, failed clone, existing folder; the token check runs on all.) src/main/forge/create.test.ts clones}
-- {**W52** Main shall open in the browser only a link it returned from a create, and clone only into the folder its own picker returned last; anything else from the window shall be ignored. src/main/forge/guards.test.ts only}
+- {**W52** Main shall open in the browser only a link it returned from a create or that is in its latest MR listing — a link from an earlier listing no longer counts — and clone only into the folder its own picker returned last; anything else from the window shall be ignored. src/main/forge/guards.test.ts only}
 
 [full spec](workspaces/spec.md)
