@@ -1,0 +1,105 @@
+import { existsSync } from 'node:fs'
+import { agentArgv, MODELS } from '../agent'
+import type { JiraCreds } from '../credentials/check'
+import type { Model, StartIssue, StartProposalResult, StartRequest, StartResult } from '../../preload/api'
+import { listRepos, rememberedRepo, rememberRepo } from '../repos'
+import { run as defaultRun, type Runner } from '../run'
+import { openWorktree, worktreePath } from '../workspaces'
+
+export const KEY_RE = /^[A-Z][A-Z0-9]+-[0-9]+$/
+const BAD_KEY = (key: string): string => `«${key}» no es una clave de Jira válida (por ejemplo PF-123)`
+
+const flowPrompt = (key: string): string => `/libretto:libretto-flow ${key}`
+const memoryKey = ({ key, components }: StartIssue): string => `${key.slice(0, key.lastIndexOf('-'))}|${components[0] ?? ''}`
+
+// What the dialog shows is what main runs: same argv, quoted only for display.
+const display = (argv: string[]): string => argv.map((a) => (/^[\w@%+=:,./-]+$/.test(a) ? a : `"${a}"`)).join(' ')
+
+async function freeBranch(repo: { id: string; path: string }, key: string, run: Runner): Promise<{ branch: string; note?: string } | null> {
+  const taken = async (b: string): Promise<boolean> =>
+    existsSync(worktreePath(repo.id, b)) ||
+    (await run('git', ['-C', repo.path, 'rev-parse', '--verify', '--quiet', `refs/heads/${b}`])).code === 0
+  if (!(await taken(key))) return { branch: key }
+  for (const letter of 'BCDEFGHIJKLMNOPQRSTUVWXYZ') {
+    const b = `${key}${letter}`
+    if (!(await taken(b))) return { branch: b, note: `«${key}» ya existe en este repo: se propone «${b}»` }
+  }
+  return null
+}
+
+export async function proposeStart(
+  issue: StartIssue,
+  opts: { repoId?: string; model?: Model } = {},
+  run: Runner = defaultRun
+): Promise<StartProposalResult> {
+  if (!KEY_RE.test(issue.key)) return { error: BAD_KEY(issue.key) }
+  const command = display(agentArgv({ model: opts.model, prompt: flowPrompt(issue.key) }))
+  const repos = await listRepos(run)
+  const wanted = opts.repoId ?? (await rememberedRepo(memoryKey(issue)))
+  const repo = repos.find((r) => r.id === wanted)
+  if (!repo) return { command }
+  const free = await freeBranch(repo, issue.key, run)
+  if (!free) return { error: `Todas las ramas ${issue.key}, ${issue.key}B… ${issue.key}Z están ocupadas` }
+  return { repoId: repo.id, branch: free.branch, mode: repo.mode, reason: repo.reason, command, ...(free.note && { note: free.note }) }
+}
+
+interface Deps {
+  run?: Runner
+  /** null: Jira not connected. */
+  creds: JiraCreds | null
+  fetchImpl?: typeof fetch
+}
+
+export async function start(req: StartRequest, deps: Deps): Promise<StartResult> {
+  const { run = defaultRun } = deps
+  if (!KEY_RE.test(req.key)) return { error: BAD_KEY(req.key) }
+  if (!MODELS.includes(req.model)) return { error: `«${String(req.model)}» no es un modelo disponible` }
+
+  const opened = await openWorktree(
+    { repoId: req.repoId, branch: req.branch, agent: 'claude', model: req.model, jiraKey: req.key, prompt: flowPrompt(req.key) },
+    run
+  )
+  if ('error' in opened) return opened
+  await rememberRepo(memoryKey(req), req.repoId)
+
+  // Already in progress: nothing to move.
+  if (req.group === 'doing') return { workspace: opened.workspace }
+  const transitionError = await moveToInProgress(req.key, deps.creds, deps.fetchImpl)
+  return transitionError ? { workspace: opened.workspace, transitionError } : { workspace: opened.workspace }
+}
+
+interface Transition {
+  id?: unknown
+  name?: unknown
+  to?: { statusCategory?: { key?: unknown } }
+}
+
+// Returns an error message, or null when the issue moved. Never echoes network errors (they can carry the token).
+async function moveToInProgress(key: string, creds: JiraCreds | null, fetchImpl: typeof fetch = fetch): Promise<string | null> {
+  if (!creds) return 'No se pudo pasar a In Progress: conecta Jira en Ajustes.'
+  const url = new URL(`/rest/api/3/issue/${key}/transitions`, new URL(creds.site.trim()).origin)
+  const headers = {
+    Authorization: `Basic ${Buffer.from(`${creds.email}:${creds.token}`).toString('base64')}`,
+    Accept: 'application/json'
+  }
+  try {
+    const list = await fetchImpl(url, { method: 'GET', headers, signal: AbortSignal.timeout(10_000) })
+    if (!list.ok) return `No se pudo pasar a In Progress: Jira respondió ${list.status}.`
+    const options = ((await list.json()) as { transitions?: Transition[] }).transitions ?? []
+    const open = options.filter((t) => t.to?.statusCategory?.key === 'indeterminate')
+    const pick = open.find((t) => typeof t.name === 'string' && /progress|curso/i.test(t.name)) ?? open[0]
+    if (typeof pick?.id !== 'string') return 'No se pudo pasar a In Progress: Jira no ofrece esa transición desde su estado actual.'
+
+    const res = await fetchImpl(url, {
+      method: 'POST',
+      headers: { ...headers, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ transition: { id: pick.id } }),
+      signal: AbortSignal.timeout(10_000)
+    })
+    return res.ok ? null : `No se pudo pasar a In Progress: Jira respondió ${res.status}.`
+  } catch (err) {
+    return err instanceof Error && err.name === 'TimeoutError'
+      ? 'No se pudo pasar a In Progress: Jira no ha respondido en 10 s.'
+      : 'No se pudo pasar a In Progress: no se ha podido conectar con Jira.'
+  }
+}

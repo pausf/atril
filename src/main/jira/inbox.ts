@@ -38,7 +38,19 @@ function parseIssues(body: { issues?: RawIssue[] }): JiraIssue[] {
   })
 }
 
-export async function readInbox(creds: JiraCreds | null, fetchImpl: typeof fetch = fetch): Promise<InboxResult> {
+/** I9: a task whose key is in a workspace record points at that workspace. */
+function linkWorkspaces(issues: JiraIssue[], records: Array<{ id: string; jiraKey?: string }>): JiraIssue[] {
+  return issues.map((i) => {
+    const ws = records.find((r) => r.jiraKey === i.key)
+    return ws ? { ...i, workspaceId: ws.id } : i
+  })
+}
+
+export async function readInbox(
+  creds: JiraCreds | null,
+  fetchImpl: typeof fetch = fetch,
+  records: Array<{ id: string; jiraKey?: string }> = []
+): Promise<InboxResult> {
   if (!creds) return { error: 'unconfigured' }
 
   // ponytail: one page of 100 issues; /search/jql paginates by nextPageToken, which this ignores.
@@ -60,7 +72,7 @@ export async function readInbox(creds: JiraCreds | null, fetchImpl: typeof fetch
     if (res.status === 401 || res.status === 403)
       return { error: 'unconfigured', message: 'Jira ha rechazado el token. Revísalo en Ajustes.' }
     if (!res.ok) return { error: 'failed', message: `Jira respondió ${res.status}` }
-    const issues = parseIssues((await res.json()) as { issues?: RawIssue[] })
+    const issues = linkWorkspaces(parseIssues((await res.json()) as { issues?: RawIssue[] }), records)
     return { issues }
   } catch (err) {
     // Network errors can echo the request; never pass err.message through.

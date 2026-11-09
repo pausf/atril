@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
-import type { Agent, DoctorReport, WorkspaceView } from '../preload/api'
+import type { Agent, DoctorReport, Model, WorkspaceView } from '../preload/api'
 import { DoctorBanner } from './components/DoctorBanner'
-import { FlowPanel } from './components/FlowPanel'
+import { FlowPanel } from './flow/FlowPanel'
 import { Footer } from './components/Footer'
 import { Rail, type Screen } from './components/Rail'
 import { Sidebar } from './components/Sidebar'
@@ -31,6 +31,7 @@ export function App() {
   useEffect(() => {
     void window.atril.snapshotView().then((v) => {
       if (v === 'settings') setScreen('settings')
+      if (v === 'start') setScreen('tasks')
     })
   }, [])
 
@@ -45,8 +46,19 @@ export function App() {
 
   useEffect(() => window.atril.status.onOpen(setSelected), [])
 
-  const create = async (repoId: string, branch: string, agent: Agent): Promise<string | null> => {
-    const r = await window.atril.workspaces.open(repoId, branch, agent)
+  const openWorkspace = (id: string): void => {
+    setSelected(id)
+    setScreen('work')
+  }
+
+  // Start already created the workspace in main: only the list and the inbox links are stale.
+  const started = async (ws: WorkspaceView): Promise<void> => {
+    setWorkspaces(await window.atril.workspaces.list())
+    setSelected(ws.id)
+  }
+
+  const create = async (repoId: string, branch: string, agent: Agent, model: Model): Promise<string | null> => {
+    const r = await window.atril.workspaces.open(repoId, branch, agent, model)
     if ('error' in r) return r.error
     setWorkspaces(await window.atril.workspaces.list())
     setSelected(r.workspace.id)
@@ -82,9 +94,9 @@ export function App() {
               onOpenTasks={() => setScreen('tasks')}
             />
             <Workspace ws={workspaces.find((w) => w.id === selected)} />
-            <FlowPanel />
+            <FlowPanel workspaceId={selected} />
           </div>
-          {screen === 'tasks' && <Inbox inbox={inbox} />}
+          {screen === 'tasks' && <Inbox inbox={inbox} onStarted={started} onOpenWorkspace={openWorkspace} />}
           {screen === 'settings' && <Ajustes />}
         </div>
       </NavigationContext.Provider>

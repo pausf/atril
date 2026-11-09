@@ -31,6 +31,7 @@ export function WorkspaceList({ workspaces, selected, onSelect, onRemove }: Prop
             <span className="ws-branch">{w.branch}</span>
             <span className="ws-meta">
               {w.repoId} · {w.agent}
+              {w.model && w.model !== 'default' && ` · ${w.model}`}
             </span>
             {(() => {
               const state = states[w.id] ?? (w.alive ? 'working' : 'stopped')

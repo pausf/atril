@@ -2,7 +2,7 @@ import { randomInt } from 'node:crypto'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
-import type { Agent, RemoveResult, WorkspaceRecord, WorkspaceResult, WorkspaceView } from '../preload/api'
+import type { Agent, Model, RemoveResult, WorkspaceRecord, WorkspaceResult, WorkspaceView } from '../preload/api'
 import { agentArgv } from './agent'
 import { detectMode, effectiveMode, type Repo } from './repos'
 import { run as defaultRun, type Runner } from './run'
@@ -12,11 +12,16 @@ export interface OpenInput {
   repoId: string
   branch: string
   agent: Agent
+  model?: Model
+  jiraKey?: string
+  /** First message the agent receives (Start passes the Libretto flow command). */
+  prompt?: string
   /** Tests swap the agent for a harmless long-running command. */
   argv?: string[]
 }
 
 const home = (): string => process.env['ATRIL_HOME'] ?? join(homedir(), '.atril')
+export const worktreePath = (repoId: string, branch: string): string => join(home(), 'wt', repoId, branch)
 const ALPHABET = 'abcdefghijklmnopqrstuvwxyz0123456789'
 const newId = (): string => Array.from({ length: 8 }, () => ALPHABET[randomInt(ALPHABET.length)]).join('')
 
@@ -70,7 +75,7 @@ export async function openWorktree(input: OpenInput, run: Runner = defaultRun): 
     if (sw.code !== 0) return { error: sw.stderr.trim() || 'git switch falló' }
     path = repo.path
   } else {
-    path = join(home(), 'wt', repoId, branch)
+    path = worktreePath(repoId, branch)
     await mkdir(join(path, '..'), { recursive: true })
     const add = await run('git', ['-C', repo.path, 'worktree', 'add', '-b', branch, path])
     if (add.code !== 0) return { error: add.stderr.trim() || 'git worktree add falló' }
@@ -78,7 +83,7 @@ export async function openWorktree(input: OpenInput, run: Runner = defaultRun): 
 
   const head = await run('git', ['-C', repo.path, 'rev-parse', 'HEAD'])
   const id = newId()
-  const paneId = await newSession(id, path, input.argv ?? agentArgv(), run)
+  const paneId = await newSession(id, path, input.argv ?? agentArgv({ model: input.model, prompt: input.prompt }), run)
 
   const record: WorkspaceRecord = {
     id,
@@ -89,6 +94,8 @@ export async function openWorktree(input: OpenInput, run: Runner = defaultRun): 
     baseCommit: head.stdout.trim(),
     ...(previousBranch !== undefined && { previousBranch }),
     agent,
+    ...(input.model && { model: input.model }),
+    ...(input.jiraKey && { jiraKey: input.jiraKey }),
     session: sessionName(id),
     paneId
   }

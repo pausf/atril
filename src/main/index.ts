@@ -1,5 +1,5 @@
 import { app, BrowserWindow, dialog, ipcMain, Notification, safeStorage, shell } from 'electron'
-import { writeHooksFile } from './agent'
+import { MODELS, writeHooksFile } from './agent'
 import { createStatus } from './status'
 import { writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
@@ -9,10 +9,14 @@ import type { JiraCreds } from './credentials/check'
 import { doctor } from './doctor'
 import type { Mode } from '../preload/api'
 import { readInbox } from './jira/inbox'
+import { proposeStart, start } from './jira/start'
+import type { Model, StartIssue, StartRequest } from '../preload/api'
 import { listRepos, registerRepo, setOverride } from './repos'
 import * as pty from './pty'
 import { run } from './run'
+import { createUsage } from './usage'
 import { listWorkspaces, openWorktree, removeWorkspace } from './workspaces'
+import { createFlowHub } from './flow/watch'
 import type { Agent } from '../preload/api'
 
 function createWindow(): void {
@@ -85,16 +89,28 @@ app.whenReady().then(() => {
   ipcMain.handle('atril:settings:openTokenPage', () =>
     shell.openExternal('https://id.atlassian.com/manage-profile/security/api-tokens')
   )
-  ipcMain.handle('atril:jira:inbox', async () => {
+  const savedJira = async (): Promise<JiraCreds | null> => {
     const c = await secretStore.readSecret('jira').catch(() => null)
-    return readInbox(c?.['site'] && c['email'] && c['token'] ? (c as unknown as JiraCreds) : null)
+    return c?.['site'] && c['email'] && c['token'] ? (c as unknown as JiraCreds) : null
+  }
+  ipcMain.handle('atril:jira:inbox', async () => readInbox(await savedJira(), fetch, await listWorkspaces(run)))
+  ipcMain.handle('atril:jira:proposeStart', (_e, issue: StartIssue, repoId?: string, model?: Model) =>
+    proposeStart(issue, { repoId, model }, run)
+  )
+  ipcMain.handle('atril:jira:start', async (_e, req: StartRequest) => start(req, { run, creds: await savedJira() }))
+  const flow = createFlowHub({
+    run,
+    find: async (id) => (await listWorkspaces(run)).find((w) => w.id === id),
+    emit: (id, stage) => BrowserWindow.getAllWindows().forEach((w) => w.webContents.send('atril:flow:changed', id, stage))
   })
+  ipcMain.handle('atril:flow:get', (_e, id: string | null) => flow.select(id))
   ipcMain.handle('atril:ws:list', () => listWorkspaces(run))
-  ipcMain.handle('atril:ws:open', (_e, repoId: string, branch: string, agent: Agent) =>
-    openWorktree({ repoId, branch, agent }, run)
+  ipcMain.handle('atril:ws:open', (_e, repoId: string, branch: string, agent: Agent, model?: Model) =>
+    openWorktree({ repoId, branch, agent, ...(model && MODELS.includes(model) && { model }) }, run)
   )
   ipcMain.handle('atril:ws:remove', async (e, id: string) => {
     pty.detach(id)
+    flow.forget(id)
     return removeWorkspace(id, run)
   })
   ipcMain.handle('atril:term:attach', async (e, id: string, cols: number, rows: number) => {
@@ -131,6 +147,12 @@ app.whenReady().then(() => {
       n.show()
     }
   })
+  const usage = createUsage({
+    run,
+    emit: (u) => BrowserWindow.getAllWindows().forEach((w) => w.webContents.send('atril:usage:changed', u))
+  })
+  ipcMain.handle('atril:usage:get', () => usage.get())
+  usage.start()
   ipcMain.handle('atril:status:list', () => status.states())
   void writeHooksFile().then(() => status.start())
   app.on('activate', () => {

@@ -34,6 +34,7 @@ export interface ReposApi {
 
 
 export type Agent = 'claude'
+export type Model = 'default' | 'opus' | 'sonnet' | 'haiku'
 
 export interface WorkspaceRecord {
   id: string
@@ -44,6 +45,7 @@ export interface WorkspaceRecord {
   baseCommit: string
   previousBranch?: string
   agent: Agent
+  model?: Model
   jiraKey?: string
   session: string
   paneId: string
@@ -58,7 +60,7 @@ export type RemoveResult = { ok: true } | { error: string }
 
 export interface WorkspacesApi {
   list(): Promise<WorkspaceView[]>
-  open(repoId: string, branch: string, agent: Agent): Promise<WorkspaceResult>
+  open(repoId: string, branch: string, agent: Agent, model?: Model): Promise<WorkspaceResult>
   remove(id: string): Promise<RemoveResult>
 }
 
@@ -79,7 +81,35 @@ export interface JiraIssue {
   project: string
   components: string[]
   group: 'todo' | 'doing' | 'review'
+  /** Set when a workspace record carries this key. */
+  workspaceId?: string
 }
+
+export interface StartIssue {
+  key: string
+  components: string[]
+  group?: JiraIssue['group']
+}
+
+export interface StartProposal {
+  repoId?: string
+  branch?: string
+  mode?: Mode
+  reason?: string
+  /** Why the branch is not the bare key. */
+  note?: string
+  /** The exact command line Start will run, built in main. */
+  command: string
+}
+export type StartProposalResult = StartProposal | { error: string }
+
+export interface StartRequest extends StartIssue {
+  repoId: string
+  branch: string
+  model: Model
+}
+/** The workspace stays open when only the Jira transition failed. */
+export type StartResult = { workspace: WorkspaceView; transitionError?: string } | { error: string }
 
 export type InboxResult =
   | { issues: JiraIssue[] }
@@ -88,6 +118,8 @@ export type InboxResult =
 
 export interface JiraApi {
   inbox(): Promise<InboxResult>
+  proposeStart(issue: StartIssue, repoId?: string, model?: Model): Promise<StartProposalResult>
+  start(req: StartRequest): Promise<StartResult>
 }
 
 export interface JiraSettingsStatus {
@@ -119,7 +151,46 @@ export interface StatusApi {
   onOpen(cb: (id: string) => void): () => void
 }
 
+export type StageName = 'sin-libretto' | 'entrada' | 'spec' | 'plan' | 'construir' | 'terminado' | 'aterrizado'
+
+export interface Checklist {
+  file: string
+  total: number
+  closed: number
+  firstOpen?: string
+}
+
+export interface FlowStage {
+  stage: StageName
+  change?: string
+  others: string[]
+  checklist?: Checklist
+}
+
+export interface FlowApi {
+  /** Also starts watching that workspace (and stops watching any other); null stops all. */
+  get(workspaceId: string | null): Promise<FlowStage | null>
+  /** Returns the unsubscribe function. */
+  onChange(cb: (workspaceId: string, stage: FlowStage) => void): () => void
+}
+
+export interface UsageWindow {
+  pct: number
+  /** ISO timestamp, null when the endpoint omits it. */
+  resetsAt: string | null
+}
+
+export type UsageResult = { fiveHour: UsageWindow; sevenDay: UsageWindow } | { error: string }
+
+export interface UsageApi {
+  get(): Promise<UsageResult>
+  /** Returns the unsubscribe function. */
+  onChange(cb: (u: UsageResult) => void): () => void
+}
+
 export interface AtrilApi {
+  usage: UsageApi
+  flow: FlowApi
   status: StatusApi
   doctor(): Promise<DoctorReport>
   repos: ReposApi

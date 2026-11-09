@@ -1,4 +1,4 @@
-import type { Agent, WorkspaceView } from '../../preload/api'
+import type { Agent, Model, WorkspaceView } from '../../preload/api'
 import { JiraSummary, type InboxState } from '../inbox/Inbox'
 import { Repos } from './Repos'
 import { WorkspaceList } from './WorkspaceList'
@@ -8,7 +8,7 @@ interface Props {
   selected: string | null
   onSelect: (id: string) => void
   onRemove: (id: string) => Promise<string | null>
-  onCreate: (repoId: string, branch: string, agent: Agent) => Promise<string | null>
+  onCreate: (repoId: string, branch: string, agent: Agent, model: Model) => Promise<string | null>
   inbox: InboxState
   onOpenTasks: () => void
 }

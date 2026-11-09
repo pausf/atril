@@ -12,7 +12,13 @@ const PATHS = {
     '<path d="M3.5 7.5A2 2 0 0 1 5.5 5.5h4l2 2h7a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"/><path d="M10 13.5h5M13 11.5l2 2-2 2"/>',
   ticket:
     '<path d="M4 7.5A2 2 0 0 1 6 5.5h12a2 2 0 0 1 2 2V10a2 2 0 0 0 0 4v2.5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V14a2 2 0 0 0 0-4z"/><path d="M14.5 6v2M14.5 11v2M14.5 16v2"/>',
-  lock: '<rect x="5" y="10.5" width="14" height="10" rx="2.5"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5M12 14.5v2"/>'
+  lock: '<rect x="5" y="10.5" width="14" height="10" rx="2.5"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5M12 14.5v2"/>',
+  's-entrada': '<path d="M4 13.5l2.2-7A2 2 0 0 1 8.1 5h7.8a2 2 0 0 1 1.9 1.5l2.2 7v4.5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><path d="M4 13.5h4.5l1 2h5l1-2H20"/>',
+  's-spec': '<path d="M7 3.5h7l4 4V19a1.5 1.5 0 0 1-1.5 1.5h-9.5A1.5 1.5 0 0 1 5.5 19V5A1.5 1.5 0 0 1 7 3.5z"/><path d="M14 3.5V7.5h4M8.5 12h7M8.5 15.5h5"/>',
+  's-plan': '<circle cx="6" cy="6" r="2"/><circle cx="18" cy="18" r="2"/><path d="M8 6h6.5a3 3 0 0 1 0 6h-5a3 3 0 0 0 0 6H16"/>',
+  's-build': '<path d="M13.5 6.5l4 4M11 9l-6.5 6.5a1.8 1.8 0 0 0 2.5 2.5L13.5 11.5"/><path d="M12 5l2.5-2.5 6 6L18 11"/>',
+  's-done': '<circle cx="12" cy="12" r="8.5"/><path d="M8 12.3l2.6 2.6L16 9.5"/>',
+  's-landed': '<path d="M3.5 20.5h17"/><path d="M5.5 13.5l2-1 3 2.5 7-3a1.6 1.6 0 0 1 1.3 2.9L8.5 18 4.5 15z"/><path d="M8 9.5l2-1 2 2"/>'
 } as const
 
 export type IconName = keyof typeof PATHS

@@ -105,4 +105,14 @@ describe('inbox', () => {
     expect(groupOf('Testing', 'indeterminate')).toBe('review')
     expect(groupOf('Ready to Deploy', 'indeterminate')).toBe('review')
   })
+
+  it('task with a workspace shows it instead of start', async () => {
+    const r = await readInbox(CREDS, (async () => json(BODY)) as typeof fetch, [
+      { id: 'ws1', jiraKey: 'PF-1' },
+      { id: 'ws2' }
+    ])
+    if (!('issues' in r)) throw new Error('no issues')
+    expect(r.issues.find((i) => i.key === 'PF-1')?.workspaceId).toBe('ws1')
+    expect(r.issues.find((i) => i.key === 'PF-2')).not.toHaveProperty('workspaceId')
+  })
 })

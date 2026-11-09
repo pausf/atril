@@ -2,6 +2,7 @@ import { execFileSync } from 'node:child_process'
 import { mkdtempSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import type { Runner } from './run'
 
 const made: string[] = []
 export const tmp = (): string => {
@@ -40,3 +41,18 @@ export const killTmux = (sock: string): void => {
 }
 export const tmuxOut = (sock: string, ...args: string[]): string =>
   execFileSync('tmux', ['-L', sock, ...args], { encoding: 'utf8' })
+
+const SLEEP = ['sh', '-c', 'sleep 300']
+/** Runner that records the agent argv tmux was given, and starts a harmless sleep instead of claude. */
+export function agentSpy(run: Runner): { run: Runner; argvs: string[][] } {
+  const argvs: string[][] = []
+  const spy: Runner = (cmd, args, opts) => {
+    if (cmd === 'tmux' && args.includes('new-session')) {
+      const at = args.indexOf('#{pane_id}') + 1
+      argvs.push(args.slice(at))
+      return run(cmd, [...args.slice(0, at), ...SLEEP], opts)
+    }
+    return run(cmd, args, opts)
+  }
+  return { run: spy, argvs }
+}

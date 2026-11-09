@@ -24,19 +24,40 @@ const ID_RE = /^[a-z0-9-]+$/
 const segments = (entry: string): string[] => entry.split('/').filter(Boolean)
 const stateFile = (): string => join(process.env['ATRIL_HOME'] ?? join(homedir(), '.atril'), 'repos.json')
 
-async function readRepos(): Promise<Repo[]> {
+interface State {
+  repos: Repo[]
+  /** "<PROJECT>|<first component or ''>" → repo id */
+  jiraRepos: Record<string, string>
+}
+
+async function readState(): Promise<State> {
   try {
-    return (JSON.parse(await readFile(stateFile(), 'utf8')) as { repos: Repo[] }).repos
+    const raw = JSON.parse(await readFile(stateFile(), 'utf8')) as Partial<State>
+    return { repos: raw.repos ?? [], jiraRepos: raw.jiraRepos ?? {} }
   } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return []
+    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return { repos: [], jiraRepos: {} }
     throw err
   }
 }
 
-async function writeRepos(repos: Repo[]): Promise<void> {
+async function writeState(state: State): Promise<void> {
   const file = stateFile()
   await mkdir(join(file, '..'), { recursive: true })
-  await writeFile(file, JSON.stringify({ repos }, null, 2) + '\n')
+  const { jiraRepos, repos } = state
+  await writeFile(file, JSON.stringify(Object.keys(jiraRepos).length ? { repos, jiraRepos } : { repos }, null, 2) + '\n')
+}
+
+const readRepos = async (): Promise<Repo[]> => (await readState()).repos
+// Rewriting the repo list must never drop the Jira memory that lives in the same file.
+const writeRepos = async (repos: Repo[]): Promise<void> => writeState({ ...(await readState()), repos })
+
+export async function rememberedRepo(key: string): Promise<string | undefined> {
+  return (await readState()).jiraRepos[key]
+}
+
+export async function rememberRepo(key: string, repoId: string): Promise<void> {
+  const state = await readState()
+  await writeState({ ...state, jiraRepos: { ...state.jiraRepos, [key]: repoId } })
 }
 
 export async function detectMode(path: string, run: Runner): Promise<Detected> {

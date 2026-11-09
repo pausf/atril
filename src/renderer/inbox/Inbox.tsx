@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { InboxResult, JiraIssue } from '../../preload/api'
+import type { InboxResult, JiraIssue, WorkspaceView } from '../../preload/api'
 import { ConnectInSettings } from '../settings/ConnectInSettings'
 import { Icon } from '../components/Icon'
+import { StartDialog } from './StartDialog'
 
 const REFRESH_MS = 5 * 60_000
 
@@ -41,8 +42,21 @@ export function useInbox(): InboxState {
   return { result, issues: result && 'issues' in result ? result.issues : [], loading, refresh }
 }
 
-export function Inbox({ inbox }: { inbox: InboxState }) {
+interface InboxProps {
+  inbox: InboxState
+  onStarted: (ws: WorkspaceView) => Promise<void>
+  onOpenWorkspace: (id: string) => void
+}
+
+export function Inbox({ inbox, onStarted, onOpenWorkspace }: InboxProps) {
   const { result, issues, loading, refresh } = inbox
+  const [starting, setStarting] = useState<JiraIssue | null>(null)
+  // ponytail: dev-only, ATRIL_SNAPSHOT_VIEW=start opens the dialog on a fake issue so it can be photographed without Jira.
+  useEffect(() => {
+    void window.atril.snapshotView().then((v) => {
+      if (v === 'start') setStarting({ key: 'PF-4870', summary: 'Filtro de laboratorios en el listado', type: 'Story', status: 'To Do', project: 'PF', components: [], group: 'todo' })
+    })
+  }, [])
   return (
     <section className="tasks-screen">
       <h1>
@@ -52,7 +66,21 @@ export function Inbox({ inbox }: { inbox: InboxState }) {
         </button>
       </h1>
       <p className="lead">Tus tareas abiertas de Jira en todos los proyectos.</p>
-      <Body result={result} issues={issues} />
+      <Body result={result} issues={issues} onStart={setStarting} onOpenWorkspace={onOpenWorkspace} />
+      {starting && (
+        <StartDialog
+          issue={starting}
+          onClose={() => setStarting(null)}
+          onStarted={async (ws) => {
+            await onStarted(ws)
+            void refresh()
+          }}
+          onOpenWorkspace={(id) => {
+            setStarting(null)
+            onOpenWorkspace(id)
+          }}
+        />
+      )}
     </section>
   )
 }
@@ -72,7 +100,12 @@ export function JiraSummary({ inbox, onOpen }: { inbox: InboxState; onOpen: () =
   )
 }
 
-function Body({ result, issues }: { result: InboxResult | null; issues: JiraIssue[] }) {
+interface TaskActions {
+  onStart: (i: JiraIssue) => void
+  onOpenWorkspace: (id: string) => void
+}
+
+function Body({ result, issues, onStart, onOpenWorkspace }: { result: InboxResult | null; issues: JiraIssue[] } & TaskActions) {
   if (!result) return <div className="empty">Cargando tus Jira…</div>
   if ('error' in result) {
     return (
@@ -98,7 +131,7 @@ function Body({ result, issues }: { result: InboxResult | null; issues: JiraIssu
             <summary>
               {title} <span className="n">{list.length}</span>
             </summary>
-            {list.map((i) => <Task key={i.key} i={i} />)}
+            {list.map((i) => <Task key={i.key} i={i} onStart={onStart} onOpenWorkspace={onOpenWorkspace} />)}
           </details>
         )
       })}
@@ -112,7 +145,7 @@ const GROUPS: ReadonlyArray<[JiraIssue['group'], string, boolean]> = [
   ['review', 'En revisión y despliegue', true]
 ]
 
-function Task({ i }: { i: JiraIssue }) {
+function Task({ i, onStart, onOpenWorkspace }: { i: JiraIssue } & TaskActions) {
   return (
     <article className="task">
       <div className="k">
@@ -120,9 +153,15 @@ function Task({ i }: { i: JiraIssue }) {
       </div>
       <div className="s">{i.summary}</div>
       <div className="row">
-        <button className="go" disabled title="llega con la casilla de Empezar">
-          Empezar ▸
-        </button>
+        {i.workspaceId ? (
+          <button className="go" onClick={() => onOpenWorkspace(i.workspaceId!)}>
+            Abrir trabajo ▸
+          </button>
+        ) : (
+          <button className="go" onClick={() => onStart(i)}>
+            Empezar ▸
+          </button>
+        )}
         <span className="tag">{i.status}</span>
       </div>
     </article>

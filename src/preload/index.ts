@@ -1,7 +1,23 @@
 import { contextBridge, ipcRenderer } from 'electron'
-import type { AgentState, AtrilApi } from './api'
+import type { AgentState, AtrilApi, FlowStage, UsageResult } from './api'
 
 const api: AtrilApi = {
+  usage: {
+    get: () => ipcRenderer.invoke('atril:usage:get'),
+    onChange: (cb) => {
+      const h = (_e: Electron.IpcRendererEvent, u: UsageResult): void => cb(u)
+      ipcRenderer.on('atril:usage:changed', h)
+      return () => ipcRenderer.removeListener('atril:usage:changed', h)
+    }
+  },
+  flow: {
+    get: (id) => ipcRenderer.invoke('atril:flow:get', id),
+    onChange: (cb) => {
+      const h = (_e: Electron.IpcRendererEvent, id: string, stage: FlowStage): void => cb(id, stage)
+      ipcRenderer.on('atril:flow:changed', h)
+      return () => ipcRenderer.removeListener('atril:flow:changed', h)
+    }
+  },
   doctor: () => ipcRenderer.invoke('atril:doctor'),
   repos: {
     list: () => ipcRenderer.invoke('atril:repos:list'),
@@ -11,10 +27,14 @@ const api: AtrilApi = {
   },
   workspaces: {
     list: () => ipcRenderer.invoke('atril:ws:list'),
-    open: (repoId, branch, agent) => ipcRenderer.invoke('atril:ws:open', repoId, branch, agent),
+    open: (repoId, branch, agent, model) => ipcRenderer.invoke('atril:ws:open', repoId, branch, agent, model),
     remove: (id) => ipcRenderer.invoke('atril:ws:remove', id)
   },
-  jira: { inbox: () => ipcRenderer.invoke('atril:jira:inbox') },
+  jira: {
+    inbox: () => ipcRenderer.invoke('atril:jira:inbox'),
+    proposeStart: (issue, repoId, model) => ipcRenderer.invoke('atril:jira:proposeStart', issue, repoId, model),
+    start: (req) => ipcRenderer.invoke('atril:jira:start', req)
+  },
   settings: {
     jira: {
       status: () => ipcRenderer.invoke('atril:settings:jira:status'),

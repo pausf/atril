@@ -1,5 +1,6 @@
 import { mkdir, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
+import type { Model } from '../preload/api'
 import { atrilHome, resourcesDir } from './paths'
 
 const librettoDir = (): string => join(resourcesDir(), 'libretto')
@@ -24,4 +25,15 @@ export async function writeHooksFile(): Promise<void> {
   await writeFile(hooksFile(), JSON.stringify(hooksSettings(), null, 2) + '\n')
 }
 
-export const agentArgv = (): string[] => ['claude', '--settings', hooksFile(), '--plugin-dir', librettoDir()]
+export const MODELS: readonly Model[] = ['default', 'opus', 'sonnet', 'haiku']
+
+/** `prompt` goes last: claude takes it as its positional argument. 'default' adds no flag. */
+export const agentArgv = (opts: { model?: Model; prompt?: string } = {}): string[] => [
+  'claude',
+  '--settings',
+  hooksFile(),
+  '--plugin-dir',
+  librettoDir(),
+  ...(opts.model && opts.model !== 'default' ? ['--model', opts.model] : []),
+  ...(opts.prompt ? [opts.prompt] : [])
+]

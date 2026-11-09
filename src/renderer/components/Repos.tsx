@@ -1,6 +1,7 @@
 import { Icon } from './Icon'
 import { useEffect, useState } from 'react'
-import type { AddRepoResult, Agent, Mode, RepoView } from '../../preload/api'
+import type { AddRepoResult, Agent, Mode, Model, RepoView } from '../../preload/api'
+import { MODEL_OPTIONS } from './models'
 
 const ID_RE = /^[a-z0-9-]+$/
 type Choice = Mode | 'auto'
@@ -10,16 +11,19 @@ const CHOICES: ReadonlyArray<{ value: Choice; label: string }> = [
   { value: 'auto', label: 'automático' }
 ]
 
+type CreateFn = (repoId: string, branch: string, agent: Agent, model: Model) => Promise<string | null>
+
 interface Pending {
   path: string
   id: string
   note: string
 }
 
-function NewWork({ repoId, onCreate }: { repoId: string; onCreate: (repoId: string, branch: string, agent: Agent) => Promise<string | null> }) {
+function NewWork({ repoId, onCreate }: { repoId: string; onCreate: CreateFn }) {
   const [open, setOpen] = useState(false)
   const [branch, setBranch] = useState('')
   const agent: Agent = 'claude'
+  const [model, setModel] = useState<Model>('default')
   const [error, setError] = useState<string | null>(null)
 
   if (!open) {
@@ -34,7 +38,7 @@ function NewWork({ repoId, onCreate }: { repoId: string; onCreate: (repoId: stri
       className="idask"
       onSubmit={(e) => {
         e.preventDefault()
-        void onCreate(repoId, branch.trim(), agent).then((err) => {
+        void onCreate(repoId, branch.trim(), agent, model).then((err) => {
           setError(err)
           if (!err) {
             setOpen(false)
@@ -45,6 +49,15 @@ function NewWork({ repoId, onCreate }: { repoId: string; onCreate: (repoId: stri
     >
       <div className="idrow">
         <input aria-label={`Rama de ${repoId}`} placeholder="feat/mi-rama" value={branch} onChange={(e) => setBranch(e.target.value)} />
+      </div>
+      <div className="idrow">
+        <select aria-label={`Modelo de ${repoId}`} value={model} onChange={(e) => setModel(e.target.value as Model)}>
+          {MODEL_OPTIONS.map((m) => (
+            <option key={m.value} value={m.value}>
+              {m.label}
+            </option>
+          ))}
+        </select>
       </div>
       <div className="idrow">
         <button type="submit" className="pill" disabled={branch.trim() === ''}>
@@ -59,7 +72,7 @@ function NewWork({ repoId, onCreate }: { repoId: string; onCreate: (repoId: stri
   )
 }
 
-export function Repos({ onCreate }: { onCreate: (repoId: string, branch: string, agent: Agent) => Promise<string | null> }) {
+export function Repos({ onCreate }: { onCreate: CreateFn }) {
   const [repos, setRepos] = useState<RepoView[]>([])
   const [pending, setPending] = useState<Pending | null>(null)
   const [error, setError] = useState<string | null>(null)
