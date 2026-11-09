@@ -113,7 +113,12 @@ export async function openWorktree(input: OpenInput, run: Runner = defaultRun): 
     await mkdir(join(home(), 'auto'), { recursive: true })
     await writeFile(autoMarker(id), '')
   }
-  const paneId = await newSession(id, path, input.argv ? [...input.argv, ...(prompt ? [prompt] : [])] : agentArgv({ model: input.model, prompt }), run)
+  const argv = input.argv ? [...input.argv, ...(prompt ? [prompt] : [])] : agentArgv({ model: input.model, prompt })
+  const paneId = await newSession(id, path, argv, run).catch(async (err: unknown) => {
+    // W60: no session, no record: the marker would never be removed.
+    if (auto) await unlink(autoMarker(id), { force: true })
+    throw err
+  })
 
   const record: WorkspaceRecord = {
     id,

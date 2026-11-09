@@ -16,7 +16,7 @@ export function ModePicker({ auto, onChange, disabled }: { auto: boolean; onChan
           ))}
         </span>
       </div>
-      <div className="f-note">{t('Sin parar en spec y plan; antes de subir te pregunta')}</div>
+      <div className="f-note">{t('Automático: sin parar en spec y plan; antes de subir te pregunta')}</div>
     </>
   )
 }

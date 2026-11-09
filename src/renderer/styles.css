@@ -734,6 +734,15 @@ kbd {
   display: inline-flex;
   gap: 16px;
 }
+.modes label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.f .modes input {
+  width: auto;
+  margin: 0;
+}
 .ws-act {
   grid-column: 1 / -1;
   font-size: 12px;

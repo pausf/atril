@@ -176,6 +176,11 @@ describe('automatic mode', () => {
     expect(atStart).toEqual([r.workspace.session])
     expect(markers()).toEqual([r.workspace.session])
 
+    // A session that fails to start leaves no marker behind.
+    const failing: typeof run = (cmd, args, opts) => (cmd === 'tmux' && args.includes('new-session') ? Promise.resolve({ code: 1, stdout: '', stderr: 'no server' }) : spy.run(cmd, args, opts))
+    await openWorktree({ repoId: 'demo', branch: 'feat/fail', agent: 'claude', task: 'x', auto: true }, failing).catch(() => undefined)
+    expect(markers()).toEqual([r.workspace.session])
+
     expect(await removeWorkspace(manual.workspace.id, run)).toEqual({ ok: true })
     expect(markers()).toEqual([r.workspace.session])
     expect(await removeWorkspace(r.workspace.id, run)).toEqual({ ok: true })
@@ -193,12 +198,22 @@ describe('automatic mode', () => {
     bash('git -c user.name=x push', true),
     bash('(gh pr create --fill)', true),
     bash('echo go | glab mr create', true),
+    bash('sh -c "git push"', true),
+    bash("bash -c 'git push origin x'", true),
+    bash('/usr/bin/git push', true),
+    bash('git -C "/a b" --no-pager push', true),
+    bash('echo `git push`', true),
+    bash('git --git-dir=.git push', true),
+    bash('gh -R o/r pr create', true),
     bash('git status', false),
     bash('git pushy', false),
     bash('rg "gh pr" src', false),
     bash('git push', false, 'PostToolUse'),
     bash('git push', false, 'PreToolUse', 'Edit'),
-    ['PreToolUse', { tool_name: 'Bash', tool_input: {} }, false]
+    ['PreToolUse', { tool_name: 'Bash', tool_input: {} }, false],
+    ['PreToolUse', { tool_name: 'Bash', tool_input: { command: 5 } }, false],
+    ['PreToolUse', null as unknown as object, false],
+    bash('git log; echo push', false)
   ]
 
   async function runHooks(auto: boolean): Promise<string[]> {

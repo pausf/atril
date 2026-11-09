@@ -14,6 +14,7 @@ Durable decisions: the ones in Prior decisions below
 - Q: ¿Por defecto? → A: Manual, como hoy (assumed).
 - Q: (revisor) ¿El clic directo de Empezar (I20)? → A: siempre Manual; ⌥-clic abre el diálogo con la elección (assumed).
 - Q: (revisor) ¿Campo `mode`? → A: ya existe (in-place/worktree): campo nuevo `auto` (assumed).
+- Q: (revisor de obra) La regex no veía `bash -c "git push"`, `/usr/bin/git push`, `--no-pager`… → A: cualquier `git … push` en un mismo segmento; un «push» en un mensaje de commit solo añade una pregunta (assumed).
 - Q: (revisor) ¿F15 frente a F26? → A: F26 es la excepción y su texto gana; solo el editor de documentos (assumed).
 
 ## Outcomes
@@ -63,18 +64,19 @@ the mode from task size automatically, a setting for the default mode.
   with `--` shall arrive byte for byte, as that one argument, and run nothing.
   Proof: src/main/tmux.test.ts task text reaches the agent as one literal argument
 - **W59** While the marker `$ATRIL_HOME/auto/<session>` exists, the hook shall answer a PreToolUse for
-  Bash whose command matches `/(^|[\s;&|(])(git(\s+-[cC]\s+\S+)*\s+push|gh\s+pr\s+create|glab\s+mr\s+create)\b/`
+  Bash whose command matches `/\bgit\b[^;&|\n]*?\spush\b|\bgh\b[^;&|\n]*?\spr\s+create\b|\bglab\b[^;&|\n]*?\smr\s+create\b/`
   by printing exactly `{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"ask",
   "permissionDecisionReason":"Modo automático: confirma antes de subir"}}`; for any other command or
   tool, or without the marker, it shall print nothing. Ceiling: a push inside a script the command
-  calls is not seen; a quoted «git push» in an `echo` only adds a question; whether a person's own
+  calls is not seen; a `push` word after `git` in the same segment (a commit message) only adds a
+  question; whether a person's own
   bypass mode or allow rule overrides «ask» is the host's (unverified).
   Proof: src/main/agent.test.ts the hook asks before an automatic push
 - **W60** An automatic workspace's marker shall be written with its record, before its tmux session
-  starts, and deleted when the workspace is removed.
+  starts, and deleted when the workspace is removed or its session fails to start.
   Proof: src/main/agent.test.ts the automatic marker lives as long as the workspace
 - **W61** Empezar's dialog, Nueva tarea and Nuevo trabajo once it has text shall offer Manual (default)
-  and Automático with the line «Sin parar en spec y plan; antes de subir te pregunta»; Nuevo trabajo
+  and Automático with the line «Automático: sin parar en spec y plan; antes de subir te pregunta»; Nuevo trabajo
   without text offers none; Empezar's one click (I20) is always Manual; an automatic workspace's row
   shows «Auto».
   Proof: src/renderer/inbox/mode.test.ts the start dialogs offer manual or automatic

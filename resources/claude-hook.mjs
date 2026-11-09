@@ -11,7 +11,8 @@ import { summarise } from './summarise.mjs'
 import { sizeNotice } from './branchsize.mjs'
 
 // W59: pushes and request creation in an automatic workspace need the person.
-const UPLOAD = /(^|[\s;&|(])(git(\s+-[cC]\s+\S+)*\s+push|gh\s+pr\s+create|glab\s+mr\s+create)\b/
+// ponytail: any git … push in one command segment; a `push` word in a commit message only adds a question.
+const UPLOAD = /\bgit\b[^;&|\n]*?\spush\b|\bgh\b[^;&|\n]*?\spr\s+create\b|\bglab\b[^;&|\n]*?\smr\s+create\b/
 const ASK = {
   hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'ask', permissionDecisionReason: 'Modo automático: confirma antes de subir' }
 }

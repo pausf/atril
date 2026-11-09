@@ -106,7 +106,7 @@ export const EN: Record<string, string> = {
   '/libretto:libretto-attacca «tu texto»': '/libretto:libretto-attacca “your text”',
   'Modo': 'Mode',
   'Manual': 'Manual',
-  'Sin parar en spec y plan; antes de subir te pregunta': 'No stop at spec and plan; asks before pushing',
+  'Automático: sin parar en spec y plan; antes de subir te pregunta': 'Automatic: no stop at spec and plan; asks before pushing',
   'Auto': 'Auto',
   '🔒 solo lectura · modo automático': '🔒 read-only · automatic mode',
   'Conecta {service} en': 'Connect {service} in',

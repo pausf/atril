@@ -129,3 +129,8 @@ W23 promises a tutorial step per element, but five changes added screens and con
 - The contract said «no head: not stored» but not what the window does with drafts nobody can act on; the cold work-reviewer found buttons that always failed. A state the store refuses must be refused before it is shown — or before quota is spent.
 - Matching a local repo to a forge project by path alone ignores the host: the same `acme/api` exists on two forges. Compare host and path.
 - Left as is (unverified): a POST that succeeds with an unreadable JSON body leaves the draft open, so a retry would post twice. Forges answer 201 with JSON; revisit if it ever shows.
+
+## 2026-11-09 · add-auto-mode · 6→7
+- A safety regex written from the spec's own examples missed how agents really push (`bash -c "git push"`, `/usr/bin/git`, `--no-pager`). For a guard, test the realistic false negatives first; a false positive only costs a question.
+- A side file written before a step that can throw (the marker before tmux) needs cleanup on that throw, not only on the happy removal.
+- Contract slip: replacing the whole criteria section dropped F26; re-count criteria after any section rewrite.

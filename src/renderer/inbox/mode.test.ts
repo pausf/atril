@@ -10,7 +10,7 @@ import { issue, mockApi, mockSystemTheme, workspace } from '../mockApi'
 const repos: RepoView[] = [{ id: 'web', path: '/w', mode: 'worktree', reason: '' }]
 const proposal = { repoId: 'web', branch: 'PF-10', mode: 'worktree' as const, reason: '', command: 'claude' }
 const rail = (name: RegExp) => within(screen.getByRole('navigation', { name: 'Pantallas' })).getByRole('button', { name })
-const LINE = 'Sin parar en spec y plan; antes de subir te pregunta'
+const LINE = 'Automático: sin parar en spec y plan; antes de subir te pregunta'
 
 beforeEach(() => mockSystemTheme(false))
 afterEach(cleanup)
