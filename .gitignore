@@ -1,3 +1,7 @@
 node_modules
 out
 dist
+.DS_Store
+# old mr-cockpit concept: holds work data, never publish
+caso-*
+flujo-mr*
