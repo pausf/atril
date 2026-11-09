@@ -196,7 +196,9 @@ it; keyboard reachability and text labels for every state.
   (decision log). Read per request from `Claude Code-credentials`, sent only to
   `api.anthropic.com`, cached 60 s in memory, never written anywhere.
 - **AI through the Claude Code CLI on the subscription, never an API key** — agreed 9 nov.
-- **Libretto ships inside Atril** — Pau, 9 nov (decision log). A pinned copy of
+- **Libretto ships inside Atril** — Pau, 9 nov (decision log). Loaded as a plugin, its flow
+  command is `/libretto:libretto-flow` (observed in Claude's autocomplete, box 4); the bundle
+  pins libretto-automata `171db90`. A pinned copy of
   libretto-automata's payload (MIT, with its vendored MIT items) lives in `resources/libretto/`
   as a Claude Code plugin; every Claude agent is launched with `--plugin-dir` pointing at it,
   for that session only. Nobody installs Libretto, and the person's `~/.claude` is untouched.
@@ -501,7 +503,7 @@ or in tmux itself, never in the window.
 - [x] the app opens: Electron + React shell with the three columns and footer of boceto 8, the runner, and the doctor naming each missing tool with its install command · Closes: W21
 - [x] register a repo by folder; the sidebar shows its mode with the reason, and the person's override persists · waits on box 1 · Closes: W1, W2, W3, W4
 - [x] "Nuevo trabajo" opens a workspace in worktree mode on a new branch with claude or codex in an `atril-<id>` tmux session recorded in workspaces.json, shown live in the centre terminal; relaunching Atril reattaches without starting agents; a dirty worktree is never removed · waits on box 2 · Closes: W5, W6, W10, W11, W12
-- [ ] Libretto bundled: the script copies the pinned payload with its licences into resources/libretto as a Claude Code plugin, and every Claude agent starts with --plugin-dir pointing at it · waits on box 3 · Closes: W29, W30
+- [x] Libretto bundled: the script copies the pinned payload with its licences into resources/libretto as a Claude Code plugin, and every Claude agent starts with --plugin-dir pointing at it · waits on box 3 · Closes: W29, W30
 - [ ] in-place workspaces: refuse a dirty checkout, refuse a second one per repo, restore the previous branch on close · waits on box 3 · Closes: W7, W8, W9
 - [ ] ⌘D and ⌘⇧D split the focused workspace through tmux · waits on box 3 · Closes: W13
 - [ ] agent state from Claude hooks passed by --settings and from the agent's dead pane, with one macOS notification per needs-you transition that opens the workspace · waits on box 3 · Closes: W14, W15, W16, W26, W27

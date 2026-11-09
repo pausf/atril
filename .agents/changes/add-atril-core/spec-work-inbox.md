@@ -13,8 +13,8 @@ Vocabulary, decision log and the primary contract: `proposal.md` beside this fil
 - A task that already has a workspace shows that, instead of a Start button.
 - **Start** opens a dialog with: the repo (remembered per Jira project and component, asked
   the first time), the branch (derived from the summary, editable), the repo's mode with its
-  reason, and the full command line that will run (`claude --settings ~/.atril/hooks.json
-  "/libretto-flow <KEY>"`). Confirming opens the
+  reason, and the full command line that will run (`claude --plugin-dir <bundled Libretto>
+  --settings ~/.atril/hooks.json "/libretto:libretto-flow <KEY>"`). Confirming opens the
   workspace, starts the agent session, and moves the issue to In Progress.
 - If Jira cannot be reached, the inbox says why and what the person runs; the rest of Atril
   keeps working.
@@ -80,8 +80,10 @@ command; the Jira token never passes through Atril.
 - **I5** When the dialog opens, Atril shall propose a branch made of the summary as a
   lowercase ASCII slug of at most 40 characters that passes `git check-ref-format --branch`.
   Proof: src/main/jira/start.test.ts  derives a valid branch from the summary
-- **I6** When Start is confirmed, Atril shall launch `claude` with its hooks and the prompt
-  `/libretto-flow <KEY>` in the new workspace's agent session.
+- **I6** When Start is confirmed, Atril shall launch `claude` with the bundled Libretto plugin,
+  its hooks and the prompt `/libretto:libretto-flow <KEY>` in the new workspace's agent
+  session — the plugin-namespaced name observed in box 4, because the bare `/libretto-flow`
+  exists only where Libretto is installed globally.
   Proof: src/main/jira/start.test.ts  start launches libretto-flow with the key
 - **I7** If an issue key does not match `^[A-Z][A-Z0-9]+-[0-9]+$`, then Atril shall refuse
   to start it.

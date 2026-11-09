@@ -1,0 +1,573 @@
+---
+name: write-spec
+description: "Trigger: a task has been read and needs a specification; writing or extending a spec; splitting a large task into several specs; recording a decision or an answer into a spec. Phase 2 of the flow. Writes the contract before any code exists."
+license: MIT
+metadata:
+  author: pausf
+  version: "2.2"
+---
+
+## What this does
+
+Phase 2 of the Libretto flow: turn a task into a contract.
+
+Input is a task already loaded by `find-work` — key, summary, description,
+subtasks. Output is the contract, written into the change document
+`.agents/changes/<change>/proposal.md` — plus one `spec-<capability>.md` beside it for each
+extra capability the change amends — and nothing else.
+
+**No code. No branch. No commit. No plan.** Those are phases 5, 6 and 8. A spec
+session that also writes code has stopped being a spec session, and the contract
+becomes a description of whatever got typed.
+
+Read `skills/evidence/` first. It applies here too: the criteria this skill writes
+are what the whole flow later gets measured against.
+
+## Step 0 — Does this spec need to exist?
+
+Ask it before anything else, and be willing to hear no.
+
+A one-line change, a typo, a version bump, a rename with no behaviour behind it —
+none of these need a contract. Six pillars around a two-character fix is the exact
+over-engineering this project exists to prevent, applied to itself.
+
+When the task is that small, say so, hand back to the flow, and let it go straight
+to the change, its check and a commit. **Skipping this phase is a legitimate
+outcome of it.**
+
+**The capture goes with it.** Phase 1 writes `.agents/changes/<name>/proposal.md` for
+every request made in conversation, before this step can say no, so the trivial lane
+starts with a folder holding no contract. It is deleted in the trivial lane's own commit.
+Left behind, it is a change that will never be cut, and every later phase 1 walks past it.
+
+**And the "no" collapses the ceremony with it.** A change that needed no spec does not
+get phase 7's gate either: the report and the commit land in the same turn, and the
+only question asked is the last one — push and open the request. Phase 8's question
+survives every collapse, because it is the user's decision and not ceremony.
+
+The reason is that the gate exists to catch a disagreement about "done", and this
+phase just established there is nothing to disagree about. Keeping the stop anyway
+charges a typo the price of a feature, and a flow that costs four round trips for a
+typo gets routed around — for typos first, then for small features, until what is
+left is a ritual reserved for work important enough to deserve it.
+
+**Say the "no" out loud, in one line.** A phase that declines and reports it is not
+the same as a phase nobody ran, and from outside they look identical. That is a real
+failure with a history: a session skipped this phase and phase 6 entirely, made the
+same judgment this phase would have made, and the user could not tell the difference
+between a considered skip and a forgotten one.
+
+The test is not the diff size — it is whether anyone could reasonably disagree about
+what "done" means. If they could, write the spec. If they could not, do not.
+
+This is `ponytail`'s first rung applied to our own artifacts — it ships with this
+flow. It states it as: does this need to exist at all?
+
+### When the work is a bug, the answer to Step 0 is almost always yes
+
+**A bug is a hole in the contract.** Something happened that the spec permitted, or
+failed to forbid, or forbade in words no run could have failed. The code is where it
+surfaced; it is not where it started.
+
+So the criterion comes first, and it is not ceremony:
+
+1. **Name the criterion that would have caught it**, in the capability that owns the
+   broken path. `Governs:` tells you which one — that is what it is for.
+2. **Write its `Proof:` as a test that fails right now**, for the reason the bug exists.
+   Watch it fail. A red test is the only evidence the criterion describes the actual
+   bug rather than a neighbouring one, and it is the evidence you can only collect
+   before the fix.
+3. **Then fix the code**, and the test going green is the fix's proof and the
+   criterion's, at once.
+
+Reversed — fix first, criterion after — the criterion gets written to describe the fix
+that exists rather than the failure that happened. It passes on the first run, so
+nothing ever proved it could fail, and the spec grew a sentence that cannot catch the
+bug it was written for. **That is the whole reason the order is fixed.**
+
+**This is Step 0's exception, not its contradiction.** The size test still applies to
+everything else, and a bug can still be too small for a contract — a typo in a log line
+is a typo. The question is whether anything about *behaviour* was wrong. If it was, some
+capability promised otherwise or promised nothing, and both are worth a sentence.
+
+**Almost always an amendment, almost never a new capability.** A bug lands inside
+something that already exists; a new spec directory for one failure is a ticket spec
+wearing a capability's clothes, and it is dead the day the fix ships. If no existing
+capability owns the path, that is itself the finding — say so, because unowned code is
+how a bug got there unmeasured.
+
+## Step 1 — One capability, or several?
+
+Ask what the shape is before writing anything.
+
+**One** when the change amends a single capability. Its contract goes in `proposal.md`.
+
+**Several** when it amends more. The primary capability's contract goes in
+`proposal.md`, and each extra one in its own `spec-<capability>.md` beside it — step 2b.
+Split by **coherence**, not by parallelism — one spec holds one idea that can be argued
+about on its own. Splitting to make agents run
+concurrently produces specs that each describe half an idea and cannot be reviewed.
+If the subtasks in the tracker already cut along coherent lines, use them; if they
+cut along assignment lines, ignore them and cut again.
+
+A spec whose scope you cannot state in one sentence is two specs.
+
+## Step 2 — Find the ground truth before writing
+
+A spec written without looking at the code is fiction, and the pillar it fails
+first is **prior decisions**: existing conventions, patterns and constraints that
+the change has to live inside.
+
+So read the code first. Specifically:
+
+- how this area is structured today and what it already does
+- the conventions actually in use — naming, layout, error shape, test style
+- what will break if this change is naive
+- whether a decision recorded elsewhere already settles part of this
+
+Read the code inline — a research sub-agent for a change you can hold in your head is a
+round trip for nothing. **The writing stays here too.** The session that read the code and
+ran the interview writes the contract itself, in step 4b; a writer is launched only for an
+extra capability whose research this context cannot hold — step 2b.
+
+### The specification is selected, never the corpus
+
+That last bullet is a lookup, and it is one that gets done by reading everything. Do
+not. **Open the spec that governs this change, never the corpus**, and find it in this
+order:
+
+1. **the change's own `Targets:`**, when its document already carries one — that names the
+   capability outright, and it is how `review-work` already assembles a reviewer's world
+2. **the `Governs:` line** that claims the path being changed. That is what `Governs:`
+   is for, and it is the same lookup the bug branch above depends on
+3. **the project's index**, when it has one — a signpost listing the capabilities, which
+   costs one file to read and answers "which one" for a change that has neither of the
+   above yet
+
+None of the three found means the answer is *no capability owns this path*, and that is
+a finding worth reporting rather than a reason to go and read the whole specification.
+
+The gap is not marginal. A specification is written to accumulate — a directory of a
+dozen capabilities is a normal middle age for one — and a phase that opens all of it to
+answer *which one* pays for the whole corpus to learn a single name. Everything past the
+governing spec is context that changes no decision this phase makes.
+
+**Read the specs the change touches, and the ones a criterion here contradicts.** The
+second half is not licence to sweep: it means following a specific suspicion to a
+specific file, which is a read you can name a reason for. "I might find something" is
+not one.
+
+### If the project already has a convention
+
+Whatever exists wins, and **the layout is discovered rather than assumed** — this skill
+installs into projects that organise their specification differently, and one that names
+a path from somewhere else works only where it was written.
+
+`spec-drift` (at `<skill-base>/../record-work/spec-drift`, next to the sibling
+`record-work` skill) looks for consolidated specs under `.agents/specs`, `specs`,
+`openspec`, `docs/specs`, `spec` — in that order, first hit wins — plus a single-file
+spec at `docs/SPEC.md` and nowhere else, and for changes under `.agents/changes`,
+`changes`, `openspec/changes`. Run it, or read the directory, before believing any
+layout.
+
+**That one path is literal**, so a project keeping its single-file spec anywhere else is
+a project `spec-drift` will not see it in. Describing the tool loosely here would send a
+reader looking for support that is not written.
+
+A single-file spec is legitimate for a small project and the tooling supports it. So is
+a directory per capability with a separate index page listing them. The selection order
+above is written to work under all three, which is why it leads with `Targets:` and
+`Governs:` — those travel inside the files, and a path does not.
+
+**Never create a `changes/` directory in a project that has none** without also
+doing the consolidation. A staging area nobody empties is just a second source of
+truth. Where `libretto` is on PATH, the sanctioned bootstrap is `libretto init`,
+run by the user on purpose; where the binary is absent, this refusal stands
+unchanged.
+
+## Step 2b — The fan-out, only when context requires it
+
+**One capability is written inline, always.** Nothing is launched for it: step 4b writes
+it into `proposal.md`.
+
+**When the change amends more than one capability, read `fan-out.md` beside this file.**
+The primary capability's contract stays in `proposal.md`, and each extra one gets its own
+`spec-<capability>.md` beside it. The session writes those inline too. A `spec-writer` is
+launched only when this session's context cannot hold the research: the context is the
+only reason to fan out.
+
+## Step 3 — Write the six pillars
+
+Every spec has all six, explicitly, with headings. A pillar left vague is not
+brevity — it is a gap that gets filled later by whoever is typing, from
+association rather than intent.
+
+**Think them, then hold the file until step 4's interview has its answers.** Thinking
+the pillars through is what surfaces the questions worth asking — a boundary the request
+left open, two precedents with nothing choosing between them — and an answer that
+arrives after the file exists gets bolted onto a contract instead of shaping it. The
+steps are numbered 3 then 4 because the *thinking* runs in that order; the writing
+happens once, after both.
+
+### Outcomes
+
+The verifiable end state, in operational terms. Not "add login" but what is true
+when it works: what the user does, what the system emits, what persists, what
+happens on a refresh.
+
+### Scope boundaries
+
+What is in. Then, at least as carefully, **what is out** — named, so it cannot be
+quietly added. "Federated login is out of scope for this change" prevents an
+afternoon of work nobody asked for.
+
+This is the cheapest place in the entire flow to remove work. Deleting a
+requirement here costs a line; deleting the code it would have produced costs a
+day. So every candidate requirement gets asked whether it needs to exist at all,
+and the ones that do not become named non-goals rather than silent omissions.
+
+`ponytail`, which ships with this flow, is the discipline for this — its ladder runs
+from "does this need to exist?" down to "only then, the minimum that works". Use it
+here, on requirements, not only later on code. Applied at build time it can shrink
+how; applied here it shrinks what.
+
+**Five things are never scoped out, whatever the ladder says:**
+
+- validation at a trust boundary
+- error handling that prevents data loss
+- security — and a secret that must not be stored or transmitted is part of the
+  contract, not a detail of the implementation
+- accessibility basics, including contrast and keyboard reachability
+- anything the user asked for explicitly
+
+A spec that trims one of these is not lean, it is incomplete. The palette that
+satisfied its spec at 1.4:1 contrast failed on the fourth of these, and the spec
+that permitted it was the thing at fault.
+
+### Constraints
+
+What the solution has to live inside: existing versions, data shape, latency
+budgets, conventions, anything the surrounding system imposes.
+
+### Prior decisions
+
+What must not be relitigated, and why — from step 2, plus anything the user has
+already settled. This is where an answer given once stops being asked again.
+
+A deliberate shortcut belongs here too, and it belongs here **with its ceiling
+named**: what it will not survive, and what replaces it when that day comes. "A
+global lock, adequate below N writes a second, per-account locks if throughput
+matters" is a decision. The same shortcut with no ceiling written down is hidden
+debt, and the next session cannot tell the two apart.
+
+This is the same information ponytail's `ponytail:` code comments carry, and
+`/ponytail-debt` — shipped alongside it — harvests them into a ledger. Read that ledger
+when writing this pillar — a shortcut already marked in the code is a prior
+decision that should not be rediscovered from scratch.
+
+### Task breakdown
+
+Atomic units. Each one independently assignable, each one small enough that a
+single failure does not take the rest with it.
+
+**This is not the checklist and it is not the approach.** It is the input phase 5 reasons
+about and the checklist is cut against — both of which are free to arrive at different
+boxes, because they know how the change is being built and this pillar does not. **So it
+is a list, never boxes**: the checklist is the boxes under `## Checklist` and nothing else,
+and a breakdown transcribed straight into checkboxes is what made the plan a task list
+until 2026-08-17.
+
+### Verification criteria
+
+How each unit is proven — **each criterion written so it can be failed, and naming the
+test that proves it**, by file and case.
+
+#### Write them in EARS. This is checked.
+
+A criterion in free prose cannot be failed, only interpreted — and one nobody can fail
+is treated as satisfied by default. EARS (Mavin et al., RE'09) is the de facto syntax
+for fixing that, and its payoff is that a criterion maps almost 1:1 onto the test below
+it. Five patterns cover everything:
+
+| Pattern | Shape | When to reach for it |
+|---|---|---|
+| ubiquitous | The `<system>` **shall** `<response>` | always true, no trigger |
+| state-driven | **While** `<precondition>`, the `<system>` **shall** `<response>` | true for as long as a state holds |
+| event-driven | **When** `<trigger>`, the `<system>` **shall** `<response>` | a response to something happening |
+| unwanted | **If** `<condition>`, **then** the `<system>` **shall** `<response>` | errors, failures, refusals |
+| optional | **Where** `<feature>`, the `<system>` **shall** `<response>` | only when a feature is present |
+
+Before and after, from this repository's own history:
+
+```
+- loop reads a legacy plan.md when no tasks.md is present          ← cannot be failed
+- Where a change holds plan.md and no tasks.md, the runner shall
+  drive plan.md.                                                    ← one test, no reading
+```
+
+The second one told the person writing the test what to assert. The first one did not,
+which is how a criterion ends up with a test that proves a neighbouring thing.
+
+**`shall` is the marker, and `spec-drift --ears` fails a delta without it** — inside
+`--anchors`, so it is one of the six gates rather than a seventh. The keyword is not
+checked, because ubiquitous requirements have none by design. Bold it or do not; the
+check strips emphasis.
+
+**Capability specs written before 2026-08-17 are warned about, never failed.** 545
+criteria predate this, and rewriting all of them in one unreviewable diff is 545 chances
+to change a promise that works today. A capability migrates when a delta lands on it.
+
+**When the shape genuinely does not fit, say so in the criterion rather than dropping
+`shall`.** A criterion that resists all five patterns is usually two criteria, or one
+that has not decided what it promises.
+
+The tests do not exist yet. Name them anyway. That citation is what makes them get
+written, and it is what makes this pillar falsifiable instead of decorative. A
+criterion with no named test is a hope, and it will be treated as satisfied by
+default.
+
+Write citations in a form a tool can check:
+
+```
+Proof: internal/link/apply_test.go TestApplyIsIdempotent
+```
+
+`spec-drift --anchors` — the script beside the sibling `record-work` skill, at
+`<skill-base>/../record-work/spec-drift` from this skill's announced base
+directory — resolves every one of them and fails on a citation
+whose file or whose **test** is absent. The test name is the part that matters: a
+file-level check passes an invented test name as long as some file sits at that
+path, which is precisely the fabrication the anchor exists to prevent. It caught
+one in this repository's own spec.
+
+### And the spec declares what it governs
+
+One line per spec file:
+
+```
+Governs: cmd/** internal/** scripts/**
+```
+
+An entry with a leading `!` excludes: `Governs: cmd/** !cmd/tool/gates_test.go` claims
+everything under `cmd/` but that test, whose promise belongs to another capability. A path
+is governed when a plain entry matches it and none of the spec's `!` entries does — an
+exclusion always wins, as in .gitignore.
+
+That is the other half of the anchor. Without it, "code changed but the spec did
+not" is a guess about the whole repository. With it, the question is precise: this
+path is governed by that spec, and that spec did not move.
+
+A path no spec claims is reported separately and more softly — not everything needs
+a contract, and treating every unanchored file as an error trains people to ignore
+the warning.
+
+## The decision log — `## Decision log`
+
+A section of the change document, `proposal.md`. It records what the user settled, in the
+user's words, and it is what a fan-out writer is given by path — a decision that lives only
+in the conversation cannot reach an agent that never had the conversation, and it gets
+asked again next session.
+
+**The first write creates it.** Normally that is step 4's first answer; a phase 5 that
+opens on a change without one — a phase 2 that had nothing to ask — creates it the same
+way. No empty heading up front: a log with no entries would be a claim that there were no
+decisions, made before anyone knew.
+
+The format, whole:
+
+```
+## Decision log
+
+### Session 2026-08-19
+- Q: discount on the base price, or on the already-discounted one? → A: base, never compounded
+- Q: new table, or a column on orders? → A: column — we do not want another migration (assumed)
+```
+
+Dated sessions, one `- Q: … → A: …` line per decision, **the answer verbatim**. A
+paraphrase loses the part that was not understood yet — the same reason the proposal
+records the ask in the words it was asked in. `(assumed)` marks an answer nobody gave:
+attacca's, and any default taken because the user was not there. An assumed entry names
+what changes if it is wrong.
+
+**One writer, the session** — the same rule as the checklist, for the same reason.
+Writers read it by path and never append; their questions come back in their return
+value and are logged here by the session that asks them.
+
+**The log dies with the change.** At landing the folder goes, and the log goes with it.
+What survives is the copy already made: each entry is written into `## Prior decisions`
+as it is answered, attributed and dated, so landing needs no new mechanism and the
+capability spec carries the decisions forward. A change begun in the old layout keeps its
+log in the file it started in.
+
+## Step 4 — Ask what cannot be settled here. As many as a wrong guess would cost.
+
+Some things are genuinely not yours to decide: a product tradeoff, a convention
+with two live precedents in the codebase, anything where guessing wrong quietly
+breaks working behaviour.
+
+**Ask them as an interview: one question per `AskUserQuestion` call — one
+conversational message where the native prompt does not exist — before the file is
+written.** Each question carries the option you recommend *with the reason it is
+recommended*, the real alternatives, room to answer differently — and **"no more
+questions" as an option, always**, so the user ends the interview whenever the
+remaining ones are not worth their time.
+
+One at a time is the point, not an inefficiency: each answer can redirect the next
+question, which is the difference between an interview and a form. A batched call asks
+everything the first draft thought of; an interview asks what the last answer made
+worth asking. Log each answer — verbatim, under `## Decision log` — before the next
+question goes out.
+
+Thinking the six pillars is what surfaces them — a boundary the request left open, a
+scope decision that changes what gets built, two precedents with nothing choosing
+between them. So the questions come after step 3's thinking and before step 3's
+file. **The answers belong inside the contract, not bolted onto it afterwards.**
+
+**There is no hard cap, and the bias is toward asking.** The spec is a contract
+built by two people, and a phase that hands one over finished has decided alone
+everything it did not ask about — the decisions made quietly are exactly the ones
+nobody reviews. When in doubt about whether a question is worth it, ask it: a
+question is cheaper than a contract that is confidently wrong, and better asked out
+of caution than swallowed out of fear.
+
+**The bound is judgment around five, and it cuts both ways.** Five is a soft target,
+not a quota and not a ceiling: stop earlier when the answers have settled everything,
+run past it when a wrong guess would cost more than the question does. Every question
+must be one a wrong guess would make expensive — never a form-length interrogation of
+things the code already answers. A dozen questions is not thoroughness, it is the phase
+handing its own job back; three sharp ones beat ten a reader skims — and now each one
+costs a round trip, which is one more reason to make it sharp.
+
+**Zero is a legitimate answer, and it is reported in one line.** When the code and
+the proposal already settle everything, say so and write the spec. A quota
+manufactures questions the code answers, which `AGENTS.md` forbids in as many words,
+and a question whose only available answer is "yes, carry on" is a round trip charged
+for a rubber stamp.
+
+This used to be one batched call, and the sequence is deliberate. The batch was cheap
+but it interviewed nobody: all its questions came from the same draft, none could build
+on an answer, and the user met them as a form. The soft bound and the standing "no
+more" option are what keep the sequence from becoming the serial ceremony this flow
+spends its length arguing against — the user can always collapse it to zero.
+
+**The answers go under `## Decision log` verbatim as they arrive, and into the contract**
+under `## Prior decisions`, next to what each one settled, attributed and dated. An answer that
+lives only in the conversation gets asked again next session, and the second answer
+will not always match the first.
+
+**Phase 2 is the only phase that interviews.** Phase 5 asks its one fork question, and the
+one stop before code asks whether the whole document is right; neither opens a second
+tranche of questions. The contract is where an answer changes the most and costs the
+least to change, and asking twice before the first line of code is how a one-stop flow
+starts growing back.
+
+Do not ask what the code can tell you. Read it.
+
+The trivial lane asks nothing: step 0 answered *no spec needed*, so there is no
+contract to disagree about and nothing to ask about it.
+
+**Under `/libretto-attacca` the questions are not asked either — they are answered and
+marked.** For each one, take the option you would have recommended, log it under
+`## Decision log` with the `(assumed)` suffix, write it under prior decisions **marked as
+assumed**, name what changes if it is wrong, and carry on. Never a
+default left silent, and never a guess written as though it were settled. The questions
+that would have been asked are the ones that must be findable afterwards, because nobody was
+there to answer them. The command carries why, and what it costs.
+
+## Step 4b — Write it into the change document
+
+The interview is done and its answers are logged.
+Write the contract into `proposal.md` itself — the file phase 1 or the queue captured, grown in place, never a new one beside it. When
+phase 1 came from a tracker and wrote no capture, create it, carrying `Tracker: <key>`.
+
+After this phase the file holds, top to bottom:
+
+| Part | Where |
+|---|---|
+| `Tracker:` · `Targets:` | top, column 0, outside any fence. Exactly one `Targets:`, the primary capability's |
+| the ask, verbatim · the reading | the headings the capture already wrote, untouched |
+| the decision log | `## Decision log` |
+| the contract | the six pillars as level-2 headings: `## Outcomes` · `## Scope boundaries` · `## Constraints` · `## Prior decisions` · `## Task breakdown` · `## Verification criteria` |
+
+Phase 5 adds `## Approach` and the `Durable decisions:` line; the 5→6 seam adds
+`## Checklist`, last. Nothing else is created for the change — one document, read in one
+place.
+
+**Level 2, because the parsers read nothing else.** `spec-drift` opens and closes a section
+on a `## ` heading only, so a pillar under `###` runs into its neighbour, and a box with no
+level-2 heading between it and `## Verification criteria` is read as a criterion — and
+failed by `--ears` for carrying no `shall`.
+
+**Written here, by the session that held the interview.** The fresh eye moves from
+drafting to reading: once the checklist exists, `review-spec` hands the whole document to a
+reader that never had the conversation, before the one stop.
+
+## Step 5 — Check it before handing it over
+
+Read the finished spec as an adversary and look for exactly these:
+
+- a pillar with a heading and nothing real under it
+- an outcome that no criterion tests
+- a criterion with no named test
+- two clauses that cannot both be true
+- a scope boundary vague enough to argue with
+- an answer from step 4 that never made it into the file
+
+Fix them here. Every one of these is cheap now and expensive in phase 6.
+
+## Where specs live
+
+```
+.agents/
+├── specs/                        the living, consolidated specification
+│   └── bundle-products/
+│       └── spec.md               Governs: src/bundles/** src/pricing/*.ts
+└── changes/                      changes in flight
+    ├── add-relative-discounts/   one capability
+    │   └── proposal.md           Targets: bundle-products — the ask, the decision log,
+    │                             the contract, the approach, the checklist
+    └── add-bundle-gift-cards/    two capabilities
+        ├── proposal.md           Targets: bundle-products — everything above
+        └── spec-gift-cards.md    Targets: gift-cards — that capability's six pillars
+```
+
+**The old layout is still read.** A change begun before the change document — a
+`spec.md` delta beside its proposal, a `plan.md`, a `tasks.md` — finishes in the layout it
+started in, and whatever it still lacks the session writes inline there. Nothing in
+flight is migrated.
+
+**One spec per capability, never per ticket.** This matters more than it looks. A
+capability spec accumulates and stays true for years; a spec named after a ticket
+is dead the day the ticket closes, and a directory of dead specs is worse than no
+specs because people still read them.
+
+So the first question is not "what shall I call this spec" but **which capability
+is this change amending?** If none of them fit, that is the discovery: a new
+capability, and it gets its own directory.
+
+**Edits go in the change while the work is in flight.** Not into the capability
+spec directly — the capability spec is what is true now, and the change is a
+proposal until it lands. `Targets:` names the capability so a tool can tell that an
+in-flight change *is* that spec moving.
+
+When it lands, phase 8 applies the contract onto the capability spec and the change
+folder goes away. Exactly one current specification, always. See
+`skills/record-work/`.
+
+A change spanning several capabilities carries the primary contract in `proposal.md` and
+one `spec-<capability>.md` per extra capability inside the same change folder, each with
+its own `Targets:`. One change, several amendments — not several changes racing each
+other.
+
+The project's own layout is discovered, not assumed — see *If the project already has a
+convention* under step 2, where the same question is answered once for the whole skill.
+
+## Output
+
+Report what was written, where, and anything still unresolved that phase 5 onward will hit.
+
+**Then carry on to `write-plan`. This phase does not stop, and that is deliberate.** The
+contract is agreed once, together with the approach and the checklist it produced and a
+fresh reader's findings beside them — `review-spec` asks that stop. A stop here as well
+would ask the user to agree to a contract before seeing what building it costs, then ask
+again.

@@ -3,6 +3,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import type { Agent, RemoveResult, WorkspaceRecord, WorkspaceResult, WorkspaceView } from '../preload/api'
+import { agentArgv } from './agent'
 import { detectMode, effectiveMode, type Repo } from './repos'
 import { run as defaultRun, type Runner } from './run'
 import { hasSession, killSession, newSession, sessionName } from './tmux'
@@ -57,7 +58,7 @@ export async function openWorktree(input: OpenInput, run: Runner = defaultRun): 
 
   const head = await run('git', ['-C', repo.path, 'rev-parse', 'HEAD'])
   const id = newId()
-  const paneId = await newSession(id, path, input.argv ?? [agent], run)
+  const paneId = await newSession(id, path, input.argv ?? agentArgv(agent), run)
 
   const record: WorkspaceRecord = {
     id,
