@@ -1,5 +1,6 @@
 Tracker: none
-Queued: 2026-11-09
+Targets: avisos
+Durable decisions: the ones in Prior decisions below
 
 # add-avisos
 
@@ -39,3 +40,124 @@ superseded: GitHub and GitLab connect with write-only tokens in Ajustes (add-cre
 The **Avisos** screen: a feed of review requested, a comment on your MR, your agent opened an MR,
 CI failed, a new MR in a project you follow, approvals and merges — filterable, each opening its
 MR or workspace, with a counter in the rail. Needs add-mr-lists.
+
+## Decision log
+
+### Session 2026-11-09
+- Q: «sigue con todo haz mejoras, nuevas features» — Pau, 9 nov → decisions taken with the recommended option, marked (assumed).
+- Q: ¿De dónde salen los avisos? → A: de comparar cada carga de MR con la anterior y de los cambios de estado de los agentes; ninguna consulta extra a las forjas (assumed).
+- Q: ¿Y la primera carga? → A: solo fija la referencia: no genera avisos (assumed).
+- Q: ¿«Comentario nuevo»? → A: cuando sube el recuento de comentarios de una MR de Mías o Me toca revisar: GitHub `comments` de la búsqueda más `review_comments` del detalle cuando lo hay; GitLab `user_notes_count` (assumed).
+- Q: ¿Cuántos se guardan? → A: los últimos 200, en `$ATRIL_HOME/avisos.json` (assumed).
+
+## Outcomes
+
+- The rail has **Avisos** with the number of unread notices. The screen lists them newest first —
+  review requested, a new comment, CI failing, a new MR in what you follow, an MR no longer open,
+  an MR you opened, an agent that needs you — each with its time, filterable by kind, and each
+  opening its MR view, or its workspace for an agent.
+- **Marcar todo leído** clears the unread count; opening a notice marks it read.
+
+## Scope boundaries
+
+**In:** deriving notices from MR listings and agent states, storing the last 200, the screen, the
+rail counter, filters, marking read. **Out:** notices from forge webhooks or the forges'
+notification APIs, approvals (not in the listing data), Mac notifications for MR notices (only the
+existing needs-you one), per-kind mute settings.
+
+**Never scoped out:** no extra forge request; notice text built from Atril's own words plus the
+MR's title as `{detail}`, shown as text; the screen is keyboard-operable.
+
+## Constraints
+
+- Uses add-mr-lists' listing and the status tracker; `MrItem` gains `notes?`.
+- New capability `avisos`: `src/main/avisos.ts` and `src/renderer/avisos/**`.
+
+## Prior decisions
+
+- **A feed apart from the sidebar** — Pau, 9 nov: «debería haber como una sub pantalla … donde vaya
+  llegando como notificaciones … publica una MR o tienes una nueva MR por mirar … en un apartado».
+- **Derived, not fetched** (assumed).
+
+## Task breakdown
+
+- Main: the diff between listings → notices, agent needs-you → notice, the store, IPC.
+- Renderer: the Avisos screen, rail counter, filters, opening a notice.
+
+## Verification criteria
+
+- **V1** When an MR listing completes after a previous one, Atril shall add a notice per change: an
+  URL new in Me toca revisar («Te piden revisión»), a higher `notes` count on an MR in Mías or Me toca
+  revisar («Comentario nuevo»), CI turning «Falla» on an MR in Mías («La CI falla»), an URL new in
+  Sigo («MR nueva en lo que sigues»), an URL gone from Mías («Ya no está abierta») and an URL new in
+  Mías («Has abierto una MR»), each with the MR title as detail; a forge that failed in either
+  listing shall produce no notice for its MRs.
+  Proof: src/main/avisos.test.ts listings turn into notices
+- **V2** The first listing after Atril starts with no stored baseline shall produce no notice.
+  Proof: src/main/avisos.test.ts the first listing only sets the baseline
+- **V3** When an agent enters «te necesita», Atril shall add «{branch} te necesita» linked to its
+  workspace.
+  Proof: src/main/avisos.test.ts an agent that needs you is a notice
+- **V4** Atril shall keep the last 200 notices and the baseline in `$ATRIL_HOME/avisos.json` across
+  restarts.
+  Proof: src/main/avisos.test.ts notices survive a restart and stay bounded
+- **V5** The rail shall show «Avisos» with the number of unread notices when it is not zero; the
+  screen shall list them newest first with kind, title and time, filter by kind, and «Marcar todo
+  leído» shall clear the count.
+  Proof: src/renderer/avisos/avisos.test.ts the feed lists, filters and marks read
+- **V6** Opening a notice shall mark it read and open its MR view when the MR is in the latest
+  listing, its workspace for an agent notice, and otherwise say «Esta MR ya no está en la lista».
+  Proof: src/renderer/avisos/avisos.test.ts a notice opens what it is about
+
+## Approach
+
+### Summary
+
+`src/main/avisos.ts`: `createAvisos(store)` with `onListing(lists)`, `onNeedsYou(ws)`, `list()`,
+`markRead(ids | 'all')`, persisting `{ baseline: { [url]: { list, notes?, ci? } }, items: Notice[] }`.
+`index.ts` calls `onListing` after `listMrs` (also on the dev fake path) and `onNeedsYou` where the
+needs-you Mac notification fires; IPC `atril:avisos:list`, `atril:avisos:markRead` and an
+`atril:avisos:changed` push. The renderer adds `src/renderer/avisos/Avisos.tsx`, a rail entry with
+a badge, and opens MR views through the MR screen's existing view.
+
+### Technical context
+
+Files: `src/main/avisos.ts` (+test), `src/main/forge/mrs.ts` (`notes`), `src/main/index.ts`,
+`src/preload/{api,index}.ts`, `src/renderer/avisos/Avisos.tsx` (+ `avisos.test.ts`),
+`src/renderer/components/Rail.tsx`, `src/renderer/App.tsx`, `mockApi.ts`, catalog, styles,
+`bocetos/novedades.html`. Gates: typecheck, lint, test.
+
+### The approach
+
+- A forge with an error in the new or the previous listing keeps its previous baseline rows and adds
+  no notice (V1), so a failed refresh never looks like "everything closed".
+- Notice: `{ id, kind, at, read, title, url?, workspaceId?, forge? }`; ids are random.
+- Opening an MR notice: switch to the MR screen and open that row's view (MrScreen gains an
+  `openUrl` prop or context).
+
+### The alternatives it beat
+
+| Considered | Why it lost |
+|---|---|
+| The forges' notification APIs | more requests and two very different shapes; the listing already has what matters |
+| A Mac notification per MR event | noise; the needs-you one stays the only interruption |
+
+### Risks
+
+| Risk | What catches it |
+|---|---|
+| A refresh that partly failed floods notices | failed forges keep their baseline (V1) |
+| Comment counts differ between search and detail | only an increase of the same source counts |
+
+### Validation and rollback
+
+V1–V6 seen red first. Rollback: one revert; `avisos.json` is a plain file.
+
+### Complexity deliberately kept
+
+None.
+
+## Checklist
+
+- [ ] main: notes in the listing, notices from listings and needs-you, the store, IPC · Closes: V1, V2, V3, V4
+- [ ] the window: Avisos screen, rail counter, filters, mark read, opening a notice · waits on box 1 · Closes: V5, V6
