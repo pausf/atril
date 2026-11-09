@@ -93,6 +93,7 @@ PTYs and worktrees, and pieces reused with attribution — but Atril does not ru
 - Q: ¿GitLab y GitHub en la fase 1? → A: «Y hacemos solo la fase 1 núcleo»
 - Q: «Cuando se crea una nueva tarea, que se pueda elegir qué modelo utilizar … Cuando haces empezar … utiliza este modelo» → A: selector Modelo en Empezar y Nuevo trabajo: Por defecto · Opus · Sonnet · Haiku (sin Fable, por gasto); el modelo se guarda en el workspace record
 - Q: la carpeta de código `src/main/secrets/` choca con tu regla global `Read/Edit(**/secrets/**)` → A: «si» a renombrarla `src/main/credentials/` (la regla queda intacta; el `mv` lo ejecutó Pau)
+- Q: nombre de la rama → A: «Las ramas del proyecto suelen ser el nombre de la tarea. Por ejemplo, pf-4870 … suele ser referenciado con la tarea del Jira» (en los repos: la clave en mayúsculas, y una letra B/C… para un segundo intento)
 
 ## Vocabulary
 
@@ -484,6 +485,7 @@ or in tmux itself, never in the window.
 | Libretto's own `libretto` CLI (loop, metrics, init) is not bundled | accepted: the flow's skills do not need it to run; bundle it with the app when a feature calls it |
 | Claude's `/hooks` menu does not list hooks passed with `--settings`, so it cannot prove they loaded | a `SessionStart` probe through the same script wrote its state file in a real Claude start (box 7); that is the evidence, not the menu |
 | Reopening Atril would notify for every agent already waiting | the first refresh after launch only records state; notifications start from the next transition (box 7 choice) |
+| Libretto's find-work branches when it writes the proposal; Start already put the agent on branch `<KEY>` | Libretto's rule is "ensure, not create" off the base branch; checked in the Start box with one real run that the change stays on `<KEY>` |
 | `Stop` fires at the end of every turn, so `needs-you` may be noisy | accepted for phase 1; one notification per transition (W15) bounds it |
 
 ### Validation and rollback

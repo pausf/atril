@@ -12,7 +12,7 @@ Vocabulary, decision log and the primary contract: `proposal.md` beside this fil
   demand.
 - A task that already has a workspace shows that, instead of a Start button.
 - **Start** opens a dialog with: the repo (remembered per Jira project and component, asked
-  the first time), the branch (derived from the summary, editable), the repo's mode with its
+  the first time), the branch (the Jira key as it is, e.g. `WEB-3535`, editable), the repo's mode with its
   reason, and the full command line that will run (`claude --plugin-dir <bundled Libretto>
   --settings ~/.atril/hooks.json "/libretto:libretto-flow <KEY>"`). Confirming opens the
   workspace, starts the agent session, and moves the issue to In Progress.
@@ -49,6 +49,10 @@ command; the Jira token never passes through Atril.
 - **Jira→repo asked once and remembered per project and component** — decision log,
   assumed. The memory key is the issue's project plus its first component, or the project
   alone when it has none.
+- **The branch is the Jira key, uppercase, as the team names them** — Pau, 9 nov: «Las ramas
+  del proyecto suelen ser el nombre de la tarea … suele ser referenciado con la tarea del
+  Jira». Observed in shop-web/v2: `WEB-3535`, `SHOP-2630`, `OPS-4131`; a second
+  attempt adds a letter: `WEB-3535B`, `SHOP-2613c`.
 - **The task→workspace link is the Jira key in the workspace record** (proposal.md
   vocabulary); it survives restarts with the record.
 - **"Unconfigured" means no Jira token in Ajustes, or `/myself` rejects it.**
@@ -75,9 +79,9 @@ command; the Jira token never passes through Atril.
 - **I4** When the person starts a task whose project and component have no remembered repo,
   Atril shall ask for one and remember it for the next task of that project and component.
   Proof: src/main/jira/start.test.ts  remembers the repo per project and component
-- **I5** When the dialog opens, Atril shall propose a branch made of the summary as a
-  lowercase ASCII slug of at most 40 characters that passes `git check-ref-format --branch`.
-  Proof: src/main/jira/start.test.ts  derives a valid branch from the summary
+- **I5** When the dialog opens, Atril shall propose the issue key exactly as Jira gives it
+  (`WEB-3535`) as the branch name.
+  Proof: src/main/jira/start.test.ts  proposes the issue key as the branch
 - **I6** When Start is confirmed, Atril shall launch `claude` with the bundled Libretto plugin,
   its hooks and the prompt `/libretto:libretto-flow <KEY>` in the new workspace's agent
   session — the plugin-namespaced name observed in box 4, because the bare `/libretto-flow`
@@ -93,6 +97,6 @@ command; the Jira token never passes through Atril.
   instead of Start, also after a restart.
   Proof: src/main/jira/inbox.test.ts  task with a workspace shows it instead of start
 - **I10** If the proposed branch already exists in the repo, or its worktree path exists,
-  then the dialog shall say so and propose the same name with the first free `-2`, `-3`…
-  suffix.
+  then the dialog shall say so and propose the key with the first free letter suffix: `B`,
+  `C`, `D`… (`WEB-3535B`), as the team does.
   Proof: src/main/jira/start.test.ts  proposes a free branch when the slug is taken
