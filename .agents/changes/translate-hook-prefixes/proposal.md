@@ -12,9 +12,8 @@ falló» — and they stay Spanish in English mode, because those lines travel a
 
 ## The reading
 
-Not a bug against the contract; a gap in it. The kind of each line is already stored (`says`,
-`asks`, `fail`…), so the window and main can render the prefix in the current language from the
-kind and keep only Claude's own words as `{detail}`.
+Not a bug against the contract; a gap in it. The window and main recognise the hook's Spanish
+prefix in the line's text and render it in the current language, keeping the rest as `{detail}`.
 
 ## Decision log
 
@@ -22,6 +21,9 @@ kind and keep only Claude's own words as `{detail}`.
 - Q: «tu desarrollo todo sin parar … te dejo solo» stands → decisions taken with the recommended option, marked (assumed).
 - Q: ¿Se traduce al escribir o al mostrar? → A: al mostrar: el hook no sabe el idioma resuelto (eso es de main) y las líneas ya escritas también deben cambiar; un único `localiseActivity` lo usan la ventana y main (assumed).
 - Q: ¿Qué no se toca? → A: lo que va detrás del prefijo: rutas, comandos, descripciones y las palabras de Claude, que viajan como `{detail}` (assumed).
+
+- Q: (spec-reviewer) ¿Qué prefijos? → A: exactamente los que escribe `summarise.mjs`, listados en S27; se reconocen por el texto, no por el tipo (assumed).
+- Q: (spec-reviewer) ¿Y una línea `✗` sin «falló» al final? → A: se queda como vino (assumed).
 
 ## Outcomes
 
@@ -55,10 +57,16 @@ disk; translating Claude's words.
   the path, command or description inside an activity line, a Jira title, a file name, the detail
   inside an error — shall be shown exactly as they came.
   Proof: src/renderer/settings/language.test.ts claude and jira text stay as written
-- **S27** While the language is English, an activity line or notification body that starts with one
-  of the hook's prefixes shall show that prefix in English and the rest unchanged, and a line with
-  no known prefix shall show as it came.
+- **S27** While the language is English, a line that is «Claude te necesita» or «Claude ha
+  terminado», or starts with «Leyendo », «Editando », «Escribiendo », «Ejecutando », «Buscando »,
+  «Lanzando un subagente: », «Te pregunta: », «Claude dice: » or «Le has escrito: », or has the
+  shape «✗ … falló», shall show that part in English and the rest unchanged; any other line shall
+  show as it came.
   Proof: src/preload/i18n.test.ts hook prefixes follow the language
+- **S28** While the language is English, the activity feed, the workspace rows and main's
+  needs-you notification body shall show the hook's lines through S27.
+  Proof: src/renderer/settings/language.test.ts claude and jira text stay as written
+  Proof: src/main/i18n.test.ts the notification body speaks the language
 
 ## Approach
 
@@ -98,4 +106,4 @@ None.
 
 ## Checklist
 
-- [ ] localiseActivity in the feed, the rows and the notification body · Closes: S17, S27
+- [ ] localiseActivity in the feed, the rows and the notification body · Closes: S17, S27, S28
