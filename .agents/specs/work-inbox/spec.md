@@ -43,6 +43,12 @@ Governs: src/main/jira/** src/renderer/inbox/**
 - **Empezar** opens a workspace on that branch whose agent runs the Libretto flow with the text
   as the request, and shows it in Trabajo, like a Jira Start.
 
+### Repos in Ajustes (move-repos-to-settings, 9 nov 2026)
+
+- The own-task dialog opens two ways: «Nueva tarea» in Tareas (text required, as I23) and
+  «Nuevo trabajo» in Trabajo (text optional; without text the agent is plain Claude).
+- With no repo registered, the dialog points to Ajustes → Repos with a button that goes there.
+
 ## Scope boundaries
 
 **In:** reading tasks, the Jira→repo memory, Start, the In Progress transition.
@@ -84,6 +90,11 @@ Jira issue from the text, Jira transitions (there is no issue).
 command — never a shell string, never a flag (`spec-workspaces.md`, W40); the dialog is fully
 keyboard-reachable (Tab cycles inside it, Escape closes, ⌘↩ submits from the text area).
 
+### Repos in Ajustes (move-repos-to-settings, 9 nov 2026)
+
+**In:** the optional text, the plain-Claude path, the no-repo pointer. **Out:** anything else in
+the dialog.
+
 ## Constraints
 
 - The Jira REST API with the site, email and token saved in Ajustes (`.agents/specs/settings/spec.md`):
@@ -113,6 +124,10 @@ keyboard-reachable (Tab cycles inside it, Escape closes, ⌘↩ submits from the
 - Reuses `workspaces.open` (W-criteria for both modes) with the text as one more argument; the
   flow command is built in main, never in the renderer.
 - Same dialog look and focus rules as the Start dialog (I4–I10).
+
+### Repos in Ajustes (move-repos-to-settings, 9 nov 2026)
+
+- Plain work calls `workspaces.open` without a task, as the old «+ trabajo» did.
 
 ## Prior decisions
 
@@ -292,11 +307,12 @@ keyboard-reachable (Tab cycles inside it, Escape closes, ⌘↩ submits from the
   shall open a workspace on the shown branch with the chosen model, passing the text as the task with agent `claude`,
   and show it in Trabajo.
   Proof: src/renderer/inbox/owntask.test.ts own task opens a workspace with its text
-- **I23** While the text is empty or only spaces, Empezar shall be disabled, and the text area
-  shall accept at most 2000 characters (UTF-16 units).
+- **I23** While the dialog is «Nueva tarea» and the text is empty or only spaces,
+  Empezar shall be disabled; in both dialogs the text area shall accept at most 2000 characters.
   Proof: src/renderer/inbox/owntask.test.ts own task needs text
-- **I25** If no repo is registered, then the dialog shall say «Añade un repo en Trabajo para
-  empezar» and Empezar shall be disabled.
+- **I25** If no repo is registered, then the dialog shall say «Añade un repo en
+  Ajustes → Repos», offer «Ir a Ajustes» which closes the dialog and shows Ajustes, and Empezar
+  shall be disabled.
   Proof: src/renderer/inbox/owntask.test.ts own task needs a repo
 - **I26** While Jira is not connected (I3), «Nueva tarea» shall still be shown and open the dialog.
   Proof: src/renderer/inbox/owntask.test.ts own task works without jira
@@ -306,3 +322,11 @@ keyboard-reachable (Tab cycles inside it, Escape closes, ⌘↩ submits from the
   `anadir-filtro-de-laboratorios`; «fix: bug-in api, ya» → `fix-bug-in-api-ya`); once the person
   changes the field in any way, it shall stay as they left it.
   Proof: src/renderer/inbox/owntask.test.ts branch follows the text until edited
+
+### Repos in Ajustes (move-repos-to-settings, 9 nov 2026)
+
+- **I27** When the person starts from «Nuevo trabajo», Atril shall open the workspace with the
+  text as its task when the text is not blank (as I22), and with no task — plain Claude — when it
+  is blank; Empezar needs only a repo and a branch there.
+  (One proof holds both: the test starts one with text and one without and checks each call.)
+  Proof: src/renderer/inbox/owntask.test.ts new work without text opens plain claude

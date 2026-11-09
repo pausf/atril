@@ -42,6 +42,9 @@ Governs: `src/main/credentials/** src/renderer/settings/**`
 - {**S8** While a Jira token is saved, the top bar shall show the account's avatar and display name from `/rest/api/3/myself`; the avatar is fetched by the main process and reaches the renderer as image data only, never with the token; clicking the chip opens Ajustes. src/renderer/settings/settings.test.ts top}
 - {**S9** When the person searches and picks a board in Ajustes, Atril shall store its id and name, and show it on the Jira card. src/renderer/settings/settings.test.ts picks}
 - {**S10** When the Jira token is replaced, Atril shall keep the picked board; when it is deleted, Atril shall forget the board too. src/main/credentials/store.test.ts board}
+- {**S11** While Ajustes is shown, the Repos card shall list every registered repo with its id, its path and a mode select offering «Auto · <detected mode>», «Worktree» and «In-place»; choosing «Worktree» or «In-place» shall store it as the repo's mode (W4), choosing «Auto» shall clear it, and the select shall show the choice; a repo detected as in-place shall show the reason under its path. src/renderer/settings/repos.test.ts repos}
+- {**S12** When the person adds a repo from the card and its id is taken, the card shall ask for another id and register it with the one given. src/renderer/settings/repos.test.ts adding}
+- {**S13** If the folder the person picks is not a git repository, then the card shall say «Esa carpeta no es un repositorio git.» and register nothing. src/renderer/settings/repos.test.ts a}
 
 [full spec](settings/spec.md)
 
@@ -71,10 +74,11 @@ Governs: `src/main/jira/** src/renderer/inbox/**`
 - {**I20** When the person clicks Empezar on a task whose project and component have a remembered repo and whose proposed branch is free, Atril shall start it without the dialog and without a `--model` flag. src/renderer/nextup.test.ts one}
 - {**I21** When the person ⌥-clicks Empezar, or the project has no remembered repo, or the proposed branch is taken, Atril shall open the Start dialog. src/renderer/nextup.test.ts option}
 - {**I22** When the person writes a task in «Nueva tarea», picks a repo and presses Empezar, Atril shall open a workspace on the shown branch with the chosen model, passing the text as the task with agent `claude`, and show it in Trabajo. src/renderer/inbox/owntask.test.ts own}
-- {**I23** While the text is empty or only spaces, Empezar shall be disabled, and the text area shall accept at most 2000 characters (UTF-16 units). src/renderer/inbox/owntask.test.ts own}
-- {**I25** If no repo is registered, then the dialog shall say «Añade un repo en Trabajo para empezar» and Empezar shall be disabled. src/renderer/inbox/owntask.test.ts own}
+- {**I23** While the dialog is «Nueva tarea» and the text is empty or only spaces, Empezar shall be disabled; in both dialogs the text area shall accept at most 2000 characters. src/renderer/inbox/owntask.test.ts own}
+- {**I25** If no repo is registered, then the dialog shall say «Añade un repo en Ajustes → Repos», offer «Ir a Ajustes» which closes the dialog and shows Ajustes, and Empezar shall be disabled. src/renderer/inbox/owntask.test.ts own}
 - {**I26** While Jira is not connected (I3), «Nueva tarea» shall still be shown and open the dialog. src/renderer/inbox/owntask.test.ts own}
 - {**I24** While the person has not edited the branch, the branch shall be the first five words of the text, a word being a run of `[a-z0-9]` after lower-casing and removing accents, joined by hyphens, at most 40 characters with no trailing hyphen («Añadir filtro de Laboratorios» → `anadir-filtro-de-laboratorios`; «fix: bug-in api, ya» → `fix-bug-in-api-ya`); once the person changes the field in any way, it shall stay as they left it. src/renderer/inbox/owntask.test.ts branch}
+- {**I27** When the person starts from «Nuevo trabajo», Atril shall open the workspace with the text as its task when the text is not blank (as I22), and with no task — plain Claude — when it is blank; Empezar needs only a repo and a branch there. (One proof holds both: the test starts one with text and one without and checks each call.) src/renderer/inbox/owntask.test.ts new}
 
 [full spec](work-inbox/spec.md)
 
@@ -133,5 +137,7 @@ Governs: `src/main/** src/preload/** src/renderer/** resources/** !src/main/jira
 - {**N3** When the person replies to a needs-you notification, Atril shall type the reply into that workspace's agent pane as literal text followed by Enter, without bringing Atril to the front; it shall send nothing for an empty reply, and if the workspace or its pane no longer exists it shall send nothing and say «No se pudo enviar: ese trabajo ya no está». src/main/reply.test.ts reply}
 - {**W40** When a workspace is opened with a task text, the agent's last argument shall be the single string `/libretto:libretto-flow <trimmed text>`; a text holding `$(…)`, `;`, both kinds of quote, a newline, or starting with `--` shall arrive byte for byte, as that one argument, and run nothing. src/main/tmux.test.ts task}
 - {**W41** If the task is not a string, or its text is empty after trimming, longer than 2000 characters, or contains a NUL character, then `workspaces.open` shall refuse with «El texto de la tarea no es válido (máx. 2000 caracteres).» and create nothing. src/main/workspaces.test.ts invalid}
+- {**W42** While the tests run, any Atril path (`ATRIL_HOME`, `ATRIL_CLAUDE_JSON`) without its env override shall throw instead of resolving to the person's home (found 9 nov: a timed-out tmux test kept writing after its `afterEach` deleted `ATRIL_HOME`, and left a workspace record in the real `~/.atril/workspaces.json`). src/main/paths.test.ts a}
+- {**W43** While Trabajo is shown, the sidebar shall show «＋ Nuevo trabajo», which opens the «Nuevo trabajo» dialog, and shall not show a Repos section. src/renderer/sidebar.test.ts sidebar}
 
 [full spec](workspaces/spec.md)

@@ -80,6 +80,11 @@ The `workspaces` capability, phase 1. Its siblings in this change: `.agents/spec
 - `workspaces.open` takes an optional task text; the agent then starts with the Libretto flow
   and that text as its request.
 
+### Repos in Ajustes (move-repos-to-settings, 9 nov 2026)
+
+- The Trabajo sidebar starts with «＋ Nuevo trabajo», then «Trabajo en marcha» and the Jira
+  summary; the repo list and its per-repo «+ trabajo» form are gone.
+
 ## Scope boundaries
 
 **In:** the three columns and footer of `bocetos/fase1-nucleo.html` (boceto 8), the
@@ -130,6 +135,10 @@ in the workspace record.
 
 **Never scoped out:** the text is one argv element after `/libretto:libretto-flow `, so it can
 never become a `claude` flag or reach a shell; the renderer cannot choose the command.
+
+### Repos in Ajustes (move-repos-to-settings, 9 nov 2026)
+
+**In:** the button and removing the section. **Out:** anything in main.
 
 ## Constraints
 
@@ -536,3 +545,9 @@ never become a `claude` flag or reach a shell; the renderer cannot choose the co
   tmux test kept writing after its `afterEach` deleted `ATRIL_HOME`, and left a workspace record
   in the real `~/.atril/workspaces.json`).
   Proof: src/main/paths.test.ts a test without its own home never reaches the real one
+
+### Repos in Ajustes (move-repos-to-settings, 9 nov 2026)
+
+- **W43** While Trabajo is shown, the sidebar shall show «＋ Nuevo trabajo», which opens the
+  «Nuevo trabajo» dialog, and shall not show a Repos section.
+  Proof: src/renderer/sidebar.test.ts sidebar offers new work and no repos
