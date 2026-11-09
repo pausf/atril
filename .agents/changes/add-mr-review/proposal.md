@@ -31,6 +31,8 @@ Pau, 9 nov 2026:
 
 ## The reading
 
+**Tokens (9 nov):** GitLab (host + PAT with `api`) and GitHub (PAT with `repo`, `read:org`) cards in Ajustes, reusing add-atril-core's write-only encrypted store (spec-settings.md); they replace the `gh`/`glab` approach below for what Atril reads and posts.
+
 **Auth (agreed 9 nov):** Atril never asks for, stores or sees a forge token — everything goes
 through `gh` and `glab` with the person's own login, as Jira goes through `jira`. On first
 opening the MR screen Atril runs `gh auth status` / `glab auth status`; a missing login shows

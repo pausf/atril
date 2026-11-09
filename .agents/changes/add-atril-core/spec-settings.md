@@ -7,9 +7,9 @@ Vocabulary, decision log and the primary contract: `proposal.md` beside this fil
 
 ## Outcomes
 
-- A **Ajustes** screen, reached from the rail, with one card per service: **Jira** (site URL,
-  email, API token), **GitLab** (host, default `https://gitlab.com`, personal access token)
-  and **GitHub** (personal access token).
+- A **Ajustes** screen, reached from the rail (Trabajo · Ajustes in this phase), with the
+  **Jira** card: site URL, email, API token. The GitLab and GitHub cards are phase 2
+  (add-mr-review) and reuse this same store and screen.
 - Wherever a feature needs a service with no token stored, it says so and links to Ajustes
   ("Conecta Jira en Ajustes") instead of failing.
 - Saving a token checks it with one call and shows the account it belongs to, or the error.
@@ -18,7 +18,8 @@ Vocabulary, decision log and the primary contract: `proposal.md` beside this fil
 
 ## Scope boundaries
 
-**In:** storing, checking, replacing and deleting the three tokens; the "connect in Ajustes"
+**In:** storing, checking, replacing and deleting the Jira token, through a store and a card
+shape the phase-2 GitLab and GitHub cards reuse unchanged; the "connect in Ajustes"
 state where a feature needs one.
 
 **Out:** OAuth browser flows; several accounts per service; reading tokens from `gh`, `glab`
@@ -35,10 +36,8 @@ file, or a message to the renderer; inputs are password fields.
   to store and says why — never a plaintext fallback.
 - Tokens live only in the main process. The renderer can send a token once (save) and can ask
   whether one exists and for whom; no IPC returns a token.
-- Network: only the service the token belongs to — the Jira site URL the person entered,
-  the GitLab host, `api.github.com`.
-- Checks: Jira `GET /rest/api/3/myself` (basic auth email:token), GitLab `GET /api/v4/user`
-  (`PRIVATE-TOKEN`), GitHub `GET /user` (`Authorization: Bearer`).
+- Network: only the Jira site URL the person entered (`https://…`, refused otherwise).
+- Check: Jira `GET /rest/api/3/myself` with basic auth `email:token`.
 
 ## Prior decisions
 
@@ -46,6 +45,8 @@ file, or a message to the renderer; inputs are password fields.
   GitLab, GitHub y de Jira, no utilizar los GH y cosas de estas», then «Yo lo haría, vale,
   híbrido». Atril uses its own tokens for everything it reads and posts; agents keep their
   CLIs and never see the tokens.
+- **Only phase 1 now** — Pau, 9 nov: «Y hacemos solo la fase 1 núcleo». The GitLab and GitHub
+  cards move to add-mr-review.
 - **Write-only once saved** — Pau, 9 nov: «donde pongan los tokens, pero ocultos … una vez que
   lo ponen, que ya no se puede visualizar».
 
@@ -53,7 +54,7 @@ file, or a message to the renderer; inputs are password fields.
 
 - Encrypted store with save / exists / delete.
 - One check call per service.
-- Ajustes screen with the three cards and the write-only states.
+- Ajustes screen with the Jira card and the write-only states.
 - The "Conecta X en Ajustes" state, used by the Jira inbox now and by MR screens in phase 2.
 
 ## Verification criteria
@@ -67,7 +68,7 @@ file, or a message to the renderer; inputs are password fields.
 - **S3** No IPC response, log line or file other than `secrets.bin` shall ever contain a saved
   token.
   Proof: src/main/secrets/store.test.ts  token never leaves the main process
-- **S4** When a token is saved, Atril shall check it with the service's identity call and show
+- **S4** When the Jira token is saved, Atril shall check it with `/rest/api/3/myself` and show
   the account name, or the service's error without the token.
   Proof: src/main/secrets/check.test.ts  check shows the account or the error
 - **S5** While a token is stored, the Ajustes card shall show "Guardado" with the account and

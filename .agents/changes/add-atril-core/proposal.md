@@ -90,6 +90,7 @@ PTYs and worktrees, and pieces reused with attribution — but Atril does not ru
 - Q: ¿Codex? → A: «no pongas codex»
 - Q: «Pero Claude tiene que cargar las propias skills que se le vayan metiendo también, aparte del libreto. ¿Eso lo hace?» → A: sí, observado en la casilla 4 (`(user)` y `(libretto)` a la vez); queda como criterio W33 y se prohíbe saltarse las del usuario
 - Q: ¿Tokens propios en vez de gh/glab/jira? → A: «Pensaba poner los tokens, o sea, los tokens de GitLab, GitHub y de Jira, no utilizar los GH y cosas de estas» → propuesta híbrida → A: «Yo lo haría. Yo lo haría, vale, híbrido, pero si no encuentra nada de token ni nada, una sección de ajustes donde pongan el token … pero ocultos, ¿sabes? O sea, cuando una vez que lo ponen, que ya no se puede visualizar.» (sustituye la decisión «Jira solo por el CLI» para lo que lee Atril; el agente de Libretto sigue usando el `jira` CLI)
+- Q: ¿GitLab y GitHub en la fase 1? → A: «Y hacemos solo la fase 1 núcleo»
 
 ## Vocabulary
 
@@ -512,7 +513,7 @@ or in tmux itself, never in the window.
 - [ ] agent state from Claude hooks passed by --settings and from the agent's dead pane, with one macOS notification per needs-you transition that opens the workspace · waits on box 3 · Closes: W14, W15, W16, W26, W27
 - [ ] usage footer: Claude 5 h and 7 d from the Keychain token and the usage endpoint, "—" with a reason when unreadable, the token never leaving main · waits on box 1 · Closes: W17, W18, W20
 - [ ] the right panel shows the Libretto stage and checklist of the selected workspace and follows file changes · waits on box 3 · Closes: F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12
-- [ ] Ajustes: the three token cards, encrypted with safeStorage, checked on save, write-only once saved, and the "Conecta X en Ajustes" state · waits on box 1 · Closes: S1, S2, S3, S4, S5, S6
+- [ ] Ajustes: the Jira token card, encrypted with safeStorage, checked on save, write-only once saved, and the "Conecta X en Ajustes" state · waits on box 1 · Closes: S1, S2, S3, S4, S5, S6
 - [ ] "Mis Jira" lists the person's open sprint tasks through the Jira REST API with the token from Ajustes, and links to Ajustes when there is none · waits on box 10 · Closes: I1, I2, I3
 - [ ] Start: repo memory, branch slug, validated key, claude running /libretto-flow <KEY> in a new workspace, In Progress transition whose failure keeps the workspace, and the task showing its workspace afterwards · waits on boxes 3, 4, 7, 11 · Closes: I4, I5, I6, I7, I8, I9, I10
 - [ ] keyboard reachability and text labels everywhere, foldable sidebar sections, and the first-launch tutorial over every element, skippable, reopenable from Help, keyboard-only · waits on boxes 3, 8, 9, 11 · Closes: W22, W23, W24, W25, W28
