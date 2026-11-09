@@ -28,6 +28,10 @@ const api: AtrilApi = {
     open: (url) => ipcRenderer.invoke('atril:forge:open', url),
     pickFolder: () => ipcRenderer.invoke('atril:forge:pickFolder')
   },
+  mr: {
+    list: () => ipcRenderer.invoke('atril:mr:list'),
+    open: (url) => ipcRenderer.invoke('atril:mr:open', url)
+  },
   flow: {
     get: (id) => ipcRenderer.invoke('atril:flow:get', id),
     docs: (id) => ipcRenderer.invoke('atril:flow:docs', id),

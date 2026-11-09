@@ -202,6 +202,45 @@ export interface ForgeApi {
   /** The folder picker; null when cancelled. */
   pickFolder(): Promise<string | null>
 }
+/** M4: what a row shows as CI; a row whose details were not fetched has none (shown «—»). */
+export type CiState = 'pass' | 'fail' | 'running' | 'none'
+
+/** One MR row; foreign text (title, project, author) is shown as the forge sends it. Never a token. */
+export interface MrItem {
+  forge: ForgeId
+  url: string
+  title: string
+  project: string
+  author: string
+  ci?: CiState
+  /** GitHub only: GitLab's API gives no line counts per MR. */
+  added?: number
+  removed?: number
+  files?: number
+  /** ISO 8601. */
+  updatedAt: string
+}
+
+export type MrListName = 'mine' | 'review' | 'following'
+
+export interface MrLists {
+  /** Forges with a saved token; empty means nothing to list (M7). */
+  connected: ForgeId[]
+  mine: MrItem[]
+  review: MrItem[]
+  following: MrItem[]
+  /** Per list, the forges that had more than the 50 rows shown (M8). */
+  more: Record<MrListName, ForgeId[]>
+  /** One per failing forge, already in the person's language (M6). */
+  errors: Array<{ forge: ForgeId; text: string }>
+}
+
+export interface MrApi {
+  list(): Promise<MrLists>
+  /** Opens an MR of the latest listing in the browser; anything else is ignored (W52). */
+  open(url: string): Promise<void>
+}
+
 export type ForgeStatus = { saved: false } | { saved: true; account?: string; site?: string }
 
 export type AgentState = 'working' | 'needs-you' | 'stopped'
@@ -347,6 +386,7 @@ export interface AtrilApi {
   usage: UsageApi
   flow: FlowApi
   forge: ForgeApi
+  mr: MrApi
   status: StatusApi
   nextup: NextUpApi
   activity: ActivityApi

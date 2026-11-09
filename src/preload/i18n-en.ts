@@ -326,5 +326,21 @@ export const EN: Record<string, string> = {
   "Ejecutando {detail}": "Running {detail}",
   "Editando {detail}": "Editing {detail}",
   "Leyendo {detail}": "Reading {detail}",
-  "Buscando {detail}": "Searching {detail}"
+  "Buscando {detail}": "Searching {detail}",
+  "{forge} ha rechazado el token: reemplázalo en Ajustes": "{forge} rejected the token: replace it in Settings",
+  "{forge} ha respondido {status}": "{forge} answered {status}",
+  "MR": "MR",
+  "MR: {n} por revisar": "MR: {n} to review",
+  "Mías": "Mine",
+  "Me toca revisar": "To review",
+  "Sigo": "Following",
+  "Tus MR abiertas, las que te toca revisar y las de los proyectos que sigues en GitHub y GitLab.": "Your open MRs, the ones you have to review and those in the projects you follow on GitHub and GitLab.",
+  "Cargando tus MR…": "Loading your MRs…",
+  "Abrir Ajustes": "Open Settings",
+  "Ninguna MR.": "No MRs.",
+  "Hay más: ábrelas en {forge}": "There are more: open them on {forge}",
+  "Pasa": "Passing",
+  "Falla": "Failing",
+  "Sin CI": "No CI",
+  "{n} archivos": "{n} files"
 }

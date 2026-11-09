@@ -1,5 +1,5 @@
 import { vi } from 'vitest'
-import type { ActivityLine, AddRepoResult, FileChange, FlowDocs, ForgeId, ForgeStatus, Mode, AgentState, AtrilApi, FlowStage, JiraIssue, MenuAction, NextItem, StartProposalResult, StartRequest, StartResult, RepoView, UiState, WorkspaceResult, WorkspaceView } from '../preload/api'
+import type { ActivityLine, AddRepoResult, FileChange, FlowDocs, ForgeId, ForgeStatus, Mode, MrLists, AgentState, AtrilApi, FlowStage, JiraIssue, MenuAction, NextItem, StartProposalResult, StartRequest, StartResult, RepoView, UiState, WorkspaceResult, WorkspaceView } from '../preload/api'
 
 export const workspace = (id: string, branch: string, alive = true): WorkspaceView => ({
   id,
@@ -47,6 +47,8 @@ interface Options {
   flow?: FlowStage
   /** Newest first, per workspace id. */
   activity?: Record<string, ActivityLine[]>
+  /** What mr.list answers; missing means no forge connected. */
+  mrs?: MrLists
 }
 
 /** ui.json lives in `stored`; pass the same object to a second mock to simulate a restart. */
@@ -106,6 +108,10 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
       open: vi.fn(async () => undefined),
       pickFolder: vi.fn(async () => '/Users/pau/gitrepos')
     },
+    mr: {
+      list: vi.fn(async (): Promise<MrLists> => o.mrs ?? { connected: [], mine: [], review: [], following: [], more: { mine: [], review: [], following: [] }, errors: [] }),
+      open: vi.fn(async () => undefined)
+    },
     settings: {
       jira: { status: async () => ({ saved: true, account: 'Pau Sánchez', site: 'https://x.atlassian.net' }) },
       forge: {
@@ -150,8 +156,8 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
     snapshotView: async () => null,
     snapshotWorkspace: async () => false
   } as unknown as AtrilApi
-  const { menu: menuApi, jira, workspaces: ws, repos: reposApi, flow: flowApi, forge: forgeApi } = window.atril
-  return { ui, stored, menuApi, jira, ws, reposApi, flowApi, forgeApi, menu: (a: MenuAction) => menu?.(a), clickNotification: (id: string) => notified?.(id),
+  const { menu: menuApi, jira, workspaces: ws, repos: reposApi, flow: flowApi, forge: forgeApi, mr: mrApi } = window.atril
+  return { ui, stored, menuApi, jira, ws, reposApi, flowApi, forgeApi, mrApi, menu: (a: MenuAction) => menu?.(a), clickNotification: (id: string) => notified?.(id),
     pushActivity: (id: string, lines: ActivityLine[]) => activityListeners.forEach((cb) => cb(id, lines)),
     pushFlow: (id: string, stage: FlowStage) => flowListeners.forEach((cb) => cb(id, stage))
   }

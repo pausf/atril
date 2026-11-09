@@ -950,6 +950,22 @@ kbd {
 .ri.last {
   margin-top: auto;
 }
+.ri {
+  position: relative;
+}
+.rbadge {
+  position: absolute;
+  top: 2px;
+  right: 6px;
+  min-width: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--you);
+  color: var(--on-text);
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 16px;
+}
 .ajustes {
   flex: 1;
   min-width: 0;
@@ -1147,6 +1163,59 @@ kbd {
 }
 .tasks-screen .fold-h {
   font-size: 13px;
+}
+/* One line per MR: title, project, author, CI, size, age. */
+.mr-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto auto auto auto;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  font-size: 13px;
+  color: var(--text);
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 5px 10px 5px 12px;
+  margin-bottom: 4px;
+  cursor: pointer;
+}
+.mr-row:hover {
+  background: var(--hover);
+}
+.mr-row .s {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mr-row .k {
+  font-weight: 600;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.mr-row .who,
+.mr-row .size,
+.mr-row .age {
+  color: var(--sub);
+  font-size: 12px;
+  white-space: nowrap;
+}
+.mr-row .tag {
+  white-space: nowrap;
+}
+.mr-row .ci-fail {
+  background: var(--bad-bg);
+  color: var(--bad-text);
+}
+.mr-row .ci-pass {
+  background: var(--ok-bg);
+  color: var(--text);
+}
+.mr-row .ci-running {
+  color: var(--run-text);
 }
 
 .icon {

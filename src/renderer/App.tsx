@@ -8,6 +8,8 @@ import { TopBar } from './components/TopBar'
 import { Workspace } from './components/Workspace'
 import { Ajustes } from './settings/Ajustes'
 import { Inbox, useInbox } from './inbox/Inbox'
+import { MrScreen } from './mr/MrScreen'
+import { useMrs } from './mr/useMrs'
 import { StartDialog } from './inbox/StartDialog'
 import { OwnTaskDialog } from './inbox/OwnTaskDialog'
 import { NextUpStrip } from './components/NextUpStrip'
@@ -57,6 +59,7 @@ function Shell() {
   const [screen, setScreen] = useState<Screen>('work')
   const inbox = useInbox()
   const next = useNextUp()
+  const mrs = useMrs()
   const [starting, setStarting] = useState<JiraIssue | null>(null)
   const [dialog, setDialog] = useState<'task' | 'work' | null>(null)
   const [startError, setStartError] = useState<string | null>(null)
@@ -64,7 +67,7 @@ function Shell() {
 
   useEffect(() => {
     void window.atril.snapshotView().then((v) => {
-      if (v === 'settings' || v === 'tasks' || v === 'work') setScreen(v)
+      if (v === 'settings' || v === 'tasks' || v === 'work' || v === 'mr') setScreen(v)
       if (v === 'tasks-board') setScreen('tasks')
       if (v === 'settings-board' || v === 'create-repo') setScreen('settings')
       if (v === 'tasks-own') {
@@ -174,7 +177,7 @@ function Shell() {
       <NavigationContext.Provider value={{ openSettings: () => setScreen('settings') }}>
         <TopBar problems={problems} screen={screen} />
         <div className="shell">
-          <Rail screen={screen} onChange={setScreen} />
+          <Rail screen={screen} onChange={setScreen} reviews={mrs.result?.review.length ?? 0} />
           {/* Hidden, not unmounted: the terminals must survive a visit to Ajustes. */}
           <div className="work" hidden={screen !== 'work'}>
             <NextUpStrip items={next} workspaces={workspaces} issues={inbox.issues} onOpen={openNext} />
@@ -193,6 +196,7 @@ function Shell() {
             </div>
           </div>
           {screen === 'tasks' && <Inbox inbox={inbox} onStart={(i, alt) => void beginStart(i, alt)} startError={startError} onOpenWorkspace={openWorkspace} onNewTask={() => setDialog('task')} />}
+          {screen === 'mr' && <MrScreen mrs={mrs} />}
           {screen === 'settings' && (
             <Ajustes>
               <Appearance />

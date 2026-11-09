@@ -8,6 +8,7 @@ import { readDocs, saveDoc } from './flow/document'
 import { FORGES, forgeSettings, type ForgeId } from './credentials/forge'
 import { cloneAndRegister, createRepo } from './forge/create'
 import { createForgeGuards } from './forge/guards'
+import { listMrs } from './forge/mrs'
 import { fileDiff, listChanges } from './flow/changes'
 import { nextUp } from './nextup'
 import { writeFile } from 'node:fs/promises'
@@ -17,7 +18,7 @@ import { jiraSettings } from './credentials/jira'
 import { searchBoards } from './credentials/boards'
 import type { JiraCreds } from './credentials/check'
 import { doctor } from './doctor'
-import type { CreateRepoRequest, Mode, UiState } from '../preload/api'
+import type { CreateRepoRequest, Mode, MrItem, MrLists, UiState } from '../preload/api'
 import { readInbox } from './jira/inbox'
 import { inboxGroups } from './jira/board'
 import { proposeStart, start } from './jira/start'
@@ -36,6 +37,20 @@ import type { Agent } from '../preload/api'
 // Dev-only evidence hooks (screenshots for review). A packaged app ignores them all, so no
 // environment variable can swap real data for fake data in front of the person.
 const SNAPSHOT = app.isPackaged ? undefined : process.env['ATRIL_SNAPSHOT']
+
+function fakeMrs(): MrLists {
+  const ago = (h: number): string => new Date(Date.now() - h * 3600_000).toISOString()
+  const gh = (n: number, title: string, project: string, author: string, ci: MrItem['ci'], added: number, removed: number, files: number, h: number): MrItem => ({ forge: 'github', url: `https://github.com/${project}/pull/${n}`, title, project, author, ci, added, removed, files, updatedAt: ago(h) })
+  const gl = (n: number, title: string, project: string, author: string, ci: MrItem['ci'], files: number, h: number): MrItem => ({ forge: 'gitlab', url: `https://gitlab.com/${project}/-/merge_requests/${n}`, title, project, author, ci, files, updatedAt: ago(h) })
+  return {
+    connected: ['github', 'gitlab'],
+    mine: [gh(41, 'Calendario de festivos por provincia', 'pausf/shop-web', 'pausf', 'running', 286, 12, 6, 2), gl(17, 'Cola de reintentos para pagos', 'acme/payments-service', 'pausf', 'pass', 9, 30)], // i18n-ignore
+    review: [gh(88, 'Filtros persistentes en el listado del vendedor', 'acme/cms-admin', 'marta', 'fail', 140, 52, 9, 5), gl(203, 'Índices para el listado de ofertas', 'acme/sourcing-service', 'jordi', 'pass', 3, 26)], // i18n-ignore
+    following: [gh(12, 'Quitar el flag antiguo del carrusel', 'acme/shop-web', 'laia', 'none', 18, 64, 3, 70)], // i18n-ignore
+    more: { mine: [], review: [], following: [] },
+    errors: []
+  }
+}
 
 function fakeIssues(): JiraIssue[] {
   const groups = ['todo', 'doing', 'review'] as const
@@ -167,6 +182,15 @@ app.whenReady().then(async () => {
     return { ...created, ...(await cloneAndRegister(created, clone, run)) }
   })
   ipcMain.handle('atril:forge:open', (_e, url: unknown) => {
+    if (typeof url === 'string' && guards.openable(url)) return shell.openExternal(url)
+  })
+  ipcMain.handle('atril:mr:list', async () => {
+    // ponytail: dev-only, ATRIL_SNAPSHOT_VIEW=mr photographs believable lists without any forge.
+    const r = SNAPSHOT && process.env['ATRIL_SNAPSHOT_VIEW'] === 'mr' ? fakeMrs() : await listMrs(secretStore)
+    guards.listed([...r.mine, ...r.review, ...r.following].map((m) => m.url))
+    return r
+  })
+  ipcMain.handle('atril:mr:open', (_e, url: unknown) => {
     if (typeof url === 'string' && guards.openable(url)) return shell.openExternal(url)
   })
   ipcMain.handle('atril:forge:pickFolder', async () => {

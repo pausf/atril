@@ -2,6 +2,7 @@
 const PATHS = {
   work: '<rect x="3" y="4.5" width="18" height="15" rx="3"/><path d="M7 10l3 2.5L7 15M12.5 15H17"/>',
   tasks: '<rect x="4" y="3.5" width="16" height="17" rx="3"/><path d="M8 9l1.5 1.5L12 8M14.5 9.5H17M8 15l1.5 1.5L12 14M14.5 15.5H17"/>',
+  mr: '<circle cx="6" cy="5.5" r="2"/><circle cx="6" cy="18.5" r="2"/><circle cx="18" cy="18.5" r="2"/><path d="M6 7.5v9M18 16.5V10a3 3 0 0 0-3-3h-4M13 4.5L10.5 7l2.5 2.5"/>',
   settings: '<path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/>',
   working: '<path d="M12 3.5a8.5 8.5 0 1 1-8.5 8.5" opacity=".35"/><path d="M3.5 12A8.5 8.5 0 0 1 12 3.5"/>',
   'needs-you':

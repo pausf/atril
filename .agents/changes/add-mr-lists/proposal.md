@@ -187,5 +187,5 @@ M1–M9 seen red first. Rollback: one revert.
 
 ## Checklist
 
-- [ ] main lists the three MR lists from both forges, deduped, capped, with the CI mapping, the errors and the listed-URL guard · Closes: M1, M2, M4, M6, M8, W52
-- [ ] the MR screen, the app-level refresh, the rail entry and counter, the no-forge state · waits on box 1 · Closes: M3, M5, M7, M9
+- [x] main lists the three MR lists from both forges, deduped, capped, with the CI mapping, the errors and the listed-URL guard · Closes: M1, M2, M4, M6, M8, W52
+- [x] the MR screen, the app-level refresh, the rail entry and counter, the no-forge state · waits on box 1 · Closes: M3, M5, M7, M9
