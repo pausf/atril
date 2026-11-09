@@ -4,13 +4,12 @@ import type { JiraCreds } from '../credentials/check'
 import type { Model, StartIssue, StartProposalResult, StartRequest, StartResult } from '../../preload/api'
 import { listRepos, rememberedRepo, rememberRepo } from '../repos'
 import { run as defaultRun, type Runner } from '../run'
-import { openWorktree, worktreePath } from '../workspaces'
+import { flowPrompt, openWorktree, worktreePath } from '../workspaces'
 import { t } from '../lang'
 
 export const KEY_RE = /^[A-Z][A-Z0-9]+-[0-9]+$/
 const BAD_KEY = (key: string): string => t('«{key}» no es una clave de Jira válida (por ejemplo PF-123)', { key })
 
-const flowPrompt = (key: string): string => `/libretto:libretto-flow ${key}`
 const memoryKey = ({ key, components }: StartIssue): string => `${key.slice(0, key.lastIndexOf('-'))}|${components[0] ?? ''}`
 
 // What the dialog shows is what main runs: same argv, quoted only for display.
@@ -30,11 +29,11 @@ async function freeBranch(repo: { id: string; path: string }, key: string, run: 
 
 export async function proposeStart(
   issue: StartIssue,
-  opts: { repoId?: string; model?: Model } = {},
+  opts: { repoId?: string; model?: Model; auto?: boolean } = {},
   run: Runner = defaultRun
 ): Promise<StartProposalResult> {
   if (!KEY_RE.test(issue.key)) return { error: BAD_KEY(issue.key) }
-  const command = display(agentArgv({ model: opts.model, prompt: flowPrompt(issue.key) }))
+  const command = display(agentArgv({ model: opts.model, prompt: flowPrompt(issue.key, opts.auto) }))
   const repos = await listRepos(run)
   const wanted = opts.repoId ?? (await rememberedRepo(memoryKey(issue)))
   const repo = repos.find((r) => r.id === wanted)
@@ -57,7 +56,7 @@ export async function start(req: StartRequest, deps: Deps): Promise<StartResult>
   if (!MODELS.includes(req.model)) return { error: t('«{model}» no es un modelo disponible', { model: String(req.model) }) }
 
   const opened = await openWorktree(
-    { repoId: req.repoId, branch: req.branch, agent: 'claude', model: req.model, jiraKey: req.key, prompt: flowPrompt(req.key) },
+    { repoId: req.repoId, branch: req.branch, agent: 'claude', model: req.model, jiraKey: req.key, auto: req.auto, prompt: flowPrompt(req.key, req.auto) },
     run
   )
   if ('error' in opened) return opened

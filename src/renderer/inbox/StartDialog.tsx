@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import type { JiraIssue, Model, RepoView, StartProposal, WorkspaceView } from '../../preload/api'
 import { Icon } from '../components/Icon'
 import { modelOptions } from '../components/models'
+import { ModePicker } from './ModePicker'
 import { useT } from '../ui'
 
 interface Props {
@@ -22,6 +23,7 @@ export function StartDialog({ issue, onClose, onStarted, onOpenWorkspace }: Prop
   const [repoId, setRepoId] = useState('')
   const [branch, setBranch] = useState('')
   const [model, setModel] = useState<Model>('default')
+  const [auto, setAuto] = useState(false)
   const [proposal, setProposal] = useState<StartProposal | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -35,14 +37,14 @@ export function StartDialog({ issue, onClose, onStarted, onOpenWorkspace }: Prop
 
   // The repo decides the branch (taken names get a suffix); the model only changes the command line.
   useEffect(() => {
-    void window.atril.jira.proposeStart(issue, repoId || undefined, model).then((p) => {
+    void window.atril.jira.proposeStart(issue, repoId || undefined, model, auto).then((p) => {
       if ('error' in p) return setError(p.error)
       setProposal(p)
       if (p.repoId && !repoId) setRepoId(p.repoId)
       if (p.branch && lastRepo.current !== p.repoId) setBranch(p.branch)
       lastRepo.current = p.repoId
     })
-  }, [issue, repoId, model])
+  }, [issue, repoId, model, auto])
 
   useEffect(() => dialog.current?.querySelector<HTMLElement>(FOCUSABLE)?.focus(), [repos])
 
@@ -53,7 +55,7 @@ export function StartDialog({ issue, onClose, onStarted, onOpenWorkspace }: Prop
     setBusy(true)
     setError(null)
     try {
-      const r = await window.atril.jira.start({ key: issue.key, components: issue.components, group: issue.group, repoId, branch: branch.trim(), model })
+      const r = await window.atril.jira.start({ key: issue.key, components: issue.components, group: issue.group, repoId, branch: branch.trim(), model, ...(auto && { auto: true }) })
       if ('error' in r) return setError(r.error)
       await onStarted(r.workspace)
       if (r.transitionError) setWarning({ ws: r.workspace, text: r.transitionError })
@@ -138,6 +140,8 @@ export function StartDialog({ issue, onClose, onStarted, onOpenWorkspace }: Prop
             ))}
           </select>
         </div>
+
+        <ModePicker auto={auto} onChange={setAuto} disabled={!!warning} />
 
         <div className="f">
           <span className="lbl">{t('Lanza')}</span>

@@ -8,13 +8,15 @@ import { partOffset, type Part } from './highlight'
 interface Props {
   workspaceId: string
   part: Part
+  /** F26: an automatic workspace's documents are read-only whatever the agent does. */
+  auto?: boolean
   onClose: () => void
 }
 
 /** A draft keeps the mtime the person started from: a save after the agent wrote must be refused (F16). */
 type Draft = { text: string; mtimeMs: number }
 
-export function DocModal({ workspaceId, part, onClose }: Props) {
+export function DocModal({ workspaceId, part, auto = false, onClose }: Props) {
   const t = useT()
   const titles: Record<Part, string> = { spec: t('Spec'), plan: t('Plan'), checklist: t('Checklist') }
   const dialog = useRef<HTMLDivElement>(null)
@@ -56,7 +58,7 @@ export function DocModal({ workspaceId, part, onClose }: Props) {
     return !!d && d.text !== f?.text
   }
   const text = drafts[file]?.text ?? current?.text ?? ''
-  const readOnly = state === 'working'
+  const readOnly = auto || state === 'working'
 
   const edit = (value: string): void => {
     if (!current) return
@@ -129,7 +131,7 @@ export function DocModal({ workspaceId, part, onClose }: Props) {
         )}
         <div className="edstatus">
           {readOnly ? (
-            <span className="ro">{t('🔒 solo lectura · Claude está escribiendo')}</span>
+            <span className="ro">{auto ? t('🔒 solo lectura · modo automático') : t('🔒 solo lectura · Claude está escribiendo')}</span>
           ) : (
             <span className="rw">{state === 'stopped' ? t('✎ editable · agente parado') : t('✎ editable · Claude te espera')}</span>
           )}

@@ -127,5 +127,5 @@ None.
 
 ## Checklist
 
-- [ ] main and hook: mode in requests and records, attacca, marker, the push question · Closes: W58, W40, W59, W60
-- [ ] the window: the choice in the three dialogs, «Auto» on the row, read-only documents · waits on box 1 · Closes: W61, F26
+- [x] main and hook: mode in requests and records, attacca, marker, the push question · Closes: W58, W40, W59, W60
+- [x] the window: the choice in the three dialogs, «Auto» on the row, read-only documents · waits on box 1 · Closes: W61, F26

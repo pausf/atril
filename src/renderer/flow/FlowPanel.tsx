@@ -24,7 +24,7 @@ const stagesOf = (t: T): { name: Exclude<StageName, 'sin-libretto'>; label: stri
   { name: 'aterrizado', label: t('Aterrizado'), icon: 's-landed' }
 ]
 
-export function FlowPanel({ workspaceId }: { workspaceId: string | null }) {
+export function FlowPanel({ workspaceId, auto = false }: { workspaceId: string | null; auto?: boolean }) {
   const t = useT()
   const TABS = tabsOf(t)
   const [flow, setFlow] = useState<FlowStage | null>(null)
@@ -115,7 +115,7 @@ export function FlowPanel({ workspaceId }: { workspaceId: string | null }) {
         {tab === 'activity' ? <ActivityFeed workspaceId={workspaceId} /> : <LibrettoFlow flow={flow} onOpen={setDoc} changes={changes} onDiff={setDiffOf} />}
       </div>
       {diffOf && workspaceId && <DiffModal workspaceId={workspaceId} files={changes} start={diffOf} onClose={() => setDiffOf(null)} />}
-      {doc && workspaceId && <DocModal workspaceId={workspaceId} part={doc} onClose={() => setDoc(null)} />}
+      {doc && workspaceId && <DocModal workspaceId={workspaceId} auto={auto} part={doc} onClose={() => setDoc(null)} />}
     </aside>
   )
 }

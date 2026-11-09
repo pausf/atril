@@ -2,13 +2,19 @@
 // Atril's own Electron is the Node here: a Finder-launched app has no node or jq on PATH.
 // The payload is read once and never written anywhere; only a short summary leaves this process.
 import { execFileSync } from 'node:child_process'
-import { closeSync, mkdirSync, openSync, readFileSync, readSync, renameSync, fstatSync, writeFileSync } from 'node:fs'
+import { closeSync, existsSync, mkdirSync, openSync, readFileSync, readSync, renameSync, fstatSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import process from 'node:process'
 import { Buffer } from 'node:buffer'
 import { summarise } from './summarise.mjs'
 import { sizeNotice } from './branchsize.mjs'
+
+// W59: pushes and request creation in an automatic workspace need the person.
+const UPLOAD = /(^|[\s;&|(])(git(\s+-[cC]\s+\S+)*\s+push|gh\s+pr\s+create|glab\s+mr\s+create)\b/
+const ASK = {
+  hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'ask', permissionDecisionReason: 'Modo automático: confirma antes de subir' }
+}
 
 const MAX_LINES = 200
 const TAIL_BYTES = 64 * 1024
@@ -63,6 +69,10 @@ try {
   if (!name) process.exit(0)
   const home = process.env.ATRIL_HOME ?? join(homedir(), '.atril')
   const at = Math.floor(Date.now() / 1000)
+  const command = payload?.tool_input?.command
+  if (event === 'PreToolUse' && payload?.tool_name === 'Bash' && typeof command === 'string' && UPLOAD.test(command) && existsSync(join(home, 'auto', name))) {
+    process.stdout.write(JSON.stringify(ASK))
+  }
   const line = summarise(event, payload, readTail)
 
   if (line) {

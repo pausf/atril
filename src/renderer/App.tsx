@@ -251,7 +251,7 @@ function Shell() {
                 onOpenTasks={() => setScreen('tasks')}
               />
               <Workspace ws={workspaces.find((w) => w.id === selected)} />
-              <FlowPanel workspaceId={selected} />
+              <FlowPanel workspaceId={selected} auto={workspaces.find((w) => w.id === selected)?.auto === true} />
             </div>
           </div>
           {screen === 'tasks' && <Inbox inbox={inbox} onStart={(i, alt) => void beginStart(i, alt)} startError={startError} onOpenWorkspace={openWorkspace} onNewTask={() => setDialog('task')} />}

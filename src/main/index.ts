@@ -378,8 +378,8 @@ app.whenReady().then(async () => {
     const creds = await savedJira()
     return readInbox(creds, fetch, await listWorkspaces(run), (await secretStore.hasSecret('jira')).board)
   }
-  ipcMain.handle('atril:jira:proposeStart', (_e, issue: StartIssue, repoId?: string, model?: Model) =>
-    proposeStart(issue, { repoId, model }, run)
+  ipcMain.handle('atril:jira:proposeStart', (_e, issue: StartIssue, repoId?: string, model?: Model, auto?: unknown) =>
+    proposeStart(issue, { repoId, model, auto: auto === true }, run)
   )
   ipcMain.handle('atril:jira:start', async (_e, req: StartRequest) => {
     const r = await start(req, { run, creds: await savedJira() })
@@ -412,9 +412,9 @@ app.whenReady().then(async () => {
     return saveDoc(ws.path, await agentState(ws, run), change, name, text, mtimeMs)
   })
   ipcMain.handle('atril:ws:list', () => listWorkspaces(run))
-  ipcMain.handle('atril:ws:open', (_e, repoId: string, branch: string, agent: Agent, model?: Model, task?: unknown) =>
+  ipcMain.handle('atril:ws:open', (_e, repoId: string, branch: string, agent: Agent, model?: Model, task?: unknown, auto?: unknown) =>
     openWorktree(
-      { repoId, branch, agent, ...(model && MODELS.includes(model) && { model }), ...(task !== undefined && { task: task as string }) },
+      { repoId, branch, agent, ...(model && MODELS.includes(model) && { model }), ...(task !== undefined && { task: task as string }), ...(auto === true && { auto: true }) },
       run
     ).finally(() => void pushNext())
   )

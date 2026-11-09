@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, realpathSync } from 'node:fs'
+import { existsSync, readFileSync, realpathSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanTmp, killTmux, makeRegisteredRepo, tmp, tmuxOut, tmuxSock } from './test-helpers'
@@ -46,15 +46,18 @@ describe('tmux', () => {
     // The fake agent records how many arguments it got and each one NUL-terminated.
     const agent = ['sh', '-c', 'printf %s "$#" > "$0.n"; for a; do printf "%s\\0" "$a"; done > "$0.args"', out]
     const text = `--dangerously-skip-permissions $(touch ${home}/pwned); echo "a" 'b'\nsecond line`
-    const r = await openWorktree({ repoId: 'demo', branch: 'feat/own', agent: 'claude', task: `  ${text} `, argv: agent })
-    if (!('workspace' in r)) throw new Error(r.error)
-    const end = Date.now() + 5000
-    while (!existsSync(`${out}.args`) && Date.now() < end) await new Promise((ok) => setTimeout(ok, 50))
-    await new Promise((ok) => setTimeout(ok, 100))
+    for (const [i, command] of ['flow', 'attacca'].entries()) {
+      const r = await openWorktree({ repoId: 'demo', branch: `feat/own${i}`, agent: 'claude', task: `  ${text} `, ...(i === 1 && { auto: true }), argv: agent })
+      if (!('workspace' in r)) throw new Error(r.error)
+      const end = Date.now() + 5000
+      while (!existsSync(`${out}.args`) && Date.now() < end) await new Promise((ok) => setTimeout(ok, 50))
+      await new Promise((ok) => setTimeout(ok, 100))
 
-    expect(readFileSync(`${out}.n`, 'utf8')).toBe('1')
-    expect(readFileSync(`${out}.args`, 'utf8')).toBe(`/libretto:libretto-flow ${text}\0`)
-    expect(existsSync(join(home, 'pwned'))).toBe(false)
+      expect(readFileSync(`${out}.n`, 'utf8')).toBe('1')
+      expect(readFileSync(`${out}.args`, 'utf8')).toBe(`/libretto:libretto-${command} ${text}\0`)
+      expect(existsSync(join(home, 'pwned'))).toBe(false)
+      rmSync(`${out}.args`)
+    }
   })
 
   it('starts the agent in a named tmux session', async () => {

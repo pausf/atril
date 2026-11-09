@@ -48,6 +48,12 @@ export function WorkspaceList({ workspaces, selected, onSelect, onRemove }: Prop
             <span className="ws-meta">
               {w.repoId} · {w.agent}
               {w.model && w.model !== 'default' && ` · ${w.model}`}
+              {w.auto === true && (
+                <>
+                  {' · '}
+                  <span className="auto-badge">{t('Auto')}</span>
+                </>
+              )}
             </span>
             {(() => {
               const state = states[w.id] ?? (w.alive ? 'working' : 'stopped')

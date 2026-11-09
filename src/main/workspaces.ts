@@ -1,5 +1,5 @@
 import { randomInt } from 'node:crypto'
-import { mkdir, readFile, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, rm as unlink, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import type { Agent, Model, RemoveResult, WorkspaceRecord, WorkspaceResult, WorkspaceView } from '../preload/api'
 import { agentArgv } from './agent'
@@ -18,6 +18,8 @@ export interface OpenInput {
   jiraKey?: string
   /** First message the agent receives (Start passes the Libretto flow command). */
   prompt?: string
+  /** W58: only `true` counts (the value crosses IPC); starts attacca instead of flow. */
+  auto?: boolean
   /** An own task (W40): becomes the flow's request; never a command line of its own. */
   task?: string
   /** Tests swap the agent for a harmless long-running command; the prompt is still appended. */
@@ -48,16 +50,22 @@ async function writeRecords(workspaces: WorkspaceRecord[]): Promise<void> {
 
 const MAX_TASK = 2000
 
+/** W58: attacca is Libretto's flow without stops. */
+export const flowPrompt = (request: string, auto?: boolean): string => `/libretto:libretto-${auto === true ? 'attacca' : 'flow'} ${request}`
+
 /** W41: the flow command and the text are one argv element, so the text can never be a flag. */
-export function taskPrompt(task: unknown): string | null {
+export function taskPrompt(task: unknown, auto?: boolean): string | null {
   if (typeof task !== 'string') return null
   const text = task.trim()
-  return text === '' || text.length > MAX_TASK || text.includes('\0') ? null : `/libretto:libretto-flow ${text}`
+  return text === '' || text.length > MAX_TASK || text.includes('\0') ? null : flowPrompt(text, auto)
 }
+
+/** W59/W60: the hook reads this marker by session name, never the record. */
+const autoMarker = (id: string): string => join(home(), 'auto', sessionName(id))
 
 export async function openWorktree(input: OpenInput, run: Runner = defaultRun): Promise<WorkspaceResult> {
   const { repoId, branch, agent } = input
-  const prompt = input.task === undefined ? input.prompt : taskPrompt(input.task)
+  const prompt = input.task === undefined ? input.prompt : taskPrompt(input.task, input.auto)
   if (prompt === null) return { error: t('El texto de la tarea no es válido (máx. 2000 caracteres).') }
   // W6: nothing else runs before the branch name is validated.
   if ((await run('git', ['check-ref-format', '--branch', branch])).code !== 0) {
@@ -100,6 +108,11 @@ export async function openWorktree(input: OpenInput, run: Runner = defaultRun): 
   const id = newId()
   // Only folders Atril created: in-place runs in the person's own checkout, never touched (W31).
   if (!inPlace) await trustFolder(path)
+  const auto = input.auto === true
+  if (auto) {
+    await mkdir(join(home(), 'auto'), { recursive: true })
+    await writeFile(autoMarker(id), '')
+  }
   const paneId = await newSession(id, path, input.argv ? [...input.argv, ...(prompt ? [prompt] : [])] : agentArgv({ model: input.model, prompt }), run)
 
   const record: WorkspaceRecord = {
@@ -113,6 +126,7 @@ export async function openWorktree(input: OpenInput, run: Runner = defaultRun): 
     agent,
     ...(input.model && { model: input.model }),
     ...(input.jiraKey && { jiraKey: input.jiraKey }),
+    ...(auto && { auto }),
     session: sessionName(id),
     paneId
   }
@@ -150,11 +164,13 @@ export async function removeWorkspace(id: string, run: Runner = defaultRun): Pro
     const back = await run('git', ['-C', rec.path, 'switch', ...(/^[0-9a-f]{40}$/.test(prev) ? ['--detach'] : []), prev])
     if (back.code !== 0) return { error: back.stderr.trim() || t('git switch falló') }
     await writeRecords(records.filter((r) => r.id !== id))
+    await unlink(autoMarker(id), { force: true })
     return { ok: true }
   }
   // No --force: git itself refuses anything the status check missed.
   const rm = await run('git', ['-C', repo.path, 'worktree', 'remove', rec.path])
   if (rm.code !== 0) return { error: rm.stderr.trim() || t('git worktree remove falló') }
   await writeRecords(records.filter((r) => r.id !== id))
+  await unlink(autoMarker(id), { force: true })
   return { ok: true }
 }

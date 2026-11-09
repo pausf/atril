@@ -85,12 +85,12 @@ const api: AtrilApi = {
   },
   workspaces: {
     list: () => ipcRenderer.invoke('atril:ws:list'),
-    open: (repoId, branch, agent, model, task) => ipcRenderer.invoke('atril:ws:open', repoId, branch, agent, model, task),
+    open: (repoId, branch, agent, model, task, auto) => ipcRenderer.invoke('atril:ws:open', repoId, branch, agent, model, task, auto),
     remove: (id) => ipcRenderer.invoke('atril:ws:remove', id)
   },
   jira: {
     inbox: () => ipcRenderer.invoke('atril:jira:inbox'),
-    proposeStart: (issue, repoId, model) => ipcRenderer.invoke('atril:jira:proposeStart', issue, repoId, model),
+    proposeStart: (issue, repoId, model, auto) => ipcRenderer.invoke('atril:jira:proposeStart', issue, repoId, model, auto),
     start: (req) => ipcRenderer.invoke('atril:jira:start', req)
   },
   settings: {

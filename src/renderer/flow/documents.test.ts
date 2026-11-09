@@ -17,9 +17,9 @@ const docs = (proposal = PROPOSAL): FlowDocs => ({
 })
 const plan: FlowStage = { stage: 'plan', change: 'add-x', others: [] }
 
-async function boot(o: { state?: AgentState; docs?: FlowDocs; flow?: FlowStage } = {}) {
+async function boot(o: { state?: AgentState; docs?: FlowDocs; flow?: FlowStage; auto?: boolean } = {}) {
   const api = mockApi({
-    workspaces: [workspace('aaaaaaa1', 'PF-1', false)],
+    workspaces: [{ ...workspace('aaaaaaa1', 'PF-1', false), ...(o.auto && { auto: true }) }],
     states: { aaaaaaa1: o.state ?? 'needs-you' },
     flow: o.flow ?? plan,
     docs: o.docs ?? docs()
@@ -100,6 +100,24 @@ describe('flow documents', () => {
     await vi.waitFor(() => expect(api.flowApi.save).toHaveBeenCalledTimes(2))
     expect(vi.mocked(api.flowApi.save).mock.calls.at(-1)).toEqual(['aaaaaaa1', 'add-x', 'proposal.md', editor().value, 1])
     await vi.waitFor(() => expect(screen.queryByRole('tab', { name: /sin guardar/ })).toBeNull())
+  })
+
+  it('automatic documents are read-only', async () => {
+    // Waiting for the person, and still read-only: F15's exception.
+    const { user } = await boot({ state: 'needs-you', auto: true })
+    await user.click(await screen.findByRole('button', { name: /^Plan/ }))
+    await vi.waitFor(() => expect(editor().value).toBe(PROPOSAL))
+    expect(editor().readOnly).toBe(true)
+    expect(screen.getByText('🔒 solo lectura · modo automático')).toBeTruthy()
+    expect(screen.queryByText(/Claude está escribiendo/)).toBeNull()
+    expect((screen.getByRole('button', { name: /Guardar/ }) as HTMLButtonElement).disabled).toBe(true)
+    cleanup()
+
+    // The same state in a manual workspace stays editable.
+    const manual = await boot({ state: 'needs-you' })
+    await manual.user.click(await screen.findByRole('button', { name: /^Plan/ }))
+    await vi.waitFor(() => expect(editor().value).toBe(PROPOSAL))
+    expect(editor().readOnly).toBe(false)
   })
 
   it('markdown renders as text only', async () => {

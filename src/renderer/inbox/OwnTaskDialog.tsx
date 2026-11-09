@@ -3,6 +3,7 @@ import type { Model, RepoView, WorkspaceView } from '../../preload/api'
 import { modelOptions } from '../components/models'
 import { useT } from '../ui'
 import { slugBranch } from './branch'
+import { ModePicker } from './ModePicker'
 
 interface Props {
   /** «Nuevo trabajo» from Trabajo: without text the agent is plain Claude (I27). */
@@ -22,6 +23,7 @@ export function OwnTaskDialog({ textOptional = false, onClose, onOpenSettings, o
   const [repoId, setRepoId] = useState('')
   const [edited, setEdited] = useState<string | null>(null)
   const [model, setModel] = useState<Model>('default')
+  const [auto, setAuto] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const branch = edited ?? slugBranch(text)
@@ -47,7 +49,7 @@ export function OwnTaskDialog({ textOptional = false, onClose, onOpenSettings, o
     try {
       const r = await (blank
         ? window.atril.workspaces.open(repoId, branch.trim(), 'claude', model)
-        : window.atril.workspaces.open(repoId, branch.trim(), 'claude', model, text))
+        : auto ? window.atril.workspaces.open(repoId, branch.trim(), 'claude', model, text, true) : window.atril.workspaces.open(repoId, branch.trim(), 'claude', model, text))
       if ('error' in r) return setError(r.error)
       await onStarted(r.workspace)
     } catch (e) {
@@ -127,9 +129,11 @@ export function OwnTaskDialog({ textOptional = false, onClose, onOpenSettings, o
           </select>
         </div>
 
+        {!blank && <ModePicker auto={auto} onChange={setAuto} />}
+
         <div className="f">
           <span className="lbl">{t('Lanza')}</span>
-          <code aria-label={t('Comando que se ejecutará')}>{blank && textOptional ? 'claude' : t('/libretto:libretto-flow «tu texto»')}</code>
+          <code aria-label={t('Comando que se ejecutará')}>{blank && textOptional ? 'claude' : auto ? t('/libretto:libretto-attacca «tu texto»') : t('/libretto:libretto-flow «tu texto»')}</code>
         </div>
 
         {error && (

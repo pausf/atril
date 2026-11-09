@@ -48,6 +48,8 @@ export interface WorkspaceRecord {
   agent: Agent
   model?: Model
   jiraKey?: string
+  /** Automatic: Libretto's attacca instead of flow; set only when true (W58). */
+  auto?: boolean
   session: string
   paneId: string
 }
@@ -62,7 +64,7 @@ export type RemoveResult = { ok: true } | { error: string }
 export interface WorkspacesApi {
   list(): Promise<WorkspaceView[]>
   /** `task`: an own task's text; main turns it into the Libretto flow's request (W40). */
-  open(repoId: string, branch: string, agent: Agent, model?: Model, task?: string): Promise<WorkspaceResult>
+  open(repoId: string, branch: string, agent: Agent, model?: Model, task?: string, auto?: boolean): Promise<WorkspaceResult>
   remove(id: string): Promise<RemoveResult>
 }
 
@@ -111,6 +113,7 @@ export interface StartRequest extends StartIssue {
   repoId: string
   branch: string
   model: Model
+  auto?: boolean
 }
 /** The workspace stays open when only the Jira transition failed. */
 export type StartResult = { workspace: WorkspaceView; transitionError?: string } | { error: string }
@@ -136,7 +139,7 @@ export type InboxResult =
 
 export interface JiraApi {
   inbox(): Promise<InboxResult>
-  proposeStart(issue: StartIssue, repoId?: string, model?: Model): Promise<StartProposalResult>
+  proposeStart(issue: StartIssue, repoId?: string, model?: Model, auto?: boolean): Promise<StartProposalResult>
   start(req: StartRequest): Promise<StartResult>
 }
 
