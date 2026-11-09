@@ -135,6 +135,10 @@ The `workspaces` capability, phase 1. Its siblings in this change: `spec-work-in
   workspaces, the agent's terminal, panes, the Libretto panel, agent states, usage) and
   explains what it does and how the flow runs through them. It can be skipped, and reopened
   later from the Help menu.
+- The sidebar's sections ("Mis Jira", "Trabajo en marcha") fold by clicking their title and
+  show their count, so seven tasks and five workspaces still fit (Pau, 9 nov: «en mis giras
+  hay como 7 y en trabajo en marcha hay como 5, no cabe»). The rail of screens (Trabajo · MR ·
+  Avisos) is drawn in boceto 8; only Trabajo is built in this change.
 - The layout is open and visual: generous spacing, large readable type, each column with a
   clear title, empty states that explain what goes there.
 

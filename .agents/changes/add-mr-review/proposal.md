@@ -21,7 +21,11 @@ Pau, 9 nov 2026:
 
 > Pero no debería revisar todas, porque yo no voy a revisar todas las MRs. Entonces, solo debería revisar como mucho las que son reviewer o las mías, pero ya está.
 
+> En DMRs, aparte de mostrar ahí en pequeñito, debería haber como una sub pantalla, ¿sabes? Donde vaya llegando como notificaciones de esa, publica una MR o tienes una nueva MR por mirar o cosas de esas, pero en un apartado, porque si no, toda la barra lateral se llena, ¿sabes? Es decir, imagínate que en mis giras hay como 7 y en trabajo en marcha hay como 5, no cabe, ¿no? En la lateral.
+
 ## The reading
+
+**Layout (Pau, 9 nov):** MRs get their own screen, not a sidebar section, reached from a rail of three screens (Trabajo · MR · Avisos) with counters. **Avisos** is a notification feed: review requested, comment on your MR, your agent opened an MR, CI failed, a new MR in a subscribed project, approvals/merges — filterable, each opening its MR or workspace.
 
 **What gets scored (Pau, 9 nov):** only MRs you authored or where you are a reviewer get metrics, AI scores and Libretto lenses. MRs in subscribed projects ("Sigo") are listed only — title, author, CI status, size — with no AI, no metrics and no checkout.
 
