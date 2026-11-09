@@ -1,5 +1,5 @@
 Targets: settings
-Governs: src/main/secrets/** src/renderer/settings/**
+Governs: src/main/credentials/** src/renderer/settings/**
 
 # settings — the person's tokens, write-only
 
@@ -68,16 +68,16 @@ file, or a message to the renderer; inputs are password fields.
 
 - **S1** When a token is saved, Atril shall store it encrypted with `safeStorage` in
   `~/.atril/secrets.bin`, and the file shall not contain the token in clear.
-  Proof: src/main/secrets/store.test.ts  saved token is encrypted at rest
+  Proof: src/main/credentials/store.test.ts  saved token is encrypted at rest
 - **S2** If `safeStorage` encryption is unavailable, then Atril shall refuse to save and say
   why.
-  Proof: src/main/secrets/store.test.ts  refuses to save without keychain encryption
+  Proof: src/main/credentials/store.test.ts  refuses to save without keychain encryption
 - **S3** No IPC response, log line or file other than `secrets.bin` shall ever contain a saved
   token.
-  Proof: src/main/secrets/store.test.ts  token never leaves the main process
+  Proof: src/main/credentials/store.test.ts  token never leaves the main process
 - **S4** When the Jira token is saved, Atril shall check it with `/rest/api/3/myself` and show
   the account name, or the service's error without the token.
-  Proof: src/main/secrets/check.test.ts  check shows the account or the error
+  Proof: src/main/credentials/check.test.ts  check shows the account or the error
 - **S5** While a token is stored, the Ajustes card shall show "Guardado" with the account and
   offer only Reemplazar and Borrar, never the token.
   Proof: src/renderer/settings/settings.test.ts  saved token cannot be seen again
