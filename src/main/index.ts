@@ -1,4 +1,6 @@
-import { app, BrowserWindow, dialog, ipcMain } from 'electron'
+import { app, BrowserWindow, dialog, ipcMain, Notification } from 'electron'
+import { writeHooksFile } from './agent'
+import { createStatus } from './status'
 import { writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { doctor } from './doctor'
@@ -85,6 +87,29 @@ app.whenReady().then(() => {
   ipcMain.on('atril:term:detach', (_e, id: string) => pty.detach(id))
   ipcMain.handle('atril:snapshot-ws', () => Boolean(process.env['ATRIL_SNAPSHOT']))
   createWindow()
+
+  const shown = new Set<Notification>()
+  const status = createStatus({
+    run,
+    onChange: (id, state) => BrowserWindow.getAllWindows().forEach((w) => w.webContents.send('atril:status:change', id, state)),
+    notify: (ws) => {
+      const n = new Notification({ title: 'Atril', body: `${ws.branch} te necesita` })
+      n.on('click', () => {
+        const win = BrowserWindow.getAllWindows()[0]
+        if (!win) return
+        if (win.isMinimized()) win.restore()
+        win.show()
+        win.focus()
+        win.webContents.send('atril:status:open', ws.id)
+      })
+      // A Notification nobody references can be collected before it is clicked.
+      shown.add(n)
+      n.on('close', () => shown.delete(n))
+      n.show()
+    }
+  })
+  ipcMain.handle('atril:status:list', () => status.states())
+  void writeHooksFile().then(() => status.start())
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
   })

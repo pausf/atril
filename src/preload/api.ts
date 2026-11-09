@@ -90,7 +90,18 @@ export interface JiraApi {
   inbox(): Promise<InboxResult>
 }
 
+export type AgentState = 'working' | 'needs-you' | 'stopped'
+
+export interface StatusApi {
+  list(): Promise<Record<string, AgentState>>
+  /** Returns the unsubscribe function. */
+  onChange(cb: (id: string, state: AgentState) => void): () => void
+  /** A notification was clicked: select that workspace. */
+  onOpen(cb: (id: string) => void): () => void
+}
+
 export interface AtrilApi {
+  status: StatusApi
   doctor(): Promise<DoctorReport>
   repos: ReposApi
   workspaces: WorkspacesApi

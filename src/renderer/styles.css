@@ -401,8 +401,23 @@ input:focus-visible {
   border-radius: 50%;
   background: var(--faint);
 }
-.state.on i {
-  background: #2a9d4b;
+.state.working i {
+  background: #0a84ff;
+  animation: pulse 1.4s ease-in-out infinite;
+}
+.state.needs-you {
+  color: #9a6700;
+}
+.state.needs-you i {
+  background: #ff9f0a;
+}
+.state.stopped i {
+  background: var(--bad);
+}
+@keyframes pulse {
+  50% {
+    opacity: 0.3;
+  }
 }
 .ws-remove {
   font: inherit;

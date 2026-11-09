@@ -481,6 +481,8 @@ or in tmux itself, never in the window.
 | The runner has no timeout, so a tool that hangs on its version command blocks the doctor | accepted for phase 1; add a timeout to `run` the first time it is seen |
 | The person also has Libretto installed globally, so the agent sees two copies of each skill | accepted: the plugin's are namespaced (`/libretto:…`) and Start always calls the plugin's. Atril never skips the person's own skills to avoid duplicates (W33) |
 | Libretto's own `libretto` CLI (loop, metrics, init) is not bundled | accepted: the flow's skills do not need it to run; bundle it with the app when a feature calls it |
+| Claude's `/hooks` menu does not list hooks passed with `--settings`, so it cannot prove they loaded | a `SessionStart` probe through the same script wrote its state file in a real Claude start (box 7); that is the evidence, not the menu |
+| Reopening Atril would notify for every agent already waiting | the first refresh after launch only records state; notifications start from the next transition (box 7 choice) |
 | `Stop` fires at the end of every turn, so `needs-you` may be noisy | accepted for phase 1; one notification per transition (W15) bounds it |
 
 ### Validation and rollback
@@ -515,7 +517,7 @@ or in tmux itself, never in the window.
 - [x] Libretto bundled: the script copies the pinned payload with its licences into resources/libretto as a Claude Code plugin, and every Claude agent starts with --plugin-dir pointing at it · waits on box 3 · Closes: W29, W30, W33
 - [ ] in-place workspaces: refuse a dirty checkout, refuse a second one per repo, restore the previous branch on close · waits on box 3 · Closes: W7, W8, W9
 - [ ] ⌘D and ⌘⇧D split the focused workspace through tmux · waits on box 3 · Closes: W13
-- [ ] agent state from Claude hooks passed by --settings and from the agent's dead pane, with one macOS notification per needs-you transition that opens the workspace · waits on box 3 · Closes: W14, W15, W16, W26, W27
+- [x] agent state from Claude hooks passed by --settings and from the agent's dead pane, with one macOS notification per needs-you transition that opens the workspace · waits on box 3 · Closes: W14, W15, W16, W26, W27
 - [ ] usage footer: Claude 5 h and 7 d from the Keychain token and the usage endpoint, "—" with a reason when unreadable, the token never leaving main · waits on box 1 · Closes: W17, W18, W20
 - [ ] the right panel shows the Libretto stage and checklist of the selected workspace and follows file changes · waits on box 3 · Closes: F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12
 - [ ] Ajustes: the Jira token card, encrypted with safeStorage, checked on save, write-only once saved, and the "Conecta X en Ajustes" state · waits on box 1 · Closes: S1, S2, S3, S4, S5, S6, S7

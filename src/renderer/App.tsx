@@ -31,6 +31,8 @@ export function App() {
     })()
   }, [])
 
+  useEffect(() => window.atril.status.onOpen(setSelected), [])
+
   const create = async (repoId: string, branch: string, agent: Agent): Promise<string | null> => {
     const r = await window.atril.workspaces.open(repoId, branch, agent)
     if ('error' in r) return r.error

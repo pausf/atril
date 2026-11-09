@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron'
-import type { AtrilApi } from './api'
+import type { AgentState, AtrilApi } from './api'
 
 const api: AtrilApi = {
   doctor: () => ipcRenderer.invoke('atril:doctor'),
@@ -15,6 +15,19 @@ const api: AtrilApi = {
     remove: (id) => ipcRenderer.invoke('atril:ws:remove', id)
   },
   jira: { inbox: () => ipcRenderer.invoke('atril:jira:inbox') },
+  status: {
+    list: () => ipcRenderer.invoke('atril:status:list'),
+    onChange: (cb) => {
+      const h = (_e: Electron.IpcRendererEvent, id: string, state: AgentState): void => cb(id, state)
+      ipcRenderer.on('atril:status:change', h)
+      return () => ipcRenderer.removeListener('atril:status:change', h)
+    },
+    onOpen: (cb) => {
+      const h = (_e: Electron.IpcRendererEvent, id: string): void => cb(id)
+      ipcRenderer.on('atril:status:open', h)
+      return () => ipcRenderer.removeListener('atril:status:open', h)
+    }
+  },
   term: {
     attach: (id, cols, rows) => ipcRenderer.invoke('atril:term:attach', id, cols, rows),
     input: (id, data) => ipcRenderer.send('atril:term:input', id, data),

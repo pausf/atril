@@ -1,5 +1,7 @@
-import { useState } from 'react'
-import type { WorkspaceView } from '../../preload/api'
+import { useEffect, useState } from 'react'
+import type { AgentState, WorkspaceView } from '../../preload/api'
+
+const LABEL: Record<AgentState, string> = { working: 'trabajando', 'needs-you': 'te necesita', stopped: 'parado' }
 
 interface Props {
   workspaces: WorkspaceView[]
@@ -10,6 +12,12 @@ interface Props {
 
 export function WorkspaceList({ workspaces, selected, onSelect, onRemove }: Props) {
   const [refusal, setRefusal] = useState<{ id: string; text: string } | null>(null)
+  const [states, setStates] = useState<Record<string, AgentState>>({})
+
+  useEffect(() => {
+    void window.atril.status.list().then(setStates)
+    return window.atril.status.onChange((id, state) => setStates((s) => ({ ...s, [id]: state })))
+  }, [])
 
   if (workspaces.length === 0) {
     return <div className="empty">Aquí verás cada trabajo con su estado. Crea uno con «Nuevo trabajo» en un repo.</div>
@@ -23,9 +31,14 @@ export function WorkspaceList({ workspaces, selected, onSelect, onRemove }: Prop
             <span className="ws-meta">
               {w.repoId} · {w.agent}
             </span>
-            <span className={w.alive ? 'state on' : 'state off'}>
-              <i /> {w.alive ? 'abierto' : 'parado'}
-            </span>
+            {(() => {
+              const state = states[w.id] ?? (w.alive ? 'working' : 'stopped')
+              return (
+                <span className={`state ${state}`}>
+                  <i /> {LABEL[state]}
+                </span>
+              )
+            })()}
           </button>
           <button
             type="button"
