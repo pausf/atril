@@ -32,7 +32,50 @@ export interface ReposApi {
   setOverride(id: string, mode: Mode | null): Promise<RepoView[]>
 }
 
+
+export type Agent = 'claude' | 'codex'
+
+export interface WorkspaceRecord {
+  id: string
+  repoId: string
+  branch: string
+  mode: Mode
+  path: string
+  baseCommit: string
+  previousBranch?: string
+  agent: Agent
+  jiraKey?: string
+  session: string
+  paneId: string
+}
+
+export interface WorkspaceView extends WorkspaceRecord {
+  alive: boolean
+}
+
+export type WorkspaceResult = { workspace: WorkspaceView } | { error: string }
+export type RemoveResult = { ok: true } | { error: string }
+
+export interface WorkspacesApi {
+  list(): Promise<WorkspaceView[]>
+  open(repoId: string, branch: string, agent: Agent): Promise<WorkspaceResult>
+  remove(id: string): Promise<RemoveResult>
+}
+
+export interface TermApi {
+  attach(id: string, cols: number, rows: number): Promise<void>
+  input(id: string, data: string): void
+  resize(id: string, cols: number, rows: number): void
+  detach(id: string): void
+  /** Returns the unsubscribe function. */
+  onData(cb: (id: string, data: string) => void): () => void
+}
+
 export interface AtrilApi {
   doctor(): Promise<DoctorReport>
   repos: ReposApi
+  workspaces: WorkspacesApi
+  term: TermApi
+  /** Dev snapshot only: the workspace to select on startup. */
+  snapshotWorkspace(): Promise<boolean>
 }

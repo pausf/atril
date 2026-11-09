@@ -1,6 +1,16 @@
+import type { Agent, WorkspaceView } from '../../preload/api'
 import { Repos } from './Repos'
+import { WorkspaceList } from './WorkspaceList'
 
-export function Sidebar() {
+interface Props {
+  workspaces: WorkspaceView[]
+  selected: string | null
+  onSelect: (id: string) => void
+  onRemove: (id: string) => Promise<string | null>
+  onCreate: (repoId: string, branch: string, agent: Agent) => Promise<string | null>
+}
+
+export function Sidebar({ workspaces, selected, onSelect, onRemove, onCreate }: Props) {
   return (
     <aside className="col left">
       <section>
@@ -14,13 +24,11 @@ export function Sidebar() {
       </section>
       <section className="sec">
         <h2>
-          Trabajo en marcha <span className="n">0</span>
+          Trabajo en marcha <span className="n">{workspaces.length}</span>
         </h2>
         <p className="lead">Cada trabajo, con su agente.</p>
-        <div className="empty">
-          Aquí verás cada trabajo con su estado: trabajando, te necesita o parado.
-        </div>
-        <Repos />
+        <WorkspaceList workspaces={workspaces} selected={selected} onSelect={onSelect} onRemove={onRemove} />
+        <Repos onCreate={onCreate} />
       </section>
     </aside>
   )

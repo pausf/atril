@@ -434,6 +434,7 @@ or in tmux itself, never in the window.
 | Mode detection flags almost every repo as in-place | the noise list (W2) and the person's override (W4); the reason is always shown, so a wrong call is visible |
 | Two tmux clients on one session fight over the size | `window-size latest` on every session Atril creates |
 | Codex is broken here, so W19 is only proved on a fixture | accepted: the fixture is a real `rate_limits` line from `~/.codex/sessions` (Feb 2026); W21 shows the breakage |
+| `node-pty` must be rebuilt for Electron | `pnpm rebuild` runs `electron-rebuild -f -w node-pty`; `pnpm-workspace.yaml` holds `allowBuilds: node-pty: false` so pnpm 11 stops failing the install and the rebuild is explicit |
 | pnpm 11 skips Electron's install script on a fresh clone, so `pnpm dev` says "Electron uninstall" | not solved: `allowBuilds` and `onlyBuiltDependencies` in `pnpm-workspace.yaml` were both tried on a fresh install and neither ran it; until found, run `node node_modules/electron/install.js` once after `pnpm install` |
 | Launched from Finder, a macOS app does not inherit the shell's PATH, so tmux, claude and jira look missing | not hit while Atril runs from source with `pnpm dev`; a packaged build must resolve PATH from the login shell first |
 | The runner has no timeout, so a tool that hangs on its version command blocks the doctor | accepted for phase 1; add a timeout to `run` the first time it is seen |
@@ -467,7 +468,7 @@ or in tmux itself, never in the window.
 
 - [x] the app opens: Electron + React shell with the three columns and footer of boceto 8, the runner, and the doctor naming each missing tool with its install command · Closes: W21
 - [x] register a repo by folder; the sidebar shows its mode with the reason, and the person's override persists · waits on box 1 · Closes: W1, W2, W3, W4
-- [ ] "Nuevo trabajo" opens a workspace in worktree mode on a new branch with claude or codex in an `atril-<id>` tmux session recorded in workspaces.json, shown live in the centre terminal; relaunching Atril reattaches without starting agents; a dirty worktree is never removed · waits on box 2 · Closes: W5, W6, W10, W11, W12
+- [x] "Nuevo trabajo" opens a workspace in worktree mode on a new branch with claude or codex in an `atril-<id>` tmux session recorded in workspaces.json, shown live in the centre terminal; relaunching Atril reattaches without starting agents; a dirty worktree is never removed · waits on box 2 · Closes: W5, W6, W10, W11, W12
 - [ ] in-place workspaces: refuse a dirty checkout, refuse a second one per repo, restore the previous branch on close · waits on box 3 · Closes: W7, W8, W9
 - [ ] ⌘D and ⌘⇧D split the focused workspace through tmux · waits on box 3 · Closes: W13
 - [ ] agent state from Claude hooks passed by --settings and from the agent's dead pane, with one macOS notification per needs-you transition that opens the workspace · waits on box 3 · Closes: W14, W15, W16, W26, W27

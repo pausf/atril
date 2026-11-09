@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import type { AddRepoResult, Mode, RepoView } from '../../preload/api'
+import type { AddRepoResult, Agent, Mode, RepoView } from '../../preload/api'
 
 const ID_RE = /^[a-z0-9-]+$/
 type Choice = Mode | 'auto'
@@ -15,7 +15,54 @@ interface Pending {
   note: string
 }
 
-export function Repos() {
+function NewWork({ repoId, onCreate }: { repoId: string; onCreate: (repoId: string, branch: string, agent: Agent) => Promise<string | null> }) {
+  const [open, setOpen] = useState(false)
+  const [branch, setBranch] = useState('')
+  const [agent, setAgent] = useState<Agent>('claude')
+  const [error, setError] = useState<string | null>(null)
+
+  if (!open) {
+    return (
+      <button type="button" className="pill add" onClick={() => setOpen(true)}>
+        Nuevo trabajo
+      </button>
+    )
+  }
+  return (
+    <form
+      className="idask"
+      onSubmit={(e) => {
+        e.preventDefault()
+        void onCreate(repoId, branch.trim(), agent).then((err) => {
+          setError(err)
+          if (!err) {
+            setOpen(false)
+            setBranch('')
+          }
+        })
+      }}
+    >
+      <div className="idrow">
+        <input aria-label={`Rama de ${repoId}`} placeholder="feat/mi-rama" value={branch} onChange={(e) => setBranch(e.target.value)} />
+        <select aria-label="Agente" value={agent} onChange={(e) => setAgent(e.target.value as Agent)}>
+          <option value="claude">Claude</option>
+          <option value="codex">Codex</option>
+        </select>
+      </div>
+      <div className="idrow">
+        <button type="submit" className="pill" disabled={branch.trim() === ''}>
+          Crear
+        </button>
+        <button type="button" className="pill" onClick={() => setOpen(false)}>
+          Cancelar
+        </button>
+      </div>
+      {error && <div className="bad">{error}</div>}
+    </form>
+  )
+}
+
+export function Repos({ onCreate }: { onCreate: (repoId: string, branch: string, agent: Agent) => Promise<string | null> }) {
   const [repos, setRepos] = useState<RepoView[]>([])
   const [pending, setPending] = useState<Pending | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -84,6 +131,7 @@ export function Repos() {
                 </button>
               ))}
             </div>
+            <NewWork repoId={repo.id} onCreate={onCreate} />
           </div>
         )
       })}

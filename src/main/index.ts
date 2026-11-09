@@ -4,7 +4,10 @@ import { join } from 'node:path'
 import { doctor } from './doctor'
 import type { Mode } from '../preload/api'
 import { listRepos, registerRepo, setOverride } from './repos'
+import * as pty from './pty'
 import { run } from './run'
+import { listWorkspaces, openWorktree, removeWorkspace } from './workspaces'
+import type { Agent } from '../preload/api'
 
 function createWindow(): void {
   const win = new BrowserWindow({
@@ -41,7 +44,7 @@ function createWindow(): void {
         const image = await win.webContents.capturePage()
         await writeFile(snapshot, image.toPNG())
         app.quit()
-      }, 1500)
+      }, 4000)
     })
   }
 }
@@ -60,10 +63,30 @@ app.whenReady().then(() => {
     await setOverride(id, mode)
     return listRepos(run)
   })
+  ipcMain.handle('atril:ws:list', () => listWorkspaces(run))
+  ipcMain.handle('atril:ws:open', (_e, repoId: string, branch: string, agent: Agent) =>
+    openWorktree({ repoId, branch, agent }, run)
+  )
+  ipcMain.handle('atril:ws:remove', async (e, id: string) => {
+    pty.detach(id)
+    return removeWorkspace(id, run)
+  })
+  ipcMain.handle('atril:term:attach', async (e, id: string, cols: number, rows: number) => {
+    const ws = (await listWorkspaces(run)).find((w) => w.id === id)
+    if (!ws?.alive) return
+    pty.attach(id, ws.path, cols, rows, (d) => {
+      if (!e.sender.isDestroyed()) e.sender.send('atril:term:data', id, d)
+    })
+  })
+  ipcMain.on('atril:term:input', (_e, id: string, data: string) => pty.input(id, data))
+  ipcMain.on('atril:term:resize', (_e, id: string, c: number, r: number) => pty.resize(id, c, r))
+  ipcMain.on('atril:term:detach', (_e, id: string) => pty.detach(id))
+  ipcMain.handle('atril:snapshot-ws', () => Boolean(process.env['ATRIL_SNAPSHOT']))
   createWindow()
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
   })
 })
 
+app.on('before-quit', pty.detachAll)
 app.on('window-all-closed', () => app.quit())
