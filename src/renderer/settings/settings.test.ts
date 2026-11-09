@@ -23,7 +23,7 @@ function mockApi(status: { saved: boolean; account?: string; site?: string; avat
     openTokenPage: vi.fn().mockResolvedValue(undefined)
   }
   // The forge cards stay loading here: this file is about the Jira card.
-  window.atril = { settings: { ...settings, forge: { status: () => new Promise(() => undefined) } }, repos: { list: async () => [] } } as unknown as AtrilApi
+  window.atril = { settings: { ...settings, forge: { status: () => new Promise(() => undefined) } }, repos: { list: async () => [] }, snapshotView: async () => null } as unknown as AtrilApi
   return settings
 }
 

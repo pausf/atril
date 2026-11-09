@@ -18,6 +18,8 @@ export function Repos() {
   const [pending, setPending] = useState<Pending | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [creating, setCreating] = useState(false)
+  // ponytail: dev-only, ATRIL_SNAPSHOT_VIEW=create-repo opens the dialog for a photo.
+  useEffect(() => void window.atril.snapshotView().then((v) => v === 'create-repo' && setCreating(true)), [])
 
   useEffect(() => {
     window.atril.repos

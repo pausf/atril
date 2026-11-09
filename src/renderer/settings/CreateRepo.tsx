@@ -65,8 +65,10 @@ export function CreateRepoDialog({ onClose, onRegistered }: { onClose: () => voi
           <label htmlFor="newrepo-desc">{t('Descripción')}</label>
           <input id="newrepo-desc" value={description} onChange={(e) => setDescription(e.target.value)} autoComplete="off" />
         </div>
-        <fieldset className="f vis">
-          <legend className="lbl">{t('Visibilidad')}</legend>
+        <div className="f vis" role="radiogroup" aria-labelledby="newrepo-vis-l">
+          <span className="lbl" id="newrepo-vis-l">
+            {t('Visibilidad')}
+          </span>
           <span>
             <label>
               <input type="radio" name="newrepo-vis" checked={!isPublic} onChange={() => setPublic(false)} /> {t('Privado')}
@@ -75,13 +77,13 @@ export function CreateRepoDialog({ onClose, onRegistered }: { onClose: () => voi
               <input type="radio" name="newrepo-vis" checked={isPublic} onChange={() => setPublic(true)} /> {t('Público')}
             </label>
           </span>
-        </fieldset>
+        </div>
         {isPublic && (
-          <label className="f-note warn">
+          <label className="f-check warn">
             <input type="checkbox" checked={understood} onChange={(e) => setUnderstood(e.target.checked)} /> {t('Entiendo que cualquiera podrá verlo')}
           </label>
         )}
-        <label className="f-note">
+        <label className="f-check">
           <input type="checkbox" checked={clone} onChange={(e) => setClone(e.target.checked)} /> {t('Clonar y añadir a Atril')}
         </label>
         {clone && (

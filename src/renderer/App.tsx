@@ -66,7 +66,7 @@ function Shell() {
     void window.atril.snapshotView().then((v) => {
       if (v === 'settings' || v === 'tasks' || v === 'work') setScreen(v)
       if (v === 'tasks-board') setScreen('tasks')
-      if (v === 'settings-board') setScreen('settings')
+      if (v === 'settings-board' || v === 'create-repo') setScreen('settings')
       if (v === 'tasks-own') {
         setScreen('tasks')
         setDialog('task')
