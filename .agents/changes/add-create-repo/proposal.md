@@ -28,6 +28,11 @@ personal vs organisation owner are open questions for its spec.
 - Q: ¿Visibilidad por defecto? → A: privado; «Público» pide confirmarlo con un segundo clic que dice que cualquiera podrá verlo (assumed).
 - Q: ¿Cómo se clona? → A: por SSH con la URL que devuelve la forja; el token nunca entra en una URL ni en un comando de git; si SSH falla se dice y se muestra el comando para hacerlo a mano (assumed).
 - Q: ¿Inicializar el repo? → A: con un README, para que se pueda clonar y crear ramas al momento (assumed).
+- Q: (spec-reviewer) ¿Quién es dueño de crear y clonar? → A: workspaces (`src/main/forge/**` cae en su `Governs:`): W49–W51 en `spec-workspaces.md`; settings se queda con conexiones, tarjetas y diálogo (assumed).
+- Q: (spec-reviewer) ¿Qué dirección de GitLab vale? → A: solo `https://`, como Jira (assumed).
+- Q: (spec-reviewer) ¿Y un 403, un 5xx o un fallo de red al conectar? → A: nada se guarda; «… ha rechazado el token ({status})» o «No se ha podido conectar con … ({detail})» (assumed).
+- Q: (spec-reviewer) ¿Qué id toma el repo en Atril? → A: el de `registerRepo`; si está cogido, el libre que propone; la carpeta usa el nombre que devuelve la forja (assumed).
+- Q: (spec-reviewer) ¿Diálogo sin forjas conectadas? → A: dice «Conecta GitHub o GitLab en Ajustes» y Crear queda desactivado; «Clonar y añadir a Atril» empieza desmarcado (assumed).
 
 ## Outcomes
 
@@ -71,31 +76,23 @@ explicit confirmation; the cards and the dialog are keyboard-operable.
 
 ## Verification criteria
 
-- **S20** When the person saves a GitHub token, or a GitLab address and token, Atril shall check
-  it against the forge's `/user` and store it only if the forge accepts it, then show the account
-  name and never the token; a refused token shall show «GitHub ha rechazado el token (401). No se
-  ha guardado.» (or GitLab's) and store nothing.
+- **S20** When the person saves a GitHub token, or a GitLab `https://` address and token, Atril
+  shall check it against the forge's `/user` and store it only on a 2xx answer, then show the
+  account name and never the token; on any other status it shall show «{forge} ha rechazado el
+  token ({status}). No se ha guardado.», on a network failure «No se ha podido conectar con
+  {forge} ({detail}).», and for a GitLab address that is not `https://` «La dirección de GitLab
+  debe empezar por https://» — storing nothing in all three.
   Proof: src/main/credentials/forge.test.ts a forge token is checked before it is stored
-- **S21** If the repo name is empty, longer than 100 characters, or has a character other than
-  letters, digits, `.`, `-` or `_`, or is `.` or `..`, then Atril shall say «Nombre de repo no
-  válido» and send no request.
-  Proof: src/main/forge/create.test.ts an invalid name sends nothing
-- **S22** When the person creates a repo, Atril shall send the forge's create request for the
-  person's account with the chosen name, description and visibility (private unless Público was
-  confirmed) and a README, and show the new repo's web link; a refusal from the forge shall show
-  its reason as `{detail}`.
-  Proof: src/main/forge/create.test.ts creates a private repo with a readme
 - **S23** While Público is chosen, Crear shall stay disabled until the person ticks «Entiendo que
   cualquiera podrá verlo».
   Proof: src/renderer/settings/createrepo.test.ts a public repo needs the confirmation
-- **S24** When «Clonar y añadir a Atril» is chosen, Atril shall clone the new repo's SSH URL into
-  `<folder>/<name>` and register it as an Atril repo; if the clone fails it shall say so, show the
-  `git clone` command to run by hand, and register nothing; the token shall appear in no command
-  Atril runs.
-  Proof: src/main/forge/create.test.ts clones over ssh and registers the repo
-- **S25** The window shall never receive a forge token: status answers carry the account and the
-  address only.
-  Proof: src/main/credentials/forge.test.ts a forge token is checked before it is stored
+- **S25** The forge status answers sent to the window shall carry `saved`, the account and the
+  address, and nothing derived from the token.
+  Proof: src/main/credentials/forge.test.ts forge status carries no token
+- **S26** While no forge is connected, the Crear repo dialog shall say «Conecta GitHub o GitLab en
+  Ajustes» and keep Crear disabled; otherwise it shall offer only the connected forges, with
+  «Clonar y añadir a Atril» unticked.
+  Proof: src/renderer/settings/createrepo.test.ts the dialog offers only connected forges
 
 ## Approach
 
@@ -120,8 +117,9 @@ texts (S16), the sketch. Gates: typecheck, lint, test.
   application/vnd.github+json`; GitLab `GET <site>/api/v4/user` with `PRIVATE-TOKEN`; 10 s
   timeout; network error codes only, never messages (as Jira, S-criteria).
 - Create: the forge answer gives `html_url`/`web_url` and `ssh_url`/`ssh_url_to_repo`.
-- Clone: `git clone -- <ssh url> <folder>/<name>` through the runner, with no credential in argv
-  or env; then `registerRepo(path)`.
+- Clone: refuse if `<folder>/<forge path>` exists; `git clone -- <ssh url> <folder>/<forge path>`
+  through the runner, with no credential in argv or env; then `registerRepo(path)`, and on
+  `id-taken` again with the suggested id.
 - Tests inject `fetch` and use a local bare repository as the "SSH URL", so cloning runs
   offline.
 
@@ -153,5 +151,5 @@ S20–S25 seen red first. Rollback: one revert; repos already created stay on th
 ## Checklist
 
 - [ ] the GitHub and GitLab connections: check, store, the two cards · Closes: S20, S25
-- [ ] creating the repo: validation, the request, the dialog with the public confirmation · waits on box 1 · Closes: S21, S22, S23
-- [ ] clone over SSH and register · waits on box 2 · Closes: S24
+- [ ] creating the repo: validation, the request, the dialog with the public confirmation · waits on box 1 · Closes: W49, W50, S23, S26
+- [ ] clone over SSH and register · waits on box 2 · Closes: W51

@@ -100,3 +100,6 @@ Committed the language proofs while red (4acae03), outside the all-green guard a
 
 ## 2026-11-09 · add-language · 6→7
 work-reviewer: ui:get could change main's language (Sistema after a macOS change) without rebuilding the menu (fixed); a message already on screen stays in the old language (ceiling named); the hook's own Spanish prefixes stay Spanish (queued as translate-hook-prefixes); "piece of work" read badly (now "workspace").
+
+## 2026-11-09 · add-create-repo · 4→5
+spec-reviewer: the create/clone code sat in workspaces' Governs while its criteria were written into settings; GitLab's address and non-401 failures had no rule; S25 borrowed S20's proof; the clone's id collision, existing folder and failure path had no criterion. Settled with spec-workspaces.md (W49–W51), https-only GitLab, a status test and one proof per clone path.
