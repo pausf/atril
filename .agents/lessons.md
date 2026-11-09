@@ -88,3 +88,6 @@ work-reviewer: an untracked symlink was followed to count its lines, and listed 
 
 ## 2026-11-09 · add-split-large-branch · 4→5
 spec-reviewer: the hook's printout had no way to be observed by the proof, a 0→900 jump was ambiguous, "one git call" contradicted the approach, parallel hooks could both announce, and "orange" had no criterion. Settled by moving the logic into a callable sizeNotice, claims with wx files, W46 pinning both counters, and F25 naming the class.
+
+## 2026-11-09 · add-split-large-branch · 6→7
+work-reviewer: the approach said the renderer imports the hook's THRESHOLD while the code pins a copy by test (text fixed); the hook's git calls had no timeout (5 s added, a timeout means no note); claim files are never cleaned (ceiling named — session ids are random).

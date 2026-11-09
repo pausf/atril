@@ -10,7 +10,8 @@ const TOOLS = new Set(['Edit', 'Write', 'MultiEdit', 'Bash'])
 
 function git(path, args) {
   const env = { ...process.env, PATH: `${process.env.PATH ?? ''}:/opt/homebrew/bin:/usr/local/bin` }
-  return execFileSync('git', ['--literal-pathspecs', '-C', path, ...args], { env, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 })
+  // A hook must never hold Claude up: a git that takes longer than this means no note.
+  return execFileSync('git', ['--literal-pathspecs', '-C', path, ...args], { env, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, timeout: 5000 })
 }
 
 function untrackedLines(file) {

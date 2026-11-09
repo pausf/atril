@@ -104,7 +104,8 @@ binary and symlink rules), and when k = floor((total − 1) / 400) is above ever
 `$ATRIL_HOME/size/<session>/`, claims it by creating `k<k>` with flag `wx` and returns the note.
 `resources/claude-hook.mjs` calls it after the state write and prints
 `{"hookSpecificOutput":{"hookEventName":"PostToolUse","additionalContext":note}}` when there is
-one. The renderer imports `THRESHOLD` for the warning. The renderer
+one. The renderer keeps its own `WARN_AT` (it cannot bundle a Node module); W46's test pins it to
+`THRESHOLD`. The renderer
 adds the warning to Cambios.
 
 ### Technical context
@@ -137,6 +138,8 @@ the sketch. Gates: typecheck, lint, test.
 |---|---|
 | The hook gets slower on a huge worktree | two git calls per edit, only after file-changing tools; ceiling named: not measured — a cap on untracked counting if it ever shows |
 | Claude ignores the note | it is a request, not a block; the orange warning in Cambios shows the person anyway |
+| A git call hangs | each has a 5 s timeout; a timeout means no note, never a stuck hook |
+| Claims outlive their workspace | ceiling named (work-reviewer, 9 nov): `size/<session>/` is never cleaned; session names carry a random id, so a new workspace never inherits old claims; clean them on Quitar if the folder ever grows |
 
 ### Validation and rollback
 
