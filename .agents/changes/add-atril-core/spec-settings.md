@@ -14,6 +14,9 @@ Vocabulary, decision log and the primary contract: `proposal.md` beside this fil
 - Wherever a feature needs a service with no token stored, it says so and links to Ajustes
   ("Conecta Jira en Ajustes") instead of failing.
 - Saving a token checks it with one call and shows the account it belongs to, or the error.
+- The top bar shows **who is signed in**: the Jira account's avatar and display name, as a
+  session chip; clicking it opens Ajustes. With no token, the chip says "Sin conectar". In
+  phase 2 the GitHub and GitLab avatars join it.
 - **Once saved, a token is never shown again** — not in Ajustes, not anywhere. The card shows
   "Guardado · <cuenta>" with **Reemplazar** and **Borrar**. Replacing means pasting a new one.
 
@@ -52,6 +55,9 @@ file, or a message to the renderer; inputs are password fields.
   Chrome … conéctate a GitHub, conéctate a GitLab, conéctate a Jira … lo que sea más fácil».
   Jira stays a token with a button to the page that creates it; GitHub and GitLab get browser
   "Conectar" in phase 2.
+- **A session chip with the account's avatar** — Pau, 9 nov: «que cogiera el icono del Jira
+  o del GitHub o del GitLab … para mostrar como arriba como una sesión … saber que soy yo el que
+  está en esa sesión de atril».
 - **Only phase 1 now** — Pau, 9 nov: «Y hacemos solo la fase 1 núcleo». The GitLab and GitHub
   cards move to add-mr-review.
 - **Write-only once saved** — Pau, 9 nov: «donde pongan los tokens, pero ocultos … una vez que
@@ -87,3 +93,7 @@ file, or a message to the renderer; inputs are password fields.
 - **S7** When the person presses «Crear token en Atlassian», Atril shall open Atlassian's API
   token page in the default browser and nothing else.
   Proof: src/renderer/settings/settings.test.ts  create token button opens the atlassian page
+- **S8** While a Jira token is saved, the top bar shall show the account's avatar and display
+  name from `/rest/api/3/myself`; the avatar is fetched by the main process and reaches the
+  renderer as image data only, never with the token; clicking the chip opens Ajustes.
+  Proof: src/renderer/settings/settings.test.ts  top bar shows who is signed in

@@ -95,6 +95,7 @@ PTYs and worktrees, and pieces reused with attribution — but Atril does not ru
 - Q: la carpeta de código `src/main/secrets/` choca con tu regla global `Read/Edit(**/secrets/**)` → A: «si» a renombrarla `src/main/credentials/` (la regla queda intacta; el `mv` lo ejecutó Pau)
 - Q: nombre de la rama → A: «Las ramas del proyecto suelen ser el nombre de la tarea. Por ejemplo, pf-4870 … suele ser referenciado con la tarea del Jira» (en los repos: la clave en mayúsculas, y una letra B/C… para un segundo intento)
 - Q: ¿Otro nombre mejor que Atril? (propuestos Batuta, Podio, Concertino, Ensayo) → A: «atril»
+- Q: «Haría que cogiera el icono del Tira o del GitHub o del GitLab … para mostrar como arriba como una sesión … saber que soy yo el que está en esa sesión de atril» → A: chip de sesión arriba con el avatar y nombre de Jira en la fase 1; GitHub y GitLab se suman en la fase 2
 
 ## Vocabulary
 
@@ -528,4 +529,4 @@ or in tmux itself, never in the window.
 - [ ] "Mis Jira" lists the person's open sprint tasks through the Jira REST API with the token from Ajustes, and links to Ajustes when there is none · waits on box 10 · Closes: I1, I2, I3
 - [ ] Start, and a Modelo selector in Start and Nuevo trabajo: repo memory, branch slug, validated key, claude running /libretto-flow <KEY> in a new workspace, In Progress transition whose failure keeps the workspace, and the task showing its workspace afterwards · waits on boxes 3, 4, 7, 11 · Closes: I4, I5, I6, I7, I8, I9, I10, W34
 - [ ] keyboard reachability and text labels everywhere, foldable sidebar sections, and the first-launch tutorial over every element, skippable, reopenable from Help, keyboard-only · waits on boxes 3, 8, 9, 11 · Closes: W22, W23, W24, W25, W28
-- [ ] Claude agents in Atril workspaces start without the folder-trust prompt, and tool problems collapse into one top-bar chip · waits on box 3 · Closes: W31, W32
+- [ ] Claude agents in Atril workspaces start without the folder-trust prompt, tool problems collapse into one top-bar chip, and the top bar shows who is signed in · waits on boxes 3, 10 · Closes: W31, W32, S8
