@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import type { Agent, DoctorReport, JiraIssue, Model, NextItem, WorkspaceView } from '../preload/api'
+import type { DoctorReport, JiraIssue, NextItem, WorkspaceView } from '../preload/api'
 import { FlowPanel } from './flow/FlowPanel'
 import { Footer } from './components/Footer'
 import { Rail, type Screen } from './components/Rail'
@@ -56,7 +56,7 @@ function Shell() {
   const inbox = useInbox()
   const next = useNextUp()
   const [starting, setStarting] = useState<JiraIssue | null>(null)
-  const [ownTask, setOwnTask] = useState(false)
+  const [dialog, setDialog] = useState<'task' | 'work' | null>(null)
   const [startError, setStartError] = useState<string | null>(null)
   const quickBusy = useRef(false)
 
@@ -67,7 +67,7 @@ function Shell() {
       if (v === 'settings-board') setScreen('settings')
       if (v === 'tasks-own') {
         setScreen('tasks')
-        setOwnTask(true)
+        setDialog('task')
       }
       if (v === 'start') {
         setScreen('tasks')
@@ -157,14 +157,6 @@ function Shell() {
     }
   }
 
-  const create = async (repoId: string, branch: string, agent: Agent, model: Model): Promise<string | null> => {
-    const r = await window.atril.workspaces.open(repoId, branch, agent, model)
-    if ('error' in r) return r.error
-    setWorkspaces(await window.atril.workspaces.list())
-    setSelected(r.workspace.id)
-    return null
-  }
-
   const remove = async (id: string): Promise<string | null> => {
     const r = await window.atril.workspaces.remove(id)
     if ('error' in r) return r.error
@@ -190,7 +182,7 @@ function Shell() {
                 selected={selected}
                 onSelect={setSelected}
                 onRemove={remove}
-                onCreate={create}
+                onNewWork={() => setDialog('work')}
                 inbox={inbox}
                 onOpenTasks={() => setScreen('tasks')}
               />
@@ -198,7 +190,7 @@ function Shell() {
               <FlowPanel workspaceId={selected} />
             </div>
           </div>
-          {screen === 'tasks' && <Inbox inbox={inbox} onStart={(i, alt) => void beginStart(i, alt)} startError={startError} onOpenWorkspace={openWorkspace} onNewTask={() => setOwnTask(true)} />}
+          {screen === 'tasks' && <Inbox inbox={inbox} onStart={(i, alt) => void beginStart(i, alt)} startError={startError} onOpenWorkspace={openWorkspace} onNewTask={() => setDialog('task')} />}
           {screen === 'settings' && (
             <Ajustes>
               <Appearance />
@@ -220,12 +212,17 @@ function Shell() {
           }}
         />
       )}
-      {ownTask && (
+      {dialog && (
         <OwnTaskDialog
-          onClose={() => setOwnTask(false)}
+          textOptional={dialog === 'work'}
+          onClose={() => setDialog(null)}
+          onOpenSettings={() => {
+            setDialog(null)
+            setScreen('settings')
+          }}
           onStarted={async (ws) => {
             await started(ws)
-            setOwnTask(false)
+            setDialog(null)
             openWorkspace(ws.id)
           }}
         />

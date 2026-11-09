@@ -140,4 +140,4 @@ None.
 
 ## Checklist
 
-- [ ] repos as a card in Ajustes, «＋ Nuevo trabajo» in the sidebar with the optional text, the no-repo pointer, the sketch · Closes: S11, S12, S13, W43, W28, I23, I27, I25
+- [x] repos as a card in Ajustes, «＋ Nuevo trabajo» in the sidebar with the optional text, the no-repo pointer, the sketch · Closes: S11, S12, S13, W43, W28, I23, I27, I25

@@ -1,7 +1,6 @@
-import type { Agent, Model, WorkspaceView } from '../../preload/api'
+import type { WorkspaceView } from '../../preload/api'
 import { JiraSummary, type InboxState } from '../inbox/Inbox'
 import { FoldSection } from './Fold'
-import { Repos } from './Repos'
 import { WorkspaceList } from './WorkspaceList'
 
 interface Props {
@@ -9,20 +8,22 @@ interface Props {
   selected: string | null
   onSelect: (id: string) => void
   onRemove: (id: string) => Promise<string | null>
-  onCreate: (repoId: string, branch: string, agent: Agent, model: Model) => Promise<string | null>
   inbox: InboxState
   onOpenTasks: () => void
+  onNewWork: () => void
 }
 
-export function Sidebar({ workspaces, selected, onSelect, onRemove, onCreate, inbox, onOpenTasks }: Props) {
+export function Sidebar({ workspaces, selected, onSelect, onRemove, inbox, onOpenTasks, onNewWork }: Props) {
   return (
     <aside className="col left">
+      <button type="button" className="new-work" onClick={onNewWork}>
+        ＋ Nuevo trabajo
+      </button>
       <JiraSummary inbox={inbox} onOpen={onOpenTasks} />
       <FoldSection id="work" title="Trabajo en marcha" count={workspaces.length} tour="workspaces">
         <p className="lead">Cada trabajo, con su agente.</p>
         <WorkspaceList workspaces={workspaces} selected={selected} onSelect={onSelect} onRemove={onRemove} />
       </FoldSection>
-      <Repos onCreate={onCreate} />
     </aside>
   )
 }

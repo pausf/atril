@@ -35,7 +35,7 @@ export function WorkspaceList({ workspaces, selected, onSelect, onRemove }: Prop
   }, [])
 
   if (workspaces.length === 0) {
-    return <div className="empty">Aquí verás cada trabajo con su estado. Crea uno con «Nuevo trabajo» en un repo.</div>
+    return <div className="empty">Aquí verás cada trabajo con su estado. Crea uno con «＋ Nuevo trabajo», arriba.</div>
   }
   return (
     <div className="ws-list">

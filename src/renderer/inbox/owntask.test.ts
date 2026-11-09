@@ -52,8 +52,11 @@ describe('own task', () => {
     mockApi({ repos: [] })
     const { user, dialog, text, go } = await openDialog()
     await user.type(text, 'algo')
-    expect(within(dialog).getByText('Añade un repo en Trabajo para empezar')).toBeTruthy()
+    expect(within(dialog).getByText('Añade un repo en Ajustes → Repos')).toBeTruthy()
     expect(go.hasAttribute('disabled')).toBe(true)
+    await user.click(within(dialog).getByRole('button', { name: 'Ir a Ajustes' }))
+    expect(screen.queryByRole('dialog')).toBeNull()
+    expect(rail(/Ajustes/).getAttribute('aria-current')).toBe('page')
   })
 
   it('own task works without jira', async () => {
@@ -76,5 +79,27 @@ describe('own task', () => {
     await user.type(branch, 'mi-rama')
     await user.type(text, ' otra')
     expect(branch.value).toBe('mi-rama')
+  })
+
+  it('new work without text opens plain claude', async () => {
+    const api = mockApi({ repos })
+    const user = userEvent.setup()
+    render(createElement(App))
+    const start = async (text: string) => {
+      await user.click(await screen.findByRole('button', { name: /Nuevo trabajo/ }))
+      const dialog = await screen.findByRole('dialog', { name: 'Nuevo trabajo' })
+      if (text) await user.type(within(dialog).getByLabelText(/¿Qué hay que hacer\?/), text)
+      const branch = within(dialog).getByLabelText('Rama')
+      await user.clear(branch)
+      await user.type(branch, 'mi-rama')
+      await vi.waitFor(() => expect((within(dialog).getByLabelText('Repo') as HTMLSelectElement).value).toBe('web'))
+      await user.click(within(dialog).getByRole('button', { name: 'Empezar' }))
+      await vi.waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+    }
+
+    await start('')
+    expect(vi.mocked(api.ws.open).mock.calls.at(-1)).toEqual(['web', 'mi-rama', 'claude', 'default'])
+    await start('Arreglar el aviso')
+    expect(vi.mocked(api.ws.open).mock.calls.at(-1)).toEqual(['web', 'mi-rama', 'claude', 'default', 'Arreglar el aviso'])
   })
 })

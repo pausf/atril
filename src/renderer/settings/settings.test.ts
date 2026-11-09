@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { createElement } from 'react'
-import { cleanup, render, screen, waitFor } from '@testing-library/react'
+import { cleanup, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { AtrilApi } from '../../preload/api'
@@ -22,7 +22,7 @@ function mockApi(status: { saved: boolean; account?: string; site?: string; avat
     },
     openTokenPage: vi.fn().mockResolvedValue(undefined)
   }
-  window.atril = { settings } as unknown as AtrilApi
+  window.atril = { settings, repos: { list: async () => [] } } as unknown as AtrilApi
   return settings
 }
 
@@ -46,7 +46,7 @@ describe('settings screen', () => {
     expect(screen.queryAllByDisplayValue(TOKEN)).toHaveLength(0)
     // The saved card has no credential fields left; the board search is the only input.
     expect(document.querySelectorAll('input:not(#jira-board)')).toHaveLength(0)
-    expect(screen.getAllByRole('button').map((b) => b.textContent)).toEqual(['Reemplazar', 'Borrar'])
+    expect(within(screen.getByRole('region', { name: 'Jira' })).getAllByRole('button').map((b) => b.textContent)).toEqual(['Reemplazar', 'Borrar'])
 
     await user.click(screen.getByRole('button', { name: 'Reemplazar' }))
     expect((screen.getByLabelText('Token') as HTMLInputElement).value).toBe('')

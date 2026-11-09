@@ -505,19 +505,54 @@ kbd {
   padding: 1px 5px;
 }
 
-.repos {
-  margin-top: 22px;
+.repo-rows {
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
 }
-.repo-item {
-  margin-bottom: 14px;
-}
-.repo {
-  font-size: 13px;
-  font-weight: 600;
+.repo-rows li {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin: 8px 0 2px;
+  gap: 12px;
+  padding: 10px 0;
+  border-top: 1px solid var(--line);
+  font-size: 13.5px;
+}
+.repo-rows .grow {
+  flex: 1;
+  min-width: 0;
+}
+.repo-rows .path {
+  font-size: 12px;
+  color: var(--sub);
+  overflow-wrap: anywhere;
+}
+.repo-rows .why {
+  margin: 2px 0 0;
+}
+.repo-rows select {
+  font: inherit;
+  font-size: 12.5px;
+  border: 1px solid var(--faint);
+  border-radius: 8px;
+  padding: 4px 8px;
+  background: var(--card);
+  color: var(--text);
+}
+.new-work {
+  width: 100%;
+  margin: 0 0 12px;
+  padding: 9px 14px;
+  border: 1px solid var(--faint);
+  border-radius: 12px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 13.5px;
+  cursor: pointer;
+}
+.new-work:hover {
+  background: var(--chip);
 }
 .mode {
   font-size: 11px;

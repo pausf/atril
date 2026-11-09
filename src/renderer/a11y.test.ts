@@ -27,7 +27,6 @@ async function boot() {
   })
   render(createElement(App))
   await screen.findByText('PF-3')
-  await screen.findByText('web')
   return api
 }
 
@@ -74,7 +73,7 @@ describe('keyboard and labels', () => {
 
     // ⌘L and ⌘J (menu actions) land focus on a real element of each column.
     act(() => api.menu({ kind: 'focus', target: 'sidebar' }))
-    expect(document.activeElement).toBe(within(document.querySelector<HTMLElement>('.col.left')!).getByRole('button', { name: /Jira/ }))
+    expect(document.activeElement).toBe(within(document.querySelector<HTMLElement>('.col.left')!).getByRole('button', { name: /Nuevo trabajo/ }))
     act(() => api.menu({ kind: 'focus', target: 'flow' }))
     expect(document.activeElement).toBe(document.querySelector('.col.right h2'))
     expect(document.activeElement?.closest('.col.right')).not.toBeNull()

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
+import { Repos } from './Repos'
 import type { BoardSearchResult, JiraBoard, JiraSettingsStatus } from '../../preload/api'
 
 type Phase = 'idle' | 'checking'
@@ -240,6 +241,7 @@ export function Ajustes({ children }: { children?: ReactNode }) {
         solo reemplazar o borrar. Tus agentes nunca los reciben.
       </p>
       <JiraCard />
+      <Repos />
       {children}
     </main>
   )

@@ -1,5 +1,5 @@
 import { vi } from 'vitest'
-import type { ActivityLine, AgentState, AtrilApi, FlowStage, JiraIssue, MenuAction, NextItem, StartProposalResult, StartRequest, StartResult, RepoView, UiState, WorkspaceResult, WorkspaceView } from '../preload/api'
+import type { ActivityLine, AddRepoResult, Mode, AgentState, AtrilApi, FlowStage, JiraIssue, MenuAction, NextItem, StartProposalResult, StartRequest, StartResult, RepoView, UiState, WorkspaceResult, WorkspaceView } from '../preload/api'
 
 export const workspace = (id: string, branch: string, alive = true): WorkspaceView => ({
   id,
@@ -32,6 +32,8 @@ interface Options {
   issues?: JiraIssue[]
   /** Jira not connected: the inbox answers «unconfigured» (I3). */
   noJira?: boolean
+  /** What the folder picker answers when the person adds a repo. */
+  addRepo?: (AddRepoResult & { path: string }) | null
   repos?: RepoView[]
   nextup?: NextItem[]
   /** What proposeStart answers; start answers with a workspace named after the key. */
@@ -70,7 +72,14 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
       list: async () => o.workspaces ?? [],
       open: vi.fn(async (_repo: string, branch: string): Promise<WorkspaceResult> => ({ workspace: workspace('own00001', branch) }))
     },
-    repos: { list: async () => o.repos ?? [] },
+    repos: {
+      list: async () => o.repos ?? [],
+      add: vi.fn(async () => o.addRepo ?? null),
+      addWithId: vi.fn(async (path: string, id: string): Promise<AddRepoResult> => ({ repo: { id, path, mode: 'worktree', reason: '' } })),
+      setOverride: vi.fn(async (id: string, mode: Mode | null): Promise<RepoView[]> =>
+        (o.repos ?? []).map((r) => (r.id === id ? { ...r, ...(mode ? { override: mode } : { override: undefined }) } : r))
+      )
+    },
     nextup: { get: async () => o.nextup ?? [], onChange: () => off },
     jira: {
       proposeStart: vi.fn(async () => o.proposal ?? { command: 'claude' }),
@@ -109,8 +118,8 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
     snapshotView: async () => null,
     snapshotWorkspace: async () => false
   } as unknown as AtrilApi
-  const { menu: menuApi, jira, workspaces: ws } = window.atril
-  return { ui, stored, menuApi, jira, ws, menu: (a: MenuAction) => menu?.(a), clickNotification: (id: string) => notified?.(id),
+  const { menu: menuApi, jira, workspaces: ws, repos: reposApi } = window.atril
+  return { ui, stored, menuApi, jira, ws, reposApi, menu: (a: MenuAction) => menu?.(a), clickNotification: (id: string) => notified?.(id),
     pushActivity: (id: string, lines: ActivityLine[]) => activityListeners.forEach((cb) => cb(id, lines))
   }
 }

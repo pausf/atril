@@ -4,13 +4,16 @@ import { MODEL_OPTIONS } from '../components/models'
 import { slugBranch } from './branch'
 
 interface Props {
+  /** «Nuevo trabajo» from Trabajo: without text the agent is plain Claude (I27). */
+  textOptional?: boolean
   onClose: () => void
+  onOpenSettings: () => void
   onStarted: (ws: WorkspaceView) => Promise<void>
 }
 
 const FOCUSABLE = 'button:not(:disabled), select:not(:disabled), input:not(:disabled), textarea:not(:disabled)'
 
-export function OwnTaskDialog({ onClose, onStarted }: Props) {
+export function OwnTaskDialog({ textOptional = false, onClose, onOpenSettings, onStarted }: Props) {
   const dialog = useRef<HTMLDivElement>(null)
   const [repos, setRepos] = useState<RepoView[] | null>(null)
   const [text, setText] = useState('')
@@ -31,14 +34,18 @@ export function OwnTaskDialog({ onClose, onStarted }: Props) {
     return () => opener?.focus?.()
   }, [])
 
-  const ready = text.trim() !== '' && repoId !== '' && branch.trim() !== '' && !busy
+  const blank = text.trim() === ''
+  const title = textOptional ? 'Nuevo trabajo' : 'Nueva tarea'
+  const ready = (textOptional || !blank) && repoId !== '' && branch.trim() !== '' && !busy
 
   const submit = async (): Promise<void> => {
     if (!ready) return
     setBusy(true)
     setError(null)
     try {
-      const r = await window.atril.workspaces.open(repoId, branch.trim(), 'claude', model, text)
+      const r = await (blank
+        ? window.atril.workspaces.open(repoId, branch.trim(), 'claude', model)
+        : window.atril.workspaces.open(repoId, branch.trim(), 'claude', model, text))
       if ('error' in r) return setError(r.error)
       await onStarted(r.workspace)
     } catch (e) {
@@ -70,11 +77,15 @@ export function OwnTaskDialog({ onClose, onStarted }: Props) {
   return (
     <div className="modal" onKeyDown={onKeyDown}>
       <div className="dlg" role="dialog" aria-modal="true" aria-labelledby="own-title" ref={dialog}>
-        <h3 id="own-title">Nueva tarea</h3>
-        <p>Escribe lo que hay que hacer: Libretto lo toma como petición y empieza por la spec.</p>
+        <h3 id="own-title">{title}</h3>
+        <p>
+          {textOptional
+            ? 'Con texto, Libretto lo toma como petición y empieza por la spec; sin texto, abre Claude a secas.'
+            : 'Escribe lo que hay que hacer: Libretto lo toma como petición y empieza por la spec.'}
+        </p>
 
         <div className="f stack">
-          <label htmlFor="own-text">¿Qué hay que hacer?</label>
+          <label htmlFor="own-text">¿Qué hay que hacer?{textOptional && ' (opcional)'}</label>
           <textarea id="own-text" rows={5} maxLength={2000} value={text} onChange={(e) => setText(e.target.value)} placeholder="Añadir filtro de laboratorios al listado…" />
         </div>
 
@@ -89,7 +100,14 @@ export function OwnTaskDialog({ onClose, onStarted }: Props) {
             ))}
           </select>
         </div>
-        {repos?.length === 0 && <div className="f-note">Añade un repo en Trabajo para empezar</div>}
+        {repos?.length === 0 && (
+          <div className="f-note">
+            Añade un repo en Ajustes → Repos{' '}
+            <button type="button" className="linklike" onClick={onOpenSettings}>
+              Ir a Ajustes
+            </button>
+          </div>
+        )}
 
         <div className="f">
           <label htmlFor="own-branch">Rama</label>
@@ -109,7 +127,7 @@ export function OwnTaskDialog({ onClose, onStarted }: Props) {
 
         <div className="f">
           <span className="lbl">Lanza</span>
-          <code aria-label="Comando que se ejecutará">/libretto:libretto-flow «tu texto»</code>
+          <code aria-label="Comando que se ejecutará">{blank && textOptional ? 'claude' : '/libretto:libretto-flow «tu texto»'}</code>
         </div>
 
         {error && (

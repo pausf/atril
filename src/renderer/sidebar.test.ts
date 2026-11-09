@@ -38,12 +38,6 @@ describe('foldable sections', () => {
     expect(work.textContent).toContain('2')
     expect(api.ui.set).toHaveBeenLastCalledWith({ folded: { work: true } })
 
-    // Repos folds on its own and keeps its own count.
-    const repoTitle = section(/^Repos\s*1$/)
-    await user.click(repoTitle)
-    expect(repoTitle.getAttribute('aria-expanded')).toBe('false')
-    expect(screen.queryByRole('button', { name: /Nuevo trabajo/ })).toBeNull()
-
     // Tareas groups: review starts folded with its count; the others start open.
     await user.click(screen.getByRole('button', { name: 'Tareas' }))
     const todo = section(/^Por empezar\s*2$/)
@@ -63,9 +57,18 @@ describe('foldable sections', () => {
     render(createElement(App))
     await screen.findByText('Trabajo en marcha')
     expect(section(/^Trabajo en marcha\s*2$/).getAttribute('aria-expanded')).toBe('false')
-    expect(section(/^Repos\s*1$/).getAttribute('aria-expanded')).toBe('false')
     await user.click(screen.getByRole('button', { name: 'Tareas' }))
     expect(section(/^Por empezar\s*2$/).getAttribute('aria-expanded')).toBe('false')
     expect(section(/^En revisión y despliegue\s*1$/).getAttribute('aria-expanded')).toBe('true')
+  })
+
+  it('sidebar offers new work and no repos', async () => {
+    const user = userEvent.setup()
+    mockApi(data)
+    render(createElement(App))
+    await screen.findByText('PF-2')
+    expect(screen.queryByRole('button', { name: /^Repos/ })).toBeNull()
+    await user.click(screen.getByRole('button', { name: /Nuevo trabajo/ }))
+    expect(await screen.findByRole('dialog', { name: 'Nuevo trabajo' })).toBeTruthy()
   })
 })
