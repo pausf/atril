@@ -20,6 +20,15 @@ Governs: src/main/flow/** src/renderer/flow/**
   While the agent works the editor is read-only and says so. The saved file is what Libretto
   reads from disk at its next step; nothing else tells the agent.
 
+### File changes (add-file-changes, 9 nov 2026)
+
+- From the **Construir** stage on, the Libretto panel shows **Cambios**: every file the workspace
+  changed against its base — committed, uncommitted and new — with its status (A, M, D) and its
+  +/− lines, plus the total; it refreshes while Claude works.
+- **Construir** becomes a button («Construir · ver N archivos») and each file in the list is a
+  button; both open a read-only **diff modal**: the files on the left, the selected file's diff
+  in green and red with line numbers, the counts in the status bar.
+
 ## Scope boundaries
 
 **In:** reading `.agents/changes/*/` in a workspace and deriving the stage.
@@ -42,6 +51,15 @@ on disk since it was read — and writes atomically, so a crash never leaves hal
 text is never rendered as HTML; the view is keyboard-operable (Escape closes, the buttons are
 native).
 
+### File changes (add-file-changes, 9 nov 2026)
+
+**In:** the list, its live refresh, the diff modal. **Out:** staging, reverting or editing files
+from Atril, comments on lines (phase 2's MR review), word-level diffs, renames shown as such
+(a rename shows as D + A).
+
+**Never scoped out:** main reads only paths that git lists as changed in that workspace; the diff
+text is rendered as text, never markup; the modal holds the keyboard like the document modal.
+
 ## Constraints
 
 - Libretto's layout and checklist rule exactly as `find-work` defines them: the checklist is
@@ -61,6 +79,11 @@ native).
 - The current change and its folder come from `stageOf` (F12's most recent change).
 - The agent state comes from main's status tracker (W14–W16, W26).
 - No new dependency.
+
+### File changes (add-file-changes, 9 nov 2026)
+
+- git only, through the runner (W-criteria); no new dependency.
+- Reuses the document modal's look (F13–F17) and the workspace's `baseCommit` (W5).
 
 ## Prior decisions
 
@@ -109,6 +132,36 @@ native).
 - Q: (Pau) «que se vea mas grande ahora mismo todo se ve minuculo lo de spec y plan» → A: al abrir un documento el editor ocupa todo el ancho (se ocultan la barra lateral y el panel de Libretto; «⤡ Salir de pantalla completa» o Esc vuelven), letra de 15 px.
 - Q: (Pau) «si la spec y plan no nos gusta como lo hacemos ya que pasa directamente a construir» → A: no pasa directo: Libretto se para antes de código con una pregunta; pero el hook marcaba esa pregunta como «trabajando» y Atril la escondía; se arregla en `spec-workspaces.md` (W44).
 - Q: (Pau) «no me sterminal de convencer no cabe todo en el la parte de la terminal, yo pensaba mas como un modal» → A: un modal grande (94 % del ancho, 88 % del alto), oscuro, por encima de la app: título de la etapa, el cambio, pestañas por archivo y Cerrar; dentro el mismo editor (esquema, números de línea, colores, barra de estado, ⌘S); Esc o Cerrar salen y, con cambios sin guardar, preguntan antes. La terminal no se toca.
+
+### File changes (add-file-changes, 9 nov 2026)
+
+- **See what Claude is changing** — Pau, 9 nov: «molaria un seccion en flujo de libreto donde se
+  pueda ver lo cambios de fichero ue se va haciendo» and «se deberia ver en el momento de
+  contruir … y que se pueda abrir en modal».
+- **Polling, not a file watcher on the whole tree** (assumed): a recursive watcher over a
+  worktree with `node_modules` costs more than a 3 s `git diff --numstat`.
+
+#### Alternatives that lost
+
+| Considered | Why it lost |
+|---|---|
+| A recursive `fs.watch` on the worktree | fires for `node_modules`, builds and caches; polling git is cheaper and exact |
+| Letting the renderer pass any path to diff | main would read whatever the renderer names; the list is the boundary |
+| A side-by-side diff | needs twice the width; unified is what `git diff` and review tools show |
+
+#### Decision log, answers as given (2026-11-09)
+- Q: (Pau) «los cambios se deberia ver en el momento de contruir no? y que se pueda abrir en modal y ver los cambios» → A: la lista sale desde Construir; «Construir» es un botón que abre el modal de cambios; boceto en `fase1-nucleo.html?diff=`.
+- Q: «tu desarrollo todo sin parar … te dejo solo» stands → the rest taken with the recommended option, marked (assumed).
+- Q: ¿Contra qué se comparan los cambios? → A: contra el commit base del trabajo (el de W5), incluyendo lo commiteado, lo no commiteado y los archivos nuevos sin seguimiento que git no ignora (assumed).
+- Q: ¿Cómo se actualiza en vivo? → A: la ventana vuelve a pedir la lista cada 3 s mientras el panel muestra Construir o después, y al cambiar la etapa; `git diff --numstat` es barato (assumed).
+- Q: ¿Se puede pedir el diff de cualquier ruta? → A: no: main solo da el diff de un archivo que está en la lista de cambios de ese trabajo (assumed).
+- Q: ¿Y un diff enorme o binario? → A: se corta en 1 MB con un aviso; un binario dice «Archivo binario» (assumed).
+
+- Q: (spec-reviewer) ¿Renombrados, T y U? → A: `--no-renames`: un renombrado es D + A; T y U cuentan como M; rutas leídas con `-z` (assumed).
+- Q: (spec-reviewer) ¿«Total» es líneas o archivos? → A: líneas añadidas + borradas («512 líneas»); el botón dice «ver N archivos» (assumed).
+- Q: (spec-reviewer) ¿Desde qué etapa? → A: Construir, Terminado y Aterrizado; antes, Construir no es botón y no hay sección (assumed).
+- Q: (spec-reviewer) ¿El modal se actualiza solo? → A: no: es una instantánea con su hora y un botón «Actualizar»; la lista del panel sí se refresca cada 3 s, sin pedir otra vez mientras una petición sigue en marcha (assumed).
+- Q: (spec-reviewer) ¿Binario sin seguimiento? → A: un byte cero en los primeros 8000 bytes, la regla de git; cuenta 0 y 0 (assumed).
 
 ## Task breakdown
 
@@ -184,3 +237,33 @@ Aterrizado**.
 - **F17** The editor's colouring shall build headings, list markers, boxes, code and bold as
   React text nodes, so markup in the file (`<script>`, `<img onerror>`) shows as literal characters.
   Proof: src/renderer/flow/documents.test.ts markdown renders as text only
+
+### File changes (add-file-changes, 9 nov 2026)
+
+- **F18** The change list shall contain every file that differs from the workspace's base commit
+  — committed, uncommitted, and untracked-but-not-ignored — each with its status (A, M or D; a
+  rename as D of the old path and A of the new) and its added and removed line counts (0 and 0
+  for a binary file, tracked or untracked).
+  Proof: src/main/flow/changes.test.ts lists committed, uncommitted and untracked changes
+- **F19** If the diff is asked for a path that is not in that workspace's change list, then Atril
+  shall return no text without running any git command for that path.
+  Proof: src/main/flow/changes.test.ts diff only for a listed file
+- **F23** If a file's diff is longer than 1 MB (UTF-8 bytes), then Atril shall cut it at the last
+  line break before 1 MB and end it with the line «Diff recortado a 1 MB».
+  Proof: src/main/flow/changes.test.ts a huge diff is cut at 1 MB
+- **F24** Atril shall pass every listed name to git as a literal path (no glob or `:(` magic), and
+  shall count an untracked symbolic link as one line without opening its target.
+  Proof: src/main/flow/changes.test.ts names are literal and links are not followed
+- **F20** While the stage is Construir, Terminado or Aterrizado and the list is not empty, the
+  Libretto panel shall show «Cambios» with each file's status and +/− counts, the total of added
+  plus removed lines, and Construir as a button reading «ver N archivos»; at earlier stages
+  Construir shall not be a button and no «Cambios» section shall appear.
+  Proof: src/renderer/flow/changes.test.ts changes show from construir on
+- **F21** When the person clicks Construir or a file in Cambios, Atril shall open a read-only modal
+  with the changed files listed and the chosen file's diff — a snapshot with its time and an
+  «Actualizar» button — its added and removed lines marked as such and rendered as text only;
+  Escape shall close it.
+  Proof: src/renderer/flow/changes.test.ts a file opens its diff
+- **F22** While the stage is Construir or later, Atril shall ask for the list again every 3 seconds,
+  skipping a tick while the previous request has not answered.
+  Proof: src/renderer/flow/changes.test.ts the list refreshes while claude works
