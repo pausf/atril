@@ -33,6 +33,12 @@ Start, and the phase-2 MR lists for the MR part of the queue.
 - Q: ¿Qué entra en «Qué me toca»? → A: agentes en «te necesita» (los más antiguos primero), después tareas de la primera columna del tablero (o «Por empezar» sin tablero); las MR llegan con la fase 2 (assumed).
 - Q: ¿Cómo se responde desde el aviso? → A: aviso de macOS con respuesta (`hasReply`); el texto se escribe en el panel del agente con `tmux send-keys -l` y Enter, solo en ese panel (assumed).
 - Q: ¿Cuándo es un clic «Empezar»? → A: cuando el proyecto+componente ya tiene repo recordado y la rama propuesta está libre: arranca con el modelo por defecto sin diálogo; ⌥-clic abre el diálogo siempre (assumed).
+- Q: (spec-reviewer) ¿Qué tareas entran en la lista? → A: solo las que no tienen ya un trabajo abierto; si el tablero no se puede leer (I18), las del grupo «Por empezar» (assumed).
+- Q: (spec-reviewer) ¿Dónde funciona ⌘↩? → A: solo con Trabajo o Tareas a la vista y con algo en la lista; si no, el elemento del menú está desactivado (assumed).
+- Q: (spec-reviewer) ¿«Modelo por defecto»? → A: el «Por defecto» de W34, sin `--model` (assumed).
+- Q: (spec-reviewer) ¿Y el «deshacer» del paso 4? → A: fuera de alcance: «Quitar» ya cierra un trabajo recién abierto (assumed).
+- Q: (spec-reviewer) ¿Responder en el aviso cuenta como pulsarlo (W38)? → A: no: responder no trae Atril al frente ni cambia de pantalla; solo pulsar el aviso lo hace (assumed).
+- Q: (spec-reviewer) ¿Y si el trabajo ya no existe al responder? → A: no se envía nada y un aviso dice «No se pudo enviar: ese trabajo ya no está» (assumed).
 
 ## Outcomes
 
@@ -45,8 +51,10 @@ Start, and the phase-2 MR lists for the MR part of the queue.
 
 ## Scope boundaries
 
-**In:** the strip, ⌘↩, the reply notification, one-click Start. **Out:** MRs in the strip
-(phase 2), replies to anything but the agent's own pane, changing model or repo on one click.
+**In:** the strip, ⌘↩, the reply notification. One-click Start is the work-inbox amendment
+in `spec-work-inbox.md`. **Out:** MRs in the strip (phase 2), replies to anything but the
+agent's own pane, changing model or repo on one click, an «undo» for one-click Start («Quitar»
+already closes a fresh workspace).
 
 **Never scoped out:** a reply only ever reaches the pane of the workspace the notification
 belongs to; the reply text goes to tmux as a literal (`send-keys -l`), never as key names or
@@ -72,19 +80,17 @@ shell; an empty reply sends nothing.
 ## Verification criteria
 
 - **N1** The «Qué me toca» list shall order agents in `needs-you` by how long they have been
-  waiting (oldest first), then the tasks of the first board column (or «Por empezar» without a
-  board) in Jira's order.
+  waiting (oldest first), then the tasks with no open workspace from the first board column — or
+  from «Por empezar» when there is no board or it cannot be read (I18) — in Jira's order.
   Proof: src/main/nextup.test.ts orders waiting agents before tasks
-- **N2** When the person presses ⌘↩, Atril shall open the first item of the list: the
-  workspace for an agent, the Start for a task.
+- **N2** While Trabajo or Tareas is shown and the list is not empty, ⌘↩ shall open its first
+  item — the workspace for an agent, the Start for a task; otherwise the menu item is disabled.
   Proof: src/renderer/nextup.test.ts command enter opens the next item
 - **N3** When the person replies to a needs-you notification, Atril shall type the reply into
-  that workspace's agent pane as literal text followed by Enter, and nothing for an empty reply.
+  that workspace's agent pane as literal text followed by Enter, without bringing Atril to the
+  front; it shall send nothing for an empty reply, and if the workspace or its pane no longer
+  exists it shall send nothing and say «No se pudo enviar: ese trabajo ya no está».
   Proof: src/main/reply.test.ts reply reaches only its own pane as literal text
-- **N4** When the person clicks Empezar on a task whose project and component have a remembered
-  repo and whose proposed branch is free, Atril shall start it without the dialog, with the
-  default model; ⌥-click shall always open the dialog.
-  Proof: src/renderer/nextup.test.ts one click starts a remembered task
 
 ## Approach
 
@@ -135,4 +141,4 @@ None.
 
 ## Checklist
 
-- [ ] next up: the ordered list and strip with ⌘↩, the reply notification into the agent pane, one-click Start for remembered tasks · Closes: N1, N2, N3, N4
+- [ ] next up: the ordered list and strip with ⌘↩, the reply notification into the agent pane, one-click Start for remembered tasks · Closes: N1, N2, N3, I20, I21
