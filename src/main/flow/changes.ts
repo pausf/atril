@@ -43,7 +43,9 @@ async function entries(path: string, base: string, run: Runner): Promise<Entry[]
   if (others.code === 0) {
     for (const file of nulFields(others.stdout)) out.push({ path: file, status: 'A', ...(await untrackedCounts(join(path, file))), untracked: true })
   }
-  return out.sort((a, b) => a.path.localeCompare(b.path))
+  // Code first: Libretto's own documents have their Spec and Plan buttons, so they go last.
+  const docs = (p: string): number => (p.startsWith('.agents/') ? 1 : 0)
+  return out.sort((a, b) => docs(a.path) - docs(b.path) || a.path.localeCompare(b.path))
 }
 
 /** F18: every file that differs from the workspace's base — committed, uncommitted and untracked. */

@@ -124,6 +124,8 @@ Files: `src/main/flow/changes.ts` (+test), `src/main/index.ts`, `src/preload/{ap
   0/0); name-status: `git diff --no-renames -z --name-status <base>` → A/M/D, T and U as M;
   untracked: each `ls-files -z --others --exclude-standard` path is A with its line count, or 0/0
   when a NUL byte appears in its first 8000 bytes.
+- Order: by path, with `.agents/` (Libretto's documents, which have their own buttons) last, so
+  Construir opens code first (seen in the real app, 9 nov).
 - `fileDiff`: tracked → `git diff --no-renames <base> -- <path>` (exit 0); new untracked →
   `git diff --no-index -- /dev/null <path>`, where exit 1 means "differences" and is success; any
   other exit is an empty diff. Ceiling named: the runner buffers the whole output before the 1 MB
@@ -159,4 +161,4 @@ F18–F22 seen red before the code. Rollback: one revert.
 ## Checklist
 
 - [x] change list and diff in main, bound to the workspace's listed files · Closes: F18, F19, F23
-- [ ] the Cambios section, the Construir button, the diff modal and the 3 s refresh · waits on box 1 · Closes: F20, F21, F22
+- [x] the Cambios section, the Construir button, the diff modal and the 3 s refresh · waits on box 1 · Closes: F20, F21, F22

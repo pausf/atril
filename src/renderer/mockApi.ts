@@ -1,5 +1,5 @@
 import { vi } from 'vitest'
-import type { ActivityLine, AddRepoResult, FlowDocs, Mode, AgentState, AtrilApi, FlowStage, JiraIssue, MenuAction, NextItem, StartProposalResult, StartRequest, StartResult, RepoView, UiState, WorkspaceResult, WorkspaceView } from '../preload/api'
+import type { ActivityLine, AddRepoResult, FileChange, FlowDocs, Mode, AgentState, AtrilApi, FlowStage, JiraIssue, MenuAction, NextItem, StartProposalResult, StartRequest, StartResult, RepoView, UiState, WorkspaceResult, WorkspaceView } from '../preload/api'
 
 export const workspace = (id: string, branch: string, alive = true): WorkspaceView => ({
   id,
@@ -34,6 +34,8 @@ interface Options {
   noJira?: boolean
   /** What flow.docs answers; tests mutate it and call pushFlow to simulate the agent writing. */
   docs?: FlowDocs | null
+  changes?: FileChange[]
+  diff?: string
   /** What the folder picker answers when the person adds a repo. */
   addRepo?: (AddRepoResult & { path: string }) | null
   repos?: RepoView[]
@@ -119,7 +121,9 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
         return () => flowListeners.delete(cb)
       },
       docs: vi.fn(async () => o.docs ?? null),
-      save: vi.fn(async (): Promise<{ mtimeMs: number } | { error: string }> => ({ mtimeMs: 2 }))
+      save: vi.fn(async (): Promise<{ mtimeMs: number } | { error: string }> => ({ mtimeMs: 2 })),
+      changes: vi.fn(async () => o.changes ?? []),
+      diff: vi.fn(async () => o.diff ?? '')
     },
     usage: {
       get: async () => ({ fiveHour: { pct: 20, resetsAt: null }, sevenDay: { pct: 40, resetsAt: null } }),

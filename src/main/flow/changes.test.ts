@@ -1,4 +1,4 @@
-import { writeFileSync } from 'node:fs'
+import { mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import { run, type Runner } from '../run'
@@ -29,6 +29,8 @@ describe('file changes', () => {
     writeFileSync(join(path, 'new.md'), 'a\nb\nc\n')
     writeFileSync(join(path, 'bin.dat'), Buffer.from([1, 0, 2, 3]))
     writeFileSync(join(path, 'x.log'), 'ignored\n')
+    mkdirSync(join(path, '.agents', 'changes', 'c'), { recursive: true })
+    writeFileSync(join(path, '.agents', 'changes', 'c', 'proposal.md'), 'p\n')
 
     expect(await listChanges(path, base, run)).toEqual([
       { path: 'a.txt', status: 'M', added: 2, removed: 1 },
@@ -36,7 +38,9 @@ describe('file changes', () => {
       { path: 'gone.txt', status: 'D', added: 0, removed: 1 },
       { path: 'new name.txt', status: 'A', added: 1, removed: 0 },
       { path: 'new.md', status: 'A', added: 3, removed: 0 },
-      { path: 'old name.txt', status: 'D', added: 0, removed: 1 }
+      { path: 'old name.txt', status: 'D', added: 0, removed: 1 },
+      // Libretto's documents last: Construir opens the first file, which should be code.
+      { path: '.agents/changes/c/proposal.md', status: 'A', added: 1, removed: 0 }
     ])
   })
 

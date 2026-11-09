@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
-import type { FlowStage, StageName } from '../../preload/api'
+import type { FileChange, FlowStage, StageName } from '../../preload/api'
 import { Icon, type IconName } from '../components/Icon'
 import { ActivityFeed } from './ActivityFeed'
 import { DocModal } from './DocModal'
+import { DiffModal } from './DiffModal'
 import type { Part } from './highlight'
 
 const TABS = [
@@ -24,15 +25,44 @@ export function FlowPanel({ workspaceId }: { workspaceId: string | null }) {
   const [flow, setFlow] = useState<FlowStage | null>(null)
   const [tab, setTab] = useState<TabId>('libretto')
   const [doc, setDoc] = useState<Part | null>(null)
+  const [changes, setChanges] = useState<FileChange[]>([])
+  const [diffOf, setDiffOf] = useState<string | null>(null)
+  const building = flow !== null && BUILDING.includes(flow.stage)
+
+  // F22: the list is asked for again every 3 s from Construir on, never twice at once.
+  useEffect(() => {
+    setChanges([])
+    setDiffOf(null)
+    if (!workspaceId || !building) return
+    let live = true
+    let busy = false
+    const load = (): void => {
+      if (busy) return
+      busy = true
+      void window.atril.flow.changes(workspaceId).then((c) => {
+        busy = false
+        if (live) setChanges(c)
+      })
+    }
+    load()
+    const t = setInterval(load, 3000)
+    return () => {
+      live = false
+      clearInterval(t)
+    }
+  }, [workspaceId, building])
   const tabs = useRef<Record<string, HTMLButtonElement | null>>({})
 
-  // ponytail: dev-only, ATRIL_SNAPSHOT_VIEW=activity photographs the Actividad tab; doc-plan opens the Plan.
+  // ponytail: dev-only, ATRIL_SNAPSHOT_VIEW=activity photographs the Actividad tab; doc-plan opens the Plan; diff the first change.
   useEffect(() => {
     void window.atril.snapshotView().then((v) => v === 'activity' && setTab('activity'))
   }, [])
   useEffect(() => {
     if (workspaceId) void window.atril.snapshotView().then((v) => v === 'doc-plan' && setDoc('plan'))
   }, [workspaceId])
+  useEffect(() => {
+    if (changes[0]) void window.atril.snapshotView().then((v) => v === 'diff' && setDiffOf((d) => d ?? changes[0]!.path))
+  }, [changes])
 
   const onTabKey = (e: KeyboardEvent): void => {
     const step = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0
@@ -77,8 +107,9 @@ export function FlowPanel({ workspaceId }: { workspaceId: string | null }) {
         ))}
       </div>
       <div role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`}>
-        {tab === 'activity' ? <ActivityFeed workspaceId={workspaceId} /> : <LibrettoFlow flow={flow} onOpen={setDoc} />}
+        {tab === 'activity' ? <ActivityFeed workspaceId={workspaceId} /> : <LibrettoFlow flow={flow} onOpen={setDoc} changes={changes} onDiff={setDiffOf} />}
       </div>
+      {diffOf && workspaceId && <DiffModal workspaceId={workspaceId} files={changes} start={diffOf} onClose={() => setDiffOf(null)} />}
       {doc && workspaceId && <DocModal workspaceId={workspaceId} part={doc} onClose={() => setDoc(null)} />}
     </aside>
   )
@@ -86,8 +117,16 @@ export function FlowPanel({ workspaceId }: { workspaceId: string | null }) {
 
 // F13: a stage opens its document once the flow has reached it.
 const DOC_OF: Partial<Record<StageName, Part>> = { spec: 'spec', plan: 'plan' }
+const BUILDING: StageName[] = ['construir', 'terminado', 'aterrizado']
 
-function LibrettoFlow({ flow, onOpen }: { flow: FlowStage | null; onOpen: (p: Part) => void }) {
+interface FlowProps {
+  flow: FlowStage | null
+  onOpen: (p: Part) => void
+  changes: FileChange[]
+  onDiff: (path: string) => void
+}
+
+function LibrettoFlow({ flow, onOpen, changes, onDiff }: FlowProps) {
   const current = STAGES.findIndex((s) => s.name === flow?.stage)
   const c = flow?.checklist
   return (
@@ -109,6 +148,15 @@ function LibrettoFlow({ flow, onOpen }: { flow: FlowStage | null; onOpen: (p: Pa
                 </>
               )
               const part = DOC_OF[s.name]
+              if (s.name === 'construir' && i <= current && changes.length > 0)
+                return (
+                  <button type="button" className={`${cls} stgbtn`} key={s.name} onClick={() => onDiff(changes[0]!.path)} title="Ver los cambios de código">
+                    <Icon name={s.icon} size={22} />
+                    <span>
+                      {s.label} <small>ver {changes.length} archivos</small>
+                    </span>
+                  </button>
+                )
               return part && i <= current && flow?.change ? (
                 <button type="button" className={`${cls} stgbtn`} key={s.name} onClick={() => onOpen(part)} title="Ver y editar lo que ha escrito Claude">
                   {body}
@@ -148,6 +196,38 @@ function LibrettoFlow({ flow, onOpen }: { flow: FlowStage | null; onOpen: (p: Pa
                 Ver checklist
               </button>
             </div>
+          )}
+          {changes.length > 0 && (
+            <section className="sec" aria-labelledby="changes-h">
+              <h2 id="changes-h">
+                Cambios <span className="n">{changes.length}</span>
+              </h2>
+              <p className="fmeta">{changes.reduce((n, f) => n + f.added + f.removed, 0)} líneas</p>
+              <ul className="fchanges">
+                {changes.map((f) => {
+                  const slash = f.path.lastIndexOf('/')
+                  const total = f.added + f.removed || 1
+                  return (
+                    <li key={f.path}>
+                      <button type="button" onClick={() => onDiff(f.path)} title={`Ver el diff de ${f.path}`}>
+                        <span className={`fst ${f.status}`}>{f.status}</span>
+                        <span className="fpath">
+                          <span className="fdir">{f.path.slice(0, slash + 1)}</span>
+                          <b>{f.path.slice(slash + 1)}</b>
+                        </span>
+                        <span className="fnum">
+                          <span className="fa">+{f.added}</span> <span className="fd">−{f.removed}</span>
+                        </span>
+                        <span className="fbar" aria-hidden="true">
+                          <i className="fa" style={{ width: `${(f.added / total) * 100}%` }} />
+                          <i className="fd" style={{ width: `${(f.removed / total) * 100}%` }} />
+                        </span>
+                      </button>
+                    </li>
+                  )
+                })}
+              </ul>
+            </section>
           )}
           {flow && flow.others.length > 0 && (
             <div className="sec">
