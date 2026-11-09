@@ -86,6 +86,7 @@ PTYs and worktrees, and pieces reused with attribution — but Atril does not ru
 - Q: (build, casilla 1) tmux y jira no aceptan `--version` → A: cada herramienta con su comando: `tmux -V`, `jira version`, `--version` el resto (corrección de la spec: el contrato estaba mal, observado al renderizar)
 - Q: (build, casilla 2) tus dos repos salían in-place por carpetas ignoradas (`out/`, `.atl/`, `.claude/`, `bin/`) → A: solo cuentan archivos ignorados, nunca carpetas (corrección de la spec, observada en los repos reales); el id del repo es el basename en minúsculas y con guiones
 - Q: ¿Libretto viene dentro de la app? → A: «Libreto estará puesto directamente en la aplicación, ¿no? Es decir, la gente no se tendrá que bajar el libreto oficial, sino que ya estará oficialmente metido dentro del sistema.»
+- Q: «Para que sea más usable y todo esto, ¿qué mejorarías?» → propuestas 1 (sin la pregunta de confianza de Claude en cada worktree) y 6 (el doctor como chip) a la fase 1, el resto a otra change → A: «si»
 
 ## Vocabulary
 
@@ -327,6 +328,12 @@ it; keyboard reachability and text labels for every state.
 - **W30** The bundled Libretto shall carry its `LICENSE`, `THIRD-PARTY.md` and every licence
   file under `licenses/`, and the version it was copied from.
   Proof: src/main/libretto-bundle.test.ts  bundle carries every licence and its version
+- **W31** When Atril starts a Claude agent in a workspace it created, the agent shall not stop
+  at Claude Code's folder-trust prompt.
+  Proof: src/main/agent.test.ts  claude in an atril workspace skips the trust prompt
+- **W32** While one or more tools have problems, the top bar shall show a single chip with
+  their count, and the full list with install commands only when the chip is opened.
+  Proof: src/renderer/doctor.test.ts  problems show as one chip that opens the list
 - **W26** When a Claude hook reports `Stop` for a session, Atril shall set its agent state to
   `needs-you`; when it reports `UserPromptSubmit`, to `working`.
   Proof: src/main/status.test.ts  stop marks needs-you and prompt submit marks working
@@ -426,6 +433,11 @@ or in tmux itself, never in the window.
   updating Libretto is re-running the script with a new ref. The exact name the flow command
   takes once loaded as a plugin (`/libretto-flow` or a namespaced form) is checked in that box
   with one real `claude` start, and I6 uses whatever it observed.
+- **Trust prompt** (W31): the mechanism is chosen in its box from what Claude Code offers and
+  is observed working with one real start (as W29's check). Candidates, in order: a setting or
+  flag that marks the folder trusted for that session; writing `hasTrustDialogAccepted` for the
+  workspace path into `~/.claude.json` — only if done atomically, because running Claude
+  processes rewrite that file and a lost update would corrupt the person's config.
 - **Tutorial** (W23–W25): React overlay with a spotlight over each `data-tour` element, 8
   steps as in boceto 8; `ui.json` records it as seen; Help → Tutorial reopens it.
 
@@ -498,3 +510,4 @@ or in tmux itself, never in the window.
 - [ ] "Mis Jira" lists the person's open sprint tasks via the jira CLI, and explains an unconfigured CLI · waits on box 1 · Closes: I1, I2, I3
 - [ ] Start: repo memory, branch slug, validated key, claude running /libretto-flow <KEY> in a new workspace, In Progress transition whose failure keeps the workspace, and the task showing its workspace afterwards · waits on boxes 3, 4, 7, 10 · Closes: I4, I5, I6, I7, I8, I9, I10
 - [ ] keyboard reachability and text labels everywhere, foldable sidebar sections, and the first-launch tutorial over every element, skippable, reopenable from Help, keyboard-only · waits on boxes 3, 8, 9, 10 · Closes: W22, W23, W24, W25, W28
+- [ ] Claude agents in Atril workspaces start without the folder-trust prompt, and tool problems collapse into one top-bar chip · waits on box 3 · Closes: W31, W32
