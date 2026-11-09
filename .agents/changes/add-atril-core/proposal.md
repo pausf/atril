@@ -88,6 +88,7 @@ PTYs and worktrees, and pieces reused with attribution — but Atril does not ru
 - Q: ¿Libretto viene dentro de la app? → A: «Libreto estará puesto directamente en la aplicación, ¿no? Es decir, la gente no se tendrá que bajar el libreto oficial, sino que ya estará oficialmente metido dentro del sistema.»
 - Q: «Para que sea más usable y todo esto, ¿qué mejorarías?» → propuestas 1 (sin la pregunta de confianza de Claude en cada worktree) y 6 (el doctor como chip) a la fase 1, el resto a otra change → A: «si»
 - Q: ¿Codex? → A: «no pongas codex»
+- Q: «Pero Claude tiene que cargar las propias skills que se le vayan metiendo también, aparte del libreto. ¿Eso lo hace?» → A: sí, observado en la casilla 4 (`(user)` y `(libretto)` a la vez); queda como criterio W33 y se prohíbe saltarse las del usuario
 
 ## Vocabulary
 
@@ -335,6 +336,11 @@ it; keyboard reachability and text labels for every state.
 - **W32** While one or more tools have problems, the top bar shall show a single chip with
   their count, and the full list with install commands only when the chip is opened.
   Proof: src/renderer/doctor.test.ts  problems show as one chip that opens the list
+- **W33** When Atril starts a Claude agent, the agent shall load the person's own user and
+  project skills, commands, agents and plugins as well as the bundled Libretto: Atril adds
+  `--plugin-dir` and never passes `--setting-sources`, `--bare` or anything else that drops
+  them.
+  Proof: src/main/agent.test.ts  claude keeps the person's own skills
 - **W26** When a Claude hook reports `Stop` for a session, Atril shall set its agent state to
   `needs-you`; when it reports `UserPromptSubmit`, to `working`.
   Proof: src/main/status.test.ts  stop marks needs-you and prompt submit marks working
@@ -465,7 +471,7 @@ or in tmux itself, never in the window.
 | pnpm 11 skips Electron's install script on a fresh clone, so `pnpm dev` says "Electron uninstall" | not solved: `allowBuilds` and `onlyBuiltDependencies` in `pnpm-workspace.yaml` were both tried on a fresh install and neither ran it; until found, run `node node_modules/electron/install.js` once after `pnpm install` |
 | Launched from Finder, a macOS app does not inherit the shell's PATH, so tmux, claude and jira look missing | not hit while Atril runs from source with `pnpm dev`; a packaged build must resolve PATH from the login shell first |
 | The runner has no timeout, so a tool that hangs on its version command blocks the doctor | accepted for phase 1; add a timeout to `run` the first time it is seen |
-| The person also has Libretto installed globally, so the agent sees two copies of each skill | accepted for phase 1: the plugin's are namespaced; if the duplicates confuse the agent, Atril passes `--setting-sources` to skip the user's skills for its agents |
+| The person also has Libretto installed globally, so the agent sees two copies of each skill | accepted: the plugin's are namespaced (`/libretto:…`) and Start always calls the plugin's. Atril never skips the person's own skills to avoid duplicates (W33) |
 | Libretto's own `libretto` CLI (loop, metrics, init) is not bundled | accepted: the flow's skills do not need it to run; bundle it with the app when a feature calls it |
 | `Stop` fires at the end of every turn, so `needs-you` may be noisy | accepted for phase 1; one notification per transition (W15) bounds it |
 
@@ -498,7 +504,7 @@ or in tmux itself, never in the window.
 - [x] the app opens: Electron + React shell with the three columns and footer of boceto 8, the runner, and the doctor naming each missing tool with its install command · Closes: W21
 - [x] register a repo by folder; the sidebar shows its mode with the reason, and the person's override persists · waits on box 1 · Closes: W1, W2, W3, W4
 - [x] "Nuevo trabajo" opens a workspace in worktree mode on a new branch with claude in an `atril-<id>` tmux session recorded in workspaces.json, shown live in the centre terminal; relaunching Atril reattaches without starting agents; a dirty worktree is never removed · waits on box 2 · Closes: W5, W6, W10, W11, W12
-- [x] Libretto bundled: the script copies the pinned payload with its licences into resources/libretto as a Claude Code plugin, and every Claude agent starts with --plugin-dir pointing at it · waits on box 3 · Closes: W29, W30
+- [x] Libretto bundled: the script copies the pinned payload with its licences into resources/libretto as a Claude Code plugin, and every Claude agent starts with --plugin-dir pointing at it · waits on box 3 · Closes: W29, W30, W33
 - [ ] in-place workspaces: refuse a dirty checkout, refuse a second one per repo, restore the previous branch on close · waits on box 3 · Closes: W7, W8, W9
 - [ ] ⌘D and ⌘⇧D split the focused workspace through tmux · waits on box 3 · Closes: W13
 - [ ] agent state from Claude hooks passed by --settings and from the agent's dead pane, with one macOS notification per needs-you transition that opens the workspace · waits on box 3 · Closes: W14, W15, W16, W26, W27

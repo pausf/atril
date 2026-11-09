@@ -14,4 +14,9 @@ describe('agentArgv', () => {
     expect(JSON.parse(readFileSync(join(dir, '.claude-plugin', 'plugin.json'), 'utf8')).name).toBe('libretto')
     expect(existsSync(join(dir, 'skills'))).toBe(true)
   })
+
+  it('claude keeps the person\'s own skills', () => {
+    const argv = agentArgv()
+    for (const drop of ['--setting-sources', '--bare', '--strict-mcp-config']) expect(argv).not.toContain(drop)
+  })
 })
