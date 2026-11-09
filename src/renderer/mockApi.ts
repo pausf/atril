@@ -54,11 +54,13 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
   let notified: ((id: string) => void) | undefined
   const activityListeners = new Set<(id: string, lines: ActivityLine[]) => void>()
   const flowListeners = new Set<(id: string, stage: FlowStage) => void>()
+  // The mock is a Spanish Mac: Sistema resolves to Spanish, as main would there.
+  const withLang = (): UiState => ({ ...stored, folded: { ...stored.folded }, lang: stored.language === 'en' ? 'en' : 'es' })
   const ui = {
-    get: vi.fn(async () => ({ ...stored, folded: { ...stored.folded } })),
+    get: vi.fn(async () => withLang()),
     set: vi.fn(async (p: Partial<UiState>) => {
       Object.assign(stored, p, { folded: { ...stored.folded, ...p.folded } })
-      return { ...stored }
+      return withLang()
     })
   }
   const off = (): void => {}

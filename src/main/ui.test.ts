@@ -14,20 +14,20 @@ afterEach(() => {
 
 describe('ui store', () => {
   it('starts with the tutorial pending and the automatic theme', async () => {
-    expect(await readUi()).toEqual({ tutorialSeen: false, theme: 'auto', folded: {} })
+    expect(await readUi()).toEqual({ tutorialSeen: false, theme: 'auto', folded: {}, language: 'system' })
   })
 
   it('persists patches and merges folded sections key by key', async () => {
     await patchUi({ theme: 'dark', folded: { repos: true } })
     await Promise.all([patchUi({ folded: { work: true } }), patchUi({ tutorialSeen: true })])
-    expect(await readUi()).toEqual({ tutorialSeen: true, theme: 'dark', folded: { repos: true, work: true } })
+    expect(await readUi()).toEqual({ tutorialSeen: true, theme: 'dark', folded: { repos: true, work: true }, language: 'system' })
     await patchUi({ folded: { repos: false } })
     expect((await readUi()).folded).toEqual({ repos: false, work: true })
   })
 
   it('drops invalid values and survives a corrupt file', async () => {
     await patchUi({ theme: 'neon', tutorialSeen: 'yes', folded: { a: 1 } })
-    expect(await readUi()).toEqual({ tutorialSeen: false, theme: 'auto', folded: {} })
+    expect(await readUi()).toEqual({ tutorialSeen: false, theme: 'auto', folded: {}, language: 'system' })
     writeFileSync(join(process.env['ATRIL_HOME']!, 'ui.json'), '{nope')
     expect((await readUi()).theme).toBe('auto')
   })

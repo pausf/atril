@@ -146,5 +146,5 @@ S14–S18 seen red first; S16 is the gate that keeps the catalog honest later. R
 
 ## Checklist
 
-- [ ] the language mechanism: translate, the setting in ui.json and its resolution in main, main's language and menu, the window's useT and the Idioma card · Closes: S14, W47, W48
+- [x] the language mechanism: translate, the setting in ui.json and its resolution in main, main's language and menu, the window's useT and the Idioma card · Closes: S14, W47, W48
 - [ ] every Atril text in the window and in main through t() with its English · waits on box 1 · Closes: S15, S16, S17, S19

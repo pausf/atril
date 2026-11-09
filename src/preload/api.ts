@@ -1,3 +1,4 @@
+import type { Lang, LangChoice } from './i18n'
 export interface ToolReport {
   tool: string
   ok: boolean
@@ -287,6 +288,10 @@ export interface UiState {
   theme: Theme
   /** Section id to folded; a missing id means the section's own default. */
   folded: Record<string, boolean>
+  /** The person's choice (S14); missing reads as Sistema. */
+  language?: LangChoice
+  /** The language main resolved from it; main sets it, the window only reads it (W48). */
+  lang?: Lang
 }
 
 export interface UiApi {

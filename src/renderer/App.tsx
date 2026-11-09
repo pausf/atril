@@ -14,6 +14,7 @@ import { NextUpStrip } from './components/NextUpStrip'
 import { startOrAsk, useNextUp } from './nextup'
 import { NavigationContext } from './settings/navigation'
 import { Appearance } from './components/Appearance'
+import { Language } from './settings/Language'
 import { focusRegion } from './focus'
 import { Tour } from './tour/Tour'
 import { UiProvider, useUi } from './ui'
@@ -194,6 +195,7 @@ function Shell() {
           {screen === 'settings' && (
             <Ajustes>
               <Appearance />
+              <Language />
             </Ajustes>
           )}
         </div>

@@ -1,7 +1,9 @@
 import { app, BrowserWindow, dialog, ipcMain, Notification, safeStorage, shell } from 'electron'
 import { MODELS, writeHooksFile } from './agent'
 import { createActivity } from './activity'
-import { agentState, createStatus, REPLY_GONE, REPLY_PLACEHOLDER, replyToAgent } from './status'
+import { agentState, createStatus, replyGone, replyPlaceholder, replyToAgent } from './status'
+import { getLang, setLang } from './lang'
+import { resolveLang } from '../preload/i18n'
 import { readDocs, saveDoc } from './flow/document'
 import { fileDiff, listChanges } from './flow/changes'
 import { nextUp } from './nextup'
@@ -12,7 +14,7 @@ import { jiraSettings } from './credentials/jira'
 import { searchBoards } from './credentials/boards'
 import type { JiraCreds } from './credentials/check'
 import { doctor } from './doctor'
-import type { Mode } from '../preload/api'
+import type { Mode, UiState } from '../preload/api'
 import { readInbox } from './jira/inbox'
 import { inboxGroups } from './jira/board'
 import { proposeStart, start } from './jira/start'
@@ -96,7 +98,7 @@ function createWindow(): void {
   }
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   // Packaged builds take build/icon.icns from the bundle; in dev the Dock needs telling.
   if (!app.isPackaged) app.dock?.setIcon(join(__dirname, '../../build/icon.png'))
   ipcMain.handle('atril:doctor', () => doctor(run))
@@ -220,8 +222,14 @@ app.whenReady().then(() => {
   ipcMain.on('atril:term:resize', (_e, id: string, c: number, r: number) => pty.resize(id, c, r))
   ipcMain.on('atril:term:detach', (_e, id: string) => pty.detach(id))
   ipcMain.handle('atril:snapshot-view', () => (SNAPSHOT ? (process.env['ATRIL_SNAPSHOT_VIEW'] ?? null) : null))
+  // W48: main resolves Sistema once; the window takes `lang` from here.
+  const applyLang = (ui: UiState): UiState => {
+    setLang(resolveLang(ui.language, app.getPreferredSystemLanguages()[0]))
+    return { ...ui, lang: getLang() }
+  }
+  applyLang(await readUi())
   ipcMain.handle('atril:ui:get', async () => {
-    const ui = await readUi()
+    const ui = applyLang(await readUi())
     // ponytail: dev snapshots force the theme and skip the tutorial unless the view is the tour.
     if (!SNAPSHOT) return ui
     const theme = process.env['ATRIL_SNAPSHOT_THEME']
@@ -231,7 +239,12 @@ app.whenReady().then(() => {
       tutorialSeen: !process.env['ATRIL_SNAPSHOT_VIEW']?.startsWith('tour')
     }
   })
-  ipcMain.handle('atril:ui:set', (_e, patch: unknown) => patchUi(patch))
+  ipcMain.handle('atril:ui:set', async (_e, patch: unknown) => {
+    const before = getLang()
+    const ui = applyLang(await patchUi(patch))
+    if (getLang() !== before) refreshMenu()
+    return ui
+  })
   ipcMain.handle('atril:snapshot-ws', () => Boolean(SNAPSHOT))
   const menu = { selected: null as string | null, count: 0, nextEnabled: false }
   const refreshMenu = (): void =>
@@ -267,14 +280,14 @@ app.whenReady().then(() => {
       void pushNext()
     },
     notify: (ws, body) => {
-      const n = new Notification({ title: 'Atril', subtitle: ws.branch, body, hasReply: true, replyPlaceholder: REPLY_PLACEHOLDER })
+      const n = new Notification({ title: 'Atril', subtitle: ws.branch, body, hasReply: true, replyPlaceholder: replyPlaceholder() })
       // W38: only a click brings Atril forward; a reply types into the pane and leaves the window alone.
       // ponytail: macOS may follow a reply with a click; one within 1 s of a reply is ignored (N3).
       let repliedAt = 0
       n.on('reply', (_e, text) => {
         repliedAt = Date.now()
         void replyToAgent(ws.id, text, run).then((r) => {
-          if (r === 'gone') new Notification({ title: 'Atril', body: REPLY_GONE }).show()
+          if (r === 'gone') new Notification({ title: 'Atril', body: replyGone() }).show()
         })
       })
       n.on('click', () => {

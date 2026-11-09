@@ -1,10 +1,13 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import type { Theme, UiState } from '../preload/api'
+import { translate, type Lang, type LangChoice } from '../preload/i18n'
 
 interface UiContextValue {
   /** null until ui.json has been read. */
   ui: UiState | null
   setTheme(theme: Theme): void
+  /** Main answers with the resolved language, which the window then speaks (W48). */
+  setLanguage(language: LangChoice): void
   setFolded(id: string, folded: boolean): void
   markTutorialSeen(): void
 }
@@ -13,11 +16,20 @@ const noop = (): void => {}
 export const UiContext = createContext<UiContextValue>({
   ui: null,
   setTheme: noop,
+  setLanguage: noop,
   setFolded: noop,
   markTutorialSeen: noop
 })
 
 export const useUi = (): UiContextValue => useContext(UiContext)
+
+export type T = (es: string, vars?: Record<string, string | number>) => string
+
+/** Atril's own texts in the language main resolved; Spanish until ui.json is read. */
+export function useT(): T {
+  const lang: Lang = useContext(UiContext).ui?.lang ?? 'es'
+  return useCallback((es: string, vars?: Record<string, string | number>) => translate(lang, es, vars), [lang])
+}
 
 const DARK = '(prefers-color-scheme: dark)'
 
@@ -60,6 +72,10 @@ export function UiProvider({ children }: { children: ReactNode }) {
     () => ({
       ui,
       setTheme: (t) => patch({ theme: t }),
+      setLanguage: (language) => {
+        setUi((u) => (u ? { ...u, language } : u))
+        void window.atril.ui.set({ language }).then((next) => setUi((u) => (u ? { ...u, language: next.language, lang: next.lang } : next)))
+      },
       setFolded: (id, folded) => patch({ folded: { [id]: folded } }),
       markTutorialSeen: () => patch({ tutorialSeen: true })
     }),

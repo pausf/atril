@@ -7,6 +7,7 @@ import { run as defaultRun, type Runner } from './run'
 import { sendText, tmuxArgs } from './tmux'
 import type { AgentSnapshot } from './nextup'
 import { listWorkspaces } from './workspaces'
+import { t } from './lang'
 
 export const stateDir = (): string => join(atrilHome(), 'state')
 
@@ -45,8 +46,9 @@ export async function agentState(ws: WorkspaceView, run: Runner = defaultRun): P
   return hookState(ws.session)
 }
 
-export const REPLY_PLACEHOLDER = 'Responde a Claude…'
-export const REPLY_GONE = 'No se pudo enviar: ese trabajo ya no está'
+// Functions, not constants: the text must be in the language of the moment it is shown (W48).
+export const replyPlaceholder = (): string => t('Responde a Claude…')
+export const replyGone = (): string => t('No se pudo enviar: ese trabajo ya no está')
 
 export type ReplyPlan = { kind: 'send'; paneId: string; text: string } | { kind: 'ignore' } | { kind: 'gone' }
 
