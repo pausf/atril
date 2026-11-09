@@ -45,6 +45,11 @@ Governs: src/main/credentials/** src/renderer/settings/**
   person's account, shows its link, and — when asked — clones it there and registers it as an
   Atril repo.
 
+### Hook prefixes (translate-hook-prefixes, 9 nov 2026)
+
+- In English, activity lines and needs-you notifications read «Reading x.php», «Claude says: …»,
+  «Asks you: …», «✗ phpunit failed» — Atril's words translated, what follows exactly as written.
+
 ## Scope boundaries
 
 **In:** storing, checking, replacing and deleting the Jira token, through a store and a card
@@ -95,6 +100,13 @@ deleting or renaming repos, cloning over HTTPS with the token, using `gh` or `gl
 or an agent's environment; the name is validated before any request; a public repo needs the
 explicit confirmation; the cards and the dialog are keyboard-operable.
 
+### Hook prefixes (translate-hook-prefixes, 9 nov 2026)
+
+**In:** the prefixes `resources/summarise.mjs` writes. **Out:** changing what the hook writes to
+disk; translating Claude's words.
+
+**Never scoped out:** a line that matches no known prefix shows exactly as it came.
+
 ## Constraints
 
 - Electron `safeStorage` (macOS Keychain-backed key) encrypts each token; the ciphertext lives
@@ -127,6 +139,10 @@ explicit confirmation; the cards and the dialog are keyboard-operable.
 - GitHub REST `GET /user`, `POST /user/repos`; GitLab REST `GET /api/v4/user`,
   `POST /api/v4/projects` with `PRIVATE-TOKEN`.
 - Registration reuses `registerRepo` (W1–W4).
+
+### Hook prefixes (translate-hook-prefixes, 9 nov 2026)
+
+- Every key passes through a literal `t()` call (S16).
 
 ## Prior decisions
 
@@ -232,6 +248,25 @@ explicit confirmation; the cards and the dialog are keyboard-operable.
 - Q: (spec-reviewer) ¿Qué id toma el repo en Atril? → A: el de `registerRepo`; si está cogido, el libre que propone; la carpeta usa el nombre que devuelve la forja (assumed).
 - Q: (spec-reviewer) ¿Diálogo sin forjas conectadas? → A: dice «Conecta GitHub o GitLab en Ajustes» y Crear queda desactivado; «Clonar y añadir a Atril» empieza desmarcado (assumed).
 
+### Hook prefixes (translate-hook-prefixes, 9 nov 2026)
+
+- **Found by add-language's review** (9 nov): S17 kept whole activity lines untranslated, which
+  also kept Atril's own words Spanish. S17 is amended: what stays as written is Claude's part.
+
+#### Alternatives that lost
+
+| Considered | Why it lost |
+|---|---|
+| The hook writes in the chosen language | it would need main's resolved language on disk, and old lines would stay in the old one |
+
+#### Decision log, answers as given (2026-11-09)
+- Q: «tu desarrollo todo sin parar … te dejo solo» stands → decisions taken with the recommended option, marked (assumed).
+- Q: ¿Se traduce al escribir o al mostrar? → A: al mostrar: el hook no sabe el idioma resuelto (eso es de main) y las líneas ya escritas también deben cambiar; un único `localiseActivity` lo usan la ventana y main (assumed).
+- Q: ¿Qué no se toca? → A: lo que va detrás del prefijo: rutas, comandos, descripciones y las palabras de Claude, que viajan como `{detail}` (assumed).
+
+- Q: (spec-reviewer) ¿Qué prefijos? → A: exactamente los que escribe `summarise.mjs`, listados en S27; se reconocen por el texto, no por el tipo (assumed).
+- Q: (spec-reviewer) ¿Y una línea `✗` sin «falló» al final? → A: se queda como vino (assumed).
+
 ## Task breakdown
 
 - Encrypted store with save / exists / delete.
@@ -302,8 +337,9 @@ explicit confirmation; the cards and the dialog are keyboard-operable.
 - **S16** Every literal key passed to `t()` or `translate()` in `src/` shall have an English entry,
   no key shall be a template literal, and the catalog shall hold no entry that no call uses.
   Proof: src/preload/i18n.test.ts every text has its english
-- **S17** While the language is English, texts Atril did not write — an activity line, a Jira
-  title, a file name, the detail inside an error — shall be shown exactly as they came.
+- **S17** While the language is English, texts Atril did not write — Claude's words and
+  the path, command or description inside an activity line, a Jira title, a file name, the detail
+  inside an error — shall be shown exactly as they came.
   Proof: src/renderer/settings/language.test.ts claude and jira text stay as written
 - **S19** Outside tests and the catalog, no string literal or JSX text in `src/` containing á, é,
   í, ó, ú, ñ, ü, ¿, ¡ or « shall reach the person without going through `t()` or `translate()`.
@@ -330,3 +366,16 @@ explicit confirmation; the cards and the dialog are keyboard-operable.
   Ajustes» and keep Crear disabled; otherwise it shall offer only the connected forges, with
   «Clonar y añadir a Atril» unticked.
   Proof: src/renderer/settings/createrepo.test.ts the dialog offers only connected forges
+
+### Hook prefixes (translate-hook-prefixes, 9 nov 2026)
+
+- **S27** While the language is English, a line that is «Claude te necesita» or «Claude ha
+  terminado», or starts with «Leyendo », «Editando », «Escribiendo », «Ejecutando », «Buscando »,
+  «Lanzando un subagente: », «Te pregunta: », «Claude dice: » or «Le has escrito: », or has the
+  shape «✗ … falló», shall show that part in English and the rest unchanged; any other line shall
+  show as it came.
+  Proof: src/preload/i18n.test.ts hook prefixes follow the language
+- **S28** While the language is English, the activity feed, the workspace rows and main's
+  needs-you notification body shall show the hook's lines through S27.
+  Proof: src/renderer/settings/language.test.ts claude and jira text stay as written
+  Proof: src/main/i18n.test.ts the notification body speaks the language
