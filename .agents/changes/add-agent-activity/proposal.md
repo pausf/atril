@@ -107,6 +107,10 @@ hook process; lines are capped at 200 characters and 200 lines per session.
 - **A8** When UserPromptSubmit fires, the line shall read «Le has escrito: <first 80
   characters of the prompt>», and PreToolUse / PostToolUse shall set the agent state to `working`.
   Proof: src/main/activity.test.ts prompt line is short and tool events mean working
+- **W39** When an agent exits as soon as it starts, its session shall remain with the dead pane
+  (state `stopped`): Atril sets the session's options on an idle pane and only then starts the
+  agent in it (found 9 nov as a race that failed a test under load).
+  Proof: src/main/tmux.test.ts an agent that exits at once still leaves its session
 - **A7** While a workspace is selected, the Actividad tab shall list its lines newest first and
   update live, and every workspace row shall show its latest line.
   (One proof holds both: the test pushes two lines for two workspaces and asserts the feed
@@ -166,4 +170,4 @@ None.
 
 ## Checklist
 
-- [x] agent activity: the Electron-as-Node hook summarising every event into a bounded activity file, main watching it, the Actividad tab, the row line and the notification body · Closes: A1, A2, A3, A4, A5, A6, A7, A8
+- [x] agent activity: the Electron-as-Node hook summarising every event into a bounded activity file, main watching it, the Actividad tab, the row line and the notification body · Closes: A1, A2, A3, A4, A5, A6, A7, A8, W39

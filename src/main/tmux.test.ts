@@ -21,6 +21,23 @@ afterEach(() => {
 })
 
 describe('tmux', () => {
+  it('an agent that exits at once still leaves its session', async () => {
+    makeRegisteredRepo(home)
+    const { openWorktree } = await import('./workspaces')
+    // `true` exits before any option could be set after the fact: the race that lost the session.
+    const results = await Promise.all(
+      ['feat/q1', 'feat/q2', 'feat/q3'].map((branch) => openWorktree({ repoId: 'demo', branch, agent: 'claude', argv: ['true'] }))
+    )
+    for (const r of results) {
+      if (!('workspace' in r)) throw new Error(r.error)
+      // The session must survive the agent's exit; under load the exit itself may take a moment.
+      const dead = (): string => tmuxOut(sock, 'display', '-p', '-t', r.workspace.paneId, '#{pane_dead}').trim()
+      const end = Date.now() + 5000
+      while (dead() !== '1' && Date.now() < end) await new Promise((ok) => setTimeout(ok, 50))
+      expect(dead()).toBe('1')
+    }
+  })
+
   it('starts the agent in a named tmux session', async () => {
     makeRegisteredRepo(home)
     const { openWorktree } = await import('./workspaces')

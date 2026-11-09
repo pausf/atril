@@ -47,8 +47,9 @@ const SLEEP = ['sh', '-c', 'sleep 300']
 export function agentSpy(run: Runner): { run: Runner; argvs: string[][] } {
   const argvs: string[][] = []
   const spy: Runner = (cmd, args, opts) => {
-    if (cmd === 'tmux' && args.includes('new-session')) {
-      const at = args.indexOf('#{pane_id}') + 1
+    // The agent starts in respawn-pane (after the session's options): capture it there, run SLEEP instead.
+    if (cmd === 'tmux' && args.includes('respawn-pane')) {
+      const at = args.indexOf('-c') + 2
       argvs.push(args.slice(at))
       return run(cmd, [...args.slice(0, at), ...SLEEP], opts)
     }

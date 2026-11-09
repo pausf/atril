@@ -37,3 +37,6 @@ A .gitignore hunk rode on this branch outside the contract — it came from the 
 
 ## 2026-11-09 · add-agent-activity · 6→7
 Subagent descriptions were shown up to the 200-char line cap and can carry prompt-like text. Fixed: capped at 80 like the prompt; assertion seen red at 200.
+
+## 2026-11-09 · add-agent-activity · 6
+Two commits in a row went in with a red gate (a chain that did not stop). Fixed the habit: commits now run behind an explicit "all three exit codes are 0" guard. The red that guard then caught was a real race: tmux set remain-on-exit after starting the agent, so an agent that exits at once took its session away. Fixed by starting the pane idle, setting options, then respawn-pane with the agent (W39, red 2/3 before, green 5/5 after).
