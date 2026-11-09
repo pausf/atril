@@ -47,7 +47,10 @@ MR or workspace, with a counter in the rail. Needs add-mr-lists.
 - Q: «sigue con todo haz mejoras, nuevas features» — Pau, 9 nov → decisions taken with the recommended option, marked (assumed).
 - Q: ¿De dónde salen los avisos? → A: de comparar cada carga de MR con la anterior y de los cambios de estado de los agentes; ninguna consulta extra a las forjas (assumed).
 - Q: ¿Y la primera carga? → A: solo fija la referencia: no genera avisos (assumed).
-- Q: ¿«Comentario nuevo»? → A: cuando sube el recuento de comentarios de una MR de Mías o Me toca revisar: GitHub `comments` de la búsqueda más `review_comments` del detalle cuando lo hay; GitLab `user_notes_count` (assumed).
+- Q: ¿«Comentario nuevo»? → A: cuando sube el recuento de comentarios de una MR de Mías o Me toca revisar: GitHub `comments` de la búsqueda (siempre presente, misma fuente siempre), GitLab `user_notes_count`; tus propios comentarios también lo suben: límite nombrado (assumed).
+- Q: (spec-reviewer) ¿Una lista recortada a 50? → A: esa lista de esa forja no da avisos de «nueva» ni de «ya no está» en esa carga (assumed).
+- Q: (spec-reviewer) ¿Una MR en varias listas? → A: la referencia guarda el conjunto de listas de cada URL; las reglas de cada aviso dicen contra qué se comparan (assumed).
+- Q: (spec-reviewer) ¿Trabajo borrado? → A: «Ese trabajo ya no está» (assumed).
 - Q: ¿Cuántos se guardan? → A: los últimos 200, en `$ATRIL_HOME/avisos.json` (assumed).
 
 ## Outcomes
@@ -86,27 +89,33 @@ MR's title as `{detail}`, shown as text; the screen is keyboard-operable.
 
 ## Verification criteria
 
-- **V1** When an MR listing completes after a previous one, Atril shall add a notice per change: an
-  URL new in Me toca revisar («Te piden revisión»), a higher `notes` count on an MR in Mías or Me toca
-  revisar («Comentario nuevo»), CI turning «Falla» on an MR in Mías («La CI falla»), an URL new in
-  Sigo («MR nueva en lo que sigues»), an URL gone from Mías («Ya no está abierta») and an URL new in
-  Mías («Has abierto una MR»), each with the MR title as detail; a forge that failed in either
-  listing shall produce no notice for its MRs.
+- **V1** When an MR listing completes after a previous one, Atril shall add, with the MR title as
+  detail: «Te piden revisión» for an URL in Me toca revisar that was not there before; «Comentario
+  nuevo» when the `notes` count of an MR in Mías or Me toca revisar is higher than before; «La CI falla»
+  when an MR in Mías was known with a CI state other than «Falla» and is now «Falla»; «MR nueva en lo
+  que sigues» for an URL in Sigo that was in no list before; «Has abierto una MR» for an URL in Mías
+  that was in no list before; and «Ya no está abierta» for an URL that was in Mías and is now in no
+  list. A forge with an error in either listing, or a list cut at its cap (`more`), shall produce no
+  notice of «new» or «gone» for that forge's rows of that list.
+  (The proof asserts each of the six kinds, one input that triggers none, the failed-forge rule and
+  the capped-list rule.)
   Proof: src/main/avisos.test.ts listings turn into notices
 - **V2** The first listing after Atril starts with no stored baseline shall produce no notice.
   Proof: src/main/avisos.test.ts the first listing only sets the baseline
-- **V3** When an agent enters «te necesita», Atril shall add «{branch} te necesita» linked to its
-  workspace.
+- **V3** When an agent enters «te necesita» — once per entry, where the needs-you Mac notification
+  fires — Atril shall add «{branch} te necesita» linked to its workspace.
   Proof: src/main/avisos.test.ts an agent that needs you is a notice
-- **V4** Atril shall keep the last 200 notices and the baseline in `$ATRIL_HOME/avisos.json` across
-  restarts.
+- **V4** Atril shall keep the newest 200 notices — dropping the oldest, read or not — and the
+  baseline in `$ATRIL_HOME/avisos.json` across restarts.
   Proof: src/main/avisos.test.ts notices survive a restart and stay bounded
-- **V5** The rail shall show «Avisos» with the number of unread notices when it is not zero; the
-  screen shall list them newest first with kind, title and time, filter by kind, and «Marcar todo
+- **V5** The rail shall show «Avisos» with the number of unread stored notices when it is not zero;
+  the screen shall list them newest first with kind, title and time, filter by kind, and «Marcar todo
   leído» shall clear the count.
+  (The proof asserts the badge, the order, a filter hiding other kinds, and the count going to zero.)
   Proof: src/renderer/avisos/avisos.test.ts the feed lists, filters and marks read
 - **V6** Opening a notice shall mark it read and open its MR view when the MR is in the latest
-  listing, its workspace for an agent notice, and otherwise say «Esta MR ya no está en la lista».
+  listing (held app-wide, M9), otherwise say «Esta MR ya no está en la lista»; an agent notice shall
+  open its workspace, or say «Ese trabajo ya no está» when it is gone.
   Proof: src/renderer/avisos/avisos.test.ts a notice opens what it is about
 
 ## Approach
@@ -114,7 +123,7 @@ MR's title as `{detail}`, shown as text; the screen is keyboard-operable.
 ### Summary
 
 `src/main/avisos.ts`: `createAvisos(store)` with `onListing(lists)`, `onNeedsYou(ws)`, `list()`,
-`markRead(ids | 'all')`, persisting `{ baseline: { [url]: { list, notes?, ci? } }, items: Notice[] }`.
+`markRead(ids | 'all')`, persisting `{ baseline: { [url]: { lists, forge, notes?, ci? } }, items: Notice[] }`.
 `index.ts` calls `onListing` after `listMrs` (also on the dev fake path) and `onNeedsYou` where the
 needs-you Mac notification fires; IPC `atril:avisos:list`, `atril:avisos:markRead` and an
 `atril:avisos:changed` push. The renderer adds `src/renderer/avisos/Avisos.tsx`, a rail entry with
@@ -132,8 +141,11 @@ Files: `src/main/avisos.ts` (+test), `src/main/forge/mrs.ts` (`notes`), `src/mai
 - A forge with an error in the new or the previous listing keeps its previous baseline rows and adds
   no notice (V1), so a failed refresh never looks like "everything closed".
 - Notice: `{ id, kind, at, read, title, url?, workspaceId?, forge? }`; ids are random.
-- Opening an MR notice: switch to the MR screen and open that row's view (MrScreen gains an
-  `openUrl` prop or context).
+- Opening an MR notice: App switches to the MR screen and passes `openUrl` to MrScreen, which opens
+  that row's view.
+- Ownership: `avisos` governs `src/main/avisos.ts` and `src/renderer/avisos/**` (workspaces
+  excludes them at landing); the `notes` field and the `openUrl` prop are mr's, with no criterion
+  change; `index.ts`, `Rail.tsx` and `App.tsx` stay workspaces'.
 
 ### The alternatives it beat
 
