@@ -5,10 +5,10 @@
 | Capability | Governs | What it promises |
 |---|---|---|
 | [flow-status](flow-status/spec.md) | `src/main/flow/** src/renderer/flow/**` |  |
-| [mr](mr/spec.md) | `src/main/forge/mrs.ts src/main/forge/scores.ts src/renderer/mr/**` | The MR screen: your merge requests on GitHub and GitLab, the ones you review, and the ones in the projects you follow. |
+| [mr](mr/spec.md) | `src/main/forge/mrs.ts src/main/forge/scores.ts src/main/forge/threads.ts src/renderer/mr/**` | The MR screen: your merge requests on GitHub and GitLab, the ones you review, and the ones in the projects you follow. |
 | [settings](settings/spec.md) | `src/main/credentials/** src/renderer/settings/**` |  |
 | [work-inbox](work-inbox/spec.md) | `src/main/jira/** src/renderer/inbox/**` |  |
-| [workspaces](workspaces/spec.md) | `src/main/** src/preload/** src/renderer/** resources/** !src/main/jira/** !src/renderer/inbox/** !src/main/flow/** !src/renderer/flow/** !src/main/credentials/** !src/renderer/settings/** !src/main/forge/mrs.ts !src/renderer/mr/** !src/main/forge/scores.ts` |  |
+| [workspaces](workspaces/spec.md) | `src/main/** src/preload/** src/renderer/** resources/** !src/main/jira/** !src/renderer/inbox/** !src/main/flow/** !src/renderer/flow/** !src/main/credentials/** !src/renderer/settings/** !src/main/forge/mrs.ts !src/renderer/mr/** !src/main/forge/scores.ts !src/main/forge/threads.ts` |  |
 
 ## flow-status
 
@@ -46,13 +46,13 @@ Governs: `src/main/flow/** src/renderer/flow/**`
 
 The MR screen: your merge requests on GitHub and GitLab, the ones you review, and the ones in the projects you follow. Phase 2 of Atril; scores, threads and notifications build on it.
 
-Governs: `src/main/forge/mrs.ts src/main/forge/scores.ts src/renderer/mr/**`
+Governs: `src/main/forge/mrs.ts src/main/forge/scores.ts src/main/forge/threads.ts src/renderer/mr/**`
 
 - {**M1** When the lists load, Atril shall put in **Mías** the open MRs you authored, in **Me toca revisar** the open MRs where your review is requested, and in **Sigo** other people's open MRs in your followed projects. src/main/forge/mrs.test.ts lists}
 - {**M2** An MR that belongs to an earlier list shall not repeat in a later one (order: Mías, Me toca revisar, Sigo). src/main/forge/mrs.test.ts an}
 - {**M3** Each row shall show the title, the project, the author, the CI state, the size — «+added −removed · N archivos» on GitHub, «N archivos» on GitLab — and the age («hace 3 h», «hace 2 d»). src/renderer/mr/mrs.test.ts the}
 - {**M4** The CI state shall be «Falla» for GitHub check-run conclusions failure, timed_out, cancelled or action_required and GitLab pipelines failed or canceled; «En curso» for check runs queued or in progress and pipelines running, pending, created, preparing, waiting_for_resource or scheduled; «Pasa» when every check run concluded success, neutral or skipped and for pipelines success, skipped or manual; and «Sin CI» with no check runs or no pipeline. src/main/forge/mrs.test.ts ci}
-- {**M5** When the person activates a row, Atril shall open that MR in the browser. src/renderer/mr/mrs.test.ts the}
+- {**M5** When the person activates a row, Atril shall open the MR view (M23); the view's «Abrir en {forge}» shall open that MR in the browser. src/renderer/mr/threads.test.ts a}
 - {**M6** If one of a forge's requests fails, then the screen shall show for that forge «{forge} ha rechazado el token: reemplázalo en Ajustes» on 401, «{forge} ha respondido {status}» on another status, or «No se ha podido conectar con {forge} ({detail}).» on a network failure, keep every MR that forge did return, and keep the other forge's MRs. src/main/forge/mrs.test.ts one}
 - {**M7** While no forge is connected the screen shall say «Conecta GitHub o GitLab en Ajustes» with a button that opens Ajustes. src/renderer/mr/mrs.test.ts no}
 - {**M8** Atril shall follow per forge the 10 followed projects with the most recent activity, cut each list at 50 rows with «Hay más: ábrelas en {forge}» when more existed, and fetch at most 60 MR details per forge and refresh. src/main/forge/mrs.test.ts caps}
@@ -65,6 +65,13 @@ Governs: `src/main/forge/mrs.ts src/main/forge/scores.ts src/renderer/mr/**`
 - {**M13** A score shall be stored with the head commit of the diff it scored; asking again for that commit shall not run Claude, and a row whose listed head commit is known and differs shall show the stored score as «De un commit anterior» with Puntuar de nuevo. src/main/forge/scores.test.ts a}
 - {**M14** Atril shall run at most one score at a time, the rest in the order asked; asking again for an URL already queued or running shall return that same run. src/main/forge/scores.test.ts scores}
 - {**M15** The score view shall show the measured values first, then Claude's, and when the diff was cut say «Claude vio {seen} de {total} KB»; each row's state shall read «En cola», «Puntuando…», its chips, or an error. src/renderer/mr/scores.test.ts the}
+- {**M18** When the MR view opens, Atril shall show its threads, comments oldest first: on GitHub, review comments (`GET /repos/{o}/{r}/pulls/{n}/comments`) grouped by their root (`in_reply_to_id`), each carrying `path`, `line` (else `original_line`) and the last line of `diff_hunk`, and the general comments (`GET /repos/{o}/{r}/issues/{n}/comments`) as one «General» thread; on GitLab, discussions (`GET /projects/:id/merge_requests/:iid/discussions`) without system notes, positioned ones carrying `new_path` (else `old_path`) and `new_line` (else `old_line`), the individual notes together as one «General» thread, and a thread resolved when every resolvable note in it is resolved. A thread with a file but no line shall show as a file thread. src/main/forge/threads.test.ts threads}
+- {**M19** Atril shall fetch at most 3 pages of 100 items per endpoint; when more exist it shall say «Hay más en {forge}: “Te toca responder” puede estar incompleto». src/main/forge/threads.test.ts threads}
+- {**M20** A thread shall be marked «Te toca responder» when its last comment is not yours and either you wrote an earlier comment in it or you authored the MR (the author taken from the listing). src/main/forge/threads.test.ts your}
+- {**M24** The MR view's header shall show how many threads are marked «Te toca responder». src/renderer/mr/threads.test.ts a}
+- {**M21** When the person writes a reply and clicks Enviar, Atril shall post it once — GitHub `POST /repos/{o}/{r}/pulls/{n}/comments/{root}/replies` for a review thread and `POST /repos/{o}/{r}/issues/{n}/comments` for «General»; GitLab `POST /projects/:id/merge_requests/:iid/discussions/:id/notes` for a discussion and `POST /projects/:id/merge_requests/:iid/notes` for «General» — then show it in the thread; an empty reply shall not be sent, and a failure shall keep the text in the box with M6's message. src/main/forge/threads.test.ts a}
+- {**M22** If the MR is not in main's latest listing, then reading or posting its threads shall be refused without a request, the view saying «Esta MR ya no está en la lista: actualiza» and keeping any written text. src/main/forge/threads.test.ts only}
+- {**M23** The MR view shall show the threads as text (markup in a comment shows literally), and close with Escape — asking first when a reply box has unsent text. src/renderer/mr/threads.test.ts a}
 
 [full spec](mr/spec.md)
 
@@ -135,7 +142,7 @@ Governs: `src/main/jira/** src/renderer/inbox/**`
 
 ## workspaces
 
-Governs: `src/main/** src/preload/** src/renderer/** resources/** !src/main/jira/** !src/renderer/inbox/** !src/main/flow/** !src/renderer/flow/** !src/main/credentials/** !src/renderer/settings/** !src/main/forge/mrs.ts !src/renderer/mr/** !src/main/forge/scores.ts`
+Governs: `src/main/** src/preload/** src/renderer/** resources/** !src/main/jira/** !src/renderer/inbox/** !src/main/flow/** !src/renderer/flow/** !src/main/credentials/** !src/renderer/settings/** !src/main/forge/mrs.ts !src/renderer/mr/** !src/main/forge/scores.ts !src/main/forge/threads.ts`
 
 - {**W1** When a repo is registered and none of the three signals is found, Atril shall set its mode to `worktree`. src/main/repos.test.ts chooses}
 - {**W2** If the checkout holds a git-ignored file outside dependency, build and editor noise (`node_modules`, `vendor`, `dist`, `build`, `.cache`, `.next`, `coverage`, `tmp`, `.idea`, `.vscode`, `.DS_Store`, `*.log`), then Atril shall set the mode to `in-place` and name that file as the reason. Only files count — entries of `git ls-files --others --ignored --exclude-standard --directory` that do not end in `/`; ignored folders (build output, tool caches) are never a signal. Noise names match at any depth. src/main/repos.test.ts chooses}
