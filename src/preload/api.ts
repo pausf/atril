@@ -170,7 +170,18 @@ export interface SettingsApi {
   }
   /** Opens Atlassian's API token page in the default browser; nothing else. */
   openTokenPage(): Promise<void>
+  /** S20, S25: GitHub and GitLab tokens; the window sees saved, account and site only. */
+  forge: {
+    status(forge: ForgeId): Promise<ForgeStatus>
+    save(forge: ForgeId, creds: { site?: string; token: string }): Promise<{ account: string } | { error: string }>
+    delete(forge: ForgeId): Promise<void>
+    /** Opens the forge's new-token page with the scopes Atril needs. */
+    openTokenPage(forge: ForgeId, site?: string): Promise<void>
+  }
 }
+
+export type ForgeId = 'github' | 'gitlab'
+export type ForgeStatus = { saved: false } | { saved: true; account?: string; site?: string }
 
 export type AgentState = 'working' | 'needs-you' | 'stopped'
 

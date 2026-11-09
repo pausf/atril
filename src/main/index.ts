@@ -5,6 +5,7 @@ import { agentState, createStatus, replyGone, replyPlaceholder, replyToAgent } f
 import { getLang, setLang, t } from './lang'
 import { resolveLang } from '../preload/i18n'
 import { readDocs, saveDoc } from './flow/document'
+import { FORGES, forgeSettings, type ForgeId } from './credentials/forge'
 import { fileDiff, listChanges } from './flow/changes'
 import { nextUp } from './nextup'
 import { writeFile } from 'node:fs/promises'
@@ -140,6 +141,20 @@ app.whenReady().then(async () => {
   ipcMain.handle('atril:settings:openTokenPage', () =>
     shell.openExternal('https://id.atlassian.com/manage-profile/security/api-tokens')
   )
+  const forges = forgeSettings(secretStore)
+  const isForge = (f: unknown): f is ForgeId => FORGES.includes(f as ForgeId)
+  ipcMain.handle('atril:settings:forge:status', (_e, f: unknown) => (isForge(f) ? forges.status(f) : { saved: false }))
+  ipcMain.handle('atril:settings:forge:save', (_e, f: unknown, creds: { site?: unknown; token?: unknown }) =>
+    isForge(f) && typeof creds?.token === 'string' && creds.token.trim() !== ''
+      ? forges.save(f, { token: creds.token, ...(typeof creds.site === 'string' && { site: creds.site }) })
+      : { error: t('Falta el token.') }
+  )
+  ipcMain.handle('atril:settings:forge:delete', (_e, f: unknown) => (isForge(f) ? forges.delete(f) : undefined))
+  ipcMain.handle('atril:settings:forge:openTokenPage', async (_e, f: unknown, site: unknown) => {
+    if (f === 'github') return shell.openExternal('https://github.com/settings/tokens/new?scopes=repo&description=Atril')
+    const base = typeof site === 'string' && /^https:\/\//.test(site) ? new URL(site).origin : 'https://gitlab.com'
+    if (f === 'gitlab') return shell.openExternal(`${base}/-/user_settings/personal_access_tokens?name=Atril&scopes=api`)
+  })
   const savedJira = async (): Promise<JiraCreds | null> => {
     const c = await secretStore.readSecret('jira').catch(() => null)
     return c?.['site'] && c['email'] && c['token'] ? (c as unknown as JiraCreds) : null

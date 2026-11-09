@@ -282,5 +282,13 @@ export const EN: Record<string, string> = {
   'El Llavero de macOS no está disponible: Atril no guarda tokens sin cifrarlos.': 'The macOS Keychain is not available: Atril does not store tokens unencrypted.',
   'Claude está escribiendo: no se ha guardado': 'Claude is writing: it was not saved',
   'Claude ha cambiado el archivo mientras editabas: copia tu texto y vuelve a abrirlo': 'Claude changed the file while you were editing: copy your text and open it again',
-  'Diff recortado a 1 MB': 'Diff cut at 1 MB'
+  'Diff recortado a 1 MB': 'Diff cut at 1 MB',
+  "{forge} ha rechazado el token ({status}). No se ha guardado.": "{forge} rejected the token ({status}). Nothing was saved.",
+  "No se ha podido conectar con {forge} ({detail}).": "Could not connect to {forge} ({detail}).",
+  "La dirección de GitLab no es válida.": "The GitLab address is not valid.",
+  "La dirección de GitLab debe empezar por https://": "The GitLab address must start with https://",
+  "Para crear repos desde Atril.": "To create repos from Atril.",
+  "El token no se muestra nunca. Si lo pierdes, crea uno nuevo y pulsa Reemplazar.": "The token is never shown. If you lose it, create a new one and press Replace.",
+  "Crear token en {forge}": "Create token on {forge}",
+  "Falta el token.": "The token is missing."
 }

@@ -69,7 +69,13 @@ const api: AtrilApi = {
       searchBoards: (query) => ipcRenderer.invoke('atril:settings:jira:searchBoards', query),
       pickBoard: (board) => ipcRenderer.invoke('atril:settings:jira:pickBoard', board)
     },
-    openTokenPage: () => ipcRenderer.invoke('atril:settings:openTokenPage')
+    openTokenPage: () => ipcRenderer.invoke('atril:settings:openTokenPage'),
+    forge: {
+      status: (forge) => ipcRenderer.invoke('atril:settings:forge:status', forge),
+      save: (forge, creds) => ipcRenderer.invoke('atril:settings:forge:save', forge, creds),
+      delete: (forge) => ipcRenderer.invoke('atril:settings:forge:delete', forge),
+      openTokenPage: (forge, site) => ipcRenderer.invoke('atril:settings:forge:openTokenPage', forge, site)
+    }
   },
   status: {
     list: () => ipcRenderer.invoke('atril:status:list'),

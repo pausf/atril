@@ -1,5 +1,5 @@
 import { vi } from 'vitest'
-import type { ActivityLine, AddRepoResult, FileChange, FlowDocs, Mode, AgentState, AtrilApi, FlowStage, JiraIssue, MenuAction, NextItem, StartProposalResult, StartRequest, StartResult, RepoView, UiState, WorkspaceResult, WorkspaceView } from '../preload/api'
+import type { ActivityLine, AddRepoResult, FileChange, FlowDocs, ForgeId, ForgeStatus, Mode, AgentState, AtrilApi, FlowStage, JiraIssue, MenuAction, NextItem, StartProposalResult, StartRequest, StartResult, RepoView, UiState, WorkspaceResult, WorkspaceView } from '../preload/api'
 
 export const workspace = (id: string, branch: string, alive = true): WorkspaceView => ({
   id,
@@ -35,6 +35,8 @@ interface Options {
   /** What flow.docs answers; tests mutate it and call pushFlow to simulate the agent writing. */
   docs?: FlowDocs | null
   changes?: FileChange[]
+  /** Connected forges, by id; missing means not connected. */
+  forges?: Partial<Record<ForgeId, ForgeStatus>>
   diff?: string
   /** What the folder picker answers when the person adds a repo. */
   addRepo?: (AddRepoResult & { path: string }) | null
@@ -99,7 +101,15 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
         return { issues, groups: groups.filter((g) => g.keys.length > 0) }
       }
     },
-    settings: { jira: { status: async () => ({ saved: true, account: 'Pau Sánchez', site: 'https://x.atlassian.net' }) } },
+    settings: {
+      jira: { status: async () => ({ saved: true, account: 'Pau Sánchez', site: 'https://x.atlassian.net' }) },
+      forge: {
+        status: vi.fn(async (f: ForgeId): Promise<ForgeStatus> => o.forges?.[f] ?? { saved: false }),
+        save: vi.fn(async () => ({ account: 'pau' })),
+        delete: vi.fn(async () => undefined),
+        openTokenPage: vi.fn(async () => undefined)
+      }
+    },
     status: {
       list: async () => o.states ?? {},
       onChange: () => off,

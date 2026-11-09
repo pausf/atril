@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import { useT } from '../ui'
 import { Repos } from './Repos'
+import { ForgeCard } from './Forges'
 import type { BoardSearchResult, JiraBoard, JiraSettingsStatus } from '../../preload/api'
 
 type Phase = 'idle' | 'checking'
@@ -245,6 +246,8 @@ export function Ajustes({ children }: { children?: ReactNode }) {
         {t(': solo reemplazar o borrar. Tus agentes nunca los reciben.')}
       </p>
       <JiraCard />
+      <ForgeCard forge="github" />
+      <ForgeCard forge="gitlab" />
       <Repos />
       {children}
     </main>
