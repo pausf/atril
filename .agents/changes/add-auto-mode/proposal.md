@@ -12,6 +12,9 @@ Durable decisions: the ones in Prior decisions below
 - Q: attacca hace push y abre la MR solo; ¿se deja? → A: no: en automático Atril pide confirmación antes de `git push`, `gh pr create` y `glab mr create`, con el permiso de Claude Code («ask» desde el hook); se lo dije a Pau al encolar (assumed).
 - Q: ¿Nuevo trabajo sin texto? → A: sin modo: es Claude a secas (assumed).
 - Q: ¿Por defecto? → A: Manual, como hoy (assumed).
+- Q: (revisor) ¿El clic directo de Empezar (I20)? → A: siempre Manual; ⌥-clic abre el diálogo con la elección (assumed).
+- Q: (revisor) ¿Campo `mode`? → A: ya existe (in-place/worktree): campo nuevo `auto` (assumed).
+- Q: (revisor) ¿F15 frente a F26? → A: F26 es la excepción y su texto gana; solo el editor de documentos (assumed).
 
 ## Outcomes
 
@@ -26,7 +29,7 @@ Durable decisions: the ones in Prior decisions below
 read-only documents, the push confirmation. **Out:** switching mode on a running workspace, picking
 the mode from task size automatically, a setting for the default mode.
 
-**Never scoped out:** the task text stays one argv element (W-own); the push needs the person.
+**Never scoped out:** the task text stays one argv element (W40); the push needs the person.
 
 ## Constraints
 
@@ -38,6 +41,8 @@ the mode from task size automatically, a setting for the default mode.
 - **Auto = attacca** (assumed): Libretto's own unattended mode; if it is wrong, the command is one
   string in `jira/start.ts` and `workspaces.ts`.
 - **Push asks in auto** (assumed): what changes if wrong is one hook rule.
+- **Automatic still stops where attacca stops**: a failing gate twice, a missing `jira`/`gh`/`glab`, the release question at the end and the push question; the row then shows «te necesita» like any agent.
+- **Free text to attacca**: attacca hands `$ARGUMENTS` to find-work, which takes a request made in conversation (assumed).
 
 ## Task breakdown
 
@@ -46,22 +51,33 @@ the mode from task size automatically, a setting for the default mode.
 
 ## Verification criteria
 
-- **W58** Where the person picks Automático in Empezar, Nueva tarea or Nuevo trabajo with text, Atril
-  shall start the agent with `/libretto:libretto-attacca <key or text>` instead of
-  `/libretto:libretto-flow` (still one argv element), store `mode: 'auto'` in the workspace record
-  and show «Auto» on its row; Manual, the default, changes nothing; Nuevo trabajo without text
-  offers no mode.
+- **W58** Where the start request carries `auto: true` (Empezar's dialog, Nueva tarea, or Nuevo trabajo
+  with text), Atril shall start the agent with the single argument
+  `/libretto:libretto-attacca <key or trimmed text>` instead of `/libretto:libretto-flow …`, store
+  `auto: true` in the workspace record (a new field; `mode` stays `in-place | worktree`) and carry it
+  in `WorkspaceView`; without it, or with any value but `true`, nothing changes.
   Proof: src/main/agent.test.ts automatic mode starts attacca and is recorded
-- **W59** While a workspace is automatic (the marker `$ATRIL_HOME/auto/<session>` exists, written when
-  it starts and removed with the workspace), the hook shall answer a PreToolUse for Bash whose
-  command matches `git push`, `gh pr create` or `glab mr create` with
-  `permissionDecision: "ask"` and the reason «Modo automático: confirma antes de subir»; for any
-  other command, or without the marker, it shall print nothing. Ceiling: a push inside a script the
-  command calls is not seen.
+- **W40** (amended) When a workspace is opened with a task text, the agent's last argument shall be the
+  single string `/libretto:libretto-flow <trimmed text>`, or `/libretto:libretto-attacca <trimmed text>`
+  when it is automatic (W58); a text holding `$(…)`, `;`, both kinds of quote, a newline, or starting
+  with `--` shall arrive byte for byte, as that one argument, and run nothing.
+  Proof: src/main/tmux.test.ts task text reaches the agent as one literal argument
+- **W59** While the marker `$ATRIL_HOME/auto/<session>` exists, the hook shall answer a PreToolUse for
+  Bash whose command matches `/(^|[\s;&|(])(git(\s+-[cC]\s+\S+)*\s+push|gh\s+pr\s+create|glab\s+mr\s+create)\b/`
+  by printing exactly `{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"ask",
+  "permissionDecisionReason":"Modo automático: confirma antes de subir"}}`; for any other command or
+  tool, or without the marker, it shall print nothing. Ceiling: a push inside a script the command
+  calls is not seen; a quoted «git push» in an `echo` only adds a question; whether a person's own
+  bypass mode or allow rule overrides «ask» is the host's (unverified).
   Proof: src/main/agent.test.ts the hook asks before an automatic push
-- **F26** In an automatic workspace, Spec, Plan and Checklist shall open read-only whatever the
-  agent's state, with the status bar «solo lectura · modo automático».
-  Proof: src/renderer/flow/documents.test.ts automatic documents are read-only
+- **W60** An automatic workspace's marker shall be written with its record, before its tmux session
+  starts, and deleted when the workspace is removed.
+  Proof: src/main/agent.test.ts the automatic marker lives as long as the workspace
+- **W61** Empezar's dialog, Nueva tarea and Nuevo trabajo once it has text shall offer Manual (default)
+  and Automático with the line «Sin parar en spec y plan; antes de subir te pregunta»; Nuevo trabajo
+  without text offers none; Empezar's one click (I20) is always Manual; an automatic workspace's row
+  shows «Auto».
+  Proof: src/renderer/inbox/mode.test.ts the start dialogs offer manual or automatic
 
 ## Approach
 
@@ -71,7 +87,7 @@ the mode from task size automatically, a setting for the default mode.
 `createWorkspace`, which picks the command, writes `mode` to the record and touches the marker.
 `removeWorkspace` deletes the marker. The hook checks the marker by session name on PreToolUse/Bash
 and prints the JSON decision. Dialogs get a two-option radio under the model; `WorkspaceView` carries
-`mode`; the row shows a badge; `DocModal` treats `mode === 'auto'` as read-only.
+`auto`; the row shows a badge; `DocModal` reads `auto` from the selected workspace and is read-only.
 
 ### Technical context
 
@@ -106,5 +122,5 @@ None.
 
 ## Checklist
 
-- [ ] main and hook: mode in requests and records, attacca, marker, the push question · Closes: W58, W59
-- [ ] the window: the choice in the three dialogs, «Auto» on the row, read-only documents · waits on box 1 · Closes: F26
+- [ ] main and hook: mode in requests and records, attacca, marker, the push question · Closes: W58, W40, W59, W60
+- [ ] the window: the choice in the three dialogs, «Auto» on the row, read-only documents · waits on box 1 · Closes: W61, F26
