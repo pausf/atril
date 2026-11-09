@@ -8,6 +8,7 @@ import { join } from 'node:path'
 import process from 'node:process'
 import { Buffer } from 'node:buffer'
 import { summarise } from './summarise.mjs'
+import { sizeNotice } from './branchsize.mjs'
 
 const MAX_LINES = 200
 const TAIL_BYTES = 64 * 1024
@@ -80,6 +81,10 @@ try {
   mkdirSync(dir, { recursive: true })
   const body = state === 'needs-you' && line ? { text: line.text } : {}
   replace(join(dir, `${name}.json`), JSON.stringify({ state, at, ...body }) + '\n')
+
+  // W45: past each 400-line threshold, Claude is asked once to offer a split into smaller MRs.
+  const notice = sizeNotice({ home, session: name, event, tool: payload?.tool_name })
+  if (notice) process.stdout.write(JSON.stringify({ hookSpecificOutput: { hookEventName: 'PostToolUse', additionalContext: notice } }))
 } catch {
   /* a hook must never disturb Claude */
 }

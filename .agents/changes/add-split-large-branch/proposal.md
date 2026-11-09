@@ -86,7 +86,8 @@ and the note never carries file contents.
   400, k not higher than one claimed, another tool, or no workspace record for the session — it
   shall print nothing.
   (One proof holds all: it runs `sizeNotice` over a real repo through 300 lines, 500, 500 again,
-  1300 in one jump, 1400, Read at 2000, and an unknown session, and checks each result.)
+  1300, 1400, Read at 2000, an unknown session, PreToolUse, and a second session jumping from
+  nothing to 1300 and back to 500, and checks each result.)
   Proof: src/main/activity.test.ts a large branch asks claude to offer a split
 - **W46** The hook's count shall equal F18's total for the same tree, and the renderer's warning
   threshold shall be the hook's.
@@ -148,5 +149,5 @@ W45 and F25 seen red first. Rollback: one revert.
 
 ## Checklist
 
-- [ ] branchsize.mjs counts like F18 and claims each threshold once; the hook prints the note · Closes: W45, W46
+- [x] branchsize.mjs counts like F18 and claims each threshold once; the hook prints the note · Closes: W45, W46
 - [ ] the warning in Cambios with the shared threshold; the sketch's copy · waits on box 1 · Closes: F25
