@@ -9,7 +9,7 @@ Vocabulary, decision log and the primary contract: `proposal.md` beside this fil
 
 ## Outcomes
 
-- «Cambios» shows the total in orange past 400 lines with the note that Claude will ask about a split.
+- «Cambios» shows the total as a warning past 400 lines, saying Atril asked Claude to propose a split.
 
 ## Scope boundaries
 
@@ -29,6 +29,7 @@ Vocabulary, decision log and the primary contract: `proposal.md` beside this fil
 
 ## Verification criteria
 
-- **F25** While the change list totals more than 400 lines, «Cambios» shall show «⚠ N líneas: rama
-  grande. Claude te preguntará si la separa en MRs más pequeñas.» in place of the plain total.
+- **F25** While the change list totals more than the hook's threshold (400), «Cambios» shall show,
+  in place of the plain total, a warning element (class `fbig`) reading «⚠ N líneas: rama grande
+  (más de 400). Atril le ha pedido a Claude que te proponga separarla en MRs más pequeñas.»
   Proof: src/renderer/flow/changes.test.ts a large branch warns in cambios

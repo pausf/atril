@@ -85,3 +85,6 @@ spec-reviewer found the scope saying renames show as D + A while the approach sa
 
 ## 2026-11-09 · add-file-changes · 6→7
 work-reviewer: an untracked symlink was followed to count its lines, and listed names reached git as pathspecs (a file named `a*.txt` pulled `ab.txt` into its diff). Fixed with lstat and --literal-pathspecs; F24 added, its test red on both before the fix.
+
+## 2026-11-09 · add-split-large-branch · 4→5
+spec-reviewer: the hook's printout had no way to be observed by the proof, a 0→900 jump was ambiguous, "one git call" contradicted the approach, parallel hooks could both announce, and "orange" had no criterion. Settled by moving the logic into a callable sizeNotice, claims with wx files, W46 pinning both counters, and F25 naming the class.
