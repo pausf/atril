@@ -1,4 +1,4 @@
-import { useContext, useEffect, useState } from 'react'
+import { useContext, useEffect, useRef, useState } from 'react'
 import type { CiState, ForgeId, MrItem, MrListName, MrScore, MrScoreState } from '../../preload/api'
 import { FoldSection } from '../components/Fold'
 import { ago } from '../flow/ActivityFeed'
@@ -10,7 +10,8 @@ import type { MrsState } from './useMrs'
 
 const NAME: Record<ForgeId, string> = { github: 'GitHub', gitlab: 'GitLab' }
 
-export function MrScreen({ mrs }: { mrs: MrsState }) {
+/** `openUrl`: a row to open in its view once it is listed (an Avisos notice). */
+export function MrScreen({ mrs, openUrl }: { mrs: MrsState; openUrl?: string | null }) {
   const { result, loading, refresh, scores, score } = mrs
   const [viewing, setViewing] = useState<{ m: MrItem; score: MrScore } | null>(null)
   const [opened, setOpened] = useState<MrItem | null>(null)
@@ -29,6 +30,13 @@ export function MrScreen({ mrs }: { mrs: MrsState }) {
     const first = result?.mine[0]
     if (first) void window.atril.snapshotView().then((v) => v === 'mr-thread' && setOpened((cur) => cur ?? first))
   }, [result])
+  const handled = useRef<string | null>(null)
+  useEffect(() => {
+    const m = result && [...result.mine, ...result.review, ...result.following].find((r) => r.url === openUrl)
+    if (!m || handled.current === openUrl) return
+    handled.current = m.url
+    setOpened(m)
+  }, [result, openUrl])
   const titles: Record<MrListName, string> = { mine: t('Mías'), review: t('Me toca revisar'), following: t('Sigo') }
   return (
     <section className="tasks-screen" data-tour="mr">

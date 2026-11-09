@@ -2017,3 +2017,49 @@ button.stg.stgbtn:focus-visible {
 .f-check.warn {
   color: var(--you-text);
 }
+/* Avisos: one line per notice, unread ones in bold with a dot. */
+.avisos-filter {
+  flex-wrap: wrap;
+  margin: 4px 0 14px;
+}
+.avisos-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.mr-row.aviso {
+  position: relative;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+}
+.mr-row.aviso .tag {
+  justify-self: start;
+}
+.mr-row.aviso.unread .s {
+  font-weight: 600;
+}
+.mr-row.aviso.unread::before {
+  content: '';
+  position: absolute;
+  left: 4px;
+  top: calc(50% - 3px);
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--run);
+}
+.aviso .k-ci,
+.aviso .k-gone {
+  background: var(--bad-bg);
+  color: var(--bad-text);
+}
+.aviso .k-review,
+.aviso .k-agent {
+  background: var(--ip-bg);
+  color: var(--you-text);
+}
+.aviso .k-comment,
+.aviso .k-opened,
+.aviso .k-following {
+  background: var(--mode-bg);
+  color: var(--mode-text);
+}

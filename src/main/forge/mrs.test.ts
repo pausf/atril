@@ -37,6 +37,7 @@ const ghHit = (repo: string, n: number, author: string, hoursAgo = 1) => ({
   repository_url: `https://api.github.com/repos/${repo}`,
   number: n,
   updated_at: at(hoursAgo),
+  comments: n + 2,
   pull_request: {}
 })
 const ghPull = (repo: string, n: number, author: string, hoursAgo = 1) => ({
@@ -60,6 +61,7 @@ const glMr = (project: string, id: number, iid: number, author: string, hoursAgo
   updated_at: at(hoursAgo),
   references: { full: `${project}!${iid}` },
   changes_count: '7',
+  user_notes_count: iid,
   head_pipeline: status ? { status } : null
 })
 
@@ -145,6 +147,8 @@ describe('mr lists', () => {
     expect(r.following[1]).toMatchObject({ forge: 'gitlab', title: 'MR grp/front!8', project: 'grp/front', author: 'leo', ci: 'fail', files: 7 })
     expect(r.following[1]!.added).toBeUndefined()
     expect(r.mine[0]!.project).toBe('pau/web')
+    // Avisos' «Comentario nuevo»: the count the listing already carries, no extra request.
+    expect(r.mine.map((m) => m.notes)).toEqual([3, 5])
     expect(Date.parse(r.following[0]!.updatedAt)).toBeGreaterThan(0)
 
     // The queries the contract names.

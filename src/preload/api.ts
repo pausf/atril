@@ -221,6 +221,8 @@ export interface MrItem {
   updatedAt: string
   /** The head commit, when the listing knew it (M13). */
   head?: string
+  /** Comments as the listing counts them: GitHub's search `comments`, GitLab's `user_notes_count`. */
+  notes?: number
 }
 
 export type MrListName = 'mine' | 'review' | 'following'
@@ -318,6 +320,30 @@ export interface MrApi {
   threads(url: string): Promise<MrThreads>
   /** Posts one reply to a thread of that MR as the person (M21). */
   reply(url: string, threadId: string, body: string): Promise<MrReply>
+}
+
+export type AvisoKind = 'review' | 'comment' | 'ci' | 'following' | 'opened' | 'gone' | 'agent'
+
+/** One notice; `title` is the MR's title or the agent's branch, never translated. */
+export interface Aviso {
+  id: string
+  kind: AvisoKind
+  /** Epoch ms. */
+  at: number
+  read: boolean
+  title: string
+  url?: string
+  workspaceId?: string
+  forge?: ForgeId
+}
+
+export interface AvisosApi {
+  /** Newest first. */
+  list(): Promise<Aviso[]>
+  /** Returns the list after marking. */
+  markRead(ids: string[] | 'all'): Promise<Aviso[]>
+  /** Returns the unsubscribe function. */
+  onChange(cb: (items: Aviso[]) => void): () => void
 }
 
 export type ForgeStatus = { saved: false } | { saved: true; account?: string; site?: string }
@@ -466,6 +492,7 @@ export interface AtrilApi {
   flow: FlowApi
   forge: ForgeApi
   mr: MrApi
+  avisos: AvisosApi
   status: StatusApi
   nextup: NextUpApi
   activity: ActivityApi

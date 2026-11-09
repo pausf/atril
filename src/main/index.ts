@@ -1,6 +1,7 @@
 import { app, BrowserWindow, dialog, ipcMain, Notification, safeStorage, shell } from 'electron'
 import { MODELS, writeHooksFile } from './agent'
 import { createActivity } from './activity'
+import { createAvisos } from './avisos'
 import { agentState, createStatus, replyGone, replyPlaceholder, replyToAgent } from './status'
 import { getLang, setLang, t } from './lang'
 import { resolveLang } from '../preload/i18n'
@@ -20,7 +21,7 @@ import { jiraSettings } from './credentials/jira'
 import { searchBoards } from './credentials/boards'
 import type { JiraCreds } from './credentials/check'
 import { doctor } from './doctor'
-import type { CreateRepoRequest, Mode, MrItem, MrLists, MrScoreState, MrThreads, UiState } from '../preload/api'
+import type { Aviso, CreateRepoRequest, Mode, MrItem, MrLists, MrScoreState, MrThreads, UiState } from '../preload/api'
 import { readInbox } from './jira/inbox'
 import { inboxGroups } from './jira/board'
 import { proposeStart, start } from './jira/start'
@@ -52,6 +53,23 @@ function fakeMrs(): MrLists {
     more: { mine: [], review: [], following: [] },
     errors: []
   }
+}
+
+// ponytail: dev-only, ATRIL_SNAPSHOT_VIEW=avisos photographs a believable feed without any forge.
+function fakeAvisos(): Aviso[] {
+  const at = (m: number): number => Date.now() - m * 60_000
+  const [mine, other] = fakeMrs().mine
+  const [review, failing] = fakeMrs().review
+  const [followed] = fakeMrs().following
+  return [
+    { id: 'a1', kind: 'review', at: at(4), read: false, title: review!.title, url: review!.url, forge: review!.forge },
+    { id: 'a2', kind: 'agent', at: at(12), read: false, title: 'feat/festivos-provincia', workspaceId: 'none' }, // i18n-ignore
+    { id: 'a3', kind: 'comment', at: at(35), read: false, title: mine!.title, url: mine!.url, forge: mine!.forge },
+    { id: 'a4', kind: 'ci', at: at(90), read: true, title: failing!.title, url: failing!.url, forge: failing!.forge },
+    { id: 'a5', kind: 'following', at: at(180), read: true, title: followed!.title, url: followed!.url, forge: followed!.forge },
+    { id: 'a6', kind: 'opened', at: at(600), read: true, title: other!.title, url: other!.url, forge: other!.forge },
+    { id: 'a7', kind: 'gone', at: at(1500), read: true, title: 'Migrar el cron de stock a colas', url: 'https://github.com/acme/shop-web/pull/7', forge: 'github' } // i18n-ignore
+  ]
 }
 
 function fakeScores(): Record<string, MrScoreState> {
@@ -244,10 +262,18 @@ app.whenReady().then(async () => {
   })
   ipcMain.handle('atril:mr:list', async () => {
     // ponytail: dev-only, ATRIL_SNAPSHOT_VIEW=mr photographs believable lists without any forge.
-    const r = SNAPSHOT && process.env['ATRIL_SNAPSHOT_VIEW']?.startsWith('mr') ? fakeMrs() : await listMrs(secretStore, fetch, guards.scorable, guards.threadable)
+    const r = SNAPSHOT && /^(mr|avisos)/.test(process.env['ATRIL_SNAPSHOT_VIEW'] ?? '') ? fakeMrs() : await listMrs(secretStore, fetch, guards.scorable, guards.threadable)
     guards.listed([...r.mine, ...r.review, ...r.following].map((m) => m.url))
+    // Avisos come from comparing listings; a failure there must never break the listing itself.
+    if (!fakeFeed) void avisos.onListing(r).catch(() => undefined)
     return r
   })
+  const fakeFeed = SNAPSHOT && process.env['ATRIL_SNAPSHOT_VIEW'] === 'avisos'
+  const avisos = createAvisos((items) => BrowserWindow.getAllWindows().forEach((w) => w.webContents.send('atril:avisos:changed', items)))
+  ipcMain.handle('atril:avisos:list', () => (fakeFeed ? fakeAvisos() : avisos.list()))
+  ipcMain.handle('atril:avisos:markRead', (_e, ids: unknown) =>
+    avisos.markRead(ids === 'all' ? 'all' : Array.isArray(ids) ? ids.filter((i): i is string => typeof i === 'string') : [])
+  )
   ipcMain.handle('atril:mr:open', (_e, url: unknown) => {
     if (typeof url === 'string' && guards.openable(url)) return shell.openExternal(url)
   })
@@ -429,6 +455,7 @@ app.whenReady().then(async () => {
       void pushNext()
     },
     notify: (ws, body) => {
+      void avisos.onNeedsYou(ws).catch(() => undefined)
       const n = new Notification({ title: 'Atril', subtitle: ws.branch, body, hasReply: true, replyPlaceholder: replyPlaceholder() })
       // W38: only a click brings Atril forward; a reply types into the pane and leaves the window alone.
       // ponytail: macOS may follow a reply with a click; one within 1 s of a reply is ignored (N3).

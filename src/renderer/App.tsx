@@ -9,6 +9,7 @@ import { Workspace } from './components/Workspace'
 import { Ajustes } from './settings/Ajustes'
 import { Inbox, useInbox } from './inbox/Inbox'
 import { MrScreen } from './mr/MrScreen'
+import { Avisos, useAvisos, type AvisoTarget } from './avisos/Avisos'
 import { useMrs } from './mr/useMrs'
 import { StartDialog } from './inbox/StartDialog'
 import { OwnTaskDialog } from './inbox/OwnTaskDialog'
@@ -60,6 +61,8 @@ function Shell() {
   const inbox = useInbox()
   const next = useNextUp()
   const mrs = useMrs()
+  const avisos = useAvisos()
+  const [openUrl, setOpenUrl] = useState<string | null>(null)
   const [starting, setStarting] = useState<JiraIssue | null>(null)
   const [dialog, setDialog] = useState<'task' | 'work' | null>(null)
   const [startError, setStartError] = useState<string | null>(null)
@@ -67,7 +70,7 @@ function Shell() {
 
   useEffect(() => {
     void window.atril.snapshotView().then((v) => {
-      if (v === 'settings' || v === 'tasks' || v === 'work' || v === 'mr') setScreen(v)
+      if (v === 'settings' || v === 'tasks' || v === 'work' || v === 'mr' || v === 'avisos') setScreen(v)
       if (v === 'mr-score' || v === 'mr-thread') setScreen('mr')
       if (v === 'tasks-board') setScreen('tasks')
       if (v === 'settings-board' || v === 'create-repo') setScreen('settings')
@@ -111,6 +114,25 @@ function Shell() {
   const openWorkspace = (id: string): void => {
     setSelected(id)
     setScreen('work')
+  }
+
+  const go = (s: Screen): void => {
+    setOpenUrl(null)
+    setScreen(s)
+  }
+
+  // V6: only what the latest listing (or the workspace list) still holds can be opened.
+  const openAviso = (to: AvisoTarget): string | null => {
+    if (to.kind === 'workspace') {
+      if (!workspaces.some((w) => w.id === to.id)) return t('Ese trabajo ya no está')
+      openWorkspace(to.id)
+      return null
+    }
+    const r = mrs.result
+    if (!r || ![...r.mine, ...r.review, ...r.following].some((m) => m.url === to.url)) return t('Esta MR ya no está en la lista')
+    setOpenUrl(to.url)
+    setScreen('mr')
+    return null
   }
 
   const openNext = (item: NextItem | undefined): void => {
@@ -178,7 +200,7 @@ function Shell() {
       <NavigationContext.Provider value={{ openSettings: () => setScreen('settings') }}>
         <TopBar problems={problems} screen={screen} />
         <div className="shell">
-          <Rail screen={screen} onChange={setScreen} reviews={mrs.result?.review.length ?? 0} />
+          <Rail screen={screen} onChange={go} reviews={mrs.result?.review.length ?? 0} unread={avisos.unread} />
           {/* Hidden, not unmounted: the terminals must survive a visit to Ajustes. */}
           <div className="work" hidden={screen !== 'work'}>
             <NextUpStrip items={next} workspaces={workspaces} issues={inbox.issues} onOpen={openNext} />
@@ -197,7 +219,8 @@ function Shell() {
             </div>
           </div>
           {screen === 'tasks' && <Inbox inbox={inbox} onStart={(i, alt) => void beginStart(i, alt)} startError={startError} onOpenWorkspace={openWorkspace} onNewTask={() => setDialog('task')} />}
-          {screen === 'mr' && <MrScreen mrs={mrs} />}
+          {screen === 'mr' && <MrScreen mrs={mrs} openUrl={openUrl} />}
+          {screen === 'avisos' && <Avisos avisos={avisos} open={openAviso} />}
           {screen === 'settings' && (
             <Ajustes>
               <Appearance />

@@ -49,6 +49,8 @@ interface GhPull {
   additions?: number
   deletions?: number
   changed_files?: number
+  /** Search hits only. */
+  comments?: number
 }
 interface GlMr {
   web_url: string
@@ -60,6 +62,7 @@ interface GlMr {
   updated_at: string
   references?: { full?: string }
   changes_count?: string
+  user_notes_count?: number
   head_pipeline?: { status?: string } | null
 }
 
@@ -67,12 +70,12 @@ const hasNext = (res: Response): boolean => /rel="next"/.test(res.headers.get('l
 const list = <T>(body: unknown): T[] => (Array.isArray(body) ? (body as T[]) : [])
 
 function ghRow(p: GhPull, repo: string): Row {
-  return { forge: 'github', url: p.html_url, title: p.title, project: repo, author: p.user?.login ?? '', updatedAt: p.updated_at, ref: `/repos/${repo}/pulls/${p.number}` }
+  return { forge: 'github', url: p.html_url, title: p.title, project: repo, author: p.user?.login ?? '', updatedAt: p.updated_at, ref: `/repos/${repo}/pulls/${p.number}`, ...(typeof p.comments === 'number' && { notes: p.comments }) }
 }
 
 function glRow(m: GlMr): Row {
   const project = m.references?.full?.replace(/!\d+$/, '') ?? m.web_url.split('/-/')[0]!.replace(/^https:\/\/[^/]+\//, '')
-  return { forge: 'gitlab', url: m.web_url, title: m.title, project, author: m.author?.username ?? '', updatedAt: m.updated_at, ref: `/projects/${m.project_id}/merge_requests/${m.iid}`, ...(m.sha && { head: m.sha }) }
+  return { forge: 'gitlab', url: m.web_url, title: m.title, project, author: m.author?.username ?? '', updatedAt: m.updated_at, ref: `/projects/${m.project_id}/merge_requests/${m.iid}`, ...(m.sha && { head: m.sha }), ...(typeof m.user_notes_count === 'number' && { notes: m.user_notes_count }) }
 }
 
 async function github(get: Get, account: string): Promise<Record<MrListName, Page>> {

@@ -1,5 +1,5 @@
 import { vi } from 'vitest'
-import type { ActivityLine, AddRepoResult, FileChange, FlowDocs, ForgeId, ForgeStatus, Mode, MrLists, MrReply, MrScoreState, MrThreads, AgentState, AtrilApi, FlowStage, JiraIssue, MenuAction, NextItem, StartProposalResult, StartRequest, StartResult, RepoView, UiState, WorkspaceResult, WorkspaceView } from '../preload/api'
+import type { ActivityLine, AddRepoResult, Aviso, FileChange, FlowDocs, ForgeId, ForgeStatus, Mode, MrLists, MrReply, MrScoreState, MrThreads, AgentState, AtrilApi, FlowStage, JiraIssue, MenuAction, NextItem, StartProposalResult, StartRequest, StartResult, RepoView, UiState, WorkspaceResult, WorkspaceView } from '../preload/api'
 
 export const workspace = (id: string, branch: string, alive = true): WorkspaceView => ({
   id,
@@ -53,6 +53,8 @@ interface Options {
   scores?: Record<string, MrScoreState>
   /** What mr.threads answers per URL; missing means no threads. */
   threads?: Record<string, MrThreads>
+  /** The stored notices, newest first; markRead changes them in place. */
+  avisos?: Aviso[]
 }
 
 /** ui.json lives in `stored`; pass the same object to a second mock to simulate a restart. */
@@ -63,6 +65,8 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
   const activityListeners = new Set<(id: string, lines: ActivityLine[]) => void>()
   const flowListeners = new Set<(id: string, stage: FlowStage) => void>()
   const scoreListeners = new Set<(url: string, state: MrScoreState) => void>()
+  const avisoListeners = new Set<(items: Aviso[]) => void>()
+  let avisos = o.avisos ?? []
   // The mock is a Spanish Mac: Sistema resolves to Spanish, as main would there.
   const withLang = (): UiState => ({ ...stored, folded: { ...stored.folded }, lang: stored.language === 'en' ? 'en' : 'es' })
   const ui = {
@@ -125,6 +129,17 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
       threads: vi.fn(async (url: string): Promise<MrThreads> => o.threads?.[url] ?? { threads: [], more: false }),
       reply: vi.fn(async (_url: string, _id: string, body: string): Promise<MrReply> => ({ comment: { id: 'new', author: 'pau', at: new Date().toISOString(), body } }))
     },
+    avisos: {
+      list: vi.fn(async () => avisos),
+      markRead: vi.fn(async (ids: string[] | 'all') => {
+        avisos = avisos.map((n) => (ids === 'all' || ids.includes(n.id) ? { ...n, read: true } : n))
+        return avisos
+      }),
+      onChange: (cb: (items: Aviso[]) => void) => {
+        avisoListeners.add(cb)
+        return () => avisoListeners.delete(cb)
+      }
+    },
     settings: {
       jira: { status: async () => ({ saved: true, account: 'Pau Sánchez', site: 'https://x.atlassian.net' }) },
       forge: {
@@ -169,8 +184,12 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
     snapshotView: async () => null,
     snapshotWorkspace: async () => false
   } as unknown as AtrilApi
-  const { menu: menuApi, jira, workspaces: ws, repos: reposApi, flow: flowApi, forge: forgeApi, mr: mrApi } = window.atril
-  return { ui, stored, menuApi, jira, ws, reposApi, flowApi, forgeApi, mrApi, menu: (a: MenuAction) => menu?.(a), clickNotification: (id: string) => notified?.(id),
+  const { menu: menuApi, jira, workspaces: ws, repos: reposApi, flow: flowApi, forge: forgeApi, mr: mrApi, avisos: avisosApi } = window.atril
+  return { ui, stored, menuApi, jira, ws, reposApi, flowApi, forgeApi, mrApi, avisosApi,
+    pushAvisos: (items: Aviso[]) => {
+      avisos = items
+      avisoListeners.forEach((cb) => cb(items))
+    }, menu: (a: MenuAction) => menu?.(a), clickNotification: (id: string) => notified?.(id),
     pushActivity: (id: string, lines: ActivityLine[]) => activityListeners.forEach((cb) => cb(id, lines)),
     pushFlow: (id: string, stage: FlowStage) => flowListeners.forEach((cb) => cb(id, stage)),
     pushScore: (url: string, state: MrScoreState) => scoreListeners.forEach((cb) => cb(url, state))

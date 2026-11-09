@@ -171,5 +171,5 @@ None.
 
 ## Checklist
 
-- [ ] main: notes in the listing, notices from listings and needs-you, the store, IPC · Closes: V1, V2, V3, V4
-- [ ] the window: Avisos screen, rail counter, filters, mark read, opening a notice · waits on box 1 · Closes: V5, V6
+- [x] main: notes in the listing, notices from listings and needs-you, the store, IPC · Closes: V1, V2, V3, V4
+- [x] the window: Avisos screen, rail counter, filters, mark read, opening a notice · waits on box 1 · Closes: V5, V6

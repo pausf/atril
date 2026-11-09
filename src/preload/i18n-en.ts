@@ -380,5 +380,21 @@ export const EN: Record<string, string> = {
   "Enviar": "Send",
   "Escribe una respuesta": "Write a reply",
   "Ese hilo no es de esta MR": "That thread is not in this MR",
-  "Esta MR ya no está en la lista: actualiza": "This MR is no longer in the list: refresh"
+  "Esta MR ya no está en la lista: actualiza": "This MR is no longer in the list: refresh",
+  "Ese trabajo ya no está": "That workspace is gone",
+  "Esta MR ya no está en la lista": "This MR is no longer in the list",
+  "Avisos": "Notices",
+  "Avisos: {n} sin leer": "Notices: {n} unread",
+  "Te piden revisión": "Review requested",
+  "Comentario nuevo": "New comment",
+  "La CI falla": "CI is failing",
+  "MR nueva en lo que sigues": "New MR in what you follow",
+  "Has abierto una MR": "You opened an MR",
+  "Ya no está abierta": "No longer open",
+  "Agente": "Agent",
+  "Marcar todo leído": "Mark all read",
+  "Lo que ha cambiado en tus MR y en tus agentes desde la última vez.": "What changed in your MRs and your agents since last time.",
+  "Filtrar por tipo": "Filter by kind",
+  "Todos": "All",
+  "Ningún aviso.": "No notices."
 }
