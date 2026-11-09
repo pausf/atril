@@ -1,5 +1,5 @@
 import type { Agent, WorkspaceView } from '../../preload/api'
-import { Inbox } from '../inbox/Inbox'
+import { JiraSummary, type InboxState } from '../inbox/Inbox'
 import { Repos } from './Repos'
 import { WorkspaceList } from './WorkspaceList'
 
@@ -9,13 +9,15 @@ interface Props {
   onSelect: (id: string) => void
   onRemove: (id: string) => Promise<string | null>
   onCreate: (repoId: string, branch: string, agent: Agent) => Promise<string | null>
+  inbox: InboxState
+  onOpenTasks: () => void
 }
 
-export function Sidebar({ workspaces, selected, onSelect, onRemove, onCreate }: Props) {
+export function Sidebar({ workspaces, selected, onSelect, onRemove, onCreate, inbox, onOpenTasks }: Props) {
   return (
     <aside className="col left">
-      <Inbox />
-      <section className="sec">
+      <JiraSummary inbox={inbox} onOpen={onOpenTasks} />
+      <section>
         <h2>
           Trabajo en marcha <span className="n">{workspaces.length}</span>
         </h2>

@@ -8,6 +8,7 @@ import { Sidebar } from './components/Sidebar'
 import { TopBar } from './components/TopBar'
 import { Workspace } from './components/Workspace'
 import { Ajustes } from './settings/Ajustes'
+import { Inbox, useInbox } from './inbox/Inbox'
 import { NavigationContext } from './settings/navigation'
 
 export function App() {
@@ -25,6 +26,7 @@ export function App() {
   const [workspaces, setWorkspaces] = useState<WorkspaceView[]>([])
   const [selected, setSelected] = useState<string | null>(null)
   const [screen, setScreen] = useState<Screen>('work')
+  const inbox = useInbox()
 
   useEffect(() => {
     void window.atril.snapshotView().then((v) => {
@@ -70,10 +72,19 @@ export function App() {
           <Rail screen={screen} onChange={setScreen} />
           {/* Hidden, not unmounted: the terminals must survive a visit to Ajustes. */}
           <div className="body" hidden={screen !== 'work'}>
-            <Sidebar workspaces={workspaces} selected={selected} onSelect={setSelected} onRemove={remove} onCreate={create} />
+            <Sidebar
+              workspaces={workspaces}
+              selected={selected}
+              onSelect={setSelected}
+              onRemove={remove}
+              onCreate={create}
+              inbox={inbox}
+              onOpenTasks={() => setScreen('tasks')}
+            />
             <Workspace ws={workspaces.find((w) => w.id === selected)} />
             <FlowPanel />
           </div>
+          {screen === 'tasks' && <Inbox inbox={inbox} />}
           {screen === 'settings' && <Ajustes />}
         </div>
       </NavigationContext.Provider>

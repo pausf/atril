@@ -1,7 +1,8 @@
-export type Screen = 'work' | 'settings'
+export type Screen = 'work' | 'tasks' | 'settings'
 
 const ITEMS: { id: Screen; icon: string; label: string }[] = [
   { id: 'work', icon: '⌂', label: 'Trabajo' },
+  { id: 'tasks', icon: '☑', label: 'Tareas' },
   { id: 'settings', icon: '⚙', label: 'Ajustes' }
 ]
 

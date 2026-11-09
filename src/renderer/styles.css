@@ -675,3 +675,11 @@ input:focus-visible {
 .tgroup>summary::-webkit-details-marker{display:none}
 .tgroup>summary::after{content:"⌄";margin-left:auto;transition:transform .15s}
 .tgroup:not([open])>summary::after{transform:rotate(-90deg)}
+
+.jira-summary{display:flex;justify-content:space-between;align-items:center;width:100%;margin:0 0 18px;padding:10px 14px;border:1px solid var(--line);border-radius:12px;background:#fff;font:inherit;font-size:13px;font-weight:600;color:var(--text);cursor:pointer;text-align:left}
+.jira-summary:hover{box-shadow:0 6px 18px rgba(0,0,0,.06)}
+.jira-summary:focus-visible{outline:2px solid var(--run);outline-offset:2px}
+.tasks-screen{flex:1;overflow:auto;padding:28px 36px;max-width:980px}
+.tasks-screen>h1{margin:0 0 4px;font-size:24px;letter-spacing:-.02em;display:flex;align-items:center;gap:10px}
+.tasks-screen .tgroup>summary{font-size:13px}
+.tasks-screen .task{max-width:none}

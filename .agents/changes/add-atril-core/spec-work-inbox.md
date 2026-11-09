@@ -7,7 +7,9 @@ Vocabulary, decision log and the primary contract: `proposal.md` beside this fil
 
 ## Outcomes
 
-- The sidebar's "Mis Jira" lists every **task**: assigned to the person and not Done, in any
+- The tasks live in their own **Tareas** screen on the rail; the Trabajo sidebar keeps the
+  running work on top, always visible, under a one-line clickable summary — "Jira: N en curso
+  · M por empezar →" — that opens Tareas. The Tareas screen lists every **task**: assigned to the person and not Done, in any
   project — key, summary, type, status — grouped: **Por empezar** (status category "new":
   Backlog, To Do), **En curso** (In Progress), and **En revisión y despliegue** (the rest of
   "in progress": Code Review, Testing, Ready to Deploy), the last group folded by default. It refreshes on launch, every 5 minutes, and on
@@ -44,6 +46,8 @@ command; the Jira token never passes through Atril.
 
 ## Prior decisions
 
+- **Tareas is its own screen** — Pau, 9 nov: the full list in the sidebar «se ha creado un
+  scroll … los que están corriendo … no se ve», then chose «Jira en su propia pantalla».
 - **All open tasks, by status, not only the sprint** — Pau, 9 nov: «Todas, por estado».
 - **Read the tasks of the person using the app** — Pau, 9 nov: «tambien que lea lo jira
   asignado a la persona que va».
@@ -108,3 +112,6 @@ command; the Jira token never passes through Atril.
   empezar; `indeterminate` whose status name says in progress → En curso; any other
   `indeterminate` → En revisión y despliegue, folded by default.
   Proof: src/main/jira/inbox.test.ts  groups tasks by status
+- **I12** While the Trabajo screen is shown, the sidebar shall show the running work first and
+  the Jira tasks only as a one-line summary of counts that opens the Tareas screen.
+  Proof: src/renderer/inbox/inbox.test.ts  sidebar shows a jira summary that opens tareas

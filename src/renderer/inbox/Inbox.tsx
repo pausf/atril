@@ -4,13 +4,20 @@ import { ConnectInSettings } from '../settings/ConnectInSettings'
 
 const REFRESH_MS = 5 * 60_000
 
-export function Inbox() {
+export interface InboxState {
+  result: InboxResult | null
+  issues: JiraIssue[]
+  loading: boolean
+  refresh: () => Promise<void>
+}
+
+// One reader for the whole app: the sidebar summary and the Tareas screen share it.
+export function useInbox(): InboxState {
   const [result, setResult] = useState<InboxResult | null>(null)
   const [loading, setLoading] = useState(false)
   const inFlight = useRef(false)
 
   const refresh = useCallback(async () => {
-    // One scan hits every Jira project; never overlap two.
     if (inFlight.current) return
     inFlight.current = true
     setLoading(true)
@@ -30,19 +37,36 @@ export function Inbox() {
     return () => clearInterval(t)
   }, [refresh])
 
-  const issues = result && 'issues' in result ? result.issues : []
+  return { result, issues: result && 'issues' in result ? result.issues : [], loading, refresh }
+}
 
+export function Inbox({ inbox }: { inbox: InboxState }) {
+  const { result, issues, loading, refresh } = inbox
   return (
-    <section>
-      <h2>
-        Mis Jira <span className="n">{issues.length}</span>
+    <section className="tasks-screen">
+      <h1>
+        Tareas <span className="n">{issues.length}</span>
         <button className="refresh" onClick={() => void refresh()} disabled={loading}>
           {loading ? 'Actualizando…' : 'Actualizar'}
         </button>
-      </h2>
-      <p className="lead">Tus tareas abiertas en todos los proyectos.</p>
+      </h1>
+      <p className="lead">Tus tareas abiertas de Jira en todos los proyectos.</p>
       <Body result={result} issues={issues} />
     </section>
+  )
+}
+
+export function JiraSummary({ inbox, onOpen }: { inbox: InboxState; onOpen: () => void }) {
+  const count = (g: JiraIssue['group']): number => inbox.issues.filter((i) => i.group === g).length
+  const label = !inbox.result
+    ? 'Jira: cargando…'
+    : 'error' in inbox.result
+      ? 'Jira: sin conectar'
+      : `Jira: ${count('doing')} en curso · ${count('todo')} por empezar`
+  return (
+    <button className="jira-summary" onClick={onOpen}>
+      {label} <span aria-hidden>→</span>
+    </button>
   )
 }
 
