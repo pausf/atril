@@ -1,6 +1,6 @@
 # Workspaces
 
-Governs: src/main/** src/preload/** src/renderer/** resources/** !src/main/jira/** !src/renderer/inbox/** !src/main/flow/** !src/renderer/flow/** !src/main/credentials/** !src/renderer/settings/** !src/main/forge/mrs.ts !src/renderer/mr/**
+Governs: src/main/** src/preload/** src/renderer/** resources/** !src/main/jira/** !src/renderer/inbox/** !src/main/flow/** !src/renderer/flow/** !src/main/credentials/** !src/renderer/settings/** !src/main/forge/mrs.ts !src/renderer/mr/** !src/main/forge/scores.ts
 
 ## Vocabulary
 
@@ -114,6 +114,10 @@ The `workspaces` capability, phase 1. Its siblings in this change: `.agents/spec
 
 - Main also opens the MR links of the latest listing.
 
+### MR scores (add-mr-scores, 9 nov 2026)
+
+- A command can be given text on stdin and a time limit after which it is killed.
+
 ## Scope boundaries
 
 **In:** the three columns and footer of `bocetos/fase1-nucleo.html` (boceto 8), the
@@ -196,6 +200,10 @@ the dialog (proposal.md).
 
 **In:** the guard. **Out:** everything else.
 
+### MR scores (add-mr-scores, 9 nov 2026)
+
+**In:** `input` and `timeoutMs` on the runner. **Out:** anything else.
+
 ## Constraints
 
 - Electron (current stable) + TypeScript in strict mode, pnpm, Node 24 (installed:
@@ -259,6 +267,10 @@ the dialog (proposal.md).
 ### MR lists (add-mr-lists, 9 nov 2026)
 
 - Same guard module as W52.
+
+### MR scores (add-mr-scores, 9 nov 2026)
+
+- Still an argument array, never a shell.
 
 ## Prior decisions
 
@@ -454,6 +466,10 @@ the dialog (proposal.md).
 ### MR lists (add-mr-lists, 9 nov 2026)
 
 - **Listed links count** (assumed, proposal.md decision log).
+
+### MR scores (add-mr-scores, 9 nov 2026)
+
+- **Scores need it** (proposal.md): the diff goes on stdin; a hung `claude` must not block the queue.
 
 ## Task breakdown
 
@@ -735,3 +751,9 @@ the dialog (proposal.md).
   in its latest MR listing — a link from an earlier listing no longer counts — and clone only into
   the folder its own picker returned last; anything else from the window shall be ignored.
   Proof: src/main/forge/guards.test.ts only links and folders main handed out are accepted
+
+### MR scores (add-mr-scores, 9 nov 2026)
+
+- **W53** When the runner is given `input`, it shall write it to the child's stdin and close it; when
+  given `timeoutMs`, it shall kill the child after that time and resolve with code 124.
+  Proof: src/main/run.test.ts input reaches stdin and a timeout kills

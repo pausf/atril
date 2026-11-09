@@ -5,10 +5,10 @@
 | Capability | Governs | What it promises |
 |---|---|---|
 | [flow-status](flow-status/spec.md) | `src/main/flow/** src/renderer/flow/**` |  |
-| [mr](mr/spec.md) | `src/main/forge/mrs.ts src/renderer/mr/**` | The MR screen: your merge requests on GitHub and GitLab, the ones you review, and the ones in the projects you follow. |
+| [mr](mr/spec.md) | `src/main/forge/mrs.ts src/main/forge/scores.ts src/renderer/mr/**` | The MR screen: your merge requests on GitHub and GitLab, the ones you review, and the ones in the projects you follow. |
 | [settings](settings/spec.md) | `src/main/credentials/** src/renderer/settings/**` |  |
 | [work-inbox](work-inbox/spec.md) | `src/main/jira/** src/renderer/inbox/**` |  |
-| [workspaces](workspaces/spec.md) | `src/main/** src/preload/** src/renderer/** resources/** !src/main/jira/** !src/renderer/inbox/** !src/main/flow/** !src/renderer/flow/** !src/main/credentials/** !src/renderer/settings/** !src/main/forge/mrs.ts !src/renderer/mr/**` |  |
+| [workspaces](workspaces/spec.md) | `src/main/** src/preload/** src/renderer/** resources/** !src/main/jira/** !src/renderer/inbox/** !src/main/flow/** !src/renderer/flow/** !src/main/credentials/** !src/renderer/settings/** !src/main/forge/mrs.ts !src/renderer/mr/** !src/main/forge/scores.ts` |  |
 
 ## flow-status
 
@@ -46,7 +46,7 @@ Governs: `src/main/flow/** src/renderer/flow/**`
 
 The MR screen: your merge requests on GitHub and GitLab, the ones you review, and the ones in the projects you follow. Phase 2 of Atril; scores, threads and notifications build on it.
 
-Governs: `src/main/forge/mrs.ts src/renderer/mr/**`
+Governs: `src/main/forge/mrs.ts src/main/forge/scores.ts src/renderer/mr/**`
 
 - {**M1** When the lists load, Atril shall put in **Mías** the open MRs you authored, in **Me toca revisar** the open MRs where your review is requested, and in **Sigo** other people's open MRs in your followed projects. src/main/forge/mrs.test.ts lists}
 - {**M2** An MR that belongs to an earlier list shall not repeat in a later one (order: Mías, Me toca revisar, Sigo). src/main/forge/mrs.test.ts an}
@@ -57,6 +57,14 @@ Governs: `src/main/forge/mrs.ts src/renderer/mr/**`
 - {**M7** While no forge is connected the screen shall say «Conecta GitHub o GitLab en Ajustes» with a button that opens Ajustes. src/renderer/mr/mrs.test.ts no}
 - {**M8** Atril shall follow per forge the 10 followed projects with the most recent activity, cut each list at 50 rows with «Hay más: ábrelas en {forge}» when more existed, and fetch at most 60 MR details per forge and refresh. src/main/forge/mrs.test.ts caps}
 - {**M9** Atril shall load the lists when it starts, every 5 minutes, when the MR screen opens and on «Actualizar», and the rail shall show the «MR» entry with the number of MRs in «Me toca revisar» from the latest load whenever it is not zero. src/renderer/mr/mrs.test.ts the}
+- {**M10** Atril shall measure from the diff alone the added and removed lines (header lines excluded), the files, whether a test file changed — a path segment `test`, `tests`, `spec`, `specs` or `__tests__`, or a name `*.test.*`, `*.spec.*` or `*_test.*` ignoring case, or `*Test.{php,java,kt,cs}` with a capital T, so `latest.ts` and `latest.php` are not one — and a size of S below 100 changed lines, M below 400, L below 1000 and XL from 1000. src/main/forge/scores.test.ts metrics}
+- {**M11** When an MR is scored, Atril shall run `claude` with exactly `-p --model sonnet --output-format json --tools "" --no-session-persistence --json-schema <schema>` and an instruction that names the person's language, send the diff on stdin — cut at 120 KB (UTF-8 bytes) at the last file boundary before it, with a line telling Claude it was cut — and take difficulty, risk, what, why and where from `structured_output`. src/main/forge/scores.test.ts scoring}
+- {**M16** If the diff cannot be fetched, then Atril shall show «No se ha podido traer el diff: {detail}» with M6's texts as the detail (and «es demasiado grande para {forge}» on GitHub's 406); if Claude exits non-zero, runs past 180 s (then it is killed) or answers outside the schema, Atril shall show «Claude no ha podido puntuar esta MR ({detail})» with the exit code, «tiempo agotado» or «respuesta fuera del esquema» — never its output — and in both cases store nothing. src/main/forge/scores.test.ts failures}
+- {**M12** Only rows in Mías and Me toca revisar shall offer Puntuar. src/renderer/mr/scores.test.ts only}
+- {**M17** Main shall score only an URL that is in Mías or Me toca revisar of its latest listing, checked when asked; anything else shall be refused without fetching or running anything. src/main/forge/scores.test.ts only}
+- {**M13** A score shall be stored with the head commit of the diff it scored; asking again for that commit shall not run Claude, and a row whose listed head commit is known and differs shall show the stored score as «De un commit anterior» with Puntuar de nuevo. src/main/forge/scores.test.ts a}
+- {**M14** Atril shall run at most one score at a time, the rest in the order asked; asking again for an URL already queued or running shall return that same run. src/main/forge/scores.test.ts scores}
+- {**M15** The score view shall show the measured values first, then Claude's, and when the diff was cut say «Claude vio {seen} de {total} KB»; each row's state shall read «En cola», «Puntuando…», its chips, or an error. src/renderer/mr/scores.test.ts the}
 
 [full spec](mr/spec.md)
 
@@ -127,7 +135,7 @@ Governs: `src/main/jira/** src/renderer/inbox/**`
 
 ## workspaces
 
-Governs: `src/main/** src/preload/** src/renderer/** resources/** !src/main/jira/** !src/renderer/inbox/** !src/main/flow/** !src/renderer/flow/** !src/main/credentials/** !src/renderer/settings/** !src/main/forge/mrs.ts !src/renderer/mr/**`
+Governs: `src/main/** src/preload/** src/renderer/** resources/** !src/main/jira/** !src/renderer/inbox/** !src/main/flow/** !src/renderer/flow/** !src/main/credentials/** !src/renderer/settings/** !src/main/forge/mrs.ts !src/renderer/mr/** !src/main/forge/scores.ts`
 
 - {**W1** When a repo is registered and none of the three signals is found, Atril shall set its mode to `worktree`. src/main/repos.test.ts chooses}
 - {**W2** If the checkout holds a git-ignored file outside dependency, build and editor noise (`node_modules`, `vendor`, `dist`, `build`, `.cache`, `.next`, `coverage`, `tmp`, `.idea`, `.vscode`, `.DS_Store`, `*.log`), then Atril shall set the mode to `in-place` and name that file as the reason. Only files count — entries of `git ls-files --others --ignored --exclude-standard --directory` that do not end in `/`; ignored folders (build output, tool caches) are never a signal. Noise names match at any depth. src/main/repos.test.ts chooses}
@@ -191,5 +199,6 @@ Governs: `src/main/** src/preload/** src/renderer/** resources/** !src/main/jira
 - {**W50** When a repo is created, Atril shall send the forge's create request for the person's account with the name, description, visibility (private unless public was confirmed) and a README, and answer with the web link and the forge's own path for the repo; a refusal shall answer «{forge} no ha creado el repo: {detail}». A public request without `confirmPublic` shall be refused in main with «Un repo público necesita tu confirmación.» and send nothing, and no request to a forge shall follow a redirect. src/main/forge/create.test.ts creates}
 - {**W51** When cloning is asked, Atril shall refuse before cloning if `<folder>/<path>` exists; otherwise clone the SSH URL there and register it (with the suggested id when the derived one is taken); if the clone fails it shall register nothing and answer with the `git clone` command to run by hand; no command Atril runs, nor its environment, shall contain the token or any variable from the person's shell beyond PATH, HOME, USER, LANG, SSH_AUTH_SOCK and TMPDIR. (One proof per path: success, failed clone, existing folder; the token check runs on all.) src/main/forge/create.test.ts clones}
 - {**W52** Main shall open in the browser only a link it returned from a create or that is in its latest MR listing — a link from an earlier listing no longer counts — and clone only into the folder its own picker returned last; anything else from the window shall be ignored. src/main/forge/guards.test.ts only}
+- {**W53** When the runner is given `input`, it shall write it to the child's stdin and close it; when given `timeoutMs`, it shall kill the child after that time and resolve with code 124. src/main/run.test.ts input}
 
 [full spec](workspaces/spec.md)
