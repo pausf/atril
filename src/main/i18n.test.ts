@@ -1,3 +1,5 @@
+import { mkdirSync, writeFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { resolveLang, translate } from '../preload/i18n'
 import { cleanTmp, tmp } from './test-helpers'
@@ -42,5 +44,19 @@ describe('main language', () => {
     setLang('es')
     expect(labels()).toEqual(expect.arrayContaining(['Edición', 'Trabajo', 'Dividir a la derecha']))
     expect(replyGone()).toBe('No se pudo enviar: ese trabajo ya no está')
+  })
+
+  it('the notification body speaks the language', async () => {
+    const home = tmp()
+    process.env['ATRIL_HOME'] = home
+    mkdirSync(join(home, 'state'), { recursive: true })
+    writeFileSync(join(home, 'state', 'atril-n1.json'), JSON.stringify({ state: 'needs-you', at: 1, text: 'Te pregunta: ¿Seguimos?' }))
+    const { setLang } = await import('./lang')
+    const { notificationBody } = await import('./status')
+    const ws = { session: 'atril-n1', branch: 'WEB-1' } as Parameters<typeof notificationBody>[0]
+    setLang('en')
+    expect(await notificationBody(ws)).toBe('Asks you: ¿Seguimos?')
+    setLang('es')
+    expect(await notificationBody(ws)).toBe('Te pregunta: ¿Seguimos?')
   })
 })

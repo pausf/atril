@@ -106,4 +106,4 @@ None.
 
 ## Checklist
 
-- [ ] localiseActivity in the feed, the rows and the notification body · Closes: S17, S27, S28
+- [x] localiseActivity in the feed, the rows and the notification body · Closes: S17, S27, S28

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import type { ActivityKind, ActivityLine } from '../../preload/api'
 import { Icon, type IconName } from '../components/Icon'
 import { useT, type T } from '../ui'
+import { localiseActivity } from '../../preload/activity-i18n'
 
 export const ACTIVITY_ICON: Record<ActivityKind, IconName> = {
   prompt: 'a-prompt',
@@ -52,7 +53,7 @@ export function ActivityFeed({ workspaceId }: { workspaceId: string | null }) {
       {lines.map((l, i) => (
         <li className={`act ${l.kind}`} key={`${l.at}-${i}`}>
           <Icon name={ACTIVITY_ICON[l.kind]} size={16} />
-          <span className="act-text">{l.text}</span>
+          <span className="act-text">{localiseActivity(l.text, t)}</span>
           <time className="act-at" dateTime={new Date(l.at * 1000).toISOString()}>
             {ago(t, l.at, now)}
           </time>

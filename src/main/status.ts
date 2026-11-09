@@ -8,6 +8,7 @@ import { sendText, tmuxArgs } from './tmux'
 import type { AgentSnapshot } from './nextup'
 import { listWorkspaces } from './workspaces'
 import { t } from './lang'
+import { localiseActivity } from '../preload/activity-i18n'
 
 export const stateDir = (): string => join(atrilHome(), 'state')
 
@@ -32,7 +33,7 @@ async function hookState(session: string): Promise<AgentState> {
 /** The agent's own words written with the state change (A4), else today's body. */
 export async function notificationBody(ws: WorkspaceView): Promise<string> {
   const { text } = await hookFile(ws.session)
-  return typeof text === 'string' && text ? text : t('{branch} te necesita', { branch: ws.branch })
+  return typeof text === 'string' && text ? localiseActivity(text, t) : t('{branch} te necesita', { branch: ws.branch })
 }
 
 // Only the agent's own pane counts (W16); a failing display means the pane or the server is gone.

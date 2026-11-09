@@ -1,6 +1,8 @@
 import { readFileSync } from 'node:fs'
 import { globSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
+import { localiseActivity } from './activity-i18n'
+import { translate } from './i18n'
 import { EN } from './i18n-en'
 
 // Atril's own source: tests, the catalog and the test mock are not shown to anyone.
@@ -37,5 +39,28 @@ describe('i18n catalog', () => {
       })
     }
     expect(offenders).toEqual([])
+  })
+
+  it('hook prefixes follow the language', () => {
+    const en = (es: string, vars?: Record<string, string | number>): string => translate('en', es, vars)
+    const cases: [string, string][] = [
+      ['Claude te necesita', 'Claude needs you'],
+      ['Claude ha terminado', 'Claude has finished'],
+      ['Leyendo src/Ño.php', 'Reading src/Ño.php'],
+      ['Editando a.ts', 'Editing a.ts'],
+      ['Escribiendo b.ts', 'Writing b.ts'],
+      ['Ejecutando vendor/bin/phpunit --filter Días', 'Running vendor/bin/phpunit --filter Días'],
+      ['Buscando festivos', 'Searching festivos'],
+      ['Lanzando un subagente: T7 festivos', 'Launching a subagent: T7 festivos'],
+      ['Te pregunta: ¿Seguimos con la casilla 1?', 'Asks you: ¿Seguimos con la casilla 1?'],
+      ['Claude dice: Listo, todo en verde.', 'Claude says: Listo, todo en verde.'],
+      ['Le has escrito: sigue', 'You wrote: sigue'],
+      ['✗ phpunit --filter X falló', '✗ phpunit --filter X failed'],
+      ['✗ algo sin el final', '✗ algo sin el final'],
+      ['Una línea cualquiera', 'Una línea cualquiera']
+    ]
+    for (const [es, out] of cases) expect(localiseActivity(es, en)).toBe(out)
+    // In Spanish nothing changes.
+    for (const [es] of cases) expect(localiseActivity(es, (k, v) => translate('es', k, v))).toBe(es)
   })
 })

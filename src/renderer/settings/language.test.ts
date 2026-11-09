@@ -65,7 +65,8 @@ describe('language', () => {
       issues: [issue('PF-10', 'todo')]
     })
     render(createElement(App))
-    expect(await screen.findByText('Editando ListOrders.php')).toBeTruthy()
+    // Atril's prefix in English, the file name exactly as written (S17, S28).
+    expect((await screen.findAllByText('Editing ListOrders.php')).length).toBeGreaterThan(0)
     await userEvent.setup().click(rail(/^Tasks/))
     expect(await screen.findByText(issue('PF-10', 'todo').summary)).toBeTruthy()
   })

@@ -2,6 +2,7 @@ import { useT } from '../ui'
 import { Icon } from './Icon'
 import { useEffect, useState } from 'react'
 import type { ActivityLine, AgentState, WorkspaceView } from '../../preload/api'
+import { localiseActivity } from '../../preload/activity-i18n'
 
 interface Props {
   workspaces: WorkspaceView[]
@@ -57,8 +58,8 @@ export function WorkspaceList({ workspaces, selected, onSelect, onRemove }: Prop
               )
             })()}
             {latest[w.id] && (
-              <span className="ws-act" title={latest[w.id]?.text}>
-                {latest[w.id]?.text}
+              <span className="ws-act" title={latest[w.id] && localiseActivity(latest[w.id]!.text, t)}>
+                {latest[w.id] && localiseActivity(latest[w.id]!.text, t)}
               </span>
             )}
           </button>
