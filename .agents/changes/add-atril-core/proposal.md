@@ -313,6 +313,9 @@ it; keyboard reachability and text labels for every state.
   Proof: src/renderer/tutorial.test.ts  tutorial runs once and reopens from help
 - **W25** While the tutorial runs, it shall be operable by keyboard alone (next, back, skip).
   Proof: src/renderer/tutorial.test.ts  tutorial works with the keyboard alone
+- **W28** When the person clicks a sidebar section's title, Atril shall fold or unfold that
+  section, keep its count visible, and remember the state across restarts.
+  Proof: src/renderer/sidebar.test.ts  section title folds the section and keeps its count
 - **W26** When a Claude hook reports `Stop` for a session, Atril shall set its agent state to
   `needs-you`; when it reports `UserPromptSubmit`, to `working`.
   Proof: src/main/status.test.ts  stop marks needs-you and prompt submit marks working
@@ -472,4 +475,4 @@ or in tmux itself, never in the window.
 - [ ] the right panel shows the Libretto stage and checklist of the selected workspace and follows file changes · waits on box 3 · Closes: F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12
 - [ ] "Mis Jira" lists the person's open sprint tasks via the jira CLI, and explains an unconfigured CLI · waits on box 1 · Closes: I1, I2, I3
 - [ ] Start: repo memory, branch slug, validated key, claude running /libretto-flow <KEY> in a new workspace, In Progress transition whose failure keeps the workspace, and the task showing its workspace afterwards · waits on boxes 3, 6, 9 · Closes: I4, I5, I6, I7, I8, I9, I10
-- [ ] keyboard reachability and text labels everywhere, and the first-launch tutorial over every element, skippable, reopenable from Help, keyboard-only · waits on boxes 3, 7, 8, 9 · Closes: W22, W23, W24, W25
+- [ ] keyboard reachability and text labels everywhere, foldable sidebar sections, and the first-launch tutorial over every element, skippable, reopenable from Help, keyboard-only · waits on boxes 3, 7, 8, 9 · Closes: W22, W23, W24, W25, W28
