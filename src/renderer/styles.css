@@ -1,5 +1,26 @@
 /* Every colour lives here; theme.test.ts reads these two blocks and checks the text pairs. */
 :root {
+  /* the document editor is dark in both themes */
+  --ed-1: #16161a;
+  --ed-2: #e5e5ea;
+  --ed-3: #26262b;
+  --ed-4: #fff;
+  --ed-5: #8e8e93;
+  --ed-6: #2c2c31;
+  --ed-7: #3a3a3f;
+  --ed-8: #a1a1a6;
+  --ed-9: #55555c;
+  --ed-10: #3a2a10;
+  --ed-11: #ffd60a;
+  --ed-12: #c7c7cc;
+  --ed-13: #d1d1d6;
+  --ed-14: #64d2ff;
+  --ed-15: #bf5af2;
+  --ed-16: #30d158;
+  --ed-17: #ff9f0a;
+  --ed-18: #232328;
+  --ed-19: #0a84ff;
+  --ed-20: #3a3a3c;
   color-scheme: light;
   --bg: #e9e9ee;
   --win: #fbfbfd;
@@ -42,6 +63,27 @@
   --shadow-lg: rgba(0, 0, 0, 0.3);
 }
 [data-theme='dark'] {
+  /* the document editor is dark in both themes */
+  --ed-1: #16161a;
+  --ed-2: #e5e5ea;
+  --ed-3: #26262b;
+  --ed-4: #fff;
+  --ed-5: #8e8e93;
+  --ed-6: #2c2c31;
+  --ed-7: #3a3a3f;
+  --ed-8: #a1a1a6;
+  --ed-9: #55555c;
+  --ed-10: #3a2a10;
+  --ed-11: #ffd60a;
+  --ed-12: #c7c7cc;
+  --ed-13: #d1d1d6;
+  --ed-14: #64d2ff;
+  --ed-15: #bf5af2;
+  --ed-16: #30d158;
+  --ed-17: #ff9f0a;
+  --ed-18: #232328;
+  --ed-19: #0a84ff;
+  --ed-20: #3a3a3c;
   color-scheme: dark;
   --bg: #0f0f11;
   --win: #1c1c1e;
@@ -1353,4 +1395,249 @@ kbd {
 }
 .nextup .hint-key {
   margin-left: auto;
+}
+
+/* Flow documents: Spec / Plan / Checklist open in a large editor modal (F13–F17). */
+button.stg.stgbtn {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  border-radius: 10px;
+}
+button.stg.stgbtn:hover,
+button.stg.stgbtn:focus-visible {
+  background: var(--chip);
+  outline: none;
+}
+.dlg.edmodal {
+  width: min(1320px, 94vw);
+  max-width: none;
+  height: 88vh;
+  max-height: none;
+  padding: 0;
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  background: var(--ed-1);
+  color: var(--ed-2);
+  overflow: hidden;
+}
+.edhead {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--ed-3);
+}
+.edhead h3 {
+  margin: 0;
+  font-size: 18px;
+  color: var(--ed-4);
+}
+.edhead .docchange {
+  color: var(--ed-5);
+  font-size: 13px;
+}
+.edhead .sp,
+.edstatus .sp {
+  flex: 1;
+}
+.edhead .btn {
+  background: var(--ed-6);
+  color: var(--ed-2);
+  border-color: var(--ed-7);
+}
+.ftabs {
+  display: flex;
+  gap: 4px;
+  margin-left: 8px;
+}
+.ftabs button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--ed-7);
+  background: transparent;
+  color: var(--ed-8);
+  border-radius: 8px;
+  padding: 5px 12px;
+  font: 13px ui-monospace, Menlo, monospace;
+  cursor: pointer;
+}
+.ftabs button[aria-selected='true'] {
+  background: var(--ed-6);
+  color: var(--ed-4);
+  border-color: var(--ed-9);
+}
+.ftabs .dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--ed-4);
+  display: inline-block;
+}
+.edbanner {
+  background: var(--ed-10);
+  color: var(--ed-11);
+  font-size: 13px;
+  padding: 8px 18px;
+}
+.doc-editor {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 230px 1fr;
+  min-height: 0;
+}
+.doc-editor .outline {
+  border-right: 1px solid var(--ed-3);
+  padding: 14px 10px;
+  overflow: auto;
+  font-size: 14px;
+}
+.doc-editor .olh {
+  display: block;
+  color: var(--ed-5);
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin: 4px 8px 8px;
+}
+.doc-editor .outline button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: 0;
+  background: transparent;
+  color: var(--ed-12);
+  padding: 4px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  font: inherit;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.doc-editor .outline button.l3 {
+  padding-left: 20px;
+  color: var(--ed-5);
+}
+.doc-editor .outline button:hover {
+  background: var(--ed-3);
+  color: var(--ed-4);
+}
+.edwrap {
+  display: flex;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+}
+.edwrap .gutter {
+  padding: 16px 12px 16px 0;
+  width: 52px;
+  flex: none;
+  text-align: right;
+  color: var(--ed-9);
+  font: 15px/1.7 ui-monospace, Menlo, monospace;
+  overflow: hidden;
+  user-select: none;
+  white-space: pre;
+}
+.edwrap .ed {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+.edwrap .hl,
+.edwrap .src {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  padding: 16px 20px;
+  font: 15px/1.7 ui-monospace, Menlo, monospace;
+  white-space: pre;
+  tab-size: 2;
+  overflow: auto;
+  border: 0;
+}
+.edwrap .hl {
+  color: var(--ed-13);
+  pointer-events: none;
+}
+.edwrap .src {
+  background: transparent;
+  color: transparent;
+  caret-color: var(--ed-4);
+  resize: none;
+  outline: none;
+}
+.edwrap .src[readonly] {
+  caret-color: transparent;
+}
+.hl .h1 {
+  color: var(--ed-4);
+  font-weight: 700;
+}
+.hl .h2 {
+  color: var(--ed-14);
+  font-weight: 700;
+}
+.hl .h3 {
+  color: var(--ed-15);
+  font-weight: 600;
+}
+.hl .bx {
+  color: var(--ed-16);
+}
+.hl .bo {
+  color: var(--ed-5);
+}
+.hl .li {
+  color: var(--ed-17);
+}
+.hl .b {
+  color: var(--ed-4);
+  font-weight: 700;
+}
+.hl .ic {
+  color: var(--ed-11);
+}
+.hl .cd,
+.hl .pf {
+  color: var(--ed-8);
+}
+.edstatus {
+  display: flex;
+  gap: 14px;
+  white-space: nowrap;
+  align-items: center;
+  height: 32px;
+  padding: 0 14px;
+  font: 12.5px ui-monospace, Menlo, monospace;
+  background: var(--ed-18);
+  color: var(--ed-8);
+  border-top: 1px solid var(--ed-3);
+}
+.edstatus .ro {
+  color: var(--ed-17);
+}
+.edstatus .rw {
+  color: var(--ed-16);
+}
+.edstatus button {
+  border: 0;
+  background: var(--ed-19);
+  color: var(--ed-4);
+  border-radius: 5px;
+  padding: 2px 10px;
+  font: inherit;
+  cursor: pointer;
+}
+.edstatus button:disabled {
+  background: var(--ed-20);
+  color: var(--ed-5);
+  cursor: default;
 }

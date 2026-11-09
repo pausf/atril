@@ -2,6 +2,8 @@ import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import type { FlowStage, StageName } from '../../preload/api'
 import { Icon, type IconName } from '../components/Icon'
 import { ActivityFeed } from './ActivityFeed'
+import { DocModal } from './DocModal'
+import type { Part } from './highlight'
 
 const TABS = [
   { id: 'libretto', label: 'Libretto', title: 'Flujo de Libretto' },
@@ -21,12 +23,16 @@ const STAGES: { name: Exclude<StageName, 'sin-libretto'>; label: string; icon: I
 export function FlowPanel({ workspaceId }: { workspaceId: string | null }) {
   const [flow, setFlow] = useState<FlowStage | null>(null)
   const [tab, setTab] = useState<TabId>('libretto')
+  const [doc, setDoc] = useState<Part | null>(null)
   const tabs = useRef<Record<string, HTMLButtonElement | null>>({})
 
-  // ponytail: dev-only, ATRIL_SNAPSHOT_VIEW=activity photographs the Actividad tab.
+  // ponytail: dev-only, ATRIL_SNAPSHOT_VIEW=activity photographs the Actividad tab; doc-plan opens the Plan.
   useEffect(() => {
     void window.atril.snapshotView().then((v) => v === 'activity' && setTab('activity'))
   }, [])
+  useEffect(() => {
+    if (workspaceId) void window.atril.snapshotView().then((v) => v === 'doc-plan' && setDoc('plan'))
+  }, [workspaceId])
 
   const onTabKey = (e: KeyboardEvent): void => {
     const step = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0
@@ -40,6 +46,7 @@ export function FlowPanel({ workspaceId }: { workspaceId: string | null }) {
   useEffect(() => {
     let live = true
     setFlow(null)
+    setDoc(null)
     void window.atril.flow.get(workspaceId).then((f) => live && setFlow(f))
     const off = window.atril.flow.onChange((id, f) => id === workspaceId && setFlow(f))
     return () => {
@@ -70,13 +77,17 @@ export function FlowPanel({ workspaceId }: { workspaceId: string | null }) {
         ))}
       </div>
       <div role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`}>
-        {tab === 'activity' ? <ActivityFeed workspaceId={workspaceId} /> : <LibrettoFlow flow={flow} />}
+        {tab === 'activity' ? <ActivityFeed workspaceId={workspaceId} /> : <LibrettoFlow flow={flow} onOpen={setDoc} />}
       </div>
+      {doc && workspaceId && <DocModal workspaceId={workspaceId} part={doc} onClose={() => setDoc(null)} />}
     </aside>
   )
 }
 
-function LibrettoFlow({ flow }: { flow: FlowStage | null }) {
+// F13: a stage opens its document once the flow has reached it.
+const DOC_OF: Partial<Record<StageName, Part>> = { spec: 'spec', plan: 'plan' }
+
+function LibrettoFlow({ flow, onOpen }: { flow: FlowStage | null; onOpen: (p: Part) => void }) {
   const current = STAGES.findIndex((s) => s.name === flow?.stage)
   const c = flow?.checklist
   return (
@@ -87,14 +98,27 @@ function LibrettoFlow({ flow }: { flow: FlowStage | null }) {
       ) : (
         <>
           <div className="stages">
-            {STAGES.map((s, i) => (
-              <div className={`stg ${i < current ? 'd' : i === current ? 'c' : 'p'}`} key={s.name}>
-                <Icon name={s.icon} size={22} />
-                <span>
-                  {s.label} <small>{i < current ? 'hecho' : i === current ? 'ahora' : 'pendiente'}</small>
-                </span>
-              </div>
-            ))}
+            {STAGES.map((s, i) => {
+              const cls = `stg ${i < current ? 'd' : i === current ? 'c' : 'p'}`
+              const body = (
+                <>
+                  <Icon name={s.icon} size={22} />
+                  <span>
+                    {s.label} <small>{i < current ? 'hecho' : i === current ? 'ahora' : 'pendiente'}</small>
+                  </span>
+                </>
+              )
+              const part = DOC_OF[s.name]
+              return part && i <= current && flow?.change ? (
+                <button type="button" className={`${cls} stgbtn`} key={s.name} onClick={() => onOpen(part)} title="Ver y editar lo que ha escrito Claude">
+                  {body}
+                </button>
+              ) : (
+                <div className={cls} key={s.name}>
+                  {body}
+                </div>
+              )
+            })}
           </div>
           {flow?.change && (
             <p className="fmeta">
@@ -120,6 +144,9 @@ function LibrettoFlow({ flow }: { flow: FlowStage | null }) {
               <p className="fmeta">
                 Leído de <code>{c.file}</code>
               </p>
+              <button type="button" className="btn" onClick={() => onOpen('checklist')}>
+                Ver checklist
+              </button>
             </div>
           )}
           {flow && flow.others.length > 0 && (

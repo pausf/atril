@@ -196,4 +196,4 @@ revert.
 
 ## Checklist
 
-- [ ] flow documents: main reads and saves the current change's files safely, the panel opens them by stage, live, with edit while the agent waits, the sketch · Closes: F13, F14, F15, F16, F17, W44
+- [x] flow documents: main reads and saves the current change's files safely, the panel opens them by stage, live, with edit while the agent waits, the sketch · Closes: F13, F14, F15, F16, F17, W44

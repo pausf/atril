@@ -129,8 +129,8 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
     snapshotView: async () => null,
     snapshotWorkspace: async () => false
   } as unknown as AtrilApi
-  const { menu: menuApi, jira, workspaces: ws, repos: reposApi } = window.atril
-  return { ui, stored, menuApi, jira, ws, reposApi, menu: (a: MenuAction) => menu?.(a), clickNotification: (id: string) => notified?.(id),
+  const { menu: menuApi, jira, workspaces: ws, repos: reposApi, flow: flowApi } = window.atril
+  return { ui, stored, menuApi, jira, ws, reposApi, flowApi, menu: (a: MenuAction) => menu?.(a), clickNotification: (id: string) => notified?.(id),
     pushActivity: (id: string, lines: ActivityLine[]) => activityListeners.forEach((cb) => cb(id, lines)),
     pushFlow: (id: string, stage: FlowStage) => flowListeners.forEach((cb) => cb(id, stage))
   }
