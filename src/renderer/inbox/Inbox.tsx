@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { InboxResult, JiraIssue } from '../../preload/api'
 import { ConnectInSettings } from '../settings/ConnectInSettings'
+import { Icon } from '../components/Icon'
 
 const REFRESH_MS = 5 * 60_000
 
@@ -65,7 +66,8 @@ export function JiraSummary({ inbox, onOpen }: { inbox: InboxState; onOpen: () =
       : `Jira: ${count('doing')} en curso · ${count('todo')} por empezar`
   return (
     <button className="jira-summary" onClick={onOpen}>
-      {label} <span aria-hidden>→</span>
+      <Icon name="ticket" size={18} />
+      <span className="grow">{label}</span> <span aria-hidden>→</span>
     </button>
   )
 }

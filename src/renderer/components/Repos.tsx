@@ -1,3 +1,4 @@
+import { Icon } from './Icon'
 import { useEffect, useState } from 'react'
 import type { AddRepoResult, Agent, Mode, RepoView } from '../../preload/api'
 
@@ -117,7 +118,9 @@ export function Repos({ onCreate }: { onCreate: (repoId: string, branch: string,
           <div className="repo-item" key={repo.id}>
             <div className="repo">
               <span>{repo.id}</span>
-              <span className={repo.mode === 'in-place' ? 'mode ip' : 'mode'}>{repo.mode}</span>
+              <span className={repo.mode === 'in-place' ? 'mode ip' : 'mode'}>
+                <Icon name={repo.mode} size={14} /> {repo.mode}
+              </span>
             </div>
             <div className="why">{repo.reason}</div>
             <div className="seg" role="group" aria-label={`Modo de ${repo.id}`}>

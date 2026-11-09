@@ -1,3 +1,4 @@
+import { Icon } from './Icon'
 import { useEffect, useState } from 'react'
 import type { AgentState, WorkspaceView } from '../../preload/api'
 
@@ -35,7 +36,7 @@ export function WorkspaceList({ workspaces, selected, onSelect, onRemove }: Prop
               const state = states[w.id] ?? (w.alive ? 'working' : 'stopped')
               return (
                 <span className={`state ${state}`}>
-                  <i /> {LABEL[state]}
+                  <Icon name={state} size={16} className={state === 'working' ? 'spin' : undefined} /> {LABEL[state]}
                 </span>
               )
             })()}

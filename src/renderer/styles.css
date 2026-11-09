@@ -683,3 +683,12 @@ input:focus-visible {
 .tasks-screen>h1{margin:0 0 4px;font-size:24px;letter-spacing:-.02em;display:flex;align-items:center;gap:10px}
 .tasks-screen .tgroup>summary{font-size:13px}
 .tasks-screen .task{max-width:none}
+
+.icon{flex:none;vertical-align:middle}
+.spin{animation:atril-spin 1.6s linear infinite}
+@keyframes atril-spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.spin{animation:none}}
+.state .icon{margin-right:2px}
+.mode .icon{margin-right:2px;vertical-align:-2px}
+.jira-summary{gap:10px}
+.jira-summary .grow{flex:1}
