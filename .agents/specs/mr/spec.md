@@ -1,6 +1,6 @@
 # MR
 
-Governs: src/main/forge/mrs.ts src/main/forge/scores.ts src/main/forge/threads.ts src/renderer/mr/**
+Governs: src/main/forge/mrs.ts src/main/forge/scores.ts src/main/forge/threads.ts src/main/forge/lenses.ts src/renderer/mr/**
 
 The MR screen: your merge requests on GitHub and GitLab, the ones you review, and the ones in
 the projects you follow. Phase 2 of Atril; scores, threads and notifications build on it.
@@ -31,6 +31,15 @@ the projects you follow. Phase 2 of Atril; scores, threads and notifications bui
 - Threads where the last word is someone else's and you are involved are marked **Te toca
   responder** and counted in the view's header.
 - Under each thread, a reply box and **Enviar** post the reply to the forge as you.
+
+### Libretto lens drafts (add-mr-lens-drafts, 9 nov 2026)
+
+- The MR view of an MR in Mías or Me toca revisar offers **Revisar con Libretto**. Claude Sonnet
+  reads the diff through five lenses and returns findings; each shows as a **draft** with its lens,
+  severity, file:line and text, and three actions: **Publicar** (a general comment on the MR that
+  quotes the file and line), **Mandar al agente** (typed into the terminal of the workspace on that
+  branch), **Descartar**.
+- Drafts are kept per MR commit; a newer commit marks them as from an earlier commit.
 
 ## Scope boundaries
 
@@ -66,6 +75,17 @@ a reply is sent only by the person's click and never twice for one click; commen
 text, never markup; tokens stay in main; requests never follow redirects; the view holds the
 keyboard like the other modals.
 
+### Libretto lens drafts (add-mr-lens-drafts, 9 nov 2026)
+
+**In:** the review call, the drafts, publish as a general comment, send to the agent, discard, the
+cache. **Out:** inline comments on the exact line, running `/libretto-review` with its five agents in a
+worktree, automatic review, reviewing «Sigo», editing a draft before publishing (it can be discarded
+and written by hand in the thread).
+
+**Never scoped out:** Claude runs with no tools and the diff on stdin (as M11); nothing is published
+or sent without the person's click, and each click acts once; tokens stay in main; draft text is
+shown as text.
+
 ## Constraints
 
 ### MR lists (add-mr-lists, 9 nov 2026)
@@ -82,6 +102,12 @@ keyboard like the other modals.
 
 - REST with the stored tokens; `redirect: 'error'`; 10 s per request; M6's error texts.
 - The `mr` capability; the view reuses the modal frame (`useModalKeys`, `dlg edmodal`).
+
+### Libretto lens drafts (add-mr-lens-drafts, 9 nov 2026)
+
+- Reuses scores' diff fetch, cut, queue, runner timeout and failure texts (M11, M14, M16, W53), the
+  listed-only rule (M17), the thread posting endpoints (M21) and `replyToAgent` (N3).
+- `MrItem` gains `branch?` (GitHub `head.ref` from the detail call, GitLab `source_branch`).
 
 ## Prior decisions
 
@@ -168,6 +194,30 @@ keyboard like the other modals.
 - Q: (spec-reviewer) ¿El límite y «te toca responder»? → A: 3 páginas de 100 elementos por endpoint; si se alcanza, la cabecera dice que el recuento puede estar incompleto (assumed).
 - Q: (spec-reviewer) ¿GitLab: notas del sistema y comentarios sueltos? → A: las del sistema fuera; los comentarios sueltos (`individual_note`) forman un hilo «General», como los generales de GitHub; responder ahí crea un comentario general nuevo (assumed).
 - Q: (spec-reviewer) ¿Y si la MR ya no está en la lista? → A: «Esta MR ya no está en la lista: actualiza», sin petición, con tu texto intacto (assumed).
+
+### Libretto lens drafts (add-mr-lens-drafts, 9 nov 2026)
+
+- **Lens findings as drafts** — Pau, 9 nov (phase-2 ask): the MR view's comments with Libretto's
+  findings as drafts to publish, send to the agent, or discard.
+- **One call, not five agents** (assumed): quota.
+
+#### Alternatives that lost
+
+| Considered | Why it lost |
+|---|---|
+| `/libretto-review` with five lens agents in a worktree | five agents per MR; quota |
+| Inline comments on the exact line | GitHub needs commit_id/side, GitLab a full position with three shas; later |
+| Auto-review on every new commit | quota |
+
+#### Decision log, answers as given (2026-11-09)
+- Q: «sigue con todo haz mejoras, nuevas features» — Pau → decisions taken with the recommended option, marked (assumed).
+- Q: ¿Las cinco lentes de `/libretto-review` en un worktree? → A: no: una sola llamada a Sonnet sin herramientas con el diff y las cinco lentes (intención, seguridad, diseño, fiabilidad, tests) en la instrucción; cinco agentes por MR gastarían demasiada cuota — Pau cuida el consumo (assumed).
+- Q: ¿Cuándo? → A: bajo demanda, con «Revisar con Libretto», solo en Mías y Me toca revisar; guardado por commit como las puntuaciones (assumed).
+- Q: ¿Publicar dónde? → A: como comentario general de la MR que cita archivo y línea; el comentario en la línea exacta queda para más adelante (assumed).
+- Q: ¿Mandar al agente cuál? → A: el único trabajo vivo en la rama de la MR y en un repo cuyo `origin` es el proyecto de la MR; si hay cero o varios, no se ofrece (assumed).
+- Q: (revisor) ¿Más de 12 hallazgos, texto largo, file/line ausentes, cero hallazgos? → A: fuera de esquema = fallo; sin ubicación se omite; cero es respuesta válida (assumed).
+- Q: (revisor de obra) ¿Borradores de una MR sin commit conocido? → A: se rechaza la revisión antes de gastar cuota; ¿mismo proyecto en otra forja? → A: el origin también debe nombrar el host (assumed).
+- Q: (revisor) ¿Cola compartida con las puntuaciones? → A: un solo runner, claves por tipo y URL (assumed).
 
 ## Task breakdown
 
@@ -284,3 +334,34 @@ keyboard like the other modals.
 - **M23** The MR view shall show the threads as text (markup in a comment shows literally), and
   close with Escape — asking first when a reply box has unsent text.
   Proof: src/renderer/mr/threads.test.ts a row opens the mr view with its threads
+
+### Libretto lens drafts (add-mr-lens-drafts, 9 nov 2026)
+
+- **M25** When the person clicks Revisar con Libretto on an MR in Mías or Me toca revisar, Atril shall
+  run `claude` exactly as M11 (no tools, no session, the diff on stdin cut at 120 KB) with a schema of
+  at most 12 findings `{ lens: intent|security|design|reliability|tests, severity: high|medium|low,
+  file?, line?, text ≤ 400 }`; a reply outside the schema, a fetch failure or a timeout shall show
+  «Claude no ha podido revisar esta MR: {detail}» (M16's details) and store nothing; zero findings is
+  an answer and shows «Libretto no ha encontrado nada que comentar». An URL outside those two lists
+  of the latest listing shall be refused without a request (M17's text). Reviews and scores share one
+  runner, one at a time in the order asked, keyed by kind and URL (M14 per kind).
+  Proof: src/main/forge/lenses.test.ts the lens review runs claude like the score and keeps drafts
+- **M26** Drafts shall be stored per MR and head commit (no known head: the review is refused before Claude runs, «No se sabe el último commit de esta MR: actualiza»); while drafts
+  exist for the current head the button is not offered; on a newer head the list shows «De un commit
+  anterior» with «Revisar de nuevo», whose result replaces every draft.
+  Proof: src/main/forge/lenses.test.ts drafts are kept per commit
+- **M27** When the person clicks Publicar on an open draft, Atril shall post once, as the MR's general
+  comment (M21), «**{lens} · {severity}** — `{file}:{line}`» (the location part dropped when `file`
+  is absent, `:{line}` when `line` is), a blank line, then the text as written; then mark it
+  published. A failure shall keep it open with M6's message. Publishing, sending or discarding a
+  draft that is not open, or of an MR outside the latest listing, shall be refused without a request.
+  Proof: src/main/forge/lenses.test.ts a draft is published once as a general comment
+- **M28** Main shall offer Mandar al agente for an MR only when exactly one workspace is alive, on the
+  MR's branch, in a repo whose `origin` remote names the MR's host and project; sending shall type, as N3,
+  «Revisión de Libretto ({lens}, {severity}) en {location}: {text}» (location as M27, «la MR» when
+  absent), mark the draft sent on `sent`, and on `gone` or `ignored` keep it open with N3's message.
+  Proof: src/main/forge/lenses.test.ts a draft goes to the one agent on that branch
+- **M29** The MR view shall show each draft as text, with Publicar, Mandar al agente (only when main
+  offers it) and Descartar while open, and «Publicado» or «Enviado al agente» with no actions after;
+  Descartar removes it.
+  Proof: src/renderer/mr/lenses.test.ts drafts can be published, sent or discarded

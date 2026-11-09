@@ -6,10 +6,10 @@
 |---|---|---|
 | [avisos](avisos/spec.md) | `src/main/avisos.ts src/renderer/avisos/**` | A feed of what changed in your MRs and agents, derived from successive MR listings and agent states, with no extra forge request. |
 | [flow-status](flow-status/spec.md) | `src/main/flow/** src/renderer/flow/**` |  |
-| [mr](mr/spec.md) | `src/main/forge/mrs.ts src/main/forge/scores.ts src/main/forge/threads.ts src/renderer/mr/**` | The MR screen: your merge requests on GitHub and GitLab, the ones you review, and the ones in the projects you follow. |
+| [mr](mr/spec.md) | `src/main/forge/mrs.ts src/main/forge/scores.ts src/main/forge/threads.ts src/main/forge/lenses.ts src/renderer/mr/**` | The MR screen: your merge requests on GitHub and GitLab, the ones you review, and the ones in the projects you follow. |
 | [settings](settings/spec.md) | `src/main/credentials/** src/renderer/settings/**` |  |
 | [work-inbox](work-inbox/spec.md) | `src/main/jira/** src/renderer/inbox/**` |  |
-| [workspaces](workspaces/spec.md) | `src/main/** src/preload/** src/renderer/** resources/** !src/main/jira/** !src/renderer/inbox/** !src/main/flow/** !src/renderer/flow/** !src/main/credentials/** !src/renderer/settings/** !src/main/forge/mrs.ts !src/renderer/mr/** !src/main/forge/scores.ts !src/main/forge/threads.ts !src/main/avisos.ts !src/renderer/avisos/**` |  |
+| [workspaces](workspaces/spec.md) | `src/main/** src/preload/** src/renderer/** resources/** !src/main/jira/** !src/renderer/inbox/** !src/main/flow/** !src/renderer/flow/** !src/main/credentials/** !src/renderer/settings/** !src/main/forge/mrs.ts !src/renderer/mr/** !src/main/forge/scores.ts !src/main/forge/threads.ts !src/main/forge/lenses.ts !src/main/avisos.ts !src/renderer/avisos/**` |  |
 
 ## avisos
 
@@ -62,7 +62,7 @@ Governs: `src/main/flow/** src/renderer/flow/**`
 
 The MR screen: your merge requests on GitHub and GitLab, the ones you review, and the ones in the projects you follow. Phase 2 of Atril; scores, threads and notifications build on it.
 
-Governs: `src/main/forge/mrs.ts src/main/forge/scores.ts src/main/forge/threads.ts src/renderer/mr/**`
+Governs: `src/main/forge/mrs.ts src/main/forge/scores.ts src/main/forge/threads.ts src/main/forge/lenses.ts src/renderer/mr/**`
 
 - {**M1** When the lists load, Atril shall put in **Mías** the open MRs you authored, in **Me toca revisar** the open MRs where your review is requested, and in **Sigo** other people's open MRs in your followed projects. src/main/forge/mrs.test.ts lists}
 - {**M2** An MR that belongs to an earlier list shall not repeat in a later one (order: Mías, Me toca revisar, Sigo). src/main/forge/mrs.test.ts an}
@@ -88,6 +88,11 @@ Governs: `src/main/forge/mrs.ts src/main/forge/scores.ts src/main/forge/threads.
 - {**M21** When the person writes a reply and clicks Enviar, Atril shall post it once — GitHub `POST /repos/{o}/{r}/pulls/{n}/comments/{root}/replies` for a review thread and `POST /repos/{o}/{r}/issues/{n}/comments` for «General»; GitLab `POST /projects/:id/merge_requests/:iid/discussions/:id/notes` for a discussion and `POST /projects/:id/merge_requests/:iid/notes` for «General» — then show it in the thread; an empty reply shall not be sent, and a failure shall keep the text in the box with M6's message. src/main/forge/threads.test.ts a}
 - {**M22** If the MR is not in main's latest listing, then reading or posting its threads shall be refused without a request, the view saying «Esta MR ya no está en la lista: actualiza» and keeping any written text. src/main/forge/threads.test.ts only}
 - {**M23** The MR view shall show the threads as text (markup in a comment shows literally), and close with Escape — asking first when a reply box has unsent text. src/renderer/mr/threads.test.ts a}
+- {**M25** When the person clicks Revisar con Libretto on an MR in Mías or Me toca revisar, Atril shall run `claude` exactly as M11 (no tools, no session, the diff on stdin cut at 120 KB) with a schema of at most 12 findings `{ lens: intent|security|design|reliability|tests, severity: high|medium|low, file?, line?, text ≤ 400 }`; a reply outside the schema, a fetch failure or a timeout shall show «Claude no ha podido revisar esta MR: {detail}» (M16's details) and store nothing; zero findings is an answer and shows «Libretto no ha encontrado nada que comentar». An URL outside those two lists of the latest listing shall be refused without a request (M17's text). Reviews and scores share one runner, one at a time in the order asked, keyed by kind and URL (M14 per kind). src/main/forge/lenses.test.ts the}
+- {**M26** Drafts shall be stored per MR and head commit (no known head: the review is refused before Claude runs, «No se sabe el último commit de esta MR: actualiza»); while drafts exist for the current head the button is not offered; on a newer head the list shows «De un commit anterior» with «Revisar de nuevo», whose result replaces every draft. src/main/forge/lenses.test.ts drafts}
+- {**M27** When the person clicks Publicar on an open draft, Atril shall post once, as the MR's general comment (M21), «**{lens} · {severity}** — `{file}:{line}`» (the location part dropped when `file` is absent, `:{line}` when `line` is), a blank line, then the text as written; then mark it published. A failure shall keep it open with M6's message. Publishing, sending or discarding a draft that is not open, or of an MR outside the latest listing, shall be refused without a request. src/main/forge/lenses.test.ts a}
+- {**M28** Main shall offer Mandar al agente for an MR only when exactly one workspace is alive, on the MR's branch, in a repo whose `origin` remote names the MR's host and project; sending shall type, as N3, «Revisión de Libretto ({lens}, {severity}) en {location}: {text}» (location as M27, «la MR» when absent), mark the draft sent on `sent`, and on `gone` or `ignored` keep it open with N3's message. src/main/forge/lenses.test.ts a}
+- {**M29** The MR view shall show each draft as text, with Publicar, Mandar al agente (only when main offers it) and Descartar while open, and «Publicado» or «Enviado al agente» with no actions after; Descartar removes it. src/renderer/mr/lenses.test.ts drafts}
 
 [full spec](mr/spec.md)
 
@@ -158,7 +163,7 @@ Governs: `src/main/jira/** src/renderer/inbox/**`
 
 ## workspaces
 
-Governs: `src/main/** src/preload/** src/renderer/** resources/** !src/main/jira/** !src/renderer/inbox/** !src/main/flow/** !src/renderer/flow/** !src/main/credentials/** !src/renderer/settings/** !src/main/forge/mrs.ts !src/renderer/mr/** !src/main/forge/scores.ts !src/main/forge/threads.ts !src/main/avisos.ts !src/renderer/avisos/**`
+Governs: `src/main/** src/preload/** src/renderer/** resources/** !src/main/jira/** !src/renderer/inbox/** !src/main/flow/** !src/renderer/flow/** !src/main/credentials/** !src/renderer/settings/** !src/main/forge/mrs.ts !src/renderer/mr/** !src/main/forge/scores.ts !src/main/forge/threads.ts !src/main/forge/lenses.ts !src/main/avisos.ts !src/renderer/avisos/**`
 
 - {**W1** When a repo is registered and none of the three signals is found, Atril shall set its mode to `worktree`. src/main/repos.test.ts chooses}
 - {**W2** If the checkout holds a git-ignored file outside dependency, build and editor noise (`node_modules`, `vendor`, `dist`, `build`, `.cache`, `.next`, `coverage`, `tmp`, `.idea`, `.vscode`, `.DS_Store`, `*.log`), then Atril shall set the mode to `in-place` and name that file as the reason. Only files count — entries of `git ls-files --others --ignored --exclude-standard --directory` that do not end in `/`; ignored folders (build output, tool caches) are never a signal. Noise names match at any depth. src/main/repos.test.ts chooses}
