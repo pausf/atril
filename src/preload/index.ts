@@ -27,6 +27,8 @@ const api: AtrilApi = {
     get: (id) => ipcRenderer.invoke('atril:flow:get', id),
     docs: (id) => ipcRenderer.invoke('atril:flow:docs', id),
     save: (id, change, name, text, mtimeMs) => ipcRenderer.invoke('atril:flow:save', id, change, name, text, mtimeMs),
+    changes: (id) => ipcRenderer.invoke('atril:flow:changes', id),
+    diff: (id, path) => ipcRenderer.invoke('atril:flow:diff', id, path),
     onChange: (cb) => {
       const h = (_e: Electron.IpcRendererEvent, id: string, stage: FlowStage): void => cb(id, stage)
       ipcRenderer.on('atril:flow:changed', h)

@@ -3,6 +3,7 @@ import { MODELS, writeHooksFile } from './agent'
 import { createActivity } from './activity'
 import { agentState, createStatus, REPLY_GONE, REPLY_PLACEHOLDER, replyToAgent } from './status'
 import { readDocs, saveDoc } from './flow/document'
+import { fileDiff, listChanges } from './flow/changes'
 import { nextUp } from './nextup'
 import { writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
@@ -180,6 +181,14 @@ app.whenReady().then(() => {
   ipcMain.handle('atril:flow:docs', async (_e, id: string) => {
     const ws = (await listWorkspaces(run)).find((w) => w.id === id)
     return ws ? readDocs(ws.path) : null
+  })
+  ipcMain.handle('atril:flow:changes', async (_e, id: string) => {
+    const ws = (await listWorkspaces(run)).find((w) => w.id === id)
+    return ws ? listChanges(ws.path, ws.baseCommit, run) : []
+  })
+  ipcMain.handle('atril:flow:diff', async (_e, id: string, path: unknown) => {
+    const ws = (await listWorkspaces(run)).find((w) => w.id === id)
+    return ws && typeof path === 'string' ? fileDiff(ws.path, ws.baseCommit, path, run) : ''
   })
   ipcMain.handle('atril:flow:save', async (_e, id: string, change: unknown, name: unknown, text: unknown, mtimeMs: unknown) => {
     const ws = (await listWorkspaces(run)).find((w) => w.id === id)

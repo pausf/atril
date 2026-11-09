@@ -221,6 +221,13 @@ export interface FlowDoc {
   mtimeMs: number
 }
 
+export interface FileChange {
+  path: string
+  status: 'A' | 'M' | 'D'
+  added: number
+  removed: number
+}
+
 export interface FlowDocs {
   change: string
   files: FlowDoc[]
@@ -235,6 +242,10 @@ export interface FlowApi {
   docs(workspaceId: string): Promise<FlowDocs | null>
   /** F16: main re-reads the agent state and the file's mtime before writing. */
   save(workspaceId: string, change: string, name: string, text: string, mtimeMs: number): Promise<{ mtimeMs: number } | { error: string }>
+  /** F18: files changed against the workspace's base. */
+  changes(workspaceId: string): Promise<FileChange[]>
+  /** F19: the diff of one file from that list; empty for anything else. */
+  diff(workspaceId: string, path: string): Promise<string>
 }
 
 export interface UsageWindow {

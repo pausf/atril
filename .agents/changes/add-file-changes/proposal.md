@@ -158,5 +158,5 @@ F18–F22 seen red before the code. Rollback: one revert.
 
 ## Checklist
 
-- [ ] change list and diff in main, bound to the workspace's listed files · Closes: F18, F19, F23
+- [x] change list and diff in main, bound to the workspace's listed files · Closes: F18, F19, F23
 - [ ] the Cambios section, the Construir button, the diff modal and the 3 s refresh · waits on box 1 · Closes: F20, F21, F22
