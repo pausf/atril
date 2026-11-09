@@ -30,7 +30,7 @@ export function App() {
 
   useEffect(() => {
     void window.atril.snapshotView().then((v) => {
-      if (v === 'settings') setScreen('settings')
+      if (v === 'settings' || v === 'tasks') setScreen(v)
       if (v === 'start') setScreen('tasks')
     })
   }, [])

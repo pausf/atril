@@ -503,7 +503,7 @@ or in tmux itself, never in the window.
 | Claude's `/hooks` menu does not list hooks passed with `--settings`, so it cannot prove they loaded | a `SessionStart` probe through the same script wrote its state file in a real Claude start (box 7); that is the evidence, not the menu |
 | Reopening Atril would notify for every agent already waiting | the first refresh after launch only records state; notifications start from the next transition (box 7 choice) |
 | Libretto's find-work branches when it writes the proposal; Start already put the agent on branch `<KEY>` | Libretto's rule is "ensure, not create" off the base branch; checked in the Start box with one real run that the change stays on `<KEY>` |
-| The `/rest/api/3/search/jql` response shape is proved only against invented fixtures | Pau saves his real token in Ajustes and the list is checked against his sprint (present-work) |
+| The `/rest/api/3/search/jql` response shape was proved only against invented fixtures | closed 9 nov: with Pau's real token the Tareas screen showed his 24 open tasks grouped 1 / 8 / 15 |
 | `Stop` fires at the end of every turn, so `needs-you` may be noisy | accepted for phase 1; one notification per transition (W15) bounds it |
 
 ### Validation and rollback
@@ -542,7 +542,7 @@ or in tmux itself, never in the window.
 - [x] usage footer: Claude 5 h and 7 d from the Keychain token and the usage endpoint, "—" with a reason when unreadable, the token never leaving main · waits on box 1 · Closes: W17, W18, W20
 - [x] the right panel shows the Libretto stage and checklist of the selected workspace and follows file changes · waits on box 3 · Closes: F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12
 - [x] Ajustes: the Jira token card, encrypted with safeStorage, checked on save, write-only once saved, and the "Conecta X en Ajustes" state · waits on box 1 · Closes: S1, S2, S3, S4, S5, S6, S7
-- [ ] "Mis Jira" lists the person's open sprint tasks through the Jira REST API with the token from Ajustes, grouped by status in its own Tareas screen with a sidebar summary, and links to Ajustes when there is none · waits on box 10 · Closes: I1, I2, I3, I11, I12
+- [x] "Mis Jira" lists the person's open sprint tasks through the Jira REST API with the token from Ajustes, grouped by status in its own Tareas screen with a sidebar summary, and links to Ajustes when there is none · waits on box 10 · Closes: I1, I2, I3, I11, I12
 - [x] Start, and a Modelo selector in Start and Nuevo trabajo: repo memory, branch slug, validated key, claude running /libretto-flow <KEY> in a new workspace, In Progress transition whose failure keeps the workspace, and the task showing its workspace afterwards · waits on boxes 3, 4, 7, 11 · Closes: I4, I5, I6, I7, I8, I9, I10, W34
 - [ ] keyboard reachability and text labels everywhere, foldable sidebar sections, the Claro/Oscuro/Automático theme, and the first-launch tutorial over every element, skippable, reopenable from Help, keyboard-only · waits on boxes 3, 8, 9, 11 · Closes: W22, W23, W24, W25, W28, W35
 - [ ] Claude agents in Atril workspaces start without the folder-trust prompt, tool problems collapse into one top-bar chip, and the top bar shows who is signed in · waits on boxes 3, 10 · Closes: W31, W32, S8
