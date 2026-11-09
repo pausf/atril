@@ -16,3 +16,7 @@ changed against its base commit (committed and uncommitted, as `git diff --numst
 untracked files), each with its status and +/− line counts, updated live while the agent works.
 Clicking a file opens its diff, read-only, in the same large modal as the flow documents. Sketched
 in `bocetos/fase1-nucleo.html`.
+
+Pau, after the sketch: «los cambios se deberia ver en el momento de contruir no? y que se pueda
+abrir en modal y ver los cambios» → the section shows from the Construir stage on, and
+«Construir» itself becomes a button (like Spec and Plan) that opens the changes modal.
