@@ -39,7 +39,7 @@ never become a `claude` flag or reach a shell; the renderer cannot choose the co
   of quote, a newline, or starting with `--` shall arrive byte for byte, as that one argument, and
   run nothing.
   Proof: src/main/tmux.test.ts task text reaches the agent as one literal argument
-- **W41** If the task text is empty after trimming, longer than 2000 characters, or contains a NUL
+- **W41** If the task is not a string, or its text is empty after trimming, longer than 2000 characters, or contains a NUL
   character, then `workspaces.open` shall refuse with «El texto de la tarea no es válido (máx. 2000
   caracteres).» and create nothing.
   Proof: src/main/workspaces.test.ts invalid task text creates nothing

@@ -52,3 +52,12 @@ N3's "ignore a click within 1 s of a reply" is proven only against the event ord
 
 ## 2026-11-09 · add-own-tasks · 4→5
 spec-reviewer found six gaps the contract left to the builder: what a slug "word" is, the Nueva tarea button without Jira, the agent of an own task, three promises on one proof (I23), the argv shape of W40 and a proof that could not tell a newline from a second argument, and a refactor of StartDialog with no proof. All settled in the document before code.
+
+## 2026-11-09 · add-own-tasks · 6→7
+A non-string `task` over IPC was silently dropped and opened a plain agent instead of being refused (trust boundary). Fixed: main forwards anything but undefined and `taskPrompt` refuses non-strings with W41's message; seen red on `null` first.
+
+## 2026-11-09 · add-own-tasks · 6→7
+W40's proof used the test argv override, so the production `agentArgv` path had no proof that the prompt stays last. Fixed: agent.test.ts asserts it after every flag (green at once: the code was right, the proof was missing).
+
+## 2026-11-09 · add-own-tasks · 1
+Queued add-language rode on this branch, an hour after logging the same lesson. Docs only; add-flow-documents is now kept uncommitted until its own branch.

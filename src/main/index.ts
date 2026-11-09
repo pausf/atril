@@ -179,7 +179,7 @@ app.whenReady().then(() => {
   ipcMain.handle('atril:ws:list', () => listWorkspaces(run))
   ipcMain.handle('atril:ws:open', (_e, repoId: string, branch: string, agent: Agent, model?: Model, task?: unknown) =>
     openWorktree(
-      { repoId, branch, agent, ...(model && MODELS.includes(model) && { model }), ...(typeof task === 'string' && { task }) },
+      { repoId, branch, agent, ...(model && MODELS.includes(model) && { model }), ...(task !== undefined && { task: task as string }) },
       run
     ).finally(() => void pushNext())
   )

@@ -107,3 +107,13 @@ describe('trust prompt', () => {
     expect(saved.projects['/wt/b'].hasTrustDialogAccepted).toBe(true)
   })
 })
+
+describe('agent argv', () => {
+  it('the flow prompt is the last argument, after every flag', () => {
+    const prompt = '/libretto:libretto-flow --dangerously-skip-permissions'
+    const argv = agentArgv({ model: 'opus', prompt })
+    expect(argv.at(-1)).toBe(prompt)
+    expect(argv.filter((a) => a === prompt)).toHaveLength(1)
+    expect(argv.indexOf('--model')).toBeLessThan(argv.length - 1)
+  })
+})

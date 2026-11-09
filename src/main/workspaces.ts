@@ -48,7 +48,8 @@ async function writeRecords(workspaces: WorkspaceRecord[]): Promise<void> {
 const MAX_TASK = 2000
 
 /** W41: the flow command and the text are one argv element, so the text can never be a flag. */
-export function taskPrompt(task: string): string | null {
+export function taskPrompt(task: unknown): string | null {
+  if (typeof task !== 'string') return null
   const text = task.trim()
   return text === '' || text.length > MAX_TASK || text.includes('\0') ? null : `/libretto:libretto-flow ${text}`
 }

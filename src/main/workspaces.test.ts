@@ -38,7 +38,8 @@ describe('workspaces', () => {
   })
 
   it('invalid task text creates nothing', async () => {
-    for (const task of ['   ', 'x'.repeat(2001), 'a\0b']) {
+    // A non-string over IPC (a buggy renderer) is refused too, never opened as a plain agent.
+    for (const task of ['   ', 'x'.repeat(2001), 'a\0b', null, { text: 'x' }] as unknown as string[]) {
       const calls: string[][] = []
       const spy: Runner = (cmd, args, opts) => {
         calls.push([cmd, ...args])
