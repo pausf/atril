@@ -7,10 +7,11 @@ import { resolveLang } from '../preload/i18n'
 import { readDocs, saveDoc } from './flow/document'
 import { FORGES, forgeSettings, type ForgeId } from './credentials/forge'
 import { cloneAndRegister, createRepo } from './forge/create'
+import { createForgeGuards } from './forge/guards'
 import { fileDiff, listChanges } from './flow/changes'
 import { nextUp } from './nextup'
 import { writeFile } from 'node:fs/promises'
-import { isAbsolute, join } from 'node:path'
+import { join } from 'node:path'
 import { createSecretStore } from './credentials/store'
 import { jiraSettings } from './credentials/jira'
 import { searchBoards } from './credentials/boards'
@@ -150,18 +151,29 @@ app.whenReady().then(async () => {
       ? forges.save(f, { token: creds.token, ...(typeof creds.site === 'string' && { site: creds.site }) })
       : { error: t('Falta el token.') }
   )
+  const guards = createForgeGuards()
   ipcMain.handle('atril:forge:create', async (_e, req: Partial<CreateRepoRequest> | null, clone?: unknown) => {
     if (!req || !isForge(req.forge) || typeof req.name !== 'string') return { error: t('Nombre de repo no válido') }
-    const created = await createRepo(secretStore, { forge: req.forge, name: req.name, description: typeof req.description === 'string' ? req.description : '', public: req.public === true })
-    if ('error' in created || typeof clone !== 'string' || !isAbsolute(clone)) return created
+    const created = await createRepo(secretStore, {
+      forge: req.forge,
+      name: req.name,
+      description: typeof req.description === 'string' ? req.description : '',
+      public: req.public === true,
+      confirmPublic: req.confirmPublic === true
+    })
+    if ('error' in created) return created
+    guards.created(created.url)
+    if (typeof clone !== 'string' || !guards.cloneFolder(clone)) return created
     return { ...created, ...(await cloneAndRegister(created, clone, run)) }
   })
   ipcMain.handle('atril:forge:open', (_e, url: unknown) => {
-    if (typeof url === 'string' && /^https:\/\//.test(url)) return shell.openExternal(url)
+    if (typeof url === 'string' && guards.openable(url)) return shell.openExternal(url)
   })
   ipcMain.handle('atril:forge:pickFolder', async () => {
     const picked = await dialog.showOpenDialog({ properties: ['openDirectory', 'createDirectory'] })
-    return picked.canceled ? null : (picked.filePaths[0] ?? null)
+    const folder = picked.canceled ? null : (picked.filePaths[0] ?? null)
+    if (folder) guards.picked(folder)
+    return folder
   })
   ipcMain.handle('atril:settings:forge:delete', (_e, f: unknown) => (isForge(f) ? forges.delete(f) : undefined))
   ipcMain.handle('atril:settings:forge:openTokenPage', async (_e, f: unknown, site: unknown) => {

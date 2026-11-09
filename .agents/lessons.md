@@ -103,3 +103,6 @@ work-reviewer: ui:get could change main's language (Sistema after a macOS change
 
 ## 2026-11-09 · add-create-repo · 4→5
 spec-reviewer: the create/clone code sat in workspaces' Governs while its criteria were written into settings; GitLab's address and non-401 failures had no rule; S25 borrowed S20's proof; the clone's id collision, existing folder and failure path had no criterion. Settled with spec-workspaces.md (W49–W51), https-only GitLab, a status test and one proof per clone path.
+
+## 2026-11-09 · add-create-repo · 6→7
+work-reviewer: the public confirmation lived only in the window; forge:open took any https URL; the clone folder took any absolute path; forge requests followed redirects with the token header; git inherited the whole shell environment. All fixed in main (confirmPublic, guards for links and folders, redirect 'error', an env allowlist), W50–W52 amended, tests red first. Also: a reviewer was launched on a red tree (fixture missing snapshotView) — run the gates before launching it.

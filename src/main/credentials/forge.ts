@@ -30,7 +30,8 @@ async function check(forge: ForgeId, site: string, token: string, fetchImpl: typ
   const name = FORGE_NAME[forge]
   const { base, headers } = forgeApi(forge, site, token)
   try {
-    const res = await fetchImpl(new URL(`${base}/user`), { headers, signal: AbortSignal.timeout(10_000) })
+    // A redirect would carry the token to another host.
+    const res = await fetchImpl(new URL(`${base}/user`), { headers, redirect: 'error', signal: AbortSignal.timeout(10_000) })
     if (!res.ok) return { error: t('{forge} ha rechazado el token ({status}). No se ha guardado.', { forge: name, status: res.status }) }
     const me = (await res.json()) as { login?: string; username?: string; name?: string }
     return { account: me.login || me.username || me.name || name }

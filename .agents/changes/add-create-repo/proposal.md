@@ -152,4 +152,4 @@ S20–S25 seen red first. Rollback: one revert; repos already created stay on th
 
 - [x] the GitHub and GitLab connections: check, store, the two cards · Closes: S20, S25
 - [x] creating the repo: validation, the request, the dialog with the public confirmation · waits on box 1 · Closes: W49, W50, S23, S26
-- [x] clone over SSH and register · waits on box 2 · Closes: W51
+- [x] clone over SSH and register · waits on box 2 · Closes: W51, W52

@@ -187,6 +187,8 @@ export interface CreateRepoRequest {
   name: string
   description: string
   public: boolean
+  /** The «Entiendo que cualquiera podrá verlo» tick; main refuses public without it. */
+  confirmPublic?: boolean
 }
 export type CreateRepoResult =
   | { url: string; sshUrl: string; path: string; registered?: string; cloneError?: string; cloneCommand?: string }

@@ -38,13 +38,19 @@ the dialog (proposal.md).
 - **W50** When a repo is created, Atril shall send the forge's create request for the person's
   account with the name, description, visibility (private unless public was confirmed) and a
   README, and answer with the web link and the forge's own path for the repo; a refusal shall
-  answer «{forge} no ha creado el repo: {detail}».
+  answer «{forge} no ha creado el repo: {detail}». A public request without `confirmPublic`
+  shall be refused in main with «Un repo público necesita tu confirmación.» and send nothing, and
+  no request to a forge shall follow a redirect.
   Proof: src/main/forge/create.test.ts creates a private repo with a readme
 - **W51** When cloning is asked, Atril shall refuse before cloning if `<folder>/<path>` exists;
   otherwise clone the SSH URL there and register it (with the suggested id when the derived one is
   taken); if the clone fails it shall register nothing and answer with the `git clone` command to
-  run by hand; no command Atril runs shall contain the token.
+  run by hand; no command Atril runs, nor its environment, shall contain the token or any
+  variable from the person's shell beyond PATH, HOME, USER, LANG, SSH_AUTH_SOCK and TMPDIR.
   (One proof per path: success, failed clone, existing folder; the token check runs on all.)
   Proof: src/main/forge/create.test.ts clones over ssh and registers the repo
   Proof: src/main/forge/create.test.ts a failed clone registers nothing
   Proof: src/main/forge/create.test.ts an existing folder is not overwritten
+- **W52** Main shall open in the browser only a link it returned from a create, and clone only into
+  the folder its own picker returned last; anything else from the window shall be ignored.
+  Proof: src/main/forge/guards.test.ts only links and folders main handed out are accepted

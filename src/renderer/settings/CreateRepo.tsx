@@ -34,7 +34,7 @@ export function CreateRepoDialog({ onClose, onRegistered }: { onClose: () => voi
   const submit = async (): Promise<void> => {
     if (!ready || !forge) return
     setBusy(true)
-    const req = { forge, name: name.trim(), description: description.trim(), public: isPublic }
+    const req = { forge, name: name.trim(), description: description.trim(), public: isPublic, ...(isPublic && { confirmPublic: understood }) }
     const r = await (clone && folder ? window.atril.forge.create(req, folder) : window.atril.forge.create(req))
     setBusy(false)
     setResult(r)

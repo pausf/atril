@@ -48,7 +48,7 @@ describe('create repo dialog', () => {
     await user.click(within(dialog).getByLabelText('Entiendo que cualquiera podrá verlo'))
     expect(create.hasAttribute('disabled')).toBe(false)
     await user.click(create)
-    await vi.waitFor(() => expect(api.forgeApi.create).toHaveBeenCalledWith({ forge: 'gitlab', name: 'mi-repo', description: '', public: true }))
+    await vi.waitFor(() => expect(api.forgeApi.create).toHaveBeenCalledWith({ forge: 'gitlab', name: 'mi-repo', description: '', public: true, confirmPublic: true }))
     expect(await within(dialog).findByText('https://gitlab.com/pau/mi-repo')).toBeTruthy()
   })
 })

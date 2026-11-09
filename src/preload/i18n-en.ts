@@ -313,5 +313,6 @@ export const EN: Record<string, string> = {
   "＋ Crear repo…": "＋ Create repo…",
   "La carpeta {detail} ya existe: no se ha clonado.": "The folder {detail} already exists: nothing was cloned.",
   "No se ha podido clonar por SSH ({detail}). Hazlo a mano:": "Could not clone over SSH ({detail}). Do it by hand:",
-  "Clonado en {detail}, pero no se ha podido añadir a Atril.": "Cloned into {detail}, but it could not be added to Atril."
+  "Clonado en {detail}, pero no se ha podido añadir a Atril.": "Cloned into {detail}, but it could not be added to Atril.",
+  "Un repo público necesita tu confirmación.": "A public repo needs your confirmation."
 }

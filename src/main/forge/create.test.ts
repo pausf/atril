@@ -18,6 +18,7 @@ beforeEach(() => {
   process.env['ATRIL_HOME'] = tmp()
 })
 afterEach(() => {
+  delete process.env['GITHUB_TOKEN']
   delete process.env['ATRIL_HOME']
   cleanTmp()
 })
@@ -58,8 +59,17 @@ describe('create repo', () => {
     expect((init.headers as Record<string, string>)['Authorization']).toBe(`Bearer ${TOKEN}`)
     expect(JSON.parse(String(init.body))).toEqual({ name: 'atril-x', description: 'Pruebas', private: true, auto_init: true })
 
+    expect(init.redirect).toBe('error')
+
+    // Public needs the confirmation in main too, not only in the window.
+    const unconfirmed = json(201, {})
+    expect(await createRepo(store, { forge: 'gitlab', name: 'x', description: '', public: true }, unconfirmed as unknown as typeof fetch)).toEqual({
+      error: 'Un repo público necesita tu confirmación.'
+    })
+    expect(unconfirmed).not.toHaveBeenCalled()
+
     const gl = json(201, { web_url: 'https://git.example.com/pau/mi.repo', ssh_url_to_repo: 'git@git.example.com:pau/mi.repo.git', path: 'mi.repo' })
-    const r = await createRepo(store, { forge: 'gitlab', name: 'mi.repo', description: '', public: true }, gl as unknown as typeof fetch)
+    const r = await createRepo(store, { forge: 'gitlab', name: 'mi.repo', description: '', public: true, confirmPublic: true }, gl as unknown as typeof fetch)
     expect(r).toEqual({ url: 'https://git.example.com/pau/mi.repo', sshUrl: 'git@git.example.com:pau/mi.repo.git', path: 'mi.repo' })
     const [glUrl, glInit] = gl.mock.calls[0] as unknown as [URL, RequestInit]
     expect(String(glUrl)).toBe('https://git.example.com/api/v4/projects')
@@ -94,6 +104,7 @@ describe('create repo', () => {
   }
 
   it('clones over ssh and registers the repo', async () => {
+    process.env['GITHUB_TOKEN'] = 'inherited-token'
     const folder = tmp()
     const { runner, calls } = spy()
     const r = await cloneAndRegister({ url: 'https://x/pau/atril-x', sshUrl: origin(), path: 'atril-x' }, folder, runner)
@@ -101,6 +112,7 @@ describe('create repo', () => {
     expect(existsSync(join(folder, 'atril-x', '.git'))).toBe(true)
     expect(readFileSync(join(process.env['ATRIL_HOME']!, 'repos.json'), 'utf8')).toContain(join(folder, 'atril-x'))
     expect(calls.join('\n')).not.toContain(TOKEN)
+    expect(calls.join('\n')).not.toContain('inherited-token')
 
     // Same name again elsewhere: the derived id is taken, the suggested one is used.
     const again = await cloneAndRegister({ url: 'https://x/pau/atril-x', sshUrl: origin(), path: 'atril-x' }, tmp(), runner)

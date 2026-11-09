@@ -11,8 +11,9 @@ export interface CreateRequest {
   forge: ForgeId
   name: string
   description: string
-  /** Only true after the person confirmed it (S23). */
   public: boolean
+  /** S23 enforced in main too: public without this is refused. */
+  confirmPublic?: boolean
 }
 export type Created = { url: string; sshUrl: string; path: string }
 
@@ -40,6 +41,7 @@ function reason(body: unknown, status: number): string {
 export async function createRepo(store: SecretStore, req: CreateRequest, fetchImpl: typeof fetch = fetch): Promise<Created | { error: string }> {
   const name = req.name
   if (!validRepoName(name)) return { error: t('Nombre de repo no válido') }
+  if (req.public && req.confirmPublic !== true) return { error: t('Un repo público necesita tu confirmación.') }
   const forgeName = FORGE_NAME[req.forge]
   const secret = await store.readSecret(req.forge)
   if (!secret?.['token']) return { error: t('Conecta {forge} en Ajustes antes de crear un repo.', { forge: forgeName }) }
@@ -53,6 +55,8 @@ export async function createRepo(store: SecretStore, req: CreateRequest, fetchIm
       method: 'POST',
       headers: { ...headers, 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
+      // A redirect would carry the token to another host.
+      redirect: 'error',
       signal: AbortSignal.timeout(20_000)
     })
     const data = (await res.json().catch(() => ({}))) as Record<string, unknown>
@@ -76,7 +80,9 @@ export async function cloneAndRegister(created: Created, folder: string, run: Ru
   const dest = join(folder, created.path)
   const cloneCommand = `git clone ${created.sshUrl} ${dest}`
   if (existsSync(dest)) return { cloneError: t('La carpeta {detail} ya existe: no se ha clonado.', { detail: dest }), cloneCommand }
-  const env = { ...process.env, GIT_TERMINAL_PROMPT: '0', GIT_SSH_COMMAND: 'ssh -o BatchMode=yes' }
+  // Only what git and ssh need: no credential-like variable from the person's shell rides along.
+  const env: NodeJS.ProcessEnv = { GIT_TERMINAL_PROMPT: '0', GIT_SSH_COMMAND: 'ssh -o BatchMode=yes' }
+  for (const k of ['PATH', 'HOME', 'USER', 'LANG', 'SSH_AUTH_SOCK', 'TMPDIR']) if (process.env[k]) env[k] = process.env[k]
   const r = await run('git', ['clone', '--', created.sshUrl, dest], { env })
   if (r.code !== 0) {
     const detail = r.stderr.trim().split('\n').at(-1)?.slice(0, 160) ?? ''

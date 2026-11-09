@@ -31,6 +31,8 @@ describe('forge connections', () => {
     const [url, init] = ok.mock.calls[0] as unknown as [URL, RequestInit]
     expect(String(url)).toBe('https://api.github.com/user')
     expect((init.headers as Record<string, string>)['Authorization']).toBe(`Bearer ${TOKEN}`)
+    // A redirect would carry the token elsewhere: requests refuse to follow one.
+    expect(init.redirect).toBe('error')
     expect(await gh.status('github')).toEqual({ saved: true, account: 'pau', site: 'https://github.com' })
 
     for (const [status, msg] of [
