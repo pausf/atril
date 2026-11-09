@@ -365,5 +365,20 @@ export const EN: Record<string, string> = {
   "Qué hace": "What it does",
   "Por qué": "Why",
   "Dónde mirar": "Where to look",
-  "Claude vio {seen} de {total} KB": "Claude saw {seen} of {total} KB"
+  "Claude vio {seen} de {total} KB": "Claude saw {seen} of {total} KB",
+  "Tienes una respuesta sin enviar. ¿Cerrar y descartarla?": "You have an unsent reply. Close and discard it?",
+  "Te toca responder: {n}": "Your turn to reply: {n}",
+  "Abrir en {forge}": "Open in {forge}",
+  "Cargando los hilos…": "Loading the threads…",
+  "Hay más en {forge}: “Te toca responder” puede estar incompleto": "There are more on {forge}: “Your turn to reply” may be incomplete",
+  "Sin comentarios.": "No comments.",
+  "General": "General",
+  "Resuelto": "Resolved",
+  "Sin resolver": "Unresolved",
+  "Te toca responder": "Your turn to reply",
+  "Responder": "Reply",
+  "Enviar": "Send",
+  "Escribe una respuesta": "Write a reply",
+  "Ese hilo no es de esta MR": "That thread is not in this MR",
+  "Esta MR ya no está en la lista: actualiza": "This MR is no longer in the list: refresh"
 }

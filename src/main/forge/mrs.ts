@@ -3,6 +3,7 @@ import { FORGE_NAME, FORGES, forgeApi, networkCode, type ForgeId } from '../cred
 import type { SecretStore } from '../credentials/store'
 import { t } from '../lang'
 import type { ScoreTarget } from './scores'
+import type { ThreadTarget } from './threads'
 
 const LIST_CAP = 50
 const FOLLOW_CAP = 10
@@ -172,8 +173,13 @@ async function one(forge: ForgeId, token: string, site: string, account: string,
 }
 
 /** M1–M8: the three lists across both forges. Rows carry no token; main keeps the URLs for W52,
- * and `scorable` gets the API path of each row of Mías and Me toca revisar (M17). */
-export async function listMrs(store: SecretStore, fetchImpl: typeof fetch = fetch, scorable?: (targets: Map<string, ScoreTarget>) => void): Promise<MrLists> {
+ * `scorable` gets the API path of each row of Mías and Me toca revisar (M17), `threadable` of every row (M22). */
+export async function listMrs(
+  store: SecretStore,
+  fetchImpl: typeof fetch = fetch,
+  scorable?: (targets: Map<string, ScoreTarget>) => void,
+  threadable?: (targets: Map<string, ThreadTarget>) => void
+): Promise<MrLists> {
   const out: MrLists = { connected: [], mine: [], review: [], following: [], more: { mine: [], review: [], following: [] }, errors: [] }
   const results = await Promise.all(
     FORGES.map(async (forge) => {
@@ -184,11 +190,13 @@ export async function listMrs(store: SecretStore, fetchImpl: typeof fetch = fetc
     })
   )
   const targets = new Map<string, ScoreTarget>()
+  const threads = new Map<string, ThreadTarget>()
   for (const r of results) {
     if (!r) continue
     out.connected.push(r.forge)
     for (const row of [...r.lists.mine, ...r.lists.review]) targets.set(row.url, { forge: r.forge, ref: row.ref, ...(row.head && { head: row.head }) })
     for (const l of LISTS) {
+      for (const row of r.lists[l]) threads.set(row.url, { forge: r.forge, ref: row.ref, author: row.author })
       out[l].push(
         ...r.lists[l].map((row) => {
           const { ref, ...item } = row
@@ -201,5 +209,6 @@ export async function listMrs(store: SecretStore, fetchImpl: typeof fetch = fetc
     if (r.error) out.errors.push({ forge: r.forge, text: r.error })
   }
   scorable?.(targets)
+  threadable?.(threads)
   return out
 }

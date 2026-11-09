@@ -4,6 +4,7 @@ import { FoldSection } from '../components/Fold'
 import { ago } from '../flow/ActivityFeed'
 import { NavigationContext } from '../settings/navigation'
 import { useT } from '../ui'
+import { MrView } from './MrView'
 import { ScoreView, isStale } from './ScoreView'
 import type { MrsState } from './useMrs'
 
@@ -12,6 +13,7 @@ const NAME: Record<ForgeId, string> = { github: 'GitHub', gitlab: 'GitLab' }
 export function MrScreen({ mrs }: { mrs: MrsState }) {
   const { result, loading, refresh, scores, score } = mrs
   const [viewing, setViewing] = useState<{ m: MrItem; score: MrScore } | null>(null)
+  const [opened, setOpened] = useState<MrItem | null>(null)
   const { openSettings } = useContext(NavigationContext)
   const t = useT()
   // M9: opening the screen loads the lists again.
@@ -22,6 +24,11 @@ export function MrScreen({ mrs }: { mrs: MrsState }) {
     const s = first && scores[first.url]
     if (first && s?.state === 'done') void window.atril.snapshotView().then((v) => v === 'mr-score' && setViewing((cur) => cur ?? { m: first, score: s.score }))
   }, [result, scores])
+  // ponytail: dev-only, ATRIL_SNAPSHOT_VIEW=mr-thread opens the first row of Mías for a photo.
+  useEffect(() => {
+    const first = result?.mine[0]
+    if (first) void window.atril.snapshotView().then((v) => v === 'mr-thread' && setOpened((cur) => cur ?? first))
+  }, [result])
   const titles: Record<MrListName, string> = { mine: t('Mías'), review: t('Me toca revisar'), following: t('Sigo') }
   return (
     <section className="tasks-screen" data-tour="mr">
@@ -52,7 +59,7 @@ export function MrScreen({ mrs }: { mrs: MrsState }) {
             {result[l].length === 0 && <p className="f-note">{t('Ninguna MR.')}</p>}
             {result[l].map((m) => (
               <div key={m.url} className="mr-line">
-                <Row m={m} />
+                <Row m={m} onOpen={() => setOpened(m)} />
                 {/* M12: never «Sigo». */}
                 {l !== 'following' && (
                   <ScoreCell m={m} state={scores[m.url] ?? { state: 'none' }} onScore={() => score(m.url)} onView={(sc) => setViewing({ m, score: sc })} />
@@ -67,6 +74,7 @@ export function MrScreen({ mrs }: { mrs: MrsState }) {
           </FoldSection>
         ))
       )}
+      {opened && <MrView m={opened} onClose={() => setOpened(null)} />}
       {viewing && <ScoreView m={viewing.m} score={viewing.score} onScore={() => score(viewing.m.url)} onClose={() => setViewing(null)} />}
     </section>
   )
@@ -106,13 +114,13 @@ function ScoreCell({ m, state, onScore, onView }: { m: MrItem; state: MrScoreSta
   )
 }
 
-function Row({ m }: { m: MrItem }) {
+function Row({ m, onOpen }: { m: MrItem; onOpen: () => void }) {
   const t = useT()
   const ci: Record<CiState, string> = { pass: t('Pasa'), fail: t('Falla'), running: t('En curso'), none: t('Sin CI') }
   const files = m.files === undefined ? '—' : t('{n} archivos', { n: m.files })
   const size = m.added !== undefined && m.removed !== undefined ? `+${m.added} −${m.removed} · ${files}` : files
   return (
-    <button className="mr-row" onClick={() => void window.atril.mr.open(m.url)}>
+    <button className="mr-row" onClick={onOpen}>
       <span className="s" title={m.title}>
         {m.title}
       </span>

@@ -1,5 +1,5 @@
 import { vi } from 'vitest'
-import type { ActivityLine, AddRepoResult, FileChange, FlowDocs, ForgeId, ForgeStatus, Mode, MrLists, MrScoreState, AgentState, AtrilApi, FlowStage, JiraIssue, MenuAction, NextItem, StartProposalResult, StartRequest, StartResult, RepoView, UiState, WorkspaceResult, WorkspaceView } from '../preload/api'
+import type { ActivityLine, AddRepoResult, FileChange, FlowDocs, ForgeId, ForgeStatus, Mode, MrLists, MrReply, MrScoreState, MrThreads, AgentState, AtrilApi, FlowStage, JiraIssue, MenuAction, NextItem, StartProposalResult, StartRequest, StartResult, RepoView, UiState, WorkspaceResult, WorkspaceView } from '../preload/api'
 
 export const workspace = (id: string, branch: string, alive = true): WorkspaceView => ({
   id,
@@ -51,6 +51,8 @@ interface Options {
   mrs?: MrLists
   /** What mr.scoreOf answers per URL; missing means never scored. */
   scores?: Record<string, MrScoreState>
+  /** What mr.threads answers per URL; missing means no threads. */
+  threads?: Record<string, MrThreads>
 }
 
 /** ui.json lives in `stored`; pass the same object to a second mock to simulate a restart. */
@@ -119,7 +121,9 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
       onScoreChange: (cb: (url: string, state: MrScoreState) => void) => {
         scoreListeners.add(cb)
         return () => scoreListeners.delete(cb)
-      }
+      },
+      threads: vi.fn(async (url: string): Promise<MrThreads> => o.threads?.[url] ?? { threads: [], more: false }),
+      reply: vi.fn(async (_url: string, _id: string, body: string): Promise<MrReply> => ({ comment: { id: 'new', author: 'pau', at: new Date().toISOString(), body } }))
     },
     settings: {
       jira: { status: async () => ({ saved: true, account: 'Pau Sánchez', site: 'https://x.atlassian.net' }) },

@@ -277,6 +277,34 @@ export type MrScoreState =
   | { state: 'done'; score: MrScore }
   | { state: 'error'; text: string }
 
+/** One comment as the forge sent it; never translated, shown as plain text. */
+export interface MrComment {
+  id: string
+  author: string
+  /** ISO 8601. */
+  at: string
+  body: string
+}
+
+/** M18: one discussion. `id` 'general' holds the comments on no line; GitLab alone says `resolved`. */
+export interface MrThread {
+  id: string
+  forge: ForgeId
+  file?: string
+  line?: number
+  /** GitHub only: the code line the comment points at. */
+  code?: string
+  resolved?: boolean
+  /** Oldest first. */
+  comments: MrComment[]
+  /** M20. */
+  yourTurn: boolean
+}
+
+/** `more`: an endpoint had more than the 3 pages read (M19). Errors are already in the person's language. */
+export type MrThreads = { threads: MrThread[]; more: boolean } | { error: string }
+export type MrReply = { comment: MrComment } | { error: string }
+
 export interface MrApi {
   list(): Promise<MrLists>
   /** Opens an MR of the latest listing in the browser; anything else is ignored (W52). */
@@ -286,6 +314,10 @@ export interface MrApi {
   /** The state of each URL: queued, running, stored or failed. */
   scoreOf(urls: string[]): Promise<Record<string, MrScoreState>>
   onScoreChange(cb: (url: string, state: MrScoreState) => void): () => void
+  /** The threads of an MR of the latest listing (M18, M22). */
+  threads(url: string): Promise<MrThreads>
+  /** Posts one reply to a thread of that MR as the person (M21). */
+  reply(url: string, threadId: string, body: string): Promise<MrReply>
 }
 
 export type ForgeStatus = { saved: false } | { saved: true; account?: string; site?: string }

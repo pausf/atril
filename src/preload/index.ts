@@ -33,6 +33,8 @@ const api: AtrilApi = {
     open: (url) => ipcRenderer.invoke('atril:mr:open', url),
     score: (url) => ipcRenderer.invoke('atril:mr:score', url),
     scoreOf: (urls) => ipcRenderer.invoke('atril:mr:scoreOf', urls),
+    threads: (url) => ipcRenderer.invoke('atril:mr:threads', url),
+    reply: (url, threadId, body) => ipcRenderer.invoke('atril:mr:reply', url, threadId, body),
     onScoreChange: (cb) => {
       const h = (_e: Electron.IpcRendererEvent, url: string, state: MrScoreState): void => cb(url, state)
       ipcRenderer.on('atril:mr:score-changed', h)

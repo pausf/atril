@@ -1296,6 +1296,78 @@ kbd {
 .score-stale {
   color: var(--chg-mod);
 }
+.dlg.edmodal.mrmodal {
+  width: min(820px, 94vw);
+  height: auto;
+  max-height: 88vh;
+}
+.mr-threads {
+  padding: 12px 22px 22px;
+  overflow: auto;
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+.mrmodal .tag {
+  background: var(--ed-3);
+  color: var(--ed-2);
+}
+.mr-thread {
+  border: 1px solid var(--ed-7);
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin: 0 0 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.mr-thread h4 {
+  margin: 0;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow-wrap: anywhere;
+}
+.mrmodal .tag.your-turn {
+  color: var(--ed-17);
+}
+.mr-code {
+  margin: 0;
+  padding: 4px 8px;
+  background: var(--ed-3);
+  color: var(--ed-12);
+  border-radius: 6px;
+  font-size: 12px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.mr-comment .who {
+  font-weight: 600;
+}
+.mr-comment .age {
+  color: var(--ed-5);
+  font-size: 12px;
+}
+.mr-comment p {
+  margin: 2px 0 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.mr-thread textarea {
+  font: inherit;
+  background: var(--ed-6);
+  color: var(--ed-2);
+  border: 1px solid var(--ed-7);
+  border-radius: 6px;
+  resize: vertical;
+}
+.mr-thread > button {
+  align-self: flex-end;
+}
+.mr-thread .mr-score-error {
+  max-width: none;
+  margin: 0;
+}
 
 .icon {
   flex: none;

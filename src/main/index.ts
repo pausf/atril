@@ -10,6 +10,7 @@ import { cloneAndRegister, createRepo } from './forge/create'
 import { createForgeGuards } from './forge/guards'
 import { listMrs } from './forge/mrs'
 import { createScorer } from './forge/scores'
+import { createThreads } from './forge/threads'
 import { fileDiff, listChanges } from './flow/changes'
 import { nextUp } from './nextup'
 import { writeFile } from 'node:fs/promises'
@@ -19,7 +20,7 @@ import { jiraSettings } from './credentials/jira'
 import { searchBoards } from './credentials/boards'
 import type { JiraCreds } from './credentials/check'
 import { doctor } from './doctor'
-import type { CreateRepoRequest, Mode, MrItem, MrLists, MrScoreState, UiState } from '../preload/api'
+import type { CreateRepoRequest, Mode, MrItem, MrLists, MrScoreState, MrThreads, UiState } from '../preload/api'
 import { readInbox } from './jira/inbox'
 import { inboxGroups } from './jira/board'
 import { proposeStart, start } from './jira/start'
@@ -78,6 +79,34 @@ function fakeScores(): Record<string, MrScoreState> {
       state: 'done',
       score: { head: 'old0000', lang: 'es', at, metrics: { added: 140, removed: 52, files: 9, tests: false, size: 'M' }, ai: { difficulty: 4, risk: 4, what: 'Guarda los filtros del listado del vendedor entre visitas.', why: 'Toca estado compartido y no trae tests.', where: ['El almacenamiento de filtros'] } } // i18n-ignore
     }
+  }
+}
+
+function fakeThreads(): MrThreads {
+  const at = (h: number): string => new Date(Date.now() - h * 3600_000).toISOString()
+  return {
+    more: false,
+    threads: [
+      {
+        id: '1',
+        forge: 'github',
+        file: 'src/Delivery/PromiseDate.php',
+        line: 48,
+        code: '+        if ($this->holidays->isHoliday($date, $province)) {',
+        comments: [
+          { id: '1', author: 'marta', at: at(20), body: '¿Qué pasa si la provincia no viene en el pedido? Aquí petaría con null.' }, // i18n-ignore
+          { id: '2', author: 'pausf', at: at(6), body: 'Buena pregunta: cae al calendario nacional. Lo cubro con un test.' }, // i18n-ignore
+          { id: '3', author: 'marta', at: at(1), body: 'Perfecto. ¿Puedes añadir también el caso de Ceuta y Melilla?' } // i18n-ignore
+        ],
+        yourTurn: true
+      },
+      {
+        id: 'general',
+        forge: 'github',
+        comments: [{ id: '9', author: 'jordi', at: at(3), body: 'Lo he probado en preview y la fecha sale bien para Madrid y Barcelona. 👍' }], // i18n-ignore
+        yourTurn: true
+      }
+    ]
   }
 }
 
@@ -215,7 +244,7 @@ app.whenReady().then(async () => {
   })
   ipcMain.handle('atril:mr:list', async () => {
     // ponytail: dev-only, ATRIL_SNAPSHOT_VIEW=mr photographs believable lists without any forge.
-    const r = SNAPSHOT && process.env['ATRIL_SNAPSHOT_VIEW']?.startsWith('mr') ? fakeMrs() : await listMrs(secretStore, fetch, guards.scorable)
+    const r = SNAPSHOT && process.env['ATRIL_SNAPSHOT_VIEW']?.startsWith('mr') ? fakeMrs() : await listMrs(secretStore, fetch, guards.scorable, guards.threadable)
     guards.listed([...r.mine, ...r.review, ...r.following].map((m) => m.url))
     return r
   })
@@ -236,6 +265,14 @@ app.whenReady().then(async () => {
     SNAPSHOT && process.env['ATRIL_SNAPSHOT_VIEW']?.startsWith('mr')
       ? fakeScores()
       : scorer.stateOf(Array.isArray(urls) ? urls.filter((u): u is string => typeof u === 'string') : [])
+  )
+  const threads = createThreads({ store: secretStore, target: guards.threadTarget })
+  ipcMain.handle('atril:mr:threads', (_e, url: unknown): Promise<MrThreads> =>
+    // ponytail: dev-only, ATRIL_SNAPSHOT_VIEW=mr-thread photographs two believable threads.
+    SNAPSHOT && process.env['ATRIL_SNAPSHOT_VIEW'] === 'mr-thread' ? Promise.resolve(fakeThreads()) : threads.read(typeof url === 'string' ? url : '')
+  )
+  ipcMain.handle('atril:mr:reply', (_e, url: unknown, threadId: unknown, body: unknown) =>
+    typeof url === 'string' && typeof threadId === 'string' && typeof body === 'string' ? threads.reply(url, threadId, body) : { error: t('Escribe una respuesta') }
   )
   ipcMain.handle('atril:forge:pickFolder', async () => {
     const picked = await dialog.showOpenDialog({ properties: ['openDirectory', 'createDirectory'] })

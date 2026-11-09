@@ -1,4 +1,5 @@
 import type { ScoreTarget } from './scores'
+import type { ThreadTarget } from './threads'
 
 /**
  * The window may only open links main handed it (a repo it just created, an MR of the latest
@@ -9,6 +10,7 @@ export function createForgeGuards() {
   const links = new Set<string>()
   let listed = new Set<string>()
   let scorable = new Map<string, ScoreTarget>()
+  let threadable = new Map<string, ThreadTarget>()
   let folder: string | null = null
   return {
     created: (url: string): void => void links.add(url),
@@ -21,6 +23,11 @@ export function createForgeGuards() {
       scorable = targets
     },
     scoreTarget: (url: string): ScoreTarget | undefined => scorable.get(url),
+    /** M22: every MR of the latest listing, replaced each time. */
+    threadable: (targets: Map<string, ThreadTarget>): void => {
+      threadable = targets
+    },
+    threadTarget: (url: string): ThreadTarget | undefined => threadable.get(url),
     openable: (url: string): boolean => links.has(url) || listed.has(url),
     picked: (f: string): void => {
       folder = f

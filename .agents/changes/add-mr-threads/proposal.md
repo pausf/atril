@@ -184,5 +184,5 @@ None.
 
 ## Checklist
 
-- [ ] main: the listed url→ref map, threads per forge, your-turn, caps, reply, the listed-only check · Closes: M18, M19, M20, M21, M22
-- [ ] the window: rows open the MR view, threads, reply boxes, the header count, Abrir en forge · waits on box 1 · Closes: M5, M21, M23, M24
+- [x] main: the listed url→ref map, threads per forge, your-turn, caps, reply, the listed-only check · Closes: M18, M19, M20, M21, M22
+- [x] the window: rows open the MR view, threads, reply boxes, the header count, Abrir en forge · waits on box 1 · Closes: M5, M21, M23, M24
