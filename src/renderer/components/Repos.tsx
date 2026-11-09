@@ -18,7 +18,7 @@ interface Pending {
 function NewWork({ repoId, onCreate }: { repoId: string; onCreate: (repoId: string, branch: string, agent: Agent) => Promise<string | null> }) {
   const [open, setOpen] = useState(false)
   const [branch, setBranch] = useState('')
-  const [agent, setAgent] = useState<Agent>('claude')
+  const agent: Agent = 'claude'
   const [error, setError] = useState<string | null>(null)
 
   if (!open) {
@@ -44,10 +44,6 @@ function NewWork({ repoId, onCreate }: { repoId: string; onCreate: (repoId: stri
     >
       <div className="idrow">
         <input aria-label={`Rama de ${repoId}`} placeholder="feat/mi-rama" value={branch} onChange={(e) => setBranch(e.target.value)} />
-        <select aria-label="Agente" value={agent} onChange={(e) => setAgent(e.target.value as Agent)}>
-          <option value="claude">Claude</option>
-          <option value="codex">Codex</option>
-        </select>
       </div>
       <div className="idrow">
         <button type="submit" className="pill" disabled={branch.trim() === ''}>

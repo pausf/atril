@@ -1,4 +1,5 @@
 import type { Agent, WorkspaceView } from '../../preload/api'
+import { Inbox } from '../inbox/Inbox'
 import { Repos } from './Repos'
 import { WorkspaceList } from './WorkspaceList'
 
@@ -13,15 +14,7 @@ interface Props {
 export function Sidebar({ workspaces, selected, onSelect, onRemove, onCreate }: Props) {
   return (
     <aside className="col left">
-      <section>
-        <h2>
-          Mis Jira <span className="n">0</span>
-        </h2>
-        <p className="lead">Asignadas a ti en el sprint activo.</p>
-        <div className="empty">
-          Aquí saldrán tus Jira. Pulsa «Empezar» en una y Atril creará la rama y lanzará al agente.
-        </div>
-      </section>
+      <Inbox />
       <section className="sec">
         <h2>
           Trabajo en marcha <span className="n">{workspaces.length}</span>

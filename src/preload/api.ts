@@ -33,7 +33,7 @@ export interface ReposApi {
 }
 
 
-export type Agent = 'claude' | 'codex'
+export type Agent = 'claude'
 
 export interface WorkspaceRecord {
   id: string
@@ -71,11 +71,31 @@ export interface TermApi {
   onData(cb: (id: string, data: string) => void): () => void
 }
 
+export interface JiraIssue {
+  key: string
+  summary: string
+  type: string
+  status: string
+  project: string
+  components: string[]
+}
+
+export type InboxResult =
+  | { issues: JiraIssue[] }
+  | { error: 'unconfigured'; message: string }
+  | { error: 'missing'; install: string }
+  | { error: 'failed'; message: string }
+
+export interface JiraApi {
+  inbox(): Promise<InboxResult>
+}
+
 export interface AtrilApi {
   doctor(): Promise<DoctorReport>
   repos: ReposApi
   workspaces: WorkspacesApi
   term: TermApi
+  jira: JiraApi
   /** Dev snapshot only: the workspace to select on startup. */
   snapshotWorkspace(): Promise<boolean>
 }

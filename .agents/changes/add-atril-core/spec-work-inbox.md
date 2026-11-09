@@ -35,8 +35,13 @@ command; the Jira token never passes through Atril.
 - Only the `jira` CLI (ankitpokhrel/jira-cli), installed and configured by the person;
   `--raw` JSON output, never `--plain` (Libretto's `find-work/tracker.md`: plain mode carries
   colour codes and drops the description).
-- The query: `jira issue list --raw --jql "assignee = currentUser() AND sprint in
-  openSprints() AND statusCategory != Done"`.
+- The query: `jira issue list --raw --jql "statusCategory = Done AND statusCategory != Done OR
+  (assignee = currentUser() AND sprint in openSprints() AND statusCategory != Done)"` — ONE
+  call for every project. The CLI prepends `project = "<config project>" AND` without
+  parentheses, and an empty config project matches nothing; the false first clause OR the
+  real query escapes that scope (observed 9 nov: 1 call in 0.66 s, against 326 calls in 12 s
+  one per project). If jira-cli ever parenthesises the JQL, this returns nothing and the
+  fallback is one call per project of `jira project list`.
 - The command Start runs goes through the primary spec's agent session, with Claude's hooks
   passed by `--settings` (proposal.md, W14).
 

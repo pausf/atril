@@ -3,6 +3,7 @@ import { writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { doctor } from './doctor'
 import type { Mode } from '../preload/api'
+import { readInbox } from './jira/inbox'
 import { listRepos, registerRepo, setOverride } from './repos'
 import * as pty from './pty'
 import { run } from './run'
@@ -44,7 +45,7 @@ function createWindow(): void {
         const image = await win.webContents.capturePage()
         await writeFile(snapshot, image.toPNG())
         app.quit()
-      }, 4000)
+      }, Number(process.env['ATRIL_SNAPSHOT_DELAY_MS']) || 4000)
     })
   }
 }
@@ -63,6 +64,7 @@ app.whenReady().then(() => {
     await setOverride(id, mode)
     return listRepos(run)
   })
+  ipcMain.handle('atril:jira:inbox', () => readInbox(run))
   ipcMain.handle('atril:ws:list', () => listWorkspaces(run))
   ipcMain.handle('atril:ws:open', (_e, repoId: string, branch: string, agent: Agent) =>
     openWorktree({ repoId, branch, agent }, run)

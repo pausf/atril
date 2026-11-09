@@ -14,6 +14,7 @@ const api: AtrilApi = {
     open: (repoId, branch, agent) => ipcRenderer.invoke('atril:ws:open', repoId, branch, agent),
     remove: (id) => ipcRenderer.invoke('atril:ws:remove', id)
   },
+  jira: { inbox: () => ipcRenderer.invoke('atril:jira:inbox') },
   term: {
     attach: (id, cols, rows) => ipcRenderer.invoke('atril:term:attach', id, cols, rows),
     input: (id, data) => ipcRenderer.send('atril:term:input', id, data),

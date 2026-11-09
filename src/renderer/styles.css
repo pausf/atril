@@ -425,3 +425,72 @@ input:focus-visible {
   padding: 4px 8px;
   background: #fff;
 }
+
+.refresh {
+  margin-left: auto;
+  font: inherit;
+  font-size: 11px;
+  text-transform: none;
+  letter-spacing: 0;
+  padding: 2px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--sub);
+  cursor: pointer;
+}
+.refresh:disabled,
+.task .go:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+.empty code {
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: 12px;
+  background: #f2f2f5;
+  border-radius: 6px;
+  padding: 1px 6px;
+}
+.task {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin-bottom: 8px;
+}
+.task .k {
+  font-weight: 600;
+  font-size: 12.5px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.task .s {
+  font-size: 13px;
+  margin: 4px 0 10px;
+}
+.task .row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.task .go {
+  font: inherit;
+  font-size: 12px;
+  padding: 3px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--faint);
+  background: var(--card);
+}
+.tag {
+  font-size: 11px;
+  font-weight: 400;
+  border-radius: 999px;
+  padding: 1px 8px;
+  background: #f2f2f5;
+  color: var(--sub);
+}
+.tag.bug {
+  background: var(--bad-bg);
+  color: var(--bad-text);
+}
