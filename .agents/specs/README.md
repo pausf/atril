@@ -70,6 +70,11 @@ Governs: `src/main/jira/** src/renderer/inbox/**`
 - {**I19** Whether or not a board is picked, the inbox shall list only issues from the search with `assignee = currentUser()`, and shall never request the board's own issues. src/main/jira/inbox.test.ts only}
 - {**I20** When the person clicks Empezar on a task whose project and component have a remembered repo and whose proposed branch is free, Atril shall start it without the dialog and without a `--model` flag. src/renderer/nextup.test.ts one}
 - {**I21** When the person ⌥-clicks Empezar, or the project has no remembered repo, or the proposed branch is taken, Atril shall open the Start dialog. src/renderer/nextup.test.ts option}
+- {**I22** When the person writes a task in «Nueva tarea», picks a repo and presses Empezar, Atril shall open a workspace on the shown branch with the chosen model, passing the text as the task with agent `claude`, and show it in Trabajo. src/renderer/inbox/owntask.test.ts own}
+- {**I23** While the text is empty or only spaces, Empezar shall be disabled, and the text area shall accept at most 2000 characters (UTF-16 units). src/renderer/inbox/owntask.test.ts own}
+- {**I25** If no repo is registered, then the dialog shall say «Añade un repo en Trabajo para empezar» and Empezar shall be disabled. src/renderer/inbox/owntask.test.ts own}
+- {**I26** While Jira is not connected (I3), «Nueva tarea» shall still be shown and open the dialog. src/renderer/inbox/owntask.test.ts own}
+- {**I24** While the person has not edited the branch, the branch shall be the first five words of the text, a word being a run of `[a-z0-9]` after lower-casing and removing accents, joined by hyphens, at most 40 characters with no trailing hyphen («Añadir filtro de Laboratorios» → `anadir-filtro-de-laboratorios`; «fix: bug-in api, ya» → `fix-bug-in-api-ya`); once the person changes the field in any way, it shall stay as they left it. src/renderer/inbox/owntask.test.ts branch}
 
 [full spec](work-inbox/spec.md)
 
@@ -126,5 +131,7 @@ Governs: `src/main/** src/preload/** src/renderer/** resources/** !src/main/jira
 - {**N1** The «Qué me toca» list shall order agents in `needs-you` by how long they have been waiting (oldest first), then the tasks with no open workspace from the first board column — or from «Por empezar» when there is no board or it cannot be read (I18) — in Jira's order. src/main/nextup.test.ts orders}
 - {**N2** While Trabajo or Tareas is shown and the list is not empty, ⌘↩ shall open its first item — the workspace for an agent, the Start for a task, or Tareas when that task is not loaded yet; otherwise the menu item is disabled. src/renderer/nextup.test.ts command}
 - {**N3** When the person replies to a needs-you notification, Atril shall type the reply into that workspace's agent pane as literal text followed by Enter, without bringing Atril to the front; it shall send nothing for an empty reply, and if the workspace or its pane no longer exists it shall send nothing and say «No se pudo enviar: ese trabajo ya no está». src/main/reply.test.ts reply}
+- {**W40** When a workspace is opened with a task text, the agent's last argument shall be the single string `/libretto:libretto-flow <trimmed text>`; a text holding `$(…)`, `;`, both kinds of quote, a newline, or starting with `--` shall arrive byte for byte, as that one argument, and run nothing. src/main/tmux.test.ts task}
+- {**W41** If the task is not a string, or its text is empty after trimming, longer than 2000 characters, or contains a NUL character, then `workspaces.open` shall refuse with «El texto de la tarea no es válido (máx. 2000 caracteres).» and create nothing. src/main/workspaces.test.ts invalid}
 
 [full spec](workspaces/spec.md)

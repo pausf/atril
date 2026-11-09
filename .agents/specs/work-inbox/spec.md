@@ -36,6 +36,13 @@ Governs: src/main/jira/** src/renderer/inbox/**
   have a remembered repo and the proposed branch (the key) is free; ⌥-click, a first task of a
   project, or a taken branch open the dialog as before (I4–I10).
 
+### Own tasks (add-own-tasks, 9 nov 2026)
+
+- Tareas has a **«Nueva tarea»** button. It opens a dialog with a text area («¿Qué hay que
+  hacer?»), the repo, a branch proposed from the first words of the text (editable) and the model.
+- **Empezar** opens a workspace on that branch whose agent runs the Libretto flow with the text
+  as the request, and shows it in Trabajo, like a Jira Start.
+
 ## Scope boundaries
 
 **In:** reading tasks, the Jira→repo memory, Start, the In Progress transition.
@@ -67,6 +74,16 @@ integer before it reaches a URL.
 **In:** the one-click path. **Out:** an undo (Quitar closes a fresh workspace); choosing model or
 repo on one click.
 
+### Own tasks (add-own-tasks, 9 nov 2026)
+
+**In:** the button, the dialog, the branch proposal, starting the workspace with the text.
+**Out:** saving drafts, editing the text after Start, a separate list of own tasks, creating a
+Jira issue from the text, Jira transitions (there is no issue).
+
+**Never scoped out:** the text reaches the agent as one literal argument behind the flow
+command — never a shell string, never a flag (`spec-workspaces.md`, W40); the dialog is fully
+keyboard-reachable (Tab cycles inside it, Escape closes, ⌘↩ submits from the text area).
+
 ## Constraints
 
 - The Jira REST API with the site, email and token saved in Ajustes (`.agents/specs/settings/spec.md`):
@@ -90,6 +107,12 @@ repo on one click.
 
 - One click calls the same `proposeStart` and `start` as the dialog, with W34's «Por defecto»
   model (no `--model`).
+
+### Own tasks (add-own-tasks, 9 nov 2026)
+
+- Reuses `workspaces.open` (W-criteria for both modes) with the text as one more argument; the
+  flow command is built in main, never in the renderer.
+- Same dialog look and focus rules as the Start dialog (I4–I10).
 
 ## Prior decisions
 
@@ -144,6 +167,34 @@ repo on one click.
 - **One click for a known project** — Pau, 9 nov, usability batch («si» to item 4). The first
   task of a project still picks its repo in the dialog, so one click never guesses a repo.
 - Q: (spec-reviewer) ¿Y el «deshacer»? → A: fuera de alcance: «Quitar» ya cierra un trabajo recién abierto (assumed).
+
+### Own tasks (add-own-tasks, 9 nov 2026)
+
+- **Own tasks from the same panel** — Pau, 9 nov: «puedo lanzar el libreto flow desde uno
+  creado yo mismo … Personalizado, poniendo yo el prom o lo que sea desde el mismo panel».
+- **No separate list** (assumed): an own task is a workspace like any other; its text lives in
+  the Libretto proposal the agent writes, which is where Libretto keeps a request anyway.
+
+#### Alternatives that lost
+
+| Considered | Why it lost |
+|---|---|
+| A text field in the Sidebar's «+ trabajo» form | Pau asked for it «desde el mismo panel» as Jira, i.e. Tareas |
+| Building the flow command in the renderer | the renderer would choose the command line; main must |
+| A Jira issue created from the text | out of scope; not every own task belongs in Jira |
+
+#### Decision log, answers as given (2026-11-09)
+- Q: «No le preguntes, tú sigue» stands → decisions taken with the recommended option, marked (assumed).
+- Q: ¿Dónde se escribe la tarea propia? → A: botón «Nueva tarea» en la cabecera de Tareas («desde el mismo panel»), que abre un diálogo: texto, repo, rama y modelo (assumed).
+- Q: ¿Qué recibe el agente? → A: `/libretto:libretto-flow <texto>` como un único argumento; Libretto ya toma «lo que dijo el usuario» como fuente y lo guarda literal en su proposal (assumed).
+- Q: ¿Y la rama? → A: se propone a partir de las primeras palabras (minúsculas, sin acentos, guiones, máx. 40) y se puede editar; deja de seguir al texto en cuanto la tocas (assumed).
+- Q: ¿Límite del texto? → A: 2000 caracteres; Libretto escribe el resto en la spec, no hace falta más en una línea de comandos (assumed).
+- Q: (spec-reviewer) ¿Qué es una «palabra» para la rama? → A: un tramo de `[a-z0-9]` tras quitar acentos y pasar a minúsculas; la puntuación separa palabras. «Editada» = cualquier cambio tuyo en el campo, aunque lo vacíes (assumed).
+- Q: (spec-reviewer) ¿«Nueva tarea» sin Jira conectado? → A: sí, se ve y funciona: la cabecera de Tareas queda fuera del estado «Conecta…» (assumed, I25).
+- Q: (spec-reviewer) ¿Qué agente? → A: siempre `claude` (assumed).
+- Q: (spec-reviewer) ¿Dónde se nota el límite de 2000? → A: el área de texto no deja escribir más (`maxLength`, unidades UTF-16, igual que `.length` en main) (assumed).
+- Q: (spec-reviewer) ¿Se extrae el atrapado de foco del diálogo de Empezar? → A: no: el diálogo nuevo lleva el suyo y el de Empezar no se toca, así no puede romperse sin prueba (assumed).
+- Q: ¿Se listan las tareas propias aparte? → A: no: cada una es un trabajo más en Trabajo, con su rama; una lista aparte sería una segunda fuente de verdad (assumed).
 
 ## Task breakdown
 
@@ -234,3 +285,24 @@ repo on one click.
 - **I21** When the person ⌥-clicks Empezar, or the project has no remembered repo, or the
   proposed branch is taken, Atril shall open the Start dialog.
   Proof: src/renderer/nextup.test.ts option click or unknown project opens the dialog
+
+### Own tasks (add-own-tasks, 9 nov 2026)
+
+- **I22** When the person writes a task in «Nueva tarea», picks a repo and presses Empezar, Atril
+  shall open a workspace on the shown branch with the chosen model, passing the text as the task with agent `claude`,
+  and show it in Trabajo.
+  Proof: src/renderer/inbox/owntask.test.ts own task opens a workspace with its text
+- **I23** While the text is empty or only spaces, Empezar shall be disabled, and the text area
+  shall accept at most 2000 characters (UTF-16 units).
+  Proof: src/renderer/inbox/owntask.test.ts own task needs text
+- **I25** If no repo is registered, then the dialog shall say «Añade un repo en Trabajo para
+  empezar» and Empezar shall be disabled.
+  Proof: src/renderer/inbox/owntask.test.ts own task needs a repo
+- **I26** While Jira is not connected (I3), «Nueva tarea» shall still be shown and open the dialog.
+  Proof: src/renderer/inbox/owntask.test.ts own task works without jira
+- **I24** While the person has not edited the branch, the branch shall be the first five words of
+  the text, a word being a run of `[a-z0-9]` after lower-casing and removing accents, joined by
+  hyphens, at most 40 characters with no trailing hyphen («Añadir filtro de Laboratorios» →
+  `anadir-filtro-de-laboratorios`; «fix: bug-in api, ya» → `fix-bug-in-api-ya`); once the person
+  changes the field in any way, it shall stay as they left it.
+  Proof: src/renderer/inbox/owntask.test.ts branch follows the text until edited

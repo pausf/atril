@@ -75,6 +75,11 @@ The `workspaces` capability, phase 1. Its siblings in this change: `.agents/spec
 - The needs-you notification has a **reply field**: what the person types goes into that
   agent's terminal, followed by Enter, without opening Atril.
 
+### Own tasks (add-own-tasks, 9 nov 2026)
+
+- `workspaces.open` takes an optional task text; the agent then starts with the Libretto flow
+  and that text as its request.
+
 ## Scope boundaries
 
 **In:** the three columns and footer of `bocetos/fase1-nucleo.html` (boceto 8), the
@@ -118,6 +123,14 @@ anything but the agent's own pane.
 belongs to; the reply text goes to tmux as a literal (`send-keys -l`), never as key names or
 shell; an empty reply sends nothing.
 
+### Own tasks (add-own-tasks, 9 nov 2026)
+
+**In:** validating the text and building the agent argument in main. **Out:** storing the text
+in the workspace record.
+
+**Never scoped out:** the text is one argv element after `/libretto:libretto-flow `, so it can
+never become a `claude` flag or reach a shell; the renderer cannot choose the command.
+
 ## Constraints
 
 - Electron (current stable) + TypeScript in strict mode, pnpm, Node 24 (installed:
@@ -154,6 +167,10 @@ shell; an empty reply sends nothing.
 - `tmux send-keys -t <pane id> -l <text>` then `send-keys -t <pane id> Enter`, through the runner.
 - The list is computed in main from the agent states (waiting time from the state file's `at`)
   and the inbox groups; ⌘↩ is a menu accelerator, handled before xterm.
+
+### Own tasks (add-own-tasks, 9 nov 2026)
+
+- tmux `respawn-pane` already receives argv as separate arguments (W39); the text rides that.
 
 ## Prior decisions
 
@@ -300,6 +317,10 @@ shell; an empty reply sends nothing.
 - Q: (spec-reviewer) ¿Responder en el aviso cuenta como pulsarlo (W38)? → A: no: responder no trae Atril al frente ni cambia de pantalla; solo pulsar el aviso lo hace (assumed).
 - Q: (spec-reviewer) ¿Y si el trabajo ya no existe al responder? → A: no se envía nada y un aviso dice «No se pudo enviar: ese trabajo ya no está» (assumed).
 - Q: (work-reviewer) ⌘↩ sobre una tarea que la ventana aún no ha cargado no hacía nada → A: abre Tareas, que recarga Jira al montarse (assumed, N2).
+
+### Own tasks (add-own-tasks, 9 nov 2026)
+
+- **The flow command is built in main** (assumed): the renderer sends data, never a command line.
 
 ## Task breakdown
 
@@ -495,3 +516,15 @@ shell; an empty reply sends nothing.
   front; it shall send nothing for an empty reply, and if the workspace or its pane no longer
   exists it shall send nothing and say «No se pudo enviar: ese trabajo ya no está».
   Proof: src/main/reply.test.ts reply reaches only its own pane as literal text
+
+### Own tasks (add-own-tasks, 9 nov 2026)
+
+- **W40** When a workspace is opened with a task text, the agent's last argument shall be the
+  single string `/libretto:libretto-flow <trimmed text>`; a text holding `$(…)`, `;`, both kinds
+  of quote, a newline, or starting with `--` shall arrive byte for byte, as that one argument, and
+  run nothing.
+  Proof: src/main/tmux.test.ts task text reaches the agent as one literal argument
+- **W41** If the task is not a string, or its text is empty after trimming, longer than 2000 characters, or contains a NUL
+  character, then `workspaces.open` shall refuse with «El texto de la tarea no es válido (máx. 2000
+  caracteres).» and create nothing.
+  Proof: src/main/workspaces.test.ts invalid task text creates nothing
