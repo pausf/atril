@@ -112,3 +112,6 @@ spec-reviewer: M3 contradicted W52 (open only created links), GitLab gives no pe
 
 ## 2026-11-09 · add-mr-lists · 6→7
 work-reviewer: M6's network text lacked the period the shared catalog key has (contract aligned with the key); a GitHub pull without head.sha asked /commits/undefined/check-runs and could raise a false forge error (now skipped, CI unknown).
+
+## 2026-11-09 · add-mr-scores · 4→5
+spec-reviewer: a hung claude would block the queue forever (no timeout), GitLab's /diffs is not a unified diff, a failed diff fetch had no outcome, {detail} could have echoed stderr, and "only mine and review" had no main-side proof. Settled with W53 (stdin + kill), M16, M17 and a per-forge diff recipe.
