@@ -30,6 +30,10 @@ contents — keep only short summaries, locally, never the full input.
 - Q: ¿Cómo lee el hook el JSON sin node ni jq en el PATH? → A: con el propio Electron de Atril como Node (`ELECTRON_RUN_AS_NODE=1 <execPath> claude-hook.mjs`), comprobado 9 nov (assumed).
 - Q: ¿Dónde se ve la actividad? → A: pestañas «Libretto | Actividad» en el panel derecho, y la última línea en la fila de cada trabajo (assumed).
 - Q: ¿Qué se guarda? → A: solo una línea de resumen por evento (≤ 200 caracteres), nunca el payload: de Edit/Write solo la ruta, del prompt solo los primeros 80 caracteres; las últimas 200 líneas por sesión (assumed).
+- Q: (spec-reviewer) ¿Qué lleva el cuerpo del aviso del Mac y de dónde sale? → A: con Notification, el mensaje del agente; con Stop, el «Claude dice: …»; el hook escribe ese texto en el mismo archivo de estado (`{state, at, text}`) que dispara el aviso, así no hay orden entre dos archivos (assumed).
+- Q: (spec-reviewer) ¿Los eventos de herramienta cambian el estado? → A: sí: PreToolUse y PostToolUse ponen `working` (aprobar un permiso hace que el agente vuelva a trabajar) (assumed). Amplía W26.
+- Q: (spec-reviewer) ¿Qué línea deja UserPromptSubmit? → A: «Le has escrito: <primeros 80 caracteres>» (assumed, A8).
+- Q: (spec-reviewer) ¿Qué es un Bash «fallido»? → A: código de salida distinto de 0, un error o una interrupción en la respuesta de la herramienta, el que venga (assumed).
 
 ## Outcomes
 
@@ -84,19 +88,26 @@ hook process; lines are capped at 200 characters and 200 lines per session.
   the command>», «Buscando <pattern>» or «Lanzando un subagente: <description>»; any other
   tool shall show its name.
   Proof: src/main/activity.test.ts summarises each tool
-- **A3** If PostToolUse reports a Bash command that failed, then the line shall read «✗ <first
-  60 chars> falló».
+- **A3** If PostToolUse reports a Bash command that failed — a non-zero exit code, an error or
+  an interruption in the tool response — then the line shall read «✗ <first 60 chars> falló».
   Proof: src/main/activity.test.ts failed command is marked
 - **A4** When a Notification hook fires, the line and the macOS notification body shall carry
-  the agent's message («Te pregunta: …»).
+  the agent's message («Te pregunta: …»); when a Stop hook fires, the body shall carry A5's
+  «Claude dice: …». The hook writes that text into the state file it writes, so the body always
+  belongs to the event that changed the state.
   Proof: src/main/activity.test.ts notification carries the agent's message
 - **A5** When a Stop hook fires, the line shall quote the first 200 characters of the last
   assistant text in the transcript as «Claude dice: …».
   Proof: src/main/activity.test.ts stop quotes the last thing claude said
 - **A6** The activity file shall keep at most its last 200 lines.
   Proof: src/main/activity.test.ts activity file stays bounded
+- **A8** When UserPromptSubmit fires, the line shall read «Le has escrito: <first 80
+  characters of the prompt>», and PreToolUse / PostToolUse shall set the agent state to `working`.
+  Proof: src/main/activity.test.ts prompt line is short and tool events mean working
 - **A7** While a workspace is selected, the Actividad tab shall list its lines newest first and
   update live, and every workspace row shall show its latest line.
+  (One proof holds both: the test pushes two lines for two workspaces and asserts the feed
+  order and each row's latest line on the same render.)
   Proof: src/renderer/activity.test.ts feed and row show the latest activity
 
 ## Approach
@@ -149,4 +160,4 @@ None.
 
 ## Checklist
 
-- [ ] agent activity: the Electron-as-Node hook summarising every event into a bounded activity file, main watching it, the Actividad tab, the row line and the notification body · Closes: A1, A2, A3, A4, A5, A6, A7
+- [ ] agent activity: the Electron-as-Node hook summarising every event into a bounded activity file, main watching it, the Actividad tab, the row line and the notification body · Closes: A1, A2, A3, A4, A5, A6, A7, A8
