@@ -17,7 +17,13 @@ export const stepsOf = (t: T): readonly Step[] => [
     target: 'rail',
     screen: 'work',
     title: t('Tus pantallas'),
-    text: t('Trabajo es donde viven tus agentes, Tareas tiene tu Jira y Ajustes guarda tus tokens y la apariencia.')
+    text: t('Trabajo es donde viven tus agentes, Tareas tiene tu Jira, MR tus merge requests, Avisos lo que ha cambiado y Ajustes tus conexiones, repos e idioma.')
+  },
+  {
+    target: 'new-work',
+    screen: 'work',
+    title: t('Nuevo trabajo'),
+    text: t('Abre un trabajo en uno de tus repos. Si escribes qué hay que hacer, Libretto empieza por la spec; si no, abre Claude a secas.')
   },
   {
     target: 'tasks',
@@ -48,9 +54,22 @@ export const stepsOf = (t: T): readonly Step[] => [
     title: t('El flujo de Libretto'),
     text: (
       <>
-        {t('La etapa y el checklist del trabajo elegido, leídos de sus archivos.')} {kbd('⌘J')} {t('te lleva aquí y')} {kbd('⌘L')} {t('a la barra lateral.')}
+        {t('La etapa y el checklist del trabajo elegido, leídos de sus archivos. Pulsa Spec o Plan para leerlos y corregirlos mientras Claude te espera, y Construir para ver los cambios de código.')}{' '}
+        {kbd('⌘J')} {t('te lleva aquí y')} {kbd('⌘L')} {t('a la barra lateral.')}
       </>
     )
+  },
+  {
+    target: 'mr',
+    screen: 'mr',
+    title: t('Tus MR'),
+    text: t('Las tuyas, las que te toca revisar y las de los proyectos que sigues en GitHub y GitLab. Pulsa una para ver sus hilos y responder, o Puntuar para que Claude te diga su dificultad y su riesgo.')
+  },
+  {
+    target: 'avisos',
+    screen: 'avisos',
+    title: t('Avisos'),
+    text: t('Lo que ha cambiado desde la última vez: revisiones pedidas, comentarios, CI rota, MRs nuevas y agentes que te necesitan.')
   },
   {
     target: 'usage',

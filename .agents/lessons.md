@@ -121,3 +121,6 @@ The builder followed the contract's test-file rule literally (`*Test.php` ignori
 
 ## 2026-11-09 · add-avisos · 6→7
 work-reviewer: the baseline keeps one list per URL (listings dedupe, M2), so an MR moving from Mías to Me toca revisar fired a false «Te piden revisión» (fixed: only an MR new to you or merely followed counts; test red first); dev photo listings wrote fake notices into the real avisos.json (fixed); no test covered a forge reconnecting (added).
+
+## 2026-11-09 · tour-new-screens · 7
+W23 promises a tutorial step per element, but five changes added screens and controls (Nuevo trabajo, Spec/Plan/Construir, MR, Avisos) without a step, and nothing failed: the proof only listed the old targets. Fixed by extending the proof first (red) and the tour; lesson: a change that adds a rail screen or a primary control owes W23 a step in the same change.

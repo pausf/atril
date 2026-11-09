@@ -52,7 +52,7 @@ export function Avisos({ avisos, open }: { avisos: AvisosState; open: (to: Aviso
     setSaid(to && open(to))
   }
   return (
-    <section className="tasks-screen avisos">
+    <section className="tasks-screen avisos" data-tour="avisos">
       <h1>
         {t('Avisos')}
         <button className="refresh" onClick={() => avisos.markRead('all')} disabled={avisos.unread === 0}>

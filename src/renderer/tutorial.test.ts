@@ -26,7 +26,7 @@ describe('tutorial', () => {
     expect(spot()).toBeNull()
     await user.click(screen.getByRole('button', { name: /Enséñamelo/ }))
 
-    expect(STEPS.map((s) => s.target)).toEqual(['rail', 'tasks', 'workspaces', 'terminal', 'flow', 'usage', 'session', 'appearance'])
+    expect(STEPS.map((s) => s.target)).toEqual(['rail', 'new-work', 'tasks', 'workspaces', 'terminal', 'flow', 'mr', 'avisos', 'usage', 'session', 'appearance'])
     for (const [n, step] of STEPS.entries()) {
       // The step switches screens so its target is on screen, then spotlights that real element.
       await waitFor(() => expect(spot()?.dataset['target']).toBe(step.target))
@@ -87,13 +87,13 @@ describe('tutorial', () => {
 
     // → and ← move, Enter on the focused primary advances.
     await user.keyboard('{ArrowRight}')
-    await waitFor(() => expect(spot()?.dataset['target']).toBe('tasks'))
+    await waitFor(() => expect(spot()?.dataset['target']).toBe('new-work'))
     await user.keyboard('{ArrowRight}')
-    await waitFor(() => expect(spot()?.dataset['target']).toBe('workspaces'))
-    await user.keyboard('{ArrowLeft}')
     await waitFor(() => expect(spot()?.dataset['target']).toBe('tasks'))
+    await user.keyboard('{ArrowLeft}')
+    await waitFor(() => expect(spot()?.dataset['target']).toBe('new-work'))
     await user.keyboard('{Enter}')
-    await waitFor(() => expect(spot()?.dataset['target']).toBe('workspaces'))
+    await waitFor(() => expect(spot()?.dataset['target']).toBe('tasks'))
 
     // Tab never leaves the tip, in either direction.
     for (let i = 0; i < 7; i++) {

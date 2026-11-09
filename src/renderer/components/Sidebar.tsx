@@ -18,7 +18,7 @@ export function Sidebar({ workspaces, selected, onSelect, onRemove, inbox, onOpe
   const t = useT()
   return (
     <aside className="col left">
-      <button type="button" className="new-work" onClick={onNewWork}>
+      <button type="button" className="new-work" onClick={onNewWork} data-tour="new-work">
         {t('＋ Nuevo trabajo')}
       </button>
       <JiraSummary inbox={inbox} onOpen={onOpenTasks} />

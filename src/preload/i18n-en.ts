@@ -189,7 +189,6 @@ export const EN: Record<string, string> = {
   '✎ editable · Claude te espera': '✎ editable · Claude is waiting for you',
   'Guardar ⌘S': 'Save ⌘S',
   'Tus pantallas': 'Your screens',
-  'Trabajo es donde viven tus agentes, Tareas tiene tu Jira y Ajustes guarda tus tokens y la apariencia.': 'Work is where your agents live, Tasks has your Jira and Settings keeps your tokens and the appearance.',
   'Tus tareas de Jira': 'Your Jira tasks',
   'Todas tus tareas abiertas, agrupadas por estado. «Empezar» crea un trabajo con su propia rama y lanza /libretto-flow con la clave.': 'All your open tasks, grouped by status. “Start” creates a workspace with its own branch and runs /libretto-flow with the key.',
   'Cada trabajo con su agente y su estado escrito: trabajando, te necesita o parado. Cuando te necesita, Atril te avisa con una notificación.': 'Each workspace with its agent and its status written out: working, needs you or stopped. When it needs you, Atril notifies you.',
@@ -198,7 +197,6 @@ export const EN: Record<string, string> = {
   'divide el panel a la derecha y': 'splits the pane to the right and',
   'hacia abajo. Si cierras Atril, el agente sigue vivo.': 'downwards. If you close Atril, the agent stays alive.',
   'El flujo de Libretto': 'The Libretto flow',
-  'La etapa y el checklist del trabajo elegido, leídos de sus archivos.': 'The stage and checklist of the chosen work, read from its files.',
   'te lleva aquí y': 'brings you here and',
   'a la barra lateral.': 'to the sidebar.',
   'Tu cuota de Claude': 'Your Claude quota',
@@ -396,5 +394,11 @@ export const EN: Record<string, string> = {
   "Lo que ha cambiado en tus MR y en tus agentes desde la última vez.": "What changed in your MRs and your agents since last time.",
   "Filtrar por tipo": "Filter by kind",
   "Todos": "All",
-  "Ningún aviso.": "No notices."
+  "Ningún aviso.": "No notices.",
+  "Trabajo es donde viven tus agentes, Tareas tiene tu Jira, MR tus merge requests, Avisos lo que ha cambiado y Ajustes tus conexiones, repos e idioma.": "Work is where your agents live, Tasks has your Jira, MR your merge requests, Avisos what changed, and Settings your connections, repos and language.",
+  "Abre un trabajo en uno de tus repos. Si escribes qué hay que hacer, Libretto empieza por la spec; si no, abre Claude a secas.": "Opens a workspace in one of your repos. If you write what needs doing, Libretto starts with the spec; if not, it opens plain Claude.",
+  "La etapa y el checklist del trabajo elegido, leídos de sus archivos. Pulsa Spec o Plan para leerlos y corregirlos mientras Claude te espera, y Construir para ver los cambios de código.": "The stage and checklist of the chosen workspace, read from its files. Press Spec or Plan to read and correct them while Claude waits for you, and Build to see the code changes.",
+  "Tus MR": "Your MRs",
+  "Las tuyas, las que te toca revisar y las de los proyectos que sigues en GitHub y GitLab. Pulsa una para ver sus hilos y responder, o Puntuar para que Claude te diga su dificultad y su riesgo.": "Yours, the ones you review and the ones in projects you follow on GitHub and GitLab. Open one to see its threads and reply, or Score to have Claude tell you its difficulty and risk.",
+  "Lo que ha cambiado desde la última vez: revisiones pedidas, comentarios, CI rota, MRs nuevas y agentes que te necesitan.": "What changed since last time: review requests, comments, broken CI, new MRs and agents that need you."
 }
