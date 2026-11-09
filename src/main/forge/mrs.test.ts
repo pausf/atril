@@ -46,7 +46,7 @@ const ghPull = (repo: string, n: number, author: string, hoursAgo = 1) => ({
   user: { login: author },
   number: n,
   updated_at: at(hoursAgo),
-  head: { sha: `sha${n}` },
+  head: { sha: `sha${n}`, ref: `feat/${n}` },
   base: { repo: { full_name: repo } },
   additions: 12,
   deletions: 3,
@@ -58,6 +58,7 @@ const glMr = (project: string, id: number, iid: number, author: string, hoursAgo
   author: { username: author },
   project_id: id,
   iid,
+  source_branch: `feat/${iid}`,
   updated_at: at(hoursAgo),
   references: { full: `${project}!${iid}` },
   changes_count: '7',
@@ -143,8 +144,8 @@ describe('mr lists', () => {
     // Your own MRs in followed projects are already in Mías.
     expect(r.following.map((m) => m.url)).toEqual(['https://github.com/acme/api/pull/4', `${GL}/grp/front/-/merge_requests/8`])
 
-    expect(r.following[0]).toMatchObject({ forge: 'github', title: 'PR acme/api#4', project: 'acme/api', author: 'luis', ci: 'pass', added: 12, removed: 3, files: 4 })
-    expect(r.following[1]).toMatchObject({ forge: 'gitlab', title: 'MR grp/front!8', project: 'grp/front', author: 'leo', ci: 'fail', files: 7 })
+    expect(r.following[0]).toMatchObject({ forge: 'github', title: 'PR acme/api#4', project: 'acme/api', author: 'luis', ci: 'pass', added: 12, removed: 3, files: 4, branch: 'feat/4' })
+    expect(r.following[1]).toMatchObject({ forge: 'gitlab', title: 'MR grp/front!8', project: 'grp/front', author: 'leo', ci: 'fail', files: 7, branch: 'feat/8' })
     expect(r.following[1]!.added).toBeUndefined()
     expect(r.mine[0]!.project).toBe('pau/web')
     // Avisos' «Comentario nuevo»: the count the listing already carries, no extra request.

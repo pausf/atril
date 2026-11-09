@@ -223,6 +223,8 @@ export interface MrItem {
   head?: string
   /** Comments as the listing counts them: GitHub's search `comments`, GitLab's `user_notes_count`. */
   notes?: number
+  /** The source branch (GitHub `head.ref` from the detail call, GitLab `source_branch`). */
+  branch?: string
 }
 
 export type MrListName = 'mine' | 'review' | 'following'
@@ -307,6 +309,30 @@ export interface MrThread {
 export type MrThreads = { threads: MrThread[]; more: boolean } | { error: string }
 export type MrReply = { comment: MrComment } | { error: string }
 
+export type LensName = 'intent' | 'security' | 'design' | 'reliability' | 'tests'
+export type LensSeverity = 'high' | 'medium' | 'low'
+
+/** M26: one finding of the lens review. Claude's words, never translated, shown as text. */
+export interface MrDraft {
+  id: string
+  lens: LensName
+  severity: LensSeverity
+  file?: string
+  line?: number
+  text: string
+  state: 'open' | 'published' | 'sent'
+}
+
+/** `head` is set once a review is stored (zero findings included); `stale` when the MR has a newer head (M26). */
+export interface MrDrafts {
+  head?: string
+  stale: boolean
+  drafts: MrDraft[]
+  /** M28: exactly one live workspace on the MR's branch in a repo of its project. */
+  canSend: boolean
+}
+export type MrDraftsResult = MrDrafts | { error: string }
+
 export interface MrApi {
   list(): Promise<MrLists>
   /** Opens an MR of the latest listing in the browser; anything else is ignored (W52). */
@@ -320,6 +346,15 @@ export interface MrApi {
   threads(url: string): Promise<MrThreads>
   /** Posts one reply to a thread of that MR as the person (M21). */
   reply(url: string, threadId: string, body: string): Promise<MrReply>
+  /** Runs the lens review of an MR of Mías or Me toca revisar; resolves with its drafts when done (M25). */
+  review(url: string): Promise<MrDraftsResult>
+  /** The stored drafts of an MR (M26). */
+  draftsOf(url: string): Promise<MrDraftsResult>
+  /** Posts an open draft once as the MR's general comment (M27). */
+  publishDraft(url: string, id: string): Promise<MrDraftsResult>
+  /** Types an open draft into the one agent on the MR's branch (M28). */
+  sendDraft(url: string, id: string): Promise<MrDraftsResult>
+  discardDraft(url: string, id: string): Promise<MrDraftsResult>
 }
 
 export type AvisoKind = 'review' | 'comment' | 'ci' | 'following' | 'opened' | 'gone' | 'agent'

@@ -75,7 +75,7 @@ function Shell() {
   useEffect(() => {
     void window.atril.snapshotView().then((v) => {
       if (v === 'settings' || v === 'tasks' || v === 'work' || v === 'mr' || v === 'avisos') setScreen(v)
-      if (v === 'mr-score' || v === 'mr-thread') setScreen('mr')
+      if (v === 'mr-score' || v === 'mr-thread' || v === 'mr-lens') setScreen('mr')
       if (v === 'tasks-board') setScreen('tasks')
       if (v === 'settings-board' || v === 'create-repo') setScreen('settings')
       if (v === 'tasks-own') {

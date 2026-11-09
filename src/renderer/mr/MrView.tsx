@@ -3,11 +3,13 @@ import type { ForgeId, MrItem, MrThread, MrThreads } from '../../preload/api'
 import { ago } from '../flow/ActivityFeed'
 import { useModalKeys } from '../flow/modalKeys'
 import { useT } from '../ui'
+import { LensDrafts } from './LensDrafts'
 
 const NAME: Record<ForgeId, string> = { github: 'GitHub', gitlab: 'GitLab' }
 
 /** M18–M24: the MR's threads with a reply box each. Comments are plain text, never markup. */
-export function MrView({ m, onClose }: { m: MrItem; onClose: () => void }) {
+/** `reviewable`: the MR is in Mías or Me toca revisar, so the lens review is offered (M25). */
+export function MrView({ m, reviewable, onClose }: { m: MrItem; reviewable: boolean; onClose: () => void }) {
   const t = useT()
   const dialog = useRef<HTMLDivElement>(null)
   const [data, setData] = useState<MrThreads | null>(null)
@@ -60,6 +62,7 @@ export function MrView({ m, onClose }: { m: MrItem; onClose: () => void }) {
           </button>
         </div>
         <div className="mr-threads">
+          <LensDrafts m={m} reviewable={reviewable} />
           {data === null && <div className="empty">{t('Cargando los hilos…')}</div>}
           {data && 'error' in data && (
             <p className="notice" role="alert">

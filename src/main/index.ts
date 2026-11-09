@@ -10,7 +10,8 @@ import { FORGES, forgeSettings, type ForgeId } from './credentials/forge'
 import { cloneAndRegister, createRepo } from './forge/create'
 import { createForgeGuards } from './forge/guards'
 import { listMrs } from './forge/mrs'
-import { createScorer } from './forge/scores'
+import { createLenses } from './forge/lenses'
+import { createQueue, createScorer } from './forge/scores'
 import { createThreads } from './forge/threads'
 import { fileDiff, listChanges } from './flow/changes'
 import { nextUp } from './nextup'
@@ -21,7 +22,7 @@ import { jiraSettings } from './credentials/jira'
 import { searchBoards } from './credentials/boards'
 import type { JiraCreds } from './credentials/check'
 import { doctor } from './doctor'
-import type { Aviso, CreateRepoRequest, Mode, MrItem, MrLists, MrScoreState, MrThreads, UiState } from '../preload/api'
+import type { Aviso, CreateRepoRequest, Mode, MrDrafts, MrDraftsResult, MrItem, MrLists, MrScoreState, MrThreads, UiState } from '../preload/api'
 import { readInbox } from './jira/inbox'
 import { inboxGroups } from './jira/board'
 import { proposeStart, start } from './jira/start'
@@ -124,6 +125,21 @@ function fakeThreads(): MrThreads {
         comments: [{ id: '9', author: 'jordi', at: at(3), body: 'Lo he probado en preview y la fecha sale bien para Madrid y Barcelona. 👍' }], // i18n-ignore
         yourTurn: true
       }
+    ]
+  }
+}
+
+// ponytail: dev-only, ATRIL_SNAPSHOT_VIEW=mr-lens photographs the Libretto drafts: open, published, sent.
+function fakeDrafts(): MrDrafts {
+  return {
+    head: 'h41',
+    stale: false,
+    canSend: true,
+    drafts: [
+      { id: 'd1', lens: 'security', severity: 'high', file: 'src/Delivery/PromiseDate.php', line: 48, text: 'La provincia llega del pedido sin validar y se usa como clave del calendario: un valor inesperado rompe el cálculo.', state: 'open' }, // i18n-ignore
+      { id: 'd2', lens: 'tests', severity: 'medium', text: 'No hay ningún test del salto de festivos en domingo.', state: 'open' }, // i18n-ignore
+      { id: 'd3', lens: 'reliability', severity: 'low', file: 'src/Delivery/Import.php', line: 12, text: 'Si el BOE cambia el formato, la importación falla en silencio.', state: 'published' }, // i18n-ignore
+      { id: 'd4', lens: 'design', severity: 'low', file: 'src/Delivery/PromiseDate.php', text: 'El calendario nacional y el provincial podrían compartir una sola interfaz.', state: 'sent' } // i18n-ignore
     ]
   }
 }
@@ -279,9 +295,12 @@ app.whenReady().then(async () => {
   ipcMain.handle('atril:mr:open', (_e, url: unknown) => {
     if (typeof url === 'string' && guards.openable(url)) return shell.openExternal(url)
   })
+  // One claude at a time across scores and lens reviews (M25).
+  const queue = createQueue()
   const scorer = createScorer({
     store: secretStore,
     run,
+    queue,
     target: guards.scoreTarget,
     emit: (url, state) => BrowserWindow.getAllWindows().forEach((w) => w.webContents.send('atril:mr:score-changed', url, state))
   })
@@ -296,12 +315,31 @@ app.whenReady().then(async () => {
   )
   const threads = createThreads({ store: secretStore, target: guards.threadTarget })
   ipcMain.handle('atril:mr:threads', (_e, url: unknown): Promise<MrThreads> =>
-    // ponytail: dev-only, ATRIL_SNAPSHOT_VIEW=mr-thread photographs two believable threads.
-    SNAPSHOT && process.env['ATRIL_SNAPSHOT_VIEW'] === 'mr-thread' ? Promise.resolve(fakeThreads()) : threads.read(typeof url === 'string' ? url : '')
+    // ponytail: dev-only, ATRIL_SNAPSHOT_VIEW=mr-thread|mr-lens photographs two believable threads.
+    SNAPSHOT && /^mr-(thread|lens)$/.test(process.env['ATRIL_SNAPSHOT_VIEW'] ?? '') ? Promise.resolve(fakeThreads()) : threads.read(typeof url === 'string' ? url : '')
   )
   ipcMain.handle('atril:mr:reply', (_e, url: unknown, threadId: unknown, body: unknown) =>
     typeof url === 'string' && typeof threadId === 'string' && typeof body === 'string' ? threads.reply(url, threadId, body) : { error: t('Escribe una respuesta') }
   )
+  const lenses = createLenses({
+    store: secretStore,
+    run,
+    queue,
+    target: guards.scoreTarget,
+    listed: (url) => guards.threadTarget(url) !== undefined,
+    post: (url, body) => threads.reply(url, 'general', body),
+    send: (id, text) => replyToAgent(id, text, run),
+    workspaces: () => listWorkspaces(run)
+  })
+  // ponytail: dev-only, ATRIL_SNAPSHOT_VIEW=mr-lens photographs believable drafts without Claude or a forge.
+  const fakeLens = SNAPSHOT && process.env['ATRIL_SNAPSHOT_VIEW'] === 'mr-lens'
+  const text = (v: unknown): string => (typeof v === 'string' ? v : '')
+  const refused = (): MrDraftsResult => ({ error: t('Ese borrador ya no está abierto') })
+  ipcMain.handle('atril:mr:review', (_e, url: unknown): Promise<MrDraftsResult> => (fakeLens ? Promise.resolve(fakeDrafts()) : lenses.review(text(url))))
+  ipcMain.handle('atril:mr:draftsOf', (_e, url: unknown): Promise<MrDraftsResult> => (fakeLens ? Promise.resolve(fakeDrafts()) : lenses.draftsOf(text(url))))
+  ipcMain.handle('atril:mr:publishDraft', (_e, url: unknown, id: unknown) => (fakeLens ? refused() : lenses.publish(text(url), text(id))))
+  ipcMain.handle('atril:mr:sendDraft', (_e, url: unknown, id: unknown) => (fakeLens ? refused() : lenses.send(text(url), text(id))))
+  ipcMain.handle('atril:mr:discardDraft', (_e, url: unknown, id: unknown) => (fakeLens ? refused() : lenses.discard(text(url), text(id))))
   ipcMain.handle('atril:forge:pickFolder', async () => {
     const picked = await dialog.showOpenDialog({ properties: ['openDirectory', 'createDirectory'] })
     const folder = picked.canceled ? null : (picked.filePaths[0] ?? null)

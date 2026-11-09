@@ -14,6 +14,9 @@ export interface ScoreTarget {
   forge: ForgeId
   ref: string
   head?: string
+  /** The MR's project and source branch, which lenses match against local workspaces (M28). */
+  project?: string
+  branch?: string
 }
 
 const CUT_BYTES = 120 * 1024
@@ -62,7 +65,7 @@ export function metrics(diff: string): MrMetrics {
 }
 
 /** M11: whole files up to 120 KB; a single larger first file is cut at a line instead. */
-function cutDiff(diff: string): { text: string; cut?: { seen: number; total: number } } {
+export function cutDiff(diff: string): { text: string; cut?: { seen: number; total: number } } {
   const total = Buffer.byteLength(diff)
   if (total <= CUT_BYTES) return { text: diff }
   const files = diff.split(/(?=^diff --git )/m)
@@ -108,11 +111,11 @@ function validAi(v: unknown): v is MrAiScore {
   )
 }
 
-class Failure extends Error {}
+export class Failure extends Error {}
 
-type Get = (path: string, accept?: string) => Promise<Response>
+export type Get = (path: string, accept?: string) => Promise<Response>
 
-async function fetchDiff(get: Get, target: ScoreTarget): Promise<string> {
+export async function fetchDiff(get: Get, target: ScoreTarget): Promise<string> {
   if (target.forge === 'github') {
     const res = await get(target.ref, 'application/vnd.github.diff')
     return res.text()
@@ -131,24 +134,51 @@ async function fetchDiff(get: Get, target: ScoreTarget): Promise<string> {
   return out
 }
 
-const cacheFile = (url: string): string => join(atrilHome(), 'scores', `${createHash('sha256').update(url).digest('hex')}.json`)
+const cacheFile = (kind: string, url: string): string => join(atrilHome(), kind, `${createHash('sha256').update(url).digest('hex')}.json`)
 
-async function readCache(url: string): Promise<MrScore | null> {
+export async function readStored<T>(kind: string, url: string): Promise<T | null> {
   try {
-    return JSON.parse(await readFile(cacheFile(url), 'utf8')) as MrScore
+    return JSON.parse(await readFile(cacheFile(kind, url), 'utf8')) as T
   } catch {
     return null
   }
 }
 
-async function writeCache(url: string, score: MrScore): Promise<void> {
-  const file = cacheFile(url)
-  await mkdir(join(atrilHome(), 'scores'), { recursive: true })
-  await writeFile(`${file}.tmp`, JSON.stringify(score))
+export async function writeStored(kind: string, url: string, value: unknown): Promise<void> {
+  const file = cacheFile(kind, url)
+  await mkdir(join(atrilHome(), kind), { recursive: true })
+  await writeFile(`${file}.tmp`, JSON.stringify(value))
   await rename(`${file}.tmp`, file).catch(async (err) => {
     await rm(`${file}.tmp`, { force: true })
     throw err
   })
+}
+
+/** One claude at a time across scores and reviews, in the order asked (M14, M25). */
+export function createQueue() {
+  let chain: Promise<unknown> = Promise.resolve()
+  return <T>(job: () => Promise<T>): Promise<T> => {
+    const next = chain.then(job)
+    chain = next.catch(() => undefined)
+    return next
+  }
+}
+export type Queue = ReturnType<typeof createQueue>
+
+/** The forge's GET with the token in headers only; a redirect would carry it to another host. */
+export function forgeGet(tgt: ScoreTarget, secret: Record<string, string> | null, fetchImpl: typeof fetch): Get {
+  const name = FORGE_NAME[tgt.forge]
+  const { base, headers } = forgeApi(tgt.forge, secret?.['site'] ?? 'https://gitlab.com', secret?.['token'] ?? '')
+  return async (path, accept) => {
+    let res: Response
+    try {
+      res = await fetchImpl(new URL(`${base}${path}`), { headers: { ...headers, ...(accept && { Accept: accept }) }, redirect: 'error', signal: AbortSignal.timeout(10_000) })
+    } catch (err) {
+      throw new Failure(networkText(name, err))
+    }
+    if (res.ok) return res
+    throw new Failure(res.status === 406 && tgt.forge === 'github' ? t('es demasiado grande para {forge}', { forge: name }) : statusText(name, res.status))
+  }
 }
 
 interface Deps {
@@ -158,13 +188,14 @@ interface Deps {
   /** M17: the scorable row behind an URL, checked when asked. */
   target: (url: string) => ScoreTarget | undefined
   emit: (url: string, state: MrScoreState) => void
+  /** Shared with the lens reviews; its own when absent. */
+  queue?: Queue
 }
 
 /** M11–M17: scores on demand, one at a time, kept per MR and head commit. */
-export function createScorer({ store, run, fetchImpl = fetch, target, emit }: Deps) {
+export function createScorer({ store, run, fetchImpl = fetch, target, emit, queue = createQueue() }: Deps) {
   const pending = new Map<string, { promise: Promise<MrScoreState>; state: MrScoreState }>()
   const failed = new Map<string, MrScoreState>()
-  let chain: Promise<unknown> = Promise.resolve()
 
   const set = (url: string, state: MrScoreState): MrScoreState => {
     const p = pending.get(url)
@@ -176,19 +207,7 @@ export function createScorer({ store, run, fetchImpl = fetch, target, emit }: De
   async function work(url: string, tgt: ScoreTarget): Promise<MrScoreState> {
     set(url, { state: 'running' })
     const secret = await store.readSecret(tgt.forge).catch(() => null)
-    const name = FORGE_NAME[tgt.forge]
-    const { base, headers } = forgeApi(tgt.forge, secret?.['site'] ?? 'https://gitlab.com', secret?.['token'] ?? '')
-    const get: Get = async (path, accept) => {
-      let res: Response
-      try {
-        // A redirect would carry the token to another host.
-        res = await fetchImpl(new URL(`${base}${path}`), { headers: { ...headers, ...(accept && { Accept: accept }) }, redirect: 'error', signal: AbortSignal.timeout(10_000) })
-      } catch (err) {
-        throw new Failure(networkText(name, err))
-      }
-      if (res.ok) return res
-      throw new Failure(res.status === 406 && tgt.forge === 'github' ? t('es demasiado grande para {forge}', { forge: name }) : statusText(name, res.status))
-    }
+    const get = forgeGet(tgt, secret, fetchImpl)
 
     let head = tgt.head
     let diff: string
@@ -196,7 +215,7 @@ export function createScorer({ store, run, fetchImpl = fetch, target, emit }: De
       if (!secret?.['token']) throw new Failure(t('Conecta GitHub o GitLab en Ajustes'))
       // GitHub: the head of the diff about to be scored, read now rather than from the listing.
       if (tgt.forge === 'github') head = ((await (await get(tgt.ref)).json()) as { head?: { sha?: string } }).head?.sha
-      const cached = head ? await readCache(url) : null
+      const cached = head ? await readStored<MrScore>('scores', url) : null
       if (cached && cached.head === head) return { state: 'done', score: cached }
       diff = await fetchDiff(get, tgt)
     } catch (err) {
@@ -222,7 +241,7 @@ export function createScorer({ store, run, fetchImpl = fetch, target, emit }: De
     if (answer?.is_error !== false || !validAi(answer.structured_output)) return fail(t('respuesta fuera del esquema'))
 
     const score: MrScore = { ...(head && { head }), metrics: m, ai: answer.structured_output, lang, ...(cut && { cut }), at: new Date().toISOString() }
-    await writeCache(url, score)
+    await writeStored('scores', url, score)
     return { state: 'done', score }
   }
 
@@ -233,8 +252,7 @@ export function createScorer({ store, run, fetchImpl = fetch, target, emit }: De
       const tgt = target(url)
       if (!tgt) return Promise.resolve({ state: 'error', text: t('Solo se pueden puntuar tus MR y las que te toca revisar') })
       failed.delete(url)
-      const promise = chain
-        .then(() => work(url, tgt))
+      const promise = queue(() => work(url, tgt))
         .catch((): MrScoreState => ({ state: 'error', text: t('Claude no ha podido puntuar esta MR ({detail})', { detail: 'error' }) }))
         .then((state) => {
           pending.delete(url)
@@ -242,7 +260,6 @@ export function createScorer({ store, run, fetchImpl = fetch, target, emit }: De
           emit(url, state)
           return state
         })
-      chain = promise
       pending.set(url, { promise, state: { state: 'queued' } })
       emit(url, { state: 'queued' })
       return promise
@@ -254,7 +271,7 @@ export function createScorer({ store, run, fetchImpl = fetch, target, emit }: De
         const live = pending.get(url)?.state ?? failed.get(url)
         if (live) out[url] = live
         else {
-          const cached = await readCache(url)
+          const cached = await readStored<MrScore>('scores', url)
           out[url] = cached ? { state: 'done', score: cached } : { state: 'none' }
         }
       }

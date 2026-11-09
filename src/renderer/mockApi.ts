@@ -1,5 +1,5 @@
 import { vi } from 'vitest'
-import type { ActivityLine, AddRepoResult, Aviso, FileChange, FlowDocs, ForgeId, ForgeStatus, Mode, MrLists, MrReply, MrScoreState, MrThreads, AgentState, AtrilApi, FlowStage, JiraIssue, MenuAction, NextItem, StartProposalResult, StartRequest, StartResult, RepoView, UiState, WorkspaceResult, WorkspaceView } from '../preload/api'
+import type { ActivityLine, AddRepoResult, Aviso, FileChange, FlowDocs, ForgeId, ForgeStatus, Mode, MrDraft, MrDrafts, MrDraftsResult, MrLists, MrReply, MrScoreState, MrThreads, AgentState, AtrilApi, FlowStage, JiraIssue, MenuAction, NextItem, StartProposalResult, StartRequest, StartResult, RepoView, UiState, WorkspaceResult, WorkspaceView } from '../preload/api'
 
 export const workspace = (id: string, branch: string, alive = true): WorkspaceView => ({
   id,
@@ -53,6 +53,10 @@ interface Options {
   scores?: Record<string, MrScoreState>
   /** What mr.threads answers per URL; missing means no threads. */
   threads?: Record<string, MrThreads>
+  /** What mr.draftsOf answers per URL; missing means no review yet. The lens actions change it in place. */
+  drafts?: Record<string, MrDrafts>
+  /** What mr.review answers per URL (stored unless it is an error); missing means no findings. */
+  review?: Record<string, MrDraftsResult>
   /** The stored notices, newest first; markRead changes them in place. */
   avisos?: Aviso[]
 }
@@ -65,6 +69,13 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
   const activityListeners = new Set<(id: string, lines: ActivityLine[]) => void>()
   const flowListeners = new Set<(id: string, stage: FlowStage) => void>()
   const scoreListeners = new Set<(url: string, state: MrScoreState) => void>()
+  const drafts = new Map(Object.entries(o.drafts ?? {}))
+  const changeDrafts = (url: string, f: (d: MrDraft[]) => MrDraft[]): MrDraftsResult => {
+    const next: MrDrafts = { ...(drafts.get(url) ?? { stale: false, canSend: false, drafts: [] }), drafts: [] }
+    next.drafts = f(drafts.get(url)?.drafts ?? [])
+    drafts.set(url, next)
+    return next
+  }
   const avisoListeners = new Set<(items: Aviso[]) => void>()
   let avisos = o.avisos ?? []
   // The mock is a Spanish Mac: Sistema resolves to Spanish, as main would there.
@@ -127,7 +138,16 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
         return () => scoreListeners.delete(cb)
       },
       threads: vi.fn(async (url: string): Promise<MrThreads> => o.threads?.[url] ?? { threads: [], more: false }),
-      reply: vi.fn(async (_url: string, _id: string, body: string): Promise<MrReply> => ({ comment: { id: 'new', author: 'pau', at: new Date().toISOString(), body } }))
+      reply: vi.fn(async (_url: string, _id: string, body: string): Promise<MrReply> => ({ comment: { id: 'new', author: 'pau', at: new Date().toISOString(), body } })),
+      review: vi.fn(async (url: string): Promise<MrDraftsResult> => {
+        const r = o.review?.[url] ?? { head: 'h1', stale: false, canSend: false, drafts: [] }
+        if (!('error' in r)) drafts.set(url, r)
+        return r
+      }),
+      draftsOf: vi.fn(async (url: string): Promise<MrDraftsResult> => drafts.get(url) ?? { stale: false, canSend: false, drafts: [] }),
+      publishDraft: vi.fn(async (url: string, id: string) => changeDrafts(url, (ds) => ds.map((d) => (d.id === id ? { ...d, state: 'published' as const } : d)))),
+      sendDraft: vi.fn(async (url: string, id: string) => changeDrafts(url, (ds) => ds.map((d) => (d.id === id ? { ...d, state: 'sent' as const } : d)))),
+      discardDraft: vi.fn(async (url: string, id: string) => changeDrafts(url, (ds) => ds.filter((d) => d.id !== id)))
     },
     avisos: {
       list: vi.fn(async () => avisos),

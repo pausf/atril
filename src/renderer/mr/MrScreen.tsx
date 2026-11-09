@@ -25,10 +25,10 @@ export function MrScreen({ mrs, openUrl }: { mrs: MrsState; openUrl?: string | n
     const s = first && scores[first.url]
     if (first && s?.state === 'done') void window.atril.snapshotView().then((v) => v === 'mr-score' && setViewing((cur) => cur ?? { m: first, score: s.score }))
   }, [result, scores])
-  // ponytail: dev-only, ATRIL_SNAPSHOT_VIEW=mr-thread opens the first row of Mías for a photo.
+  // ponytail: dev-only, ATRIL_SNAPSHOT_VIEW=mr-thread|mr-lens opens the first row of Mías for a photo.
   useEffect(() => {
     const first = result?.mine[0]
-    if (first) void window.atril.snapshotView().then((v) => v === 'mr-thread' && setOpened((cur) => cur ?? first))
+    if (first) void window.atril.snapshotView().then((v) => (v === 'mr-thread' || v === 'mr-lens') && setOpened((cur) => cur ?? first))
   }, [result])
   const handled = useRef<string | null>(null)
   useEffect(() => {
@@ -82,7 +82,7 @@ export function MrScreen({ mrs, openUrl }: { mrs: MrsState; openUrl?: string | n
           </FoldSection>
         ))
       )}
-      {opened && <MrView m={opened} onClose={() => setOpened(null)} />}
+      {opened && <MrView m={opened} reviewable={!!result && [...result.mine, ...result.review].some((r) => r.url === opened.url)} onClose={() => setOpened(null)} />}
       {viewing && <ScoreView m={viewing.m} score={viewing.score} onScore={() => score(viewing.m.url)} onClose={() => setViewing(null)} />}
     </section>
   )

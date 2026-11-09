@@ -149,5 +149,5 @@ None.
 
 ## Checklist
 
-- [ ] main: branch on rows, the lens call, drafts per commit, publish, send to agent, the listed-only check · Closes: M25, M26, M27, M28
-- [ ] the window: Revisar con Libretto, drafts with Publicar, Mandar al agente and Descartar · waits on box 1 · Closes: M29
+- [x] main: branch on rows, the lens call, drafts per commit, publish, send to agent, the listed-only check · Closes: M25, M26, M27, M28
+- [x] the window: Revisar con Libretto, drafts with Publicar, Mandar al agente and Descartar · waits on box 1 · Closes: M29

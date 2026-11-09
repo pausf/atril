@@ -45,7 +45,7 @@ interface GhPull {
   updated_at: string
   repository_url?: string
   base?: { repo?: { full_name?: string } }
-  head?: { sha?: string }
+  head?: { sha?: string; ref?: string }
   additions?: number
   deletions?: number
   changed_files?: number
@@ -59,6 +59,7 @@ interface GlMr {
   project_id: number
   iid: number
   sha?: string
+  source_branch?: string
   updated_at: string
   references?: { full?: string }
   changes_count?: string
@@ -75,7 +76,7 @@ function ghRow(p: GhPull, repo: string): Row {
 
 function glRow(m: GlMr): Row {
   const project = m.references?.full?.replace(/!\d+$/, '') ?? m.web_url.split('/-/')[0]!.replace(/^https:\/\/[^/]+\//, '')
-  return { forge: 'gitlab', url: m.web_url, title: m.title, project, author: m.author?.username ?? '', updatedAt: m.updated_at, ref: `/projects/${m.project_id}/merge_requests/${m.iid}`, ...(m.sha && { head: m.sha }), ...(typeof m.user_notes_count === 'number' && { notes: m.user_notes_count }) }
+  return { forge: 'gitlab', url: m.web_url, title: m.title, project, author: m.author?.username ?? '', updatedAt: m.updated_at, ref: `/projects/${m.project_id}/merge_requests/${m.iid}`, ...(m.sha && { head: m.sha }), ...(m.source_branch && { branch: m.source_branch }), ...(typeof m.user_notes_count === 'number' && { notes: m.user_notes_count }) }
 }
 
 async function github(get: Get, account: string): Promise<Record<MrListName, Page>> {
@@ -125,7 +126,7 @@ async function details(forge: ForgeId, get: Get, row: Row): Promise<void> {
     return
   }
   const p = r.body as GhPull
-  Object.assign(row, { added: p.additions, removed: p.deletions, files: p.changed_files }, p.head?.sha && { head: p.head.sha })
+  Object.assign(row, { added: p.additions, removed: p.deletions, files: p.changed_files }, p.head?.sha && { head: p.head.sha }, p.head?.ref && { branch: p.head.ref })
   // No head sha, no check runs to ask for: CI stays unknown rather than a false forge error.
   if (!p.head?.sha) return
   const runs = await get(`${row.ref.replace(/\/pulls\/\d+$/, '')}/commits/${p.head.sha}/check-runs?per_page=100`)
@@ -197,7 +198,7 @@ export async function listMrs(
   for (const r of results) {
     if (!r) continue
     out.connected.push(r.forge)
-    for (const row of [...r.lists.mine, ...r.lists.review]) targets.set(row.url, { forge: r.forge, ref: row.ref, ...(row.head && { head: row.head }) })
+    for (const row of [...r.lists.mine, ...r.lists.review]) targets.set(row.url, { forge: r.forge, ref: row.ref, project: row.project, ...(row.head && { head: row.head }), ...(row.branch && { branch: row.branch }) })
     for (const l of LISTS) {
       for (const row of r.lists[l]) threads.set(row.url, { forge: r.forge, ref: row.ref, author: row.author })
       out[l].push(
