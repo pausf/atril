@@ -100,6 +100,11 @@ The `workspaces` capability, phase 1. Its siblings in this change: `.agents/spec
 - The «Cambios» section shows the total as a warning past 400 lines: «⚠ N líneas: rama grande (más
   de 400). Atril le ha pedido a Claude que te proponga separarla en MRs más pequeñas.»
 
+### Language (add-language, 9 nov 2026)
+
+- `ui.json` keeps the language choice beside the theme; main resolves it and owns the result for
+  the menu, notifications, its messages and the window.
+
 ## Scope boundaries
 
 **In:** the three columns and footer of `bocetos/fase1-nucleo.html` (boceto 8), the
@@ -169,6 +174,10 @@ Cambios (`spec-flow-status.md`). **Out:** splitting the branch (Claude does it, 
 untracked list) per file-changing event, never prints anything when it cannot find its workspace,
 and the note never carries file contents.
 
+### Language (add-language, 9 nov 2026)
+
+**In:** storing, resolving, the menu rebuild, `t()` in main. **Out:** anything in the window.
+
 ## Constraints
 
 - Electron (current stable) + TypeScript in strict mode, pnpm, Node 24 (installed:
@@ -220,6 +229,10 @@ and the note never carries file contents.
   `$ATRIL_HOME/workspaces.json` by its tmux session name.
 - Claude Code reads `hookSpecificOutput.additionalContext` from a PostToolUse hook's stdout and
   gives it to Claude on its next request (verified 9 nov, code.claude.com/docs/en/hooks).
+
+### Language (add-language, 9 nov 2026)
+
+- Same `ui.json` and `atril:ui:*` IPC as the theme (W35).
 
 ## Prior decisions
 
@@ -403,6 +416,10 @@ and the note never carries file contents.
 - Q: (spec-reviewer) ¿El número es exacto? → A: sí, el total de F18, sin cortar la cuenta (assumed).
 - Q: (spec-reviewer) ¿Dos hooks a la vez? → A: cada umbral se reclama creando un archivo en exclusiva (`wx`); como mucho una nota por umbral (assumed).
 - Q: (spec-reviewer) ¿El aviso promete una pregunta que ya no vendrá? → A: el texto dice lo que ya pasó: «Atril le ha pedido a Claude que te proponga separarla» (assumed).
+
+### Language (add-language, 9 nov 2026)
+
+- **One source for Sistema** (assumed, proposal.md decision log): main.
 
 ## Task breakdown
 
@@ -647,3 +664,13 @@ and the note never carries file contents.
 - **W46** The hook's count shall equal F18's total for the same tree, and the renderer's warning
   threshold shall be the hook's.
   Proof: src/main/activity.test.ts the hook counts like the change list
+
+### Language (add-language, 9 nov 2026)
+
+- **W47** The `language` in `ui.json` shall survive a restart when it is `system`, `es` or `en`,
+  and shall read as `system` when missing or anything else.
+  Proof: src/main/i18n.test.ts the language choice survives a restart
+- **W48** When the language resolves to English — chosen, or Sistema on a Mac whose first
+  preferred language does not start with `es` — main shall build the menu, the notification texts
+  and its own messages in English, keeping any `{detail}` as it came.
+  Proof: src/main/i18n.test.ts main speaks the chosen language

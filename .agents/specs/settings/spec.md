@@ -28,6 +28,13 @@ Governs: src/main/credentials/** src/renderer/settings/**
   select — «Auto · <detected mode>», «Worktree», «In-place» — plus «Añadir repo…».
 - The Trabajo sidebar shows **«＋ Nuevo trabajo»** above «Trabajo en marcha» and no repo list.
 
+### Language (add-language, 9 nov 2026)
+
+- Ajustes has an **Idioma** card: Español · English · Sistema. Choosing one switches the window,
+  the app menu and new Mac notifications at once, and the choice survives restarts.
+- What Atril did not write — the terminal, Claude's words, Jira titles, file names and contents —
+  stays exactly as it came.
+
 ## Scope boundaries
 
 **In:** storing, checking, replacing and deleting the Jira token, through a store and a card
@@ -59,6 +66,15 @@ it is keyboard-reachable like the other cards (W22) — a ceiling named: no test
 keyboard; add one if a custom control ever replaces a native one. The add flow keeps its
 validation (id pattern, not a git folder).
 
+### Language (add-language, 9 nov 2026)
+
+**In:** the setting, the window's text, the menu, notifications, main's messages that reach the
+window. **Out:** more languages, translating Jira or Claude, dates and numbers formatted per
+locale beyond the time already shown, the sketches.
+
+**Never scoped out:** a text with no English entry shows in Spanish rather than empty; the card is
+keyboard-reachable like Apariencia.
+
 ## Constraints
 
 - Electron `safeStorage` (macOS Keychain-backed key) encrypts each token; the ciphertext lives
@@ -78,6 +94,12 @@ validation (id pattern, not a git folder).
 
 - Same `repos` API as today (`list`, `add`, `addWithId`, `setOverride`); nothing in main changes.
 - The card sits between Jira and Apariencia and uses the existing card styles.
+
+### Language (add-language, 9 nov 2026)
+
+- The setting lives in `ui.json` beside the theme (W35); no new dependency.
+- Main owns the resolved language and the window takes it from main (`spec-workspaces.md`).
+- Spanish stays the source of every text: it is the key.
 
 ## Prior decisions
 
@@ -125,6 +147,34 @@ validation (id pattern, not a git folder).
 - Q: (spec-reviewer) ¿Y el boceto? → A: `bocetos/repos.html` queda como registro de la decisión; `fase1-nucleo.html` se actualiza para verse igual (tarjeta en Ajustes, botón en la barra) (assumed).
 - Q: (spec-reviewer) ¿El tutorial? → A: no tiene paso de repos; no cambia (assumed).
 - Q: ¿Dónde se ve el motivo del modo? → A: como `title` del desplegable y, en texto, bajo el nombre cuando el modo es in-place, que es el que conviene entender (assumed).
+
+### Language (add-language, 9 nov 2026)
+
+- **English as well** — Pau, 9 nov: «Hazlo la versión en inglés, es decir, en ajustes que puedas
+  elegir español o inglés. del sistema.»
+- **Spanish text as the key** (assumed): no invented ids to keep in sync; a missing entry falls
+  back to the Spanish it already has.
+
+#### Alternatives that lost
+
+| Considered | Why it lost |
+|---|---|
+| i18next / react-intl | a dependency and a key scheme for two languages and ~200 strings |
+| Invented ids (`settings.title`) | two files to keep in sync per text; a missing id shows nothing |
+| Translating Jira titles or Claude's output | not Atril's words; and it would need a model call |
+
+#### Decision log, answers as given (2026-11-09)
+- Q: «tu desarrollo todo sin parar … te dejo solo» stands → decisions taken with the recommended option, marked (assumed).
+- Q: ¿Qué opciones? → A: Español, English y Sistema; Sistema por defecto, como el tema (assumed).
+- Q: ¿Qué es «Sistema»? → A: el idioma preferido de macOS: español si empieza por `es`, inglés en cualquier otro caso (assumed).
+- Q: ¿Qué se traduce? → A: todo lo que escribe Atril: ventana, menú, avisos del Mac y mensajes de error; nunca lo que no escribe Atril: la terminal, lo que dice Claude, títulos de Jira, nombres de archivo ni el contenido de los documentos (assumed).
+- Q: ¿Hace falta reiniciar? → A: no: cambia al momento, menú incluido (assumed).
+- Q: ¿Librería de i18n? → A: no: un diccionario español → inglés y una función `t()` con `{variables}`; el texto en español es la clave, así que nada se queda sin texto si falta una traducción (assumed).
+- Q: (spec-reviewer) ¿Quién decide qué es «Sistema»? → A: main, con el idioma preferido de macOS; la ventana recibe el idioma ya resuelto, así ventana y menú nunca discrepan (assumed).
+- Q: (spec-reviewer) ¿Qué guarda `ui.json`? → A: `language: 'system' | 'es' | 'en'`, por defecto `system`; lo inválido se descarta (assumed).
+- Q: (spec-reviewer) ¿Qué cierra el «todo»? → A: un test que busca, fuera de los tests y del catálogo, literales con letras propias del español (á é í ó ú ñ ü ¿ ¡ «) que no pasen por `t()`; un texto sin tildes se le escapa: límite nombrado (assumed).
+- Q: (spec-reviewer) ¿Un error de Atril con texto de git o Jira dentro? → A: se traduce lo de Atril y lo ajeno viaja intacto en `{detail}` (assumed).
+- Q: (spec-reviewer) ¿Y los criterios que citan frases en español? → A: describen el texto en español; en inglés vale su entrada del catálogo (assumed).
 
 ## Task breakdown
 
@@ -184,3 +234,23 @@ validation (id pattern, not a git folder).
 - **S13** If the folder the person picks is not a git repository, then the card shall say «Esa
   carpeta no es un repositorio git.» and register nothing.
   Proof: src/renderer/settings/repos.test.ts a folder that is not git is refused
+
+### Language (add-language, 9 nov 2026)
+
+- **S14** While Ajustes is shown, the Idioma card shall offer Español, English and Sistema, show
+  the stored choice selected — Sistema when none was made — and store a new choice when picked.
+  Proof: src/renderer/settings/language.test.ts language choice persists
+- **S15** When the person picks English, the window shall show Atril's own texts in English at
+  once — the rail, Trabajo, Tareas, Ajustes and the Nueva tarea dialog — without a restart.
+  Proof: src/renderer/settings/language.test.ts the window switches language at once
+- **S16** Every literal key passed to `t()` or `translate()` in `src/` shall have an English entry,
+  no key shall be a template literal, and the catalog shall hold no entry that no call uses.
+  Proof: src/preload/i18n.test.ts every text has its english
+- **S17** While the language is English, texts Atril did not write — an activity line, a Jira
+  title, a file name, the detail inside an error — shall be shown exactly as they came.
+  Proof: src/renderer/settings/language.test.ts claude and jira text stay as written
+- **S19** Outside tests and the catalog, no string literal or JSX text in `src/` containing á, é,
+  í, ó, ú, ñ, ü, ¿, ¡ or « shall reach the person without going through `t()` or `translate()`.
+  (Ceiling named: a Spanish text with none of these letters is caught only by S15's screens or by
+  reading.)
+  Proof: src/preload/i18n.test.ts no spanish text skips t

@@ -58,6 +58,11 @@ Governs: `src/main/credentials/** src/renderer/settings/**`
 - {**S11** While Ajustes is shown, the Repos card shall list every registered repo with its id, its path and a mode select offering «Auto · <detected mode>», «Worktree» and «In-place»; choosing «Worktree» or «In-place» shall store it as the repo's mode (W4), choosing «Auto» shall clear it, and the select shall show the choice; a repo detected as in-place shall show the reason under its path. src/renderer/settings/repos.test.ts repos}
 - {**S12** When the person adds a repo from the card and its id is taken, the card shall ask for another id and register it with the one given. src/renderer/settings/repos.test.ts adding}
 - {**S13** If the folder the person picks is not a git repository, then the card shall say «Esa carpeta no es un repositorio git.» and register nothing. src/renderer/settings/repos.test.ts a}
+- {**S14** While Ajustes is shown, the Idioma card shall offer Español, English and Sistema, show the stored choice selected — Sistema when none was made — and store a new choice when picked. src/renderer/settings/language.test.ts language}
+- {**S15** When the person picks English, the window shall show Atril's own texts in English at once — the rail, Trabajo, Tareas, Ajustes and the Nueva tarea dialog — without a restart. src/renderer/settings/language.test.ts the}
+- {**S16** Every literal key passed to `t()` or `translate()` in `src/` shall have an English entry, no key shall be a template literal, and the catalog shall hold no entry that no call uses. src/preload/i18n.test.ts every}
+- {**S17** While the language is English, texts Atril did not write — an activity line, a Jira title, a file name, the detail inside an error — shall be shown exactly as they came. src/renderer/settings/language.test.ts claude}
+- {**S19** Outside tests and the catalog, no string literal or JSX text in `src/` containing á, é, í, ó, ú, ñ, ü, ¿, ¡ or « shall reach the person without going through `t()` or `translate()`. (Ceiling named: a Spanish text with none of these letters is caught only by S15's screens or by reading.) src/preload/i18n.test.ts no}
 
 [full spec](settings/spec.md)
 
@@ -155,5 +160,7 @@ Governs: `src/main/** src/preload/** src/renderer/** resources/** !src/main/jira
 - {**W44** When Claude calls `AskUserQuestion`, the hook shall set the workspace to `needs-you` with «Te pregunta: <its first question>» as the text, and when that call returns (PostToolUse) it shall set `working`. src/main/activity.test.ts a}
 - {**W45** When a PostToolUse for Edit, Write, MultiEdit or Bash ends and the workspace's branch has more than 400 × k changed lines against its base, with k higher than any k already claimed in that session, the hook shall claim k and print one `additionalContext` naming the exact total and asking Claude to offer a split into chained MRs at its next stop; otherwise — at or below 400, k not higher than one claimed, another tool, or no workspace record for the session — it shall print nothing. (One proof holds all: it runs `sizeNotice` over a real repo through 300 lines, 500, 500 again, 1300, 1400, Read at 2000, an unknown session, PreToolUse, and a second session jumping from nothing to 1300 and back to 500, and checks each result.) src/main/activity.test.ts a}
 - {**W46** The hook's count shall equal F18's total for the same tree, and the renderer's warning threshold shall be the hook's. src/main/activity.test.ts the}
+- {**W47** The `language` in `ui.json` shall survive a restart when it is `system`, `es` or `en`, and shall read as `system` when missing or anything else. src/main/i18n.test.ts the}
+- {**W48** When the language resolves to English — chosen, or Sistema on a Mac whose first preferred language does not start with `es` — main shall build the menu, the notification texts and its own messages in English, keeping any `{detail}` as it came. src/main/i18n.test.ts main}
 
 [full spec](workspaces/spec.md)
