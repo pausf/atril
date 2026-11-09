@@ -23,7 +23,11 @@ Pau, 9 nov 2026:
 
 > En DMRs, aparte de mostrar ahí en pequeñito, debería haber como una sub pantalla, ¿sabes? Donde vaya llegando como notificaciones de esa, publica una MR o tienes una nueva MR por mirar o cosas de esas, pero en un apartado, porque si no, toda la barra lateral se llena, ¿sabes? Es decir, imagínate que en mis giras hay como 7 y en trabajo en marcha hay como 5, no cabe, ¿no? En la lateral.
 
+> sonnet
+
 ## The reading
+
+**AI engine for scores (Pau, 9 nov):** Claude Sonnet via `claude -p --model sonnet --output-format json --json-schema …` on the subscription (no API key) for review difficulty, risk, "qué hace" and "por qué"; Codex as fallback once it works on the machine. Deterministic metrics stay AI-free and decide.
 
 **Layout (Pau, 9 nov):** MRs get their own screen, not a sidebar section, reached from a rail of three screens (Trabajo · MR · Avisos) with counters. **Avisos** is a notification feed: review requested, comment on your MR, your agent opened an MR, CI failed, a new MR in a subscribed project, approvals/merges — filterable, each opening its MR or workspace.
 
