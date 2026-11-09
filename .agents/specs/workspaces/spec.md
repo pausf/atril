@@ -118,6 +118,13 @@ The `workspaces` capability, phase 1. Its siblings in this change: `.agents/spec
 
 - A command can be given text on stdin and a time limit after which it is killed.
 
+### Command palette (add-command-palette, 9 nov 2026)
+
+- **⌘K** opens a palette over any screen: a search box and a list; typing filters it; ↑/↓ move,
+  Enter runs the highlighted item, Escape closes.
+- Items take you somewhere (a screen, a workspace, an MR view, a task's Start) or do something
+  (new work, new task, refresh MRs, mark notices read, tutorial).
+
 ## Scope boundaries
 
 **In:** the three columns and footer of `bocetos/fase1-nucleo.html` (boceto 8), the
@@ -127,7 +134,7 @@ sibling specs.
 
 **Out, named so it is not added quietly:**
 - every phase 2–4 feature: diff view, inline comments to the agent, MR/PR review, scores,
-  GitLab/GitHub APIs, ⌘K, previews, dictation, chat UI, SSH hosts, automations, embedded
+  GitLab/GitHub APIs, previews, dictation, chat UI, SSH hosts, automations, embedded
   browser, mobile app, model per stage
 - a team view, a server, accounts, sync
 - Windows and Linux builds
@@ -204,6 +211,16 @@ the dialog (proposal.md).
 
 **In:** `input` and `timeoutMs` on the runner. **Out:** anything else.
 
+### Command palette (add-command-palette, 9 nov 2026)
+
+**In:** the palette, its items, filtering, the keyboard, the menu accelerator. **Out:** recent or
+ranked items, custom commands, running shell commands, searching inside files or MR comments, a
+tutorial step for the palette. This change removes ⌘K from the workspaces spec's «Out» list.
+
+**Never scoped out:** fully keyboard-operable with a visible highlight; MR titles, task titles and
+branch names shown as text; the palette never posts anything, and a task item does exactly what
+Tareas' Empezar does (I20/I21).
+
 ## Constraints
 
 - Electron (current stable) + TypeScript in strict mode, pnpm, Node 24 (installed:
@@ -271,6 +288,12 @@ the dialog (proposal.md).
 ### MR scores (add-mr-scores, 9 nov 2026)
 
 - Still an argument array, never a shell.
+
+### Command palette (add-command-palette, 9 nov 2026)
+
+- Uses data the app already holds: workspaces, the app-wide MR listing (M9), the Jira inbox, the
+  notices; no new request when it opens.
+- ⌘K is a menu accelerator (like N2's ⌘↩); every text through `t()` (S16).
 
 ## Prior decisions
 
@@ -470,6 +493,26 @@ the dialog (proposal.md).
 ### MR scores (add-mr-scores, 9 nov 2026)
 
 - **Scores need it** (proposal.md): the diff goes on stdin; a hung `claude` must not block the queue.
+
+### Command palette (add-command-palette, 9 nov 2026)
+
+- **⌘K, phase 3** — agreed in the usability batch (add-next-up).
+
+#### Alternatives that lost
+
+| Considered | Why it lost |
+|---|---|
+| A fuzzy-matching library | every-word containment is enough for names and branches |
+| A keydown listener in the window for ⌘K | xterm would swallow it while the terminal has focus |
+
+#### Decision log, answers as given (2026-11-09)
+- Q: «sigue con todo haz mejoras, nuevas features» — Pau → decisions taken with the recommended option, marked (assumed).
+- Q: ¿Qué sale en la paleta? → A: pantallas, trabajos (por rama y repo), MRs de la última carga (título y proyecto), tareas de Jira (clave y título) y acciones: Nuevo trabajo, Nueva tarea, Actualizar MR, Marcar avisos leídos, Tutorial (assumed).
+- Q: ¿Cómo filtra? → A: cada palabra escrita debe aparecer en el texto del elemento, sin distinguir mayúsculas ni tildes; como mucho 50 resultados (assumed).
+- Q: ¿Cómo se abre? → A: ⌘K como acelerador del menú, igual que ⌘↩, así la terminal no se lo come (assumed).
+- Q: (spec-reviewer) workspaces tiene ⌘K en «fuera de alcance» → A: este cambio lo saca de ahí al integrarse (assumed).
+- Q: (spec-reviewer) ¿⌘K con otro diálogo abierto? → A: no hace nada (assumed).
+- Q: (spec-reviewer) ¿Una tarea desde la paleta arranca sola si el repo está recordado? → A: hace lo mismo que pulsar Empezar en Tareas (I20/I21): es tu acción, como allí (assumed).
 
 ## Task breakdown
 
@@ -757,3 +800,26 @@ the dialog (proposal.md).
 - **W53** When the runner is given `input`, it shall write it to the child's stdin and close it; when
   given `timeoutMs`, it shall kill the child after that time and resolve with code 124.
   Proof: src/main/run.test.ts input reaches stdin and a timeout kills
+
+### Command palette (add-command-palette, 9 nov 2026)
+
+- **W54** When the person presses ⌘K (the menu item «Buscar…») and no other dialog is open, Atril shall
+  open the palette with the search box focused, over whatever screen is shown; with a dialog open it
+  shall do nothing.
+  Proof: src/main/i18n.test.ts main speaks the chosen language
+  Proof: src/renderer/palette/palette.test.ts command k opens the palette and runs an item
+- **W55** The palette shall list the five screens, every workspace («{branch} · {repo}»), every MR of
+  the latest listing («{title} · {project}»), every Jira task already loaded («{key} {title}») and the
+  actions Nuevo trabajo, Nueva tarea, Actualizar MR, Marcar avisos leídos and Tutorial; typing shall
+  keep only the items whose text contains every typed word, ignoring case and accents; the list shall
+  show at most 50 after filtering (the first 50 with an empty box).
+  (The proof asserts the five screens and one item of each other kind with an empty box, a two-word
+  query matching across accents and case, and 60 tasks cut to 50.)
+  Proof: src/renderer/palette/palette.test.ts the palette filters by every word
+- **W56** ↓ and ↑ shall move the highlight, wrapping at both ends; Enter shall run the highlighted item
+  and close the palette; Escape shall close it and give focus back to where it was.
+  Proof: src/renderer/palette/palette.test.ts the palette moves with the keyboard
+- **W57** Running an item shall do what its own control does: a screen opens it, a workspace selects
+  it on Trabajo, an MR opens its MR view (switching to MR), a task does what Empezar does in Tareas,
+  and each action runs its button's handler.
+  Proof: src/renderer/palette/palette.test.ts each kind of item goes where it says
