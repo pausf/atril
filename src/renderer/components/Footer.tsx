@@ -47,6 +47,12 @@ export function Footer() {
             5 h <Bar pct={usage.fiveHour.pct} /> {usage.fiveHour.pct} % · 7 días <Bar pct={usage.sevenDay.pct} />{' '}
             {usage.sevenDay.pct} %
             {resetLabel(usage.sevenDay.resetsAt) && <> · se reinicia {resetLabel(usage.sevenDay.resetsAt)}</>}
+            {usage.stale && (
+              <span className="stale" title="La API de uso no responde ahora mismo; Atril reintentará más tarde">
+                {' '}
+                · dato de hace {Math.max(1, Math.round((Date.now() - usage.stale.since) / 60_000))} min
+              </span>
+            )}
           </>
         )}
       </span>

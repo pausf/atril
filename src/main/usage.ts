@@ -54,21 +54,44 @@ export async function readUsage(run: Runner, doFetch: Fetch = fetch): Promise<Us
   }
 }
 
+const POLL_MS = 60_000
+const MAX_WAIT_MS = 10 * 60_000
+
 export function createUsage(deps: { run: Runner; emit: (u: UsageResult) => void; fetch?: Fetch }) {
   let last: UsageResult = { error: 'aún sin leer' }
+  let good: { value: UsageResult; at: number } | undefined
+  let wait = POLL_MS
+  let timer: NodeJS.Timeout | undefined
+  let running = false
+
   const refresh = async (): Promise<UsageResult> => {
-    last = await readUsage(deps.run, deps.fetch)
+    const r = await readUsage(deps.run, deps.fetch)
+    if ('error' in r) {
+      // The statusline polls the same endpoint: back off instead of hammering it, keep the last good numbers.
+      wait = Math.min(wait * 2, MAX_WAIT_MS)
+      last = good ? { ...(good.value as Exclude<UsageResult, { error: string }>), stale: { since: good.at } } : r
+    } else {
+      wait = POLL_MS
+      good = { value: r, at: Date.now() }
+      last = r
+    }
     deps.emit(last)
     return last
   }
-  let timer: NodeJS.Timeout | undefined
+  const loop = async (): Promise<void> => {
+    await refresh()
+    if (running) timer = setTimeout(() => void loop(), wait)
+  }
   return {
     get: () => refresh(),
     start: () => {
-      void refresh()
-      timer = setInterval(() => void refresh(), 60_000)
+      running = true
+      void loop()
     },
-    stop: () => clearInterval(timer),
+    stop: () => {
+      running = false
+      clearTimeout(timer)
+    },
     last: () => last
   }
 }

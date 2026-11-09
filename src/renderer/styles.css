@@ -1153,3 +1153,5 @@ kbd {
   color: var(--sub);
   margin-top: 10px;
 }
+
+.stale{color:var(--sub)}

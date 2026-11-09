@@ -182,7 +182,9 @@ export interface UsageWindow {
   resetsAt: string | null
 }
 
-export type UsageResult = { fiveHour: UsageWindow; sevenDay: UsageWindow } | { error: string }
+export type UsageResult =
+  | { fiveHour: UsageWindow; sevenDay: UsageWindow; /** Set when the latest read failed: these values are from `since`. */ stale?: { since: number } }
+  | { error: string }
 
 export interface UsageApi {
   get(): Promise<UsageResult>

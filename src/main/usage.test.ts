@@ -66,4 +66,36 @@ describe('usage', () => {
     expect(rejected).toHaveProperty('error')
     expect((rejected as { error: string }).error).toMatch(/401/)
   })
+
+  it('rate limit keeps the last value and backs off', async () => {
+    vi.useFakeTimers()
+    const seq = [200, 429, 429, 200]
+    const fetch = vi.fn(async () => {
+      const st = seq.shift() ?? 200
+      return new Response(JSON.stringify(FIXTURE), { status: st })
+    }) as unknown as typeof globalThis.fetch
+    const emitted: unknown[] = []
+    const usage = createUsage({ run: keychain(), fetch, emit: (u) => emitted.push(u) })
+    usage.start()
+    await vi.advanceTimersByTimeAsync(0)
+    expect(emitted.at(-1)).toHaveProperty('fiveHour')
+
+    await vi.advanceTimersByTimeAsync(60_000) // 2nd call: 429
+    const stale = emitted.at(-1) as { fiveHour?: unknown; stale?: { since: number } }
+    expect(stale.fiveHour).toBeDefined() // the last good value stays on screen
+    expect(stale.stale?.since).toBeTypeOf('number')
+    expect(fetch).toHaveBeenCalledTimes(2)
+
+    await vi.advanceTimersByTimeAsync(60_000) // backed off to 2 min: no call yet
+    expect(fetch).toHaveBeenCalledTimes(2)
+    await vi.advanceTimersByTimeAsync(60_000) // 3rd call at 2 min: 429 again → 4 min
+    expect(fetch).toHaveBeenCalledTimes(3)
+    await vi.advanceTimersByTimeAsync(3 * 60_000)
+    expect(fetch).toHaveBeenCalledTimes(3)
+    await vi.advanceTimersByTimeAsync(60_000) // 4th at 4 min: 200 → fresh, back to 1 min
+    expect(fetch).toHaveBeenCalledTimes(4)
+    expect(emitted.at(-1)).not.toHaveProperty('stale')
+    usage.stop()
+    vi.useRealTimers()
+  })
 })
