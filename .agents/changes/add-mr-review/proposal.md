@@ -29,7 +29,15 @@ Pau, 9 nov 2026:
 
 > Voy a configurar y que salga lo de GitLab, GitHub, estas cosas. ¿Cómo lo haremos? O sea, ¿qué token necesitará? ¿O cuándo pedirá el token? Etcétera, etcétera.
 
+> o más que el token que haya una autentificación de Chrome, ¿no? ¿Sabes? O sea, conéctate a GitHub, conéctate a GitLab, conéctate a Jira, ¿sabes? Como si fuera una aplicación, no sé, lo que sea más fácil.
+
 ## The reading
+
+**Connect buttons (9 nov):** «Conectar con GitHub» with GitHub's OAuth device flow (client id
+only, no secret, no server) and «Conectar con GitLab» with OAuth + PKCE as a public client
+(Atril registered once as an application on gitlab.com; self-hosted GitLab needs its own
+registration or falls back to a token). Tokens obtained this way go into the same write-only
+encrypted store. Jira stays an API token (phase 1): Atlassian Cloud OAuth needs a client secret.
 
 **Tokens (9 nov):** GitLab (host + PAT with `api`) and GitHub (PAT with `repo`, `read:org`) cards in Ajustes, reusing add-atril-core's write-only encrypted store (spec-settings.md); they replace the `gh`/`glab` approach below for what Atril reads and posts.
 

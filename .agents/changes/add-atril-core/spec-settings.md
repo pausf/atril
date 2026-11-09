@@ -8,7 +8,8 @@ Vocabulary, decision log and the primary contract: `proposal.md` beside this fil
 ## Outcomes
 
 - A **Ajustes** screen, reached from the rail (Trabajo · Ajustes in this phase), with the
-  **Jira** card: site URL, email, API token. The GitLab and GitHub cards are phase 2
+  **Jira** card: site URL, email, API token, and a **«Crear token en Atlassian»** button that
+  opens `https://id.atlassian.com/manage-profile/security/api-tokens` in the browser. The GitLab and GitHub cards are phase 2
   (add-mr-review) and reuse this same store and screen.
 - Wherever a feature needs a service with no token stored, it says so and links to Ajustes
   ("Conecta Jira en Ajustes") instead of failing.
@@ -22,7 +23,9 @@ Vocabulary, decision log and the primary contract: `proposal.md` beside this fil
 shape the phase-2 GitLab and GitHub cards reuse unchanged; the "connect in Ajustes"
 state where a feature needs one.
 
-**Out:** OAuth browser flows; several accounts per service; reading tokens from `gh`, `glab`
+**Out:** a browser login for Jira — Atlassian Cloud's OAuth (3LO) needs a client secret,
+which a desktop app cannot keep, so it would need a backend of ours (checked 9 nov); a
+browser "Conectar" for GitHub (device flow) and GitLab (PKCE) is phase 2; several accounts per service; reading tokens from `gh`, `glab`
 or `jira`; giving tokens to agents. Agents never receive them: the `jira` CLI the Libretto
 agent uses stays the person's own (proposal.md W21).
 
@@ -45,6 +48,10 @@ file, or a message to the renderer; inputs are password fields.
   GitLab, GitHub y de Jira, no utilizar los GH y cosas de estas», then «Yo lo haría, vale,
   híbrido». Atril uses its own tokens for everything it reads and posts; agents keep their
   CLIs and never see the tokens.
+- **«Lo que sea más fácil»** — Pau, 9 nov: «o más que el token que haya una autentificación de
+  Chrome … conéctate a GitHub, conéctate a GitLab, conéctate a Jira … lo que sea más fácil».
+  Jira stays a token with a button to the page that creates it; GitHub and GitLab get browser
+  "Conectar" in phase 2.
 - **Only phase 1 now** — Pau, 9 nov: «Y hacemos solo la fase 1 núcleo». The GitLab and GitHub
   cards move to add-mr-review.
 - **Write-only once saved** — Pau, 9 nov: «donde pongan los tokens, pero ocultos … una vez que
@@ -77,3 +84,6 @@ file, or a message to the renderer; inputs are password fields.
 - **S6** If a feature needs a service with no token, it shall show "Conecta <servicio> en
   Ajustes" with a link to that card.
   Proof: src/renderer/settings/settings.test.ts  missing token links to ajustes
+- **S7** When the person presses «Crear token en Atlassian», Atril shall open Atlassian's API
+  token page in the default browser and nothing else.
+  Proof: src/renderer/settings/settings.test.ts  create token button opens the atlassian page
