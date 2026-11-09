@@ -23,7 +23,9 @@ on its file and line, send to the agent of that workspace, or discard. Needs add
 - Q: ¿Las cinco lentes de `/libretto-review` en un worktree? → A: no: una sola llamada a Sonnet sin herramientas con el diff y las cinco lentes (intención, seguridad, diseño, fiabilidad, tests) en la instrucción; cinco agentes por MR gastarían demasiada cuota — Pau cuida el consumo (assumed).
 - Q: ¿Cuándo? → A: bajo demanda, con «Revisar con Libretto», solo en Mías y Me toca revisar; guardado por commit como las puntuaciones (assumed).
 - Q: ¿Publicar dónde? → A: como comentario general de la MR que cita archivo y línea; el comentario en la línea exacta queda para más adelante (assumed).
-- Q: ¿Mandar al agente cuál? → A: el único trabajo abierto cuya rama es la de la MR; si hay cero o varios, no se ofrece (assumed).
+- Q: ¿Mandar al agente cuál? → A: el único trabajo vivo en la rama de la MR y en un repo cuyo `origin` es el proyecto de la MR; si hay cero o varios, no se ofrece (assumed).
+- Q: (revisor) ¿Más de 12 hallazgos, texto largo, file/line ausentes, cero hallazgos? → A: fuera de esquema = fallo; sin ubicación se omite; cero es respuesta válida (assumed).
+- Q: (revisor) ¿Cola compartida con las puntuaciones? → A: un solo runner, claves por tipo y URL (assumed).
 
 ## Outcomes
 
@@ -66,20 +68,31 @@ shown as text.
 
 - **M25** When the person clicks Revisar con Libretto on an MR in Mías or Me toca revisar, Atril shall
   run `claude` exactly as M11 (no tools, no session, the diff on stdin cut at 120 KB) with a schema of
-  findings `{ lens: intent|security|design|reliability|tests, severity: high|medium|low, file?, line?,
-  text ≤ 400 }` (at most 12) and show each as a draft; failures follow M16 and store nothing; an URL
-  outside those two lists of the latest listing shall be refused without a request (M17).
+  at most 12 findings `{ lens: intent|security|design|reliability|tests, severity: high|medium|low,
+  file?, line?, text ≤ 400 }`; a reply outside the schema, a fetch failure or a timeout shall show
+  «Claude no ha podido revisar esta MR: {detail}» (M16's details) and store nothing; zero findings is
+  an answer and shows «Libretto no ha encontrado nada que comentar». An URL outside those two lists
+  of the latest listing shall be refused without a request (M17's text). Reviews and scores share one
+  runner, one at a time in the order asked, keyed by kind and URL (M14 per kind).
   Proof: src/main/forge/lenses.test.ts the lens review runs claude like the score and keeps drafts
-- **M26** Drafts shall be stored per MR and head commit; asking again for that commit shall not run
-  Claude, and a newer head shall show them as «De un commit anterior».
+- **M26** Drafts shall be stored per MR and head commit (no head: not stored, as M13); while drafts
+  exist for the current head the button is not offered; on a newer head the list shows «De un commit
+  anterior» with «Revisar de nuevo», whose result replaces every draft.
   Proof: src/main/forge/lenses.test.ts drafts are kept per commit
-- **M27** When the person clicks Publicar on a draft, Atril shall post once, as the MR's general
-  comment (M21's «General» endpoint), the text «**{lens} · {severity}** — `{file}:{line}`» followed by
-  the draft's text, then mark the draft published; a failure shall keep the draft with M6's message.
+- **M27** When the person clicks Publicar on an open draft, Atril shall post once, as the MR's general
+  comment (M21), «**{lens} · {severity}** — `{file}:{line}`» (the location part dropped when `file`
+  is absent, `:{line}` when `line` is), a blank line, then the text as written; then mark it
+  published. A failure shall keep it open with M6's message. Publishing, sending or discarding a
+  draft that is not open, or of an MR outside the latest listing, shall be refused without a request.
   Proof: src/main/forge/lenses.test.ts a draft is published once as a general comment
-- **M28** Mandar al agente shall be offered only when exactly one open workspace has the MR's branch,
-  and clicking it shall type the draft (lens, file:line, text) into that workspace's agent pane as
-  N3 does; Descartar shall remove the draft.
+- **M28** Main shall offer Mandar al agente for an MR only when exactly one workspace is alive, on the
+  MR's branch, in a repo whose `origin` remote names the MR's project; sending shall type, as N3,
+  «Revisión de Libretto ({lens}, {severity}) en {location}: {text}» (location as M27, «la MR» when
+  absent), mark the draft sent on `sent`, and on `gone` or `ignored` keep it open with N3's message.
+  Proof: src/main/forge/lenses.test.ts a draft goes to the one agent on that branch
+- **M29** The MR view shall show each draft as text, with Publicar, Mandar al agente (only when main
+  offers it) and Descartar while open, and «Publicado» or «Enviado al agente» with no actions after;
+  Descartar removes it.
   Proof: src/renderer/mr/lenses.test.ts drafts can be published, sent or discarded
 
 ## Approach
@@ -90,7 +103,7 @@ shown as text.
 target map) with its own schema and cache (`$ATRIL_HOME/lenses/<sha256(url)>.json` holding
 `{ head, drafts: { id, lens, severity, file?, line?, text, state: open|published|sent }[] }`).
 Publishing reuses `threads.ts`' general-comment post. IPC: `atril:mr:review(url)`,
-`atril:mr:draftsOf(url)`, `atril:mr:publishDraft(url, id)`, `atril:mr:sendDraft(url, id)`,
+`atril:mr:draftsOf(url)` (returns `{ head, stale, drafts, canSend }`), `atril:mr:publishDraft(url, id)`, `atril:mr:sendDraft(url, id)`,
 `atril:mr:discardDraft(url, id)`. The MR view shows a «Libretto» section above the threads.
 
 ### Technical context
@@ -107,7 +120,9 @@ lint, test.
   time, in the person's language, and says the size/test measures (M10) are already known.
 - Sending to the agent finds the workspace by `branch` among `listWorkspaces()`; the text is one line:
   «Revisión de Libretto ({lens}, {severity}) en {file}:{line}: {text}».
-- The same one-at-a-time queue as scores: a review waits behind a score and the reverse.
+- `scores.ts`' `chain` becomes a runner both modules share; `pending` keys become `score:<url>` and
+  `review:<url>`, so a review waits behind a score and the reverse without colliding.
+- Draft text goes to the forge as written, like any comment the person types (M21).
 
 ### The alternatives it beat
 
@@ -134,5 +149,5 @@ None.
 
 ## Checklist
 
-- [ ] main: branch on rows, the lens call, drafts per commit, publish, send to agent, the listed-only check · Closes: M25, M26, M27
-- [ ] the window: Revisar con Libretto, drafts with Publicar, Mandar al agente and Descartar · waits on box 1 · Closes: M28
+- [ ] main: branch on rows, the lens call, drafts per commit, publish, send to agent, the listed-only check · Closes: M25, M26, M27, M28
+- [ ] the window: Revisar con Libretto, drafts with Publicar, Mandar al agente and Descartar · waits on box 1 · Closes: M29
