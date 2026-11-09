@@ -87,6 +87,9 @@ text is rendered as text, never markup; the modal holds the keyboard like the do
 - **F23** If a file's diff is longer than 1 MB (UTF-8 bytes), then Atril shall cut it at the last
   line break before 1 MB and end it with the line «Diff recortado a 1 MB».
   Proof: src/main/flow/changes.test.ts a huge diff is cut at 1 MB
+- **F24** Atril shall pass every listed name to git as a literal path (no glob or `:(` magic), and
+  shall count an untracked symbolic link as one line without opening its target.
+  Proof: src/main/flow/changes.test.ts names are literal and links are not followed
 - **F20** While the stage is Construir, Terminado or Aterrizado and the list is not empty, the
   Libretto panel shall show «Cambios» with each file's status and +/− counts, the total of added
   plus removed lines, and Construir as a button reading «ver N archivos»; at earlier stages

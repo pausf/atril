@@ -1,4 +1,4 @@
-import { readFile } from 'node:fs/promises'
+import { lstat, readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import type { FileChange } from '../../preload/api'
 import type { Runner } from '../run'
@@ -11,6 +11,9 @@ type Entry = FileChange & { untracked: boolean }
 const nulFields = (out: string): string[] => out.split('\0').filter((x) => x !== '')
 
 async function untrackedCounts(file: string): Promise<{ added: number; removed: number }> {
+  // A link is one line to git (its target path); its target is never opened.
+  const st = await lstat(file).catch(() => null)
+  if (!st?.isFile()) return { added: st?.isSymbolicLink() ? 1 : 0, removed: 0 }
   const bytes = await readFile(file).catch(() => Buffer.alloc(0))
   // git's own rule: a NUL in the first 8000 bytes makes it binary.
   if (bytes.subarray(0, 8000).includes(0)) return { added: 0, removed: 0 }
@@ -20,7 +23,7 @@ async function untrackedCounts(file: string): Promise<{ added: number; removed: 
 }
 
 async function entries(path: string, base: string, run: Runner): Promise<Entry[]> {
-  const g = (args: string[]) => run('git', ['-C', path, ...args])
+  const g = (args: string[]) => run('git', ['--literal-pathspecs', '-C', path, ...args])
   const [numstat, status, others] = await Promise.all([
     g(['diff', '--no-renames', '-z', '--numstat', base]),
     g(['diff', '--no-renames', '-z', '--name-status', base]),
@@ -58,8 +61,8 @@ export async function fileDiff(path: string, base: string, file: string, run: Ru
   const entry = (await entries(path, base, run)).find((e) => e.path === file)
   if (!entry) return ''
   const r = entry.untracked
-    ? await run('git', ['-C', path, 'diff', '--no-index', '--', '/dev/null', file])
-    : await run('git', ['-C', path, 'diff', '--no-renames', base, '--', file])
+    ? await run('git', ['--literal-pathspecs', '-C', path, 'diff', '--no-index', '--', '/dev/null', file])
+    : await run('git', ['--literal-pathspecs', '-C', path, 'diff', '--no-renames', base, '--', file])
   // --no-index exits 1 when the files differ, which is the point here.
   if (r.code !== 0 && !(entry.untracked && r.code === 1)) return ''
   const bytes = Buffer.from(r.stdout, 'utf8')

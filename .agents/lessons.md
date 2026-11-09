@@ -82,3 +82,6 @@ saveDoc's mtime check and rename are not one atomic step. Not fixed: the contrac
 
 ## 2026-11-09 · add-file-changes · 4→5
 spec-reviewer found the scope saying renames show as D + A while the approach said M, plus an undefined «total», a 1 MB cap with no proof, and no rule for whether the diff modal follows the agent. Settled before code (--no-renames, total = lines, F23 for the cap, the modal as a snapshot with Actualizar).
+
+## 2026-11-09 · add-file-changes · 6→7
+work-reviewer: an untracked symlink was followed to count its lines, and listed names reached git as pathspecs (a file named `a*.txt` pulled `ab.txt` into its diff). Fixed with lstat and --literal-pathspecs; F24 added, its test red on both before the fix.

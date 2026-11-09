@@ -1,4 +1,4 @@
-import { mkdirSync, writeFileSync } from 'node:fs'
+import { mkdirSync, symlinkSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import { run, type Runner } from '../run'
@@ -68,5 +68,22 @@ describe('file changes', () => {
     expect(Buffer.byteLength(diff)).toBeLessThanOrEqual(1024 * 1024 + 40)
     expect(diff.endsWith('\nDiff recortado a 1 MB')).toBe(true)
     expect(diff.split('\n').at(-2)).toBe('+insert into t values (1);')
+  })
+
+  it('names are literal and links are not followed', async () => {
+    const { path, base } = repo()
+    const outside = join(tmp(), 'secret.txt')
+    writeFileSync(outside, 'uno\ndos\ntres\ncuatro\n')
+    symlinkSync(outside, join(path, 'link.txt'))
+    writeFileSync(join(path, 'a*.txt'), 'estrella\n')
+    writeFileSync(join(path, 'ab.txt'), 'otro\n')
+    git(path, 'add', 'a*.txt', 'ab.txt')
+
+    const list = await listChanges(path, base, run)
+    // A link counts as one line, like git counts it; its target is never read.
+    expect(list.find((c) => c.path === 'link.txt')).toEqual({ path: 'link.txt', status: 'A', added: 1, removed: 0 })
+    const star = await fileDiff(path, base, 'a*.txt', run)
+    expect(star).toContain('+estrella')
+    expect(star).not.toContain('ab.txt')
   })
 })
