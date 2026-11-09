@@ -49,7 +49,7 @@ const api: AtrilApi = {
   },
   workspaces: {
     list: () => ipcRenderer.invoke('atril:ws:list'),
-    open: (repoId, branch, agent, model) => ipcRenderer.invoke('atril:ws:open', repoId, branch, agent, model),
+    open: (repoId, branch, agent, model, task) => ipcRenderer.invoke('atril:ws:open', repoId, branch, agent, model, task),
     remove: (id) => ipcRenderer.invoke('atril:ws:remove', id)
   },
   jira: {

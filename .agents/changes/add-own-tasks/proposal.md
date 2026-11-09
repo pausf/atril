@@ -86,7 +86,7 @@ keyboard-reachable (Tab cycles inside it, Escape closes, ⌘↩ submits from the
 - **I24** While the person has not edited the branch, the branch shall be the first five words of
   the text, a word being a run of `[a-z0-9]` after lower-casing and removing accents, joined by
   hyphens, at most 40 characters with no trailing hyphen («Añadir filtro de Laboratorios» →
-  `anadir-filtro-de-laboratorios`; «fix: bug-in api, ya» → `fix-bug-in-api`); once the person
+  `anadir-filtro-de-laboratorios`; «fix: bug-in api, ya» → `fix-bug-in-api-ya`); once the person
   changes the field in any way, it shall stay as they left it.
   Proof: src/renderer/inbox/owntask.test.ts branch follows the text until edited
 
@@ -148,4 +148,4 @@ None.
 
 ## Checklist
 
-- [ ] own task: main validates the text and starts the flow with it, the «Nueva tarea» dialog in Tareas with the branch proposal, the sketch · Closes: W40, W41, I22, I23, I24, I25, I26
+- [x] own task: main validates the text and starts the flow with it, the «Nueva tarea» dialog in Tareas with the branch proposal, the sketch · Closes: W40, W41, I22, I23, I24, I25, I26

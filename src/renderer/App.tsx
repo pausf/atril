@@ -9,6 +9,7 @@ import { Workspace } from './components/Workspace'
 import { Ajustes } from './settings/Ajustes'
 import { Inbox, useInbox } from './inbox/Inbox'
 import { StartDialog } from './inbox/StartDialog'
+import { OwnTaskDialog } from './inbox/OwnTaskDialog'
 import { NextUpStrip } from './components/NextUpStrip'
 import { startOrAsk, useNextUp } from './nextup'
 import { NavigationContext } from './settings/navigation'
@@ -55,6 +56,7 @@ function Shell() {
   const inbox = useInbox()
   const next = useNextUp()
   const [starting, setStarting] = useState<JiraIssue | null>(null)
+  const [ownTask, setOwnTask] = useState(false)
   const [startError, setStartError] = useState<string | null>(null)
   const quickBusy = useRef(false)
 
@@ -63,6 +65,10 @@ function Shell() {
       if (v === 'settings' || v === 'tasks') setScreen(v)
       if (v === 'tasks-board') setScreen('tasks')
       if (v === 'settings-board') setScreen('settings')
+      if (v === 'tasks-own') {
+        setScreen('tasks')
+        setOwnTask(true)
+      }
       if (v === 'start') {
         setScreen('tasks')
         // ponytail: dev-only, ATRIL_SNAPSHOT_VIEW=start opens the dialog on a fake issue so it can be photographed without Jira.
@@ -192,7 +198,7 @@ function Shell() {
               <FlowPanel workspaceId={selected} />
             </div>
           </div>
-          {screen === 'tasks' && <Inbox inbox={inbox} onStart={(i, alt) => void beginStart(i, alt)} startError={startError} onOpenWorkspace={openWorkspace} />}
+          {screen === 'tasks' && <Inbox inbox={inbox} onStart={(i, alt) => void beginStart(i, alt)} startError={startError} onOpenWorkspace={openWorkspace} onNewTask={() => setOwnTask(true)} />}
           {screen === 'settings' && (
             <Ajustes>
               <Appearance />
@@ -211,6 +217,16 @@ function Shell() {
           onOpenWorkspace={(id) => {
             setStarting(null)
             openWorkspace(id)
+          }}
+        />
+      )}
+      {ownTask && (
+        <OwnTaskDialog
+          onClose={() => setOwnTask(false)}
+          onStarted={async (ws) => {
+            await started(ws)
+            setOwnTask(false)
+            openWorkspace(ws.id)
           }}
         />
       )}

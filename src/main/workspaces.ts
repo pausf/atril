@@ -17,7 +17,9 @@ export interface OpenInput {
   jiraKey?: string
   /** First message the agent receives (Start passes the Libretto flow command). */
   prompt?: string
-  /** Tests swap the agent for a harmless long-running command. */
+  /** An own task (W40): becomes the flow's request; never a command line of its own. */
+  task?: string
+  /** Tests swap the agent for a harmless long-running command; the prompt is still appended. */
   argv?: string[]
 }
 
@@ -43,8 +45,18 @@ async function writeRecords(workspaces: WorkspaceRecord[]): Promise<void> {
   await writeFile(join(home(), 'workspaces.json'), JSON.stringify({ workspaces }, null, 2) + '\n')
 }
 
+const MAX_TASK = 2000
+
+/** W41: the flow command and the text are one argv element, so the text can never be a flag. */
+export function taskPrompt(task: string): string | null {
+  const text = task.trim()
+  return text === '' || text.length > MAX_TASK || text.includes('\0') ? null : `/libretto:libretto-flow ${text}`
+}
+
 export async function openWorktree(input: OpenInput, run: Runner = defaultRun): Promise<WorkspaceResult> {
   const { repoId, branch, agent } = input
+  const prompt = input.task === undefined ? input.prompt : taskPrompt(input.task)
+  if (prompt === null) return { error: 'El texto de la tarea no es válido (máx. 2000 caracteres).' }
   // W6: nothing else runs before the branch name is validated.
   if ((await run('git', ['check-ref-format', '--branch', branch])).code !== 0) {
     return { error: `«${branch}» no es un nombre de rama válido` }
@@ -86,7 +98,7 @@ export async function openWorktree(input: OpenInput, run: Runner = defaultRun): 
   const id = newId()
   // Only folders Atril created: in-place runs in the person's own checkout, never touched (W31).
   if (!inPlace) await trustFolder(path)
-  const paneId = await newSession(id, path, input.argv ?? agentArgv({ model: input.model, prompt: input.prompt }), run)
+  const paneId = await newSession(id, path, input.argv ? [...input.argv, ...(prompt ? [prompt] : [])] : agentArgv({ model: input.model, prompt }), run)
 
   const record: WorkspaceRecord = {
     id,

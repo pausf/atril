@@ -37,6 +37,20 @@ describe('workspaces', () => {
     expect(r.workspace.baseCommit).toBe(git(repo, 'rev-parse', 'HEAD').trim())
   })
 
+  it('invalid task text creates nothing', async () => {
+    for (const task of ['   ', 'x'.repeat(2001), 'a\0b']) {
+      const calls: string[][] = []
+      const spy: Runner = (cmd, args, opts) => {
+        calls.push([cmd, ...args])
+        return run(cmd, args, opts)
+      }
+      const r = await openWorktree({ repoId: 'demo', branch: 'feat/own', agent: 'claude', task, argv: SLEEP }, spy)
+      expect(r).toEqual({ error: 'El texto de la tarea no es válido (máx. 2000 caracteres).' })
+      expect(calls).toEqual([])
+    }
+    expect(existsSync(join(home, 'wt'))).toBe(false)
+  })
+
   it('refuses an invalid branch name', async () => {
     const calls: string[][] = []
     const spy: Runner = (cmd, args, opts) => {

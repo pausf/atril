@@ -1,5 +1,5 @@
 import { vi } from 'vitest'
-import type { ActivityLine, AgentState, AtrilApi, FlowStage, JiraIssue, MenuAction, NextItem, StartProposalResult, StartRequest, StartResult, RepoView, UiState, WorkspaceView } from '../preload/api'
+import type { ActivityLine, AgentState, AtrilApi, FlowStage, JiraIssue, MenuAction, NextItem, StartProposalResult, StartRequest, StartResult, RepoView, UiState, WorkspaceResult, WorkspaceView } from '../preload/api'
 
 export const workspace = (id: string, branch: string, alive = true): WorkspaceView => ({
   id,
@@ -30,6 +30,8 @@ interface Options {
   workspaces?: WorkspaceView[]
   states?: Record<string, AgentState>
   issues?: JiraIssue[]
+  /** Jira not connected: the inbox answers «unconfigured» (I3). */
+  noJira?: boolean
   repos?: RepoView[]
   nextup?: NextItem[]
   /** What proposeStart answers; start answers with a workspace named after the key. */
@@ -64,13 +66,17 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
       }
     },
     doctor: async () => [],
-    workspaces: { list: async () => o.workspaces ?? [] },
+    workspaces: {
+      list: async () => o.workspaces ?? [],
+      open: vi.fn(async (_repo: string, branch: string): Promise<WorkspaceResult> => ({ workspace: workspace('own00001', branch) }))
+    },
     repos: { list: async () => o.repos ?? [] },
     nextup: { get: async () => o.nextup ?? [], onChange: () => off },
     jira: {
       proposeStart: vi.fn(async () => o.proposal ?? { command: 'claude' }),
       start: vi.fn(async (req: StartRequest): Promise<StartResult> => ({ workspace: workspace('started1', req.branch) })),
       inbox: async () => {
+        if (o.noJira) return { error: 'unconfigured' }
         const issues = o.issues ?? []
         const titles = { todo: 'Por empezar', doing: 'En curso', review: 'En revisión y despliegue' }
         const groups = (['todo', 'doing', 'review'] as const).map((id) => ({ id, title: titles[id], folded: id === 'review', keys: issues.filter((i) => i.group === id).map((i) => i.key) }))
@@ -103,8 +109,8 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
     snapshotView: async () => null,
     snapshotWorkspace: async () => false
   } as unknown as AtrilApi
-  const { menu: menuApi, jira } = window.atril
-  return { ui, stored, menuApi, jira, menu: (a: MenuAction) => menu?.(a), clickNotification: (id: string) => notified?.(id),
+  const { menu: menuApi, jira, workspaces: ws } = window.atril
+  return { ui, stored, menuApi, jira, ws, menu: (a: MenuAction) => menu?.(a), clickNotification: (id: string) => notified?.(id),
     pushActivity: (id: string, lines: ActivityLine[]) => activityListeners.forEach((cb) => cb(id, lines))
   }
 }

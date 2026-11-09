@@ -60,7 +60,8 @@ export type RemoveResult = { ok: true } | { error: string }
 
 export interface WorkspacesApi {
   list(): Promise<WorkspaceView[]>
-  open(repoId: string, branch: string, agent: Agent, model?: Model): Promise<WorkspaceResult>
+  /** `task`: an own task's text; main turns it into the Libretto flow's request (W40). */
+  open(repoId: string, branch: string, agent: Agent, model?: Model, task?: string): Promise<WorkspaceResult>
   remove(id: string): Promise<RemoveResult>
 }
 

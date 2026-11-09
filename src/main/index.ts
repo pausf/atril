@@ -177,8 +177,11 @@ app.whenReady().then(() => {
   })
   ipcMain.handle('atril:flow:get', (_e, id: string | null) => flow.select(id))
   ipcMain.handle('atril:ws:list', () => listWorkspaces(run))
-  ipcMain.handle('atril:ws:open', (_e, repoId: string, branch: string, agent: Agent, model?: Model) =>
-    openWorktree({ repoId, branch, agent, ...(model && MODELS.includes(model) && { model }) }, run).finally(() => void pushNext())
+  ipcMain.handle('atril:ws:open', (_e, repoId: string, branch: string, agent: Agent, model?: Model, task?: unknown) =>
+    openWorktree(
+      { repoId, branch, agent, ...(model && MODELS.includes(model) && { model }), ...(typeof task === 'string' && { task }) },
+      run
+    ).finally(() => void pushNext())
   )
   ipcMain.handle('atril:ws:remove', async (e, id: string) => {
     pty.detach(id)

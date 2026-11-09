@@ -50,9 +50,11 @@ interface InboxProps {
   /** Why a one-click Start did not finish. */
   startError?: string | null
   onOpenWorkspace: (id: string) => void
+  /** «Nueva tarea»: works with or without Jira (I26). */
+  onNewTask: () => void
 }
 
-export function Inbox({ inbox, onStart, startError, onOpenWorkspace }: InboxProps) {
+export function Inbox({ inbox, onStart, startError, onOpenWorkspace, onNewTask }: InboxProps) {
   const { result, issues, loading, refresh } = inbox
   // A board picked in Ajustes must show up the next time Tareas opens, not five minutes later.
   useEffect(() => void refresh(), [refresh])
@@ -62,6 +64,9 @@ export function Inbox({ inbox, onStart, startError, onOpenWorkspace }: InboxProp
         Tareas <span className="n">{issues.length}</span>
         <button className="refresh" onClick={() => void refresh()} disabled={loading}>
           {loading ? 'Actualizando…' : 'Actualizar'}
+        </button>
+        <button className="refresh" onClick={onNewTask}>
+          Nueva tarea
         </button>
       </h1>
       <p className="lead">Tus tareas abiertas de Jira en todos los proyectos.</p>

@@ -1127,8 +1127,13 @@ kbd {
 .f .lbl {
   color: var(--sub);
 }
+.f.stack {
+  grid-template-columns: 1fr;
+  gap: 6px;
+}
 .f select,
-.f input {
+.f input,
+.f textarea {
   font: inherit;
   border: 1px solid var(--faint);
   border-radius: 9px;
@@ -1136,6 +1141,10 @@ kbd {
   width: 100%;
   background: var(--card);
   color: var(--text);
+}
+.f textarea {
+  resize: vertical;
+  line-height: 1.45;
 }
 .f code {
   font: 12px ui-monospace, Menlo, monospace;
