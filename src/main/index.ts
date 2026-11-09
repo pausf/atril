@@ -6,11 +6,11 @@ import { getLang, setLang, t } from './lang'
 import { resolveLang } from '../preload/i18n'
 import { readDocs, saveDoc } from './flow/document'
 import { FORGES, forgeSettings, type ForgeId } from './credentials/forge'
-import { createRepo } from './forge/create'
+import { cloneAndRegister, createRepo } from './forge/create'
 import { fileDiff, listChanges } from './flow/changes'
 import { nextUp } from './nextup'
 import { writeFile } from 'node:fs/promises'
-import { join } from 'node:path'
+import { isAbsolute, join } from 'node:path'
 import { createSecretStore } from './credentials/store'
 import { jiraSettings } from './credentials/jira'
 import { searchBoards } from './credentials/boards'
@@ -150,9 +150,11 @@ app.whenReady().then(async () => {
       ? forges.save(f, { token: creds.token, ...(typeof creds.site === 'string' && { site: creds.site }) })
       : { error: t('Falta el token.') }
   )
-  ipcMain.handle('atril:forge:create', async (_e, req: Partial<CreateRepoRequest> | null) => {
+  ipcMain.handle('atril:forge:create', async (_e, req: Partial<CreateRepoRequest> | null, clone?: unknown) => {
     if (!req || !isForge(req.forge) || typeof req.name !== 'string') return { error: t('Nombre de repo no válido') }
-    return createRepo(secretStore, { forge: req.forge, name: req.name, description: typeof req.description === 'string' ? req.description : '', public: req.public === true })
+    const created = await createRepo(secretStore, { forge: req.forge, name: req.name, description: typeof req.description === 'string' ? req.description : '', public: req.public === true })
+    if ('error' in created || typeof clone !== 'string' || !isAbsolute(clone)) return created
+    return { ...created, ...(await cloneAndRegister(created, clone, run)) }
   })
   ipcMain.handle('atril:forge:open', (_e, url: unknown) => {
     if (typeof url === 'string' && /^https:\/\//.test(url)) return shell.openExternal(url)

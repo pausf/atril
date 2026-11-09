@@ -310,5 +310,8 @@ export const EN: Record<string, string> = {
   "Clonado y añadido a Atril como «{id}».": "Cloned and added to Atril as “{id}”.",
   "Creando…": "Creating…",
   "Crear": "Create",
-  "＋ Crear repo…": "＋ Create repo…"
+  "＋ Crear repo…": "＋ Create repo…",
+  "La carpeta {detail} ya existe: no se ha clonado.": "The folder {detail} already exists: nothing was cloned.",
+  "No se ha podido clonar por SSH ({detail}). Hazlo a mano:": "Could not clone over SSH ({detail}). Do it by hand:",
+  "Clonado en {detail}, pero no se ha podido añadir a Atril.": "Cloned into {detail}, but it could not be added to Atril."
 }

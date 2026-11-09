@@ -1,6 +1,11 @@
+import { existsSync } from 'node:fs'
+import { join } from 'node:path'
+import process from 'node:process'
 import { FORGE_NAME, forgeApi, networkCode, type ForgeId } from '../credentials/forge'
 import type { SecretStore } from '../credentials/store'
 import { t } from '../lang'
+import { registerRepo } from '../repos'
+import type { Runner } from '../run'
 
 export interface CreateRequest {
   forge: ForgeId
@@ -59,4 +64,27 @@ export async function createRepo(store: SecretStore, req: CreateRequest, fetchIm
   } catch (err) {
     return { error: t('No se ha podido conectar con {forge} ({detail}).', { forge: forgeName, detail: networkCode(err) }) }
   }
+}
+
+export type CloneResult = { registered: string } | { cloneError: string; cloneCommand: string }
+
+/**
+ * W51: clone the forge's SSH URL into <folder>/<path> and register it. No credential ever goes
+ * into the command or its environment; BatchMode makes a missing key fail instead of prompting.
+ */
+export async function cloneAndRegister(created: Created, folder: string, run: Runner): Promise<CloneResult> {
+  const dest = join(folder, created.path)
+  const cloneCommand = `git clone ${created.sshUrl} ${dest}`
+  if (existsSync(dest)) return { cloneError: t('La carpeta {detail} ya existe: no se ha clonado.', { detail: dest }), cloneCommand }
+  const env = { ...process.env, GIT_TERMINAL_PROMPT: '0', GIT_SSH_COMMAND: 'ssh -o BatchMode=yes' }
+  const r = await run('git', ['clone', '--', created.sshUrl, dest], { env })
+  if (r.code !== 0) {
+    const detail = r.stderr.trim().split('\n').at(-1)?.slice(0, 160) ?? ''
+    return { cloneError: t('No se ha podido clonar por SSH ({detail}). Hazlo a mano:', { detail }), cloneCommand }
+  }
+  let reg = await registerRepo(dest, run)
+  if ('error' in reg && reg.error === 'invalid-id') reg = await registerRepo(dest, run, { id: 'repo' })
+  if ('error' in reg && reg.error === 'id-taken') reg = await registerRepo(dest, run, { id: reg.suggested })
+  if ('error' in reg) return { cloneError: t('Clonado en {detail}, pero no se ha podido añadir a Atril.', { detail: dest }), cloneCommand }
+  return { registered: reg.repo.id }
 }

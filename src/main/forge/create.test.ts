@@ -1,7 +1,10 @@
+import { existsSync, mkdirSync, readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createSecretStore, type Encryptor } from '../credentials/store'
-import { cleanTmp, tmp } from '../test-helpers'
-import { createRepo } from './create'
+import { run, type Runner } from '../run'
+import { cleanTmp, git, tmp } from '../test-helpers'
+import { cloneAndRegister, createRepo } from './create'
 
 const TOKEN = 'ghp_super-secret-forge-token'
 const enc: Encryptor = {
@@ -69,5 +72,58 @@ describe('create repo', () => {
     process.env['ATRIL_HOME'] = tmp()
     expect(await createRepo(createSecretStore(enc), { forge: 'github', name: 'x', description: '', public: false }, none as unknown as typeof fetch)).toEqual({ error: 'Conecta GitHub en Ajustes antes de crear un repo.' })
     expect(none).not.toHaveBeenCalled()
+  })
+
+  function origin(): string {
+    const src = tmp()
+    git(src, 'init', '-q')
+    git(src, 'commit', '-q', '--allow-empty', '-m', 'readme')
+    const bare = join(tmp(), 'atril-x.git')
+    git(src, 'clone', '-q', '--bare', src, bare)
+    return bare
+  }
+  function spy(): { runner: Runner; calls: string[] } {
+    const calls: string[] = []
+    return {
+      calls,
+      runner: (cmd, args, opts) => {
+        calls.push([cmd, ...args, JSON.stringify(opts?.env ?? {})].join(' '))
+        return run(cmd, args, opts)
+      }
+    }
+  }
+
+  it('clones over ssh and registers the repo', async () => {
+    const folder = tmp()
+    const { runner, calls } = spy()
+    const r = await cloneAndRegister({ url: 'https://x/pau/atril-x', sshUrl: origin(), path: 'atril-x' }, folder, runner)
+    expect(r).toEqual({ registered: 'atril-x' })
+    expect(existsSync(join(folder, 'atril-x', '.git'))).toBe(true)
+    expect(readFileSync(join(process.env['ATRIL_HOME']!, 'repos.json'), 'utf8')).toContain(join(folder, 'atril-x'))
+    expect(calls.join('\n')).not.toContain(TOKEN)
+
+    // Same name again elsewhere: the derived id is taken, the suggested one is used.
+    const again = await cloneAndRegister({ url: 'https://x/pau/atril-x', sshUrl: origin(), path: 'atril-x' }, tmp(), runner)
+    expect(again).toEqual({ registered: 'atril-x-2' })
+  })
+
+  it('a failed clone registers nothing', async () => {
+    const folder = tmp()
+    const { runner, calls } = spy()
+    const missing = join(tmp(), 'nope.git')
+    const r = await cloneAndRegister({ url: 'https://x/pau/y', sshUrl: missing, path: 'y' }, folder, runner)
+    expect(r).toMatchObject({ cloneCommand: `git clone ${missing} ${join(folder, 'y')}` })
+    expect('cloneError' in r && r.cloneError.startsWith('No se ha podido clonar por SSH')).toBe(true)
+    expect(existsSync(join(process.env['ATRIL_HOME']!, 'repos.json'))).toBe(false)
+    expect(calls.join('\n')).not.toContain(TOKEN)
+  })
+
+  it('an existing folder is not overwritten', async () => {
+    const folder = tmp()
+    mkdirSync(join(folder, 'atril-x'))
+    const { runner, calls } = spy()
+    const r = await cloneAndRegister({ url: 'https://x/pau/atril-x', sshUrl: origin(), path: 'atril-x' }, folder, runner)
+    expect(r).toMatchObject({ cloneError: `La carpeta ${join(folder, 'atril-x')} ya existe: no se ha clonado.` })
+    expect(calls.some((c) => c.startsWith('git clone'))).toBe(false)
   })
 })
