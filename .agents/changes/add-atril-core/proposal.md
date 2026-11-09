@@ -99,6 +99,7 @@ PTYs and worktrees, and pieces reused with attribution — but Atril does not ru
 - Q: «no obtiene ninguna tarjeta de Jira» — 0 tareas en sprints abiertos, 24 abiertas asignadas (WEB, SHOP, APP) → A: «Todas, por estado»: Por empezar, En curso, y Code Review/Testing/Ready to Deploy plegadas
 - Q: «quiero también efecto oscuro y efecto plano y que uno sea automático del sistema» → A: tema Claro, Oscuro y Automático (sigue al sistema), elegible en Ajustes; Automático por defecto
 - Q: la lista de Jira tapa los trabajos en marcha → A: «Jira en su propia pantalla»
+- Q: ¿seguir preguntando? → A: «de crear tareas y hacer cosas para mejorar este proyecto, que no se apague el ordenador, y tú sigue trabajando, ¿vale? No le preguntes, tú sigue.» (a partir de aquí, las decisiones van marcadas `(assumed)`)
 
 ## Vocabulary
 
@@ -360,6 +361,10 @@ it; keyboard reachability and text labels for every state.
   follows macOS); the choice persists across restarts, Automático switches live when the
   system appearance changes, and every theme keeps text contrast at 4.5:1 or more.
   Proof: src/renderer/theme.test.ts  theme follows the choice and the system
+- **W36** If the main checkout of an in-place workspace is no longer on that workspace's
+  branch when it is closed, then Atril shall refuse, say which branch it is on, and move
+  nothing.
+  Proof: src/main/workspaces.test.ts  in-place close refuses when the branch was changed by hand
 - **W26** When a Claude hook reports `Stop` for a session, Atril shall set its agent state to
   `needs-you`; when it reports `UserPromptSubmit`, to `working`.
   Proof: src/main/status.test.ts  stop marks needs-you and prompt submit marks working
@@ -528,7 +533,7 @@ or in tmux itself, never in the window.
 - [x] register a repo by folder; the sidebar shows its mode with the reason, and the person's override persists · waits on box 1 · Closes: W1, W2, W3, W4
 - [x] "Nuevo trabajo" opens a workspace in worktree mode on a new branch with claude in an `atril-<id>` tmux session recorded in workspaces.json, shown live in the centre terminal; relaunching Atril reattaches without starting agents; a dirty worktree is never removed · waits on box 2 · Closes: W5, W6, W10, W11, W12
 - [x] Libretto bundled: the script copies the pinned payload with its licences into resources/libretto as a Claude Code plugin, and every Claude agent starts with --plugin-dir pointing at it · waits on box 3 · Closes: W29, W30, W33
-- [ ] in-place workspaces: refuse a dirty checkout, refuse a second one per repo, restore the previous branch on close · waits on box 3 · Closes: W7, W8, W9
+- [x] in-place workspaces: refuse a dirty checkout, refuse a second one per repo, restore the previous branch on close, and refuse to close when the branch was changed by hand · waits on box 3 · Closes: W7, W8, W9, W36
 - [ ] ⌘D and ⌘⇧D split the focused workspace through tmux · waits on box 3 · Closes: W13
 - [x] agent state from Claude hooks passed by --settings and from the agent's dead pane, with one macOS notification per needs-you transition that opens the workspace · waits on box 3 · Closes: W14, W15, W16, W26, W27
 - [ ] usage footer: Claude 5 h and 7 d from the Keychain token and the usage endpoint, "—" with a reason when unreadable, the token never leaving main · waits on box 1 · Closes: W17, W18, W20

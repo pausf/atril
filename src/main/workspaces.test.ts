@@ -1,9 +1,9 @@
 import { existsSync } from 'node:fs'
-import { writeFileSync } from 'node:fs'
+import { rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanTmp, git, killTmux, makeRegisteredRepo, tmp, tmuxSock } from './test-helpers'
-import { openWorktree, removeWorkspace } from './workspaces'
+import { listWorkspaces, openWorktree, removeWorkspace } from './workspaces'
 import { run, type Runner } from './run'
 
 const SLEEP = ['sh', '-c', 'sleep 300']
@@ -61,5 +61,71 @@ describe('workspaces', () => {
     expect(out).toEqual({ error: 'Tiene cambios sin commitear: haz commit o descártalos antes' })
     expect(existsSync(join(r.workspace.path, 'wip.txt'))).toBe(true)
     expect(vi.isMockFunction(removeWorkspace)).toBe(false)
+  })
+
+  describe('in-place', () => {
+    beforeEach(() => {
+      writeFileSync(join(home, 'repos.json'), JSON.stringify({ repos: [{ id: 'demo', path: repo, override: 'in-place' }] }))
+    })
+
+    it('refuses a second in-place workspace', async () => {
+      const first = await openWorktree({ repoId: 'demo', branch: 'feat/one', agent: 'claude', argv: SLEEP })
+      expect('workspace' in first).toBe(true)
+
+      const second = await openWorktree({ repoId: 'demo', branch: 'feat/two', agent: 'claude', argv: SLEEP })
+
+      expect(second).toEqual({ error: 'Este repo trabaja in-place y ya tiene un trabajo abierto: ciérralo antes' })
+      expect(git(repo, 'branch', '--show-current').trim()).toBe('feat/one')
+      expect(git(repo, 'branch', '--list', 'feat/two').trim()).toBe('')
+    })
+
+    it('in-place refuses a dirty checkout', async () => {
+      const before = git(repo, 'branch', '--show-current').trim()
+      writeFileSync(join(repo, 'wip.txt'), 'uncommitted')
+
+      const r = await openWorktree({ repoId: 'demo', branch: 'feat/dirty', agent: 'claude', argv: SLEEP })
+
+      expect(r).toEqual({ error: 'La copia principal tiene cambios sin commitear: haz commit o descártalos antes' })
+      expect(git(repo, 'branch', '--show-current').trim()).toBe(before)
+      expect(git(repo, 'branch', '--list', 'feat/dirty').trim()).toBe('')
+      expect(existsSync(join(repo, 'wip.txt'))).toBe(true)
+      expect(existsSync(join(home, 'workspaces.json'))).toBe(false)
+    })
+
+    it('in-place close refuses when the branch was changed by hand', async () => {
+      const before = git(repo, 'branch', '--show-current').trim()
+      const r = await openWorktree({ repoId: 'demo', branch: 'feat/hand', agent: 'claude', argv: SLEEP })
+      if (!('workspace' in r)) throw new Error(r.error)
+      git(repo, 'switch', '-c', 'other-work')
+
+      const refused = await removeWorkspace(r.workspace.id)
+      expect(refused).toEqual({ error: 'El repo está en la rama «other-work», no en «feat/hand»: vuelve a «feat/hand» antes de cerrar' })
+      // Nothing moved: the person stays where they switched to, and the workspace remains.
+      expect(git(repo, 'branch', '--show-current').trim()).toBe('other-work')
+      expect((await listWorkspaces()).map((w) => w.id)).toEqual([r.workspace.id])
+      expect(before).not.toBe('other-work')
+    })
+
+    it('in-place close restores the previous branch', async () => {
+      const before = git(repo, 'branch', '--show-current').trim()
+      const r = await openWorktree({ repoId: 'demo', branch: 'feat/ip', agent: 'claude', argv: SLEEP })
+      if (!('workspace' in r)) throw new Error(r.error)
+      expect(r.workspace.path).toBe(repo)
+      expect(r.workspace.previousBranch).toBe(before)
+      expect(git(repo, 'branch', '--show-current').trim()).toBe('feat/ip')
+
+      writeFileSync(join(repo, 'wip.txt'), 'uncommitted')
+      const refused = await removeWorkspace(r.workspace.id)
+      expect(refused).toEqual({ error: 'Tiene cambios sin commitear: haz commit o descártalos antes' })
+      expect(git(repo, 'branch', '--show-current').trim()).toBe('feat/ip')
+      expect(existsSync(join(repo, 'wip.txt'))).toBe(true)
+      expect((await listWorkspaces()).map((w) => w.id)).toEqual([r.workspace.id])
+
+      rmSync(join(repo, 'wip.txt'))
+      expect(await removeWorkspace(r.workspace.id)).toEqual({ ok: true })
+      expect(git(repo, 'branch', '--show-current').trim()).toBe(before)
+      expect(git(repo, 'branch', '--list', 'feat/ip').trim()).not.toBe('')
+      expect(await listWorkspaces()).toEqual([])
+    })
   })
 })

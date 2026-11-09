@@ -49,12 +49,32 @@ export async function openWorktree(input: OpenInput, run: Runner = defaultRun): 
   if (!repo) return { error: `No hay ningún repo «${repoId}»` }
 
   const detected = repo.override ? { mode: repo.override, reason: '' } : await detectMode(repo.path, run)
-  if (effectiveMode(repo, detected).mode === 'in-place') return { error: 'in-place llega en la casilla 4' }
+  const inPlace = effectiveMode(repo, detected).mode === 'in-place'
 
-  const path = join(home(), 'wt', repoId, branch)
-  await mkdir(join(path, '..'), { recursive: true })
-  const add = await run('git', ['-C', repo.path, 'worktree', 'add', '-b', branch, path])
-  if (add.code !== 0) return { error: add.stderr.trim() || 'git worktree add falló' }
+  let path: string
+  let previousBranch: string | undefined
+  if (inPlace) {
+    if ((await readRecords()).some((r) => r.repoId === repoId && r.mode === 'in-place')) {
+      return { error: 'Este repo trabaja in-place y ya tiene un trabajo abierto: ciérralo antes' }
+    }
+    const status = await run('git', ['-C', repo.path, 'status', '--porcelain'])
+    if (status.code !== 0) return { error: status.stderr.trim() || 'git status falló' }
+    if (status.stdout.trim() !== '') {
+      return { error: 'La copia principal tiene cambios sin commitear: haz commit o descártalos antes' }
+    }
+    const current = (await run('git', ['-C', repo.path, 'branch', '--show-current'])).stdout.trim()
+    // Detached HEAD has no branch name: the sha is what close switches back to.
+    previousBranch = current || (await run('git', ['-C', repo.path, 'rev-parse', 'HEAD'])).stdout.trim()
+    const exists = (await run('git', ['-C', repo.path, 'rev-parse', '--verify', '--quiet', `refs/heads/${branch}`])).code === 0
+    const sw = await run('git', ['-C', repo.path, 'switch', ...(exists ? [] : ['-c']), branch])
+    if (sw.code !== 0) return { error: sw.stderr.trim() || 'git switch falló' }
+    path = repo.path
+  } else {
+    path = join(home(), 'wt', repoId, branch)
+    await mkdir(join(path, '..'), { recursive: true })
+    const add = await run('git', ['-C', repo.path, 'worktree', 'add', '-b', branch, path])
+    if (add.code !== 0) return { error: add.stderr.trim() || 'git worktree add falló' }
+  }
 
   const head = await run('git', ['-C', repo.path, 'rev-parse', 'HEAD'])
   const id = newId()
@@ -64,9 +84,10 @@ export async function openWorktree(input: OpenInput, run: Runner = defaultRun): 
     id,
     repoId,
     branch,
-    mode: 'worktree',
+    mode: inPlace ? 'in-place' : 'worktree',
     path,
     baseCommit: head.stdout.trim(),
+    ...(previousBranch !== undefined && { previousBranch }),
     agent,
     session: sessionName(id),
     paneId
@@ -91,7 +112,22 @@ export async function removeWorkspace(id: string, run: Runner = defaultRun): Pro
   if (status.code !== 0) return { error: status.stderr.trim() || 'git status falló' }
   if (status.stdout.trim() !== '') return { error: 'Tiene cambios sin commitear: haz commit o descártalos antes' }
 
+  if (rec.mode === 'in-place') {
+    // The main checkout is shared with the person: never switch them off a branch they chose by hand.
+    const current = (await run('git', ['-C', rec.path, 'branch', '--show-current'])).stdout.trim()
+    if (current !== rec.branch)
+      return { error: `El repo está en la rama «${current || 'HEAD suelto'}», no en «${rec.branch}»: vuelve a «${rec.branch}» antes de cerrar` }
+  }
+
   await killSession(id, run)
+  if (rec.mode === 'in-place') {
+    // Never delete the branch: the person's commits live there.
+    const prev = rec.previousBranch ?? ''
+    const back = await run('git', ['-C', rec.path, 'switch', ...(/^[0-9a-f]{40}$/.test(prev) ? ['--detach'] : []), prev])
+    if (back.code !== 0) return { error: back.stderr.trim() || 'git switch falló' }
+    await writeRecords(records.filter((r) => r.id !== id))
+    return { ok: true }
+  }
   // No --force: git itself refuses anything the status check missed.
   const rm = await run('git', ['-C', repo.path, 'worktree', 'remove', rec.path])
   if (rm.code !== 0) return { error: rm.stderr.trim() || 'git worktree remove falló' }
