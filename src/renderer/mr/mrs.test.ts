@@ -57,11 +57,13 @@ describe('mr screen', () => {
     const mine = await section(/^Mías/)
     const review = await section(/^Me toca revisar/)
     const following = await section(/^Sigo/)
-    expect(within(mine).getAllByRole('button').slice(1).map((b) => b.textContent)).toEqual([
+    // Mías and Me toca revisar also hold Puntuar (M12): the rows are the other buttons.
+    const rows = (sec: HTMLElement) => within(sec).getAllByRole('button').slice(1).filter((b) => b.textContent !== 'Puntuar')
+    expect(rows(mine).map((b) => b.textContent)).toEqual([
       expect.stringMatching(/Arreglar el envío.*acme\/web.*pau.*Falla.*\+12 −3 · 4 archivos.*hace 3 h/)
     ])
     expect(within(mine).getByText('Hay más: ábrelas en GitHub')).toBeTruthy()
-    expect(within(review).getAllByRole('button').slice(1).map((b) => b.textContent)).toEqual([
+    expect(rows(review).map((b) => b.textContent)).toEqual([
       expect.stringMatching(/Nuevo filtro.*grp\/shop.*eva.*Pasa.*7 archivos.*hace 2 d/)
     ])
     expect(within(review).getAllByRole('button')[1]!.textContent).not.toMatch(/[+−]/)

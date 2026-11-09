@@ -219,6 +219,8 @@ export interface MrItem {
   files?: number
   /** ISO 8601. */
   updatedAt: string
+  /** The head commit, when the listing knew it (M13). */
+  head?: string
 }
 
 export type MrListName = 'mine' | 'review' | 'following'
@@ -235,10 +237,55 @@ export interface MrLists {
   errors: Array<{ forge: ForgeId; text: string }>
 }
 
+export type MrSize = 'S' | 'M' | 'L' | 'XL'
+
+/** M10: what Atril measures from the diff alone, without Claude. */
+export interface MrMetrics {
+  added: number
+  removed: number
+  files: number
+  tests: boolean
+  size: MrSize
+}
+
+/** M11: Claude's view, as its schema allows it. Never translated. */
+export interface MrAiScore {
+  difficulty: number
+  risk: number
+  what: string
+  why: string
+  where: string[]
+}
+
+/** M13: one score, kept per MR and head commit. */
+export interface MrScore {
+  head?: string
+  metrics: MrMetrics
+  ai: MrAiScore
+  /** The language Claude answered in. */
+  lang: Lang
+  /** KB, when the diff Claude saw was cut (M15). */
+  cut?: { seen: number; total: number }
+  /** ISO 8601. */
+  at: string
+}
+
+export type MrScoreState =
+  | { state: 'none' }
+  | { state: 'queued' }
+  | { state: 'running' }
+  | { state: 'done'; score: MrScore }
+  | { state: 'error'; text: string }
+
 export interface MrApi {
   list(): Promise<MrLists>
   /** Opens an MR of the latest listing in the browser; anything else is ignored (W52). */
   open(url: string): Promise<void>
+  /** Queues a score for an MR of Mías or Me toca revisar; resolves when it is done (M14, M17). */
+  score(url: string): Promise<MrScoreState>
+  /** The state of each URL: queued, running, stored or failed. */
+  scoreOf(urls: string[]): Promise<Record<string, MrScoreState>>
+  onScoreChange(cb: (url: string, state: MrScoreState) => void): () => void
 }
 
 export type ForgeStatus = { saved: false } | { saved: true; account?: string; site?: string }

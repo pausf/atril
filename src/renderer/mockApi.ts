@@ -1,5 +1,5 @@
 import { vi } from 'vitest'
-import type { ActivityLine, AddRepoResult, FileChange, FlowDocs, ForgeId, ForgeStatus, Mode, MrLists, AgentState, AtrilApi, FlowStage, JiraIssue, MenuAction, NextItem, StartProposalResult, StartRequest, StartResult, RepoView, UiState, WorkspaceResult, WorkspaceView } from '../preload/api'
+import type { ActivityLine, AddRepoResult, FileChange, FlowDocs, ForgeId, ForgeStatus, Mode, MrLists, MrScoreState, AgentState, AtrilApi, FlowStage, JiraIssue, MenuAction, NextItem, StartProposalResult, StartRequest, StartResult, RepoView, UiState, WorkspaceResult, WorkspaceView } from '../preload/api'
 
 export const workspace = (id: string, branch: string, alive = true): WorkspaceView => ({
   id,
@@ -49,6 +49,8 @@ interface Options {
   activity?: Record<string, ActivityLine[]>
   /** What mr.list answers; missing means no forge connected. */
   mrs?: MrLists
+  /** What mr.scoreOf answers per URL; missing means never scored. */
+  scores?: Record<string, MrScoreState>
 }
 
 /** ui.json lives in `stored`; pass the same object to a second mock to simulate a restart. */
@@ -58,6 +60,7 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
   let notified: ((id: string) => void) | undefined
   const activityListeners = new Set<(id: string, lines: ActivityLine[]) => void>()
   const flowListeners = new Set<(id: string, stage: FlowStage) => void>()
+  const scoreListeners = new Set<(url: string, state: MrScoreState) => void>()
   // The mock is a Spanish Mac: Sistema resolves to Spanish, as main would there.
   const withLang = (): UiState => ({ ...stored, folded: { ...stored.folded }, lang: stored.language === 'en' ? 'en' : 'es' })
   const ui = {
@@ -110,7 +113,13 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
     },
     mr: {
       list: vi.fn(async (): Promise<MrLists> => o.mrs ?? { connected: [], mine: [], review: [], following: [], more: { mine: [], review: [], following: [] }, errors: [] }),
-      open: vi.fn(async () => undefined)
+      open: vi.fn(async () => undefined),
+      score: vi.fn(async (): Promise<MrScoreState> => ({ state: 'queued' })),
+      scoreOf: vi.fn(async (urls: string[]) => Object.fromEntries(urls.map((u) => [u, o.scores?.[u] ?? { state: 'none' }]))),
+      onScoreChange: (cb: (url: string, state: MrScoreState) => void) => {
+        scoreListeners.add(cb)
+        return () => scoreListeners.delete(cb)
+      }
     },
     settings: {
       jira: { status: async () => ({ saved: true, account: 'Pau Sánchez', site: 'https://x.atlassian.net' }) },
@@ -159,7 +168,8 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
   const { menu: menuApi, jira, workspaces: ws, repos: reposApi, flow: flowApi, forge: forgeApi, mr: mrApi } = window.atril
   return { ui, stored, menuApi, jira, ws, reposApi, flowApi, forgeApi, mrApi, menu: (a: MenuAction) => menu?.(a), clickNotification: (id: string) => notified?.(id),
     pushActivity: (id: string, lines: ActivityLine[]) => activityListeners.forEach((cb) => cb(id, lines)),
-    pushFlow: (id: string, stage: FlowStage) => flowListeners.forEach((cb) => cb(id, stage))
+    pushFlow: (id: string, stage: FlowStage) => flowListeners.forEach((cb) => cb(id, stage)),
+    pushScore: (url: string, state: MrScoreState) => scoreListeners.forEach((cb) => cb(url, state))
   }
 }
 

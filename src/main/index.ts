@@ -9,6 +9,7 @@ import { FORGES, forgeSettings, type ForgeId } from './credentials/forge'
 import { cloneAndRegister, createRepo } from './forge/create'
 import { createForgeGuards } from './forge/guards'
 import { listMrs } from './forge/mrs'
+import { createScorer } from './forge/scores'
 import { fileDiff, listChanges } from './flow/changes'
 import { nextUp } from './nextup'
 import { writeFile } from 'node:fs/promises'
@@ -18,7 +19,7 @@ import { jiraSettings } from './credentials/jira'
 import { searchBoards } from './credentials/boards'
 import type { JiraCreds } from './credentials/check'
 import { doctor } from './doctor'
-import type { CreateRepoRequest, Mode, MrItem, MrLists, UiState } from '../preload/api'
+import type { CreateRepoRequest, Mode, MrItem, MrLists, MrScoreState, UiState } from '../preload/api'
 import { readInbox } from './jira/inbox'
 import { inboxGroups } from './jira/board'
 import { proposeStart, start } from './jira/start'
@@ -40,8 +41,8 @@ const SNAPSHOT = app.isPackaged ? undefined : process.env['ATRIL_SNAPSHOT']
 
 function fakeMrs(): MrLists {
   const ago = (h: number): string => new Date(Date.now() - h * 3600_000).toISOString()
-  const gh = (n: number, title: string, project: string, author: string, ci: MrItem['ci'], added: number, removed: number, files: number, h: number): MrItem => ({ forge: 'github', url: `https://github.com/${project}/pull/${n}`, title, project, author, ci, added, removed, files, updatedAt: ago(h) })
-  const gl = (n: number, title: string, project: string, author: string, ci: MrItem['ci'], files: number, h: number): MrItem => ({ forge: 'gitlab', url: `https://gitlab.com/${project}/-/merge_requests/${n}`, title, project, author, ci, files, updatedAt: ago(h) })
+  const gh = (n: number, title: string, project: string, author: string, ci: MrItem['ci'], added: number, removed: number, files: number, h: number): MrItem => ({ forge: 'github', url: `https://github.com/${project}/pull/${n}`, title, project, author, ci, added, removed, files, updatedAt: ago(h), head: `h${n}` })
+  const gl = (n: number, title: string, project: string, author: string, ci: MrItem['ci'], files: number, h: number): MrItem => ({ forge: 'gitlab', url: `https://gitlab.com/${project}/-/merge_requests/${n}`, title, project, author, ci, files, updatedAt: ago(h), head: `h${n}` })
   return {
     connected: ['github', 'gitlab'],
     mine: [gh(41, 'Calendario de festivos por provincia', 'pausf/shop-web', 'pausf', 'running', 286, 12, 6, 2), gl(17, 'Cola de reintentos para pagos', 'acme/payments-service', 'pausf', 'pass', 9, 30)], // i18n-ignore
@@ -49,6 +50,34 @@ function fakeMrs(): MrLists {
     following: [gh(12, 'Quitar el flag antiguo del carrusel', 'acme/shop-web', 'laia', 'none', 18, 64, 3, 70)], // i18n-ignore
     more: { mine: [], review: [], following: [] },
     errors: []
+  }
+}
+
+function fakeScores(): Record<string, MrScoreState> {
+  const [mine] = fakeMrs().mine
+  const [review] = fakeMrs().review
+  const at = new Date().toISOString()
+  return {
+    [mine!.url]: {
+      state: 'done',
+      score: {
+        head: mine!.head,
+        lang: 'es',
+        at,
+        metrics: { added: 286, removed: 12, files: 6, tests: true, size: 'M' },
+        ai: {
+          difficulty: 3,
+          risk: 2,
+          what: 'Añade un calendario de festivos por provincia y lo usa para calcular la fecha prometida de entrega.', // i18n-ignore
+          why: 'La lógica es acotada y viene con tests, pero toca la fecha que ve el cliente y depende de datos externos del BOE.', // i18n-ignore
+          where: ['src/Delivery/PromiseDate.php: el salto de festivos', 'La importación del BOE: qué pasa si cambia el formato'] // i18n-ignore
+        }
+      }
+    },
+    [review!.url]: {
+      state: 'done',
+      score: { head: 'old0000', lang: 'es', at, metrics: { added: 140, removed: 52, files: 9, tests: false, size: 'M' }, ai: { difficulty: 4, risk: 4, what: 'Guarda los filtros del listado del vendedor entre visitas.', why: 'Toca estado compartido y no trae tests.', where: ['El almacenamiento de filtros'] } } // i18n-ignore
+    }
   }
 }
 
@@ -186,13 +215,28 @@ app.whenReady().then(async () => {
   })
   ipcMain.handle('atril:mr:list', async () => {
     // ponytail: dev-only, ATRIL_SNAPSHOT_VIEW=mr photographs believable lists without any forge.
-    const r = SNAPSHOT && process.env['ATRIL_SNAPSHOT_VIEW'] === 'mr' ? fakeMrs() : await listMrs(secretStore)
+    const r = SNAPSHOT && process.env['ATRIL_SNAPSHOT_VIEW']?.startsWith('mr') ? fakeMrs() : await listMrs(secretStore, fetch, guards.scorable)
     guards.listed([...r.mine, ...r.review, ...r.following].map((m) => m.url))
     return r
   })
   ipcMain.handle('atril:mr:open', (_e, url: unknown) => {
     if (typeof url === 'string' && guards.openable(url)) return shell.openExternal(url)
   })
+  const scorer = createScorer({
+    store: secretStore,
+    run,
+    target: guards.scoreTarget,
+    emit: (url, state) => BrowserWindow.getAllWindows().forEach((w) => w.webContents.send('atril:mr:score-changed', url, state))
+  })
+  ipcMain.handle('atril:mr:score', (_e, url: unknown): Promise<MrScoreState> =>
+    scorer.score(typeof url === 'string' ? url : '')
+  )
+  ipcMain.handle('atril:mr:scoreOf', (_e, urls: unknown) =>
+    // ponytail: dev-only, the MR photos show one fresh score and one from an earlier commit.
+    SNAPSHOT && process.env['ATRIL_SNAPSHOT_VIEW']?.startsWith('mr')
+      ? fakeScores()
+      : scorer.stateOf(Array.isArray(urls) ? urls.filter((u): u is string => typeof u === 'string') : [])
+  )
   ipcMain.handle('atril:forge:pickFolder', async () => {
     const picked = await dialog.showOpenDialog({ properties: ['openDirectory', 'createDirectory'] })
     const folder = picked.canceled ? null : (picked.filePaths[0] ?? null)

@@ -99,8 +99,8 @@ stores nothing.
 
 - **M10** Atril shall measure from the diff alone the added and removed lines (header lines excluded),
   the files, whether a test file changed — a path segment `test`, `tests`, `spec`, `specs` or
-  `__tests__`, or a name `*.test.*`, `*.spec.*`, `*_test.*` or `*Test.{php,java,kt,cs}`, ignoring
-  case, so `latest.ts` is not one — and a size of S below 100 changed lines, M below 400, L below 1000
+  `__tests__`, or a name `*.test.*`, `*.spec.*` or `*_test.*` ignoring case, or `*Test.{php,java,kt,cs}`
+  with a capital T, so `latest.ts` and `latest.php` are not one — and a size of S below 100 changed lines, M below 400, L below 1000
   and XL from 1000.
   Proof: src/main/forge/scores.test.ts metrics come from the diff alone
 - **M11** When an MR is scored, Atril shall run `claude` with exactly `-p --model sonnet
@@ -192,6 +192,6 @@ M10–M15 seen red first. Rollback: one revert; cached scores are plain files.
 
 ## Checklist
 
-- [ ] the runner's stdin and timeout · Closes: W53
-- [ ] main: head in the listing and the scorable set, diff per forge, metrics, the Claude call, failures, cache by commit, the deduping queue · waits on box 1 · Closes: M10, M11, M13, M14, M16, M17
-- [ ] the window: Puntuar on the right rows, states, chips, the score view, stale marker · waits on box 2 · Closes: M12, M13, M15
+- [x] the runner's stdin and timeout · Closes: W53
+- [x] main: head in the listing and the scorable set, diff per forge, metrics, the Claude call, failures, cache by commit, the deduping queue · waits on box 1 · Closes: M10, M11, M13, M14, M16, M17
+- [x] the window: Puntuar on the right rows, states, chips, the score view, stale marker · waits on box 2 · Closes: M12, M13, M15

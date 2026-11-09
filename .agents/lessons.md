@@ -115,3 +115,6 @@ work-reviewer: M6's network text lacked the period the shared catalog key has (c
 
 ## 2026-11-09 · add-mr-scores · 4→5
 spec-reviewer: a hung claude would block the queue forever (no timeout), GitLab's /diffs is not a unified diff, a failed diff fetch had no outcome, {detail} could have echoed stderr, and "only mine and review" had no main-side proof. Settled with W53 (stdin + kill), M16, M17 and a per-forge diff recipe.
+
+## 2026-11-09 · add-mr-scores · 6
+The builder followed the contract's test-file rule literally (`*Test.php` ignoring case), which made latest.php and Contest.java count as tests. The contract was wrong; fixed there and in code (the xUnit suffix is case-sensitive), negatives added to M10's proof, seen red first.

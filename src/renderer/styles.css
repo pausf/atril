@@ -1217,6 +1217,85 @@ kbd {
 .mr-row .ci-running {
   color: var(--run-text);
 }
+/* A row plus its score cell (M12, M15). */
+.mr-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.mr-line .mr-row {
+  margin-bottom: 0;
+}
+.mr-score {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.mr-score.f-note {
+  margin: 0;
+}
+.mr-score .f-note {
+  margin: 0;
+}
+.mr-score .mr-chips {
+  border: 0;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+.mr-score-error {
+  color: var(--bad-text);
+  max-width: 280px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dlg.edmodal.scoremodal {
+  width: min(720px, 94vw);
+  height: auto;
+  max-height: 88vh;
+}
+.score-body {
+  padding: 16px 22px 22px;
+  overflow: auto;
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+.score-body h4 {
+  margin: 14px 0 6px;
+  font-size: 14px;
+  color: var(--ed-4);
+}
+.score-body h5 {
+  margin: 10px 0 2px;
+  font-size: 12.5px;
+  color: var(--ed-5);
+}
+.score-body p {
+  margin: 0;
+}
+.score-body .f-note {
+  margin: 14px 0 0;
+  color: var(--ed-5);
+}
+.score-measures {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.score-measures li {
+  background: var(--ed-3);
+  border-radius: 999px;
+  padding: 1px 10px;
+}
+.score-stale {
+  color: var(--chg-mod);
+}
 
 .icon {
   flex: none;

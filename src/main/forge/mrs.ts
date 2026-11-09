@@ -2,6 +2,7 @@ import type { CiState, MrItem, MrListName, MrLists } from '../../preload/api'
 import { FORGE_NAME, FORGES, forgeApi, networkCode, type ForgeId } from '../credentials/forge'
 import type { SecretStore } from '../credentials/store'
 import { t } from '../lang'
+import type { ScoreTarget } from './scores'
 
 const LIST_CAP = 50
 const FOLLOW_CAP = 10
@@ -54,6 +55,7 @@ interface GlMr {
   author?: { username?: string }
   project_id: number
   iid: number
+  sha?: string
   updated_at: string
   references?: { full?: string }
   changes_count?: string
@@ -69,7 +71,7 @@ function ghRow(p: GhPull, repo: string): Row {
 
 function glRow(m: GlMr): Row {
   const project = m.references?.full?.replace(/!\d+$/, '') ?? m.web_url.split('/-/')[0]!.replace(/^https:\/\/[^/]+\//, '')
-  return { forge: 'gitlab', url: m.web_url, title: m.title, project, author: m.author?.username ?? '', updatedAt: m.updated_at, ref: `/projects/${m.project_id}/merge_requests/${m.iid}` }
+  return { forge: 'gitlab', url: m.web_url, title: m.title, project, author: m.author?.username ?? '', updatedAt: m.updated_at, ref: `/projects/${m.project_id}/merge_requests/${m.iid}`, ...(m.sha && { head: m.sha }) }
 }
 
 async function github(get: Get, account: string): Promise<Record<MrListName, Page>> {
@@ -119,7 +121,7 @@ async function details(forge: ForgeId, get: Get, row: Row): Promise<void> {
     return
   }
   const p = r.body as GhPull
-  Object.assign(row, { added: p.additions, removed: p.deletions, files: p.changed_files })
+  Object.assign(row, { added: p.additions, removed: p.deletions, files: p.changed_files }, p.head?.sha && { head: p.head.sha })
   // No head sha, no check runs to ask for: CI stays unknown rather than a false forge error.
   if (!p.head?.sha) return
   const runs = await get(`${row.ref.replace(/\/pulls\/\d+$/, '')}/commits/${p.head.sha}/check-runs?per_page=100`)
@@ -133,6 +135,11 @@ async function pool<T>(items: T[], n: number, fn: (x: T) => Promise<void>): Prom
   }))
 }
 
+/** M6: what a forge's failed answer or unreachable network is called. */
+export const statusText = (name: string, status: number): string =>
+  status === 401 ? t('{forge} ha rechazado el token: reemplázalo en Ajustes', { forge: name }) : t('{forge} ha respondido {status}', { forge: name, status })
+export const networkText = (name: string, err: unknown): string => t('No se ha podido conectar con {forge} ({detail}).', { forge: name, detail: networkCode(err) })
+
 async function one(forge: ForgeId, token: string, site: string, account: string, fetchImpl: typeof fetch) {
   const name = FORGE_NAME[forge]
   const { base, headers } = forgeApi(forge, site, token)
@@ -143,9 +150,9 @@ async function one(forge: ForgeId, token: string, site: string, account: string,
       // A redirect would carry the token to another host.
       const res = await fetchImpl(new URL(`${base}${path}`), { headers, redirect: 'error', signal: AbortSignal.timeout(10_000) })
       if (res.ok) return { body: await res.json(), res }
-      error ??= res.status === 401 ? t('{forge} ha rechazado el token: reemplázalo en Ajustes', { forge: name }) : t('{forge} ha respondido {status}', { forge: name, status: res.status })
+      error ??= statusText(name, res.status)
     } catch (err) {
-      error ??= t('No se ha podido conectar con {forge} ({detail}).', { forge: name, detail: networkCode(err) })
+      error ??= networkText(name, err)
     }
     return null
   }
@@ -164,8 +171,9 @@ async function one(forge: ForgeId, token: string, site: string, account: string,
   return { lists, more, error }
 }
 
-/** M1–M8: the three lists across both forges. Rows carry no token; main keeps the URLs for W52. */
-export async function listMrs(store: SecretStore, fetchImpl: typeof fetch = fetch): Promise<MrLists> {
+/** M1–M8: the three lists across both forges. Rows carry no token; main keeps the URLs for W52,
+ * and `scorable` gets the API path of each row of Mías and Me toca revisar (M17). */
+export async function listMrs(store: SecretStore, fetchImpl: typeof fetch = fetch, scorable?: (targets: Map<string, ScoreTarget>) => void): Promise<MrLists> {
   const out: MrLists = { connected: [], mine: [], review: [], following: [], more: { mine: [], review: [], following: [] }, errors: [] }
   const results = await Promise.all(
     FORGES.map(async (forge) => {
@@ -175,9 +183,11 @@ export async function listMrs(store: SecretStore, fetchImpl: typeof fetch = fetc
       return { forge, ...(await one(forge, secret['token'], secret['site'] ?? 'https://gitlab.com', account, fetchImpl)) }
     })
   )
+  const targets = new Map<string, ScoreTarget>()
   for (const r of results) {
     if (!r) continue
     out.connected.push(r.forge)
+    for (const row of [...r.lists.mine, ...r.lists.review]) targets.set(row.url, { forge: r.forge, ref: row.ref, ...(row.head && { head: row.head }) })
     for (const l of LISTS) {
       out[l].push(
         ...r.lists[l].map((row) => {
@@ -190,5 +200,6 @@ export async function listMrs(store: SecretStore, fetchImpl: typeof fetch = fetc
     }
     if (r.error) out.errors.push({ forge: r.forge, text: r.error })
   }
+  scorable?.(targets)
   return out
 }
