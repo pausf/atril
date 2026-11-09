@@ -30,6 +30,12 @@ Governs: src/main/jira/** src/renderer/inbox/**
 - The sidebar summary keeps working: it counts the first column as "por empezar" and every
   other column as "en curso" when a board is picked.
 
+### Next up (add-next-up, 9 nov 2026)
+
+- **Empezar** starts at once, without the dialog, when the task's project and component already
+  have a remembered repo and the proposed branch (the key) is free; ⌥-click, a first task of a
+  project, or a taken branch open the dialog as before (I4–I10).
+
 ## Scope boundaries
 
 **In:** reading tasks, the Jira→repo memory, Start, the In Progress transition.
@@ -56,6 +62,11 @@ currentUser()`, whoever owns the saved token; the board contributes columns, nev
 the Jira token stays in main; the board id is validated as a positive
 integer before it reaches a URL.
 
+### Next up (add-next-up, 9 nov 2026)
+
+**In:** the one-click path. **Out:** an undo (Quitar closes a fresh workspace); choosing model or
+repo on one click.
+
 ## Constraints
 
 - The Jira REST API with the site, email and token saved in Ajustes (`.agents/specs/settings/spec.md`):
@@ -74,6 +85,11 @@ integer before it reaches a URL.
 - Same basic auth and 10 s timeout as the inbox; one extra request per refresh.
 - The work-inbox spec's grouping by status category (I11) becomes the fallback when no board is
   picked; it is not removed.
+
+### Next up (add-next-up, 9 nov 2026)
+
+- One click calls the same `proposeStart` and `start` as the dialog, with W34's «Por defecto»
+  model (no `--model`).
 
 ## Prior decisions
 
@@ -122,6 +138,12 @@ integer before it reaches a URL.
 - Q: ¿Qué tareas salen? → A: «solo debería salir las tareas que me estén asignadas a mí. a desarrollar utilizaremos cualquiera, pero cuando esté el producto final solamente tiene que salir las que están relacionadas a mí» — el tablero solo da las columnas; las tareas son siempre las asignadas a quien tiene el token; los datos inventados solo existen en las capturas de desarrollo y nunca en la app empaquetada.
 - Q: (work-reviewer) ¿«primera columna» es la del tablero aunque esté vacía? → A: sí, la primera columna del tablero; vacía significa nada por empezar (assumed).
 - Q: ¿Sin tablero elegido? → A: la agrupación actual por categoría, con un aviso «Elige tu tablero en Ajustes para ver sus columnas» (assumed).
+
+### Next up (add-next-up, 9 nov 2026)
+
+- **One click for a known project** — Pau, 9 nov, usability batch («si» to item 4). The first
+  task of a project still picks its repo in the dialog, so one click never guesses a repo.
+- Q: (spec-reviewer) ¿Y el «deshacer»? → A: fuera de alcance: «Quitar» ya cierra un trabajo recién abierto (assumed).
 
 ## Task breakdown
 
@@ -203,3 +225,12 @@ integer before it reaches a URL.
   with `assignee = currentUser()`, and shall never request the board's own issues.
   Proof: src/main/jira/inbox.test.ts only my tasks even with a board
 
+### Next up (add-next-up, 9 nov 2026)
+
+- **I20** When the person clicks Empezar on a task whose project and component have a remembered
+  repo and whose proposed branch is free, Atril shall start it without the dialog and without a
+  `--model` flag.
+  Proof: src/renderer/nextup.test.ts one click starts a remembered task
+- **I21** When the person ⌥-clicks Empezar, or the project has no remembered repo, or the
+  proposed branch is taken, Atril shall open the Start dialog.
+  Proof: src/renderer/nextup.test.ts option click or unknown project opens the dialog

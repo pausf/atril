@@ -68,6 +68,8 @@ Governs: `src/main/jira/** src/renderer/inbox/**`
 - {**I17** While a board is picked, the sidebar summary shall count the first column's tasks as "por empezar" and the tasks of every other column as "en curso" («Fuera del tablero» counts in neither). src/renderer/inbox/inbox.test.ts summary}
 - {**I18** If reading the picked board fails (timeout, 403, 404), then the inbox shall fall back to the status-category groups and show «No se pudo leer el tablero (<status>)». src/main/jira/board.test.ts board}
 - {**I19** Whether or not a board is picked, the inbox shall list only issues from the search with `assignee = currentUser()`, and shall never request the board's own issues. src/main/jira/inbox.test.ts only}
+- {**I20** When the person clicks Empezar on a task whose project and component have a remembered repo and whose proposed branch is free, Atril shall start it without the dialog and without a `--model` flag. src/renderer/nextup.test.ts one}
+- {**I21** When the person ⌥-clicks Empezar, or the project has no remembered repo, or the proposed branch is taken, Atril shall open the Start dialog. src/renderer/nextup.test.ts option}
 
 [full spec](work-inbox/spec.md)
 
@@ -121,5 +123,8 @@ Governs: `src/main/** src/preload/** src/renderer/** resources/** !src/main/jira
 - {**A8** When UserPromptSubmit fires, the line shall read «Le has escrito: <first 80 characters of the prompt>», and PreToolUse / PostToolUse shall set the agent state to `working`. src/main/activity.test.ts prompt}
 - {**W39** When an agent exits as soon as it starts, its session shall remain with the dead pane (state `stopped`): Atril sets the session's options on an idle pane and only then starts the agent in it (found 9 nov as a race that failed a test under load). src/main/tmux.test.ts an}
 - {**A7** While a workspace is selected, the Actividad tab shall list its lines newest first and update live, and every workspace row shall show its latest line. (One proof holds both: the test pushes two lines for two workspaces and asserts the feed order and each row's latest line on the same render.) src/renderer/activity.test.ts feed}
+- {**N1** The «Qué me toca» list shall order agents in `needs-you` by how long they have been waiting (oldest first), then the tasks with no open workspace from the first board column — or from «Por empezar» when there is no board or it cannot be read (I18) — in Jira's order. src/main/nextup.test.ts orders}
+- {**N2** While Trabajo or Tareas is shown and the list is not empty, ⌘↩ shall open its first item — the workspace for an agent, the Start for a task, or Tareas when that task is not loaded yet; otherwise the menu item is disabled. src/renderer/nextup.test.ts command}
+- {**N3** When the person replies to a needs-you notification, Atril shall type the reply into that workspace's agent pane as literal text followed by Enter, without bringing Atril to the front; it shall send nothing for an empty reply, and if the workspace or its pane no longer exists it shall send nothing and say «No se pudo enviar: ese trabajo ya no está». src/main/reply.test.ts reply}
 
 [full spec](workspaces/spec.md)

@@ -68,6 +68,13 @@ The `workspaces` capability, phase 1. Its siblings in this change: `.agents/spec
 - Each workspace row in the sidebar shows its latest activity line under the branch.
 - The macOS needs-you notification carries the agent's real message, not only the branch.
 
+### Next up (add-next-up, 9 nov 2026)
+
+- A **«Qué me toca»** strip at the top of Trabajo lists, in order, the agents waiting for the
+  person (oldest first) and then the tasks waiting to start; **⌘↩** opens the next one.
+- The needs-you notification has a **reply field**: what the person types goes into that
+  agent's terminal, followed by Enter, without opening Atril.
+
 ## Scope boundaries
 
 **In:** the three columns and footer of `bocetos/fase1-nucleo.html` (boceto 8), the
@@ -102,6 +109,15 @@ anywhere off the machine.
 **Never scoped out:** the raw payload is never written to disk; file contents never leave the
 hook process; lines are capped at 200 characters and 200 lines per session.
 
+### Next up (add-next-up, 9 nov 2026)
+
+**In:** the strip, ⌘↩, the reply notification. **Out:** MRs in the strip (phase 2), replies to
+anything but the agent's own pane.
+
+**Never scoped out:** a reply only ever reaches the pane of the workspace the notification
+belongs to; the reply text goes to tmux as a literal (`send-keys -l`), never as key names or
+shell; an empty reply sends nothing.
+
 ## Constraints
 
 - Electron (current stable) + TypeScript in strict mode, pnpm, Node 24 (installed:
@@ -131,6 +147,13 @@ hook process; lines are capped at 200 characters and 200 lines per session.
   main watches it like the state files.
 - `Stop` reads the last assistant text from the payload's `transcript_path` (JSONL), only the
   last entry, only its text.
+
+### Next up (add-next-up, 9 nov 2026)
+
+- Electron `Notification` with `hasReply: true` and the `reply` event (macOS).
+- `tmux send-keys -t <pane id> -l <text>` then `send-keys -t <pane id> Enter`, through the runner.
+- The list is computed in main from the agent states (waiting time from the state file's `at`)
+  and the inbox groups; ⌘↩ is a menu accelerator, handled before xterm.
 
 ## Prior decisions
 
@@ -180,7 +203,6 @@ hook process; lines are capped at 200 characters and 200 lines per session.
 | Detecting needs-you by scraping the terminal | brittle against every Claude Code UI change; hooks are the documented signal |
 | Installing hooks into the person's `~/.claude/settings.json` | touches their global config and fires for every session; `--settings` scopes them to Atril's agents |
 
-### Complexity deliberately kept
 ### Complexity deliberately kept
 
 - **tmux**, an extra dependency, because it is what makes agents outlive the app.
@@ -254,6 +276,30 @@ hook process; lines are capped at 200 characters and 200 lines per session.
 - Q: (spec-reviewer) ¿Qué es un Bash «fallido»? → A: código de salida distinto de 0, un error o una interrupción en la respuesta de la herramienta, el que venga (assumed).
 - Q: (work-reviewer) el `.gitignore` de esta rama (`.DS_Store`, `caso-*`, `flujo-mr*`) no lo cubre el contrato → A: viene de otra petición de Pau, hacer el repo privado («Cambian el nombre. Ponlo en privado y que se llame Atril»); los archivos del concepto viejo llevan datos del trabajo y no deben subirse nunca.
 - Q: (work-reviewer) ¿la descripción de un subagente puede llevar texto tipo prompt? → A: sí; mismo límite de 80 caracteres que el prompt (assumed).
+
+### Next up (add-next-up, 9 nov 2026)
+
+- **The usability batch** — Pau, 9 nov: «Para que sea más usable y todo esto, ¿qué mejorarías?»
+  → «si» to the next-up queue, the reply notification and one-click Start, in their own change.
+- **A click right after a reply is ignored** (N3): macOS may follow a reply with a click; one
+  within 1 s of a reply does not bring Atril to the front. Unverified on a real notification —
+  if it proves unnecessary or too short, this is the knob.
+
+#### Alternatives that lost
+
+| Considered | Why it lost |
+|---|---|
+| Reply by opening Atril | the point is answering without switching apps |
+| `send-keys` without `-l` | text like `C-c` or `Enter` would be interpreted as keys |
+
+#### Decision log, answers as given (2026-11-09)
+- Q: ¿Qué entra en «Qué me toca»? → A: agentes en «te necesita» (los más antiguos primero), después tareas de la primera columna del tablero (o «Por empezar» sin tablero); las MR llegan con la fase 2 (assumed).
+- Q: ¿Cómo se responde desde el aviso? → A: aviso de macOS con respuesta (`hasReply`); el texto se escribe en el panel del agente con `tmux send-keys -l` y Enter, solo en ese panel (assumed).
+- Q: (spec-reviewer) ¿Qué tareas entran en la lista? → A: solo las que no tienen ya un trabajo abierto; si el tablero no se puede leer (I18), las del grupo «Por empezar» (assumed).
+- Q: (spec-reviewer) ¿Dónde funciona ⌘↩? → A: solo con Trabajo o Tareas a la vista y con algo en la lista; si no, el elemento del menú está desactivado (assumed).
+- Q: (spec-reviewer) ¿Responder en el aviso cuenta como pulsarlo (W38)? → A: no: responder no trae Atril al frente ni cambia de pantalla; solo pulsar el aviso lo hace (assumed).
+- Q: (spec-reviewer) ¿Y si el trabajo ya no existe al responder? → A: no se envía nada y un aviso dice «No se pudo enviar: ese trabajo ya no está» (assumed).
+- Q: (work-reviewer) ⌘↩ sobre una tarea que la ventana aún no ha cargado no hacía nada → A: abre Tareas, que recarga Jira al montarse (assumed, N2).
 
 ## Task breakdown
 
@@ -434,3 +480,18 @@ hook process; lines are capped at 200 characters and 200 lines per session.
   order and each row's latest line on the same render.)
   Proof: src/renderer/activity.test.ts feed and row show the latest activity
 
+### Next up (add-next-up, 9 nov 2026)
+
+- **N1** The «Qué me toca» list shall order agents in `needs-you` by how long they have been
+  waiting (oldest first), then the tasks with no open workspace from the first board column — or
+  from «Por empezar» when there is no board or it cannot be read (I18) — in Jira's order.
+  Proof: src/main/nextup.test.ts orders waiting agents before tasks
+- **N2** While Trabajo or Tareas is shown and the list is not empty, ⌘↩ shall open its first
+  item — the workspace for an agent, the Start for a task, or Tareas when that task is not loaded
+  yet; otherwise the menu item is disabled.
+  Proof: src/renderer/nextup.test.ts command enter opens the next item
+- **N3** When the person replies to a needs-you notification, Atril shall type the reply into
+  that workspace's agent pane as literal text followed by Enter, without bringing Atril to the
+  front; it shall send nothing for an empty reply, and if the workspace or its pane no longer
+  exists it shall send nothing and say «No se pudo enviar: ese trabajo ya no está».
+  Proof: src/main/reply.test.ts reply reaches only its own pane as literal text
