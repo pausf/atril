@@ -40,13 +40,14 @@ two never write the same file at once.
 
 - Q: (Pau, tras el boceto) «lo de espec y plan que sea visualmente mas omo un editor para poder editar etc...» → A: pestañas en la zona central junto a la terminal, un editor con números de línea, colores de markdown y esquema de secciones; se escribe directamente (sin botón Editar), solo lectura mientras Claude trabaja, ⌘S guarda, punto en la pestaña con cambios sin guardar; boceto en `fase1-nucleo.html?doc=plan`.
 - Q: (Pau) «que se vea mas grande ahora mismo todo se ve minuculo lo de spec y plan» → A: al abrir un documento el editor ocupa todo el ancho (se ocultan la barra lateral y el panel de Libretto; «⤡ Salir de pantalla completa» o Esc vuelven), letra de 15 px.
+- Q: (Pau) «no me sterminal de convencer no cabe todo en el la parte de la terminal, yo pensaba mas como un modal» → A: un modal grande (94 % del ancho, 88 % del alto), oscuro, por encima de la app: título de la etapa, el cambio, pestañas por archivo y Cerrar; dentro el mismo editor (esquema, números de línea, colores, barra de estado, ⌘S); Esc o Cerrar salen y, con cambios sin guardar, preguntan antes. La terminal no se toca.
 
 ## Outcomes
 
 - In the Libretto panel, **Spec**, **Plan** and the **Checklist** are buttons once their stage is
-  reached; each opens the change's files as **tabs in the centre, next to the terminal**, in an
-  editor — line numbers, markdown colours, an outline of the sections — scrolled to that section,
-  following the file live.
+  reached; each opens a **large modal over the app** with the change's files as tabs and an
+  editor — line numbers, markdown colours, an outline of the sections — at that section,
+  following the file live. The terminal stays as it is underneath.
 - While the agent waits for the person or has stopped, the person types straight into the
   editor; **⌘S** (or Guardar in the status bar) saves; a tab with unsaved changes shows a dot.
   While the agent works the editor is read-only and says so. The saved file is what Libretto
@@ -88,20 +89,19 @@ native).
 ## Verification criteria
 
 - **F13** When the person clicks Spec, Plan or Checklist in the Libretto panel, Atril shall open
-  the current change's `proposal.md` as a tab next to the terminal (and, for Spec, one more tab per
+  a modal over the app with the current change's `proposal.md` (and, for Spec, one more file tab per
   `spec-*.md`), with the cursor at that part's heading — Spec: the first level-2 heading; Plan:
   `## Approach`; Checklist: `## Checklist`, found outside code fences as in F1–F7 — and each shall
   be a button only from its stage on: Spec from Spec, Plan from Plan, Checklist once a checklist
-  exists; opening it shall widen the centre to the whole window (sidebar and Libretto panel hidden)
-  until the person leaves full screen, presses Escape or goes back to the terminal tab.
+  exists; Escape or Cerrar shall close it, asking first when there are unsaved changes.
   Proof: src/renderer/flow/documents.test.ts stage opens what the agent wrote
-- **F14** While a document tab is open with no unsaved changes, it shall show the file's new
+- **F14** While a document is open with no unsaved changes, it shall show the file's new
   text within one second of the agent changing it, even when the stage does not change.
   Proof: src/main/flow/document.test.ts an edit inside a stage still notifies
   Proof: src/renderer/flow/documents.test.ts document view follows the file live
 - **F15** While the agent's known state is working, the editor shall be read-only and its status
   bar shall say «solo lectura · Claude está escribiendo»; otherwise the person shall type into it,
-  the tab shall show a dot while there are unsaved changes, and ⌘S or Guardar shall save the whole
+  its file tab shall show a dot while there are unsaved changes, and ⌘S or Guardar shall save the whole
   file; if the save is refused, the person's text shall stay in the editor with the reason shown
   above it.
   Proof: src/renderer/flow/documents.test.ts edit only while the agent waits
@@ -127,8 +127,8 @@ refusals and a temp-file + rename write. Two IPC handlers wire them (`atril:flow
 The watcher's change key becomes the stage plus the change folder's newest mtime
 (`lastModified`, already in `stage.ts`), so it emits on every write, not only on a new stage;
 `FlowStage` itself does not change shape. The renderer's `LibrettoFlow`
-turns Spec, Plan and Checklist into buttons that open the change's files as tabs in the
-`Workspace` centre; `DocEditor` is a `<textarea>` over a coloured `<pre>` (the standard overlay:
+turns Spec, Plan and Checklist into buttons that open `DocModal` (file tabs, Cerrar) over the
+app; inside it `DocEditor` is a `<textarea>` over a coloured `<pre>` (the standard overlay:
 same font, same scroll), with a line-number gutter, an outline of `##`/`###` headings and a status
 bar; it re-reads on `flow.onChange` while it has no unsaved changes.
 
@@ -136,7 +136,7 @@ bar; it re-reads on `flow.onChange` while it has no unsaved changes.
 
 TypeScript, Electron, React 19, vitest (+jsdom). Files: `src/main/flow/document.ts` (+test),
 `src/main/index.ts` (two handlers), `src/preload/{api,index}.ts`, `src/renderer/flow/{FlowPanel,
-DocEditor,highlight}.tsx`, `src/renderer/components/Workspace.tsx` (tabs), `src/renderer/App.tsx`, `src/renderer/mockApi.ts`, `styles.css`, test
+DocEditor,highlight}.tsx`, `src/renderer/flow/DocModal.tsx`, `src/renderer/mockApi.ts`, `styles.css`, test
 `src/renderer/flow/documents.test.ts`, the sketch `bocetos/fase1-nucleo.html`. Gates: typecheck,
 lint, test. No new dependency.
 
@@ -158,8 +158,9 @@ lint, test. No new dependency.
 - Colouring: line-based spans over the raw text — headings, list markers, boxes, fenced code,
   `**bold**`, `` `code` ``, `Proof:` lines — each a React text node; no wrapping, so the gutter
   always matches (horizontal scroll, as in an editor).
-- Tabs: the centre gets a tab strip (`terminal` + open files); the terminal stays mounted
-  (hidden) so xterm keeps its session; switching workspace closes the document tabs.
+- Modal: the same `modal` + focus-trap pattern as the Start dialog, sized 94vw × 88vh; the
+  terminal underneath is untouched; Escape with unsaved changes asks «Tienes cambios sin guardar.
+  ¿Cerrar y descartarlos?».
 
 ### The alternatives it beat
 
@@ -168,6 +169,7 @@ lint, test. No new dependency.
 | A markdown library (react-markdown, marked) | a new dependency for five constructs; marked returns HTML that would need sanitising |
 | A code editor component (CodeMirror, Monaco) | the right tool for a big editor, but hundreds of KB for markdown colouring; the overlay does it in one file — revisit if Pau wants search, multi-cursor or folding |
 | A read view plus an Editar button | Pau: «que sea visualmente mas como un editor para poder editar» |
+| Tabs in the centre next to the terminal (sketched, also full width) | Pau: «no cabe todo en … la parte de la terminal, yo pensaba mas como un modal» |
 | Editing only the section you read | splicing a section back into the file is where edits get lost; the whole file is honest |
 | Locking the file while the person edits | the agent does not know about the lock; the state gate plus the mtime check cover it |
 | Edit any time, last writer wins | the agent's next write silently erases the person's correction |
