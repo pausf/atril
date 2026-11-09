@@ -290,3 +290,10 @@ Aterrizado**.
   in place of the plain total, a warning element (class `fbig`) reading «⚠ N líneas: rama grande
   (más de 400). Atril le ha pedido a Claude que te proponga separarla en MRs más pequeñas.»
   Proof: src/renderer/flow/changes.test.ts a large branch warns in cambios
+
+### Automatic or manual mode (add-auto-mode, 9 nov 2026)
+
+- **F26** In an automatic workspace, Spec, Plan and Checklist shall open read-only whatever the
+  agent's state (an exception to F15; the diff modals already are), with the status bar «solo lectura ·
+  modo automático» in place of F15's.
+  Proof: src/renderer/flow/documents.test.ts automatic documents are read-only

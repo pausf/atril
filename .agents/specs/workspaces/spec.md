@@ -125,6 +125,13 @@ The `workspaces` capability, phase 1. Its siblings in this change: `.agents/spec
 - Items take you somewhere (a screen, a workspace, an MR view, a task's Start) or do something
   (new work, new task, refresh MRs, mark notices read, tutorial).
 
+### Automatic or manual mode (add-auto-mode, 9 nov 2026)
+
+- Empezar (Jira), Nueva tarea and Nuevo trabajo with text offer **Manual** (default: Libretto stops at
+  the spec and plan, as today) or **Automático** (no stop: from the spec and plan straight to build).
+- An automatic workspace shows «Auto» on its row; its Spec, Plan and Checklist open read-only.
+- Before an automatic agent pushes or opens a request, Claude Code asks the person.
+
 ## Scope boundaries
 
 **In:** the three columns and footer of `bocetos/fase1-nucleo.html` (boceto 8), the
@@ -223,6 +230,14 @@ tutorial step for the palette. This change removes ⌘K from the workspaces spec
 branch names shown as text; the palette never posts anything, and a task item does exactly what
 Tareas' Empezar does (I20/I21).
 
+### Automatic or manual mode (add-auto-mode, 9 nov 2026)
+
+**In:** the choice in the three dialogs, the attacca command, the record field, the row badge,
+read-only documents, the push confirmation. **Out:** switching mode on a running workspace, picking
+the mode from task size automatically, a setting for the default mode.
+
+**Never scoped out:** the task text stays one argv element (W40); the push needs the person.
+
 ## Constraints
 
 - Electron (current stable) + TypeScript in strict mode, pnpm, Node 24 (installed:
@@ -296,6 +311,11 @@ Tareas' Empezar does (I20/I21).
 - Uses data the app already holds: workspaces, the app-wide MR listing (M9), the Jira inbox, the
   notices; no new request when it opens.
 - ⌘K is a menu accelerator (like N2's ⌘↩); every text through `t()` (S16).
+
+### Automatic or manual mode (add-auto-mode, 9 nov 2026)
+
+- The mode only changes the slash command; W29/W31/W33/W34 apply unchanged.
+- The hook stays the only thing Claude Code runs from Atril; it reads a marker, never the record.
 
 ## Prior decisions
 
@@ -516,6 +536,33 @@ Tareas' Empezar does (I20/I21).
 - Q: (spec-reviewer) ¿⌘K con otro diálogo abierto? → A: no hace nada (assumed).
 - Q: (spec-reviewer) ¿Una tarea desde la paleta arranca sola si el repo está recordado? → A: hace lo mismo que pulsar Empezar en Tareas (I20/I21): es tu acción, como allí (assumed).
 
+### Automatic or manual mode (add-auto-mode, 9 nov 2026)
+
+- **Auto = attacca** (assumed): Libretto's own unattended mode; if it is wrong, the command is one
+  string in `jira/start.ts` and `workspaces.ts`.
+- **Push asks in auto** (assumed): what changes if wrong is one hook rule.
+- **Automatic still stops where attacca stops**: a failing gate twice, a missing `jira`/`gh`/`glab`, the release question at the end and the push question; the row then shows «te necesita» like any agent.
+- **Free text to attacca**: attacca hands `$ARGUMENTS` to find-work, which takes a request made in conversation (assumed).
+
+#### Alternatives that lost
+
+| Considered | Why it lost |
+|---|---|
+| Atril answers Libretto's stop question itself | fragile: reads Claude's terminal |
+| attacca untouched (it pushes and opens the MR) | Pau was told the push would ask |
+| A "no push" argument to attacca | changes the Libretto payload, not Atril |
+
+#### Decision log, answers as given (2026-11-09)
+- Q: Pau, 9 nov: «cuando se crea la tarea te diga si lo quieres automático o manual en que se pare en la spec y plan; si una tarea es pequeña puede ser modo auto y sigue a construir solo con el spec y plan sin revisar, solo lectura».
+- Q: ¿Qué lanza el automático? → A: `/libretto:libretto-attacca`, el modo sin paradas de Libretto: mismas fases, nada que mantener en Atril (assumed).
+- Q: attacca hace push y abre la MR solo; ¿se deja? → A: no: en automático Atril pide confirmación antes de `git push`, `gh pr create` y `glab mr create`, con el permiso de Claude Code («ask» desde el hook); se lo dije a Pau al encolar (assumed).
+- Q: ¿Nuevo trabajo sin texto? → A: sin modo: es Claude a secas (assumed).
+- Q: ¿Por defecto? → A: Manual, como hoy (assumed).
+- Q: (revisor) ¿El clic directo de Empezar (I20)? → A: siempre Manual; ⌥-clic abre el diálogo con la elección (assumed).
+- Q: (revisor) ¿Campo `mode`? → A: ya existe (in-place/worktree): campo nuevo `auto` (assumed).
+- Q: (revisor de obra) La regex no veía `bash -c "git push"`, `/usr/bin/git push`, `--no-pager`… → A: cualquier `git … push` en un mismo segmento; un «push» en un mensaje de commit solo añade una pregunta (assumed).
+- Q: (revisor) ¿F15 frente a F26? → A: F26 es la excepción y su texto gana; solo el editor de documentos (assumed).
+
 ## Task breakdown
 
 - App shell: Electron main, preload bridge, renderer with sidebar / centre / right panel /
@@ -714,9 +761,9 @@ Tareas' Empezar does (I20/I21).
 ### Own tasks (add-own-tasks, 9 nov 2026)
 
 - **W40** When a workspace is opened with a task text, the agent's last argument shall be the
-  single string `/libretto:libretto-flow <trimmed text>`; a text holding `$(…)`, `;`, both kinds
-  of quote, a newline, or starting with `--` shall arrive byte for byte, as that one argument, and
-  run nothing.
+  single string `/libretto:libretto-flow <trimmed text>`, or `/libretto:libretto-attacca <trimmed text>`
+  when it is automatic (W58); a text holding `$(…)`, `;`, both kinds of quote, a newline, or starting
+  with `--` shall arrive byte for byte, as that one argument, and run nothing.
   Proof: src/main/tmux.test.ts task text reaches the agent as one literal argument
 - **W41** If the task is not a string, or its text is empty after trimming, longer than 2000 characters, or contains a NUL
   character, then `workspaces.open` shall refuse with «El texto de la tarea no es válido (máx. 2000
@@ -825,3 +872,29 @@ Tareas' Empezar does (I20/I21).
   it on Trabajo, an MR opens its MR view (switching to MR), a task does what Empezar does in Tareas,
   and each action runs its button's handler.
   Proof: src/renderer/palette/palette.test.ts each kind of item goes where it says
+
+### Automatic or manual mode (add-auto-mode, 9 nov 2026)
+
+- **W58** Where the start request carries `auto: true` (Empezar's dialog, Nueva tarea, or Nuevo trabajo
+  with text), Atril shall start the agent with the single argument
+  `/libretto:libretto-attacca <key or trimmed text>` instead of `/libretto:libretto-flow …`, store
+  `auto: true` in the workspace record (a new field; `mode` stays `in-place | worktree`) and carry it
+  in `WorkspaceView`; without it, or with any value but `true`, nothing changes.
+  Proof: src/main/agent.test.ts automatic mode starts attacca and is recorded
+- **W59** While the marker `$ATRIL_HOME/auto/<session>` exists, the hook shall answer a PreToolUse for
+  Bash whose command matches `/\bgit\b[^;&|\n]*?\spush\b|\bgh\b[^;&|\n]*?\spr\s+create\b|\bglab\b[^;&|\n]*?\smr\s+create\b/`
+  by printing exactly `{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"ask",
+  "permissionDecisionReason":"Modo automático: confirma antes de subir"}}`; for any other command or
+  tool, or without the marker, it shall print nothing. Ceiling: a push inside a script the command
+  calls is not seen; a `push` word after `git` in the same segment (a commit message) only adds a
+  question; whether a person's own
+  bypass mode or allow rule overrides «ask» is the host's (unverified).
+  Proof: src/main/agent.test.ts the hook asks before an automatic push
+- **W60** An automatic workspace's marker shall be written with its record, before its tmux session
+  starts, and deleted when the workspace is removed or its session fails to start.
+  Proof: src/main/agent.test.ts the automatic marker lives as long as the workspace
+- **W61** Empezar's dialog, Nueva tarea and Nuevo trabajo once it has text shall offer Manual (default)
+  and Automático with the line «Automático: sin parar en spec y plan; antes de subir te pregunta»; Nuevo trabajo
+  without text offers none; Empezar's one click (I20) is always Manual; an automatic workspace's row
+  shows «Auto».
+  Proof: src/renderer/inbox/mode.test.ts the start dialogs offer manual or automatic
