@@ -59,7 +59,8 @@ function diff(prev: Stored, lists: MrLists): { baseline: Record<string, Seen>; f
     if (!speaks(m.forge)) continue
     const was = prev.baseline[url]
     const fresh = !cut(m.forge, m.list)
-    if (m.list === 'review' && fresh && !was?.lists.includes('review')) say('review', m, url)
+    // A listing shows each MR once (M2): only an MR new to you, or one you merely followed, is a request.
+    if (m.list === 'review' && fresh && (!was || was.lists.every((l) => l === 'following'))) say('review', m, url)
     if (m.list === 'following' && fresh && !was) say('following', m, url)
     if (m.list === 'mine' && fresh && !was) say('opened', m, url)
     if ((m.list === 'mine' || m.list === 'review') && was?.notes !== undefined && m.notes !== undefined && m.notes > was.notes) say('comment', m, url)

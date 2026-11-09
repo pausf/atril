@@ -127,6 +127,22 @@ async function failedAndCapped(): Promise<void> {
 
 describe('avisos baseline and store', () => {
   it('the first listing only sets the baseline', async () => {
+    // A listing shows each MR once (M2): leaving Mías for Me toca revisar is not a new review request.
+    process.env['ATRIL_HOME'] = tmp()
+    const moved = createAvisos()
+    await moved.onListing(lists({ mine: [mr(GL(40))] }))
+    await moved.onListing(lists({ review: [mr(GL(40))] }))
+    expect(await moved.list()).toEqual([])
+
+    // A forge that disconnects and comes back starts from a fresh baseline, silently.
+    process.env['ATRIL_HOME'] = tmp()
+    const back = createAvisos()
+    await back.onListing(lists({ mine: [mr(GH(50))], review: [mr(GL(51))] }))
+    await back.onListing(lists({ connected: ['gitlab'], review: [mr(GL(51))] }))
+    await back.onListing(lists({ mine: [mr(GH(52))], review: [mr(GL(51))] }))
+    expect(await back.list()).toEqual([])
+    process.env['ATRIL_HOME'] = home
+
     const a = createAvisos()
     await a.onListing(lists({ mine: [mr(GH(1), { ci: 'fail', notes: 9 })], review: [mr(GH(2))], following: [mr(GH(3))] }))
     expect(await a.list()).toEqual([])

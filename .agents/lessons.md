@@ -118,3 +118,6 @@ spec-reviewer: a hung claude would block the queue forever (no timeout), GitLab'
 
 ## 2026-11-09 · add-mr-scores · 6
 The builder followed the contract's test-file rule literally (`*Test.php` ignoring case), which made latest.php and Contest.java count as tests. The contract was wrong; fixed there and in code (the xUnit suffix is case-sensitive), negatives added to M10's proof, seen red first.
+
+## 2026-11-09 · add-avisos · 6→7
+work-reviewer: the baseline keeps one list per URL (listings dedupe, M2), so an MR moving from Mías to Me toca revisar fired a false «Te piden revisión» (fixed: only an MR new to you or merely followed counts; test red first); dev photo listings wrote fake notices into the real avisos.json (fixed); no test covered a forge reconnecting (added).

@@ -262,10 +262,12 @@ app.whenReady().then(async () => {
   })
   ipcMain.handle('atril:mr:list', async () => {
     // ponytail: dev-only, ATRIL_SNAPSHOT_VIEW=mr photographs believable lists without any forge.
-    const r = SNAPSHOT && /^(mr|avisos)/.test(process.env['ATRIL_SNAPSHOT_VIEW'] ?? '') ? fakeMrs() : await listMrs(secretStore, fetch, guards.scorable, guards.threadable)
+    const fake = SNAPSHOT && /^(mr|avisos)/.test(process.env['ATRIL_SNAPSHOT_VIEW'] ?? '')
+    const r = fake ? fakeMrs() : await listMrs(secretStore, fetch, guards.scorable, guards.threadable)
     guards.listed([...r.mine, ...r.review, ...r.following].map((m) => m.url))
     // Avisos come from comparing listings; a failure there must never break the listing itself.
-    if (!fakeFeed) void avisos.onListing(r).catch(() => undefined)
+    // Fake photo listings never reach the real feed.
+    if (!fake) void avisos.onListing(r).catch(() => undefined)
     return r
   })
   const fakeFeed = SNAPSHOT && process.env['ATRIL_SNAPSHOT_VIEW'] === 'avisos'
