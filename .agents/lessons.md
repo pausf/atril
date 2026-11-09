@@ -79,3 +79,6 @@ The document modal never took focus: until the documents loaded, Escape did noth
 
 ## 2026-11-09 · add-flow-documents · 6→7
 saveDoc's mtime check and rename are not one atomic step. Not fixed: the contract never promised a lock; the ceiling is now named in the approach's risks.
+
+## 2026-11-09 · add-file-changes · 4→5
+spec-reviewer found the scope saying renames show as D + A while the approach said M, plus an undefined «total», a 1 MB cap with no proof, and no rule for whether the diff modal follows the agent. Settled before code (--no-renames, total = lines, F23 for the cap, the modal as a snapshot with Actualizar).

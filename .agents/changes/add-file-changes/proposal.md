@@ -32,6 +32,12 @@ abrir en modal y ver los cambios» → the section shows from the Construir stag
 - Q: ¿Se puede pedir el diff de cualquier ruta? → A: no: main solo da el diff de un archivo que está en la lista de cambios de ese trabajo (assumed).
 - Q: ¿Y un diff enorme o binario? → A: se corta en 1 MB con un aviso; un binario dice «Archivo binario» (assumed).
 
+- Q: (spec-reviewer) ¿Renombrados, T y U? → A: `--no-renames`: un renombrado es D + A; T y U cuentan como M; rutas leídas con `-z` (assumed).
+- Q: (spec-reviewer) ¿«Total» es líneas o archivos? → A: líneas añadidas + borradas («512 líneas»); el botón dice «ver N archivos» (assumed).
+- Q: (spec-reviewer) ¿Desde qué etapa? → A: Construir, Terminado y Aterrizado; antes, Construir no es botón y no hay sección (assumed).
+- Q: (spec-reviewer) ¿El modal se actualiza solo? → A: no: es una instantánea con su hora y un botón «Actualizar»; la lista del panel sí se refresca cada 3 s, sin pedir otra vez mientras una petición sigue en marcha (assumed).
+- Q: (spec-reviewer) ¿Binario sin seguimiento? → A: un byte cero en los primeros 8000 bytes, la regla de git; cuenta 0 y 0 (assumed).
+
 ## Outcomes
 
 - From the **Construir** stage on, the Libretto panel shows **Cambios**: every file the workspace
@@ -71,22 +77,28 @@ text is rendered as text, never markup; the modal holds the keyboard like the do
 ## Verification criteria
 
 - **F18** The change list shall contain every file that differs from the workspace's base commit
-  — committed, uncommitted, and untracked-but-not-ignored — each with its status (A, M or D) and
-  its added and removed line counts (0 and 0 for a binary file).
+  — committed, uncommitted, and untracked-but-not-ignored — each with its status (A, M or D; a
+  rename as D of the old path and A of the new) and its added and removed line counts (0 and 0
+  for a binary file, tracked or untracked).
   Proof: src/main/flow/changes.test.ts lists committed, uncommitted and untracked changes
 - **F19** If the diff is asked for a path that is not in that workspace's change list, then Atril
-  shall return no text and read nothing; a diff over 1 MB shall be cut there with «Diff recortado
-  a 1 MB».
+  shall return no text without running any git command for that path.
   Proof: src/main/flow/changes.test.ts diff only for a listed file
-- **F20** While the stage is Construir or later, the Libretto panel shall show «Cambios» with each
-  file's status, +/− counts and the total lines, and Construir shall be a button; before
-  Construir neither shall appear.
+- **F23** If a file's diff is longer than 1 MB (UTF-8 bytes), then Atril shall cut it at the last
+  line break before 1 MB and end it with the line «Diff recortado a 1 MB».
+  Proof: src/main/flow/changes.test.ts a huge diff is cut at 1 MB
+- **F20** While the stage is Construir, Terminado or Aterrizado and the list is not empty, the
+  Libretto panel shall show «Cambios» with each file's status and +/− counts, the total of added
+  plus removed lines, and Construir as a button reading «ver N archivos»; at earlier stages
+  Construir shall not be a button and no «Cambios» section shall appear.
   Proof: src/renderer/flow/changes.test.ts changes show from construir on
 - **F21** When the person clicks Construir or a file in Cambios, Atril shall open a read-only modal
-  with the changed files listed and the chosen file's diff, its added and removed lines marked as
-  such and rendered as text only; Escape shall close it.
+  with the changed files listed and the chosen file's diff — a snapshot with its time and an
+  «Actualizar» button — its added and removed lines marked as such and rendered as text only;
+  Escape shall close it.
   Proof: src/renderer/flow/changes.test.ts a file opens its diff
-- **F22** While Cambios is shown, Atril shall ask for the list again every 3 seconds.
+- **F22** While the stage is Construir or later, Atril shall ask for the list again every 3 seconds,
+  skipping a tick while the previous request has not answered.
   Proof: src/renderer/flow/changes.test.ts the list refreshes while claude works
 
 ## Approach
@@ -108,9 +120,14 @@ Files: `src/main/flow/changes.ts` (+test), `src/main/index.ts`, `src/preload/{ap
 
 ### The approach
 
-- numstat: `git -C <path> diff --numstat <base>` → added/removed (`-` for binary → 0/0);
-  name-status: `git diff --name-status <base>` → A/M/D (R and C reported as M of the new path);
-  untracked: each `ls-files --others --exclude-standard` path is A with its line count.
+- numstat: `git -C <path> diff --no-renames -z --numstat <base>` → added/removed (`-` for binary →
+  0/0); name-status: `git diff --no-renames -z --name-status <base>` → A/M/D, T and U as M;
+  untracked: each `ls-files -z --others --exclude-standard` path is A with its line count, or 0/0
+  when a NUL byte appears in its first 8000 bytes.
+- `fileDiff`: tracked → `git diff --no-renames <base> -- <path>` (exit 0); new untracked →
+  `git diff --no-index -- /dev/null <path>`, where exit 1 means "differences" and is success; any
+  other exit is an empty diff. Ceiling named: the runner buffers the whole output before the 1 MB
+  cut; a streaming read replaces it if a diff ever threatens memory.
 - Diff colouring: `+` lines (not `+++`) added, `-` lines (not `---`) removed, `@@` hunk,
   headers dim — each a React text node.
 - The modal frame (focus on mount, Tab trap, Escape) is shared with `DocModal` through a small
@@ -141,4 +158,5 @@ F18–F22 seen red before the code. Rollback: one revert.
 
 ## Checklist
 
-- [ ] file changes: main lists and diffs only the workspace's changed files, the Cambios section and Construir button from the Construir stage, the diff modal, refresh every 3 s · Closes: F18, F19, F20, F21, F22
+- [ ] change list and diff in main, bound to the workspace's listed files · Closes: F18, F19, F23
+- [ ] the Cambios section, the Construir button, the diff modal and the 3 s refresh · waits on box 1 · Closes: F20, F21, F22
