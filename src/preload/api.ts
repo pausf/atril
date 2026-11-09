@@ -82,8 +82,7 @@ export interface JiraIssue {
 
 export type InboxResult =
   | { issues: JiraIssue[] }
-  | { error: 'unconfigured'; message: string }
-  | { error: 'missing'; install: string }
+  | { error: 'unconfigured'; message?: string }
   | { error: 'failed'; message: string }
 
 export interface JiraApi {

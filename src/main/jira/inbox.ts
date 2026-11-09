@@ -1,32 +1,22 @@
-import type { Runner } from '../run'
+import type { JiraCreds } from '../credentials/check'
 import type { InboxResult, JiraIssue } from '../../preload/api'
 
-export const INSTALL = 'brew install ankitpokhrel/jira-cli/jira-cli'
 export const JQL = 'assignee = currentUser() AND sprint in openSprints() AND statusCategory != Done'
-
-const NO_RESULT = /No result found/i
-
-// ponytail: the CLI prepends `project = "<config project>" AND` to every --jql without
-// parentheses. AND binds tighter than OR, so a false first clause OR (the real query) runs
-// across every project in ONE call. Ceiling: if jira-cli ever wraps the JQL in parentheses
-// this returns nothing; the fallback then is one call per project of `jira project list`.
-export const QUERY = `statusCategory = Done AND statusCategory != Done OR (${JQL})`
 
 interface RawIssue {
   key?: unknown
   fields?: {
     summary?: unknown
-    issueType?: { name?: unknown }
+    issuetype?: { name?: unknown }
     status?: { name?: unknown }
-    components?: Array<{ name?: unknown } | string>
+    components?: Array<{ name?: unknown }>
   }
 }
 
 const str = (v: unknown): string => (typeof v === 'string' ? v : '')
 
-export function parseIssues(stdout: string): JiraIssue[] {
-  const raw = JSON.parse(stdout) as RawIssue[]
-  return raw.flatMap((r) => {
+function parseIssues(body: { issues?: RawIssue[] }): JiraIssue[] {
+  return (body.issues ?? []).flatMap((r) => {
     const key = str(r.key)
     if (!key) return []
     const f = r.fields ?? {}
@@ -34,33 +24,43 @@ export function parseIssues(stdout: string): JiraIssue[] {
       {
         key,
         summary: str(f.summary),
-        type: str(f.issueType?.name),
+        type: str(f.issuetype?.name),
         status: str(f.status?.name),
         project: key.slice(0, key.lastIndexOf('-')),
-        components: (f.components ?? []).map((c) => (typeof c === 'string' ? c : str(c.name))).filter(Boolean)
+        components: (f.components ?? []).map((c) => str(c.name)).filter(Boolean)
       }
     ]
   })
 }
 
-const missing = (code: number, stderr: string): boolean => code === 127 || /ENOENT/.test(stderr)
+export async function readInbox(creds: JiraCreds | null, fetchImpl: typeof fetch = fetch): Promise<InboxResult> {
+  if (!creds) return { error: 'unconfigured' }
 
-export async function readInbox(run: Runner): Promise<InboxResult> {
-  const r = await run('jira', ['issue', 'list', '--raw', '--jql', QUERY])
-  if (missing(r.code, r.stderr)) return { error: 'missing', install: INSTALL }
-  if (r.code === 0) {
-    try {
-      const issues = parseIssues(r.stdout)
-      issues.sort((a, b) => a.key.localeCompare(b.key, 'en', { numeric: true }))
-      return { issues }
-    } catch {
-      return { error: 'failed', message: 'jira devolvió una respuesta que Atril no entiende' }
-    }
+  // ponytail: one page of 100 issues; /search/jql paginates by nextPageToken, which this ignores.
+  // Ceiling: a person with more than 100 open sprint tasks sees the first 100.
+  const url = new URL('/rest/api/3/search/jql', new URL(creds.site.trim()).origin)
+  url.searchParams.set('jql', JQL)
+  url.searchParams.set('fields', 'summary,issuetype,status,components')
+  url.searchParams.set('maxResults', '100')
+
+  try {
+    const res = await fetchImpl(url, {
+      method: 'GET',
+      headers: {
+        Authorization: `Basic ${Buffer.from(`${creds.email}:${creds.token}`).toString('base64')}`,
+        Accept: 'application/json'
+      },
+      signal: AbortSignal.timeout(10_000)
+    })
+    if (res.status === 401 || res.status === 403)
+      return { error: 'unconfigured', message: 'Jira ha rechazado el token. Revísalo en Ajustes.' }
+    if (!res.ok) return { error: 'failed', message: `Jira respondió ${res.status}` }
+    const issues = parseIssues((await res.json()) as { issues?: RawIssue[] })
+    issues.sort((a, b) => a.key.localeCompare(b.key, 'en', { numeric: true }))
+    return { issues }
+  } catch (err) {
+    // Network errors can echo the request; never pass err.message through.
+    const timeout = err instanceof Error && err.name === 'TimeoutError'
+    return { error: 'failed', message: timeout ? 'Jira no ha respondido en 10 s.' : 'No se ha podido conectar con Jira.' }
   }
-  if (NO_RESULT.test(r.stderr + r.stdout)) return { issues: [] }
-
-  // A failure that is not "no results": an unauthenticated CLI fails this too.
-  const projects = await run('jira', ['project', 'list'])
-  if (projects.code !== 0) return { error: 'unconfigured', message: 'Ejecuta `jira init` en tu terminal' }
-  return { error: 'failed', message: r.stderr.trim() || `jira terminó con código ${r.code}` }
 }

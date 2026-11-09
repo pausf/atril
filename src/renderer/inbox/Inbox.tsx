@@ -51,12 +51,11 @@ function Body({ result, issues }: { result: InboxResult | null; issues: JiraIssu
   if ('error' in result) {
     return (
       <div className="empty" role="alert">
-        {result.error === 'missing' ? (
+        {result.error === 'unconfigured' ? (
           <>
-            Falta la herramienta <b>jira</b>. Instálala con <code>{result.install}</code>
+            {result.message && <p>{result.message}</p>}
+            <ConnectInSettings service="Jira" />
           </>
-        ) : result.error === 'unconfigured' ? (
-          <ConnectInSettings service="Jira" />
         ) : (
           <>No se pudo leer Jira: {result.message}</>
         )}

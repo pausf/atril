@@ -5,6 +5,7 @@ import { writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { createSecretStore } from './credentials/store'
 import { jiraSettings } from './credentials/jira'
+import type { JiraCreds } from './credentials/check'
 import { doctor } from './doctor'
 import type { Mode } from '../preload/api'
 import { readInbox } from './jira/inbox'
@@ -68,13 +69,12 @@ app.whenReady().then(() => {
     await setOverride(id, mode)
     return listRepos(run)
   })
-  const jiraCreds = jiraSettings(
-    createSecretStore({
-      isAvailable: () => safeStorage.isEncryptionAvailable(),
-      encrypt: (s) => safeStorage.encryptString(s),
-      decrypt: (b) => safeStorage.decryptString(b)
-    })
-  )
+  const secretStore = createSecretStore({
+    isAvailable: () => safeStorage.isEncryptionAvailable(),
+    encrypt: (s) => safeStorage.encryptString(s),
+    decrypt: (b) => safeStorage.decryptString(b)
+  })
+  const jiraCreds = jiraSettings(secretStore)
   ipcMain.handle('atril:settings:jira:status', () => jiraCreds.status())
   ipcMain.handle('atril:settings:jira:save', (_e, creds: { site: string; email: string; token: string }) =>
     jiraCreds.save({ site: String(creds.site), email: String(creds.email), token: String(creds.token) })
@@ -83,7 +83,10 @@ app.whenReady().then(() => {
   ipcMain.handle('atril:settings:openTokenPage', () =>
     shell.openExternal('https://id.atlassian.com/manage-profile/security/api-tokens')
   )
-  ipcMain.handle('atril:jira:inbox', () => readInbox(run))
+  ipcMain.handle('atril:jira:inbox', async () => {
+    const c = await secretStore.readSecret('jira').catch(() => null)
+    return readInbox(c?.['site'] && c['email'] && c['token'] ? (c as unknown as JiraCreds) : null)
+  })
   ipcMain.handle('atril:ws:list', () => listWorkspaces(run))
   ipcMain.handle('atril:ws:open', (_e, repoId: string, branch: string, agent: Agent) =>
     openWorktree({ repoId, branch, agent }, run)
