@@ -112,5 +112,14 @@ Governs: `src/main/** src/preload/** src/renderer/** resources/** !src/main/jira
 - {**W38** When the person clicks a needs-you notification, Atril shall show the Trabajo screen with that workspace selected, whatever screen was open. src/renderer/a11y.test.ts notification}
 - {**W26** When a Claude hook reports `Stop` for a session, Atril shall set its agent state to `needs-you`; when it reports `UserPromptSubmit`, to `working`. src/main/status.test.ts stop}
 - {**W27** When a session leaves `needs-you` and enters it again, Atril shall notify again. src/main/status.test.ts re-entering}
+- {**A1** When a Claude hook fires, Atril shall append one line `{at, kind, text}` of at most 200 characters to the session's activity file, and never write the hook's raw payload. src/main/activity.test.ts hook}
+- {**A2** When PreToolUse reports Read, Edit, Write, Bash, Grep/Glob or Task, the line shall read «Leyendo <file>», «Editando <file>», «Escribiendo <file>», «Ejecutando <first 60 chars of the command>», «Buscando <pattern>» or «Lanzando un subagente: <first 80 characters of the description>»; any other tool shall show its name. src/main/activity.test.ts summarises}
+- {**A3** If PostToolUse reports a Bash command that failed — a non-zero exit code, an error or an interruption in the tool response — then the line shall read «✗ <first 60 chars> falló». src/main/activity.test.ts failed}
+- {**A4** When a Notification hook fires, the line and the macOS notification body shall carry the agent's message («Te pregunta: …»); when a Stop hook fires, the body shall carry A5's «Claude dice: …». The hook writes that text into the state file it writes, so the body always belongs to the event that changed the state. src/main/activity.test.ts notification}
+- {**A5** When a Stop hook fires, the line shall quote, within A1's 200-character cap, the start of the last assistant text in the transcript as «Claude dice: …». src/main/activity.test.ts stop}
+- {**A6** The activity file shall keep at most its last 200 lines. src/main/activity.test.ts activity}
+- {**A8** When UserPromptSubmit fires, the line shall read «Le has escrito: <first 80 characters of the prompt>», and PreToolUse / PostToolUse shall set the agent state to `working`. src/main/activity.test.ts prompt}
+- {**W39** When an agent exits as soon as it starts, its session shall remain with the dead pane (state `stopped`): Atril sets the session's options on an idle pane and only then starts the agent in it (found 9 nov as a race that failed a test under load). src/main/tmux.test.ts an}
+- {**A7** While a workspace is selected, the Actividad tab shall list its lines newest first and update live, and every workspace row shall show its latest line. (One proof holds both: the test pushes two lines for two workspaces and asserts the feed order and each row's latest line on the same render.) src/renderer/activity.test.ts feed}
 
 [full spec](workspaces/spec.md)

@@ -59,6 +59,15 @@ The `workspaces` capability, phase 1. Its siblings in this change: `.agents/spec
 - The layout is open and visual: generous spacing, large readable type, each column with a
   clear title, empty states that explain what goes there.
 
+### Agent activity (add-agent-activity, 9 nov 2026)
+
+- Next to the terminal, an **Actividad** tab in the right panel shows, newest first and live,
+  what the selected agent is doing: «Leyendo Repository.php», «Editando ListOrders.php»,
+  «Ejecutando vendor/bin/phpunit --filter Orders», «✗ phpunit falló», «Lanzando un subagente:
+  T5 paginación», «Claude dice: …», «Te pregunta: …».
+- Each workspace row in the sidebar shows its latest activity line under the branch.
+- The macOS needs-you notification carries the agent's real message, not only the branch.
+
 ## Scope boundaries
 
 **In:** the three columns and footer of `bocetos/fase1-nucleo.html` (boceto 8), the
@@ -82,6 +91,17 @@ sibling specs.
 the OAuth token never leaves the main process; nothing is deleted with uncommitted work in
 it; keyboard reachability and text labels for every state.
 
+### Agent activity (add-agent-activity, 9 nov 2026)
+
+**In:** summarising Claude Code hook payloads (PreToolUse, PostToolUse, Notification, Stop,
+UserPromptSubmit) into short local lines; the feed, the row line, the notification body.
+
+**Out:** token or cost per workspace; replaying the whole transcript; Codex; sending activity
+anywhere off the machine.
+
+**Never scoped out:** the raw payload is never written to disk; file contents never leave the
+hook process; lines are capped at 200 characters and 200 lines per session.
+
 ## Constraints
 
 - Electron (current stable) + TypeScript in strict mode, pnpm, Node 24 (installed:
@@ -101,6 +121,16 @@ it; keyboard reachability and text labels for every state.
   against a temporary git repo and a fake tmux, never the person's real sessions.
 - Visual: the boceto's minimal style — colour only for state (needs-you / working /
   failed), a text label beside every colour.
+
+### Agent activity (add-agent-activity, 9 nov 2026)
+
+- The hook runs as `ELECTRON_RUN_AS_NODE=1 "<Atril's execPath>" "<resources>/claude-hook.mjs"
+  <event>` from the hooks.json Atril writes; it keeps writing the agent state exactly as
+  today (W14–W16, W26) plus the activity line.
+- Activity lives in `$ATRIL_HOME/activity/<session>.jsonl` (`{at, kind, text}` per line);
+  main watches it like the state files.
+- `Stop` reads the last assistant text from the payload's `transcript_path` (JSONL), only the
+  last entry, only its text.
 
 ## Prior decisions
 
@@ -196,6 +226,34 @@ it; keyboard reachability and text labels for every state.
 - Q: ¿El avatar de Jira lleva el token? → A: solo si la imagen está en el mismo dominio que Jira; el CDN de avatares de Atlassian es público (assumed, casilla 14).
 - Q: el pie mostraba «api.anthropic.com respondió 429» (bug observado 9 nov: Atril y la statusline consultan la misma API) → A: mantener el último valor bueno con su antigüedad y espaciar los reintentos (assumed, W37)
 - Q: ¿Se guarda copia de `~/.claude.json` antes de escribir la confianza? → A: no; puede contener otros secretos (claves de servidores MCP). Protege la escritura atómica con reintento y no escribir nunca un archivo ilegible (assumed, revisión en frío 9 nov). Si es falso: vuelve una copia, pero fuera de `~/.atril` y cifrada.
+
+### Agent activity (add-agent-activity, 9 nov 2026)
+
+- **More feedback than the terminal** — Pau, 9 nov: «Podemos mejorar la terminal para ver lo
+  que dice Claude … Molaría un poco más de feedback … También aparte del que hay».
+- **Summaries, never payloads** (assumed, decision log).
+- **Electron as the hook's Node** (assumed, decision log): a Finder-launched app has no PATH.
+
+#### Alternatives that lost
+
+| Considered | Why it lost |
+|---|---|
+| Parse JSON in POSIX sh | fragile and unsafe with arbitrary payloads |
+| Require node/jq on PATH | a Finder-launched app has no PATH |
+| Read the whole transcript | heavy, and it holds file contents; one last entry is enough |
+| Store raw payloads and summarise in main | puts prompts and file contents on disk |
+
+#### Decision log, answers as given (2026-11-09)
+- Q: «No le preguntes, tú sigue» stands → decisions taken with the recommended option, marked (assumed).
+- Q: ¿Cómo lee el hook el JSON sin node ni jq en el PATH? → A: con el propio Electron de Atril como Node (`ELECTRON_RUN_AS_NODE=1 <execPath> claude-hook.mjs`), comprobado 9 nov (assumed).
+- Q: ¿Dónde se ve la actividad? → A: pestañas «Libretto | Actividad» en el panel derecho, y la última línea en la fila de cada trabajo (assumed).
+- Q: ¿Qué se guarda? → A: solo una línea de resumen por evento (≤ 200 caracteres), nunca el payload: de Edit/Write solo la ruta, del prompt solo los primeros 80 caracteres; las últimas 200 líneas por sesión (assumed).
+- Q: (spec-reviewer) ¿Qué lleva el cuerpo del aviso del Mac y de dónde sale? → A: con Notification, el mensaje del agente; con Stop, el «Claude dice: …»; el hook escribe ese texto en el mismo archivo de estado (`{state, at, text}`) que dispara el aviso, así no hay orden entre dos archivos (assumed).
+- Q: (spec-reviewer) ¿Los eventos de herramienta cambian el estado? → A: sí: PreToolUse y PostToolUse ponen `working` (aprobar un permiso hace que el agente vuelva a trabajar) (assumed). Amplía W26.
+- Q: (spec-reviewer) ¿Qué línea deja UserPromptSubmit? → A: «Le has escrito: <primeros 80 caracteres>» (assumed, A8).
+- Q: (spec-reviewer) ¿Qué es un Bash «fallido»? → A: código de salida distinto de 0, un error o una interrupción en la respuesta de la herramienta, el que venga (assumed).
+- Q: (work-reviewer) el `.gitignore` de esta rama (`.DS_Store`, `caso-*`, `flujo-mr*`) no lo cubre el contrato → A: viene de otra petición de Pau, hacer el repo privado («Cambian el nombre. Ponlo en privado y que se llame Atril»); los archivos del concepto viejo llevan datos del trabajo y no deben subirse nunca.
+- Q: (work-reviewer) ¿la descripción de un subagente puede llevar texto tipo prompt? → A: sí; mismo límite de 80 caracteres que el prompt (assumed).
 
 ## Task breakdown
 
@@ -338,3 +396,41 @@ it; keyboard reachability and text labels for every state.
   Proof: src/main/status.test.ts stop marks needs-you and prompt submit marks working
 - **W27** When a session leaves `needs-you` and enters it again, Atril shall notify again.
   Proof: src/main/status.test.ts re-entering needs-you notifies again
+
+### Agent activity (add-agent-activity, 9 nov 2026)
+
+- **A1** When a Claude hook fires, Atril shall append one line `{at, kind, text}` of at most
+  200 characters to the session's activity file, and never write the hook's raw payload.
+  Proof: src/main/activity.test.ts hook appends a short summary, never the payload
+- **A2** When PreToolUse reports Read, Edit, Write, Bash, Grep/Glob or Task, the line shall
+  read «Leyendo <file>», «Editando <file>», «Escribiendo <file>», «Ejecutando <first 60 chars of
+  the command>», «Buscando <pattern>» or «Lanzando un subagente: <first 80 characters of the
+  description>»; any other
+  tool shall show its name.
+  Proof: src/main/activity.test.ts summarises each tool
+- **A3** If PostToolUse reports a Bash command that failed — a non-zero exit code, an error or
+  an interruption in the tool response — then the line shall read «✗ <first 60 chars> falló».
+  Proof: src/main/activity.test.ts failed command is marked
+- **A4** When a Notification hook fires, the line and the macOS notification body shall carry
+  the agent's message («Te pregunta: …»); when a Stop hook fires, the body shall carry A5's
+  «Claude dice: …». The hook writes that text into the state file it writes, so the body always
+  belongs to the event that changed the state.
+  Proof: src/main/activity.test.ts notification carries the agent's message
+- **A5** When a Stop hook fires, the line shall quote, within A1's 200-character cap, the start of the last
+  assistant text in the transcript as «Claude dice: …».
+  Proof: src/main/activity.test.ts stop quotes the last thing claude said
+- **A6** The activity file shall keep at most its last 200 lines.
+  Proof: src/main/activity.test.ts activity file stays bounded
+- **A8** When UserPromptSubmit fires, the line shall read «Le has escrito: <first 80
+  characters of the prompt>», and PreToolUse / PostToolUse shall set the agent state to `working`.
+  Proof: src/main/activity.test.ts prompt line is short and tool events mean working
+- **W39** When an agent exits as soon as it starts, its session shall remain with the dead pane
+  (state `stopped`): Atril sets the session's options on an idle pane and only then starts the
+  agent in it (found 9 nov as a race that failed a test under load).
+  Proof: src/main/tmux.test.ts an agent that exits at once still leaves its session
+- **A7** While a workspace is selected, the Actividad tab shall list its lines newest first and
+  update live, and every workspace row shall show its latest line.
+  (One proof holds both: the test pushes two lines for two workspaces and asserts the feed
+  order and each row's latest line on the same render.)
+  Proof: src/renderer/activity.test.ts feed and row show the latest activity
+
