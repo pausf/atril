@@ -61,3 +61,6 @@ W40's proof used the test argv override, so the production `agentArgv` path had 
 
 ## 2026-11-09 · add-own-tasks · 1
 Queued add-language rode on this branch, an hour after logging the same lesson. Docs only; add-flow-documents is now kept uncommitted until its own branch.
+
+## 2026-11-09 · fix-test-home-leak · 6
+A tmux test that timed out under load kept writing after afterEach deleted ATRIL_HOME, so its workspace record landed in the person's real ~/.atril (seen as a ghost «feat/q1 · demo» in the app). Fixed at the root: under vitest a missing path env throws (W42), and every module resolves the home through one function. The guard then caught four argv tests resolving against the real home.

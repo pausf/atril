@@ -1,6 +1,5 @@
 import { randomInt } from 'node:crypto'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
-import { homedir } from 'node:os'
 import { join } from 'node:path'
 import type { Agent, Model, RemoveResult, WorkspaceRecord, WorkspaceResult, WorkspaceView } from '../preload/api'
 import { agentArgv } from './agent'
@@ -8,6 +7,7 @@ import { detectMode, effectiveMode, type Repo } from './repos'
 import { run as defaultRun, type Runner } from './run'
 import { trustFolder } from './trust'
 import { hasSession, killSession, newSession, sessionName } from './tmux'
+import { atrilHome } from './paths'
 
 export interface OpenInput {
   repoId: string
@@ -23,7 +23,7 @@ export interface OpenInput {
   argv?: string[]
 }
 
-const home = (): string => process.env['ATRIL_HOME'] ?? join(homedir(), '.atril')
+const home = atrilHome
 export const worktreePath = (repoId: string, branch: string): string => join(home(), 'wt', repoId, branch)
 const ALPHABET = 'abcdefghijklmnopqrstuvwxyz0123456789'
 const newId = (): string => Array.from({ length: 8 }, () => ALPHABET[randomInt(ALPHABET.length)]).join('')

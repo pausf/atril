@@ -1,10 +1,11 @@
 import { readFile, rename, stat, writeFile } from 'node:fs/promises'
 import { homedir } from 'node:os'
+import { envPath } from './paths'
 import { join } from 'node:path'
 
 // Claude Code has no flag or setting that pre-trusts a folder (`claude --help` only skips the
 // dialog in -p mode), so the dialog's own record is written: projects[path].hasTrustDialogAccepted.
-export const claudeConfigPath = (): string => process.env['ATRIL_CLAUDE_JSON'] ?? join(homedir(), '.claude.json')
+export const claudeConfigPath = (): string => envPath('ATRIL_CLAUDE_JSON', () => join(homedir(), '.claude.json'))
 
 type Config = Record<string, unknown>
 

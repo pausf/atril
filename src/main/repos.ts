@@ -1,8 +1,8 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
-import { homedir } from 'node:os'
 import { basename, join } from 'node:path'
 import type { AddRepoResult, Mode, RepoView } from '../preload/api'
 import type { Runner } from './run'
+import { atrilHome } from './paths'
 
 export interface Repo {
   id: string
@@ -22,7 +22,7 @@ const HEAVY_DEPS_KB = 2 * 1024 * 1024
 const ID_RE = /^[a-z0-9-]+$/
 
 const segments = (entry: string): string[] => entry.split('/').filter(Boolean)
-const stateFile = (): string => join(process.env['ATRIL_HOME'] ?? join(homedir(), '.atril'), 'repos.json')
+const stateFile = (): string => join(atrilHome(), 'repos.json')
 
 interface State {
   repos: Repo[]

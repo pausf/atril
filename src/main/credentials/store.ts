@@ -1,6 +1,6 @@
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
-import { homedir } from 'node:os'
 import { join } from 'node:path'
+import { atrilHome } from '../paths'
 
 /** safeStorage in the app; a fake reversible one in tests. */
 export interface Encryptor {
@@ -28,7 +28,7 @@ interface Entry {
   board?: { id: number; name: string }
 }
 
-const file = (): string => join(process.env['ATRIL_HOME'] ?? join(homedir(), '.atril'), 'secrets.bin')
+const file = (): string => join(atrilHome(), 'secrets.bin')
 
 async function readAll(): Promise<Record<string, Entry>> {
   try {

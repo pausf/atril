@@ -10,6 +10,14 @@ import { updateClaudeConfig, withTrust } from './trust'
 import { openWorktree } from './workspaces'
 
 describe('agentArgv', () => {
+  it('the flow prompt is the last argument, after every flag', () => {
+    const prompt = '/libretto:libretto-flow --dangerously-skip-permissions'
+    const argv = agentArgv({ model: 'opus', prompt })
+    expect(argv.at(-1)).toBe(prompt)
+    expect(argv.filter((a) => a === prompt)).toHaveLength(1)
+    expect(argv.indexOf('--model')).toBeLessThan(argv.length - 1)
+  })
+
   it('claude starts with the bundled libretto plugin', () => {
     const argv = agentArgv()
     expect(argv[0]).toBe('claude')
@@ -105,15 +113,5 @@ describe('trust prompt', () => {
     const saved = JSON.parse(readFileSync(file, 'utf8'))
     expect(saved.theirs).toBe(true)
     expect(saved.projects['/wt/b'].hasTrustDialogAccepted).toBe(true)
-  })
-})
-
-describe('agent argv', () => {
-  it('the flow prompt is the last argument, after every flag', () => {
-    const prompt = '/libretto:libretto-flow --dangerously-skip-permissions'
-    const argv = agentArgv({ model: 'opus', prompt })
-    expect(argv.at(-1)).toBe(prompt)
-    expect(argv.filter((a) => a === prompt)).toHaveLength(1)
-    expect(argv.indexOf('--model')).toBeLessThan(argv.length - 1)
   })
 })

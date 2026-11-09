@@ -528,3 +528,11 @@ never become a `claude` flag or reach a shell; the renderer cannot choose the co
   character, then `workspaces.open` shall refuse with «El texto de la tarea no es válido (máx. 2000
   caracteres).» and create nothing.
   Proof: src/main/workspaces.test.ts invalid task text creates nothing
+
+### Test isolation (fix-test-home-leak, 9 nov 2026)
+
+- **W42** While the tests run, any Atril path (`ATRIL_HOME`, `ATRIL_CLAUDE_JSON`) without its
+  env override shall throw instead of resolving to the person's home (found 9 nov: a timed-out
+  tmux test kept writing after its `afterEach` deleted `ATRIL_HOME`, and left a workspace record
+  in the real `~/.atril/workspaces.json`).
+  Proof: src/main/paths.test.ts a test without its own home never reaches the real one
