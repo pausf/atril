@@ -27,6 +27,10 @@ person picks it.
 - Q: ¿Qué tablero? → A: el que la persona elige en Ajustes, con un buscador por nombre; uno solo (assumed). Si es falso: varios tableros a la vez o uno por proyecto.
 - Q: ¿Y las tareas que no están en ninguna columna del tablero? → A: grupo «Fuera del tablero», al final y plegado (assumed).
 - Q: ¿Qué columna viene plegada? → A: la primera columna desplegada; las que el tablero llama Done/Hecho no salen (la consulta ya excluye lo terminado); el resto desplegadas salvo «Fuera del tablero» (assumed).
+- Q: (spec-reviewer) ¿Y si falla la lectura del tablero? → A: vuelve a los grupos por categoría y avisa «No se pudo leer el tablero (…)» (assumed). Si es falso: I18 mostraría un error en lugar de grupos.
+- Q: (spec-reviewer) ¿Qué columnas vienen plegadas? → A: todas abiertas; solo «Fuera del tablero» plegada (assumed).
+- Q: (spec-reviewer) ¿Borrar el token de Jira olvida el tablero? → A: sí; Reemplazar lo conserva (assumed).
+- Q: (spec-reviewer) ¿Dónde vive la búsqueda de tableros y cómo se busca? → A: `src/main/credentials/boards.ts`; desde 2 letras, 300 ms tras dejar de escribir, «Ningún tablero coincide» si no hay resultados (assumed).
 - Q: ¿Sin tablero elegido? → A: la agrupación actual por categoría, con un aviso «Elige tu tablero en Ajustes para ver sus columnas» (assumed).
 
 ## Outcomes
@@ -78,8 +82,9 @@ integer before it reaches a URL.
 ## Verification criteria
 
 - **I13** When a board is picked, the inbox shall group the tasks by its columns, in the
-  board's order, matching each task's status id to the column that lists it; empty columns
-  shall not appear.
+  board's order, matching each task's status id to the column that lists it, every column
+  unfolded; empty columns shall not appear. (One proof holds both promises: main computes the
+  order and the filtering in one pass, and the test asserts both on one result.)
   Proof: src/main/jira/board.test.ts groups tasks by the board columns in order
 - **I14** If a task's status is in no column of the picked board, then it shall go to «Fuera
   del tablero», after every column, folded.
@@ -90,6 +95,14 @@ integer before it reaches a URL.
 - **I16** If the board id is not a positive integer, then Atril shall refuse it before any
   request.
   Proof: src/main/jira/board.test.ts refuses a board id that is not a positive integer
+
+- **I17** While a board is picked, the sidebar summary shall count the first column's tasks as
+  "por empezar" and the tasks of every other column as "en curso" («Fuera del tablero» counts
+  in neither).
+  Proof: src/renderer/inbox/inbox.test.ts summary follows the board columns
+- **I18** If reading the picked board fails (timeout, 403, 404), then the inbox shall fall back
+  to the status-category groups and show «No se pudo leer el tablero (<status>)».
+  Proof: src/main/jira/board.test.ts board failure falls back to the status groups
 
 ## Approach
 
@@ -110,7 +123,9 @@ Same stack and tests as the work-inbox capability (vitest, fake fetch). Files: `
 
 - `InboxResult` gains `groups: { id, title, folded, keys[] }[]`, computed in main: by board
   columns when a board is picked (I13, I14), by status category otherwise (I11, unchanged).
-- Board search: `GET /rest/agile/1.0/board?name=<q>&maxResults=50` → `{ id, name, type }[]`.
+- Board search lives in `src/main/credentials/boards.ts` (settings capability): `GET
+  /rest/agile/1.0/board?name=<q>&maxResults=50` → `{ id, name, type }[]`; the picker queries from
+  2 letters, 300 ms after typing stops, and says «Ningún tablero coincide» when empty.
 - The pick is stored with the Jira metadata (never with the token); changing the Jira token
   keeps it.
 
@@ -140,4 +155,4 @@ None.
 
 ## Checklist
 
-- [ ] board columns: read the picked board's configuration, group the inbox by its columns with «Fuera del tablero» last, keep the category groups and the pick notice when there is no board, validate the board id · Closes: I13, I14, I15, I16, S9
+- [ ] board columns: Ajustes board picker (search in credentials/boards.ts, stored beside the account, forgotten on Borrar); the inbox grouped by the picked board's columns with «Fuera del tablero» last and folded, the category groups + pick notice without a board, the category groups + failure notice when the board cannot be read, the sidebar summary from the columns, the board id validated · Closes: I13, I14, I15, I16, I17, I18, S9
