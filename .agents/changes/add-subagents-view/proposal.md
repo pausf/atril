@@ -12,13 +12,17 @@ Durable decisions: the ones in Prior decisions below
 - Q: ¿Se lee el transcript del subagente? → A: no: ni cuota ni contenido, solo los eventos (assumed).
 - Q: ¿Cuánto se quedan los terminados? → A: hasta el siguiente mensaje de la persona (UserPromptSubmit), como mucho 20 (assumed).
 - Q: ¿Agentes internos de Claude Code (agent_type vacío)? → A: se ignoran (assumed).
+- Q: (revisor) ¿El PreToolUse de Agent deja de marcar «trabajando»? → A: no, sigue igual; solo SubagentStart/Stop no tocan el estado (assumed).
+- Q: (revisor) ¿Sin subagent_type? ¿Pendientes que nunca emparejan? → A: cuenta como general-purpose; los pendientes caducan a los 10 min (assumed).
+- Q: (revisor) ¿Unidades y formato? → A: segundos epoch; «45 s», «1 min 20 s»; terminado muestra la duración (assumed).
 
 ## Outcomes
 
 - The flow panel shows the workspace's subagents: what each was asked (its description, or its type
   when none is known), its type, and «trabajando · 1 min 20 s» or «terminado · 45 s».
 - The workspace row shows «2 subagentes» while any is running.
-- A subagent starting or stopping never changes the workspace's own state (working / needs-you).
+- SubagentStart and SubagentStop never change the workspace's own state (working / needs-you); the
+  Agent call itself and the subagent's tool calls still count as working, as today.
 
 ## Scope boundaries
 
@@ -30,7 +34,7 @@ subagents shown as a tree, history past the next prompt.
 
 ## Constraints
 
-- The hook stays one script; the new events install alongside the five existing ones (W29).
+- The hook stays one script; the new events install alongside the existing ones in `agent.ts`' `HOOK_EVENTS`.
 - Descriptions are text from Claude: shown as text, cut at 120 characters.
 
 ## Prior decisions
@@ -48,17 +52,29 @@ subagents shown as a tree, history past the next prompt.
 
 ## Verification criteria
 
-- **W62** When Claude Code fires SubagentStart with a non-empty `agent_type` in a workspace's session,
-  the hook shall add `{ id: agent_id, type, description?, startedAt }` to
-  `$ATRIL_HOME/subagents/<session>.json`, taking `description` (cut to 120 characters) from the oldest
-  unpaired PreToolUse of tool `Agent` with that `subagent_type`; SubagentStop with that `agent_id`
-  shall set `endedAt`; a SubagentStart or SubagentStop with an empty `agent_type` shall be ignored;
-  UserPromptSubmit shall drop every entry with `endedAt`; the file shall keep at most 20 entries,
-  dropping the oldest finished first; none of these shall write the workspace's state file.
-  Proof: src/main/agent.test.ts the hook keeps the subagents of a session
-- **W63** Atril shall install SubagentStart and SubagentStop hooks with the same command as the other
-  five, and main shall push a workspace's subagent list to the window whenever its file changes.
-  Proof: src/main/agent.test.ts subagent hooks are installed and their list reaches the window
+- **W62** When the hook gets a PreToolUse for tool `Agent`, it shall keep its existing state and
+  activity writes and also append `{ type: subagent_type or "general-purpose", description (cut to 120
+  characters), at }` to `pending` in `$ATRIL_HOME/subagents/<session>.json`; on SubagentStart with a
+  non-empty `agent_type` it shall add `{ id: agent_id, type, description?, startedAt }` (epoch seconds),
+  taking and removing the oldest pending entry of that type younger than 10 minutes, and dropping
+  pending entries older than that.
+  Proof: src/main/agent.test.ts a subagent start takes its description
+- **W63** On SubagentStop with that `agent_id` the hook shall set `endedAt`; SubagentStart and
+  SubagentStop with an empty `agent_type`, or an unknown `agent_id` on stop, shall change nothing; neither
+  event shall write the state file or an activity line.
+  Proof: src/main/agent.test.ts subagent events never change the agent state
+- **W64** On UserPromptSubmit the hook shall drop every finished entry; the file shall keep at most 20
+  entries plus 20 pending, dropping the oldest finished entry, then the oldest pending, and never a
+  running one (more than 20 running is kept as is).
+  Proof: src/main/agent.test.ts the subagent list stays bounded
+- **W65** Atril shall install SubagentStart and SubagentStop hooks with the same command as the other
+  hook events; main shall answer `atril:subagents:get(workspaceId)` with the entries only (no
+  `pending`; `[]` without a file) and send `atril:subagents:changed(workspaceId, entries)` whenever the
+  file's content changes, an `endedAt` flip included; removing a workspace deletes its file.
+  Proof: src/main/subagents.test.ts the subagent list reaches the window
+- **W66** A workspace row shall show «{n} subagentes» («1 subagente») while n > 0 of its entries have
+  no `endedAt`, and nothing otherwise.
+  Proof: src/renderer/subagents.test.ts the row counts running subagents
 
 ## Approach
 
@@ -68,8 +84,8 @@ The hook gains three branches that read-modify-write the session's subagents fil
 atomic `replace` it uses for activity. Pending Agent descriptions live in the same file under
 `pending: { type, description }[]` (at most 20). `agent.ts`' `HOOK_EVENTS` gains the two events.
 `src/main/subagents.ts` watches the folder (like `activity.ts`) and emits `atril:subagents:changed`
-with `(workspaceId, list)`; `atril:subagents:get(id)` answers the current list. The window keeps a map
-per workspace: the FlowPanel shows a «Subagentes» section, the row shows the running count; times
+with `(workspaceId, list)`; `atril:subagents:get(id)` answers the current list. The window loads each workspace's list with `get` when its workspaces load and
+follows `changed`, in one map per workspace: the FlowPanel shows a «Subagentes» section, the row shows the running count; times
 tick once a second only while one runs.
 
 ### Technical context
@@ -92,12 +108,12 @@ flow-status. Gates: typecheck, lint, test.
 | Risk | What catches it |
 |---|---|
 | Two Agent calls of the same type at once get each other's description | named: pairing by order; at worst a swapped label |
-| A subagent killed without SubagentStop stays «trabajando» | dropped only when finished; cleared when the workspace is removed; named ceiling |
+| A subagent killed without SubagentStop stays «trabajando» | the file is deleted with the workspace (W65); named ceiling |
 | Concurrent hook processes writing the same file | atomic rename: last writer wins, an entry may be lost; named ceiling |
 
 ### Validation and rollback
 
-W62, W63, F27 seen red first. Rollback: one revert.
+W62–W66, F27 seen red first. Rollback: one revert.
 
 ### Complexity deliberately kept
 
@@ -105,5 +121,5 @@ None.
 
 ## Checklist
 
-- [ ] hook and main: the three hook branches, the two installed events, the watcher and IPC · Closes: W62, W63
-- [ ] the window: the Subagentes section and the row count · waits on box 1 · Closes: F27
+- [ ] hook and main: the three hook branches, the two installed events, the watcher and IPC · Closes: W62, W63, W64, W65
+- [ ] the window: the Subagentes section and the row count · waits on box 1 · Closes: W66, F27
