@@ -85,6 +85,12 @@ The `workspaces` capability, phase 1. Its siblings in this change: `.agents/spec
 - The Trabajo sidebar starts with «＋ Nuevo trabajo», then «Trabajo en marcha» and the Jira
   summary; the repo list and its per-repo «+ trabajo» form are gone.
 
+### Flow documents (add-flow-documents, 9 nov 2026)
+
+- When Claude asks the person something with its question tool — Libretto's stop before code is
+  one — the workspace shows «te necesita», notifies with the question, and the documents become
+  editable (F15); once the person answers, it shows «trabajando» again.
+
 ## Scope boundaries
 
 **In:** the three columns and footer of `bocetos/fase1-nucleo.html` (boceto 8), the
@@ -140,6 +146,10 @@ never become a `claude` flag or reach a shell; the renderer cannot choose the co
 
 **In:** the button and removing the section. **Out:** anything in main.
 
+### Flow documents (add-flow-documents, 9 nov 2026)
+
+**In:** the hook's state for `AskUserQuestion`. **Out:** any other tool.
+
 ## Constraints
 
 - Electron (current stable) + TypeScript in strict mode, pnpm, Node 24 (installed:
@@ -180,6 +190,10 @@ never become a `claude` flag or reach a shell; the renderer cannot choose the co
 ### Own tasks (add-own-tasks, 9 nov 2026)
 
 - tmux `respawn-pane` already receives argv as separate arguments (W39); the text rides that.
+
+### Flow documents (add-flow-documents, 9 nov 2026)
+
+- Same hook, same state file (W14–W16, W26, A1–A8).
 
 ## Prior decisions
 
@@ -330,6 +344,12 @@ never become a `claude` flag or reach a shell; the renderer cannot choose the co
 ### Own tasks (add-own-tasks, 9 nov 2026)
 
 - **The flow command is built in main** (assumed): the renderer sends data, never a command line.
+
+### Flow documents (add-flow-documents, 9 nov 2026)
+
+- **The stop must be visible** — Pau, 9 nov: «si la spec y plan no nos gusta como lo hacemos ya que
+  pasa directamente a construir»: it does not — Libretto stops before code with a question — but
+  the hook marked every tool as working, so Atril hid that stop (found 9 nov).
 
 ## Task breakdown
 
@@ -551,3 +571,10 @@ never become a `claude` flag or reach a shell; the renderer cannot choose the co
 - **W43** While Trabajo is shown, the sidebar shall show «＋ Nuevo trabajo», which opens the
   «Nuevo trabajo» dialog, and shall not show a Repos section.
   Proof: src/renderer/sidebar.test.ts sidebar offers new work and no repos
+
+### Flow documents (add-flow-documents, 9 nov 2026)
+
+- **W44** When Claude calls `AskUserQuestion`, the hook shall set the workspace to `needs-you`
+  with «Te pregunta: <its first question>» as the text, and when that call returns (PostToolUse)
+  it shall set `working`.
+  Proof: src/main/activity.test.ts a question from claude means it needs you

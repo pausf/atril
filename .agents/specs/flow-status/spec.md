@@ -9,6 +9,17 @@ Governs: src/main/flow/** src/renderer/flow/**
 - The stage updates by itself when the agent writes the files, without a manual refresh.
 - A workspace with no Libretto change shows "sin Libretto" and nothing invented.
 
+### Flow documents (add-flow-documents, 9 nov 2026)
+
+- In the Libretto panel, **Spec**, **Plan** and the **Checklist** are buttons once their stage is
+  reached; each opens a **large modal over the app** with the change's files as tabs and an
+  editor — line numbers, markdown colours, an outline of the sections — at that section,
+  following the file live. The terminal stays as it is underneath.
+- While the agent waits for the person or has stopped, the person types straight into the
+  editor; **⌘S** (or Guardar in the status bar) saves; a tab with unsaved changes shows a dot.
+  While the agent works the editor is read-only and says so. The saved file is what Libretto
+  reads from disk at its next step; nothing else tells the agent.
+
 ## Scope boundaries
 
 **In:** reading `.agents/changes/*/` in a workspace and deriving the stage.
@@ -17,6 +28,19 @@ Governs: src/main/flow/** src/renderer/flow/**
 `review-work` and `present-work` leave nothing on disk that tells them apart from building,
 so they are **not** shown as their own stages in this phase — the boceto's eight dots
 become the six below. Showing them needs a signal from the agent session (phase 3).
+
+### Flow documents (add-flow-documents, 9 nov 2026)
+
+**In:** the document view, live reading, editing and saving `proposal.md` and `spec-*.md` of the
+workspace's current change. **Out:** other changes' folders, the capability specs under
+`.agents/specs/`, creating or deleting files, telling the agent what changed (the person replies
+in the terminal), rich-text editing, a diff of the person's edit.
+
+**Never scoped out:** main refuses a save while the agent is working, for any name that is not
+`proposal.md` or `spec-<name>.md` directly in the current change folder, and when the file changed
+on disk since it was read — and writes atomically, so a crash never leaves half a file; the file's
+text is never rendered as HTML; the view is keyboard-operable (Escape closes, the buttons are
+native).
 
 ## Constraints
 
@@ -32,12 +56,59 @@ become the six below. Showing them needs a signal from the agent session (phase 
 - **Old layout:** a change with no the workspaces spec gets its stage from its checklist alone
   (Construir or Terminado sin aterrizar), else Entrada.
 
+### Flow documents (add-flow-documents, 9 nov 2026)
+
+- The current change and its folder come from `stageOf` (F12's most recent change).
+- The agent state comes from main's status tracker (W14–W16, W26).
+- No new dependency.
+
 ## Prior decisions
 
 - **The flow is the spine of every piece of work** — Pau, 9 nov: «tiene que combinar la dos
   cosas, para que sea un flujo en un app».
 - **Read-only, from files** — the app never decides the stage; Libretto does, by writing its
   files.
+
+### Flow documents (add-flow-documents, 9 nov 2026)
+
+- **See and correct what the agent wrote** — Pau, 9 nov: «si tú le das al libreto y le das encima
+  del spec o del plan, que puedas ver lo que ha escrito la IA … el plan lo ves bien y puedas
+  modificarlo antes de que tire al siguiente» → «dale» to: read live, edit only while it waits.
+- **Edit only while the agent waits** (assumed): the agent and the person never write one file
+  at once; the mtime check catches the rest.
+
+#### Alternatives that lost
+
+| Considered | Why it lost |
+|---|---|
+| A markdown library (react-markdown, marked) | a new dependency for five constructs; marked returns HTML that would need sanitising |
+| A code editor component (CodeMirror, Monaco) | the right tool for a big editor, but hundreds of KB for markdown colouring; the overlay does it in one file — revisit if Pau wants search, multi-cursor or folding |
+| A read view plus an Editar button | Pau: «que sea visualmente mas como un editor para poder editar» |
+| Tabs in the centre next to the terminal (sketched, also full width) | Pau: «no cabe todo en … la parte de la terminal, yo pensaba mas como un modal» |
+| Editing only the section you read | splicing a section back into the file is where edits get lost; the whole file is honest |
+| Locking the file while the person edits | the agent does not know about the lock; the state gate plus the mtime check cover it |
+| Edit any time, last writer wins | the agent's next write silently erases the person's correction |
+
+#### Decision log, answers as given (2026-11-09)
+- Q: (propuesta) ver y editar spec y plan desde el panel; editar solo mientras el agente espera → A: «dale».
+- Q: «No le preguntes, tú sigue» stands → the rest taken with the recommended option, marked (assumed).
+- Q: ¿Qué se ve al pulsar cada etapa? → A: Spec = `proposal.md` desde arriba hasta `## Approach` más cada `spec-*.md`; Plan = `## Approach`; Checklist = `## Checklist`; una etapa sin nada escrito no se puede pulsar (assumed).
+- Q: ¿Qué se edita? → A: el archivo entero de la pestaña que miras (`proposal.md` o un `spec-*.md`), como texto; leer es por secciones, editar es el archivo (assumed).
+- Q: ¿Cuándo se puede editar? → A: con el agente en «te necesita» o parado; trabajando, no. Lo comprueba main al guardar, no solo la ventana (assumed).
+- Q: ¿Y si Claude cambia el archivo mientras lo editas? → A: no se guarda nada y se avisa «Claude ha cambiado el archivo mientras editabas: vuelve a abrirlo» (assumed).
+- Q: ¿Markdown con librería? → A: no: un lector mínimo (títulos, listas, casillas, bloques de código, negrita) que solo produce texto de React, nunca HTML (assumed).
+
+- Q: (spec-reviewer) el aviso en vivo solo salta si cambia la etapa → A: la clave del watcher suma la última modificación de la carpeta del cambio, así cualquier escritura avisa; mismo límite de 1 s que F8 (assumed).
+- Q: (spec-reviewer) ¿Qué estado decide si se puede guardar? → A: uno recién leído en main al guardar (`agentState`), no el último sondeo; en la ventana, Editar solo se desactiva si el estado conocido es «trabajando» (assumed).
+- Q: (spec-reviewer) ¿Y un «te necesita» por un permiso a mitad de turno? → A: se acepta: se puede editar; lo que Claude escriba después lo protege la comprobación de mtime, y el agente relee el archivo cuando Libretto lo necesita o cuando se lo pides en la terminal (assumed).
+- Q: (spec-reviewer) ¿Qué decide si una etapa es botón? → A: la etapa de F1–F5: Spec desde que la etapa es Spec o posterior, Plan desde Plan, Checklist cuando hay checklist; las secciones se cortan con las mismas reglas que `stage.ts` (títulos `^##\s+…\b`, sin contar los de dentro de un bloque de código) (assumed).
+- Q: (spec-reviewer) ¿Qué dice cada rechazo y qué pasa con tu texto? → A: «Claude está escribiendo: no se ha guardado», «Ese archivo no se puede editar desde Atril», «Claude ha cambiado el archivo mientras editabas: copia tu texto y vuelve a abrirlo»; tu texto se queda en el editor (assumed).
+- Q: (spec-reviewer) ¿En qué cambio se guarda? → A: en el que se leyó: el guardado lleva el nombre del cambio, validado (`^[a-z0-9-]+$`, carpeta existente) (assumed).
+
+- Q: (Pau, tras el boceto) «lo de espec y plan que sea visualmente mas omo un editor para poder editar etc...» → A: pestañas en la zona central junto a la terminal, un editor con números de línea, colores de markdown y esquema de secciones; se escribe directamente (sin botón Editar), solo lectura mientras Claude trabaja, ⌘S guarda, punto en la pestaña con cambios sin guardar; boceto en `fase1-nucleo.html?doc=plan`.
+- Q: (Pau) «que se vea mas grande ahora mismo todo se ve minuculo lo de spec y plan» → A: al abrir un documento el editor ocupa todo el ancho (se ocultan la barra lateral y el panel de Libretto; «⤡ Salir de pantalla completa» o Esc vuelven), letra de 15 px.
+- Q: (Pau) «si la spec y plan no nos gusta como lo hacemos ya que pasa directamente a construir» → A: no pasa directo: Libretto se para antes de código con una pregunta; pero el hook marcaba esa pregunta como «trabajando» y Atril la escondía; se arregla en `spec-workspaces.md` (W44).
+- Q: (Pau) «no me sterminal de convencer no cabe todo en el la parte de la terminal, yo pensaba mas como un modal» → A: un modal grande (94 % del ancho, 88 % del alto), oscuro, por encima de la app: título de la etapa, el cambio, pestañas por archivo y Cerrar; dentro el mismo editor (esquema, números de línea, colores, barra de estado, ⌘S); Esc o Cerrar salen y, con cambios sin guardar, preguntan antes. La terminal no se toca.
 
 ## Task breakdown
 
@@ -83,3 +154,33 @@ Aterrizado**.
 - **F12** Where several change folders exist, Atril shall show the most recently modified one
   and list the others.
   Proof: src/main/flow/stage.test.ts several changes shows the latest and lists the rest
+
+### Flow documents (add-flow-documents, 9 nov 2026)
+
+- **F13** When the person clicks Spec, Plan or Checklist in the Libretto panel, Atril shall open
+  a modal over the app with the current change's `proposal.md` (and, for Spec, one more file tab per
+  `spec-*.md`), with the cursor at that part's heading — Spec: the first level-2 heading; Plan:
+  `## Approach`; Checklist: `## Checklist`, found outside code fences as in F1–F7 — and each shall
+  be a button only from its stage on: Spec from Spec, Plan from Plan, Checklist once a checklist
+  exists; Escape or Cerrar shall close it, asking first when there are unsaved changes.
+  Proof: src/renderer/flow/documents.test.ts stage opens what the agent wrote
+- **F14** While a document is open with no unsaved changes, it shall show the file's new
+  text within one second of the agent changing it, even when the stage does not change.
+  Proof: src/main/flow/document.test.ts an edit inside a stage still notifies
+  Proof: src/renderer/flow/documents.test.ts document view follows the file live
+- **F15** While the agent's known state is working, the editor shall be read-only and its status
+  bar shall say «solo lectura · Claude está escribiendo»; otherwise the person shall type into it,
+  its file tab shall show a dot while there are unsaved changes, and ⌘S or Guardar shall save the whole
+  file; if the save is refused, the person's text shall stay in the editor with the reason shown
+  above it.
+  Proof: src/renderer/flow/documents.test.ts edit only while the agent waits
+- **F16** If a save arrives while the agent's state read at that moment is working («Claude está
+  escribiendo: no se ha guardado»), or names a change that is not a folder under
+  `.agents/changes/` or a file other than `proposal.md` or `spec-<name>.md` directly in it («Ese
+  archivo no se puede editar desde Atril»), or the file's mtime differs from the one it was read
+  with («Claude ha cambiado el archivo mientras editabas: copia tu texto y vuelve a abrirlo»), then
+  Atril shall write nothing and return that message; otherwise it shall replace the file atomically.
+  Proof: src/main/flow/document.test.ts save refuses unless it is safe
+- **F17** The editor's colouring shall build headings, list markers, boxes, code and bold as
+  React text nodes, so markup in the file (`<script>`, `<img onerror>`) shows as literal characters.
+  Proof: src/renderer/flow/documents.test.ts markdown renders as text only
