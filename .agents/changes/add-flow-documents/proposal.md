@@ -31,13 +31,21 @@ two never write the same file at once.
 - Q: ¿Y si Claude cambia el archivo mientras lo editas? → A: no se guarda nada y se avisa «Claude ha cambiado el archivo mientras editabas: vuelve a abrirlo» (assumed).
 - Q: ¿Markdown con librería? → A: no: un lector mínimo (títulos, listas, casillas, bloques de código, negrita) que solo produce texto de React, nunca HTML (assumed).
 
+- Q: (spec-reviewer) el aviso en vivo solo salta si cambia la etapa → A: `FlowStage` lleva `updatedAt` (la última modificación de la carpeta del cambio), así cualquier escritura avisa; mismo límite de 1 s que F8 (assumed).
+- Q: (spec-reviewer) ¿Qué estado decide si se puede guardar? → A: uno recién leído en main al guardar (`agentState`), no el último sondeo; en la ventana, Editar solo se desactiva si el estado conocido es «trabajando» (assumed).
+- Q: (spec-reviewer) ¿Y un «te necesita» por un permiso a mitad de turno? → A: se acepta: se puede editar; lo que Claude escriba después lo protege la comprobación de mtime, y el agente relee el archivo cuando Libretto lo necesita o cuando se lo pides en la terminal (assumed).
+- Q: (spec-reviewer) ¿Qué decide si una etapa es botón? → A: la etapa de F1–F5: Spec desde que la etapa es Spec o posterior, Plan desde Plan, Checklist cuando hay checklist; las secciones se cortan con las mismas reglas que `stage.ts` (títulos `^##\s+…\b`, sin contar los de dentro de un bloque de código) (assumed).
+- Q: (spec-reviewer) ¿Qué dice cada rechazo y qué pasa con tu texto? → A: «Claude está escribiendo: no se ha guardado», «Ese archivo no se puede editar desde Atril», «Claude ha cambiado el archivo mientras editabas: copia tu texto y vuelve a abrirlo»; tu texto se queda en el editor (assumed).
+- Q: (spec-reviewer) ¿En qué cambio se guarda? → A: en el que se leyó: el guardado lleva el nombre del cambio, validado (`^[a-z0-9-]+$`, carpeta existente) (assumed).
+
 ## Outcomes
 
 - In the Libretto panel, **Spec**, **Plan** and the **Checklist** are buttons once their part of
   the change exists; each opens a document view with what the agent wrote, readable (headings,
   lists, boxes, code), following the file live.
 - While the agent waits for the person or has stopped, the view offers **Editar**: the whole file
-  as text, **Guardar** and **Cancelar**. The agent reads the saved file when it continues.
+  as text, **Guardar** and **Cancelar**. The saved file is what Libretto reads from disk at its
+  next step; nothing else tells the agent.
 
 ## Scope boundaries
 
@@ -76,20 +84,24 @@ native).
 
 - **F13** When the person clicks Spec, Plan or Checklist in the Libretto panel, Atril shall open
   the current change's document at that part — Spec: `proposal.md` up to `## Approach` and one tab
-  per `spec-*.md`; Plan: `## Approach`; Checklist: `## Checklist` — and a stage whose part does not
-  exist yet shall not be a button.
+  per `spec-*.md`; Plan: `## Approach`; Checklist: `## Checklist`, headings found as in F1–F7
+  (outside code fences) — and each shall be a button only from its stage on: Spec from Spec, Plan
+  from Plan, Checklist once a checklist exists.
   Proof: src/renderer/flow/documents.test.ts stage opens what the agent wrote
 - **F14** While the document view is open and not being edited, it shall show the file's new
-  text when the agent changes it.
+  text within one second of the agent changing it, even when the stage does not change.
   Proof: src/renderer/flow/documents.test.ts document view follows the file live
-- **F15** While the agent is working, Editar shall be disabled with «Claude está escribiendo:
-  podrás editar cuando te espere»; while it waits or has stopped, Editar shall open the whole file
-  as text and Guardar shall save it.
+- **F15** While the agent's known state is working, Editar shall be disabled with «Claude está
+  escribiendo: podrás editar cuando te espere»; otherwise Editar shall open the whole file as text
+  and Guardar shall save it; if the save is refused, the person's text shall stay in the editor
+  with the reason shown.
   Proof: src/renderer/flow/documents.test.ts edit only while the agent waits
-- **F16** If a save arrives while the agent is working, or names a file other than `proposal.md`
-  or `spec-<name>.md` directly in the current change folder, or the file's mtime differs from the
-  one it was read with, then Atril shall write nothing and say why; otherwise it shall replace the
-  file atomically.
+- **F16** If a save arrives while the agent's state read at that moment is working («Claude está
+  escribiendo: no se ha guardado»), or names a change that is not a folder under
+  `.agents/changes/` or a file other than `proposal.md` or `spec-<name>.md` directly in it («Ese
+  archivo no se puede editar desde Atril»), or the file's mtime differs from the one it was read
+  with («Claude ha cambiado el archivo mientras editabas: copia tu texto y vuelve a abrirlo»), then
+  Atril shall write nothing and return that message; otherwise it shall replace the file atomically.
   Proof: src/main/flow/document.test.ts save refuses unless it is safe
 - **F17** The document view shall render headings, list items, boxes, code blocks and bold as
   text, so markup in the file (`<script>`, `<img onerror>`) shows as literal characters.
@@ -100,9 +112,11 @@ native).
 ### Summary
 
 `src/main/flow/document.ts` exposes `readDocs(ws)` → `{ change, files: [{ name, text, mtimeMs }] }`
-for the current change, and `saveDoc(ws, state, name, text, mtimeMs)` with the three refusals and
-a temp-file + rename write. Two IPC handlers wire them (`atril:flow:docs`, `atril:flow:save`), the
-second reading the agent state from the status tracker in main. The renderer's `LibrettoFlow`
+for the current change, and `saveDoc(ws, state, change, name, text, mtimeMs)` with the three
+refusals and a temp-file + rename write. Two IPC handlers wire them (`atril:flow:docs`,
+`atril:flow:save`); the second reads the state fresh with `agentState(ws)` just before saving.
+`stageOf` adds `updatedAt` (the change folder's newest mtime, already computed by
+`lastModified`) to `FlowStage`, so the watcher emits on every write, not only on a new stage. The renderer's `LibrettoFlow`
 turns Spec, Plan and Checklist into buttons that open `DocumentView`, which re-reads on the
 existing `flow.onChange` signal and renders through `markdown.tsx`.
 
@@ -116,15 +130,19 @@ lint, test. No new dependency.
 
 ### The approach
 
-- Sections: `Spec` = text before the first `^## Approach`; `Plan` = from `## Approach` to the next
-  `^## ` heading that is not inside it (i.e. up to `## Checklist` or the end); `Checklist` = from
-  `## Checklist` to the end. A stage is a button only when its section is non-empty.
+- Sections: split on level-2 headings outside code fences (`^##\s+(\S.*)$`): `Spec` = everything
+  before `Approach`; `Plan` = the `Approach` section; `Checklist` = the `Checklist` section. Which
+  stage is a button comes from the stage (F1–F5), not from the text.
 - Name check: `/^(proposal|spec-[a-z0-9-]+)\.md$/` and the resolved path's parent equals the
   change folder.
-- Atomic write: `writeFile(<file>.atril-tmp)` then `rename`.
-- Live: `DocumentView` re-reads docs whenever `flow.onChange` fires for its workspace (the watcher
-  already fires on any file change in the change folder, F8); while editing it does not replace
-  the person's text.
+- Atomic write: `writeFile(.<name>.atril-tmp)` in the same folder, then `rename` (same device, so
+  atomic). Ceiling named: a crash between the two leaves the hidden temp file, which only nudges
+  F12's "most recent change" until the next save removes it.
+- Live: `DocumentView` re-reads docs whenever `flow.onChange` fires for its workspace — which now
+  happens on every write thanks to `updatedAt`; while editing it does not replace the person's
+  text.
+- Wiring: the two handlers live in `src/main/index.ts` (workspaces' territory, as `atril:flow:get`
+  already does); their behaviour is flow-status's and proven by F16's test against `saveDoc`.
 - Markdown: line-based — `#`…`######` → heading elements, `- [ ]`/`- [x]` → a disabled checkbox
   and text, `- `/`* `/`1. ` → list items, fenced blocks → `<pre>`, `**x**` → `<b>`; every piece is a
   React text node.
@@ -142,7 +160,8 @@ lint, test. No new dependency.
 
 | Risk | What catches it |
 |---|---|
-| The agent starts writing between Editar and Guardar | the mtime check refuses the save (F16) |
+| The agent starts writing between Editar and Guardar | the fresh state read and the mtime check refuse the save (F16) |
+| A needs-you from a mid-turn permission prompt allows an edit the agent never re-reads | accepted: the edit is on disk for Libretto's next read; the person can say so in the terminal |
 | A crafted name escapes the folder (`../`, absolute) | the name pattern plus the parent-folder check (F16 proof uses both) |
 | A huge file freezes the view | ceiling named: no cap; Libretto documents are a few hundred lines |
 
