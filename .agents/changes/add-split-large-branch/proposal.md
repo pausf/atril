@@ -18,5 +18,8 @@ at its next stop it should ask the person whether to split the work into chained
 with its question tool, which W44 already turns into «te necesita» and a Mac notification. The
 «Cambios» section shows the total and turns orange past the threshold.
 
-To verify at spec time, not assumed: that a Claude Code `PostToolUse` hook can hand Claude extra
-context (`hookSpecificOutput.additionalContext`), and how often a hook may do it.
+Verified 9 nov against https://code.claude.com/docs/en/hooks: a `PostToolUse` hook may print
+`{"hookSpecificOutput": {"hookEventName": "PostToolUse", "additionalContext": "..."}}`; «Claude
+Code wraps the string in a system reminder and inserts it into the conversation at the point
+where the hook fired. Claude reads the reminder on the next model request». Strings are capped at
+10,000 characters. How often to say it is Atril's choice: once per threshold crossed.
