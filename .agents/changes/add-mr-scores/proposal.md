@@ -53,6 +53,14 @@ subscription explains review difficulty, risk, «qué hace» and «por qué». N
 - Q: ¿Qué decide y qué explica? → A: lo determinista (tamaño, archivos, tests) se calcula sin IA y va primero; Sonnet da dificultad y riesgo de 1 a 5, qué hace, por qué y dónde mirar (assumed).
 - Q: ¿Cómo se llama a Claude? → A: verificado 9 nov con Claude Code 2.1.319: `claude -p --model sonnet --output-format json --tools "" --no-session-persistence --json-schema <schema> "<instrucción>"`, el diff por stdin; la respuesta trae `structured_output` (assumed para el resto de flags).
 
+- Q: (spec-reviewer) ¿Dueño de `scores.ts` y del runner? → A: `mr` gobierna `src/main/forge/scores.ts`; el runner con stdin y tiempo máximo es de workspaces (W53) (assumed).
+- Q: (spec-reviewer) ¿Qué es un archivo de test? → A: un segmento `test`, `tests`, `spec`, `specs` o `__tests__`, o un nombre `*.test.*`, `*.spec.*`, `*_test.*` o `*Test.php|java|kt|cs`; sin distinguir mayúsculas (assumed).
+- Q: (spec-reviewer) ¿Qué diff da cada forja? → A: GitHub el texto de `pulls/{n}` con `Accept: application/vnd.github.diff` (un 406 es «demasiado grande»); GitLab `/diffs?per_page=100` hasta 10 páginas, montado en un diff unificado con cabeceras `diff --git`/`---`/`+++`; los archivos que GitLab recorta cuentan con nota (assumed).
+- Q: (spec-reviewer) ¿Y si no llega el diff, o Claude se cuelga? → A: los textos de M6, nada guardado; Claude tiene 180 s y se mata; `{detail}` es un código, nunca stderr (assumed).
+- Q: (spec-reviewer) ¿Qué commit se guarda? → A: el del diff puntuado (GitHub lo lee de `pulls/{n}` al puntuar; GitLab lo trae la lista); una fila sin commit conocido no muestra «anterior» (assumed).
+- Q: (spec-reviewer) ¿Doble clic? → A: la misma puntuación en curso, sin otra llamada (assumed).
+- Q: (spec-reviewer) ¿Puntuación guardada tras cambiar de idioma? → A: se muestra en el idioma en que se hizo (assumed).
+
 ## Outcomes
 
 - Rows in **Mías** and **Me toca revisar** offer **Puntuar**. Scoring shows, first, what Atril
@@ -89,39 +97,56 @@ stores nothing.
 
 ## Verification criteria
 
-- **M10** Atril shall measure from the diff alone the added and removed lines, the files, whether
-  any test file changed (a path with `test`, `spec` or `__tests__`), and a size of S below 100
-  changed lines, M below 400, L below 1000 and XL from 1000.
+- **M10** Atril shall measure from the diff alone the added and removed lines (header lines excluded),
+  the files, whether a test file changed — a path segment `test`, `tests`, `spec`, `specs` or
+  `__tests__`, or a name `*.test.*`, `*.spec.*`, `*_test.*` or `*Test.{php,java,kt,cs}`, ignoring
+  case, so `latest.ts` is not one — and a size of S below 100 changed lines, M below 400, L below 1000
+  and XL from 1000.
   Proof: src/main/forge/scores.test.ts metrics come from the diff alone
-- **M11** When the person asks to score an MR, Atril shall run `claude` with exactly `-p --model
-  sonnet --output-format json --tools "" --no-session-persistence --json-schema <schema>` and the
-  instruction, send the diff on stdin cut at 120 KB with a note when cut, and take difficulty,
-  risk, what, why and where from `structured_output`; if Claude fails or answers outside the
-  schema, Atril shall say «Claude no ha podido puntuar esta MR ({detail})» and store nothing.
+- **M11** When an MR is scored, Atril shall run `claude` with exactly `-p --model sonnet
+  --output-format json --tools "" --no-session-persistence --json-schema <schema>` and an instruction
+  that names the person's language, send the diff on stdin — cut at 120 KB (UTF-8 bytes) at the last
+  file boundary before it, with a line telling Claude it was cut — and take difficulty, risk, what,
+  why and where from `structured_output`.
   Proof: src/main/forge/scores.test.ts scoring runs claude with no tools and the diff on stdin
-- **M12** Only rows in Mías and Me toca revisar shall offer Puntuar, and main shall score only an URL
-  in those two lists of its latest listing.
+- **M16** If the diff cannot be fetched, then Atril shall show «No se ha podido traer el diff:
+  {detail}» with M6's texts as the detail (and «es demasiado grande para {forge}» on GitHub's 406);
+  if Claude exits non-zero, runs past 180 s (then it is killed) or answers outside the schema, Atril
+  shall show «Claude no ha podido puntuar esta MR ({detail})» with the exit code, «tiempo agotado» or
+  «respuesta fuera del esquema» — never its output — and in both cases store nothing.
+  Proof: src/main/forge/scores.test.ts failures store nothing and say why
+- **M12** Only rows in Mías and Me toca revisar shall offer Puntuar.
   Proof: src/renderer/mr/scores.test.ts only mine and to review can be scored
-- **M13** A score shall be stored per MR and head commit; asking again for the same commit shall
-  not run Claude, and a listing whose head commit differs shall show the stored score as «De un
-  commit anterior» with Puntuar de nuevo.
+- **M17** Main shall score only an URL that is in Mías or Me toca revisar of its latest listing, checked
+  when asked; anything else shall be refused without fetching or running anything.
+  Proof: src/main/forge/scores.test.ts only listed mine and review urls are scored
+- **M13** A score shall be stored with the head commit of the diff it scored; asking again for that
+  commit shall not run Claude, and a row whose listed head commit is known and differs shall show the
+  stored score as «De un commit anterior» with Puntuar de nuevo.
   Proof: src/main/forge/scores.test.ts a score is kept per commit
-- **M14** Atril shall run at most one score at a time and the rest in the order asked.
+  Proof: src/renderer/mr/scores.test.ts the score view puts the measures first
+- **M14** Atril shall run at most one score at a time, the rest in the order asked; asking again for an
+  URL already queued or running shall return that same run.
   Proof: src/main/forge/scores.test.ts scores run one at a time
-- **M15** The score view shall show the measured values first and Claude's below, Claude answering
-  in the person's language.
+- **M15** The score view shall show the measured values first, then Claude's, and when the diff was
+  cut say «Claude vio {seen} de {total} KB»; each row's state shall read «En cola», «Puntuando…», its
+  chips, or an error.
   Proof: src/renderer/mr/scores.test.ts the score view puts the measures first
 
 ## Approach
 
 ### Summary
 
-`src/main/forge/scores.ts`: `fetchDiff(store, item)` (GitHub `GET /repos/{o}/{r}/pulls/{n}` with
-`Accept: application/vnd.github.diff`, GitLab `GET /projects/:id/merge_requests/:iid/diffs`
-joined into one unified diff), `metrics(diff)`, `scoreWithClaude(diff, metrics, lang, run)`, a
+`src/main/forge/scores.ts`: `fetchDiff(store, ref)` — GitHub: `GET /repos/{o}/{r}/pulls/{n}` (JSON,
+for `head.sha`) then the same URL with `Accept: application/vnd.github.diff` read as text; GitLab:
+`GET /projects/:id/merge_requests/:iid/diffs?per_page=100&page=N` for N ≤ 10, each file rendered as
+`diff --git a/<old> b/<new>` + `--- a/<old>` + `+++ b/<new>` + its hunks, `too_large`/`collapsed`
+files noted; the head is the listing's `sha` —, `metrics(diff)`, `scoreWithClaude(diff, metrics, lang, run)`, a
 JSON cache in `$ATRIL_HOME/scores/<sha256(url)>.json` holding `{ head, metrics, ai, at }`, and a
-promise queue. `listMrs` adds each row's head commit (`head.sha` / `sha`) so the window can tell
-a stale score. IPC `atril:mr:score(url)` and `atril:mr:scoreOf(url)`. The renderer adds the
+promise queue that dedupes by URL. `listMrs` adds each row's head when known (GitLab `sha`, GitHub
+`head.sha` from the detail call) and keeps, in the guards module, the URLs of Mías and Me toca revisar
+(M17). IPC `atril:mr:score(url)` (queues, returns when done) and `atril:mr:scoreOf(urls)` (state per
+URL); main sends `atril:mr:score-changed` when a state changes. The renderer adds the
 Puntuar button, the chips and a score modal.
 
 ### Technical context
@@ -136,7 +161,8 @@ Files: `src/main/forge/scores.ts` (+test), `src/main/forge/mrs.ts` (head commit,
   `additionalProperties: false`; answers outside it are a failure (M11).
 - Instruction: names the language (`es`/`en`), says the measured values decide size and that
   Claude explains, and asks for review difficulty and risk with reasons.
-- The runner's `input` is written to the child's stdin and closed; no shell.
+- The runner (W53): `input` written to the child's stdin and closed; `timeoutMs` kills the child with
+  SIGKILL and resolves with code 124.
 - Queue: a single promise chain in main; the window shows «En cola» and «Puntuando…».
 
 ### The alternatives it beat
@@ -166,5 +192,6 @@ M10–M15 seen red first. Rollback: one revert; cached scores are plain files.
 
 ## Checklist
 
-- [ ] main: diff per forge, metrics, the Claude call, cache by commit, one-at-a-time queue, scoring only mine and to review · Closes: M10, M11, M12, M13, M14
-- [ ] the window: Puntuar on the right rows, the chips, the score view, stale marker · waits on box 1 · Closes: M12, M13, M15
+- [ ] the runner's stdin and timeout · Closes: W53
+- [ ] main: head in the listing and the scorable set, diff per forge, metrics, the Claude call, failures, cache by commit, the deduping queue · waits on box 1 · Closes: M10, M11, M13, M14, M16, M17
+- [ ] the window: Puntuar on the right rows, states, chips, the score view, stale marker · waits on box 2 · Closes: M12, M13, M15
