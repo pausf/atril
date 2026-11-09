@@ -32,6 +32,7 @@ person picks it.
 - Q: (spec-reviewer) ¿Borrar el token de Jira olvida el tablero? → A: sí; Reemplazar lo conserva (assumed).
 - Q: (spec-reviewer) ¿Dónde vive la búsqueda de tableros y cómo se busca? → A: `src/main/credentials/boards.ts`; desde 2 letras, 300 ms tras dejar de escribir, «Ningún tablero coincide» si no hay resultados (assumed).
 - Q: ¿Qué tareas salen? → A: «solo debería salir las tareas que me estén asignadas a mí. a desarrollar utilizaremos cualquiera, pero cuando esté el producto final solamente tiene que salir las que están relacionadas a mí» — el tablero solo da las columnas; las tareas son siempre las asignadas a quien tiene el token; los datos inventados solo existen en las capturas de desarrollo y nunca en la app empaquetada.
+- Q: (work-reviewer) ¿«primera columna» es la del tablero aunque esté vacía? → A: sí, la primera columna del tablero; vacía significa nada por empezar (assumed).
 - Q: ¿Sin tablero elegido? → A: la agrupación actual por categoría, con un aviso «Elige tu tablero en Ajustes para ver sus columnas» (assumed).
 
 ## Outcomes
@@ -162,4 +163,4 @@ None.
 
 ## Checklist
 
-- [x] board columns: Ajustes board picker (search in credentials/boards.ts, stored beside the account, forgotten on Borrar); the inbox grouped by the picked board's columns with «Fuera del tablero» last and folded, the category groups + pick notice without a board, the category groups + failure notice when the board cannot be read, the sidebar summary from the columns, the board id validated · Closes: I13, I14, I15, I16, I17, I18, I19, S9
+- [x] board columns: Ajustes board picker (search in credentials/boards.ts, stored beside the account, forgotten on Borrar); the inbox grouped by the picked board's columns with «Fuera del tablero» last and folded, the category groups + pick notice without a board, the category groups + failure notice when the board cannot be read, the sidebar summary from the columns, the board id validated · Closes: I13, I14, I15, I16, I17, I18, I19, S9, S10

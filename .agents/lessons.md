@@ -22,3 +22,9 @@ Question raised: claude-hook.sh resolves its session with `tmux display -p '#S'`
 
 ## 2026-11-09 · add-atril-core · 8
 The landing commit went in with one red test: the gate ran inside a `&&` chain whose last command (`rg`) returned 0 whatever the test said. Cause of the red: every test file shared one temp ATRIL_CLAUDE_JSON, and a parallel Start test wrote a trust entry into it. Fixed: a vitest setup file gives each test file its own path; full suite green 3 runs in a row. Lesson: read the gate's own exit code before committing, never a filter's.
+
+## 2026-11-09 · use-jira-board-columns · 6→7
+Reviewer found nothing against the contract; raised that S9's proof mocks IPC so it cannot show the board kept on Reemplazar / forgotten on Borrar. Fixed: split into S10 citing the main-side store test that already proved it.
+
+## 2026-11-09 · use-jira-board-columns · 6→7
+Reviewer asked whether I17's "first column" is the board's first column even when empty. Answered (assumed): yes — an empty first column means nothing to start. No code change.

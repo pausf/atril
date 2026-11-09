@@ -30,6 +30,8 @@ Vocabulary, decision log and the primary contract: `proposal.md` beside this fil
 ## Verification criteria
 
 - **S9** When the person searches and picks a board in Ajustes, Atril shall store its id and
-  name, show it on the Jira card, keep it when the token is replaced, and forget it when the
-  token is deleted.
+  name, and show it on the Jira card.
   Proof: src/renderer/settings/settings.test.ts picks a board and keeps it
+- **S10** When the Jira token is replaced, Atril shall keep the picked board; when it is
+  deleted, Atril shall forget the board too.
+  Proof: src/main/credentials/store.test.ts board survives replacing the token and is forgotten on delete
