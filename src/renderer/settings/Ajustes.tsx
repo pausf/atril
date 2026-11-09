@@ -1,7 +1,93 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
-import type { JiraSettingsStatus } from '../../preload/api'
+import type { BoardSearchResult, JiraBoard, JiraSettingsStatus } from '../../preload/api'
 
 type Phase = 'idle' | 'checking'
+
+const MIN_LETTERS = 2
+const DEBOUNCE_MS = 300
+
+function BoardField({ board, onPicked }: { board?: JiraBoard; onPicked: () => Promise<void> }) {
+  const [changing, setChanging] = useState(!board)
+  const [query, setQuery] = useState('')
+  const [found, setFound] = useState<BoardSearchResult | null>(null)
+
+  useEffect(() => {
+    const q = query.trim()
+    if (q.length < MIN_LETTERS) {
+      setFound(null)
+      return
+    }
+    let live = true
+    const t = setTimeout(() => {
+      window.atril.settings.jira.searchBoards(q).then(
+        (r) => live && setFound(r),
+        () => live && setFound({ error: 'No se pudo buscar tableros.' })
+      )
+    }, DEBOUNCE_MS)
+    return () => {
+      live = false
+      clearTimeout(t)
+    }
+  }, [query])
+
+  const pick = async (b: JiraBoard): Promise<void> => {
+    const r = await window.atril.settings.jira.pickBoard({ id: b.id, name: b.name })
+    if ('error' in r) {
+      setFound(r)
+      return
+    }
+    setChanging(false)
+    setQuery('')
+    setFound(null)
+    await onPicked()
+  }
+
+  if (board && !changing)
+    return (
+      <div className="board-field">
+        <span>Tablero: {board.name}</span>
+        <button className="btn" onClick={() => setChanging(true)}>
+          Cambiar
+        </button>
+      </div>
+    )
+  return (
+    <div className="board-field">
+      <div className="srow">
+        <label htmlFor="jira-board">Tablero</label>
+        <input
+          id="jira-board"
+          type="search"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Busca por nombre"
+          autoComplete="off"
+          spellCheck={false}
+        />
+      </div>
+      {found && 'error' in found && (
+        <div className="serr" role="alert">
+          ✕ {found.error}
+        </div>
+      )}
+      {found && Array.isArray(found) && found.length === 0 && <div className="lockn">Ningún tablero coincide</div>}
+      {found && Array.isArray(found) && found.length > 0 && (
+        <ul className="board-list">
+          {found.map((b) => (
+            <li key={b.id}>
+              <button onClick={() => void pick(b)}>{b.name}</button> <span className="lockn">{b.type}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+      {board && (
+        <button className="btn" onClick={() => setChanging(false)}>
+          Mantener {board.name}
+        </button>
+      )}
+    </div>
+  )
+}
 
 function JiraCard() {
   const [status, setStatus] = useState<JiraSettingsStatus | null>(null)
@@ -84,6 +170,7 @@ function JiraCard() {
           <div className="lockn">
             El token no se muestra nunca. Si lo pierdes, crea uno nuevo en Atlassian y pulsa Reemplazar.
           </div>
+          <BoardField key={status.board?.id ?? 'none'} board={status.board} onPicked={refresh} />
         </>
       )}
       {showForm && (

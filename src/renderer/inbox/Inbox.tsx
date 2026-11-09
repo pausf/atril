@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useContext, useEffect, useRef, useState } from 'react'
 import type { InboxResult, JiraIssue, WorkspaceView } from '../../preload/api'
 import { ConnectInSettings } from '../settings/ConnectInSettings'
+import { NavigationContext } from '../settings/navigation'
 import { FoldSection } from '../components/Fold'
 import { Icon } from '../components/Icon'
 import { StartDialog } from './StartDialog'
@@ -53,9 +54,11 @@ export function Inbox({ inbox, onStarted, onOpenWorkspace }: InboxProps) {
   const { result, issues, loading, refresh } = inbox
   const [starting, setStarting] = useState<JiraIssue | null>(null)
   // ponytail: dev-only, ATRIL_SNAPSHOT_VIEW=start opens the dialog on a fake issue so it can be photographed without Jira.
+  // A board picked in Ajustes must show up the next time Tareas opens, not five minutes later.
+  useEffect(() => void refresh(), [refresh])
   useEffect(() => {
     void window.atril.snapshotView().then((v) => {
-      if (v === 'start') setStarting({ key: 'PF-4870', summary: 'Filtro de laboratorios en el listado', type: 'Story', status: 'To Do', project: 'PF', components: [], group: 'todo' })
+      if (v === 'start') setStarting({ key: 'PF-4870', summary: 'Filtro de laboratorios en el listado', type: 'Story', status: 'To Do', statusId: '2', project: 'PF', components: [], group: 'todo' })
     })
   }, [])
   return (
@@ -87,12 +90,17 @@ export function Inbox({ inbox, onStarted, onOpenWorkspace }: InboxProps) {
 }
 
 export function JiraSummary({ inbox, onOpen }: { inbox: InboxState; onOpen: () => void }) {
+  const groups = inbox.result && 'groups' in inbox.result ? inbox.result.groups : []
+  const board = groups.some((g) => g.id.startsWith('col-'))
   const count = (g: JiraIssue['group']): number => inbox.issues.filter((i) => i.group === g).length
+  // With a board, its first column is "por empezar" and the other columns "en curso"; «Fuera del tablero» is neither.
+  const inColumns = (first: boolean): number =>
+    groups.filter((g) => g.id.startsWith('col-') && (g.id === 'col-0') === first).reduce((n, g) => n + g.keys.length, 0)
   const label = !inbox.result
     ? 'Jira: cargando…'
     : 'error' in inbox.result
       ? 'Jira: sin conectar'
-      : `Jira: ${count('doing')} en curso · ${count('todo')} por empezar`
+      : board ? `Jira: ${inColumns(false)} en curso · ${inColumns(true)} por empezar` : `Jira: ${count('doing')} en curso · ${count('todo')} por empezar`
   return (
     <button className="jira-summary" onClick={onOpen}>
       <Icon name="ticket" size={18} />
@@ -107,6 +115,7 @@ interface TaskActions {
 }
 
 function Body({ result, issues, onStart, onOpenWorkspace }: { result: InboxResult | null; issues: JiraIssue[] } & TaskActions) {
+  const { openSettings } = useContext(NavigationContext)
   if (!result) return <div className="empty">Cargando tus Jira…</div>
   if ('error' in result) {
     return (
@@ -123,25 +132,30 @@ function Body({ result, issues, onStart, onOpenWorkspace }: { result: InboxResul
     )
   }
   if (issues.length === 0) return <div className="empty">No tienes tareas abiertas.</div>
+  const byKey = new Map(issues.map((i) => [i.key, i]))
   return (
     <>
-      {GROUPS.map(([group, title, folded]) => {
-        const list = issues.filter((i) => i.group === group)
-        return list.length === 0 ? null : (
-          <FoldSection key={group} id={`tasks-${group}`} title={title} count={list.length} defaultFolded={folded} className="tgroup">
-            {list.map((i) => <Task key={i.key} i={i} onStart={onStart} onOpenWorkspace={onOpenWorkspace} />)}
-          </FoldSection>
-        )
-      })}
+      {result.notice && (
+        <p className="notice" role="status">
+          {result.notice.text}
+          {result.notice.settings && (
+            <>
+              {' '}
+              <button className="linklike" onClick={openSettings}>
+                Ajustes
+              </button>
+            </>
+          )}
+        </p>
+      )}
+      {result.groups.map((g) => (
+        <FoldSection key={g.id} id={`tasks-${g.id}`} title={g.title} count={g.keys.length} defaultFolded={g.folded} className="tgroup">
+          {g.keys.map((k) => byKey.get(k)).filter((i): i is JiraIssue => !!i).map((i) => <Task key={i.key} i={i} onStart={onStart} onOpenWorkspace={onOpenWorkspace} />)}
+        </FoldSection>
+      ))}
     </>
   )
 }
-
-const GROUPS: ReadonlyArray<[JiraIssue['group'], string, boolean]> = [
-  ['todo', 'Por empezar', false],
-  ['doing', 'En curso', false],
-  ['review', 'En revisión y despliegue', true]
-]
 
 function Task({ i, onStart, onOpenWorkspace }: { i: JiraIssue } & TaskActions) {
   return (

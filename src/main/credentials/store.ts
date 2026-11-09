@@ -15,6 +15,7 @@ export interface SecretStatus {
   site?: string
   /** data: URL of the account picture; not secret. */
   avatar?: string
+  board?: { id: number; name: string }
 }
 
 export type SaveResult = { ok: true } | { error: string }
@@ -24,6 +25,7 @@ interface Entry {
   account?: string
   site?: string
   avatar?: string
+  board?: { id: number; name: string }
 }
 
 const file = (): string => join(process.env['ATRIL_HOME'] ?? join(homedir(), '.atril'), 'secrets.bin')
@@ -51,7 +53,7 @@ export function createSecretStore(enc: Encryptor) {
     async saveSecret(
       service: string,
       fields: Record<string, string>,
-      meta: { account?: string; site?: string; avatar?: string } = {}
+      meta: Omit<Entry, 'cipher'> = {}
     ): Promise<SaveResult> {
       if (!enc.isAvailable())
         return { error: 'El Llavero de macOS no está disponible: Atril no guarda tokens sin cifrarlos.' }
@@ -63,7 +65,18 @@ export function createSecretStore(enc: Encryptor) {
 
     async hasSecret(service: string): Promise<SecretStatus> {
       const e = (await readAll())[service]
-      return e ? { saved: true, account: e.account, site: e.site, avatar: e.avatar } : { saved: false }
+      return e ? { saved: true, account: e.account, site: e.site, avatar: e.avatar, board: e.board } : { saved: false }
+    },
+
+    /** Non-secret metadata only; the ciphertext is untouched. Returns false when nothing is saved. */
+    async setBoard(service: string, board: { id: number; name: string } | null): Promise<boolean> {
+      const all = await readAll()
+      const e = all[service]
+      if (!e) return false
+      if (board) e.board = board
+      else delete e.board
+      await writeAll(all)
+      return true
     },
 
     async deleteSecret(service: string): Promise<void> {

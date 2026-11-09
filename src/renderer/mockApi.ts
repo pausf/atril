@@ -19,6 +19,7 @@ export const issue = (key: string, group: JiraIssue['group'], summary = `Resumen
   summary,
   type: 'Story',
   status: group === 'todo' ? 'To Do' : group === 'doing' ? 'In Progress' : 'Code Review',
+  statusId: group,
   project: 'PF',
   components: [],
   group
@@ -58,7 +59,14 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
     doctor: async () => [],
     workspaces: { list: async () => o.workspaces ?? [] },
     repos: { list: async () => o.repos ?? [] },
-    jira: { inbox: async () => ({ issues: o.issues ?? [] }) },
+    jira: {
+      inbox: async () => {
+        const issues = o.issues ?? []
+        const titles = { todo: 'Por empezar', doing: 'En curso', review: 'En revisión y despliegue' }
+        const groups = (['todo', 'doing', 'review'] as const).map((id) => ({ id, title: titles[id], folded: id === 'review', keys: issues.filter((i) => i.group === id).map((i) => i.key) }))
+        return { issues, groups: groups.filter((g) => g.keys.length > 0) }
+      }
+    },
     settings: { jira: { status: async () => ({ saved: true, account: 'Pau Sánchez', site: 'https://x.atlassian.net' }) } },
     status: {
       list: async () => o.states ?? {},

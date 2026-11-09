@@ -54,6 +54,8 @@ function Shell() {
   useEffect(() => {
     void window.atril.snapshotView().then((v) => {
       if (v === 'settings' || v === 'tasks') setScreen(v)
+      if (v === 'tasks-board') setScreen('tasks')
+      if (v === 'settings-board') setScreen('settings')
       if (v === 'start') setScreen('tasks')
       const at = /^tour(\d+)$/.exec(v ?? '')
       if (at) setTourStart(Number(at[1]))

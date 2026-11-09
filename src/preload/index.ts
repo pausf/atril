@@ -51,7 +51,9 @@ const api: AtrilApi = {
     jira: {
       status: () => ipcRenderer.invoke('atril:settings:jira:status'),
       save: (creds) => ipcRenderer.invoke('atril:settings:jira:save', creds),
-      delete: () => ipcRenderer.invoke('atril:settings:jira:delete')
+      delete: () => ipcRenderer.invoke('atril:settings:jira:delete'),
+      searchBoards: (query) => ipcRenderer.invoke('atril:settings:jira:searchBoards', query),
+      pickBoard: (board) => ipcRenderer.invoke('atril:settings:jira:pickBoard', board)
     },
     openTokenPage: () => ipcRenderer.invoke('atril:settings:openTokenPage')
   },

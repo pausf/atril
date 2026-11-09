@@ -56,4 +56,21 @@ describe('secret store', () => {
     expect(written).not.toContain(TOKEN)
     for (const spy of logs) expect(JSON.stringify(spy.mock.calls)).not.toContain(TOKEN)
   })
+
+  it('board survives replacing the token and is forgotten on delete', async () => {
+    const jira = jiraSettings(createSecretStore(enc()), (async () => new Response(JSON.stringify({ displayName: 'Ana' }), { status: 200 })) as typeof fetch)
+    const creds = { site: 'https://x.atlassian.net', email: 'a@b.c', token: TOKEN }
+    await jira.save(creds)
+    expect(await jira.pickBoard({ id: 7, name: 'TEAM' })).toEqual({ ok: true })
+    expect((await jira.status()).board).toEqual({ id: 7, name: 'TEAM' })
+
+    await jira.save({ ...creds, token: 'another-token' })
+    expect((await jira.status()).board).toEqual({ id: 7, name: 'TEAM' })
+    expect(await readFile(join(home, 'secrets.bin'), 'utf8')).not.toContain(TOKEN)
+
+    expect(await jira.pickBoard({ id: 0, name: 'x' })).toHaveProperty('error')
+    await jira.delete()
+    await jira.save(creds)
+    expect((await jira.status()).board).toBeUndefined()
+  })
 })

@@ -5,12 +5,14 @@ import { writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { createSecretStore } from './credentials/store'
 import { jiraSettings } from './credentials/jira'
+import { searchBoards } from './credentials/boards'
 import type { JiraCreds } from './credentials/check'
 import { doctor } from './doctor'
 import type { Mode } from '../preload/api'
 import { readInbox } from './jira/inbox'
+import { inboxGroups } from './jira/board'
 import { proposeStart, start } from './jira/start'
-import type { JiraIssue, Model, StartIssue, StartRequest } from '../preload/api'
+import type { InboxGroup, JiraIssue, Model, StartIssue, StartRequest } from '../preload/api'
 import { listRepos, registerRepo, setOverride } from './repos'
 import * as pty from './pty'
 import { run } from './run'
@@ -36,11 +38,18 @@ function fakeIssues(): JiraIssue[] {
       summary: i % 3 === 0 ? 'Filtro de laboratorios en el listado de categoría con paginación y orden por precio' : 'Corregir el cálculo del envío',
       type: i % 4 === 1 ? 'Bug' : 'Story',
       status: status[group],
+      statusId: String(i),
       project: 'APP',
       components: [],
       group
     }
   })
+}
+
+// ponytail: dev-only fake board for ATRIL_SNAPSHOT_VIEW=tasks-board; status ids are the fake issue indexes.
+function fakeBoardGroups(): InboxGroup[] {
+  const cols: Array<[string, number, number]> = [['Backlog', 0, 4], ['To Do', 4, 10], ['In Progress', 10, 18], ['Code Review', 18, 21], ['Testing', 21, 23], ['Ready to Deploy', 23, 24]]
+  return cols.map(([title, from, to], n) => ({ id: `col-${n}`, title, folded: false, keys: Array.from({ length: to - from }, (_, k) => `APP-${4800 + from + k}`) }))
 }
 
 function createWindow(): void {
@@ -105,11 +114,23 @@ app.whenReady().then(() => {
     decrypt: (b) => safeStorage.decryptString(b)
   })
   const jiraCreds = jiraSettings(secretStore)
-  ipcMain.handle('atril:settings:jira:status', () => jiraCreds.status())
+  // ponytail: dev-only, ATRIL_SNAPSHOT_VIEW=settings-board photographs the Jira card with a picked board.
+  ipcMain.handle('atril:settings:jira:status', () =>
+    SNAPSHOT && process.env['ATRIL_SNAPSHOT_VIEW'] === 'settings-board'
+      ? { saved: true, account: 'Pau Sánchez', site: 'https://shop.atlassian.net', board: { id: 7, name: 'TEAM' } }
+      : jiraCreds.status()
+  )
   ipcMain.handle('atril:settings:jira:save', (_e, creds: { site: string; email: string; token: string }) =>
     jiraCreds.save({ site: String(creds.site), email: String(creds.email), token: String(creds.token) })
   )
   ipcMain.handle('atril:settings:jira:delete', () => jiraCreds.delete())
+  ipcMain.handle('atril:settings:jira:searchBoards', async (_e, query: unknown) => {
+    const creds = await savedJira()
+    return creds ? searchBoards(creds, String(query).trim(), fetch) : { error: 'Conecta Jira en Ajustes.' }
+  })
+  ipcMain.handle('atril:settings:jira:pickBoard', (_e, board: { id: unknown; name: unknown } | null) =>
+    jiraCreds.pickBoard(board && { id: Number(board.id), name: String(board.name) })
+  )
   ipcMain.handle('atril:settings:openTokenPage', () =>
     shell.openExternal('https://id.atlassian.com/manage-profile/security/api-tokens')
   )
@@ -117,11 +138,18 @@ app.whenReady().then(() => {
     const c = await secretStore.readSecret('jira').catch(() => null)
     return c?.['site'] && c['email'] && c['token'] ? (c as unknown as JiraCreds) : null
   }
-  ipcMain.handle('atril:jira:inbox', async () =>
-    // ponytail: dev-only, ATRIL_SNAPSHOT_VIEW=tasks|tour|tourN (N = step) photographs a believable list without Jira.
-    SNAPSHOT && /^(tasks|tour)/.test(process.env['ATRIL_SNAPSHOT_VIEW'] ?? '')
-      ? { issues: fakeIssues() }
-      : readInbox(await savedJira(), fetch, await listWorkspaces(run)))
+  ipcMain.handle('atril:jira:inbox', async () => {
+    // ponytail: dev-only, ATRIL_SNAPSHOT_VIEW=tasks|tasks-board|tour|tourN (N = step) photographs a believable list without Jira.
+    const view = process.env['ATRIL_SNAPSHOT_VIEW'] ?? ''
+    if (SNAPSHOT && /^(tasks|tour)/.test(view)) {
+      const issues = fakeIssues()
+      return view === 'tasks-board'
+        ? { issues, groups: fakeBoardGroups() }
+        : { issues, ...(await inboxGroups({ site: '', email: '', token: '' }, null, issues)) }
+    }
+    const creds = await savedJira()
+    return readInbox(creds, fetch, await listWorkspaces(run), (await secretStore.hasSecret('jira')).board)
+  })
   ipcMain.handle('atril:jira:proposeStart', (_e, issue: StartIssue, repoId?: string, model?: Model) =>
     proposeStart(issue, { repoId, model }, run)
   )

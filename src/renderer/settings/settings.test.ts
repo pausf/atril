@@ -11,12 +11,14 @@ import { NavigationContext } from './navigation'
 
 const TOKEN = 'ATATT-super-secret-token'
 
-function mockApi(status: { saved: boolean; account?: string; site?: string; avatar?: string }) {
+function mockApi(status: { saved: boolean; account?: string; site?: string; avatar?: string; board?: { id: number; name: string } }) {
   const settings = {
     jira: {
       status: vi.fn().mockResolvedValue(status),
       save: vi.fn().mockResolvedValue({ account: 'Pau Sánchez' }),
-      delete: vi.fn().mockResolvedValue(undefined)
+      delete: vi.fn().mockResolvedValue(undefined),
+      searchBoards: vi.fn().mockResolvedValue([]),
+      pickBoard: vi.fn().mockResolvedValue({ ok: true })
     },
     openTokenPage: vi.fn().mockResolvedValue(undefined)
   }
@@ -42,7 +44,8 @@ describe('settings screen', () => {
     await screen.findByText(/Guardado/)
     expect(document.body.innerHTML).not.toContain(TOKEN)
     expect(screen.queryAllByDisplayValue(TOKEN)).toHaveLength(0)
-    expect(document.querySelectorAll('input')).toHaveLength(0)
+    // The saved card has no credential fields left; the board search is the only input.
+    expect(document.querySelectorAll('input:not(#jira-board)')).toHaveLength(0)
     expect(screen.getAllByRole('button').map((b) => b.textContent)).toEqual(['Reemplazar', 'Borrar'])
 
     await user.click(screen.getByRole('button', { name: 'Reemplazar' }))
@@ -73,6 +76,42 @@ describe('settings screen', () => {
     expect(api.openTokenPage).toHaveBeenCalledWith()
     expect(api.jira.save).not.toHaveBeenCalled()
     expect(api.jira.delete).not.toHaveBeenCalled()
+  })
+})
+
+describe('board picker', () => {
+  it('picks a board and keeps it', async () => {
+    const SAVED = { saved: true, account: 'Pau Sánchez', site: 'https://x.atlassian.net' }
+    const api = mockApi(SAVED)
+    api.jira.searchBoards.mockResolvedValue([
+      { id: 7, name: 'TEAM', type: 'kanban' },
+      { id: 9, name: 'TEAM legacy', type: 'scrum' }
+    ])
+    const user = userEvent.setup()
+    render(createElement(Ajustes))
+
+    // One letter is not a search; two letters are, once, after the typing stops.
+    await user.type(await screen.findByLabelText('Tablero'), 'd')
+    await new Promise((r) => setTimeout(r, 400))
+    expect(api.jira.searchBoards).not.toHaveBeenCalled()
+    await user.type(screen.getByLabelText('Tablero'), 'x')
+    const match = await screen.findByRole('button', { name: 'TEAM' })
+    expect(api.jira.searchBoards).toHaveBeenCalledTimes(1)
+    expect(api.jira.searchBoards).toHaveBeenCalledWith('dx')
+
+    api.jira.status.mockResolvedValue({ ...SAVED, board: { id: 7, name: 'TEAM' } })
+    await user.click(match)
+    expect(api.jira.pickBoard).toHaveBeenCalledWith({ id: 7, name: 'TEAM' })
+    expect(await screen.findByText('Tablero: TEAM')).toBeTruthy()
+
+    // Replacing the token and cancelling leaves the board where it was; Cambiar reopens the search.
+    await user.click(screen.getByRole('button', { name: 'Reemplazar' }))
+    await user.click(screen.getByRole('button', { name: 'Cancelar' }))
+    expect(screen.getByText('Tablero: TEAM')).toBeTruthy()
+    api.jira.searchBoards.mockResolvedValue([])
+    await user.click(screen.getByRole('button', { name: 'Cambiar' }))
+    await user.type(screen.getByLabelText('Tablero'), 'zzz')
+    expect(await screen.findByText('Ningún tablero coincide')).toBeTruthy()
   })
 })
 

@@ -162,4 +162,4 @@ None.
 
 ## Checklist
 
-- [ ] board columns: Ajustes board picker (search in credentials/boards.ts, stored beside the account, forgotten on Borrar); the inbox grouped by the picked board's columns with «Fuera del tablero» last and folded, the category groups + pick notice without a board, the category groups + failure notice when the board cannot be read, the sidebar summary from the columns, the board id validated · Closes: I13, I14, I15, I16, I17, I18, I19, S9
+- [x] board columns: Ajustes board picker (search in credentials/boards.ts, stored beside the account, forgotten on Borrar); the inbox grouped by the picked board's columns with «Fuera del tablero» last and folded, the category groups + pick notice without a board, the category groups + failure notice when the board cannot be read, the sidebar summary from the columns, the board id validated · Closes: I13, I14, I15, I16, I17, I18, I19, S9

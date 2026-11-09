@@ -78,6 +78,8 @@ export interface JiraIssue {
   summary: string
   type: string
   status: string
+  /** Jira's status id: what the picked board's columns list. */
+  statusId: string
   project: string
   components: string[]
   group: 'todo' | 'doing' | 'review'
@@ -111,8 +113,22 @@ export interface StartRequest extends StartIssue {
 /** The workspace stays open when only the Jira transition failed. */
 export type StartResult = { workspace: WorkspaceView; transitionError?: string } | { error: string }
 
+/** One section of Tareas: a board column or a status category, already ordered and filtered in main. */
+export interface InboxGroup {
+  id: string
+  title: string
+  folded: boolean
+  keys: string[]
+}
+
+export interface InboxNotice {
+  text: string
+  /** Shows a link that opens Ajustes. */
+  settings?: boolean
+}
+
 export type InboxResult =
-  | { issues: JiraIssue[] }
+  | { issues: JiraIssue[]; groups: InboxGroup[]; notice?: InboxNotice }
   | { error: 'unconfigured'; message?: string }
   | { error: 'failed'; message: string }
 
@@ -128,7 +144,15 @@ export interface JiraSettingsStatus {
   site?: string
   /** data: URL, fetched by main. */
   avatar?: string
+  board?: JiraBoard
 }
+
+export interface JiraBoard {
+  id: number
+  name: string
+}
+
+export type BoardSearchResult = Array<JiraBoard & { type: string }> | { error: string }
 
 export type JiraSaveResult = { account: string } | { error: string }
 
@@ -138,6 +162,9 @@ export interface SettingsApi {
     status(): Promise<JiraSettingsStatus>
     save(creds: { site: string; email: string; token: string }): Promise<JiraSaveResult>
     delete(): Promise<void>
+    searchBoards(query: string): Promise<BoardSearchResult>
+    /** null forgets the board. */
+    pickBoard(board: JiraBoard | null): Promise<{ ok: true } | { error: string }>
   }
   /** Opens Atlassian's API token page in the default browser; nothing else. */
   openTokenPage(): Promise<void>

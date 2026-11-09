@@ -13,7 +13,7 @@ const BODY = {
       fields: {
         summary: 'Fix the cart total',
         issuetype: { id: '10', name: 'Bug', subtask: false },
-        status: { name: 'In Progress', statusCategory: { key: 'indeterminate' } },
+        status: { id: '3', name: 'In Progress', statusCategory: { key: 'indeterminate' } },
         components: [{ name: 'checkout' }]
       }
     },
@@ -23,7 +23,7 @@ const BODY = {
       fields: {
         summary: 'Add a filter',
         issuetype: { id: '11', name: 'Story', subtask: false },
-        status: { name: 'To Do', statusCategory: { key: 'new' } },
+        status: { id: '2', name: 'To Do', statusCategory: { key: 'new' } },
         components: []
       }
     }
@@ -63,9 +63,14 @@ describe('inbox', () => {
     expect(r).toEqual({
       issues: [
         // Jira's order (updated DESC) is kept, not re-sorted by key.
-        { key: 'PF-2', summary: 'Fix the cart total', type: 'Bug', status: 'In Progress', project: 'PF', components: ['checkout'], group: 'doing' },
-        { key: 'PF-1', summary: 'Add a filter', type: 'Story', status: 'To Do', project: 'PF', components: [], group: 'todo' }
-      ]
+        { key: 'PF-2', summary: 'Fix the cart total', type: 'Bug', status: 'In Progress', statusId: '3', project: 'PF', components: ['checkout'], group: 'doing' },
+        { key: 'PF-1', summary: 'Add a filter', type: 'Story', status: 'To Do', statusId: '2', project: 'PF', components: [], group: 'todo' }
+      ],
+      groups: [
+        { id: 'todo', title: 'Por empezar', folded: false, keys: ['PF-1'] },
+        { id: 'doing', title: 'En curso', folded: false, keys: ['PF-2'] }
+      ],
+      notice: { text: 'Elige tu tablero en Ajustes para ver sus columnas', settings: true }
     })
   })
 
@@ -114,5 +119,22 @@ describe('inbox', () => {
     if (!('issues' in r)) throw new Error('no issues')
     expect(r.issues.find((i) => i.key === 'PF-1')?.workspaceId).toBe('ws1')
     expect(r.issues.find((i) => i.key === 'PF-2')).not.toHaveProperty('workspaceId')
+  })
+
+  it('only my tasks even with a board', async () => {
+    const urls: URL[] = []
+    const fetch = (async (u: URL | string) => {
+      const url = new URL(String(u))
+      urls.push(url)
+      return url.pathname.endsWith('/configuration')
+        ? json({ columnConfig: { columns: [{ name: 'To Do', statuses: [{ id: '1' }] }] } })
+        : json(BODY)
+    }) as typeof globalThis.fetch
+
+    await readInbox(CREDS, fetch, [], { id: 7, name: 'TEAM' })
+
+    // The board gives columns only: never its own issues, never anyone else's.
+    expect(urls.map((u) => u.pathname).sort()).toEqual(['/rest/agile/1.0/board/7/configuration', '/rest/api/3/search/jql'])
+    expect(urls.find((u) => u.pathname === '/rest/api/3/search/jql')?.searchParams.get('jql')).toMatch(/^assignee = currentUser\(\) AND/)
   })
 })

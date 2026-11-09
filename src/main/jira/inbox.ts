@@ -1,5 +1,6 @@
 import type { JiraCreds } from '../credentials/check'
-import type { InboxResult, JiraIssue } from '../../preload/api'
+import type { InboxResult, JiraBoard, JiraIssue } from '../../preload/api'
+import { inboxGroups } from './board'
 
 export const JQL = 'assignee = currentUser() AND statusCategory != Done ORDER BY updated DESC'
 
@@ -8,7 +9,7 @@ interface RawIssue {
   fields?: {
     summary?: unknown
     issuetype?: { name?: unknown }
-    status?: { name?: unknown; statusCategory?: { key?: unknown } }
+    status?: { id?: unknown; name?: unknown; statusCategory?: { key?: unknown } }
     components?: Array<{ name?: unknown }>
   }
 }
@@ -30,6 +31,7 @@ function parseIssues(body: { issues?: RawIssue[] }): JiraIssue[] {
         summary: str(f.summary),
         type: str(f.issuetype?.name),
         status: str(f.status?.name),
+        statusId: str(f.status?.id),
         group: groupOf(str(f.status?.name), str(f.status?.statusCategory?.key)),
         project: key.slice(0, key.lastIndexOf('-')),
         components: (f.components ?? []).map((c) => str(c.name)).filter(Boolean)
@@ -49,7 +51,8 @@ function linkWorkspaces(issues: JiraIssue[], records: Array<{ id: string; jiraKe
 export async function readInbox(
   creds: JiraCreds | null,
   fetchImpl: typeof fetch = fetch,
-  records: Array<{ id: string; jiraKey?: string }> = []
+  records: Array<{ id: string; jiraKey?: string }> = [],
+  board?: JiraBoard | null
 ): Promise<InboxResult> {
   if (!creds) return { error: 'unconfigured' }
 
@@ -73,7 +76,7 @@ export async function readInbox(
       return { error: 'unconfigured', message: 'Jira ha rechazado el token. Revísalo en Ajustes.' }
     if (!res.ok) return { error: 'failed', message: `Jira respondió ${res.status}` }
     const issues = linkWorkspaces(parseIssues((await res.json()) as { issues?: RawIssue[] }), records)
-    return { issues }
+    return { issues, ...(await inboxGroups(creds, board, issues, fetchImpl)) }
   } catch (err) {
     // Network errors can echo the request; never pass err.message through.
     const timeout = err instanceof Error && err.name === 'TimeoutError'
