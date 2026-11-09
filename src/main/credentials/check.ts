@@ -28,8 +28,12 @@ export async function checkJira(
     const me = (await res.json()) as { displayName?: string; emailAddress?: string }
     return { account: me.displayName || me.emailAddress || email }
   } catch (err) {
-    // Network errors can echo the request; never pass err.message through.
+    // Network errors can echo the request; never pass err.message through. Codes are an
+    // enumeration (ENOTFOUND, CERT_HAS_EXPIRED…), safe to show and the only way to debug.
     const timeout = err instanceof Error && err.name === 'TimeoutError'
-    return { error: timeout ? 'Jira no ha respondido en 10 s.' : 'No se ha podido conectar con Jira.' }
+    const cause = (err as { cause?: { code?: unknown } }).cause?.code
+    const code = typeof cause === 'string' && /^[A-Z0-9_]+$/.test(cause) ? cause : err instanceof Error ? err.name : 'Error'
+    console.error(`[atril] Jira check failed: ${code}`)
+    return { error: timeout ? 'Jira no ha respondido en 10 s.' : `No se ha podido conectar con Jira (${code}).` }
   }
 }

@@ -7,8 +7,10 @@ Vocabulary, decision log and the primary contract: `proposal.md` beside this fil
 
 ## Outcomes
 
-- The sidebar's "Mis Jira" lists every **task**: assigned to the person, in an open sprint,
-  not Done — key, summary, type, status. It refreshes on launch, every 5 minutes, and on
+- The sidebar's "Mis Jira" lists every **task**: assigned to the person and not Done, in any
+  project — key, summary, type, status — grouped: **Por empezar** (status category "new":
+  Backlog, To Do), **En curso** (In Progress), and **En revisión y despliegue** (the rest of
+  "in progress": Code Review, Testing, Ready to Deploy), the last group folded by default. It refreshes on launch, every 5 minutes, and on
   demand.
 - A task that already has a workspace shows that, instead of a Start button.
 - **Start** opens a dialog with: the repo (remembered per Jira project and component, asked
@@ -35,12 +37,14 @@ command; the Jira token never passes through Atril.
 - The Jira REST API with the site, email and token saved in Ajustes (`spec-settings.md`):
   `GET /rest/api/3/search/jql` with the JQL below, across every project in one call. The
   `jira` CLI is no longer used by Atril itself; the Libretto agent still uses it.
-- The JQL: `assignee = currentUser() AND sprint in openSprints() AND statusCategory != Done`.
+- The JQL: `assignee = currentUser() AND statusCategory != Done ORDER BY updated DESC`. No
+  sprint filter: observed 9 nov, the person has 0 tasks in open sprints and 24 open ones.
 - The command Start runs goes through the primary spec's agent session, with Claude's hooks
   passed by `--settings` (proposal.md, W14).
 
 ## Prior decisions
 
+- **All open tasks, by status, not only the sprint** — Pau, 9 nov: «Todas, por estado».
 - **Read the tasks of the person using the app** — Pau, 9 nov: «tambien que lea lo jira
   asignado a la persona que va».
 - **Jira through the REST API with the token from Ajustes** — Pau, 9 nov (proposal.md decision
@@ -100,3 +104,7 @@ command; the Jira token never passes through Atril.
   then the dialog shall say so and propose the key with the first free letter suffix: `B`,
   `C`, `D`… (`WEB-3535B`), as the team does.
   Proof: src/main/jira/start.test.ts  proposes a free branch when the slug is taken
+- **I11** When the inbox shows tasks, Atril shall group them: status category `new` → Por
+  empezar; `indeterminate` whose status name says in progress → En curso; any other
+  `indeterminate` → En revisión y despliegue, folded by default.
+  Proof: src/main/jira/inbox.test.ts  groups tasks by status

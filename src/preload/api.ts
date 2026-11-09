@@ -78,6 +78,7 @@ export interface JiraIssue {
   status: string
   project: string
   components: string[]
+  group: 'todo' | 'doing' | 'review'
 }
 
 export type InboxResult =

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { JQL, readInbox } from './inbox'
+import { groupOf } from './inbox'
 
 const CREDS = { site: 'https://acme.atlassian.net', email: 'ada@example.com', token: 'tok-SECRET-123' }
 
@@ -12,7 +13,7 @@ const BODY = {
       fields: {
         summary: 'Fix the cart total',
         issuetype: { id: '10', name: 'Bug', subtask: false },
-        status: { name: 'In Progress' },
+        status: { name: 'In Progress', statusCategory: { key: 'indeterminate' } },
         components: [{ name: 'checkout' }]
       }
     },
@@ -22,7 +23,7 @@ const BODY = {
       fields: {
         summary: 'Add a filter',
         issuetype: { id: '11', name: 'Story', subtask: false },
-        status: { name: 'To Do' },
+        status: { name: 'To Do', statusCategory: { key: 'new' } },
         components: []
       }
     }
@@ -46,7 +47,7 @@ describe('inbox', () => {
     expect(init?.method ?? 'GET').toBe('GET')
     expect(url.origin + url.pathname).toBe('https://acme.atlassian.net/rest/api/3/search/jql')
     expect(url.searchParams.get('jql')).toBe(
-      'assignee = currentUser() AND sprint in openSprints() AND statusCategory != Done'
+      'assignee = currentUser() AND statusCategory != Done ORDER BY updated DESC'
     )
     expect(JQL).toBe(url.searchParams.get('jql'))
     expect(url.searchParams.get('fields')).toBe('summary,issuetype,status,components')
@@ -61,8 +62,9 @@ describe('inbox', () => {
 
     expect(r).toEqual({
       issues: [
-        { key: 'PF-1', summary: 'Add a filter', type: 'Story', status: 'To Do', project: 'PF', components: [] },
-        { key: 'PF-2', summary: 'Fix the cart total', type: 'Bug', status: 'In Progress', project: 'PF', components: ['checkout'] }
+        // Jira's order (updated DESC) is kept, not re-sorted by key.
+        { key: 'PF-2', summary: 'Fix the cart total', type: 'Bug', status: 'In Progress', project: 'PF', components: ['checkout'], group: 'doing' },
+        { key: 'PF-1', summary: 'Add a filter', type: 'Story', status: 'To Do', project: 'PF', components: [], group: 'todo' }
       ]
     })
   })
@@ -92,5 +94,15 @@ describe('inbox', () => {
     const r = await readInbox(CREDS, boom)
     expect(r).toMatchObject({ error: 'failed' })
     expect(JSON.stringify(r)).not.toContain(CREDS.token)
+  })
+
+  it('groups tasks by status', () => {
+    expect(groupOf('Backlog', 'new')).toBe('todo')
+    expect(groupOf('To Do', 'new')).toBe('todo')
+    expect(groupOf('In Progress', 'indeterminate')).toBe('doing')
+    expect(groupOf('En curso', 'indeterminate')).toBe('doing')
+    expect(groupOf('Code Review', 'indeterminate')).toBe('review')
+    expect(groupOf('Testing', 'indeterminate')).toBe('review')
+    expect(groupOf('Ready to Deploy', 'indeterminate')).toBe('review')
   })
 })

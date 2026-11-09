@@ -669,3 +669,9 @@ input:focus-visible {
   text-decoration: underline;
   cursor: pointer;
 }
+
+.tgroup{margin:6px 0 10px}
+.tgroup>summary{cursor:pointer;list-style:none;font-size:12px;font-weight:600;color:var(--sub);padding:6px 2px;display:flex;align-items:center;gap:8px}
+.tgroup>summary::-webkit-details-marker{display:none}
+.tgroup>summary::after{content:"⌄";margin-left:auto;transition:transform .15s}
+.tgroup:not([open])>summary::after{transform:rotate(-90deg)}

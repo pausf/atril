@@ -96,6 +96,8 @@ PTYs and worktrees, and pieces reused with attribution — but Atril does not ru
 - Q: nombre de la rama → A: «Las ramas del proyecto suelen ser el nombre de la tarea. Por ejemplo, pf-4870 … suele ser referenciado con la tarea del Jira» (en los repos: la clave en mayúsculas, y una letra B/C… para un segundo intento)
 - Q: ¿Otro nombre mejor que Atril? (propuestos Batuta, Podio, Concertino, Ensayo) → A: «atril»
 - Q: «Haría que cogiera el icono del Tira o del GitHub o del GitLab … para mostrar como arriba como una sesión … saber que soy yo el que está en esa sesión de atril» → A: chip de sesión arriba con el avatar y nombre de Jira en la fase 1; GitHub y GitLab se suman en la fase 2
+- Q: «no obtiene ninguna tarjeta de Jira» — 0 tareas en sprints abiertos, 24 abiertas asignadas (WEB, SHOP, APP) → A: «Todas, por estado»: Por empezar, En curso, y Code Review/Testing/Ready to Deploy plegadas
+- Q: «quiero también efecto oscuro y efecto plano y que uno sea automático del sistema» → A: tema Claro, Oscuro y Automático (sigue al sistema), elegible en Ajustes; Automático por defecto
 
 ## Vocabulary
 
@@ -110,7 +112,7 @@ Shared by every spec of this change, one name per concept.
 | **agent session** | a tmux session named `atril-<workspace id>`, where the workspace id is `[a-z0-9]{8}`; everything else about it is read from its workspace record, never parsed from the name |
 | **pane** | a tmux pane of an agent session, shown as a terminal in the centre column |
 | **agent state** | `working`, `needs-you` or `stopped` |
-| **task** | a Jira issue assigned to the person, in an open sprint, not Done |
+| **task** | a Jira issue assigned to the person and not Done, in any project, sprint or not |
 | **Start** | the action that turns a task into a workspace plus an agent session running `/libretto-flow <KEY>` |
 | **stage** | the Libretto stage of a workspace, read from its `.agents/changes/` files |
 | **usage** | the 5-hour and 7-day quota of Claude |
@@ -353,6 +355,10 @@ it; keyboard reachability and text labels for every state.
   Claude with `--model <alias>` (`opus`, `sonnet`, `haiku`; no flag for "Por defecto"), store it
   in the workspace record, and show it on the workspace row. Fable is not offered.
   Proof: src/main/agent.test.ts  chosen model reaches claude and the record
+- **W35** Atril shall offer three themes in Ajustes — Claro, Oscuro and Automático (default,
+  follows macOS); the choice persists across restarts, Automático switches live when the
+  system appearance changes, and every theme keeps text contrast at 4.5:1 or more.
+  Proof: src/renderer/theme.test.ts  theme follows the choice and the system
 - **W26** When a Claude hook reports `Stop` for a session, Atril shall set its agent state to
   `needs-you`; when it reports `UserPromptSubmit`, to `working`.
   Proof: src/main/status.test.ts  stop marks needs-you and prompt submit marks working
@@ -527,7 +533,7 @@ or in tmux itself, never in the window.
 - [ ] usage footer: Claude 5 h and 7 d from the Keychain token and the usage endpoint, "—" with a reason when unreadable, the token never leaving main · waits on box 1 · Closes: W17, W18, W20
 - [ ] the right panel shows the Libretto stage and checklist of the selected workspace and follows file changes · waits on box 3 · Closes: F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12
 - [x] Ajustes: the Jira token card, encrypted with safeStorage, checked on save, write-only once saved, and the "Conecta X en Ajustes" state · waits on box 1 · Closes: S1, S2, S3, S4, S5, S6, S7
-- [x] "Mis Jira" lists the person's open sprint tasks through the Jira REST API with the token from Ajustes, and links to Ajustes when there is none · waits on box 10 · Closes: I1, I2, I3
+- [ ] "Mis Jira" lists the person's open sprint tasks through the Jira REST API with the token from Ajustes, grouped by status, and links to Ajustes when there is none · waits on box 10 · Closes: I1, I2, I3, I11
 - [ ] Start, and a Modelo selector in Start and Nuevo trabajo: repo memory, branch slug, validated key, claude running /libretto-flow <KEY> in a new workspace, In Progress transition whose failure keeps the workspace, and the task showing its workspace afterwards · waits on boxes 3, 4, 7, 11 · Closes: I4, I5, I6, I7, I8, I9, I10, W34
-- [ ] keyboard reachability and text labels everywhere, foldable sidebar sections, and the first-launch tutorial over every element, skippable, reopenable from Help, keyboard-only · waits on boxes 3, 8, 9, 11 · Closes: W22, W23, W24, W25, W28
+- [ ] keyboard reachability and text labels everywhere, foldable sidebar sections, the Claro/Oscuro/Automático theme, and the first-launch tutorial over every element, skippable, reopenable from Help, keyboard-only · waits on boxes 3, 8, 9, 11 · Closes: W22, W23, W24, W25, W28, W35
 - [ ] Claude agents in Atril workspaces start without the folder-trust prompt, tool problems collapse into one top-bar chip, and the top bar shows who is signed in · waits on boxes 3, 10 · Closes: W31, W32, S8

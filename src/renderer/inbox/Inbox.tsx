@@ -40,7 +40,7 @@ export function Inbox() {
           {loading ? 'Actualizando…' : 'Actualizar'}
         </button>
       </h2>
-      <p className="lead">Asignadas a ti en el sprint activo.</p>
+      <p className="lead">Tus tareas abiertas en todos los proyectos.</p>
       <Body result={result} issues={issues} />
     </section>
   )
@@ -62,23 +62,43 @@ function Body({ result, issues }: { result: InboxResult | null; issues: JiraIssu
       </div>
     )
   }
-  if (issues.length === 0) return <div className="empty">No tienes tareas abiertas en el sprint activo.</div>
+  if (issues.length === 0) return <div className="empty">No tienes tareas abiertas.</div>
   return (
     <>
-      {issues.map((i) => (
-        <article className="task" key={i.key}>
-          <div className="k">
-            {i.key} <span className={`tag${/bug/i.test(i.type) ? ' bug' : ''}`}>{i.type}</span>
-          </div>
-          <div className="s">{i.summary}</div>
-          <div className="row">
-            <button className="go" disabled title="llega en la casilla 11">
-              Empezar ▸
-            </button>
-            <span className="tag">{i.status}</span>
-          </div>
-        </article>
-      ))}
+      {GROUPS.map(([group, title, folded]) => {
+        const list = issues.filter((i) => i.group === group)
+        return list.length === 0 ? null : (
+          <details key={group} className="tgroup" open={!folded}>
+            <summary>
+              {title} <span className="n">{list.length}</span>
+            </summary>
+            {list.map((i) => <Task key={i.key} i={i} />)}
+          </details>
+        )
+      })}
     </>
+  )
+}
+
+const GROUPS: ReadonlyArray<[JiraIssue['group'], string, boolean]> = [
+  ['todo', 'Por empezar', false],
+  ['doing', 'En curso', false],
+  ['review', 'En revisión y despliegue', true]
+]
+
+function Task({ i }: { i: JiraIssue }) {
+  return (
+    <article className="task">
+      <div className="k">
+        {i.key} <span className={`tag${/bug/i.test(i.type) ? ' bug' : ''}`}>{i.type}</span>
+      </div>
+      <div className="s">{i.summary}</div>
+      <div className="row">
+        <button className="go" disabled title="llega con la casilla de Empezar">
+          Empezar ▸
+        </button>
+        <span className="tag">{i.status}</span>
+      </div>
+    </article>
   )
 }
