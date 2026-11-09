@@ -229,7 +229,10 @@ app.whenReady().then(async () => {
   }
   applyLang(await readUi())
   ipcMain.handle('atril:ui:get', async () => {
+    const before = getLang()
     const ui = applyLang(await readUi())
+    // Sistema can resolve differently after a macOS language change: the menu follows too.
+    if (getLang() !== before) refreshMenu()
     // ponytail: dev snapshots force the theme and skip the tutorial unless the view is the tour.
     if (!SNAPSHOT) return ui
     const theme = process.env['ATRIL_SNAPSHOT_THEME']

@@ -97,3 +97,6 @@ spec-reviewer: the default ("Sistema") contradicted the test default ("es"), Sis
 
 ## 2026-11-09 · add-language · 6
 Committed the language proofs while red (4acae03), outside the all-green guard adopted earlier today. Labelled as such and followed by the extraction, but the guard exists so the history never holds a red tree; next time keep red tests uncommitted until the code that turns them green.
+
+## 2026-11-09 · add-language · 6→7
+work-reviewer: ui:get could change main's language (Sistema after a macOS change) without rebuilding the menu (fixed); a message already on screen stays in the old language (ceiling named); the hook's own Spanish prefixes stay Spanish (queued as translate-hook-prefixes); "piece of work" read badly (now "workspace").

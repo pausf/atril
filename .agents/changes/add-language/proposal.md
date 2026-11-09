@@ -135,6 +135,8 @@ main module that returns text. Gates: typecheck, lint, test.
 |---|---|
 | A text missed in the extraction stays Spanish in English mode | S16 catches every `t()` without English; a text never wrapped is caught only by reading — S15's screens catch the main ones |
 | Interpolated texts built by concatenation | they become one `t()` with `{vars}` |
+| A message main already returned stays on screen in the old language after a switch | ceiling named (work-reviewer, 9 nov): it is stored as text; the next poll or reopen brings it in the new language |
+| The hook's own prefixes («Claude dice:», «Te pregunta:», «Claude te necesita») stay Spanish | ceiling named: they are written into the activity files, which travel as they came (S17); queued as `translate-hook-prefixes` |
 
 ### Validation and rollback
 
