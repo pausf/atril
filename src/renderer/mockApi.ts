@@ -41,6 +41,7 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
   Object.assign(stored, o.ui)
   let menu: ((a: MenuAction) => void) | undefined
   let notified: ((id: string) => void) | undefined
+  const activityListeners = new Set<(id: string, lines: ActivityLine[]) => void>()
   const ui = {
     get: vi.fn(async () => ({ ...stored, folded: { ...stored.folded } })),
     set: vi.fn(async (p: Partial<UiState>) => {
@@ -81,7 +82,10 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
     activity: {
       get: async (id: string) => o.activity?.[id] ?? [],
       latest: async () => Object.fromEntries(Object.entries(o.activity ?? {}).flatMap(([id, l]) => (l[0] ? [[id, l[0]]] : []))),
-      onChange: () => off
+      onChange: (cb: (id: string, lines: ActivityLine[]) => void) => {
+        activityListeners.add(cb)
+        return () => activityListeners.delete(cb)
+      }
     },
     flow: { get: async () => o.flow ?? null, onChange: () => off },
     usage: {
@@ -92,7 +96,9 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
     snapshotView: async () => null,
     snapshotWorkspace: async () => false
   } as unknown as AtrilApi
-  return { ui, stored, menu: (a: MenuAction) => menu?.(a), clickNotification: (id: string) => notified?.(id) }
+  return { ui, stored, menu: (a: MenuAction) => menu?.(a), clickNotification: (id: string) => notified?.(id),
+    pushActivity: (id: string, lines: ActivityLine[]) => activityListeners.forEach((cb) => cb(id, lines))
+  }
 }
 
 /** jsdom has no matchMedia: this one reports `dark` and fires `change` like the system does. */

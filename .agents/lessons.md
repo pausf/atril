@@ -28,3 +28,12 @@ Reviewer found nothing against the contract; raised that S9's proof mocks IPC so
 
 ## 2026-11-09 · use-jira-board-columns · 6→7
 Reviewer asked whether I17's "first column" is the board's first column even when empty. Answered (assumed): yes — an empty first column means nothing to start. No code change.
+
+## 2026-11-09 · add-agent-activity · 6→7
+A7's proof claimed "pushes two lines" but only seeded the mock before render, so a broken live update passed. Fixed: the mock now fans out activity events; the test pushes a line after render and asserts feed and row update (seen red with the subscription unhooked).
+
+## 2026-11-09 · add-agent-activity · 6→7
+A .gitignore hunk rode on this branch outside the contract — it came from the separate "make it private" request. Logged in the decision log; lesson: commit a side request on its own branch or say so in the change that carries it.
+
+## 2026-11-09 · add-agent-activity · 6→7
+Subagent descriptions were shown up to the 200-char line cap and can carry prompt-like text. Fixed: capped at 80 like the prompt; assertion seen red at 200.

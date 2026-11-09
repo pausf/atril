@@ -112,6 +112,8 @@ describe('activity', () => {
     expect(pre('Grep', { pattern: 'OrderRepository' })).toBe('Buscando OrderRepository')
     expect(pre('Glob', { pattern: '**/*.php' })).toBe('Buscando **/*.php')
     expect(pre('Task', { description: 'T5 paginación', prompt: 'SECRET' })).toBe('Lanzando un subagente: T5 paginación')
+    // A description can carry prompt-like text: the same 80-character cap as the person's prompt.
+    expect(pre('Task', { description: 'x'.repeat(300) }).length).toBeLessThanOrEqual('Lanzando un subagente: '.length + 80)
     expect(pre('WebFetch', { url: 'https://x.test' })).toBe('WebFetch')
     expect(summarise('PreToolUse', { tool_name: 'Read', tool_input: { file_path: '/a/b.php' } }, NO_TAIL)?.kind).toBe('read')
   })

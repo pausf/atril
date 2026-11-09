@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { createElement } from 'react'
-import { cleanup, render, screen, within } from '@testing-library/react'
+import { act, cleanup, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { App } from './App'
@@ -14,7 +14,7 @@ const now = Math.floor(Date.now() / 1000)
 describe('activity', () => {
   it('feed and row show the latest activity', async () => {
     const user = userEvent.setup()
-    mockApi({
+    const api = mockApi({
       // Stopped workspaces: a live one would mount xterm, which jsdom cannot run.
       workspaces: [workspace('aaaaaaa1', 'PF-1', false), workspace('aaaaaaa2', 'PF-2', false)],
       activity: {
@@ -53,5 +53,17 @@ describe('activity', () => {
 
     await user.keyboard('{ArrowLeft}')
     expect(first.getAttribute('aria-selected')).toBe('true')
+
+    // Live: a new line from main reaches the open feed and the row without a reload.
+    await user.keyboard('{ArrowRight}')
+    act(() =>
+      api.pushActivity('aaaaaaa1', [
+        { at: now, kind: 'says', text: 'Claude dice: tests en verde' },
+        { at: now - 5, kind: 'fail', text: '✗ vendor/bin/phpunit falló' }
+      ])
+    )
+    const live = within(await screen.findByRole('list', { name: /Actividad del agente/ }))
+    expect(live.getAllByRole('listitem')[0]?.querySelector('.act-text')?.textContent).toBe('Claude dice: tests en verde')
+    expect(document.querySelector('.ws-row .ws-act')?.textContent).toBe('Claude dice: tests en verde')
   })
 })

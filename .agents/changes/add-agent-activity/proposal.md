@@ -34,6 +34,8 @@ contents — keep only short summaries, locally, never the full input.
 - Q: (spec-reviewer) ¿Los eventos de herramienta cambian el estado? → A: sí: PreToolUse y PostToolUse ponen `working` (aprobar un permiso hace que el agente vuelva a trabajar) (assumed). Amplía W26.
 - Q: (spec-reviewer) ¿Qué línea deja UserPromptSubmit? → A: «Le has escrito: <primeros 80 caracteres>» (assumed, A8).
 - Q: (spec-reviewer) ¿Qué es un Bash «fallido»? → A: código de salida distinto de 0, un error o una interrupción en la respuesta de la herramienta, el que venga (assumed).
+- Q: (work-reviewer) el `.gitignore` de esta rama (`.DS_Store`, `caso-*`, `flujo-mr*`) no lo cubre el contrato → A: viene de otra petición de Pau, hacer el repo privado («Cambian el nombre. Ponlo en privado y que se llame Atril»); los archivos del concepto viejo llevan datos del trabajo y no deben subirse nunca.
+- Q: (work-reviewer) ¿la descripción de un subagente puede llevar texto tipo prompt? → A: sí; mismo límite de 80 caracteres que el prompt (assumed).
 
 ## Outcomes
 
@@ -85,7 +87,8 @@ hook process; lines are capped at 200 characters and 200 lines per session.
   Proof: src/main/activity.test.ts hook appends a short summary, never the payload
 - **A2** When PreToolUse reports Read, Edit, Write, Bash, Grep/Glob or Task, the line shall
   read «Leyendo <file>», «Editando <file>», «Escribiendo <file>», «Ejecutando <first 60 chars of
-  the command>», «Buscando <pattern>» or «Lanzando un subagente: <description>»; any other
+  the command>», «Buscando <pattern>» or «Lanzando un subagente: <first 80 characters of the
+  description>»; any other
   tool shall show its name.
   Proof: src/main/activity.test.ts summarises each tool
 - **A3** If PostToolUse reports a Bash command that failed — a non-zero exit code, an error or

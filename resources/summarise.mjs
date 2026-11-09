@@ -20,8 +20,8 @@ const TOOLS = {
   Bash: (i) => ({ kind: 'run', text: `Ejecutando ${flat(i?.command).slice(0, COMMAND)}` }),
   Grep: (i) => ({ kind: 'search', text: `Buscando ${flat(i?.pattern)}` }),
   Glob: (i) => ({ kind: 'search', text: `Buscando ${flat(i?.pattern)}` }),
-  Task: (i) => ({ kind: 'agent', text: `Lanzando un subagente: ${flat(i?.description)}` }),
-  Agent: (i) => ({ kind: 'agent', text: `Lanzando un subagente: ${flat(i?.description)}` })
+  Task: (i) => ({ kind: 'agent', text: `Lanzando un subagente: ${clip(flat(i?.description), 80)}` }),
+  Agent: (i) => ({ kind: 'agent', text: `Lanzando un subagente: ${clip(flat(i?.description), 80)}` })
 }
 
 // Claude reports a failed command as a non-zero code, an error or an interruption, whichever it has.
