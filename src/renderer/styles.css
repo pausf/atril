@@ -1,0 +1,251 @@
+:root {
+  --bg: #e9e9ee;
+  --win: #fbfbfd;
+  --card: #fff;
+  --line: #ececf0;
+  --text: #1d1d1f;
+  --sub: #86868b;
+  --faint: #d2d2d7;
+  --bad: #ff3b30;
+  --bad-text: #c4281c;
+  --bad-bg: #ffefee;
+  --r: 16px;
+}
+* {
+  box-sizing: border-box;
+}
+html,
+body,
+#root {
+  height: 100%;
+}
+body {
+  margin: 0;
+  background: var(--win);
+  color: var(--text);
+  font: 14px/1.55 -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+.win {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--win);
+}
+.bar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 22px 14px 96px;
+  border-bottom: 1px solid var(--line);
+  -webkit-app-region: drag;
+}
+.bar .name {
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: -0.01em;
+}
+.sp {
+  flex: 1;
+}
+.nag {
+  font-size: 12.5px;
+  color: var(--sub);
+}
+.body {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 300px 1fr 330px;
+}
+.col {
+  padding: 22px;
+  overflow: auto;
+  min-width: 0;
+}
+.col h2 {
+  margin: 0 0 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--sub);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.col h2 .n {
+  background: #f0f0f3;
+  color: var(--sub);
+  border-radius: 999px;
+  padding: 0 8px;
+  font-size: 11px;
+  letter-spacing: 0;
+}
+.lead {
+  color: var(--sub);
+  font-size: 12.5px;
+  margin: 0 0 14px;
+}
+.left {
+  border-right: 1px solid var(--line);
+}
+.right {
+  border-left: 1px solid var(--line);
+  background: #fff;
+}
+.sec {
+  margin-top: 24px;
+}
+.empty {
+  border: 1px dashed var(--faint);
+  border-radius: var(--r);
+  padding: 14px 16px;
+  color: var(--sub);
+  font-size: 13px;
+}
+
+.center {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.whead {
+  display: flex;
+  align-items: flex-end;
+  gap: 14px;
+}
+.whead h1 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.whead .m {
+  color: var(--sub);
+  font-size: 13px;
+}
+.panes {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+  min-height: 0;
+}
+.pane {
+  background: #16161a;
+  border-radius: var(--r);
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+}
+.ph {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 10px 14px;
+  font-size: 12px;
+  color: #8e8e93;
+  border-bottom: 1px solid #26262b;
+}
+.ph b {
+  color: #e5e5ea;
+  font-weight: 600;
+}
+.term {
+  flex: 1;
+  padding: 14px 16px;
+  font: 12.5px/1.75 ui-monospace, Menlo, monospace;
+  color: #d1d1d6;
+  overflow: auto;
+}
+.term .s {
+  color: #8e8e93;
+}
+.hint {
+  font-size: 12px;
+  color: var(--sub);
+  display: flex;
+  gap: 16px;
+}
+
+.stages {
+  display: flex;
+  flex-direction: column;
+  margin: 6px 0 4px;
+}
+.stg {
+  display: grid;
+  grid-template-columns: 22px 1fr;
+  gap: 10px;
+  align-items: center;
+  padding: 7px 0;
+  position: relative;
+  color: #b0b0b5;
+  font-size: 14px;
+}
+.stg::before {
+  content: '';
+  position: absolute;
+  left: 10px;
+  top: -8px;
+  height: 16px;
+  width: 2px;
+  background: var(--line);
+}
+.stg:first-child::before {
+  display: none;
+}
+.stg i {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid var(--faint);
+  background: #fff;
+  z-index: 1;
+}
+
+.foot {
+  display: flex;
+  gap: 26px;
+  align-items: center;
+  padding: 12px 22px;
+  border-top: 1px solid var(--line);
+  font-size: 12.5px;
+  color: var(--sub);
+  background: #fff;
+}
+.meter b {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.doctor {
+  padding: 12px 22px;
+  background: var(--bad-bg);
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+}
+.doctor-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+.doctor-item b {
+  color: var(--bad-text);
+}
+.doctor-problem {
+  color: var(--text);
+}
+code {
+  font: 12px ui-monospace, Menlo, monospace;
+  background: #fff;
+  border-radius: 6px;
+  padding: 3px 7px;
+}

@@ -83,6 +83,7 @@ PTYs and worktrees, and pieces reused with attribution — but Atril does not ru
 - Q: ¿Cómo pintamos los paneles divididos (⌘D) de cada agente? → A: tmux los dibuja. Descartadas: «Tarjetas separadas (control mode)» — un parser del protocolo -CC, redimensionado y foco por panel, mucho más código; «Una sesión por panel» — tmux deja de saber que los paneles son del mismo trabajo y el layout pasa a Atril, cambiando el vocabulario de la spec.
 - Q: El revisor encontró huecos que romperían el código; ¿cómo seguimos? → A: Corregir y luego casilla 1
 - Q: (W10) ¿Qué pasa al quitar un worktree con trabajo sin commitear? → A: nunca se borra, ni confirmando; Atril dice que commitees o descartes antes (assumed, por la regla «nothing is deleted with uncommitted work»). Si es falso: cambia W10.
+- Q: (build, casilla 1) tmux y jira no aceptan `--version` → A: cada herramienta con su comando: `tmux -V`, `jira version`, `--version` el resto (corrección de la spec: el contrato estaba mal, observado al renderizar)
 
 ## Vocabulary
 
@@ -288,7 +289,8 @@ it; keyboard reachability and text labels for every state.
   Proof: src/main/usage.test.ts  reads codex limits from the newest session
 - **W20** If a usage source cannot be read, then Atril shall show "—" with the reason.
   Proof: src/main/usage.test.ts  missing source shows a reason
-- **W21** If git, tmux, claude, codex or jira is missing or fails `--version`, then Atril shall
+- **W21** If git, tmux, claude, codex or jira is missing or fails its version command — `-V`
+  for tmux, `version` for jira, `--version` for the rest — then Atril shall
   name it with its install command — git `xcode-select --install`, tmux `brew install tmux`,
   claude `curl -fsSL https://claude.ai/install.sh | bash`, codex `npm i -g @openai/codex`,
   jira `brew install ankitpokhrel/jira-cli/jira-cli` — and keep the rest of the app working.
@@ -423,6 +425,9 @@ or in tmux itself, never in the window.
 | Mode detection flags almost every repo as in-place | the noise list (W2) and the person's override (W4); the reason is always shown, so a wrong call is visible |
 | Two tmux clients on one session fight over the size | `window-size latest` on every session Atril creates |
 | Codex is broken here, so W19 is only proved on a fixture | accepted: the fixture is a real `rate_limits` line from `~/.codex/sessions` (Feb 2026); W21 shows the breakage |
+| pnpm 11 skips Electron's install script on a fresh clone, so `pnpm dev` says "Electron uninstall" | not solved: `allowBuilds` and `onlyBuiltDependencies` in `pnpm-workspace.yaml` were both tried on a fresh install and neither ran it; until found, run `node node_modules/electron/install.js` once after `pnpm install` |
+| Launched from Finder, a macOS app does not inherit the shell's PATH, so tmux, claude and jira look missing | not hit while Atril runs from source with `pnpm dev`; a packaged build must resolve PATH from the login shell first |
+| The runner has no timeout, so a tool that hangs on its version command blocks the doctor | accepted for phase 1; add a timeout to `run` the first time it is seen |
 | `Stop` fires at the end of every turn, so `needs-you` may be noisy | accepted for phase 1; one notification per transition (W15) bounds it |
 
 ### Validation and rollback
@@ -451,7 +456,7 @@ or in tmux itself, never in the window.
 
 ## Checklist
 
-- [ ] the app opens: Electron + React shell with the three columns and footer of boceto 8, the runner, and the doctor naming each missing tool with its install command · Closes: W21
+- [x] the app opens: Electron + React shell with the three columns and footer of boceto 8, the runner, and the doctor naming each missing tool with its install command · Closes: W21
 - [ ] register a repo by folder; the sidebar shows its mode with the reason, and the person's override persists · waits on box 1 · Closes: W1, W2, W3, W4
 - [ ] "Nuevo trabajo" opens a workspace in worktree mode on a new branch with claude or codex in an `atril-<id>` tmux session recorded in workspaces.json, shown live in the centre terminal; relaunching Atril reattaches without starting agents; a dirty worktree is never removed · waits on box 2 · Closes: W5, W6, W10, W11, W12
 - [ ] in-place workspaces: refuse a dirty checkout, refuse a second one per repo, restore the previous branch on close · waits on box 3 · Closes: W7, W8, W9
