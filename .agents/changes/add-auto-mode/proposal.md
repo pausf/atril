@@ -79,6 +79,11 @@ the mode from task size automatically, a setting for the default mode.
   shows «Auto».
   Proof: src/renderer/inbox/mode.test.ts the start dialogs offer manual or automatic
 
+- **F26** In an automatic workspace, Spec, Plan and Checklist shall open read-only whatever the
+  agent's state (an exception to F15; the diff modals already are), with the status bar «solo lectura ·
+  modo automático» in place of F15's.
+  Proof: src/renderer/flow/documents.test.ts automatic documents are read-only
+
 ## Approach
 
 ### Summary
@@ -114,7 +119,7 @@ lint, test.
 
 ### Validation and rollback
 
-W58, W59, F26 seen red first. Rollback: one revert.
+W58–W61, W40, F26 seen red first. Rollback: one revert.
 
 ### Complexity deliberately kept
 
