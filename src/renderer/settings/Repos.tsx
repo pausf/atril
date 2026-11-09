@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { CreateRepoDialog } from './CreateRepo'
 import type { AddRepoResult, Mode, RepoView } from '../../preload/api'
 import { useT } from '../ui'
 
@@ -16,6 +17,7 @@ export function Repos() {
   const [repos, setRepos] = useState<RepoView[]>([])
   const [pending, setPending] = useState<Pending | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [creating, setCreating] = useState(false)
 
   useEffect(() => {
     window.atril.repos
@@ -106,7 +108,16 @@ export function Repos() {
       {error && <div className="bad">{error}</div>}
       <button type="button" className="pill add" onClick={() => void add()}>
         {t('＋ Añadir repo…')}
+      </button>{' '}
+      <button type="button" className="pill add" onClick={() => setCreating(true)}>
+        {t('＋ Crear repo…')}
       </button>
+      {creating && (
+        <CreateRepoDialog
+          onClose={() => setCreating(false)}
+          onRegistered={() => void window.atril.repos.list().then(setRepos)}
+        />
+      )}
     </section>
   )
 }

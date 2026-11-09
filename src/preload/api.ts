@@ -181,6 +181,25 @@ export interface SettingsApi {
 }
 
 export type ForgeId = 'github' | 'gitlab'
+
+export interface CreateRepoRequest {
+  forge: ForgeId
+  name: string
+  description: string
+  public: boolean
+}
+export type CreateRepoResult =
+  | { url: string; sshUrl: string; path: string; registered?: string; cloneError?: string; cloneCommand?: string }
+  | { error: string }
+
+export interface ForgeApi {
+  /** W50, W51: creates the repo; with `clone`, clones it into that folder and registers it. */
+  create(req: CreateRepoRequest, clone?: string): Promise<CreateRepoResult>
+  /** Opens an https link in the browser; anything else is ignored. */
+  open(url: string): Promise<void>
+  /** The folder picker; null when cancelled. */
+  pickFolder(): Promise<string | null>
+}
 export type ForgeStatus = { saved: false } | { saved: true; account?: string; site?: string }
 
 export type AgentState = 'working' | 'needs-you' | 'stopped'
@@ -325,6 +344,7 @@ export interface AtrilApi {
   ui: UiApi
   usage: UsageApi
   flow: FlowApi
+  forge: ForgeApi
   status: StatusApi
   nextup: NextUpApi
   activity: ActivityApi

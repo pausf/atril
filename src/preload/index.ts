@@ -23,6 +23,11 @@ const api: AtrilApi = {
       return () => ipcRenderer.removeListener('atril:usage:changed', h)
     }
   },
+  forge: {
+    create: (req, clone) => ipcRenderer.invoke('atril:forge:create', req, clone),
+    open: (url) => ipcRenderer.invoke('atril:forge:open', url),
+    pickFolder: () => ipcRenderer.invoke('atril:forge:pickFolder')
+  },
   flow: {
     get: (id) => ipcRenderer.invoke('atril:flow:get', id),
     docs: (id) => ipcRenderer.invoke('atril:flow:docs', id),

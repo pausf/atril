@@ -6,6 +6,7 @@ import { getLang, setLang, t } from './lang'
 import { resolveLang } from '../preload/i18n'
 import { readDocs, saveDoc } from './flow/document'
 import { FORGES, forgeSettings, type ForgeId } from './credentials/forge'
+import { createRepo } from './forge/create'
 import { fileDiff, listChanges } from './flow/changes'
 import { nextUp } from './nextup'
 import { writeFile } from 'node:fs/promises'
@@ -15,7 +16,7 @@ import { jiraSettings } from './credentials/jira'
 import { searchBoards } from './credentials/boards'
 import type { JiraCreds } from './credentials/check'
 import { doctor } from './doctor'
-import type { Mode, UiState } from '../preload/api'
+import type { CreateRepoRequest, Mode, UiState } from '../preload/api'
 import { readInbox } from './jira/inbox'
 import { inboxGroups } from './jira/board'
 import { proposeStart, start } from './jira/start'
@@ -149,6 +150,17 @@ app.whenReady().then(async () => {
       ? forges.save(f, { token: creds.token, ...(typeof creds.site === 'string' && { site: creds.site }) })
       : { error: t('Falta el token.') }
   )
+  ipcMain.handle('atril:forge:create', async (_e, req: Partial<CreateRepoRequest> | null) => {
+    if (!req || !isForge(req.forge) || typeof req.name !== 'string') return { error: t('Nombre de repo no válido') }
+    return createRepo(secretStore, { forge: req.forge, name: req.name, description: typeof req.description === 'string' ? req.description : '', public: req.public === true })
+  })
+  ipcMain.handle('atril:forge:open', (_e, url: unknown) => {
+    if (typeof url === 'string' && /^https:\/\//.test(url)) return shell.openExternal(url)
+  })
+  ipcMain.handle('atril:forge:pickFolder', async () => {
+    const picked = await dialog.showOpenDialog({ properties: ['openDirectory', 'createDirectory'] })
+    return picked.canceled ? null : (picked.filePaths[0] ?? null)
+  })
   ipcMain.handle('atril:settings:forge:delete', (_e, f: unknown) => (isForge(f) ? forges.delete(f) : undefined))
   ipcMain.handle('atril:settings:forge:openTokenPage', async (_e, f: unknown, site: unknown) => {
     if (f === 'github') return shell.openExternal('https://github.com/settings/tokens/new?scopes=repo&description=Atril')

@@ -101,6 +101,11 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
         return { issues, groups: groups.filter((g) => g.keys.length > 0) }
       }
     },
+    forge: {
+      create: vi.fn(async (req: { name: string; forge: ForgeId }) => ({ url: `https://${req.forge}.com/pau/${req.name}`, sshUrl: `git@x:pau/${req.name}.git`, path: req.name })),
+      open: vi.fn(async () => undefined),
+      pickFolder: vi.fn(async () => '/Users/pau/gitrepos')
+    },
     settings: {
       jira: { status: async () => ({ saved: true, account: 'Pau Sánchez', site: 'https://x.atlassian.net' }) },
       forge: {
@@ -145,8 +150,8 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
     snapshotView: async () => null,
     snapshotWorkspace: async () => false
   } as unknown as AtrilApi
-  const { menu: menuApi, jira, workspaces: ws, repos: reposApi, flow: flowApi } = window.atril
-  return { ui, stored, menuApi, jira, ws, reposApi, flowApi, menu: (a: MenuAction) => menu?.(a), clickNotification: (id: string) => notified?.(id),
+  const { menu: menuApi, jira, workspaces: ws, repos: reposApi, flow: flowApi, forge: forgeApi } = window.atril
+  return { ui, stored, menuApi, jira, ws, reposApi, flowApi, forgeApi, menu: (a: MenuAction) => menu?.(a), clickNotification: (id: string) => notified?.(id),
     pushActivity: (id: string, lines: ActivityLine[]) => activityListeners.forEach((cb) => cb(id, lines)),
     pushFlow: (id: string, stage: FlowStage) => flowListeners.forEach((cb) => cb(id, stage))
   }
