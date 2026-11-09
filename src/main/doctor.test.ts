@@ -6,29 +6,28 @@ const INSTALL = {
   git: 'xcode-select --install',
   tmux: 'brew install tmux',
   claude: 'curl -fsSL https://claude.ai/install.sh | bash',
-  codex: 'npm i -g @openai/codex',
   jira: 'brew install ankitpokhrel/jira-cli/jira-cli'
 }
 
 describe('doctor', () => {
   it('names each missing tool with its install command', async () => {
     const fake: Runner = async (cmd) => {
-      if (cmd === 'codex') return { code: 1, stdout: '', stderr: 'spawn codex ENOENT' }
+      if (cmd === 'tmux') return { code: 1, stdout: '', stderr: 'spawn tmux ENOENT' }
       if (cmd === 'jira') return { code: 127, stdout: '', stderr: 'command not found' }
       return { code: 0, stdout: `${cmd} version 1.2.3\n`, stderr: '' }
     }
 
     const report = await doctor(fake)
 
-    expect(report.map((r) => r.tool)).toEqual(['git', 'tmux', 'claude', 'codex', 'jira'])
+    expect(report.map((r) => r.tool)).toEqual(['git', 'tmux', 'claude', 'jira'])
     const bad = report.filter((r) => !r.ok)
-    expect(bad.map((r) => r.tool)).toEqual(['codex', 'jira'])
+    expect(bad.map((r) => r.tool)).toEqual(['tmux', 'jira'])
     for (const r of bad) {
       expect(r.install).toBe(INSTALL[r.tool as keyof typeof INSTALL])
       expect(r.problem).toBeTruthy()
     }
     const good = report.filter((r) => r.ok)
-    expect(good.map((r) => r.tool)).toEqual(['git', 'tmux', 'claude'])
+    expect(good.map((r) => r.tool)).toEqual(['git', 'claude'])
     expect(good.every((r) => r.problem === undefined && r.version)).toBe(true)
   })
 
@@ -41,6 +40,6 @@ describe('doctor', () => {
 
     await doctor(fake)
 
-    expect(calls).toEqual(['git --version', 'tmux -V', 'claude --version', 'codex --version', 'jira version'])
+    expect(calls).toEqual(['git --version', 'tmux -V', 'claude --version', 'jira version'])
   })
 })

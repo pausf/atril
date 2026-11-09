@@ -7,5 +7,4 @@ const librettoDir = (): string =>
     ? join(process.resourcesPath, 'libretto')
     : join(__dirname, '../../resources/libretto')
 
-export const agentArgv = (agent: 'claude' | 'codex'): string[] =>
-  agent === 'claude' ? ['claude', '--plugin-dir', librettoDir()] : ['codex']
+export const agentArgv = (): string[] => ['claude', '--plugin-dir', librettoDir()]

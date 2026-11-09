@@ -58,7 +58,7 @@ export async function openWorktree(input: OpenInput, run: Runner = defaultRun): 
 
   const head = await run('git', ['-C', repo.path, 'rev-parse', 'HEAD'])
   const id = newId()
-  const paneId = await newSession(id, path, input.argv ?? agentArgv(agent), run)
+  const paneId = await newSession(id, path, input.argv ?? agentArgv(), run)
 
   const record: WorkspaceRecord = {
     id,

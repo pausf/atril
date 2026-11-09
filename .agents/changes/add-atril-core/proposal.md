@@ -43,7 +43,7 @@ a human reads, spec-first, an orchestrator with core / worker / workflow executo
 
 The whole product, agreed across the conversation: a native-feeling Mac app, built from
 scratch in Electron + TypeScript, that works like Orca (an agent development environment:
-one git worktree per agent, real agent terminals in split panes, Claude Code and Codex,
+one git worktree per agent, real agent terminals in split panes, Claude Code only,
 usage meters) and adds what Orca lacks — the Libretto flow as the spine of every piece of
 work, the person's own Jira tasks as the input, and review of GitLab and GitHub MRs with
 scores (deterministic metrics decide, `claude -p --json-schema` explains). AI goes through
@@ -53,10 +53,10 @@ Delivered in four phases, agreed 9 nov:
 
 | Phase | Orca's part | Atril's own part |
 |---|---|---|
-| **1 · core — THIS CHANGE** | worktree per agent · real terminals with split panes · Claude Code and Codex · usage meters · macOS notifications | the person's Jira sprint tasks · Libretto flow per stage · "Empezar" opens a worktree and launches `/libretto-flow <KEY>` |
+| **1 · core — THIS CHANGE** | worktree per agent · real terminals with split panes · Claude Code · usage meter · macOS notifications | the person's Jira sprint tasks · Libretto flow per stage · "Empezar" opens a worktree and launches `/libretto-flow <KEY>` |
 | 2 · review | built-in diff with inline comments sent back to the agent · open PR/MR from the app | GitLab and GitHub MRs · scores · which MR a human reads |
 | 3 · comfort | file and Markdown previews · ⌘K jump anywhere · dictation · chat beside the terminal | visible guardrails · the spec stop inside the app |
-| 4 · scale | remote hosts over SSH · scheduled automations · embedded browser · mobile app | a model per stage (Claude, Codex, Qwen on the VPS) |
+| 4 · scale | remote hosts over SSH · scheduled automations · embedded browser · mobile app | a model per stage (Claude, Qwen on the VPS) |
 
 **This change is phase 1 only.** Phases 2–4 are later changes.
 
@@ -87,6 +87,7 @@ PTYs and worktrees, and pieces reused with attribution — but Atril does not ru
 - Q: (build, casilla 2) tus dos repos salían in-place por carpetas ignoradas (`out/`, `.atl/`, `.claude/`, `bin/`) → A: solo cuentan archivos ignorados, nunca carpetas (corrección de la spec, observada en los repos reales); el id del repo es el basename en minúsculas y con guiones
 - Q: ¿Libretto viene dentro de la app? → A: «Libreto estará puesto directamente en la aplicación, ¿no? Es decir, la gente no se tendrá que bajar el libreto oficial, sino que ya estará oficialmente metido dentro del sistema.»
 - Q: «Para que sea más usable y todo esto, ¿qué mejorarías?» → propuestas 1 (sin la pregunta de confianza de Claude en cada worktree) y 6 (el doctor como chip) a la fase 1, el resto a otra change → A: «si»
+- Q: ¿Codex? → A: «no pongas codex»
 
 ## Vocabulary
 
@@ -97,14 +98,14 @@ Shared by every spec of this change, one name per concept.
 | **repo** | a git repository the person registered in Atril; its **repo id** is the folder's basename, lowercased with `-` for anything outside `[a-z0-9-]`, and registering a second repo with the same basename asks for another id (`[a-z0-9-]+`) |
 | **mode** | how a repo hosts work: `worktree` (one worktree per piece of work) or `in-place` (the main checkout switches branch; one piece of work at a time) |
 | **workspace** | where one piece of work happens: a worktree, or the main checkout on a branch in `in-place` mode |
-| **workspace record** | one entry in `~/.atril/workspaces.json`: workspace id, repo id, branch, mode, path, base commit, previous branch (in-place only), agent (`claude`/`codex`), Jira key (if started from a task), tmux session name, the agent's pane id |
+| **workspace record** | one entry in `~/.atril/workspaces.json`: workspace id, repo id, branch, mode, path, base commit, previous branch (in-place only), agent (`claude`), Jira key (if started from a task), tmux session name, the agent's pane id |
 | **agent session** | a tmux session named `atril-<workspace id>`, where the workspace id is `[a-z0-9]{8}`; everything else about it is read from its workspace record, never parsed from the name |
 | **pane** | a tmux pane of an agent session, shown as a terminal in the centre column |
 | **agent state** | `working`, `needs-you` or `stopped` |
 | **task** | a Jira issue assigned to the person, in an open sprint, not Done |
 | **Start** | the action that turns a task into a workspace plus an agent session running `/libretto-flow <KEY>` |
 | **stage** | the Libretto stage of a workspace, read from its `.agents/changes/` files |
-| **usage** | the 5-hour and 7-day quota of Claude and of Codex |
+| **usage** | the 5-hour and 7-day quota of Claude |
 
 ## Outcomes
 
@@ -124,14 +125,14 @@ The `workspaces` capability, phase 1. Its siblings in this change: `spec-work-in
   attaches to them; nothing is restarted and nothing is lost.
 - Each workspace shows its **agent state** with a dot and a text label. Entering `needs-you`
   raises one macOS notification; clicking it opens that workspace.
-- The footer shows **usage**: Claude 5 h and 7 d with reset time, Codex 5 h and 7 d. A
+- The footer shows **usage**: Claude 5 h and 7 d with reset time. A
   source that cannot be read shows "—" and why.
 - Removing a workspace never loses work: a worktree or in-place branch with uncommitted
   changes is never removed or switched away from — Atril says to commit or discard first.
   Removing a clean workspace ends its agent session; `in-place` restores the branch that was
   checked out before.
-- Besides Start, each repo has "Nuevo trabajo": a branch name and a choice of Claude or Codex.
-- A missing or broken dependency (tmux, git, claude, codex) is named in the app with the
+- Besides Start, each repo has "Nuevo trabajo": a branch name; the agent is always Claude.
+- A missing or broken dependency (tmux, git, claude, jira) is named in the app with the
   command that installs it, and the rest of the app keeps working.
 - The first launch opens a **tutorial** that highlights each element in turn (Jira tasks,
   workspaces, the agent's terminal, panes, the Libretto panel, agent states, usage) and
@@ -158,7 +159,8 @@ sibling specs.
 - a team view, a server, accounts, sync
 - Windows and Linux builds
 - editing files inside Atril (the agent and the person's editor do that)
-- installing tmux, git, claude or codex for the person — Atril names the command, the
+- Codex, or any agent other than Claude Code — Pau, 9 nov: «no pongas codex»
+- installing tmux, git, claude or jira for the person — Atril names the command, the
   person runs it
 - auto-update and code signing / notarisation (run from source or an unsigned local build)
 
@@ -174,7 +176,7 @@ it; keyboard reachability and text labels for every state.
 - Terminals: `xterm.js` in the renderer, `node-pty` in the main process attached to
   `tmux attach -t <session>`. `node-pty` is native and must be rebuilt for Electron.
 - tmux ≥ 3 (installed: 3.7b). Git worktrees. CLIs used as installed and configured by the
-  person: `git`, `tmux`, `claude`, `codex`, `jira`. Every external command is spawned with an
+  person: `git`, `tmux`, `claude`, `jira`. Every external command is spawned with an
   argument array, never a shell string.
 - macOS on Apple Silicon only.
 - Network: only `https://api.anthropic.com/api/oauth/usage`. Jira goes through the `jira`
@@ -202,8 +204,8 @@ it; keyboard reachability and text labels for every state.
   libretto-automata's payload (MIT, with its vendored MIT items) lives in `resources/libretto/`
   as a Claude Code plugin; every Claude agent is launched with `--plugin-dir` pointing at it,
   for that session only. Nobody installs Libretto, and the person's `~/.claude` is untouched.
-- **`/libretto-flow` runs only on Claude** — `libretto --help` (v0.44.2): «codex cannot run
-  the flow». Codex is offered as a plain agent session.
+- **Claude Code is the only agent** — Pau, 9 nov: «no pongas codex». It is also the only one
+  that runs the flow (`libretto --help` v0.44.2: «codex cannot run the flow»).
 - **Worktree unless the repo cannot take one** — Pau, 9 nov: «worktree si pero en alguno
   proyecto es imposibole … tiene que saber cuando puee o no». Signals are review-project's
   (decision log, assumed).
@@ -225,14 +227,14 @@ it; keyboard reachability and text labels for every state.
 
 - App shell: Electron main, preload bridge, renderer with sidebar / centre / right panel /
   footer, the boceto's minimal style.
-- Dependency doctor: detect git, tmux, claude, codex, jira; name the install command.
+- Dependency doctor: detect git, tmux, claude, jira; name the install command.
 - Repo registry and mode detection, with the person's override persisted.
 - Workspace lifecycle: create and remove, in both modes, with the safety rules.
 - tmux session manager: create, list, attach, split, kill, named `atril-<repo>-<branch>`.
 - Terminal bridge: `node-pty` attached to tmux, streamed to `xterm.js`, resize and input.
 - Agent state: Claude hooks via `--settings` writing state; process exit → stopped.
 - macOS notifications on entering `needs-you`.
-- Usage readers: Claude OAuth endpoint, Codex newest session `rate_limits`.
+- Usage reader: the Claude OAuth endpoint.
 - First-launch tutorial: a step per element, highlight plus explanation, skip and reopen.
 - Siblings: `spec-work-inbox.md`, `spec-flow-status.md`.
 
@@ -298,15 +300,12 @@ it; keyboard reachability and text labels for every state.
   renderer, or in any file under `~/.atril/`; the runner shall not log the stdout of a command
   marked secret.
   Proof: src/main/usage.test.ts  token never leaves the main process
-- **W19** When Codex usage is read, Atril shall take `rate_limits` from the newest file under
-  `~/.codex/sessions`.
-  Proof: src/main/usage.test.ts  reads codex limits from the newest session
 - **W20** If a usage source cannot be read, then Atril shall show "—" with the reason.
   Proof: src/main/usage.test.ts  missing source shows a reason
-- **W21** If git, tmux, claude, codex or jira is missing or fails its version command — `-V`
+- **W21** If git, tmux, claude or jira is missing or fails its version command — `-V`
   for tmux, `version` for jira, `--version` for the rest — then Atril shall
   name it with its install command — git `xcode-select --install`, tmux `brew install tmux`,
-  claude `curl -fsSL https://claude.ai/install.sh | bash`, codex `npm i -g @openai/codex`,
+  claude `curl -fsSL https://claude.ai/install.sh | bash`,
   jira `brew install ankitpokhrel/jira-cli/jira-cli` — and keep the rest of the app working.
   Proof: src/main/doctor.test.ts  names each missing tool with its install command
 - **W22** The sidebar, panes and every button shall be reachable by keyboard — `⌘L` moves
@@ -382,9 +381,8 @@ or in tmux itself, never in the window.
   `{ code, stdout, stderr }`. Nothing else in main spawns a process; tests swap it.
   Branch names pass `git check-ref-format --branch` and issue keys their regex before any
   call that uses them (W6, I7).
-- **Doctor** runs `<tool> --version` for git, tmux, claude, codex, jira at launch; a failure
-  becomes a named message with its install command (W21). Codex's current ENOENT on this
-  machine is exactly that case.
+- **Doctor** runs each tool's version command for git, tmux, claude, jira at launch; a
+  failure becomes a named message with its install command (W21).
 - **Mode detection** (W1–W4): `git ls-files --others --ignored --exclude-standard
   --directory` minus the noise list → first survivor is the in-place reason; `du -sk` of
   `node_modules` + `vendor` over 2 GB → in-place; an override in `repos.json` beats both.
@@ -406,8 +404,7 @@ or in tmux itself, never in the window.
   and writes `{ state, at }` to `~/.atril/state/<session>.json` — `Notification` and `Stop`
   mean `needs-you`, `UserPromptSubmit` means `working`. Main watches that directory. A 2 s
   poll of `tmux display -p -t <pane id> '#{pane_dead}'` marks `stopped` when it says 1 or the
-  pane is gone (W16). Codex gets
-  working/stopped only.
+  pane is gone (W16).
 - **Notifications** (W15): Electron `Notification` on the transition into `needs-you` only;
   clicking focuses the window and selects that workspace.
 - **Usage** (W17–W20): every 60 s, `security find-generic-password -s "Claude
@@ -415,8 +412,7 @@ or in tmux itself, never in the window.
   `https://api.anthropic.com/api/oauth/usage` with `Authorization: Bearer`, `anthropic-beta:
   oauth-2025-04-20` (the headers the statusline sends). The `security` call is marked secret
   so the runner never logs its stdout; the token is a local variable of that function and
-  never crosses IPC, a logger or a file. Codex: last `rate_limits` line of the
-  newest `~/.codex/sessions/**/*.jsonl` (`primary` = 5 h, `secondary` = 7 d).
+  never crosses IPC, a logger or a file.
 - **Jira** (I1–I9): `jira issue list --raw --jql …` every 5 min; Start →
   `repos.json` lookup or ask → branch slug → workspace → tmux with `claude --settings … "/
   libretto-flow <KEY>"` → `jira issue move <KEY> "In Progress"`, whose failure is shown and
@@ -465,7 +461,6 @@ or in tmux itself, never in the window.
 | The Keychain prompts when Electron runs `security` | the call goes through `/usr/bin/security`, the same binary the statusline uses; if it prompts, the person allows once — observed in the first run, reported in present-work |
 | Mode detection flags almost every repo as in-place | the noise list (W2) and the person's override (W4); the reason is always shown, so a wrong call is visible |
 | Two tmux clients on one session fight over the size | `window-size latest` on every session Atril creates |
-| Codex is broken here, so W19 is only proved on a fixture | accepted: the fixture is a real `rate_limits` line from `~/.codex/sessions` (Feb 2026); W21 shows the breakage |
 | `node-pty` must be rebuilt for Electron | `pnpm rebuild` runs `electron-rebuild -f -w node-pty`; `pnpm-workspace.yaml` holds `allowBuilds: node-pty: false` so pnpm 11 stops failing the install and the rebuild is explicit |
 | pnpm 11 skips Electron's install script on a fresh clone, so `pnpm dev` says "Electron uninstall" | not solved: `allowBuilds` and `onlyBuiltDependencies` in `pnpm-workspace.yaml` were both tried on a fresh install and neither ran it; until found, run `node node_modules/electron/install.js` once after `pnpm install` |
 | Launched from Finder, a macOS app does not inherit the shell's PATH, so tmux, claude and jira look missing | not hit while Atril runs from source with `pnpm dev`; a packaged build must resolve PATH from the login shell first |
@@ -502,12 +497,12 @@ or in tmux itself, never in the window.
 
 - [x] the app opens: Electron + React shell with the three columns and footer of boceto 8, the runner, and the doctor naming each missing tool with its install command · Closes: W21
 - [x] register a repo by folder; the sidebar shows its mode with the reason, and the person's override persists · waits on box 1 · Closes: W1, W2, W3, W4
-- [x] "Nuevo trabajo" opens a workspace in worktree mode on a new branch with claude or codex in an `atril-<id>` tmux session recorded in workspaces.json, shown live in the centre terminal; relaunching Atril reattaches without starting agents; a dirty worktree is never removed · waits on box 2 · Closes: W5, W6, W10, W11, W12
+- [x] "Nuevo trabajo" opens a workspace in worktree mode on a new branch with claude in an `atril-<id>` tmux session recorded in workspaces.json, shown live in the centre terminal; relaunching Atril reattaches without starting agents; a dirty worktree is never removed · waits on box 2 · Closes: W5, W6, W10, W11, W12
 - [x] Libretto bundled: the script copies the pinned payload with its licences into resources/libretto as a Claude Code plugin, and every Claude agent starts with --plugin-dir pointing at it · waits on box 3 · Closes: W29, W30
 - [ ] in-place workspaces: refuse a dirty checkout, refuse a second one per repo, restore the previous branch on close · waits on box 3 · Closes: W7, W8, W9
 - [ ] ⌘D and ⌘⇧D split the focused workspace through tmux · waits on box 3 · Closes: W13
 - [ ] agent state from Claude hooks passed by --settings and from the agent's dead pane, with one macOS notification per needs-you transition that opens the workspace · waits on box 3 · Closes: W14, W15, W16, W26, W27
-- [ ] usage footer: Claude 5 h and 7 d from the Keychain token and the usage endpoint, Codex from its newest session file, "—" with a reason when unreadable, the token never leaving main · waits on box 1 · Closes: W17, W18, W19, W20
+- [ ] usage footer: Claude 5 h and 7 d from the Keychain token and the usage endpoint, "—" with a reason when unreadable, the token never leaving main · waits on box 1 · Closes: W17, W18, W20
 - [ ] the right panel shows the Libretto stage and checklist of the selected workspace and follows file changes · waits on box 3 · Closes: F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12
 - [ ] "Mis Jira" lists the person's open sprint tasks via the jira CLI, and explains an unconfigured CLI · waits on box 1 · Closes: I1, I2, I3
 - [ ] Start: repo memory, branch slug, validated key, claude running /libretto-flow <KEY> in a new workspace, In Progress transition whose failure keeps the workspace, and the task showing its workspace afterwards · waits on boxes 3, 4, 7, 10 · Closes: I4, I5, I6, I7, I8, I9, I10

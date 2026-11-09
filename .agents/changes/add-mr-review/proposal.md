@@ -25,9 +25,21 @@ Pau, 9 nov 2026:
 
 > sonnet
 
+> no pongas codex
+
+> Voy a configurar y que salga lo de GitLab, GitHub, estas cosas. ¿Cómo lo haremos? O sea, ¿qué token necesitará? ¿O cuándo pedirá el token? Etcétera, etcétera.
+
 ## The reading
 
-**AI engine for scores (Pau, 9 nov):** Claude Sonnet via `claude -p --model sonnet --output-format json --json-schema …` on the subscription (no API key) for review difficulty, risk, "qué hace" and "por qué"; Codex as fallback once it works on the machine. Deterministic metrics stay AI-free and decide.
+**Auth (agreed 9 nov):** Atril never asks for, stores or sees a forge token — everything goes
+through `gh` and `glab` with the person's own login, as Jira goes through `jira`. On first
+opening the MR screen Atril runs `gh auth status` / `glab auth status`; a missing login shows
+"Ejecuta `gh auth login` / `glab auth login` en tu terminal". Scopes: GitHub `repo` +
+`read:org`; GitLab `api` (`read_api` would only read). Observed on Pau's Mac (9 nov): gh logged
+in as pausf via keyring; glab logged in via the shell's `GITLAB_TOKEN`, which a Finder-launched
+app will not inherit — `glab auth login` stores it in glab's config instead.
+
+**AI engine for scores (Pau, 9 nov):** Claude Sonnet via `claude -p --model sonnet --output-format json --json-schema …` on the subscription (no API key) for review difficulty, risk, "qué hace" and "por qué". Deterministic metrics stay AI-free and decide.
 
 **Layout (Pau, 9 nov):** MRs get their own screen, not a sidebar section, reached from a rail of three screens (Trabajo · MR · Avisos) with counters. **Avisos** is a notification feed: review requested, comment on your MR, your agent opened an MR, CI failed, a new MR in a subscribed project, approvals/merges — filterable, each opening its MR or workspace.
 

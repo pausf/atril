@@ -5,7 +5,7 @@ import { agentArgv } from './agent'
 
 describe('agentArgv', () => {
   it('claude starts with the bundled libretto plugin', () => {
-    const argv = agentArgv('claude')
+    const argv = agentArgv()
     expect(argv[0]).toBe('claude')
     const flag = argv.indexOf('--plugin-dir')
     expect(flag).toBeGreaterThan(0)
@@ -13,6 +13,5 @@ describe('agentArgv', () => {
     expect(statSync(dir).isDirectory()).toBe(true)
     expect(JSON.parse(readFileSync(join(dir, '.claude-plugin', 'plugin.json'), 'utf8')).name).toBe('libretto')
     expect(existsSync(join(dir, 'skills'))).toBe(true)
-    expect(agentArgv('codex')).toEqual(['codex'])
   })
 })

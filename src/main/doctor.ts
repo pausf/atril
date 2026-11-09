@@ -7,7 +7,6 @@ const TOOLS: ReadonlyArray<{ tool: string; versionArgs: string[]; install: strin
   { tool: 'git', versionArgs: ['--version'], install: 'xcode-select --install' },
   { tool: 'tmux', versionArgs: ['-V'], install: 'brew install tmux' },
   { tool: 'claude', versionArgs: ['--version'], install: 'curl -fsSL https://claude.ai/install.sh | bash' },
-  { tool: 'codex', versionArgs: ['--version'], install: 'npm i -g @openai/codex' },
   { tool: 'jira', versionArgs: ['version'], install: 'brew install ankitpokhrel/jira-cli/jira-cli' }
 ]
 
