@@ -32,16 +32,10 @@ command; the Jira token never passes through Atril.
 
 ## Constraints
 
-- Only the `jira` CLI (ankitpokhrel/jira-cli), installed and configured by the person;
-  `--raw` JSON output, never `--plain` (Libretto's `find-work/tracker.md`: plain mode carries
-  colour codes and drops the description).
-- The query: `jira issue list --raw --jql "statusCategory = Done AND statusCategory != Done OR
-  (assignee = currentUser() AND sprint in openSprints() AND statusCategory != Done)"` — ONE
-  call for every project. The CLI prepends `project = "<config project>" AND` without
-  parentheses, and an empty config project matches nothing; the false first clause OR the
-  real query escapes that scope (observed 9 nov: 1 call in 0.66 s, against 326 calls in 12 s
-  one per project). If jira-cli ever parenthesises the JQL, this returns nothing and the
-  fallback is one call per project of `jira project list`.
+- The Jira REST API with the site, email and token saved in Ajustes (`spec-settings.md`):
+  `GET /rest/api/3/search/jql` with the JQL below, across every project in one call. The
+  `jira` CLI is no longer used by Atril itself; the Libretto agent still uses it.
+- The JQL: `assignee = currentUser() AND sprint in openSprints() AND statusCategory != Done`.
 - The command Start runs goes through the primary spec's agent session, with Claude's hooks
   passed by `--settings` (proposal.md, W14).
 
@@ -49,16 +43,15 @@ command; the Jira token never passes through Atril.
 
 - **Read the tasks of the person using the app** — Pau, 9 nov: «tambien que lea lo jira
   asignado a la persona que va».
-- **Jira via its CLI, never REST or MCP; the token never enters the app** — Libretto's
-  tracker rule.
+- **Jira through the REST API with the token from Ajustes** — Pau, 9 nov (proposal.md decision
+  log), replacing the CLI-only rule for what Atril reads. The token never reaches an agent.
 - **Start runs Claude only** — `libretto --help`: «codex cannot run the flow».
 - **Jira→repo asked once and remembered per project and component** — decision log,
   assumed. The memory key is the issue's project plus its first component, or the project
   alone when it has none.
 - **The task→workspace link is the Jira key in the workspace record** (proposal.md
   vocabulary); it survives restarts with the record.
-- **"Unconfigured" means `jira project list` fails** — a real authenticated call, as
-  Libretto's tracker rule says; `jira --version` and `jira me` prove nothing.
+- **"Unconfigured" means no Jira token in Ajustes, or `/myself` rejects it.**
 
 ## Task breakdown
 
@@ -70,14 +63,14 @@ command; the Jira token never passes through Atril.
 
 ## Verification criteria
 
-- **I1** When the inbox refreshes, Atril shall run `jira issue list --raw` with the JQL in
-  Constraints.
+- **I1** When the inbox refreshes, Atril shall call `GET /rest/api/3/search/jql` once with
+  the JQL in Constraints.
   Proof: src/main/jira/inbox.test.ts  queries my open sprint issues
-- **I2** When the CLI returns JSON, Atril shall list each issue's key, summary, type and
+- **I2** When the API returns issues, Atril shall list each issue's key, summary, type and
   status.
   Proof: src/main/jira/inbox.test.ts  parses issues from raw json
-- **I3** If `jira` is missing or `jira project list` fails, then the inbox shall show the install command
-  or tell the person to run `jira init` in their own shell, and shall never ask for a token.
+- **I3** If no Jira token is saved, or the API rejects it, then the inbox shall show "Conecta
+  Jira en Ajustes" with a link, and shall never ask for the token anywhere but Ajustes.
   Proof: src/main/jira/inbox.test.ts  unconfigured jira asks the person to run jira init
 - **I4** When the person starts a task whose project and component have no remembered repo,
   Atril shall ask for one and remember it for the next task of that project and component.
