@@ -124,3 +124,8 @@ work-reviewer: the baseline keeps one list per URL (listings dedupe, M2), so an 
 
 ## 2026-11-09 · tour-new-screens · 7
 W23 promises a tutorial step per element, but five changes added screens and controls (Nuevo trabajo, Spec/Plan/Construir, MR, Avisos) without a step, and nothing failed: the proof only listed the old targets. Fixed by extending the proof first (red) and the tour; lesson: a change that adds a rail screen or a primary control owes W23 a step in the same change.
+
+## 2026-11-09 · add-mr-lens-drafts · 6→7
+- The contract said «no head: not stored» but not what the window does with drafts nobody can act on; the cold work-reviewer found buttons that always failed. A state the store refuses must be refused before it is shown — or before quota is spent.
+- Matching a local repo to a forge project by path alone ignores the host: the same `acme/api` exists on two forges. Compare host and path.
+- Left as is (unverified): a POST that succeeds with an unreadable JSON body leaves the draft open, so a retry would post twice. Forges answer 201 with JSON; revisit if it ever shows.

@@ -94,10 +94,11 @@ function commentBody(d: MrDraft): string {
   return `**${d.lens} · ${d.severity}**${loc ? ` — \`${loc}\`` : ''}\n\n${d.text}`
 }
 
-const namesProject = (origin: string, project: string): boolean => {
+const namesProject = (origin: string, project: string, host: string): boolean => {
   const path = origin.trim().replace(/\/+$/, '').replace(/\.git$/, '').toLowerCase()
   const p = project.toLowerCase()
-  return path.endsWith(`/${p}`) || path.endsWith(`:${p}`)
+  // ponytail: the host as a substring of the origin, enough to tell github.com from a GitLab host.
+  return path.includes(host.toLowerCase()) && (path.endsWith(`/${p}`) || path.endsWith(`:${p}`))
 }
 
 interface Deps {
@@ -126,20 +127,20 @@ export function createLenses({ store, run, fetchImpl = fetch, target, listed, po
   const writes = createQueue()
 
   /** M28: the one live workspace on the MR's branch in a repo of its project; zero or several is none. */
-  async function agentFor(tgt: ScoreTarget | undefined): Promise<WorkspaceView | undefined> {
+  async function agentFor(url: string, tgt: ScoreTarget | undefined): Promise<WorkspaceView | undefined> {
     if (!tgt?.branch || !tgt.project) return undefined
     const matches: WorkspaceView[] = []
     for (const w of (await workspaces()).filter((x) => x.alive && x.branch === tgt.branch)) {
       const r = await run('git', ['-C', w.path, 'remote', 'get-url', 'origin'], { timeoutMs: 5000 })
-      if (r.code === 0 && namesProject(r.stdout, tgt.project)) matches.push(w)
+      if (r.code === 0 && namesProject(r.stdout, tgt.project, new URL(url).hostname)) matches.push(w)
     }
     return matches.length === 1 ? matches[0] : undefined
   }
 
-  async function view(tgt: ScoreTarget | undefined, stored: Stored | null, fresh = false): Promise<MrDrafts> {
+  async function view(url: string, tgt: ScoreTarget | undefined, stored: Stored | null, fresh = false): Promise<MrDrafts> {
     if (!stored) return { stale: false, canSend: false, drafts: [] }
     const stale = !fresh && !!tgt?.head && tgt.head !== stored.head
-    const canSend = stored.drafts.some((d) => d.state === 'open') && !!(await agentFor(tgt))
+    const canSend = stored.drafts.some((d) => d.state === 'open') && !!(await agentFor(url, tgt))
     return { head: stored.head, stale, canSend, drafts: stored.drafts }
   }
 
@@ -158,8 +159,10 @@ export function createLenses({ store, run, fetchImpl = fetch, target, listed, po
     try {
       if (!secret?.['token']) throw new Failure(t('Conecta GitHub o GitLab en Ajustes'))
       if (tgt.forge === 'github') head = ((await (await get(tgt.ref)).json()) as { head?: { sha?: string } }).head?.sha
-      const cached = head ? await readDrafts(url) : null
-      if (cached && cached.head === head) return view(tgt, cached, true)
+      // M26: no head, nothing to key drafts by: refused before spending quota.
+      if (!head) throw new Failure(t('No se sabe el último commit de esta MR: actualiza'))
+      const cached = await readDrafts(url)
+      if (cached && cached.head === head) return view(url, tgt, cached, true)
       diff = await fetchDiff(get, tgt)
     } catch (err) {
       if (!(err instanceof Failure)) throw err
@@ -182,10 +185,9 @@ export function createLenses({ store, run, fetchImpl = fetch, target, listed, po
     if (answer?.is_error !== false || !validFindings(found)) return fail(t('respuesta fuera del esquema'))
 
     const drafts = (found as unknown as { findings: Finding[] }).findings.map((f): MrDraft => ({ id: randomUUID(), ...f, state: 'open' }))
-    // M26: no head, nothing to key it by: shown, not kept.
-    const stored = head ? { head, drafts } : null
-    if (stored) await writes(() => writeStored(KIND, url, stored))
-    return head ? view(tgt, stored, true) : { stale: false, canSend: !!(await agentFor(tgt)) && drafts.length > 0, drafts }
+    const stored = { head, drafts }
+    await writes(() => writeStored(KIND, url, stored))
+    return view(url, tgt, stored, true)
   }
 
   const closed = (): MrDraftsResult => ({ error: t('Ese borrador ya no está abierto') })
@@ -210,7 +212,7 @@ export function createLenses({ store, run, fetchImpl = fetch, target, listed, po
         await writeStored(KIND, url, out)
         return out
       })
-      return view(tgt, next)
+      return view(url, tgt, next)
     } finally {
       busy.delete(key)
     }
@@ -234,7 +236,7 @@ export function createLenses({ store, run, fetchImpl = fetch, target, listed, po
     },
 
     async draftsOf(url: string): Promise<MrDraftsResult> {
-      return view(target(url), await readDrafts(url))
+      return view(url, target(url), await readDrafts(url))
     },
 
     publish: (url: string, id: string): Promise<MrDraftsResult> =>
@@ -245,7 +247,7 @@ export function createLenses({ store, run, fetchImpl = fetch, target, listed, po
 
     send: (url: string, id: string): Promise<MrDraftsResult> =>
       act(url, id, async (d, tgt) => {
-        const agent = await agentFor(tgt)
+        const agent = await agentFor(url, tgt)
         if (!agent) return replyGone()
         const text = t('Revisión de Libretto ({lens}, {severity}) en {location}: {text}', { lens: d.lens, severity: d.severity, location: location(d) ?? t('la MR'), text: d.text })
         return (await send(agent.id, text)) === 'sent' ? undefined : replyGone()

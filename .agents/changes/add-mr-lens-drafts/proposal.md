@@ -25,6 +25,7 @@ on its file and line, send to the agent of that workspace, or discard. Needs add
 - Q: ¿Publicar dónde? → A: como comentario general de la MR que cita archivo y línea; el comentario en la línea exacta queda para más adelante (assumed).
 - Q: ¿Mandar al agente cuál? → A: el único trabajo vivo en la rama de la MR y en un repo cuyo `origin` es el proyecto de la MR; si hay cero o varios, no se ofrece (assumed).
 - Q: (revisor) ¿Más de 12 hallazgos, texto largo, file/line ausentes, cero hallazgos? → A: fuera de esquema = fallo; sin ubicación se omite; cero es respuesta válida (assumed).
+- Q: (revisor de obra) ¿Borradores de una MR sin commit conocido? → A: se rechaza la revisión antes de gastar cuota; ¿mismo proyecto en otra forja? → A: el origin también debe nombrar el host (assumed).
 - Q: (revisor) ¿Cola compartida con las puntuaciones? → A: un solo runner, claves por tipo y URL (assumed).
 
 ## Outcomes
@@ -75,7 +76,7 @@ shown as text.
   of the latest listing shall be refused without a request (M17's text). Reviews and scores share one
   runner, one at a time in the order asked, keyed by kind and URL (M14 per kind).
   Proof: src/main/forge/lenses.test.ts the lens review runs claude like the score and keeps drafts
-- **M26** Drafts shall be stored per MR and head commit (no head: not stored, as M13); while drafts
+- **M26** Drafts shall be stored per MR and head commit (no known head: the review is refused before Claude runs, «No se sabe el último commit de esta MR: actualiza»); while drafts
   exist for the current head the button is not offered; on a newer head the list shows «De un commit
   anterior» with «Revisar de nuevo», whose result replaces every draft.
   Proof: src/main/forge/lenses.test.ts drafts are kept per commit
@@ -86,7 +87,7 @@ shown as text.
   draft that is not open, or of an MR outside the latest listing, shall be refused without a request.
   Proof: src/main/forge/lenses.test.ts a draft is published once as a general comment
 - **M28** Main shall offer Mandar al agente for an MR only when exactly one workspace is alive, on the
-  MR's branch, in a repo whose `origin` remote names the MR's project; sending shall type, as N3,
+  MR's branch, in a repo whose `origin` remote names the MR's host and project; sending shall type, as N3,
   «Revisión de Libretto ({lens}, {severity}) en {location}: {text}» (location as M27, «la MR» when
   absent), mark the draft sent on `sent`, and on `gone` or `ignored` keep it open with N3's message.
   Proof: src/main/forge/lenses.test.ts a draft goes to the one agent on that branch

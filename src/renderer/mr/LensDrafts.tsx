@@ -85,7 +85,7 @@ export function LensDrafts({ m, reviewable }: { m: MrItem; reviewable: boolean }
                   </button>
                 </div>
               ) : (
-                <span className="f-note">{d.state === 'published' ? t('Publicado') : t('Enviado al agente')}</span>
+                <span className="mr-draft-done">{d.state === 'published' ? t('Publicado') : t('Enviado al agente')}</span>
               )}
               {errors[d.id] && (
                 <p className="mr-score-error" role="alert">

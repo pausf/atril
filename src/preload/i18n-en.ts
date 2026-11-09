@@ -413,6 +413,7 @@ export const EN: Record<string, string> = {
   "Resultados": "Results",
   "Nada coincide con «{query}»": "Nothing matches “{query}”",
   "Claude no ha podido revisar esta MR: {detail}": "Claude could not review this MR: {detail}",
+  "No se sabe el último commit de esta MR: actualiza": "The latest commit of this MR is unknown: refresh",
   "Ese borrador ya no está abierto": "That draft is no longer open",
   "Revisión de Libretto ({lens}, {severity}) en {location}: {text}": "Libretto review ({lens}, {severity}) at {location}: {text}",
   "la MR": "the MR",

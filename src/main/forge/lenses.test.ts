@@ -333,10 +333,11 @@ describe('mr lens drafts', () => {
     expect(stored()).toHaveLength(1)
     expect(await second.l.draftsOf(GH_URL)).toEqual(again)
 
-    // No head, nothing stored (as M13): the drafts are answered, not kept.
+    // No head: refused before Claude runs, nothing stored.
     const headless = await lenser({ target: (u) => (u === GL_URL ? { forge: 'gitlab', ref: targets[u]!.ref } : undefined) })
     const before = stored().length
-    expect(await headless.l.review(GL_URL)).toMatchObject({ drafts: [{ lens: 'security' }, { lens: 'tests' }] })
+    expect(await headless.l.review(GL_URL)).toEqual({ error: 'Claude no ha podido revisar esta MR: No se sabe el último commit de esta MR: actualiza' })
+    expect(headless.claude.calls).toHaveLength(0)
     expect(stored()).toHaveLength(before)
     expect(await headless.l.draftsOf(GL_URL)).toEqual({ stale: false, canSend: false, drafts: [] })
   })
@@ -406,7 +407,7 @@ describe('mr lens drafts', () => {
   })
 
   it('a draft goes to the one agent on that branch', async () => {
-    const origins = { '/wt/api': 'git@github.com:acme/api.git', '/wt/api2': 'https://github.com/acme/api.git', '/wt/other': 'git@github.com:acme/api-extra.git', '/wt/shop': `${GL}/grp/shop.git` }
+    const origins = { '/wt/api': 'git@github.com:acme/api.git', '/wt/api2': 'https://github.com/acme/api.git', '/wt/other': 'git@github.com:acme/api-extra.git', '/wt/shop': `${GL}/grp/shop.git`, '/wt/elsewhere': 'git@gitlab.example.org:acme/api.git' }
     const one = [ws('api', 'feat/x', { path: '/wt/api' }), ws('other', 'feat/x', { path: '/wt/other' }), ws('dead', 'feat/x', { path: '/wt/api2', alive: false }), ws('elsewhere', 'feat/z', { path: '/wt/api2' })]
     const sent: Array<[string, string]> = []
     const claude = fakeRun({ origins })
@@ -441,8 +442,8 @@ describe('mr lens drafts', () => {
     expect(await two.l.send(GH_URL, t2.drafts[0]!.id)).toEqual({ error: 'No se pudo enviar: ese trabajo ya no está' })
     expect(two.send).not.toHaveBeenCalled()
 
-    // None: a dead one, another branch, another project, no origin.
-    for (const list of [[], [ws('api', 'feat/x', { path: '/wt/api', alive: false })], [ws('api', 'feat/z', { path: '/wt/api' })], [ws('other', 'feat/x', { path: '/wt/other' })], [ws('x', 'feat/x', { path: '/wt/unknown' })]]) {
+    // None: a dead one, another branch, another project, the same path on another host, no origin.
+    for (const list of [[ws('e', 'feat/x', { path: '/wt/elsewhere' })], [], [ws('api', 'feat/x', { path: '/wt/api', alive: false })], [ws('api', 'feat/z', { path: '/wt/api' })], [ws('other', 'feat/x', { path: '/wt/other' })], [ws('x', 'feat/x', { path: '/wt/unknown' })]]) {
       const none = await lenser({ claude: fakeRun({ origins }), workspaces: list })
       expect((await open(none.l)).canSend).toBe(false)
     }

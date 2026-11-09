@@ -1375,6 +1375,10 @@ kbd {
   align-items: center;
   gap: 10px;
 }
+.mr-draft-done {
+  font-size: 12px;
+  color: var(--sub);
+}
 .mr-lens .mr-score-error {
   max-width: none;
   margin: 0;
