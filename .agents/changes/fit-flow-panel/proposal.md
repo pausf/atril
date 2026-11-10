@@ -56,6 +56,9 @@ add-doctor-install-terminal, antes de expand-tour (assumed: el «si» respondía
   - La frase de cabecera desaparece (F29).
   - Que no haga falta scroll no lo puede probar jsdom: se ve en la foto, y está nombrado como techo.
 
+- Q: (foto) A 900 px Subagentes quedaba cortado → A: filas de Cambios en una línea, «Leído de» al
+  `title` de «Ver checklist», que pasa a enlace junto a Siguiente; objetivo 900 px, no 1080 (assumed).
+
 ## Outcomes
 
 - Las seis etapas ocupan una sola fila: iconos unidos por una línea; la actual lleva su nombre debajo;
@@ -65,7 +68,7 @@ add-doctor-install-terminal, antes de expand-tour (assumed: el «si» respondía
   vista; Atril recuerda cómo los dejaste; Otros cambios empieza plegado.
 - Cambios enseña como mucho 8 archivos; con más, «+N más» abre el diff del noveno.
 - Un trabajo normal (3/7, 12 archivos, 3 subagentes) cabe en el panel sin scroll en una ventana de
-  1080 px de alto.
+  900 px de alto, la de Pau (sus capturas: 2880×1768 a 2x).
 
 ## Scope boundaries
 
@@ -178,5 +181,5 @@ Ninguna.
 
 ## Checklist
 
-- [ ] the stages in one row with their names kept as text · Closes: F29
-- [ ] the four sections fold with counts, remembered; Cambios capped at 8 with «+N más»; sketch and photo · waits on box 1 · Closes: F30, F31
+- [x] the stages in one row with their names kept as text · Closes: F29
+- [x] the four sections fold with counts, remembered; Cambios capped at 8 with «+N más»; sketch and photo · waits on box 1 · Closes: F30, F31

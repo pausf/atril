@@ -180,7 +180,7 @@ export const EN: Record<string, string> = {
   'Cambio:': 'Change:',
   'Checklist': 'Checklist',
   'Siguiente:': 'Next:',
-  'Leído de': 'Read from',
+  'Leído de {file}': 'Read from {file}',
   'Ver checklist': 'View checklist',
   'Cambios': 'Changes',
   'Ver el diff de {path}': 'See the diff of {path}',

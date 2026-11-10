@@ -45,7 +45,7 @@ export function Subagents({ workspaceId }: { workspaceId: string | null }) {
           {[...entries].sort(newest).map((e) => (
             <li key={e.id}>
               <button type="button" className={`sub ${e.endedAt === undefined ? 'run' : 'end'}`} onClick={() => setOpen(e.id)}>
-                <span className="sub-text">{e.description || e.type}</span>
+                <span className="sub-text" title={e.description || e.type}>{e.description || e.type}</span>
                 {e.description && <span className="sub-type">{e.type}</span>}
                 <span className="sub-state">{state(e)}</span>
               </button>

@@ -147,6 +147,7 @@ function LibrettoFlow({ flow, onOpen, changes, onDiff }: FlowProps) {
   const STAGES = stagesOf(t)
   const current = STAGES.findIndex((s) => s.name === flow?.stage)
   const c = flow?.checklist
+  const lines = changes.reduce((n, f) => n + f.added + f.removed, 0)
   return (
     <>
       {flow?.stage === 'sin-libretto' ? (
@@ -199,22 +200,21 @@ function LibrettoFlow({ flow, onOpen, changes, onDiff }: FlowProps) {
               <div className="prog">
                 <i style={{ width: `${(c.closed / c.total) * 100}%` }} />
               </div>
-              {c.firstOpen && (
-                <p className="fmeta">
-                  {t('Siguiente:')} <b>{c.firstOpen}</b>
-                </p>
-              )}
-              <p className="fmeta">
-                {t('Leído de')} <code>{c.file}</code>
+              <p className="fmeta crow">
+                {c.firstOpen && (
+                  <span>
+                    {t('Siguiente:')} <b>{c.firstOpen}</b>
+                  </span>
+                )}
+                <button type="button" className="fmore" title={t('Leído de {file}', { file: c.file })} onClick={() => onOpen('checklist')}>
+                  {t('Ver checklist')}
+                </button>
               </p>
-              <button type="button" className="btn" onClick={() => onOpen('checklist')}>
-                {t('Ver checklist')}
-              </button>
             </FoldSection>
           )}
           {changes.length > 0 && (
             <FoldSection id="flow-changes" title={t('Cambios')} count={changes.length} className="flow-fold">
-              <ChangeTotal lines={changes.reduce((n, f) => n + f.added + f.removed, 0)} />
+              <BigWarning lines={lines} />
               <ul className="fchanges">
                 {changes.slice(0, MAX_FILES).map((f) => {
                   const slash = f.path.lastIndexOf('/')
@@ -239,11 +239,14 @@ function LibrettoFlow({ flow, onOpen, changes, onDiff }: FlowProps) {
                   )
                 })}
               </ul>
-              {changes.length > MAX_FILES && (
-                <button type="button" className="fmore" onClick={() => onDiff(changes[MAX_FILES]!.path)}>
-                  {t('+{n} más', { n: changes.length - MAX_FILES })}
-                </button>
-              )}
+              <p className="fmeta crow">
+                {changes.length > MAX_FILES && (
+                  <button type="button" className="fmore" onClick={() => onDiff(changes[MAX_FILES]!.path)}>
+                    {t('+{n} más', { n: changes.length - MAX_FILES })}
+                  </button>
+                )}
+                {lines <= WARN_AT && <span>{t('{lines} líneas', { lines })}</span>}
+              </p>
             </FoldSection>
           )}
           {flow && flow.others.length > 0 && (
@@ -261,10 +264,10 @@ function LibrettoFlow({ flow, onOpen, changes, onDiff }: FlowProps) {
   )
 }
 
-/** F25: past the hook's threshold the total turns into a warning that says what Atril already did. */
-function ChangeTotal({ lines }: { lines: number }) {
+/** F25: past the hook's threshold the total turns into a warning, on top, that says what Atril already did. */
+function BigWarning({ lines }: { lines: number }) {
   const t = useT()
-  if (lines <= WARN_AT) return <p className="fmeta">{t('{lines} líneas', { lines })}</p>
+  if (lines <= WARN_AT) return null
   return (
     <p className="fbig" role="status">
       {t('⚠ {lines} líneas: rama grande (más de {max}). Atril le ha pedido a Claude que te proponga separarla en MRs más pequeñas.', { lines, max: WARN_AT })}
