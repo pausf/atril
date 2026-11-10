@@ -13,6 +13,7 @@ import { cloneAndRegister, createRepo } from './forge/create'
 import { createForgeGuards } from './forge/guards'
 import { listMrs } from './forge/mrs'
 import { createLenses } from './forge/lenses'
+import { createOpenMr, type MrEntry } from './forge/openmr'
 import { createQueue, createScorer } from './forge/scores'
 import { createThreads } from './forge/threads'
 import { fileDiff, listChanges } from './flow/changes'
@@ -313,11 +314,19 @@ app.whenReady().then(async () => {
   ipcMain.handle('atril:forge:open', (_e, url: unknown) => {
     if (typeof url === 'string' && guards.openable(url)) return shell.openExternal(url)
   })
+  let latestMrs = new Map<string, MrEntry>()
+  const openMr = createOpenMr({ latest: (url) => latestMrs.get(url), run })
+  ipcMain.handle('atril:mr:workFor', (_e, url: unknown) => openMr.workFor(typeof url === 'string' ? url : ''))
+  ipcMain.handle('atril:mr:openWork', (_e, url: unknown) => openMr.open(url).finally(() => void pushNext()))
   ipcMain.handle('atril:mr:list', async () => {
     // ponytail: dev-only, ATRIL_SNAPSHOT_VIEW=mr|avisos|palette photographs believable lists without any forge.
     const fake = SNAPSHOT && /^(mr|avisos|palette)/.test(process.env['ATRIL_SNAPSHOT_VIEW'] ?? '')
     const r = fake ? fakeMrs() : await listMrs(secretStore, fetch, guards.scorable, guards.threadable)
     guards.listed([...r.mine, ...r.review, ...r.following].map((m) => m.url))
+    // Each list holds an MR once and Mías comes first, so the first list an URL is seen in is its own.
+    latestMrs = new Map()
+    for (const list of ['mine', 'review', 'following'] as const)
+      for (const m of r[list]) if (!latestMrs.has(m.url)) latestMrs.set(m.url, { list, forge: m.forge, project: m.project, ...(m.branch && { branch: m.branch }) })
     // Avisos come from comparing listings; a failure there must never break the listing itself.
     // Fake photo listings never reach the real feed.
     if (!fake) void avisos.onListing(r).catch(() => undefined)

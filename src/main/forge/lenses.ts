@@ -94,7 +94,7 @@ function commentBody(d: MrDraft): string {
   return `**${d.lens} · ${d.severity}**${loc ? ` — \`${loc}\`` : ''}\n\n${d.text}`
 }
 
-const namesProject = (origin: string, project: string, host: string): boolean => {
+export const namesProject = (origin: string, project: string, host: string): boolean => {
   const path = origin.trim().replace(/\/+$/, '').replace(/\.git$/, '').toLowerCase()
   const p = project.toLowerCase()
   // ponytail: the host as a substring of the origin, enough to tell github.com from a GitLab host.

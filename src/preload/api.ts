@@ -41,7 +41,8 @@ export interface WorkspaceRecord {
   id: string
   repoId: string
   branch: string
-  mode: Mode
+  /** `review`: a review session in the repo's own folder, no branch or worktree of Atril's (W90). */
+  mode: Mode | 'review'
   path: string
   baseCommit: string
   previousBranch?: string
@@ -231,6 +232,8 @@ export interface MrItem {
 }
 
 export type MrListName = 'mine' | 'review' | 'following'
+/** M33: how an MR opens in Atril. `review` and `continue` take one press; `existing` is a record of that same kind. */
+export type MrWork = { kind: 'review' } | { kind: 'continue' } | { kind: 'existing'; workspaceId: string } | { kind: 'none'; reason: string }
 
 export interface MrLists {
   /** Forges with a saved token; empty means nothing to list (M7). */
@@ -363,6 +366,10 @@ export interface MrApi {
   /** M30: asks that agent to fix the MR's failing CI. */
   fixCi(url: string): Promise<MrFixCiResult>
   discardDraft(url: string, id: string): Promise<MrDraftsResult>
+  /** M33: how an MR of the latest listing opens in Atril. */
+  workFor(url: string): Promise<MrWork>
+  /** M34: opens it as review session or continued workspace; a record of that kind already there is returned. */
+  openWork(url: string): Promise<WorkspaceResult>
 }
 
 export type AvisoKind = 'review' | 'comment' | 'ci' | 'following' | 'opened' | 'gone' | 'agent'

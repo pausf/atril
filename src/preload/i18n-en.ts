@@ -528,4 +528,9 @@ export const EN: Record<string, string> = {
   'Probar en vivo': 'Test live',
   'Ver {name} en grande': 'View {name} large',
   'Sin capturas todavía': 'No screenshots yet',
+  'No se pudo traer la rama: {detail}': 'Could not fetch the branch: {detail}',
+  'Este repo trabaja en tu copia: cambia de rama a mano': 'This repo works in your own copy: switch branch by hand',
+  'No se sabe la rama de esta MR: actualiza': 'The branch of this MR is unknown: refresh',
+  'Añade el repo de {project} en Ajustes': 'Add the repo of {project} in Settings',
+  'Varios repos registrados son de {project}': 'Several registered repos are {project}',
 }

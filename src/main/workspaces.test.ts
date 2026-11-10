@@ -2,7 +2,7 @@ import { existsSync, readFileSync } from 'node:fs'
 import { rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { cleanTmp, git, killTmux, makeRegisteredRepo, tmp, tmuxSock } from './test-helpers'
+import { cleanTmp, git, killTmux, makeRegisteredRepo, tmp, tmuxOut, tmuxSock } from './test-helpers'
 import { listWorkspaces, openWorktree, readRecords, removeWorkspace, writeRecords } from './workspaces'
 import { run, type Runner } from './run'
 
@@ -165,6 +165,102 @@ describe('workspaces', () => {
       expect(git(repo, 'branch', '--list', 'feat/ip').trim()).not.toBe('')
       expect(await listWorkspaces()).toEqual([])
     })
+  })
+
+  it('a workspace opens on an existing remote branch', async () => {
+    const bare = tmp()
+    git(bare, 'init', '--bare', '-q')
+    git(repo, 'remote', 'add', 'origin', bare)
+    const pushBranch = (name: string): string => {
+      git(repo, 'switch', '-q', '-c', `tmp-${name}`)
+      writeFileSync(join(repo, `${name.replace("/", "-")}.txt`), name)
+      git(repo, 'add', '.')
+      git(repo, 'commit', '-q', '-m', name)
+      git(repo, 'push', '-q', 'origin', `tmp-${name}:refs/heads/${name}`)
+      const sha = git(repo, 'rev-parse', 'HEAD').trim()
+      git(repo, 'switch', '-q', '-')
+      git(repo, 'branch', '-q', '-D', `tmp-${name}`)
+      return sha
+    }
+    const calls: string[][] = []
+    const spy: Runner = (cmd, args, opts) => {
+      calls.push([cmd, ...args])
+      return run(cmd, args, opts)
+    }
+
+    // No local branch: a new one tracking the remote's, based on the fetched commit.
+    const fetched = pushBranch('feat/remote')
+    const fresh = await openWorktree({ repoId: 'demo', branch: 'feat/remote', agent: 'claude', existing: true, remote: 'origin', argv: SLEEP }, spy)
+    if (!('workspace' in fresh)) throw new Error(fresh.error)
+    expect(calls).toContainEqual(['git', '-C', repo, 'fetch', 'origin', 'feat/remote'])
+    expect(git(fresh.workspace.path, 'rev-parse', 'HEAD').trim()).toBe(fetched)
+    expect(git(fresh.workspace.path, 'rev-parse', '--abbrev-ref', 'feat/remote@{upstream}').trim()).toBe('origin/feat/remote')
+    expect(fresh.workspace.baseCommit).toBe(fetched)
+
+    // A local branch already there is the one checked out, untouched.
+    const remoteTip = pushBranch('feat/both')
+    const localTip = git(repo, 'rev-parse', 'HEAD').trim()
+    git(repo, 'branch', 'feat/both', localTip)
+    const both = await openWorktree({ repoId: 'demo', branch: 'feat/both', agent: 'claude', existing: true, remote: 'origin', argv: SLEEP })
+    if (!('workspace' in both)) throw new Error(both.error)
+    expect(git(both.workspace.path, 'branch', '--show-current').trim()).toBe('feat/both')
+    expect(git(both.workspace.path, 'rev-parse', 'HEAD').trim()).toBe(localTip)
+    expect(both.workspace.baseCommit).toBe(remoteTip)
+
+    // A branch the remote does not have opens nothing.
+    const missing = await openWorktree({ repoId: 'demo', branch: 'feat/nowhere', agent: 'claude', existing: true, remote: 'origin', argv: SLEEP })
+    expect('error' in missing && missing.error.startsWith('No se pudo traer la rama: ')).toBe(true)
+    expect(existsSync(join(home, 'wt', 'demo', 'feat/nowhere'))).toBe(false)
+    expect(git(repo, 'branch', '--list', 'feat/nowhere').trim()).toBe('')
+
+    // In place, the person's copy is never switched: refused before any fetch.
+    writeFileSync(join(home, 'repos.json'), JSON.stringify({ repos: [{ id: 'demo', path: repo, override: 'in-place' }] }))
+    calls.length = 0
+    const before = git(repo, 'branch', '--show-current').trim()
+    const inPlace = await openWorktree({ repoId: 'demo', branch: 'feat/remote', agent: 'claude', existing: true, remote: 'origin', argv: SLEEP }, spy)
+    expect(inPlace).toEqual({ error: 'Este repo trabaja en tu copia: cambia de rama a mano' })
+    expect(calls.some((c) => c.includes('fetch'))).toBe(false)
+    expect(git(repo, 'branch', '--show-current').trim()).toBe(before)
+    expect((await readRecords()).map((r) => r.branch)).toEqual(['feat/remote', 'feat/both'])
+  })
+
+  it('a review session never touches git', async () => {
+    // Read-only plumbing is all a review session may run; anything else could move a ref, the index or the files.
+    const READ_ONLY = ['check-ref-format', 'rev-parse', 'remote', 'status', 'branch --show-current', 'for-each-ref', 'ls-files']
+    writeFileSync(join(repo, 'wip.txt'), 'the person\'s own uncommitted work')
+    const state = (): string[] => [git(repo, 'for-each-ref'), git(repo, 'rev-parse', 'HEAD'), git(repo, 'status', '--porcelain'), git(repo, 'ls-files', '--stage'), git(repo, 'worktree', 'list')]
+    const before = state()
+    const calls: string[][] = []
+    const spy: Runner = (cmd, args, opts) => {
+      calls.push([cmd, ...args])
+      return run(cmd, args, opts)
+    }
+
+    const r = await openWorktree({ repoId: 'demo', branch: 'feat/their-mr', agent: 'claude', review: true, prompt: '/libretto:libretto-review https://github.com/acme/shop-web/pull/7', argv: SLEEP }, spy)
+    if (!('workspace' in r)) throw new Error(r.error)
+    expect(r.workspace).toMatchObject({ mode: 'review', branch: 'feat/their-mr', path: repo })
+    const gits = calls.filter((c) => c[0] === 'git').map((c) => c.slice(c[1] === '-C' ? 3 : 1).join(' '))
+    expect(gits.filter((g) => !READ_ONLY.some((ok) => g.startsWith(ok)))).toEqual([])
+    expect(state()).toEqual(before)
+    expect(tmuxOut(sock, 'display-message', '-p', '-t', r.workspace.session, '#{pane_current_path}').trim()).toBe(repo)
+
+    // W7 counts in-place workspaces only: a review session in an in-place repo leaves room for one.
+    rmSync(join(repo, 'wip.txt'))
+    writeFileSync(join(home, 'repos.json'), JSON.stringify({ repos: [{ id: 'demo', path: repo, override: 'in-place' }] }))
+    const second = await openWorktree({ repoId: 'demo', branch: 'feat/their-mr-2', agent: 'claude', review: true, argv: SLEEP })
+    if (!('workspace' in second)) throw new Error(second.error)
+    const ip = await openWorktree({ repoId: 'demo', branch: 'feat/mine', agent: 'claude', argv: SLEEP })
+    if (!('workspace' in ip)) throw new Error(ip.error)
+    expect(ip.workspace.mode).toBe('in-place')
+
+    // Removing it ends its session and drops its record, with no git at all (the checkout is dirty again on purpose).
+    writeFileSync(join(repo, 'wip.txt'), 'dirty')
+    calls.length = 0
+    expect(await removeWorkspace(r.workspace.id, spy)).toEqual({ ok: true })
+    expect(calls.filter((c) => c[0] === 'git')).toEqual([])
+    expect((await readRecords()).map((w) => w.id)).toEqual([second.workspace.id, ip.workspace.id])
+    expect((await listWorkspaces()).some((w) => w.id === r.workspace.id)).toBe(false)
+    expect(() => tmuxOut(sock, 'has-session', '-t', r.workspace.session)).toThrow()
   })
 
   it('a reader never sees a half-written workspaces file', async () => {

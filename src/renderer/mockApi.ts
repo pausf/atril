@@ -1,5 +1,5 @@
 import { vi } from 'vitest'
-import type { ActivityLine, SubagentEntry, SubagentLine, AddRepoResult, Aviso, FileChange, FlowDocs, ForgeId, ForgeStatus, Mode, MrDraft, MrDrafts, MrDraftsResult, MrFixCiResult, MrLists, MrReply, MrScoreState, MrThreads, AgentState, QaResult, QaStatus, AtrilApi, QuickAnswer, QuickReplies, FlowStage, JiraIssue, MenuAction, NextItem, StartProposalResult, StartRequest, StartResult, RepoView, ToolReport, UiState, WorkspaceResult, WorkspaceView } from '../preload/api'
+import type { ActivityLine, SubagentEntry, SubagentLine, AddRepoResult, Aviso, FileChange, FlowDocs, ForgeId, ForgeStatus, Mode, MrDraft, MrDrafts, MrDraftsResult, MrFixCiResult, MrLists, MrReply, MrScoreState, MrThreads, MrWork, AgentState, QaResult, QaStatus, AtrilApi, QuickAnswer, QuickReplies, FlowStage, JiraIssue, MenuAction, NextItem, StartProposalResult, StartRequest, StartResult, RepoView, ToolReport, UiState, WorkspaceResult, WorkspaceView } from '../preload/api'
 
 export const workspace = (id: string, branch: string, alive = true): WorkspaceView => ({
   id,
@@ -71,6 +71,10 @@ interface Options {
   drafts?: Record<string, MrDrafts>
   /** What mr.review answers per URL (stored unless it is an error); missing means no findings. */
   review?: Record<string, MrDraftsResult>
+  /** What mr.workFor answers per URL; missing means review. */
+  work?: Record<string, MrWork>
+  /** What mr.openWork answers per URL; missing means a new live workspace on branch «mr». */
+  openWork?: Record<string, WorkspaceResult>
   /** What mr.ciAgent answers per URL (the agent's branch); missing means no agent. */
   ciAgents?: Record<string, string>
   /** The stored notices, newest first; markRead changes them in place. */
@@ -177,7 +181,9 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
       sendDraft: vi.fn(async (url: string, id: string) => changeDrafts(url, (ds) => ds.map((d) => (d.id === id ? { ...d, state: 'sent' as const } : d)))),
       discardDraft: vi.fn(async (url: string, id: string) => changeDrafts(url, (ds) => ds.filter((d) => d.id !== id))),
       ciAgent: vi.fn(async (url: string): Promise<string | null> => o.ciAgents?.[url] ?? null),
-      fixCi: vi.fn(async (url: string): Promise<MrFixCiResult> => (o.ciAgents?.[url] ? { sent: o.ciAgents[url]! } : { error: 'No hay un único trabajo de esta MR abierto en Atril.' }))
+      fixCi: vi.fn(async (url: string): Promise<MrFixCiResult> => (o.ciAgents?.[url] ? { sent: o.ciAgents[url]! } : { error: 'No hay un único trabajo de esta MR abierto en Atril.' })),
+      workFor: vi.fn(async (url: string): Promise<MrWork> => o.work?.[url] ?? { kind: 'review' }),
+      openWork: vi.fn(async (url: string): Promise<WorkspaceResult> => o.openWork?.[url] ?? { workspace: workspace('mr', 'mr') })
     },
     avisos: {
       list: vi.fn(async () => avisos),

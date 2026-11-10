@@ -51,7 +51,7 @@ async function writeState(state: State): Promise<void> {
   await rename(temp, file)
 }
 
-const readRepos = async (): Promise<Repo[]> => (await readState()).repos
+export const readRepos = async (): Promise<Repo[]> => (await readState()).repos
 // Rewriting the repo list must never drop the Jira memory that lives in the same file.
 const writeRepos = async (repos: Repo[]): Promise<void> => writeState({ ...(await readState()), repos })
 

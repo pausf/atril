@@ -44,6 +44,8 @@ const api: AtrilApi = {
     ciAgent: (url) => ipcRenderer.invoke('atril:mr:ciAgent', url),
     fixCi: (url) => ipcRenderer.invoke('atril:mr:fixCi', url),
     discardDraft: (url, id) => ipcRenderer.invoke('atril:mr:discardDraft', url, id),
+    workFor: (url) => ipcRenderer.invoke('atril:mr:workFor', url),
+    openWork: (url) => ipcRenderer.invoke('atril:mr:openWork', url),
     onScoreChange: (cb) => {
       const h = (_e: Electron.IpcRendererEvent, url: string, state: MrScoreState): void => cb(url, state)
       ipcRenderer.on('atril:mr:score-changed', h)

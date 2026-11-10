@@ -22,6 +22,11 @@ export interface OpenInput {
   auto?: boolean
   /** An own task (W40): becomes the flow's request; never a command line of its own. */
   task?: string
+  /** W89: the branch already exists on `remote` (default origin): fetched and checked out, never created. */
+  existing?: boolean
+  remote?: string
+  /** W90: a review session in the repo's own folder; Atril runs no git that changes anything. */
+  review?: boolean
   /** Tests swap the agent for a harmless long-running command; the prompt is still appended. */
   argv?: string[]
 }
@@ -84,12 +89,17 @@ export async function openWorktree(input: OpenInput, run: Runner = defaultRun): 
   const repo = repos.find((r) => r.id === repoId)
   if (!repo) return { error: t('No hay ningún repo «{id}»', { id: repoId }) }
 
-  const detected = repo.override ? { mode: repo.override, reason: '' } : await detectMode(repo.path, run)
-  const inPlace = effectiveMode(repo, detected).mode === 'in-place'
+  const review = input.review === true
+  const detected = review ? null : repo.override ? { mode: repo.override, reason: '' } : await detectMode(repo.path, run)
+  const inPlace = detected !== null && effectiveMode(repo, detected).mode === 'in-place'
+  if (inPlace && input.existing === true) return { error: t('Este repo trabaja en tu copia: cambia de rama a mano') }
 
   let path: string
   let previousBranch: string | undefined
-  if (inPlace) {
+  let fetched: string | undefined
+  if (review) {
+    path = repo.path
+  } else if (inPlace) {
     if ((await readRecords()).some((r) => r.repoId === repoId && r.mode === 'in-place')) {
       return { error: t('Este repo trabaja in-place y ya tiene un trabajo abierto: ciérralo antes') }
     }
@@ -107,15 +117,24 @@ export async function openWorktree(input: OpenInput, run: Runner = defaultRun): 
     path = repo.path
   } else {
     path = worktreePath(repoId, branch)
+    let where = ['-b', branch, path]
+    if (input.existing === true) {
+      const remote = input.remote ?? 'origin'
+      const fetch = await run('git', ['-C', repo.path, 'fetch', remote, branch])
+      if (fetch.code !== 0) return { error: t('No se pudo traer la rama: {detail}', { detail: fetch.stderr.trim() || fetch.code }) }
+      fetched = (await run('git', ['-C', repo.path, 'rev-parse', `refs/remotes/${remote}/${branch}`])).stdout.trim()
+      const local = (await run('git', ['-C', repo.path, 'rev-parse', '--verify', '--quiet', `refs/heads/${branch}`])).code === 0
+      where = local ? [path, branch] : ['--track', '-b', branch, path, `${remote}/${branch}`]
+    }
     await mkdir(join(path, '..'), { recursive: true })
-    const add = await run('git', ['-C', repo.path, 'worktree', 'add', '-b', branch, path])
+    const add = await run('git', ['-C', repo.path, 'worktree', 'add', ...where])
     if (add.code !== 0) return { error: add.stderr.trim() || t('git worktree add falló') }
   }
 
-  const head = await run('git', ['-C', repo.path, 'rev-parse', 'HEAD'])
+  const head = fetched === undefined ? (await run('git', ['-C', repo.path, 'rev-parse', 'HEAD'])).stdout.trim() : fetched
   const id = newId()
-  // Only folders Atril created: in-place runs in the person's own checkout, never touched (W31).
-  if (!inPlace) await trustFolder(path)
+  // Only folders Atril created: in-place and review run in the person's own checkout, never touched (W31).
+  if (!inPlace && !review) await trustFolder(path)
   const auto = input.auto === true
   if (auto) {
     await mkdir(join(home(), 'auto'), { recursive: true })
@@ -132,9 +151,9 @@ export async function openWorktree(input: OpenInput, run: Runner = defaultRun): 
     id,
     repoId,
     branch,
-    mode: inPlace ? 'in-place' : 'worktree',
+    mode: review ? 'review' : inPlace ? 'in-place' : 'worktree',
     path,
-    baseCommit: head.stdout.trim(),
+    baseCommit: head,
     ...(previousBranch !== undefined && { previousBranch }),
     agent,
     ...(input.model && { model: input.model }),
@@ -156,6 +175,14 @@ export async function removeWorkspace(id: string, run: Runner = defaultRun): Pro
   const records = await readRecords()
   const rec = records.find((r) => r.id === id)
   if (!rec) return { error: t('Ese trabajo ya no existe') }
+  if (rec.mode === 'review') {
+    // W90: the folder is the person's own repo; ending the session is all there is to undo.
+    await killSession(id, run)
+    await writeRecords(records.filter((r) => r.id !== id))
+    await dropFiles(id)
+    return { ok: true }
+  }
+
   const repo = (await readJson<{ repos: Repo[] }>(join(home(), 'repos.json'), { repos: [] })).repos.find((r) => r.id === rec.repoId)
   if (!repo) return { error: t('No hay ningún repo «{id}»', { id: rec.repoId }) }
 
