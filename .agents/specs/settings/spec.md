@@ -50,6 +50,13 @@ Governs: src/main/credentials/** src/renderer/settings/**
 - In English, activity lines and needs-you notifications read «Reading x.php», «Claude says: …»,
   «Asks you: …», «✗ phpunit failed» — Atril's words translated, what follows exactly as written.
 
+### Conexiones (redesign-connections, 10 nov 2026)
+
+- Ajustes abre con tres filas de conexión que se leen de un vistazo y no ocupan media pantalla.
+- Conectar guía en tres pasos y dice qué permisos hacen falta; nada parece deshabilitado sin motivo.
+- Gestionar enseña Reemplazar y Borrar (y el tablero en Jira) sin mostrar nunca el token (S5).
+- En una ventana ancha, Ajustes usa dos columnas.
+
 ## Scope boundaries
 
 **In:** storing, checking, replacing and deleting the Jira token, through a store and a card
@@ -106,6 +113,13 @@ explicit confirmation; the cards and the dialog are keyboard-operable.
 disk; translating Claude's words.
 
 **Never scoped out:** a line that matches no known prefix shows exactly as it came.
+
+### Conexiones (redesign-connections, 10 nov 2026)
+
+**In:** la presentación de las tarjetas de Jira, GitHub y GitLab, sus textos y el layout de Ajustes.
+**Out:** cómo se guardan o comprueban los tokens (S1–S4, S20 no cambian); nuevas forjas; OAuth.
+**Never scoped out:** el token nunca se muestra (S3, S5); teclado y foco en las filas y formularios;
+errores visibles junto al campo.
 
 ## Constraints
 
@@ -267,6 +281,59 @@ disk; translating Claude's words.
 - Q: (spec-reviewer) ¿Qué prefijos? → A: exactamente los que escribe `summarise.mjs`, listados en S27; se reconocen por el texto, no por el tipo (assumed).
 - Q: (spec-reviewer) ¿Y una línea `✗` sin «falló» al final? → A: se queda como vino (assumed).
 
+### Conexiones (redesign-connections, 10 nov 2026)
+
+- Pau, 10 nov: «diseño feísimo» de la tarjeta de GitLab; diseño minimalista (memoria design-taste-minimal).
+- Comprobar y guardar siempre activo, con el error junto al campo (assumed, 10 nov).
+
+#### Alternatives that lost
+
+| Considered | Why it lost |
+|---|---|
+| Un asistente modal paso a paso | Más pantalla para tres campos; la fila desplegable se queda donde estás. |
+| Dejar «Guardar» deshabilitado con una pista | Es justo lo que parecía roto. |
+
+#### Decision log, answers as given (2026-11-10)
+- Q: ¿Cómo se ve? → A: una sección «Conexiones» con una fila compacta por servicio (Jira, GitHub, GitLab):
+  nombre, para qué sirve en una línea, estado («Sin conectar» o «Conectado · cuenta · sitio») y un botón
+  «Conectar» o «Gestionar» (assumed, del diseño encolado).
+- Q: ¿El formulario? → A: solo al pulsar Conectar (o Reemplazar), dentro de la fila, en tres pasos
+  numerados: 1 · Crear el token (abre la página con los permisos ya marcados y los nombra), 2 · Pegarlo
+  (y dirección en GitLab y Jira), 3 · Comprobar y guardar (assumed).
+- Q: ¿El botón gris que parecía roto? → A: «Guardar y comprobar» está siempre activo con estilo primario;
+  si falta un campo, al pulsarlo dice cuál, junto al campo, sin llamar a nadie (assumed).
+- Q: ¿Para qué sirve cada uno? → A: Jira «Tus tareas y empezar trabajos»; GitHub y GitLab «Tus MR, revisar y
+  crear repos» (assumed: la conexión de forja también trae las MR).
+- Q: ¿Dos columnas? → A: sí, desde 1100 px de ancho: Conexiones y Repos a la izquierda, Apariencia e Idioma
+  a la derecha (assumed).
+
+- Q: (revisor de spec) Holguras → A, todas (assumed):
+  - **Gestionar.** Una fila guardada enseña «Gestionar». Al desplegarla aparecen Reemplazar y Borrar, y
+    en Jira también el tablero. El token no se muestra nunca. S5 se enmienda para decirlo.
+  - **El botón de guardar** se sigue llamando «Guardar y comprobar», como hoy, para no tocar lo que ya
+    funciona.
+    - Está activo siempre, salvo durante la comprobación, en la que dice «Comprobando…».
+    - Si falta un campo, lo dice junto a ese campo y no llama a main.
+  - **Campos de Jira:** dirección, correo y token, como hoy. GitLab: dirección y token. GitHub: token.
+  - **Permisos.** Se nombran en texto visible junto al botón de crear el token:
+    - Jira: «un token de API de Atlassian»;
+    - GitHub: «con el permiso repo»;
+    - GitLab: «con el permiso api».
+    Las URL no cambian (S7).
+  - **Estado de la fila:**
+    - «Sin conectar»;
+    - «Conectado · {cuenta}», con « · {sitio}» detrás solo cuando hay sitio (la dirección de Jira o la de
+      GitLab);
+    - «Cargando…» mientras llega.
+  - **Botón de la fila.** Conectar o Gestionar pliega y despliega la fila, y lleva `aria-expanded`. Su
+    texto no cambia al abrirla.
+  - **Dos columnas.**
+    - El selector es `.ajustes`. Ajustes coloca Apariencia y lo que llega como `children` (Idioma) en una
+      columna derecha, y Conexiones y Repos en la izquierda.
+    - Se mide el ancho de la ventana. Por debajo de 1100 px, una sola columna en el orden de hoy.
+    - Queda superada la línea de move-repos-to-settings que dice «entre Jira y Apariencia».
+  - **El boceto y la foto** no tienen criterio: son dibujo y evidencia.
+
 ## Task breakdown
 
 - Encrypted store with save / exists / delete.
@@ -288,8 +355,8 @@ disk; translating Claude's words.
 - **S4** When the Jira token is saved, Atril shall check it with `/rest/api/3/myself` and show
   the account name, or the service's error without the token.
   Proof: src/main/credentials/check.test.ts check shows the account or the error
-- **S5** While a token is stored, the Ajustes card shall show "Guardado" with the account and
-  offer only Reemplazar and Borrar, never the token.
+- **S5** While a token is stored, its connection row shall show «Gestionar», whose body offers
+  only Reemplazar and Borrar (and, for Jira, the board), never the token.
   Proof: src/renderer/settings/settings.test.ts saved token cannot be seen again
 - **S6** If a feature needs a service with no token, it shall show "Conecta <servicio> en
   Ajustes" with a link to that card.
@@ -379,3 +446,23 @@ disk; translating Claude's words.
   needs-you notification body shall show the hook's lines through S27.
   Proof: src/renderer/settings/language.test.ts claude and jira text stay as written
   Proof: src/main/i18n.test.ts the notification body speaks the language
+
+### Conexiones (redesign-connections, 10 nov 2026)
+
+- **S29** While Ajustes is shown, a «Conexiones» section shall list Jira, GitHub and GitLab as rows, each
+  with its name, its purpose line, its state («Cargando…», «Sin conectar», or «Conectado · {cuenta}» plus
+  « · {sitio}» when a site is known) and one button with `aria-expanded` — «Conectar» when nothing is
+  saved, «Gestionar» when it is — that folds and unfolds the row's body; no form shows until it is
+  pressed. One test holds a case per clause.
+  Proof: src/renderer/settings/connections.test.ts connections read as rows with one button
+- **S30** When the person presses Conectar (or Reemplazar), the row shall open three numbered steps — the
+  create-token button with visible text naming what to create (Jira «un token de API de Atlassian»,
+  GitHub «con el permiso repo», GitLab «con el permiso api»), the fields (Jira: dirección, correo y
+  token; GitLab: dirección y token; GitHub: token), and «Guardar y comprobar» — where «Guardar y
+  comprobar» is disabled only while a check runs («Comprobando…») and, if a field is empty, says which
+  next to that field without calling main. One test holds a case per clause.
+  Proof: src/renderer/settings/connections.test.ts connect guides in three steps
+- **S31** Ajustes shall group Conexiones and Repos in a left column and Apariencia and Idioma in a right
+  one, and `.ajustes` shall show them side by side while the window is at least 1100 px wide and as one
+  column, left first, below that.
+  Proof: src/renderer/settings/connections.test.ts settings use two columns when wide
