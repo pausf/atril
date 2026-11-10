@@ -1,11 +1,13 @@
 """Land a change: python3 land.py <change> "<Topic label>"
 Applies proposal.md onto its Targets capability and each spec-<cap>.md onto <cap>, one
-'### <label> (<change>, 9 nov 2026)' block per pillar; criteria tagged '(amended)' replace the
+'### <label> (<change>, <today>)' block per pillar; criteria tagged '(amended)' replace the
 existing one in place."""
-import re, sys
+import re, sys, datetime
+D = datetime.date.today()
+DAY = f"{D.day} {'ene feb mar abr may jun jul ago sep oct nov dic'.split()[D.month - 1]} {D.year}"
 change, label = sys.argv[1], sys.argv[2]
 d = f'.agents/changes/{change}/'
-T = f"### {label} ({change}, 9 nov 2026)\n\n"
+T = f"### {label} ({change}, {DAY})\n\n"
 def sec(doc, name):
     m = re.search(r'^## ' + re.escape(name) + r'\n(.*?)(?=^## |\Z)', doc, re.S | re.M)
     return m.group(1).strip('\n') if m else ''
@@ -21,7 +23,7 @@ def land(cap, doc, with_prior_extras):
             alts = ap[ap.index('### The alternatives it beat') + 28:ap.index('### Risks')].strip()
             prior += "\n\n#### Alternatives that lost\n\n" + alts
         dl = sec(doc, 'Decision log')
-        if dl: prior += "\n\n#### Decision log, answers as given (2026-11-09)\n" + re.sub(r'^### Session.*\n', '', dl, flags=re.M)
+        if dl: prior += f"\n\n#### Decision log, answers as given ({D.isoformat()})\n" + re.sub(r'^### Session.*\n', '', dl, flags=re.M)
     for heading, body in [('## Scope boundaries', sec(doc, 'Outcomes')), ('## Constraints', sec(doc, 'Scope boundaries')),
                           ('## Prior decisions', sec(doc, 'Constraints')), ('## Task breakdown', prior)]:
         if not body.strip(): continue

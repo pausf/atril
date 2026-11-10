@@ -132,6 +132,14 @@ The `workspaces` capability, phase 1. Its siblings in this change: `.agents/spec
 - An automatic workspace shows «Auto» on its row; its Spec, Plan and Checklist open read-only.
 - Before an automatic agent pushes or opens a request, Claude Code asks the person.
 
+### Subagentes (add-subagents-view, 10 nov 2026)
+
+- The flow panel shows the workspace's subagents: what each was asked (its description, or its type
+  when none is known), its type, and «trabajando · 1 min 20 s» or «terminado · 45 s».
+- The workspace row shows «2 subagentes» while any is running.
+- SubagentStart and SubagentStop never change the workspace's own state (working / needs-you); the
+  Agent call itself and the subagent's tool calls still count as working, as today.
+
 ## Scope boundaries
 
 **In:** the three columns and footer of `bocetos/fase1-nucleo.html` (boceto 8), the
@@ -238,6 +246,14 @@ the mode from task size automatically, a setting for the default mode.
 
 **Never scoped out:** the task text stays one argv element (W40); the push needs the person.
 
+### Subagentes (add-subagents-view, 10 nov 2026)
+
+**In:** the two hook events, the description from the Agent tool, the list per workspace, the row
+count. **Out:** reading a subagent's transcript or output, stopping a subagent from Atril, subagents of
+subagents shown as a tree, history past the next prompt.
+
+**Never scoped out:** the hook payload is read once and only the listed fields leave it (as today).
+
 ## Constraints
 
 - Electron (current stable) + TypeScript in strict mode, pnpm, Node 24 (installed:
@@ -316,6 +332,11 @@ the mode from task size automatically, a setting for the default mode.
 
 - The mode only changes the slash command; W29/W31/W33/W34 apply unchanged.
 - The hook stays the only thing Claude Code runs from Atril; it reads a marker, never the record.
+
+### Subagentes (add-subagents-view, 10 nov 2026)
+
+- The hook stays one script; the new events install alongside the existing ones in `agent.ts`' `HOOK_EVENTS`.
+- Descriptions are text from Claude: shown as text, cut at 120 characters.
 
 ## Prior decisions
 
@@ -562,6 +583,30 @@ the mode from task size automatically, a setting for the default mode.
 - Q: (revisor) ¿Campo `mode`? → A: ya existe (in-place/worktree): campo nuevo `auto` (assumed).
 - Q: (revisor de obra) La regex no veía `bash -c "git push"`, `/usr/bin/git push`, `--no-pager`… → A: cualquier `git … push` en un mismo segmento; un «push» en un mensaje de commit solo añade una pregunta (assumed).
 - Q: (revisor) ¿F15 frente a F26? → A: F26 es la excepción y su texto gana; solo el editor de documentos (assumed).
+
+### Subagentes (add-subagents-view, 10 nov 2026)
+
+- **Events only** (assumed): the transcript would cost reading and could leak content.
+- **Pairing by order** (assumed): SubagentStart carries no description, so it takes the oldest unpaired
+  Agent PreToolUse description of the same `subagent_type`; if none, the type alone is shown.
+
+#### Alternatives that lost
+
+| Considered | Why it lost |
+|---|---|
+| Read subagent transcripts for live progress | quota, content, size |
+| Derive the list from the activity feed | the feed keeps 200 lines: a long run drops the start |
+| Pair by `tool_use_id` | SubagentStart does not carry it (not documented) |
+
+#### Decision log, answers as given (2026-11-10)
+- Q: Pau, 9 nov: «si claude crea subagentes también estaría bien verlos».
+- Q: ¿De dónde salen? → A: de los hooks `SubagentStart`/`SubagentStop` de Claude Code (`agent_id`, `agent_type`) y del PreToolUse de la herramienta `Agent` (`description`, `subagent_type`); documentado en code.claude.com/docs/en/hooks (assumed).
+- Q: ¿Se lee el transcript del subagente? → A: no: ni cuota ni contenido, solo los eventos (assumed).
+- Q: ¿Cuánto se quedan los terminados? → A: hasta el siguiente mensaje de la persona (UserPromptSubmit), como mucho 20 (assumed).
+- Q: ¿Agentes internos de Claude Code (agent_type vacío)? → A: se ignoran (assumed).
+- Q: (revisor) ¿El PreToolUse de Agent deja de marcar «trabajando»? → A: no, sigue igual; solo SubagentStart/Stop no tocan el estado (assumed).
+- Q: (revisor) ¿Sin subagent_type? ¿Pendientes que nunca emparejan? → A: cuenta como general-purpose; los pendientes caducan a los 10 min (assumed).
+- Q: (revisor) ¿Unidades y formato? → A: segundos epoch; «45 s», «1 min 20 s»; terminado muestra la duración (assumed).
 
 ## Task breakdown
 
@@ -898,3 +943,29 @@ the mode from task size automatically, a setting for the default mode.
   without text offers none; Empezar's one click (I20) is always Manual; an automatic workspace's row
   shows «Auto».
   Proof: src/renderer/inbox/mode.test.ts the start dialogs offer manual or automatic
+
+### Subagentes (add-subagents-view, 10 nov 2026)
+
+- **W62** When the hook gets a PreToolUse for tool `Agent` (or `Task`, its older name), it shall keep its existing state and
+  activity writes and also append `{ type: subagent_type or "general-purpose", description (cut to 120
+  characters), at }` to `pending` in `$ATRIL_HOME/subagents/<session>.json`; on SubagentStart with a
+  non-empty `agent_type` it shall add `{ id: agent_id, type, description?, startedAt }` (epoch seconds),
+  taking and removing the oldest pending entry of that type younger than 10 minutes, and dropping
+  pending entries older than that.
+  Proof: src/main/agent.test.ts a subagent start takes its description
+- **W63** On SubagentStop with that `agent_id` the hook shall set `endedAt`; SubagentStart and
+  SubagentStop with an empty `agent_type`, or an unknown `agent_id` on stop, shall change nothing; neither
+  event shall write the state file or an activity line.
+  Proof: src/main/agent.test.ts subagent events never change the agent state
+- **W64** On UserPromptSubmit the hook shall drop every finished entry; the file shall keep at most 20
+  entries plus 20 pending, dropping the oldest finished entry, then the oldest pending, and never a
+  running one (more than 20 running is kept as is).
+  Proof: src/main/agent.test.ts the subagent list stays bounded
+- **W65** Atril shall install SubagentStart and SubagentStop hooks with the same command as the other
+  hook events; main shall answer `atril:subagents:get(workspaceId)` with the entries only (no
+  `pending`; `[]` without a file) and send `atril:subagents:changed(workspaceId, entries)` whenever the
+  file's content changes, an `endedAt` flip included; removing a workspace deletes its file.
+  Proof: src/main/subagents.test.ts the subagent list reaches the window
+- **W66** A workspace row shall show «{n} subagentes» («1 subagente») while n > 0 of its entries have
+  no `endedAt`, and nothing otherwise.
+  Proof: src/renderer/subagents.test.ts the row counts running subagents
