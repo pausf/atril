@@ -25,6 +25,17 @@ un botón le pide a ese agente que mire qué ha fallado y lo arregle.
 - Q: (fase 5) ¿Cómo? → A: reutilizar `agentFor` de lenses y el `send` que ya escribe en el panel (assumed).
   Perdió: abrir un trabajo nuevo desde la MR (es la mejora «Abrir un trabajo desde una MR», aparte).
 
+- Q: (revisor de spec) Holguras → A, todas (assumed):
+  - **De dónde sale la CI.** Main la lee de la última lista de MR, como M27; no se fía de la ventana.
+  - **Los errores, uno por caso:**
+    - «La CI de esta MR ya no falla.»
+    - «No hay un único trabajo de esta MR abierto en Atril.»
+    - «No se pudo enviar: ese trabajo ya no está.» (el texto de N3)
+  - **`ciAgent`** tiene su propio criterio, M32. La vista lo pregunta al abrir la MR.
+  - **Doble clic.** Un segundo clic mientras el primero sigue en curso se rechaza, como en M27.
+  - **Dónde vive el código.** En `lenses.ts`, que ya está en el `Governs:` de mr, junto a `agentFor`.
+  - **Textos.** Todos por `t()`.
+
 ## Outcomes
 
 - En una MR con CI «Falla» y su trabajo vivo en Atril, «Arreglar CI con Claude» escribe la petición en la
@@ -53,13 +64,20 @@ sin pulsar; el botón se usa con teclado.
 - **M30** When the window asks `atril:mr:fixCi(url)` for an MR whose CI is «Falla» and M28 finds exactly
   one workspace for it, main shall type into that workspace's pane, as literal text followed by Enter, «La
   CI de {url} falla. Mira qué ha fallado con {gh pr checks|glab ci view}, arréglalo y avísame antes de subir
-  nada.» (gh for GitHub, glab for GitLab) and answer `{ sent: branch }`; otherwise it shall type nothing and
-  answer `{ error }`.
+  nada.» (gh for GitHub, glab for GitLab) and answer `{ sent: branch }`, judging the CI from main's latest
+  MR listing; otherwise it shall type nothing and answer `{ error }` with «La CI de esta MR ya no falla.»,
+  «No hay un único trabajo de esta MR abierto en Atril.» or «No se pudo enviar: ese trabajo ya no está.»;
+  a second call for the same MR while one is in flight shall be refused. One test holds a case per clause
+  (GitHub, GitLab, two agents, CI not failing, gone, double call).
   Proof: src/main/forge/fixci.test.ts fix ci types into the one agent of the mr
 - **M31** While an MR's CI is «Falla» and main reports an agent for it, the MR view shall show «Arreglar CI
   con Claude» beside the CI state; pressing it shall show «Enviado a {rama}» or the error; with no agent, or
-  any other CI state, no button shall show.
+  any other CI state, no button shall show. One test holds the visibility, the sent text and the error.
   Proof: src/renderer/mr/fixci.test.ts the fix ci button shows only with a failing ci and an agent
+- **M32** When the MR view opens, the window shall ask `atril:mr:ciAgent(url)`, and main shall answer the
+  branch of the one workspace M28 finds when main's latest listing has that MR's CI as «Falla», and `null`
+  otherwise.
+  Proof: src/main/forge/fixci.test.ts ci agent names the branch only for a failing ci
 
 ## Approach
 
@@ -91,5 +109,5 @@ Ninguna.
 
 ## Checklist
 
-- [ ] main: ciAgent and fixCi over agentFor and send · Closes: M30
+- [ ] main: ciAgent and fixCi over agentFor and send · Closes: M30, M32
 - [ ] the MR view button with its state; sketch; photo · waits on box 1 · Closes: M31
