@@ -170,3 +170,9 @@ Root cause of the day's flaky tmux/git timeouts (W62 hang, reply, workspaces, ch
 
 ## 2026-11-10 · adopt-grafito · 6→7
 Reviewer found nothing against the contract (4 proofs re-run, green). Noted `UiState.palette` is optional in the type while main always fills it; kept, the same as other optional ui fields.
+
+## 2026-11-10 · expand-tour · 6→7
+Reviewer found nothing against the contract (W23 proof and the i18n scan re-run, green; ~12 text claims spot-checked true).
+
+## 2026-11-10 · expand-tour · 6
+The step table written before reading the code said four untrue things (Nueva tarea «crea en Jira», a red rail badge, a live subagent terminal, the 5 h reset). The builder caught them by checking each sentence against its component. Lesson: copy for a tutorial is a claim about the code — write it from the component, not from memory.

@@ -166,6 +166,11 @@ The `workspaces` capability, phase 1. Its siblings in this change: `.agents/spec
 - La elección se guarda y se aplica al abrir, como el tema.
 - El boceto `fase1-nucleo.html` ofrece la misma elección.
 
+### Tutorial de 24 pasos (expand-tour, 10 nov 2026)
+
+El tutorial recorre 24 pasos que explican toda la app, sin dejar piezas sin contar: la lista y los
+textos, en «Pasos» abajo. Los que tienen elemento en pantalla lo iluminan; los que no, salen centrados.
+
 ## Scope boundaries
 
 **In:** the three columns and footer of `bocetos/fase1-nucleo.html` (boceto 8), the
@@ -313,6 +318,13 @@ cambiar la paleta original.
 **Never scoped out:** contraste de texto ≥ 4,5:1 en las dos paletas y los dos temas; el selector con
 teclado y estado legible (`aria-pressed`).
 
+### Tutorial de 24 pasos (expand-tour, 10 nov 2026)
+
+**In:** los 24 pasos, sus textos y atajos, los `data-tour` que falten, la bienvenida.
+**Out:** cambiar cómo funciona el tutorial (foco, posiciones, teclado); vídeos o animaciones; un tutorial
+por pantalla.
+**Never scoped out:** castellano de España y su inglés en `i18n-en.ts`; manejable con teclado (W25).
+
 ## Constraints
 
 - Electron (current stable) + TypeScript in strict mode, pnpm, Node 24 (installed:
@@ -416,6 +428,11 @@ teclado y estado legible (`aria-pressed`).
 - Tokens sobrescritos bajo `[data-palette='grafito']` y `[data-palette='grafito'][data-theme='dark']`,
   con los mismos nombres; `--ed-*` y `--jira*` no se tocan.
 - El estado vive donde vive `theme` (`src/main/ui.ts`, `UiState`), con su validación.
+
+### Tutorial de 24 pasos (expand-tour, 10 nov 2026)
+
+Cada afirmación de un texto debe ser cierta en el código: atajo, nombre de botón, comportamiento.
+Textos por `t()`.
 
 ## Prior decisions
 
@@ -788,6 +805,43 @@ teclado y estado legible (`aria-pressed`).
   - El boceto y la foto no tienen criterio: son dibujo y evidencia.
   - «Paleta», «Original» y «Grafito» pasan por `t()`.
 
+### Tutorial de 24 pasos (expand-tour, 10 nov 2026)
+
+- Pau, 10 nov: «tiene que ser más extenso… dejas muchas cosas en el aire», en castellano de España.
+
+#### Alternatives that lost
+
+| Considered | Why it lost |
+|---|---|
+| Un tutorial corto por pantalla | Pau pidió uno más extenso; partirlo deja piezas sin ver. |
+| Abrir diálogos de verdad durante el tutorial | Toca el motor y puede dejar estado a medias. |
+
+#### Decision log, answers as given (2026-11-10)
+- Q: ¿Cuántos pasos? → A: 24, uno por pieza que se usa, en el orden en que se usa: Trabajo, su panel,
+  Tareas, MR, Avisos, lo de arriba y abajo, Ajustes (assumed).
+- Q: ¿Qué dice cada paso? → A: qué es, cómo se usa y qué pasa al usarlo, en 2–3 frases de castellano de
+  España, con sus atajos; cada frase tiene que ser verdad en el código de hoy (assumed).
+- Q: ¿Pasos de cosas que no siempre están (subagentes, herramientas, el diálogo de modo, ⌘K)? → A: se
+  explican igual: si no hay elemento, el paso sale centrado, como ya hace el tutorial (assumed).
+- Q: ¿La bienvenida? → A: «Enséñamelo · 3 min» (assumed).
+
+- Q: (revisor de spec) Holguras → A, todas (assumed):
+  - Cada texto tiene **2 o 3 frases**; una frase acaba en «.», «?» o «!» seguido de espacio o del final.
+  - start-mode y palette nunca tienen elemento: el test comprueba que salen centrados, sin foco. Los
+    otros seis opcionales se dan en el mock cuando es práctico.
+  - El paso 11 ilumina la pestaña Actividad, que siempre está visible.
+  - El paso 18, «la nueva comprobación», es la que se hace al volver el foco a Atril.
+  - Los `data-tour` en rutas de otras capacidades son solo atributos al servicio del tutorial, que es de
+    workspaces; no se escribe spec en esas capacidades.
+  - La bienvenida dice «Enséñamelo · 3 min» y entra en W23.
+  - El «Out» de add-command-palette sobre un paso de tutorial para ⌘K queda superado por este cambio.
+  - Fotos: pasos 7 y 13, en `bocetos/novedades/tutorial-7.png` y `tutorial-13.png`.
+
+- Q: (constructor) Sin elemento, el paso salía en una esquina, no centrado como pide W23 → A: se añade
+  `.tip.centred` y una línea en `Tour.tsx`; único cambio al motor, a favor de W23 (assumed). Los textos se
+  corrigieron donde la tabla no era verdad: Nueva tarea abre un trabajo (no crea en Jira), el número del
+  rail sin color, el registro del subagente «como una terminal», el reinicio semanal de la cuota.
+
 ## Task breakdown
 
 - App shell: Electron main, preload bridge, renderer with sidebar / centre / right panel /
@@ -877,8 +931,14 @@ teclado y estado legible (`aria-pressed`).
   focus from the terminal to the sidebar and `⌘J` to the right panel, as menu accelerators
   the terminal never receives — and every state colour shall carry a text label.
   Proof: src/renderer/a11y.test.ts states have text labels and controls are focusable
-- **W23** When Atril launches for the first time, it shall run the tutorial, highlighting
-  each element in turn with its explanation.
+- **W23** When Atril launches for the first time, it shall run the tutorial over the 24 steps
+  of «Pasos» in that order, after a welcome whose button reads «Enséñamelo · 3 min», each with its title
+  and a text of two or three sentences (a sentence ends in «.», «?» or «!» before a space or the end),
+  highlighting the
+  step's `data-tour` element when it is on screen and showing the step centred when it is not — the
+  ones that may be absent being next-up, flow-checklist, flow-changes, flow-subagents, start-mode,
+  mr-tools, doctor and palette, of which start-mode and palette never have one; every other target
+  shall exist when its step shows. One test holds a case per clause.
   Proof: src/renderer/tutorial.test.ts first launch runs the tutorial over every element
 - **W24** When the person skips or finishes the tutorial, Atril shall not run it again on
   launch, and shall reopen it from Help → Tutorial.

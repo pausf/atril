@@ -7,9 +7,9 @@ con agentes de Claude Code en tmux, y gestiona MRs de GitHub/GitLab. Remoto PRIV
 ## Dónde lo dejamos (10 nov 2026) — empieza por aquí
 
 Las ramas van apiladas: cada una sale de la anterior y `main` no se ha movido. La última es
-**`adopt-grafito`**, aterrizada y subida el 10 nov (paleta Grafito junto a la Original).
+**`expand-tour`**, aterrizada y subida el 10 nov (tutorial de 24 pasos).
 
-1. Hechos el 10 nov: `add-subagents-view`, `add-subagent-detail` `add-doctor-install-terminal`, `restyle-mode-picker`, `fit-flow-panel`, `show-doc-buttons` y `adopt-grafito`.
+1. Hechos el 10 nov: `add-subagents-view`, `add-subagent-detail` `add-doctor-install-terminal`, `restyle-mode-picker`, `fit-flow-panel`, `show-doc-buttons`, `adopt-grafito` y `expand-tour`.
    Bocetos fase 2: `bocetos/fase2-nucleo.html` (6 diseños del panel; Pau eligió el 0) y `bocetos/fase2-app.html` (4 variantes minimalistas; Pau eligió Grafito, ya en la app como segunda paleta).
 2. Cola en `.agents/changes/` por `Queued:`: `expand-tour` (tutorial más extenso, Pau lo ve corto) y `redesign-connections` (Ajustes: conexiones). Los cuelgues de tests de tmux/git eran contención: arreglado con `maxWorkers: 4` (ver lessons).
 3. Después, la lista de mejoras que se le dio a Pau el 9 nov. Ve una por una con el flujo Libretto:
