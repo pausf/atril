@@ -206,3 +206,6 @@ Two cold spec reviews caught the first design leaving Libretto's patterns (an At
 
 ## 2026-11-10 · cost-per-work · 6→7
 Reviewer found nothing (4 proofs re-run). Noted cost.ts keeps in-memory totals of a removed workspace until restart: a few numbers, kept as is. Before the review the session dropped the «≈» in front of «< 0,01 $» (seen red first; W94 amended).
+
+## 2026-11-10 · mr-line-comments · 6→7
+Reviewer found nothing (4 proofs re-run). The session caught that the builder's new file, linecomments.ts, was governed by no spec (mr's Governs lists files one by one): added to mr and excluded from workspaces. Lesson: a builder's new file needs a Governs check before landing, not only its tests.

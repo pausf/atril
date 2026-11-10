@@ -7,14 +7,14 @@ con agentes de Claude Code en tmux, y gestiona MRs de GitHub/GitLab. Remoto PRIV
 ## Dónde lo dejamos (10 nov 2026) — empieza por aquí
 
 Las ramas van apiladas: cada una sale de la anterior y `main` no se ha movido. La última es
-**`cost-per-work`**, aterrizada y subida el 10 nov (coste estimado a precio de API por trabajo). Ideas para después: `bocetos/ideas.html` (50, con ★ las favoritas).
+**`mr-line-comments`**, aterrizada y subida el 11 nov (borradores de Libretto en su línea del diff). Ideas para después: `bocetos/ideas.html` (50, con ★ las favoritas).
 
 1. Hechos el 10 nov: `add-subagents-view`, `add-subagent-detail` `add-doctor-install-terminal`, `restyle-mode-picker`, `fit-flow-panel`, `show-doc-buttons`, `adopt-grafito`, `expand-tour` y `redesign-connections`.
    Bocetos fase 2: `bocetos/fase2-nucleo.html` (6 diseños del panel; Pau eligió el 0) y `bocetos/fase2-app.html` (4 variantes minimalistas; Pau eligió Grafito, ya en la app como segunda paleta).
 2. **Objetivo (Pau, 10 nov): mejorar la idea, no cambiarla** (flujo Libretto, puntuaciones, borradores…),
    para que una persona lleve **3 tareas a la vez sin perder el foco**. Orden de la cola (en
    `.agents/changes/`), elegido por eso: `add-qa-lab` (en curso; borrador en el scratchpad) (QA en vivo: Chrome, emuladores) → `pause-agent` → `open-work-from-mr` → `cost-per-work` → `mr-line-comments` →
-   `work-history` → `first-run-setup` → `package-and-sign`. Los cuelgues de tests de tmux/git eran
+   `work-history` (en curso) → `first-run-setup` → `package-and-sign`. Los cuelgues de tests de tmux/git eran
    contención: arreglado con `maxWorkers: 4` (ver lessons).
 3. Después, la lista de mejoras que se le dio a Pau el 9 nov. Ve una por una con el flujo Libretto:
    - Estado de la CI en la fila de la MR, y «Arreglar CI con Claude».
@@ -39,6 +39,7 @@ Sin probar con datos reales (necesita a Pau):
 - Responder desde un aviso del Mac.
 - Que el selector de opciones de Claude Code acepte el número tecleado (respuestas rápidas).
 - La QA en vivo con un Claude, un navegador y un emulador reales (solo probada con dobles).
+- Publicar un borrador en su línea contra un GitHub/GitLab real.
 - Que Esc pause a Claude sin eventos sueltos y que «Sigue donde lo dejaste.» se tome como mensaje nuevo.
 
 ## Cómo se trabaja aquí
