@@ -34,7 +34,25 @@ cambio siguiente.
 - Q: ¿«Empezar»? → A: abre un trabajo nuevo (`openWorktree`) en la rama `feat/<name>` con el primer mensaje
   `/libretto:libretto-next <name>`; el comando quita `Queued:` y sigue el flujo (assumed). Si Libretto intenta otra
   rama dentro del worktree, va a «sin probar».
-- Q: ¿Se refresca sola? → A: al entrar, al cambiar de repo y tras encolar o empezar; botón «Actualizar» (assumed).
+- Q: ¿Se refresca sola? (ver abajo) → A: al entrar, al cambiar de repo y tras encolar o empezar; botón «Actualizar» (assumed).
+
+### Session 2026-11-11 (revisión en frío)
+- Q: `libretto-next` no acepta nombre, pregunta cuál y hace `checkout -b`: ¿cómo se empieza? → A: Atril hace el paso 3
+  del comando él mismo: abre el trabajo en `feat/<name>` (es la rama), quita la línea `Queued:` del `proposal.md` de
+  ese worktree y la commitea ahí (`docs(queue): start <name>`); y el primer mensaje es el paso 4,
+  `/libretto:write-spec <name>`. Igual que `/libretto-next`, sin su pregunta: el clic ya eligió (assumed).
+- Q: ¿Qué árbol se lee? → A: el checkout del repo; una idea en cola cuya rama `feat/<name>` ya existe se muestra
+  «Empezada · feat/<name>» sin «Empezar» (assumed).
+- Q: ¿Repos sin worktree (in-place)? → A: valen; si `openWorktree` devuelve error, sale bajo la idea y no se
+  commitea nada (assumed).
+- Q: ¿Nombre? → A: de la primera línea del texto: minúsculas, sin acentos, lo no alfanumérico a un guion, sin guiones
+  al borde, cortado a 40 contando el sufijo `-N`; si queda vacío, `idea` (assumed).
+- Q: ¿Si el commit falla? → A: se borra la carpeta escrita y se enseña el error (assumed).
+- Q: ¿Fecha? → A: local (assumed).
+- Q: ¿Qué es la línea `Queued:`? → A: `Queued: AAAA-MM-DD` sola en su línea, antes del primer `## `; empate por
+  nombre (assumed).
+- Q: ¿Qué sale en curso? → A: toda carpeta no en cola, con o sin `proposal.md`; las que tienen todas las casillas
+  cerradas dicen «Lista para aterrizar» (assumed).
 
 ## Outcomes
 
@@ -53,29 +71,39 @@ pulsar; textos por `t()`; teclado; una petición vacía no se encola.
 
 - Leer del disco, no preguntar a Claude (assumed, 11 nov).
 - Encolar sin modelo, con la plantilla de `/libretto-queue` (assumed, 11 nov).
-- Empezar = trabajo nuevo con `/libretto:libretto-next <name>` (assumed, 11 nov).
+- Empezar = Atril hace el paso 3 de `/libretto-next` y entra en `write-spec` (assumed, 11 nov).
 - Pantalla propia «Libretto» (assumed, 11 nov).
 
 ## Verification criteria
 
-- **W100** When Atril reads a repo's Libretto state, it shall return the folders under `.agents/changes/` whose
-  `proposal.md` holds `Queued: <date>` as the queue, oldest date first, each with name, date and the first non-blank
-  line under `## Reading`; and every other folder as in flight with name and `readChecklist`'s closed, total and first
-  open box (or none); and if the repo has no `.agents/changes/`, then it shall say so instead.
+- **W100** When Atril reads a repo's Libretto state, it shall return as the queue the folders under `.agents/changes/`
+  whose `proposal.md` holds a line `Queued: YYYY-MM-DD` before its first `## ` heading, oldest first then by name, each
+  with name, date, the first non-blank line under `## Reading`, and `started: true` when a local branch
+  `feat/<name>` exists; and every other folder as in flight with name and `readChecklist`'s closed, total and first
+  open box (or none); and if the repo has no `.agents/changes/`, then it shall return `{ none: true }`.
   Proof: src/main/libretto.test.ts a repo's queue and work in flight are read from disk
 - **W101** When the person queues an idea, Atril shall write `.agents/changes/<name>/proposal.md` with `# <name>`,
-  `Tracker: none`, `Queued: <today ISO>`, `## The ask, verbatim` with the text quoted line by line, and `## Reading`,
-  the name derived from the text (lowercase, accents stripped, non-alphanumerics to single dashes, at most 40 chars,
-  `-2`… when taken), and commit only that file as `docs(queue): capture <name>`, leaving any other change in the repo
-  uncommitted; if the text is blank or the repo has no `.agents/changes/`, then it shall write nothing.
+  `Tracker: none`, `Queued: <local date>`, `## The ask, verbatim` with every line of the text quoted, and `## Reading`,
+  the name taken from the text's first line (lowercase, accents stripped, non-alphanumerics to one dash, no edge
+  dashes, at most 40 characters including a `-2`… suffix when taken, `idea` when empty), and commit only that file as
+  `docs(queue): capture <name>`, leaving every other change in the repo uncommitted; if the text is blank or the repo
+  has no `.agents/changes/`, then it shall write nothing; if the commit fails, then it shall remove the folder and
+  return the error.
   Proof: src/main/libretto.test.ts queueing an idea writes and commits only its proposal
-- **W102** When the person starts a queued idea, Atril shall open a workspace in that repo on branch `feat/<name>`
-  whose first message is `/libretto:libretto-next <name>`.
-  Proof: src/main/libretto.test.ts starting a queued idea opens its work with libretto-next
-- **W103** The «Libretto» screen shall be reachable from the rail and ⌘K, offer a picker of registered repos, show the
-  queue with «Empezar» per idea and the work in flight with its boxes, offer a text box with «Encolar» (disabled while
-  blank), and show «Este repo no usa Libretto» without the box for a repo without `.agents/changes/`.
+- **W102** When the person starts a queued idea, Atril shall open a workspace in that repo on branch `feat/<name>`,
+  remove the `Queued:` line from that workspace's `proposal.md` and commit it there as `docs(queue): start <name>`,
+  and send `/libretto:write-spec <name>` as the first message; if opening fails, then it shall return the error and
+  commit nothing.
+  Proof: src/main/libretto.test.ts starting a queued idea opens its work at write-spec
+- **W103** The «Libretto» screen shall show, for the picked repo, the queue with «Empezar» per idea (or «Empezada ·
+  feat/<name>» when started), the work in flight with «{closed}/{total}» and its first open box or «Lista para
+  aterrizar», a text box whose «Encolar» is disabled while blank, an error from queueing or starting under what
+  caused it, and «Este repo no usa Libretto» without the text box for `{ none: true }`.
   Proof: src/renderer/libretto.test.ts the Libretto screen shows the queue and queues an idea
+- **W104** The «Libretto» screen shall be reachable from the rail and from ⌘K, remember the last picked repo across
+  restarts in the interface state, and read the state again on entering, on changing repo, after queueing or starting,
+  and on «Actualizar».
+  Proof: src/renderer/libretto.test.ts the Libretto screen is reachable and keeps its repo
 
 ## Approach
 
@@ -94,7 +122,10 @@ Electron 45, React 19, vitest. Reutiliza `changeFolders`/`readChecklist` (`src/m
 - `librettoState(repoPath)` → `{ none: true } | { queued: Queued[], inFlight: InFlight[] }`.
 - `queueIdea(repoPath, text, run)` → `{ name } | { error }`: `git add -- <file>` y
   `git commit -m … -- <file>` (pathspec: no arrastra nada más del índice ni del árbol).
-- `startQueued(repoId, name, run)` → `openWorktree({ repoId, branch: 'feat/'+name, agent: 'claude', prompt })`.
+- `startQueued(repoId, name, run)` → `openWorktree({ repoId, branch: 'feat/'+name, agent: 'claude' })` sin prompt;
+  luego quita `Queued:` en `<ws.path>/.agents/changes/<name>/proposal.md`, `git commit -- <file>` en el worktree, y
+  envía `/libretto:write-spec <name>` con `replyToAgent` (o el `prompt` de `openWorktree` si el commit puede hacerse
+  antes de que arranque Claude: el constructor elige y lo dice). `started` sale de `git branch --list 'feat/*'`.
 - La pantalla guarda el repo elegido en el estado de interfaz existente.
 
 ### The alternatives it beat
@@ -107,7 +138,7 @@ Electron 45, React 19, vitest. Reutiliza `changeFolders`/`readChecklist` (`src/m
 | Risk | Mitigation |
 |---|---|
 | el commit arrastra cambios ajenos ya en el índice | commit con pathspec; el test deja otro archivo en el índice y comprueba que sigue sin commitear |
-| `libretto-next` crea otra rama dentro del worktree | entrada «sin probar» |
+| Claude no toma `/libretto:write-spec <name>` como el paso 4 | entrada «sin probar» |
 | nombre con caracteres raros | slug probado con acentos y símbolos |
 
 ### Validation and rollback
@@ -119,4 +150,4 @@ Ninguna.
 ## Checklist
 
 - [ ] read, queue and start in main with their IPC · Closes: W100, W101, W102
-- [ ] the Libretto screen, rail, ⌘K, tour; sketch; photo; novedades; CLAUDE.md «sin probar» · waits on box 1 · Closes: W103
+- [ ] the Libretto screen, rail, ⌘K, remembered repo, refresh, tour mention; sketch; photo; novedades; CLAUDE.md «sin probar» · waits on box 1 · Closes: W103, W104
