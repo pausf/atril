@@ -22,7 +22,8 @@ function clean(raw: unknown): UiState {
     folded,
     language: LANG_CHOICES.includes(r['language'] as LangChoice) ? (r['language'] as LangChoice) : 'system',
     palette: PALETTES.includes(r['palette'] as Palette) ? (r['palette'] as Palette) : 'original',
-    ...(r['setupDismissed'] === true ? { setupDismissed: true } : {})
+    ...(r['setupDismissed'] === true ? { setupDismissed: true } : {}),
+    ...(typeof r['librettoRepo'] === 'string' && r['librettoRepo'] !== '' ? { librettoRepo: r['librettoRepo'] } : {})
   }
 }
 

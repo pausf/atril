@@ -82,7 +82,15 @@ const autoMarker = (id: string): string => join(home(), 'auto', sessionName(id))
 const dropFiles = (id: string): Promise<unknown> =>
   Promise.all([autoMarker(id), join(home(), 'subagents', `${sessionName(id)}.json`), join(home(), 'paused', sessionName(id)), join(home(), 'transcripts', sessionName(id))].map((f) => unlink(f, { force: true })))
 
-export async function openWorktree(input: OpenInput, run: Runner = defaultRun): Promise<WorkspaceResult> {
+/**
+ * `prepare` runs in the new folder after the branch exists and before the agent starts (W102); an error it returns
+ * undoes the folder and the branch it just made.
+ */
+export async function openWorktree(
+  input: OpenInput,
+  run: Runner = defaultRun,
+  prepare?: (path: string) => Promise<string | undefined>
+): Promise<WorkspaceResult> {
   const { repoId, branch, agent } = input
   const prompt = input.task === undefined ? input.prompt : taskPrompt(input.task, input.auto)
   if (prompt === null) return { error: t('El texto de la tarea no es válido (máx. 2000 caracteres).') }
@@ -103,6 +111,7 @@ export async function openWorktree(input: OpenInput, run: Runner = defaultRun): 
   let path: string
   let previousBranch: string | undefined
   let fetched: string | undefined
+  let madeBranch = !review && input.existing !== true
   if (review) {
     path = repo.path
   } else if (inPlace) {
@@ -118,6 +127,7 @@ export async function openWorktree(input: OpenInput, run: Runner = defaultRun): 
     // Detached HEAD has no branch name: the sha is what close switches back to.
     previousBranch = current || (await run('git', ['-C', repo.path, 'rev-parse', 'HEAD'])).stdout.trim()
     const exists = (await run('git', ['-C', repo.path, 'rev-parse', '--verify', '--quiet', `refs/heads/${branch}`])).code === 0
+    madeBranch = !exists
     const sw = await run('git', ['-C', repo.path, 'switch', ...(exists ? [] : ['-c']), branch])
     if (sw.code !== 0) return { error: sw.stderr.trim() || t('git switch falló') }
     path = repo.path
@@ -143,6 +153,15 @@ export async function openWorktree(input: OpenInput, run: Runner = defaultRun): 
     await mkdir(join(path, '..'), { recursive: true })
     const add = await run('git', ['-C', repo.path, 'worktree', 'add', ...where])
     if (add.code !== 0) return { error: add.stderr.trim() || t('git worktree add falló') }
+  }
+
+  const prepared = prepare ? await prepare(path) : undefined
+  if (prepared !== undefined) {
+    if (inPlace) {
+      await run('git', ['-C', path, 'switch', '--discard-changes', previousBranch ?? branch])
+    } else if (!review) await run('git', ['-C', repo.path, 'worktree', 'remove', '--force', path])
+    if (madeBranch) await run('git', ['-C', repo.path, 'branch', '-D', branch])
+    return { error: prepared }
   }
 
   const head = fetched === undefined ? (await run('git', ['-C', repo.path, 'rev-parse', 'HEAD'])).stdout.trim() : fetched

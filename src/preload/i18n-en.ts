@@ -562,4 +562,8 @@ export const EN: Record<string, string> = {
   'Pendiente': 'To do',
   'opcional': 'optional',
   'Ya lo tengo': 'Got it',
+  'Escribe la idea antes de encolarla.': 'Write the idea before queueing it.',
+  'Este repo no usa Libretto': 'This repo does not use Libretto',
+  'git commit falló': 'git commit failed',
+  'Esa idea no existe': 'That idea does not exist',
 }

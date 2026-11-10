@@ -61,6 +61,11 @@ const api: AtrilApi = {
       return () => ipcRenderer.removeListener('atril:avisos:changed', h)
     }
   },
+  libretto: {
+    state: (repoId) => ipcRenderer.invoke('atril:libretto:state', repoId),
+    queue: (repoId, text) => ipcRenderer.invoke('atril:libretto:queue', repoId, text),
+    start: (repoId, name) => ipcRenderer.invoke('atril:libretto:start', repoId, name)
+  },
   flow: {
     get: (id) => ipcRenderer.invoke('atril:flow:get', id),
     docs: (id) => ipcRenderer.invoke('atril:flow:docs', id),

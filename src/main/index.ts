@@ -32,7 +32,8 @@ import { readInbox } from './jira/inbox'
 import { inboxGroups } from './jira/board'
 import { proposeStart, start } from './jira/start'
 import type { InboxGroup, InboxResult, JiraIssue, Model, NextItem, StartIssue, StartRequest } from '../preload/api'
-import { listRepos, registerRepo, setOverride } from './repos'
+import { listRepos, readRepos, registerRepo, setOverride } from './repos'
+import { librettoState, queueIdea, startQueued } from './libretto'
 import * as pty from './pty'
 import { run } from './run'
 import { createUsage } from './usage'
@@ -444,6 +445,18 @@ app.whenReady().then(async () => {
     find: (id) => flowWorkspace(id, run),
     emit: (id, stage) => BrowserWindow.getAllWindows().forEach((w) => w.webContents.send('atril:flow:changed', id, stage))
   })
+  const repoPath = async (id: unknown): Promise<string | undefined> => (await readRepos()).find((r) => r.id === id)?.path
+  const noRepo = (id: unknown): { error: string } => ({ error: t('No hay ningún repo «{id}»', { id: String(id) }) })
+  ipcMain.handle('atril:libretto:state', async (_e, id: unknown) => {
+    const path = await repoPath(id)
+    return path === undefined ? noRepo(id) : librettoState(path, run)
+  })
+  ipcMain.handle('atril:libretto:queue', async (_e, id: unknown, text: unknown) => {
+    const path = await repoPath(id)
+    if (path === undefined) return noRepo(id)
+    return typeof text === 'string' ? queueIdea(path, text, run) : { error: t('Escribe la idea antes de encolarla.') }
+  })
+  ipcMain.handle('atril:libretto:start', (_e, id: unknown, name: unknown) => startQueued(String(id), name as string, run))
   ipcMain.handle('atril:flow:get', (_e, id: string | null) => flow.select(id))
   ipcMain.handle('atril:flow:docs', async (_e, id: string) => {
     const ws = await flowWorkspace(id, run)

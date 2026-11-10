@@ -569,6 +569,29 @@ export interface FlowDocs {
   files: FlowDoc[]
 }
 
+export interface LibrettoQueued {
+  name: string
+  /** YYYY-MM-DD from the `Queued:` line. */
+  date: string
+  reading?: string
+  /** A local branch feat/<name> exists. */
+  started: boolean
+}
+/** `total` 0 means the folder has no checklist. */
+export interface LibrettoInFlight {
+  name: string
+  closed: number
+  total: number
+  firstOpen?: string
+}
+export type LibrettoState = { none: true } | { queued: LibrettoQueued[]; inFlight: LibrettoInFlight[] } | { error: string }
+
+export interface LibrettoApi {
+  state(repoId: string): Promise<LibrettoState>
+  queue(repoId: string, text: string): Promise<{ name: string } | { error: string }>
+  start(repoId: string, name: string): Promise<WorkspaceResult>
+}
+
 export interface FlowApi {
   /** Also starts watching that workspace (and stops watching any other); null stops all. */
   get(workspaceId: string | null): Promise<FlowStage | null>
@@ -627,6 +650,8 @@ export interface UiState {
   tutorialSeen: boolean
   /** «Ya lo tengo» on «Primeros pasos» (W97); missing reads as not dismissed. */
   setupDismissed?: boolean
+  /** The repo last picked on the Libretto screen (W104). */
+  librettoRepo?: string
   theme: Theme
   /** Independent of the theme; missing reads as Original. */
   palette?: Palette
@@ -665,6 +690,7 @@ export interface AtrilApi {
   ui: UiApi
   usage: UsageApi
   flow: FlowApi
+  libretto: LibrettoApi
   forge: ForgeApi
   mr: MrApi
   avisos: AvisosApi
