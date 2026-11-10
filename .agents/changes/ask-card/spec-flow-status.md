@@ -7,7 +7,7 @@
   its number, Subagentes its number of entries — and keeping its folded state per section when the panel is mounted
   again; all three shall start open. One test holds a case per clause.
   Proof: src/renderer/flow/panel.test.ts the panel sections fold and remember
-- **F35** While the workspace's repo holds other change folders besides the current one, the panel shall show
-  «{n} cambios más en este repo» with a button «Ver en Libretto» that opens the Libretto screen with that repo
-  picked, and no list of their names; with none, it shall show nothing.
+- **F35** While the flow state's `others` is not empty, the panel shall show «{n} cambios más en este repo» (n its
+  length) with a button «Ver en Libretto» that stores that workspace's repo as the Libretto repo (W104) and opens the
+  Libretto screen, and no list of their names; with `others` empty, it shall show neither.
   Proof: src/renderer/flow/panel.test.ts other changes lead to Libretto

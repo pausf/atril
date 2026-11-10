@@ -30,10 +30,26 @@ cambios» del panel, que no se entiende, cambiado por un enlace a la pantalla Li
   sección; en su lugar una línea «{n} cambios más en este repo → Libretto» que abre la pantalla Libretto con ese
   repo elegido (assumed).
 
+### Session 2026-11-11 (revisión en frío)
+- Q: ¿«Entera» desde dónde? → A: la línea de actividad tal como la guarda el hook (ya cortada a 200 en
+  `summarise.mjs`); en la tarjeta solo se quita la elipsis de CSS. Nada cambia en main (assumed).
+- Q: ¿Dónde se prueba que la fila no repite la línea? → A: en `quickreplies.test.ts`, montando `WorkspaceList`, como
+  ya hace hoy ese test (el constructor lo comprueba); al dejar de estar needs-you vuelve la línea en el mismo render
+  (assumed).
+- Q: ¿Todos? → A: W82 se enmienda aquí: en «Todos» la tarjeta va pegada bajo el botón de la tarjeta, fuera de él, y
+  el botón no repite la línea cortada; su prueba sigue en `overview.test.ts` (assumed).
+- Q: ¿Contraste de qué? → A: texto de la pregunta y etiquetas activas sobre `--ask-bg`; los números (`aria-hidden`),
+  el borde y lo desactivado quedan fuera. El tinte es un token `--ask-bg` por tema y paleta (los cuatro: original
+  claro y oscuro, Grafito claro y oscuro), sin `color-mix`, para que el test lea lo mismo que se pinta (assumed).
+- Q: ¿Libretto con qué repo? → A: «Ver en Libretto» guarda ese repo como el elegido (W104) y cambia de pantalla; la
+  cuenta es `flow.others.length` (assumed).
+- Q: ¿Línea o botón? → A: texto «{n} cambios más en este repo» y un botón «Ver en Libretto» (assumed). El plegado
+  `flow-others` guardado se ignora (assumed).
+
 ## Outcomes
 
 - Cuando un agente pregunta, su fila crece en una tarjeta con la pregunta entera y las respuestas numeradas; no
-  choca con la fila de abajo. El panel ya no tiene «Otros cambios»: dice cuántos hay y lleva a Libretto.
+  choca con la fila de abajo. El panel ya no tiene «Otros cambios»: dice «{n} cambios más en este repo» y «Ver en Libretto».
 
 ## Scope boundaries
 
@@ -55,8 +71,13 @@ cambios» del panel, que no se entiende, cambiado por un enlace a la pantalla Li
   buttons until the state changes — or show the error and keep the buttons live; the card shall go when the state
   leaves needs-you. One test holds a case per clause.
   Proof: src/renderer/quickreplies.test.ts a waiting row answers with one press
-- **W105** The question card's text and button labels shall keep a contrast of at least 4.5:1 over the card's tinted
-  background in both themes and both palettes.
+- **W82** (amended) Pressing a card shall open that workspace in «Uno» without focus mode; while a card's workspace
+  is needs-you and its question is not multiSelect, W76's question card shall sit joined under the card's button,
+  outside it, the button shall not repeat the cut activity line, and answering there shall not open it. One test
+  holds a case per clause.
+  Proof: src/renderer/overview.test.ts a card opens its workspace or answers in place
+- **W105** The question text and the enabled answer labels shall keep a contrast of at least 4.5:1 over `--ask-bg`
+  in each of the original light, original dark, Grafito light and Grafito dark token sets.
   Proof: src/renderer/quickreplies.test.ts the question card reads in every theme
 
 ## Approach
@@ -74,10 +95,11 @@ React 19, vitest + Testing Library. Archivos: `src/renderer/components/{QuickRep
 ### The approach
 - `QuickReplies` recibe `question?: string`; envuelve todo en `.ask` con `<p class="ask-q">` y botones
   `.ask-opt` con `<kbd aria-hidden>` del número. La fila lleva la clase `asks` para las esquinas y el borde.
-- W105: el test lee los tokens de `styles.css` por tema/paleta y calcula el contraste de `--text` sobre la mezcla
-  `--you` 7 % + `--card` (mismo cálculo que `color-mix` en sRGB); si `color-mix` en oklch no es reproducible en el
-  test, el tinte se define como token propio `--ask-bg` por tema y el test lee ese.
-- `FlowPanel` recibe `onOpenLibretto(repoId)`; App pone `librettoRepo` y cambia a la pantalla Libretto.
+- W105: `--ask-bg` es un token propio en cada uno de los cuatro bloques de tokens; el test lee `styles.css`, saca
+  `--text` y `--ask-bg` de cada bloque y calcula el contraste WCAG.
+- La fila (`WorkspaceList`) y la tarjeta de «Todos» (`AgentsOverview`) ocultan `ws-act`/su línea mientras hay
+  tarjeta y pasan la línea entera como `question`.
+- `FlowPanel` recibe `onOpenLibretto(repoId)`; App llama a `setLibrettoRepo(repoId)` y cambia a la pantalla Libretto. La prueba de F35 monta App con el mock o, si no se puede, prueba la llamada en `panel.test.ts` y el cambio de pantalla en `libretto.test.ts`.
 
 ### The alternatives it beat
 | Considered | Why it lost |
@@ -90,7 +112,7 @@ React 19, vitest + Testing Library. Archivos: `src/renderer/components/{QuickRep
 | Risk | Mitigation |
 |---|---|
 | tinte con poco contraste en algún tema | W105 lo mide |
-| `color-mix` difícil de calcular en el test | token `--ask-bg` por tema |
+| el test mide otro color que el pintado | `--ask-bg` es el color pintado, sin mezcla |
 
 ### Validation and rollback
 Gates de siempre; foto de Trabajo con un agente preguntando (`respuestas.png`) mirada antes de aterrizar. Un revert.
@@ -100,5 +122,5 @@ Ninguna.
 
 ## Checklist
 
-- [ ] the question card in Trabajo and Todos, its contrast · Closes: W76, W105
+- [ ] the question card in Trabajo and Todos, its contrast · Closes: W76, W82, W105
 - [ ] the Libretto line in place of Otros cambios; sketch; photos; novedades · waits on box 1 · Closes: F35
