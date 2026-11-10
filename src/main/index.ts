@@ -48,6 +48,8 @@ import type { Agent, AgentState, QuickAnswer, QuickChoice } from '../preload/api
 // Dev-only evidence hooks (screenshots for review). A packaged app ignores them all, so no
 // environment variable can swap real data for fake data in front of the person.
 const SNAPSHOT = app.isPackaged ? undefined : process.env['ATRIL_SNAPSHOT']
+// ponytail: dev-only, ATRIL_CDP_PORT lets a session drive the real window with Playwright (connectOverCDP).
+if (!app.isPackaged && process.env['ATRIL_CDP_PORT']) app.commandLine.appendSwitch('remote-debugging-port', process.env['ATRIL_CDP_PORT'])
 
 function fakeMrs(): MrLists {
   const ago = (h: number): string => new Date(Date.now() - h * 3600_000).toISOString()
