@@ -177,6 +177,13 @@ textos, en «Pasos» abajo. Los que tienen elemento en pantalla lo iluminan; los
   la manda al agente sin cambiar de trabajo, y la fila dice «Enviado».
 - Al volver el agente a trabajar, los botones desaparecen.
 
+### Modo foco (focus-mode, 10 nov 2026)
+
+- ⌘⇧F deja a la vista solo el trabajo elegido: su terminal y su panel; ⌘⇧F otra vez, o «Salir del foco», lo
+  devuelve todo.
+- Mientras tanto, si otro agente te necesita y Atril está delante, una pastilla te lo dice sin moverte;
+  ⌘↩ te lleva y «Volver a …» te trae de vuelta, sin salir del foco.
+
 ## Scope boundaries
 
 **In:** the three columns and footer of `bocetos/fase1-nucleo.html` (boceto 8), the
@@ -338,6 +345,14 @@ por pantalla.
 notificación (ya tiene su campo, N3); modo foco (otro cambio).
 **Never scoped out:** el texto de las opciones se pinta como texto; se envía solo al pulsar y al panel de
 ese trabajo; teclado; si el trabajo ya no está, «No se pudo enviar: ese trabajo ya no está» (N3).
+
+### Modo foco (focus-mode, 10 nov 2026)
+
+**In:** el estado de foco, el menú y atajo, esconder barra y «Qué me toca», la pastilla, saltar y volver,
+suprimir el aviso del Mac con Atril delante.
+**Out:** foco por tiempo (pomodoro), silenciar sonidos del sistema, foco en Tareas o MR, recordar el foco.
+**Never scoped out:** ningún agente se pierde: la pastilla nombra a todos los que te necesitan (el primero y
+«+N»); con Atril detrás el aviso del Mac sigue; teclado para todo.
 
 ## Constraints
 
@@ -898,6 +913,61 @@ Textos por `t()`.
     superada.
   - **Tutorial.** El paso 4 («Trabajo en marcha») nombra las respuestas rápidas sin pasar de 3 frases.
 
+### Modo foco (focus-mode, 10 nov 2026)
+
+- El foco no se recuerda al reiniciar (assumed, 10 nov).
+- Con Atril detrás, el aviso del Mac sale igual (assumed, 10 nov).
+- ⌘⇧F y ⌘⌥← como atajos (assumed, 10 nov; libres en el menú).
+
+#### Alternatives that lost
+
+| Considered | Why it lost |
+|---|---|
+| Ventana aparte por trabajo | Rompe la ventana única y duplica la terminal. |
+| Silenciar todos los avisos en foco | Con Atril detrás perderías al agente que te necesita. |
+
+#### Decision log, answers as given (2026-11-10)
+- Q: ¿Qué es el modo foco? → A: estás en un trabajo y Atril quita lo demás de la vista: la barra lateral y
+  «Qué me toca» se esconden; la terminal y el panel de Libretto de ese trabajo se quedan (assumed).
+- Q: ¿Cómo se entra y sale? → A: menú Trabajo → Modo foco, ⌘⇧F, y un botón «Salir del foco» arriba; no se
+  recuerda al reiniciar (assumed: el foco es de un momento).
+- Q: ¿Y si otro agente te necesita? → A: con Atril delante, en vez del aviso del Mac sale una pastilla
+  discreta arriba, «{rama} te necesita», que no te cambia de trabajo; con Atril detrás, el aviso del Mac
+  sale como siempre (permite responder, N3) (assumed).
+- Q: ¿Cómo saltas y vuelves? → A: ⌘↩ (o pulsar la pastilla) va al que te necesita, sin salir del foco; allí
+  «Volver a {rama}» y ⌘⌥← te devuelven al trabajo donde estabas (assumed).
+- Q: (fase 5) ¿Cómo? → A: un estado `focus` en la ventana y un aviso a main de si suprimir notificaciones
+  (assumed). Perdió: una ventana aparte por trabajo (rompe el modelo de una sola ventana).
+
+- Q: (revisor de spec) Holguras → A, todas (assumed):
+  - **⌘↩ en foco:** salta solo al agente que espera, el más antiguo según N1, sin contar el que tienes
+    abierto. En foco nunca abre una tarea; si no espera nadie, la opción del menú está desactivada. N2 se
+    enmienda para recogerlo.
+  - **«Volver a»:**
+    - Recuerda el trabajo en el que estabas al hacer el primer salto, y los saltos siguientes no lo
+      cambian.
+    - Se olvida al volver, al salir del foco o si ese trabajo se cierra.
+    - Cambiar de trabajo a mano (⌘1…9, ⌘K) sigue permitido y no cambia a dónde vuelves.
+  - **La pastilla:**
+    - Nombra a todos los que esperan ahora, menos el abierto, aunque ya esperaran antes de entrar en el
+      foco.
+    - Desaparece cuando no queda ninguno.
+    - Es parte de W79, en la ventana.
+  - **El aviso del Mac:**
+    - Un aviso que se calla por estar en el foco ya no sale después: la pastilla lo sustituye. W15 se
+      enmienda con esa excepción.
+    - Main mira `isFocused()` de la ventana en el momento de avisar. Minimizada, oculta o en otro
+      Escritorio cuenta como «no delante».
+    - La ventana le dice a main cada vez que el foco cambia y al cargar. Si recarga, el foco vuelve a
+      estar apagado.
+  - **Cuándo se puede activar:** «Modo foco» solo se activa en Trabajo con un trabajo elegido. Al cambiar
+    de trabajo, el foco sigue puesto, ahora sobre el nuevo.
+  - **Tutorial:** se nombra en el paso 4.
+  - **Textos:** «Modo foco» y «Volver» van por `t()`.
+
+- Q: (revisor de obra) ¿Al ir a Tareas o Ajustes con el foco puesto, se olvida «Volver a»? → A: no: el foco
+  queda latente y al volver a Trabajo sigue con su destino; solo se aplica en Trabajo (assumed).
+
 ## Task breakdown
 
 - App shell: Electron main, preload bridge, renderer with sidebar / centre / right panel /
@@ -963,7 +1033,7 @@ Textos por `t()`.
   its agent state to `needs-you`.
   Proof: src/main/status.test.ts claude notification marks needs-you
 - **W15** When a session enters `needs-you`, Atril shall show one macOS notification, and no
-  other until the session leaves that state.
+  other until the session leaves that state, except where W78 suppresses it.
   Proof: src/main/status.test.ts notifies once per needs-you transition
 - **W16** If the agent's pane (by its recorded pane id) is dead or missing, Atril shall set
   the agent state to `stopped`; other panes of the session do not count.
@@ -1092,8 +1162,8 @@ Textos por `t()`.
   from «Por empezar» when there is no board or it cannot be read (I18) — in Jira's order.
   Proof: src/main/nextup.test.ts orders waiting agents before tasks
 - **N2** While Trabajo or Tareas is shown and the list is not empty, ⌘↩ shall open its first
-  item — the workspace for an agent, the Start for a task, or Tareas when that task is not loaded
-  yet; otherwise the menu item is disabled.
+  item — the workspace for an agent, the Start for a task, or Tareas when that task is not loaded yet;
+  otherwise the menu item is disabled; while focus mode is on, W79 governs ⌘↩ instead.
   Proof: src/renderer/nextup.test.ts command enter opens the next item
 - **N3** When the person replies to a needs-you notification, Atril shall type the reply into
   that workspace's agent pane as literal text followed by Enter, without bringing Atril to the
@@ -1351,3 +1421,24 @@ Textos por `t()`.
 - **W80** Atril shall replace `workspaces.json` and `repos.json` by writing a temporary file and renaming it,
   so a reader during a write sees either the old file or the new one, never a partial one.
   Proof: src/main/workspaces.test.ts a reader never sees a half-written workspaces file
+
+### Modo foco (focus-mode, 10 nov 2026)
+
+- **W77** When the person chooses Trabajo → Modo foco (⌘⇧F) with a workspace selected, the Trabajo screen
+  shall hide the sidebar and «Qué me toca» and keep that workspace's terminal and Libretto panel, showing
+  «Salir del foco»; choosing it again or pressing «Salir del foco» shall restore them; the menu item shall
+  be disabled unless Trabajo is shown with a workspace selected; switching workspace keeps focus on the new
+  one; focus shall not be stored across restarts. One test holds a case per clause.
+  Proof: src/renderer/focus.test.ts focus keeps only the chosen workspace
+- **W78** While focus is on and the Atril window is focused (`isFocused()` at that moment; minimised,
+  hidden or on another Space is not focused), main shall show no macOS notification for a workspace
+  entering needs-you, and that entry shall not be notified later; otherwise notifications behave as W15.
+  One test holds the four combinations of focus on/off and window focused/not.
+  Proof: src/main/focus.test.ts focus swaps the notification for the pill only in front
+- **W79** While focus is on, the window shall show «{rama} te necesita» (plus «+{n}») for every needs-you
+  workspace other than the selected one, without changing the selection, and hide it when there is none;
+  ⌘↩ or pressing it shall select the oldest waiting one (N1 order) and keep focus on, with ⌘↩ disabled
+  when none waits; «Volver a {rama}» or ⌘⌥← shall then select the workspace selected at the first jump,
+  which later jumps or manual switches do not change and which is forgotten on return, on leaving focus or
+  when that workspace is removed. One test holds a case per clause.
+  Proof: src/renderer/focus.test.ts jump to the waiting agent and back
