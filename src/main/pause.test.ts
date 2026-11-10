@@ -43,7 +43,20 @@ const hookCommand = (event: string): string => hooksSettings().hooks[event]?.[0]
 const hookSteps = (...groups: string[][]): string[] => [
   'sh',
   '-c',
-  groups.map((g, i) => 'read x; ' + g.map((e) => `${hookCommand(e)} </dev/null`).join('; ') + `; touch "$ATRIL_HOME/step-${i}"`).join('; ') + '; sleep 300'
+  groups
+    .map(
+      (g, i) =>
+        'read x; ' +
+        g
+          .map((e) =>
+            e === 'Notification:idle'
+              ? `echo '{"message":"Claude is waiting for your input","notification_type":"idle_prompt"}' | ${hookCommand('Notification')}`
+              : `${hookCommand(e)} </dev/null`
+          )
+          .join('; ') +
+        `; touch "$ATRIL_HOME/step-${i}"`
+    )
+    .join('; ') + '; sleep 300'
 ]
 const stepDone = (i: number): Promise<string> => until(() => String(existsSync(join(home, `step-${i}`))), (v) => v === 'true', 10000)
 const stateOf = (ws: WorkspaceView): string => {
@@ -152,7 +165,7 @@ describe('pause', () => {
     expect(await resumeAgent(b.id, run)).toEqual({ error: 'Ese agente no está en pausa.' })
 
     // A UserPromptSubmit (the person typing) or a needs-you state from the real hook removes the mark too.
-    const c = await open('feat/rc', hookSteps(['UserPromptSubmit'], ['Notification'], ['Stop']))
+    const c = await open('feat/rc', hookSteps(['UserPromptSubmit'], ['Notification'], ['Stop'], ['Notification:idle']))
     const marked = (): void => {
       mkdirSync(join(home, 'paused'), { recursive: true })
       writeFileSync(join(home, 'paused', c.session), '1')
@@ -165,6 +178,12 @@ describe('pause', () => {
       expect(existsSync(join(home, 'paused', c.session))).toBe(false)
       expect(await agentState(c, run)).toBe(want)
     }
+    // Claude Code's idle reminder (about a minute at the prompt) is not a question: the pause stays.
+    marked()
+    tmuxOut(sock, 'send-keys', '-t', c.paneId, 'Enter')
+    expect(await stepDone(3)).toBe('true')
+    expect(existsSync(join(home, 'paused', c.session))).toBe(true)
+    expect(await agentState(c, run)).toBe('paused')
 
     // A gone workspace: nothing is sent and the caller says so.
     expect(await pauseAgent(a.id, run)).toEqual({ ok: true })

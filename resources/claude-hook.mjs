@@ -162,7 +162,9 @@ try {
   }
 
   // W87: Atril's pause mark goes when the person types or the agent waits; a late tool event keeps it.
-  if (event === 'UserPromptSubmit' || state === 'needs-you') rmSync(join(home, 'paused', name), { force: true })
+  // Claude Code's idle reminder after a minute at the prompt is not a question: a pause survives it (W87).
+  const idle = event === 'Notification' && (payload?.notification_type === 'idle_prompt' || /waiting for your input/i.test(text(payload?.message)))
+  if (event === 'UserPromptSubmit' || (state === 'needs-you' && !idle)) rmSync(join(home, 'paused', name), { force: true })
 
   const dir = join(home, 'state')
   mkdirSync(dir, { recursive: true })

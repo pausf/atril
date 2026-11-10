@@ -67,7 +67,9 @@ Pausar un agente (lista del 9 nov): parar a Claude sin cerrar su sesión y reanu
   test holds a case per clause.
   Proof: src/main/pause.test.ts pausing interrupts only that agent
 - **W87** When the person resumes a paused workspace, main shall type «Sigue donde lo dejaste.» then Enter into
-  its agent pane and remove the mark; a UserPromptSubmit or a needs-you state shall also remove it; resuming
+  its agent pane and remove the mark; a UserPromptSubmit or a needs-you state shall also remove it, except
+  Claude Code's idle reminder (a Notification with `notification_type` idle_prompt or «waiting for your
+  input»), which keeps it; resuming
   a workspace that is not paused shall answer «Ese agente no está en pausa.» and a gone one N3's message. One
   test holds a case per clause.
   Proof: src/main/pause.test.ts resuming asks the agent to go on
@@ -85,5 +87,5 @@ envío literal de N3. Perdió: un cuarto estado escrito por el hook (Claude Code
 
 ## Checklist
 
-- [ ] pause and resume in main with the paused mark · Closes: W86, W87
-- [ ] menu, ⌘⇧P, row and card; sketch; photo · waits on box 1 · Closes: W88
+- [x] pause and resume in main with the paused mark · Closes: W86, W87
+- [x] menu, ⌘⇧P, row and card; sketch; photo · waits on box 1 · Closes: W88
