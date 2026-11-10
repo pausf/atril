@@ -135,5 +135,5 @@ Ninguna.
 
 ## Checklist
 
-- [ ] the Todos mode with ordered cards, and focus off on entering · Closes: W77, W81
-- [ ] opening a card and answering in place; tutorial step 4 text (no criterion); sketch; photo · waits on box 1 · Closes: W82
+- [x] the Todos mode with ordered cards, and focus off on entering · Closes: W77, W81
+- [x] opening a card and answering in place; tutorial step 4 text (no criterion); sketch; photo · waits on box 1 · Closes: W82
