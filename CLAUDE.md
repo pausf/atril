@@ -1,0 +1,90 @@
+# Atril
+
+App de Mac (Electron + TypeScript + React 19, pnpm) que lleva cada tarea de Jira por el flujo Libretto
+con agentes de Claude Code en tmux, y gestiona MRs de GitHub/GitLab. Remoto PRIVADO
+`github.com/pausf/atril` (identidad git `pausf`, correo noreply).
+
+## Dónde lo dejamos (10 nov 2026) — empieza por aquí
+
+Las ramas van apiladas: cada una sale de la anterior y `main` no se ha movido. La última es
+**`add-subagents-view`**, que tiene trabajo **sin commitear**.
+
+1. **Terminar `add-subagents-view`**: hay que ver los subagentes que crea Claude.
+   - El contrato está en `.agents/changes/add-subagents-view/` (`proposal.md` con W62–W66 y `spec-flow-status.md` con F27).
+   - El código está escrito: hook, `src/main/subagents.ts`, `src/renderer/flow/Subagents.tsx` y los tests.
+   - El constructor vio los 219 tests en verde, pero al repasarlo fallaron dos:
+     - `src/main/agent.test.ts` › «a subagent start takes its description»: se colgó unos 1000 s esperando a tmux.
+     - `src/renderer/subagents.test.ts` › «the row counts running subagents».
+   - Pasos:
+     1. Depura esos dos (`systematic-debugging`).
+     2. Pasa las tres puertas.
+     3. Commit.
+     4. Lanza el work-reviewer en frío y arregla lo que encuentre.
+     5. Escribe las lecciones en `.agents/lessons.md`.
+     6. Aterriza con `scripts/land.py` (ver abajo).
+     7. Escanea los identificadores de trabajo y haz push.
+     8. Saca la foto con `ATRIL_SNAPSHOT_VIEW=subagents` y añádela a `bocetos/novedades.html`.
+2. **Siguiente: `add-subagent-detail`** (encolado en `.agents/changes/add-subagent-detail/proposal.md`).
+   - Pau quiere que, al pulsar un subagente, se abra un **modal que sea un terminal** con lo que hace el Claude de ese subagente.
+   - Cómo:
+     - Leer en vivo `<transcript sin .jsonl>/subagents/agent-<agent_id>.jsonl` y pintarlo al estilo Claude Code (`⏺ Tool(arg)`, `⎿` resultado, texto, «✻ Pensando…» sin contenido).
+     - `agent-<id>.meta.json` trae `description`/`agentType`. Con eso sobra el emparejamiento por orden de add-subagents-view: bórralo.
+   - Ojo: es un formato interno de Claude Code, no documentado.
+   - El boceto `bocetos/fase1-nucleo.html` ya tiene un modal de subagente, pero como lista. Hay que pasarlo a terminal.
+3. Después, la lista de mejoras que se le dio a Pau el 9 nov. Ve una por una con el flujo Libretto:
+   - Estado de la CI en la fila de la MR, y «Arreglar CI con Claude».
+   - Abrir un trabajo desde una MR.
+   - Coste y cuota por trabajo.
+   - Historial de trabajos terminados.
+   - Mover la tarea de Jira al abrir la MR.
+   - Comentarios en la línea exacta.
+   - Filtros en Tareas.
+   - Modo foco.
+   - Pausar un agente.
+   - Plantillas de tarea.
+   - Respuestas rápidas al agente.
+   - Exportar el informe de un trabajo.
+
+Sin probar con datos reales (necesita a Pau):
+- Conectar la forja y ver MRs reales.
+- Una puntuación real.
+- Los borradores de Libretto en una MR real.
+- El modo automático preguntando antes del push.
+- El tablero de Jira.
+- Responder desde un aviso del Mac.
+
+## Cómo se trabaja aquí
+
+- **Solo el flujo Libretto**, por cambio:
+  - El contrato va en `.agents/changes/<cambio>/proposal.md`. Lleva Decision log, criterios EARS con `Proof:`, Approach y Checklist; las deltas de otras capacidades van en `spec-<cap>.md`.
+  - Antes de construir, un spec-reviewer en frío.
+  - El constructor escribe primero los tests en rojo.
+  - Después, el work-reviewer en frío, los arreglos y las lecciones.
+  - Por último, aterrizar.
+- **Autonomía (Pau):** sigue sin preguntar. Toma la opción recomendada y apúntala con `(assumed)`. Push solo a pausf/atril.
+- **Specs vivas** en `.agents/specs/{workspaces,work-inbox,flow-status,settings,mr,avisos}/spec.md`. Léelas antes de tocar código.
+- **Puertas:** `pnpm -s typecheck`, `pnpm -s lint` y `pnpm -s test`, todas antes de cada commit, con un `if` que no deje commitear en rojo. **Nunca `pnpm build`.**
+- **Comandos:** rg/fd/eza/bat, no grep/find/ls/cat.
+- **Commits:** convencionales, sin `Co-Authored-By` ni atribución a IA.
+- **Antes de cada push**, escanea identificadores de trabajo reales con
+  `git grep -niE -f ~/.config/atril/work-identifiers.txt HEAD`.
+  La lista vive fuera del repo a propósito: nunca la copies aquí. Debe salir vacío. Usa nombres de
+  ejemplo (shop-web, WEB, SHOP, PF, OPS, acme).
+- **Nunca** una carpeta llamada `secrets` (hay una regla de denegación global), ni leer `~/.atril/secrets.bin`. Los tokens solo viven en main.
+- **No tocar:** los repos reales de Pau, sus sesiones de tmux por defecto ni `~/.claude.json`. Los tests usan su propio socket de tmux y un `ATRIL_HOME` temporal.
+- **Cuota:** Pau cuida su cuota de Claude. Nada de llamadas automáticas a Claude: solo bajo demanda. Subagentes acotados, en Sonnet para lo mecánico, nunca Fable.
+- **Cada función que aterriza** actualiza:
+  - `bocetos/novedades.html`: sección, foto real en `bocetos/novedades/*.png` e historial;
+  - `bocetos/fase1-nucleo.html` (el boceto).
+- **Fotos de la app real** (solo en dev):
+  ```
+  ATRIL_HOME=$(mktemp -d) ATRIL_SNAPSHOT=$PWD/bocetos/novedades/x.png ATRIL_SNAPSHOT_VIEW=<vista> ATRIL_SNAPSHOT_DELAY_MS=6000 pnpm -s dev
+  ```
+  Lánzalo en segundo plano, espera a que exista el PNG y luego `pkill -f "electron-vite dev"`.
+- **Textos:** todos pasan por `t()`/`useT()` y llevan su entrada en inglés en `src/preload/i18n-en.ts`. Los escaneos S16/S19 lo comprueban.
+- **Colores** solo como tokens en `:root` y `[data-theme='dark']`.
+- **Aterrizar:** `python3 scripts/land.py <cambio> "<Etiqueta>"`. Aplica `proposal.md` sobre su
+  capacidad `Targets:` y cada `spec-<cap>.md` sobre `<cap>`. Los criterios `(amended)` sustituyen al
+  existente. Luego, en el mismo commit: `git rm -r .agents/changes/<cambio>`, `libretto wiki` y
+  `libretto land`.
+- **Lecciones de los revisores** en `.agents/lessons.md`. Léelas: son los errores que ya se pagaron.
