@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import type { ActivityLine, AgentState, WorkspaceView } from '../../preload/api'
 import { runningCount, useSubagents } from '../subagents'
 import { localiseActivity } from '../../preload/activity-i18n'
+import { QuickReplies } from './QuickReplies'
 
 interface Props {
   workspaces: WorkspaceView[]
@@ -72,6 +73,7 @@ export function WorkspaceList({ workspaces, selected, onSelect, onRemove }: Prop
               </span>
             )}
           </button>
+          {states[w.id] === 'needs-you' && <QuickReplies workspaceId={w.id} activityAt={latest[w.id]?.at} />}
           <button
             type="button"
             className="ws-remove"

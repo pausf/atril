@@ -1,5 +1,5 @@
 import { vi } from 'vitest'
-import type { ActivityLine, SubagentEntry, SubagentLine, AddRepoResult, Aviso, FileChange, FlowDocs, ForgeId, ForgeStatus, Mode, MrDraft, MrDrafts, MrDraftsResult, MrFixCiResult, MrLists, MrReply, MrScoreState, MrThreads, AgentState, AtrilApi, FlowStage, JiraIssue, MenuAction, NextItem, StartProposalResult, StartRequest, StartResult, RepoView, ToolReport, UiState, WorkspaceResult, WorkspaceView } from '../preload/api'
+import type { ActivityLine, SubagentEntry, SubagentLine, AddRepoResult, Aviso, FileChange, FlowDocs, ForgeId, ForgeStatus, Mode, MrDraft, MrDrafts, MrDraftsResult, MrFixCiResult, MrLists, MrReply, MrScoreState, MrThreads, AgentState, AtrilApi, QuickAnswer, QuickReplies, FlowStage, JiraIssue, MenuAction, NextItem, StartProposalResult, StartRequest, StartResult, RepoView, ToolReport, UiState, WorkspaceResult, WorkspaceView } from '../preload/api'
 
 export const workspace = (id: string, branch: string, alive = true): WorkspaceView => ({
   id,
@@ -47,6 +47,10 @@ interface Options {
   flow?: FlowStage
   /** Newest first, per workspace id. */
   activity?: Record<string, ActivityLine[]>
+  /** What status.quickReplies answers per workspace id; missing means no options. */
+  quickReplies?: Record<string, QuickReplies>
+  /** What status.answer answers; missing means sent. */
+  answer?: QuickAnswer
   /** Subagent entries per workspace id. */
   subagents?: Record<string, SubagentEntry[]>
   /** What subagents.log answers per subagent id. */
@@ -74,6 +78,7 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
   Object.assign(stored, o.ui)
   let menu: ((a: MenuAction) => void) | undefined
   let notified: ((id: string) => void) | undefined
+  const stateListeners = new Set<(id: string, state: AgentState) => void>()
   const activityListeners = new Set<(id: string, lines: ActivityLine[]) => void>()
   const subagentListeners = new Set<(id: string, entries: SubagentEntry[]) => void>()
   const flowListeners = new Set<(id: string, stage: FlowStage) => void>()
@@ -183,7 +188,12 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
     },
     status: {
       list: async () => o.states ?? {},
-      onChange: () => off,
+      quickReplies: async (id: string) => o.quickReplies?.[id] ?? { options: [], multiSelect: false },
+      answer: vi.fn(async (): Promise<QuickAnswer> => o.answer ?? { ok: true }),
+      onChange: (cb: (id: string, state: AgentState) => void) => {
+        stateListeners.add(cb)
+        return () => stateListeners.delete(cb)
+      },
       onOpen: (cb: (id: string) => void) => {
         notified = cb
         return off
@@ -224,12 +234,13 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
     snapshotView: async () => null,
     snapshotWorkspace: async () => false
   } as unknown as AtrilApi
-  const { menu: menuApi, jira, workspaces: ws, repos: reposApi, flow: flowApi, forge: forgeApi, mr: mrApi, avisos: avisosApi } = window.atril
-  return { ui, stored, menuApi, jira, ws, reposApi, flowApi, forgeApi, mrApi, avisosApi,
+  const { menu: menuApi, jira, workspaces: ws, repos: reposApi, flow: flowApi, forge: forgeApi, mr: mrApi, avisos: avisosApi, status: statusApi } = window.atril
+  return { ui, stored, menuApi, jira, ws, reposApi, flowApi, forgeApi, mrApi, avisosApi, statusApi,
     pushAvisos: (items: Aviso[]) => {
       avisos = items
       avisoListeners.forEach((cb) => cb(items))
     }, menu: (a: MenuAction) => menu?.(a), clickNotification: (id: string) => notified?.(id),
+    pushState: (id: string, state: AgentState) => stateListeners.forEach((cb) => cb(id, state)),
     pushActivity: (id: string, lines: ActivityLine[]) => activityListeners.forEach((cb) => cb(id, lines)),
     pushSubagents: (id: string, entries: SubagentEntry[]) => subagentListeners.forEach((cb) => cb(id, entries)),
     pushFlow: (id: string, stage: FlowStage) => flowListeners.forEach((cb) => cb(id, stage)),
