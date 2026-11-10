@@ -1,5 +1,5 @@
 import { vi } from 'vitest'
-import type { ActivityLine, SubagentEntry, SubagentLine, AddRepoResult, Aviso, FileChange, FlowDocs, ForgeId, ForgeStatus, Mode, MrDraft, MrDrafts, MrDraftsResult, MrFixCiResult, MrLists, MrReply, MrScoreState, MrThreads, MrWork, AgentState, QaResult, QaStatus, AtrilApi, QuickAnswer, QuickReplies, FlowStage, HistoryEntry, JiraIssue, MenuAction, NextItem, StartProposalResult, StartRequest, StartResult, RepoView, ToolReport, UiState, WorkCost, WorkspaceResult, WorkspaceView } from '../preload/api'
+import type { ActivityLine, SubagentEntry, SubagentLine, AddRepoResult, Aviso, FileChange, FlowDocs, ForgeId, ForgeStatus, Mode, MrDraft, MrDrafts, MrDraftsResult, MrFixCiResult, MrLists, MrReply, MrScoreState, MrThreads, MrWork, AgentState, QaResult, QaStatus, AtrilApi, QuickAnswer, QuickReplies, FlowStage, HistoryEntry, JiraIssue, JiraSettingsStatus, MenuAction, NextItem, StartProposalResult, StartRequest, StartResult, RepoView, ToolReport, UiState, WorkCost, WorkspaceResult, WorkspaceView } from '../preload/api'
 
 export const workspace = (id: string, branch: string, alive = true): WorkspaceView => ({
   id,
@@ -83,6 +83,8 @@ interface Options {
   ciAgents?: Record<string, string>
   /** The stored notices, newest first; markRead changes them in place. */
   avisos?: Aviso[]
+  /** What settings.jira.status answers; missing means a saved token. */
+  jira?: JiraSettingsStatus
   /** What the doctor answers; missing means every tool is installed. */
   doctor?: ToolReport[]
 }
@@ -208,7 +210,7 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
       }
     },
     settings: {
-      jira: { status: async () => ({ saved: true, account: 'Pau Sánchez', site: 'https://x.atlassian.net' }) },
+      jira: { status: async () => o.jira ?? { saved: true, account: 'Pau Sánchez', site: 'https://x.atlassian.net' } },
       forge: {
         status: vi.fn(async (f: ForgeId): Promise<ForgeStatus> => o.forges?.[f] ?? { saved: false }),
         save: vi.fn(async () => ({ account: 'pau' })),

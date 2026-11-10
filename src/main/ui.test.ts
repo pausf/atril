@@ -37,4 +37,12 @@ describe('ui store', () => {
     writeFileSync(join(process.env['ATRIL_HOME']!, 'ui.json'), JSON.stringify({ palette: 'neon' }))
     expect((await readUi()).palette).toBe('original')
   })
+
+  it('remembers «Ya lo tengo» and drops anything but true', async () => {
+    await patchUi({ setupDismissed: 'yes' })
+    expect((await readUi()).setupDismissed).toBeUndefined()
+    await patchUi({ setupDismissed: true })
+    await patchUi({ theme: 'dark' })
+    expect((await readUi()).setupDismissed).toBe(true)
+  })
 })

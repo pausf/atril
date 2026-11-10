@@ -86,7 +86,7 @@ describe('own task', () => {
     const user = userEvent.setup()
     render(createElement(App))
     const start = async (text: string) => {
-      await user.click(await screen.findByRole('button', { name: /Nuevo trabajo/ }))
+      await user.click(await screen.findByRole('button', { name: '＋ Nuevo trabajo' }))
       const dialog = await screen.findByRole('dialog', { name: 'Nuevo trabajo' })
       if (text) await user.type(within(dialog).getByLabelText(/¿Qué hay que hacer\?/), text)
       const branch = within(dialog).getByLabelText('Rama')

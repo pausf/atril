@@ -73,7 +73,7 @@ describe('start modes', () => {
     // Nuevo trabajo: no choice without text, one as soon as there is text.
     const work = mockApi({ repos })
     render(createElement(App))
-    await user.click(await screen.findByRole('button', { name: /Nuevo trabajo/ }))
+    await user.click(await screen.findByRole('button', { name: '＋ Nuevo trabajo' }))
     const nw = await screen.findByRole('dialog', { name: 'Nuevo trabajo' })
     expect(within(nw).queryByRole('radiogroup')).toBeNull()
     await user.type(within(nw).getByLabelText(/¿Qué hay que hacer\?/), 'x')

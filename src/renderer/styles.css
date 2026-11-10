@@ -2896,3 +2896,72 @@ button.stg.stgbtn .icon {
   max-height: 100%;
   object-fit: contain;
 }
+
+/* W97: «Primeros pasos» in Trabajo's empty centre. Greys; the accent only on what is done. */
+.setup {
+  width: 100%;
+  max-width: 520px;
+  margin: auto;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  padding: 22px 24px 16px;
+}
+.setup h1 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.setup-lead {
+  margin: 4px 0 14px;
+  color: var(--sub);
+  font-size: 13px;
+}
+.setup ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.setup li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  border-top: 1px solid var(--line);
+  font-size: 13.5px;
+}
+.setup li .sp {
+  flex: 1;
+}
+.setup-mark {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1px solid var(--faint);
+  display: grid;
+  place-items: center;
+  font-size: 11.5px;
+  color: var(--sub);
+}
+.setup li.done .setup-mark {
+  border-color: var(--run);
+  color: var(--run-text);
+  font-weight: 700;
+}
+.setup li.done .setup-name {
+  color: var(--sub);
+}
+.setup-opt {
+  color: var(--sub);
+  font-size: 12px;
+}
+.setup-foot {
+  display: flex;
+  justify-content: flex-end;
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
+  font-size: 12.5px;
+  color: var(--sub);
+}

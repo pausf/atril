@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { ToolReport } from '../../preload/api'
 import { useT } from '../ui'
 
-export function DoctorChip({ problems }: { problems: ToolReport[] }) {
+export function DoctorChip({ problems, openRequest = 0 }: { problems: ToolReport[]; openRequest?: number }) {
   const t = useT()
   const [open, setOpen] = useState(false)
   const [copied, setCopied] = useState<string | null>(null)
@@ -11,6 +11,9 @@ export function DoctorChip({ problems }: { problems: ToolReport[] }) {
   const root = useRef<HTMLSpanElement>(null)
 
   useEffect(() => setInstalls({}), [problems])
+  useEffect(() => {
+    if (openRequest > 0) setOpen(true)
+  }, [openRequest])
   useEffect(() => void window.atril.snapshotView().then((v) => v === 'doctor' && setOpen(true)), [])
 
   useEffect(() => {

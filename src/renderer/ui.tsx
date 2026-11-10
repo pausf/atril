@@ -11,6 +11,7 @@ interface UiContextValue {
   setLanguage(language: LangChoice): void
   setFolded(id: string, folded: boolean): void
   markTutorialSeen(): void
+  dismissSetup(): void
 }
 
 const noop = (): void => {}
@@ -20,7 +21,8 @@ export const UiContext = createContext<UiContextValue>({
   setPalette: noop,
   setLanguage: noop,
   setFolded: noop,
-  markTutorialSeen: noop
+  markTutorialSeen: noop,
+  dismissSetup: noop
 })
 
 export const useUi = (): UiContextValue => useContext(UiContext)
@@ -92,7 +94,8 @@ export function UiProvider({ children }: { children: ReactNode }) {
         void window.atril.ui.set({ language }).then((next) => setUi((u) => (u ? { ...u, language: next.language, lang: next.lang } : next)))
       },
       setFolded: (id, folded) => patch({ folded: { [id]: folded } }),
-      markTutorialSeen: () => patch({ tutorialSeen: true })
+      markTutorialSeen: () => patch({ tutorialSeen: true }),
+      dismissSetup: () => patch({ setupDismissed: true })
     }),
     [ui, patch]
   )

@@ -21,7 +21,8 @@ function clean(raw: unknown): UiState {
     theme: THEMES.includes(r['theme'] as Theme) ? (r['theme'] as Theme) : DEFAULT_UI.theme,
     folded,
     language: LANG_CHOICES.includes(r['language'] as LangChoice) ? (r['language'] as LangChoice) : 'system',
-    palette: PALETTES.includes(r['palette'] as Palette) ? (r['palette'] as Palette) : 'original'
+    palette: PALETTES.includes(r['palette'] as Palette) ? (r['palette'] as Palette) : 'original',
+    ...(r['setupDismissed'] === true ? { setupDismissed: true } : {})
   }
 }
 

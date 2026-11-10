@@ -68,7 +68,7 @@ describe('foldable sections', () => {
     render(createElement(App))
     await screen.findByText('PF-2')
     expect(screen.queryByRole('button', { name: /^Repos/ })).toBeNull()
-    await user.click(screen.getByRole('button', { name: /Nuevo trabajo/ }))
+    await user.click(screen.getByRole('button', { name: '＋ Nuevo trabajo' }))
     expect(await screen.findByRole('dialog', { name: 'Nuevo trabajo' })).toBeTruthy()
   })
 })

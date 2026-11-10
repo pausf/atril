@@ -53,7 +53,7 @@ describe('language', () => {
     expect(within(dialog).getByRole('button', { name: 'Cancel' })).toBeTruthy()
     await user.keyboard('{Escape}')
     await user.click(rail(/^Work/))
-    expect(await screen.findByRole('button', { name: /New work/ })).toBeTruthy()
+    expect(await screen.findByRole('button', { name: '＋ New work' })).toBeTruthy()
   })
 
   it('claude and jira text stay as written', async () => {

@@ -6,6 +6,7 @@ import { Rail, type Screen } from './components/Rail'
 import { Sidebar } from './components/Sidebar'
 import { TopBar } from './components/TopBar'
 import { Workspace } from './components/Workspace'
+import { Setup } from './components/Setup'
 import { Ajustes } from './settings/Ajustes'
 import { Inbox, useInbox } from './inbox/Inbox'
 import { MrScreen } from './mr/MrScreen'
@@ -35,7 +36,7 @@ export function App() {
 }
 
 function Shell() {
-  const { ui, markTutorialSeen } = useUi()
+  const { ui, markTutorialSeen, dismissSetup } = useUi()
   const t = useT()
   const [tourOpen, setTourOpen] = useState(false)
   const [tourStart, setTourStart] = useState(-1)
@@ -69,6 +70,10 @@ function Shell() {
   }, [missing])
 
   const [workspaces, setWorkspaces] = useState<WorkspaceView[]>([])
+  /** False until listed: the setup card must not flash before the real list arrives. */
+  const [listed, setListed] = useState(false)
+  const [worked, setWorked] = useState<boolean | null>(null)
+  const [openDoctor, setOpenDoctor] = useState(0)
   const [selected, setSelected] = useState<string | null>(null)
   const [screen, setScreen] = useState<Screen>('work')
   // W77: never stored, focus is for the moment. It only holds on Trabajo with a workspace selected:
@@ -129,10 +134,23 @@ function Shell() {
     void (async () => {
       const list = await window.atril.workspaces.list()
       setWorkspaces(list)
+      setListed(true)
       // Dev snapshot: show the first workspace without a click.
       if (list[0] && (await window.atril.snapshotWorkspace())) setSelected(list[0].id)
     })()
   }, [])
+
+  useEffect(() => {
+    let pushed = false
+    void window.atril.history.list().then((e) => !pushed && setWorked(e.length > 0), () => setWorked(false))
+    return window.atril.history.onChange((e) => {
+      pushed = true
+      setWorked(e.length > 0)
+    })
+  }, [])
+  // W97: only for someone who never worked here, and never over the tutorial. A live workspace is any listed one,
+  // stopped in tmux or not; the closed ones are in the history.
+  const setup = listed && worked === false && ui !== null && !ui.setupDismissed && !tourOpen && workspaces.length === 0
 
   // A notification click must show the workspace, not just select it behind another screen (W38).
   useEffect(
@@ -321,7 +339,7 @@ function Shell() {
           })
         }}
       >
-        <TopBar problems={problems} screen={screen} />
+        <TopBar problems={problems} screen={screen} openDoctor={openDoctor} />
         <div className="shell">
           <Rail screen={screen} onChange={go} reviews={mrs.result?.review.length ?? 0} unread={avisos.unread} />
           {/* Hidden, not unmounted: the terminals must survive a visit to Ajustes. */}
@@ -352,7 +370,17 @@ function Shell() {
               {all && <AgentsOverview workspaces={workspaces} next={next} onOpen={pick} switcher={<ViewSwitch all={all} onChange={showAll} />} />}
               {/* Hidden, not unmounted, in «Todos»: the terminal must survive. */}
               <div className="uno" hidden={all}>
-                <Workspace ws={workspaces.find((w) => w.id === selected)} switcher={<ViewSwitch all={all} onChange={showAll} />} />
+                {setup ? (
+                  <Setup
+                    report={report}
+                    active={screen === 'work'}
+                    onTools={() => setOpenDoctor((n) => n + 1)}
+                    onNewWork={() => setDialog('work')}
+                    onDismiss={dismissSetup}
+                  />
+                ) : (
+                  <Workspace ws={workspaces.find((w) => w.id === selected)} switcher={<ViewSwitch all={all} onChange={showAll} />} />
+                )}
                 <FlowPanel workspaceId={selected} auto={workspaces.find((w) => w.id === selected)?.auto === true} />
               </div>
             </div>

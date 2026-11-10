@@ -625,6 +625,8 @@ export type Palette = 'original' | 'grafito'
 /** What the app remembers about itself in ~/.atril/ui.json. */
 export interface UiState {
   tutorialSeen: boolean
+  /** «Ya lo tengo» on «Primeros pasos» (W97); missing reads as not dismissed. */
+  setupDismissed?: boolean
   theme: Theme
   /** Independent of the theme; missing reads as Original. */
   palette?: Palette
