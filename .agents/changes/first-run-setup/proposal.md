@@ -29,7 +29,7 @@ Primer arranque para alguien nuevo: una lista de puesta en marcha (herramientas,
 - Q: ¿Opcionales? → A: Jira y forja se marcan «opcional» y no impiden terminar (assumed).
 
 - Q: (revisor de spec) Holguras → A, todas (assumed):
-  - **Cuándo sale.** Mientras no haya ningún trabajo vivo, el historial (W96) esté vacío y no exista
+  - **Cuándo sale.** Mientras no haya ningún trabajo en la lista (también los parados; corregido al construir), el historial (W96) esté vacío y no exista
     `setupDismissed`. Quien ya trabajó no la vuelve a ver.
   - **El paso 5** es solo su botón «Nuevo trabajo». Nunca sale marcado, porque la tarjeta se va en cuanto hay
     un trabajo.
@@ -65,7 +65,7 @@ Primer arranque para alguien nuevo: una lista de puesta en marcha (herramientas,
 
 ## Verification criteria
 
-- **W97** While Trabajo has no live workspace, the history (W96) is empty, `setupDismissed` is not set and the
+- **W97** While Trabajo has no workspace record (stopped ones included), the history (W96) is empty, `setupDismissed` is not set and the
   tutorial is not open, it shall show «Primeros pasos» with five steps — 1 git, tmux and claude without a doctor
   problem («Comprobando…» until the report arrives; its button opens W32's list), 2 at least one repo, 3 a saved
   Jira token («opcional»), 4 a saved GitHub or GitLab token («opcional»), 5 «Nuevo trabajo» (a button, never
@@ -75,4 +75,4 @@ Primer arranque para alguien nuevo: una lista de puesta en marcha (herramientas,
 
 ## Checklist
 
-- [ ] the card, its live steps, buttons and dismiss (with setupDismissed in ui.json); tutorial order; sketch; photo; novedades · Closes: W97
+- [x] the card, its live steps, buttons and dismiss (with setupDismissed in ui.json); tutorial order; sketch; photo; novedades · Closes: W97
