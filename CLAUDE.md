@@ -7,14 +7,13 @@ con agentes de Claude Code en tmux, y gestiona MRs de GitHub/GitLab. Remoto PRIV
 ## Dónde lo dejamos (10 nov 2026) — empieza por aquí
 
 Las ramas van apiladas: cada una sale de la anterior y `main` no se ha movido. La última es
-**`first-run-setup`**, aterrizada y subida el 11 nov (tarjeta Primeros pasos). Ideas para después: `bocetos/ideas.html` (50, con ★ las favoritas).
+**`package-and-sign`**, aterrizada y subida el 11 nov (`pnpm dist`, `bocetos/instalar.html`). Ideas para después: `bocetos/ideas.html` (50, con ★ las favoritas).
 
 1. Hechos el 10 nov: `add-subagents-view`, `add-subagent-detail` `add-doctor-install-terminal`, `restyle-mode-picker`, `fit-flow-panel`, `show-doc-buttons`, `adopt-grafito`, `expand-tour` y `redesign-connections`.
    Bocetos fase 2: `bocetos/fase2-nucleo.html` (6 diseños del panel; Pau eligió el 0) y `bocetos/fase2-app.html` (4 variantes minimalistas; Pau eligió Grafito, ya en la app como segunda paleta).
 2. **Objetivo (Pau, 10 nov): mejorar la idea, no cambiarla** (flujo Libretto, puntuaciones, borradores…),
    para que una persona lleve **3 tareas a la vez sin perder el foco**. Hecho el 10–11 nov: CI, respuestas
-   rápidas, foco, Todos, QA en vivo, pausa, abrir MR, coste, comentarios en línea, historial, primeros pasos. Cola (en `.agents/changes/`):
-   `package-and-sign` (en curso); después, las ★ de `bocetos/ideas.html`.
+   rápidas, foco, Todos, QA en vivo, pausa, abrir MR, coste, comentarios en línea, historial, primeros pasos. Cola: las ★ de `bocetos/ideas.html`, una por una.
    Los cuelgues de tests de tmux/git eran contención: arreglado con `maxWorkers: 4` (ver lessons).
 3. Después, la lista de mejoras que se le dio a Pau el 9 nov. Ve una por una con el flujo Libretto:
    - Estado de la CI en la fila de la MR, y «Arreglar CI con Claude».

@@ -214,6 +214,11 @@ textos, en «Pasos» abajo. Los que tienen elemento en pantalla lo iluminan; los
 - Alguien que abre Atril por primera vez ve qué falta para empezar, cada cosa con su botón, y los pasos se marcan
   solos según lo va haciendo.
 
+### Empaquetar (package-and-sign, 10 nov 2026)
+
+- `pnpm dist` deja en `dist/` un `.dmg` y un `.zip` arm64 firmados (propio o ad-hoc) con todo lo que la app necesita
+  dentro; una página explica cómo construirlo, firmarlo y abrirlo.
+
 ## Scope boundaries
 
 **In:** the three columns and footer of `bocetos/fase1-nucleo.html` (boceto 8), the
@@ -425,6 +430,13 @@ guarda aún).
 **In:** la tarjeta, sus cinco pasos leídos del estado real, los botones, «Ya lo tengo» recordado.
 **Out:** instalar herramientas desde la tarjeta sin el doctor; crear el token por la persona; un asistente modal.
 **Never scoped out:** teclado; textos por `t()`; nada se hace sin pulsar.
+
+### Empaquetar (package-and-sign, 10 nov 2026)
+
+**In:** la dependencia (con `electron-winstaller` sin scripts de instalación), la configuración (y sus globales `.cjs` en ESLint), los entitlements, el script, la página de instalación.
+**Out:** abrirlo en otro Mac como criterio, notarización, actualizaciones automáticas, x64, Windows/Linux, publicar el `.dmg`.
+**Never scoped out:** ningún secreto en el repo (la identidad llega por variable de entorno); los recursos del hook y
+Libretto dentro del paquete.
 
 ## Constraints
 
@@ -1314,6 +1326,51 @@ Textos por `t()`.
   - **Los botones de Ajustes** usan la navegación que ya usa M35 («Ajustes → Repos»).
   - **La foto** se saca con `ATRIL_SNAPSHOT_VIEW=work`, un `ATRIL_HOME` vacío y `tutorialSeen: true`.
 
+### Empaquetar (package-and-sign, 10 nov 2026)
+
+- arm64 solo (assumed, 11 nov).
+- Identidad por `ATRIL_SIGN_IDENTITY`, si no ad-hoc (assumed, 11 nov).
+- Sin notarización ni auto-update (assumed, 11 nov; investigación del 10 nov).
+- La sesión no construye; Pau sí (assumed, 11 nov).
+
+#### Alternatives that lost
+
+| Considered | Why it lost |
+|---|---|
+| `electron-builder.yml` + `CSC_NAME` | no expresa «si no, ad-hoc» sin macros; un test no puede ver la caída |
+| electron-forge | más piezas (makers, plugins) para el mismo `.dmg` |
+| construir aquí para probarlo | CLAUDE.md lo prohíbe |
+
+#### Decision log, answers as given (2026-11-10)
+- Q: ¿Con qué? → A: `electron-builder` como dependencia de desarrollo (versión fijada), configuración en
+  `electron-builder.config.cjs` (JS, para que la identidad caiga a ad-hoc sin YAML con macros); hace falta una dependencia nueva porque no hay empaquetador (assumed).
+- Q: ¿Qué sale? → A: un `.dmg` y un `.zip` para Apple Silicon (arm64); x64 no (assumed).
+- Q: ¿Firma? → A: la investigación del 10 nov: certificado propio del Llavero si `ATRIL_SIGN_IDENTITY` está
+  definido (p. ej. «Atril Local»), si no firma ad-hoc (`"-"`); `hardenedRuntime: true` con `allow-jit`,
+  `allow-unsigned-executable-memory` y `disable-library-validation` en `build/entitlements.mac.plist`; sin
+  notarización (sin cuenta de Apple) (assumed).
+- Q: ¿Quién lo construye? → A: la persona, con `pnpm dist`; esta sesión no construye (CLAUDE.md: nunca `pnpm build`),
+  así que la prueba es la configuración, y la comprobación a mano va escrita (assumed).
+- Q: ¿Recursos? → A: `resources/` (Libretto, hook, resumen) va dentro del paquete como `extraResources`; `paths.ts`
+  ya distingue empaquetado (assumed; el constructor lo comprueba).
+- Q: ¿Instrucciones? → A: `bocetos/instalar.html`: construir, firmar con certificado propio, abrir la primera vez
+  («Abrir igualmente» en Privacidad y seguridad desde Sequoia), y la vía de 99 $/año si un día se comparte (assumed).
+
+
+- Q: ¿Dónde vive la caída a ad-hoc? → A: en el propio `electron-builder.config.cjs`:
+  `identity: process.env.ATRIL_SIGN_IDENTITY || '-'`; el test lo carga con y sin la variable (assumed).
+- Q: ¿`resources/` plano o en carpeta? → A: plano, `{ from: 'resources', to: '.' }`, como espera `paths.ts`
+  (`<resourcesPath>/claude-hook.mjs`, `<resourcesPath>/libretto/`) (assumed).
+- Q: ¿node-pty? → A: `asarUnpack` de `node_modules/node-pty/**`, `npmRebuild: true`, y `files` limitado a `out/**` y
+  `package.json`; `dist` = `electron-vite build && electron-builder --mac` (assumed).
+- Q: ¿Qué demuestra el test? → A: el texto de la configuración, nada más; que el `.dmg` arranque, abra terminales y
+  encuentre el hook lo comprueba Pau a mano (entrada «sin probar») (assumed).
+- Q: ¿Fijada? → A: versión exacta, sin `^` (`26.18.0`, del 20 oct) (assumed).
+- Q: ¿Dueño de los archivos nuevos? → A: workspaces; su `Governs:` añade `electron-builder.config.cjs` y `build/**`
+  (assumed).
+- Q: ¿Foto y boceto? → A: no hay pantalla nueva: novedades lleva su sección sin foto y el boceto no cambia (assumed).
+- Q: ¿Otro Mac? → A: fuera; la página explica «Abrir igualmente» y el certificado propio, sin prometerlo (assumed).
+
 ## Task breakdown
 
 - App shell: Electron main, preload bridge, renderer with sidebar / centre / right panel /
@@ -1906,3 +1963,19 @@ Textos por `t()`.
   marked) — each of 1–4 marked done from the live state, with a button where it is done while undone; «Ya lo
   tengo» shall set `setupDismissed`, kept across restarts. One test holds a case per clause.
   Proof: src/renderer/setup.test.ts a new person sees what is left to start
+
+### Empaquetar (package-and-sign, 10 nov 2026)
+
+- **W98** The repository shall hold an `electron-builder.config.cjs` asking for `dmg` and `zip` for `arm64` with
+  `appId`, `productName: Atril`, the icon `build/icon.icns`, `extraResources` copying `resources` flat into the
+  resources dir, `asarUnpack` covering `node-pty`, `hardenedRuntime: true`, `entitlements` and
+  `entitlementsInherit` at `build/entitlements.mac.plist` (holding `allow-jit`, `allow-unsigned-executable-memory`
+  and `disable-library-validation`), `notarize: false`, and `identity` equal to `ATRIL_SIGN_IDENTITY` when set and
+  `"-"` when not; `package.json` shall pin `electron-builder` to an exact version and its `dist` script shall run
+  `electron-vite build` then `electron-builder`. One test holds a case per clause; it proves the config text, never
+  a built app.
+  Proof: src/main/packaging.test.ts the packaging config asks for a signed arm64 app
+- **W99** When packaged, `resourcesDir()` shall return `process.resourcesPath`, and in dev the repo's `resources/`;
+  and every file the main process joins onto `resourcesDir()` (`claude-hook.mjs`, `libretto/`), and every
+  local module the hook imports (`summarise.mjs`, `branchsize.mjs`), shall exist in `resources/`, so the flat copy of W98 places it where it is looked for.
+  Proof: src/main/paths.test.ts resources resolve packaged and in dev
