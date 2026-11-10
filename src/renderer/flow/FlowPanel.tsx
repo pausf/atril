@@ -146,38 +146,41 @@ function LibrettoFlow({ flow, onOpen, changes, onDiff }: FlowProps) {
   const c = flow?.checklist
   return (
     <>
-      <p className="lead">{t('Dónde va cada trabajo, leído de sus archivos.')}</p>
       {flow?.stage === 'sin-libretto' ? (
         <div className="empty">{t('sin Libretto: este trabajo no tiene carpeta .agents')}</div>
       ) : (
         <>
           <div className="stages">
             {STAGES.map((s, i) => {
-              const cls = `stg ${i < current ? 'd' : i === current ? 'c' : 'p'}`
+              const now = i === current
+              const cls = `stg ${i < current ? 'd' : now ? 'c' : 'p'}`
+              const building = s.name === 'construir' && i <= current && changes.length > 0
+              const part = DOC_OF[s.name]
+              const opens = part && i <= current && flow?.change
+              // F29: only the current stage shows its name; the rest keep it as visually hidden text,
+              // F20 Construir names its files instead of its state.
+              const state = building ? `· ${t('ver {n} archivos', { n: changes.length })}` : i < current ? t('hecho') : now ? t('ahora') : t('pendiente')
+              const name = `${s.label} ${state}`
               const body = (
                 <>
-                  <Icon name={s.icon} size={22} />
-                  <span>
-                    {s.label} <small>{i < current ? t('hecho') : i === current ? t('ahora') : t('pendiente')}</small>
+                  <Icon name={s.icon} size={16} />
+                  <span className={now ? 'stg-t' : 'stg-t sr-only'}>
+                    {s.label} <small className={now ? 'sr-only' : undefined}>{state}</small>
                   </span>
                 </>
               )
-              const part = DOC_OF[s.name]
-              if (s.name === 'construir' && i <= current && changes.length > 0)
+              if (building)
                 return (
-                  <button type="button" className={`${cls} stgbtn`} key={s.name} onClick={() => onDiff(changes[0]!.path)} title={t('Ver los cambios de código')}>
-                    <Icon name={s.icon} size={22} />
-                    <span>
-                      {s.label} <small>{t('ver {n} archivos', { n: changes.length })}</small>
-                    </span>
+                  <button type="button" className={`${cls} stgbtn`} key={s.name} onClick={() => onDiff(changes[0]!.path)} title={`${name} — ${t('Ver los cambios de código')}`}>
+                    {body}
                   </button>
                 )
-              return part && i <= current && flow?.change ? (
-                <button type="button" className={`${cls} stgbtn`} key={s.name} onClick={() => onOpen(part)} title={t('Ver y editar lo que ha escrito Claude')}>
+              return opens ? (
+                <button type="button" className={`${cls} stgbtn`} key={s.name} onClick={() => onOpen(part)} title={`${name} — ${t('Ver y editar lo que ha escrito Claude')}`}>
                   {body}
                 </button>
               ) : (
-                <div className={cls} key={s.name}>
+                <div className={cls} key={s.name} title={name}>
                   {body}
                 </div>
               )

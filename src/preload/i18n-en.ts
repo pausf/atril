@@ -168,7 +168,6 @@ export const EN: Record<string, string> = {
   'Construir': 'Build',
   'Terminado': 'Done',
   'Aterrizado': 'Landed',
-  'Dónde va cada trabajo, leído de sus archivos.': 'Where each workspace stands, read from its files.',
   'sin Libretto: este trabajo no tiene carpeta .agents': 'no Libretto: this work has no .agents folder',
   'hecho': 'done',
   'ahora': 'now',
