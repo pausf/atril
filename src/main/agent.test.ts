@@ -333,6 +333,33 @@ describe('subagents hook', () => {
     expect(readFileSync(join(home, 'activity', `${pre.session}.jsonl`), 'utf8')).toContain('Lanzando un subagente: T5 paginación')
   }, 30000)
 
+  it('the hook keeps where the transcript is', async () => {
+    const pointer = (session: string): string | undefined => {
+      const file = join(home, 'transcripts', session)
+      return existsSync(file) ? readFileSync(file, 'utf8') : undefined
+    }
+    // Any event carries it, a subagent one too; only the path is written, never the rest of the payload.
+    const t = join(home, 'claude', 'sess.jsonl')
+    const sub = await fireIn([start('a1', 'explorer', { transcript_path: t })])
+    expect(pointer(sub.session)).toBe(`${t}\n`)
+    // One line per transcript, added when new (a resumed session gets a second); the rest leave it as it is.
+    const kept = await fireIn([
+      ['UserPromptSubmit', { prompt: 'SECRET-PROMPT', transcript_path: '/x/first.jsonl' }],
+      ['Stop', { transcript_path: '/x/first.jsonl', last_assistant_message: 'SECRET-LAST' }],
+      ['PreToolUse', { tool_name: 'Bash', tool_input: { command: 'ls' }, transcript_path: '/x/third.txt' }],
+      ['PostToolUse', { tool_name: 'Bash', transcript_path: 7 }],
+      ['Notification', { message: 'hola' }],
+      ['UserPromptSubmit', { prompt: 'sigue', transcript_path: '/x/second.jsonl' }],
+      ['Stop', { transcript_path: '/x/first.jsonl' }]
+    ])
+    expect(pointer(kept.session)).toBe('/x/first.jsonl\n/x/second.jsonl\n')
+    expect(pointer(kept.session)).not.toContain('SECRET')
+    expect(readdirSync(join(home, 'transcripts')).sort()).toEqual([kept.session, sub.session].sort())
+    // No path at all: no file.
+    const none = await fireIn([['Stop', {}], ['UserPromptSubmit', { prompt: 'x', transcript_path: 'a.txt' }]])
+    expect(pointer(none.session)).toBeUndefined()
+  }, 60000)
+
   it('an asked question keeps its options', async () => {
     const stateOf = (session: string): { state?: string; options?: string[]; multiSelect?: boolean } => JSON.parse(readFileSync(join(home, 'state', `${session}.json`), 'utf8'))
     const ask = (questions: unknown): [string, object] => ['PreToolUse', { tool_name: 'AskUserQuestion', tool_input: { questions } }]

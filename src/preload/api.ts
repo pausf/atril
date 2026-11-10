@@ -469,7 +469,15 @@ export interface SubagentsApi {
   onChange(cb: (workspaceId: string, entries: SubagentEntry[]) => void): () => void
 }
 
-export type QaKind = 'expo' | 'react-native' | 'flutter' | 'android' | 'ios' | 'web'
+/** W93: a workspace's usage at API prices; `usd` is null when no model in it has a price. */
+export interface WorkCost {
+  tokens: number
+  usd: number | null
+  /** Models seen without a price, so their tokens count and their cost does not. */
+  unpriced: string[]
+}
+
+export type QaKind ='expo' | 'react-native' | 'flutter' | 'android' | 'ios' | 'web'
 
 /** One screenshot of a QA run: `src` is a data URL, so the window never opens a local file. */
 export interface QaShot {

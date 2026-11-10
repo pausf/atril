@@ -77,9 +77,9 @@ export function taskPrompt(task: unknown, auto?: boolean): string | null {
 /** W59/W60: the hook reads this marker by session name, never the record. */
 const autoMarker = (id: string): string => join(home(), 'auto', sessionName(id))
 
-/** W60 and W65: what the hook keeps by session name dies with the workspace. */
+/** W60, W65 and W92: what the hook keeps by session name dies with the workspace. */
 const dropFiles = (id: string): Promise<unknown> =>
-  Promise.all([autoMarker(id), join(home(), 'subagents', `${sessionName(id)}.json`), join(home(), 'paused', sessionName(id))].map((f) => unlink(f, { force: true })))
+  Promise.all([autoMarker(id), join(home(), 'subagents', `${sessionName(id)}.json`), join(home(), 'paused', sessionName(id)), join(home(), 'transcripts', sessionName(id))].map((f) => unlink(f, { force: true })))
 
 export async function openWorktree(input: OpenInput, run: Runner = defaultRun): Promise<WorkspaceResult> {
   const { repoId, branch, agent } = input

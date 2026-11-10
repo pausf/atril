@@ -1,6 +1,6 @@
 // Claude Code hook: ELECTRON_RUN_AS_NODE=1 <execPath> claude-hook.mjs <Event>.
 // Atril's own Electron is the Node here: a Finder-launched app has no node or jq on PATH.
-// The payload is read once and never written anywhere; only a short summary leaves this process.
+// The payload is read once and never written anywhere; only a short summary and the transcript's path leave this process.
 import { execFileSync } from 'node:child_process'
 import { closeSync, existsSync, mkdirSync, openSync, readFileSync, readSync, renameSync, rmSync, fstatSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
@@ -94,6 +94,21 @@ function trackSubagents(home, name, event, payload, at) {
   replace(file, body)
 }
 
+// W92: every transcript this session has used, one path per line, for main's cost totals; never their content.
+function keepTranscript(home, name, path) {
+  if (typeof path !== 'string' || !path.endsWith('.jsonl') || path.includes('\n')) return
+  const file = join(home, 'transcripts', name)
+  let raw = ''
+  try {
+    raw = readFileSync(file, 'utf8')
+  } catch {
+    /* first event of this session */
+  }
+  if (raw.split('\n').includes(path)) return
+  mkdirSync(join(home, 'transcripts'), { recursive: true })
+  replace(file, `${raw}${path}\n`)
+}
+
 // W74: the first question's labels, for the row's quick replies; an empty label would shift the numbers, so none then.
 // A multiSelect question is only flagged: the row offers nothing for it. Both last while the state stays needs-you.
 function quickReplies(event, state, payload, stateFile) {
@@ -138,6 +153,11 @@ try {
   if (!name) process.exit(0)
   const home = process.env.ATRIL_HOME ?? join(homedir(), '.atril')
   const at = Math.floor(Date.now() / 1000)
+  try {
+    keepTranscript(home, name, payload?.transcript_path)
+  } catch {
+    /* the cost pointer never costs the state its write */
+  }
   // Neither subagent event is the agent working or waiting: no state, no activity line.
   if (!STATES[event]) {
     trackSubagents(home, name, event, payload, at)
