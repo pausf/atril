@@ -442,3 +442,9 @@ Aterrizado**.
   12 newest, each at most 2 MB) — each opening large on press; for an unclassified workspace no section
   shall show. One test holds a case per clause.
   Proof: src/renderer/flow/qa.test.ts the qa section shows the button and the screenshots
+
+### Coste por trabajo (cost-per-work, 10 nov 2026)
+
+- **F34** While the selected workspace has a non-zero total (W93), the Libretto panel shall show, under «Cambio»,
+  the same «≈ {coste} $ · {tokens} tokens» line as W94 with «estimado a precio de API».
+  Proof: src/renderer/flow/cost.test.ts the panel shows the work's estimated cost

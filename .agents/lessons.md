@@ -203,3 +203,6 @@ Reviewer found nothing against the contract (3 proofs re-run). Asked whether a r
 
 ## 2026-11-10 · open-work-from-mr · 4→6 and 6→7
 Two cold spec reviews caught the first design leaving Libretto's patterns (an Atril worktree under review-project's own; libretto-flow given an MR URL it does not take); redesigned to Libretto's own paths. Work-reviewer found nothing; it asked whether anything treats a review session as a worktree — yes: the panel, documents, Cambios and QA read its folder, the person's copy. Fixed with `flowWorkspace` (W91), and the continue base is now the merge-base with the main line so Cambios shows the whole MR (W89 amended). Both seen red first. Lesson: before wiring a command into a flow, read the command's own file for its inputs and its isolation.
+
+## 2026-11-10 · cost-per-work · 6→7
+Reviewer found nothing (4 proofs re-run). Noted cost.ts keeps in-memory totals of a removed workspace until restart: a few numbers, kept as is. Before the review the session dropped the «≈» in front of «< 0,01 $» (seen red first; W94 amended).
