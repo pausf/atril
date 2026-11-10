@@ -215,3 +215,12 @@ Reviewer found nothing (2 proofs and the i18n scans re-run). The builder's mutat
 
 ## 2026-11-11 · first-run-setup · 6→7
 Reviewer found nothing (W97 proof and ui.ts validation re-run). The builder corrected the contract's «live workspace» to «any workspace record»: the stricter reading would have shown the card beside a sidebar of stopped workspaces. Lesson: «live» is a tmux word in this app; for what a person sees, say «in the list».
+
+## 2026-11-11 · package-and-sign · 6→7
+- The resources test asserted one hook import by name; the hook also imports `branchsize.mjs`, so deleting it would ship a broken hook with a green run. Fixed: the test reads every `from './x'` in the hook and checks each file exists.
+
+## 2026-11-11 · package-and-sign · 6→7
+- The builder added an ESLint `.cjs` globals block and `electron-winstaller: false` without the contract naming them. Fixed: both named in Scope **In**. Support edits a new dependency forces still go in the contract.
+
+## 2026-11-11 · package-and-sign · 6→7
+- Whether electron-builder accepts the config is unproven: nothing may be built here. Not fixed, by design: «sin probar» entry in CLAUDE.md and the checklist in bocetos/instalar.html §4.

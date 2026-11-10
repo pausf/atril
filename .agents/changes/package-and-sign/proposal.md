@@ -52,7 +52,7 @@ Empaquetar Atril para otros: configuración de electron-builder (arm64), firma c
 
 ## Scope boundaries
 
-**In:** la dependencia, la configuración, los entitlements, el script, la página de instalación.
+**In:** la dependencia (con `electron-winstaller` sin scripts de instalación), la configuración (y sus globales `.cjs` en ESLint), los entitlements, el script, la página de instalación.
 **Out:** abrirlo en otro Mac como criterio, notarización, actualizaciones automáticas, x64, Windows/Linux, publicar el `.dmg`.
 **Never scoped out:** ningún secreto en el repo (la identidad llega por variable de entorno); los recursos del hook y
 Libretto dentro del paquete.
@@ -77,7 +77,7 @@ Libretto dentro del paquete.
   Proof: src/main/packaging.test.ts the packaging config asks for a signed arm64 app
 - **W99** When packaged, `resourcesDir()` shall return `process.resourcesPath`, and in dev the repo's `resources/`;
   and every file the main process joins onto `resourcesDir()` (`claude-hook.mjs`, `libretto/`), and every
-  local module the hook imports (`summarise.mjs`), shall exist in `resources/`, so the flat copy of W98 places it where it is looked for.
+  local module the hook imports (`summarise.mjs`, `branchsize.mjs`), shall exist in `resources/`, so the flat copy of W98 places it where it is looked for.
   Proof: src/main/paths.test.ts resources resolve packaged and in dev
 
 ## Approach

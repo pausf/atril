@@ -70,7 +70,9 @@ describe('paths', () => {
     expect([...joined].sort()).toEqual(expect.arrayContaining(['claude-hook.mjs', 'libretto']))
     for (const name of joined) expect(existsSync(join(root, 'resources', name)), name).toBe(true)
     // the hook imports its sibling: both must travel in the flat copy
-    expect(readFileSync(join(root, 'resources/claude-hook.mjs'), 'utf8')).toContain("'./summarise.mjs'")
-    expect(existsSync(join(root, 'resources/summarise.mjs'))).toBe(true)
+    const hook = readFileSync(join(root, 'resources/claude-hook.mjs'), 'utf8')
+    const local = [...hook.matchAll(/from '\.\/([^']+)'/g)].map((m) => m[1] as string)
+    expect(local).toContain('summarise.mjs')
+    for (const f of local) expect(existsSync(join(root, 'resources', f)), f).toBe(true)
   })
 })
