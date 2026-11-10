@@ -63,12 +63,16 @@ describe('mr lens drafts in the window', () => {
     expect(within(items[3]!).getByText('Enviado al agente')).toBeTruthy()
     for (const i of [2, 3]) expect(within(items[i]!).queryAllByRole('button')).toHaveLength(0)
 
-    // Publicar: once, then published without actions.
+    // Publicar: once, then published without actions; main's note (M37) follows «Publicado», and only there.
+    const note = 'Publicado como comentario general: la forja no aceptó esa línea'
+    vi.mocked(api.mrApi.publishDraft).mockResolvedValueOnce(stored(drafts.map((d) => (d.id === 'a' ? { ...d, state: 'published' as const, note } : d))))
     await user.click(within(items[0]!).getByRole('button', { name: 'Publicar' }))
     expect(api.mrApi.publishDraft).toHaveBeenCalledTimes(1)
     expect(api.mrApi.publishDraft).toHaveBeenCalledWith(GH, 'a')
     expect(await within(items[0]!).findByText('Publicado')).toBeTruthy()
+    expect(within(items[0]!).getByText(note)).toBeTruthy()
     expect(within(items[0]!).queryAllByRole('button')).toHaveLength(0)
+    expect(within(items[2]!).queryByText(note)).toBeNull()
 
     // A failure keeps the draft open and says why.
     vi.mocked(api.mrApi.sendDraft).mockResolvedValueOnce({ error: 'No se pudo enviar: ese trabajo ya no está' })

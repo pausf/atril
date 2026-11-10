@@ -87,6 +87,8 @@ export function LensDrafts({ m, reviewable }: { m: MrItem; reviewable: boolean }
               ) : (
                 <span className="mr-draft-done">{d.state === 'published' ? t('Publicado') : t('Enviado al agente')}</span>
               )}
+              {/* M37: main's own text, already in the person's language. */}
+              {d.state === 'published' && d.note && <p className="f-note">{d.note}</p>}
               {errors[d.id] && (
                 <p className="mr-score-error" role="alert">
                   {errors[d.id]}
