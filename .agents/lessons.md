@@ -182,3 +182,6 @@ Reviewer: (1) the Paleta/Tema row labels in Appearance were scope that arrived u
 
 ## 2026-11-10 · fix-ci-with-claude · 6→7
 Reviewer found nothing against the contract (3 proofs re-run, green); noted the double-call refusal text («Ya se está enviando a ese trabajo») was not among the decision log's three, which the criterion allows. No real-app photo: no snapshot fake has a failing-CI MR with an agent; the sketch shows it.
+
+## 2026-11-10 · quick-replies · 6→7
+Reviewer found nothing (3 proofs re-run, green). Before the review the session caught that a failed send kept the buttons disabled (no retry); W76 amended and fixed, seen red first. Unverified on a real Claude Code: that its AskUserQuestion selector takes a typed digit plus Enter — listed under «Sin probar con datos reales».

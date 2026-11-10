@@ -171,6 +171,12 @@ The `workspaces` capability, phase 1. Its siblings in this change: `.agents/spec
 El tutorial recorre 24 pasos que explican toda la app, sin dejar piezas sin contar: la lista y los
 textos, en «Pasos» abajo. Los que tienen elemento en pantalla lo iluminan; los que no, salen centrados.
 
+### Respuestas rápidas (quick-replies, 10 nov 2026)
+
+- Una fila «te necesita» enseña la pregunta y, debajo, sus respuestas como botones pequeños; pulsar una se
+  la manda al agente sin cambiar de trabajo, y la fila dice «Enviado».
+- Al volver el agente a trabajar, los botones desaparecen.
+
 ## Scope boundaries
 
 **In:** the three columns and footer of `bocetos/fase1-nucleo.html` (boceto 8), the
@@ -324,6 +330,14 @@ teclado y estado legible (`aria-pressed`).
 **Out:** cambiar cómo funciona el tutorial (foco, posiciones, teclado); vídeos o animaciones; un tutorial
 por pantalla.
 **Never scoped out:** castellano de España y su inglés en `i18n-en.ts`; manejable con teclado (W25).
+
+### Respuestas rápidas (quick-replies, 10 nov 2026)
+
+**In:** guardar las opciones de la primera pregunta en el estado, los botones de la fila, el envío.
+**Out:** respuestas configurables; varias preguntas; botones en el panel, en «Qué me toca» o en la
+notificación (ya tiene su campo, N3); modo foco (otro cambio).
+**Never scoped out:** el texto de las opciones se pinta como texto; se envía solo al pulsar y al panel de
+ese trabajo; teclado; si el trabajo ya no está, «No se pudo enviar: ese trabajo ya no está» (N3).
 
 ## Constraints
 
@@ -842,6 +856,48 @@ Textos por `t()`.
   corrigieron donde la tabla no era verdad: Nueva tarea abre un trabajo (no crea en Jira), el número del
   rail sin color, el registro del subagente «como una terminal», el reinicio semanal de la cuota.
 
+### Respuestas rápidas (quick-replies, 10 nov 2026)
+
+- Solo la primera pregunta (assumed, 10 nov); techo: las demás, en la terminal.
+- El número de la opción como tecla (assumed, 10 nov); techo: formato interno de Claude Code.
+- Respuestas fijas «Sí, sigue» / «No, espera» (assumed, 10 nov).
+
+#### Alternatives that lost
+
+| Considered | Why it lost |
+|---|---|
+| Escribir siempre el texto de la opción | En el selector de Claude Code no elige nada. |
+| Botones en la notificación del Mac | macOS solo deja un campo de respuesta; ya existe (N3). |
+
+#### Decision log, answers as given (2026-11-10)
+- Q: ¿Para qué? → A: para llevar 3 trabajos a la vez sin perder el foco: contestar a un agente desde
+  su fila sin abrir su terminal (Pau, 10 nov) (assumed).
+- Q: ¿Qué respuestas? → A: si la pregunta es de `AskUserQuestion` (con opciones), sus opciones; si no,
+  dos fijas: «Sí, sigue» y «No, espera» (assumed).
+- Q: ¿Cómo se envía una opción? → A: tecleando su número (1, 2…) y Enter en el panel del agente, que es
+  como se elige en el selector de Claude Code (assumed; formato interno: si cambia, se escribe el texto de
+  la opción). Una respuesta fija se escribe literal, como N3.
+- Q: ¿Dónde? → A: en la fila del trabajo en «Trabajo en marcha», debajo de «Te pregunta: …»; nada en el
+  panel ni en otras pantallas en este cambio (assumed).
+- Q: ¿Varias preguntas a la vez (`questions` con más de una)? → A: solo la primera; las demás se contestan
+  en la terminal (assumed).
+
+- Q: (revisor de spec) Holguras → A, todas (assumed):
+  - **Qué manda la ventana.** Solo `{ option: n }` o `{ fixed: 'yes' | 'no' }`. Main traduce `yes` a «Sí,
+    sigue» y `no` a «No, espera». Nunca teclea texto que venga de la ventana.
+  - **Qué comprueba main al pulsar.** Relee el estado del trabajo. Si ya no está en needs-you, responde
+    «Ese agente ya no está esperando una respuesta.». Si la opción no está entre las guardadas, «Esa
+    opción ya no existe.».
+  - **Preguntas multiSelect.** No llevan botones de opción ni respuestas fijas; se contestan en la
+    terminal. «Other» no se ofrece.
+  - **Cuánto duran las opciones.** Se guardan mientras el estado siga en needs-you, también si llega un
+    Notification o un Stop, y se borran en cuanto el estado pasa a otro.
+  - **Después de enviar.** La fila dice «Enviado» y los botones quedan desactivados hasta que el estado
+    cambie.
+  - **Dónde van los botones.** Solo en la fila. La línea del Reading que habla del panel y del aviso queda
+    superada.
+  - **Tutorial.** El paso 4 («Trabajo en marcha») nombra las respuestas rápidas sin pasar de 3 frases.
+
 ## Task breakdown
 
 - App shell: Electron main, preload bridge, renderer with sidebar / centre / right panel /
@@ -1268,3 +1324,24 @@ Textos por `t()`.
   click and keep it across restarts; main shall read an unknown stored value as Original, the default.
   One test holds a case per clause.
   Proof: src/renderer/theme.test.ts the palette is chosen in appearance and remembered
+
+### Respuestas rápidas (quick-replies, 10 nov 2026)
+
+- **W74** When the hook gets a PreToolUse for `AskUserQuestion`, it shall add to the needs-you state the
+  labels of the first question's options (at most 4, each cut to 40 characters, whitespace collapsed);
+  a multiSelect question shall store none; the stored options shall stay while the state stays needs-you
+  (a later Notification or Stop included) and go when it leaves needs-you. One test holds a case per clause.
+  Proof: src/main/agent.test.ts an asked question keeps its options
+- **W75** When the window asks `atril:status:answer(workspaceId, choice)` with choice `{ option: n }` or
+  `{ fixed: 'yes' | 'no' }`, main shall re-read that workspace's state and, while it is needs-you, type
+  n plus one then Enter for an option among the stored ones, or «Sí, sigue» / «No, espera» as literal
+  text then Enter for a fixed reply, into that workspace's pane; otherwise it shall type nothing and answer
+  «Ese agente ya no está esperando una respuesta.», «Esa opción ya no existe.» or, for a gone workspace,
+  N3's message. Any other choice shape shall be refused. One test holds a case per clause.
+  Proof: src/main/reply.test.ts a quick answer reaches its own pane
+- **W76** While a workspace is needs-you and its question is not multiSelect, its row shall show its stored
+  options as buttons (their labels as text), or «Sí, sigue» and «No, espera» when it has none; pressing
+  one, by mouse or keyboard, shall send it (W75) and show «Enviado» — disabling the buttons until the
+  state changes — or show the error and keep the buttons live; the buttons shall go when the state leaves needs-you. One test holds a case per
+  clause.
+  Proof: src/renderer/quickreplies.test.ts a waiting row answers with one press

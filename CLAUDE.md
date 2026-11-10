@@ -7,13 +7,13 @@ con agentes de Claude Code en tmux, y gestiona MRs de GitHub/GitLab. Remoto PRIV
 ## Dónde lo dejamos (10 nov 2026) — empieza por aquí
 
 Las ramas van apiladas: cada una sale de la anterior y `main` no se ha movido. La última es
-**`fix-ci-with-claude`**, aterrizada y subida el 10 nov (botón Arreglar CI en la MR).
+**`quick-replies`**, aterrizada y subida el 10 nov (respuestas rápidas en la fila).
 
 1. Hechos el 10 nov: `add-subagents-view`, `add-subagent-detail` `add-doctor-install-terminal`, `restyle-mode-picker`, `fit-flow-panel`, `show-doc-buttons`, `adopt-grafito`, `expand-tour` y `redesign-connections`.
    Bocetos fase 2: `bocetos/fase2-nucleo.html` (6 diseños del panel; Pau eligió el 0) y `bocetos/fase2-app.html` (4 variantes minimalistas; Pau eligió Grafito, ya en la app como segunda paleta).
 2. **Objetivo (Pau, 10 nov): mejorar la idea, no cambiarla** (flujo Libretto, puntuaciones, borradores…),
    para que una persona lleve **3 tareas a la vez sin perder el foco**. Orden de la cola (en
-   `.agents/changes/`), elegido por eso: `quick-replies` (en curso; borrador en el scratchpad de la sesión) → `focus-mode`
+   `.agents/changes/`), elegido por eso: `focus-mode` (en curso)
    → `agents-overview` → `pause-agent` → `open-work-from-mr` → `cost-per-work` → `mr-line-comments` →
    `work-history` → `first-run-setup` → `package-and-sign`. Los cuelgues de tests de tmux/git eran
    contención: arreglado con `maxWorkers: 4` (ver lessons).
@@ -38,6 +38,7 @@ Sin probar con datos reales (necesita a Pau):
 - El modo automático preguntando antes del push.
 - El tablero de Jira.
 - Responder desde un aviso del Mac.
+- Que el selector de opciones de Claude Code acepte el número tecleado (respuestas rápidas).
 
 ## Cómo se trabaja aquí
 
