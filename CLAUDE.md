@@ -7,23 +7,11 @@ con agentes de Claude Code en tmux, y gestiona MRs de GitHub/GitLab. Remoto PRIV
 ## Dónde lo dejamos (10 nov 2026) — empieza por aquí
 
 Las ramas van apiladas: cada una sale de la anterior y `main` no se ha movido. La última es
-**`add-subagents-view`**, que tiene trabajo **sin commitear**.
+**`add-subagents-view`**, aterrizada y subida el 10 nov (la vista de subagentes, con foto en novedades).
 
-1. **Terminar `add-subagents-view`**: hay que ver los subagentes que crea Claude.
-   - El contrato está en `.agents/changes/add-subagents-view/` (`proposal.md` con W62–W66 y `spec-flow-status.md` con F27).
-   - El código está escrito: hook, `src/main/subagents.ts`, `src/renderer/flow/Subagents.tsx` y los tests.
-   - El constructor vio los 219 tests en verde, pero al repasarlo fallaron dos:
-     - `src/main/agent.test.ts` › «a subagent start takes its description»: se colgó unos 1000 s esperando a tmux.
-     - `src/renderer/subagents.test.ts` › «the row counts running subagents».
-   - Pasos:
-     1. Depura esos dos (`systematic-debugging`).
-     2. Pasa las tres puertas.
-     3. Commit.
-     4. Lanza el work-reviewer en frío y arregla lo que encuentre.
-     5. Escribe las lecciones en `.agents/lessons.md`.
-     6. Aterriza con `scripts/land.py` (ver abajo).
-     7. Escanea los identificadores de trabajo y haz push.
-     8. Saca la foto con `ATRIL_SNAPSHOT_VIEW=subagents` y añádela a `bocetos/novedades.html`.
+1. Hecho: `add-subagents-view`. Cola en `.agents/changes/` por `Queued:`:
+   `add-subagent-detail`, `add-doctor-install-terminal` (botón «Instalar» que abre una terminal) y
+   `expand-tour` (tutorial más extenso; Pau lo ve corto y con cosas en el aire).
 2. **Siguiente: `add-subagent-detail`** (encolado en `.agents/changes/add-subagent-detail/proposal.md`).
    - Pau quiere que, al pulsar un subagente, se abra un **modal que sea un terminal** con lo que hace el Claude de ese subagente.
    - Cómo:
