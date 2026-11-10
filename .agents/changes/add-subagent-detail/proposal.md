@@ -37,6 +37,20 @@ runs; local file only, no quota. Ceiling: internal format, may change with Claud
 - Q: ¿Qué se pinta? → A: el encargo (`> ` y sus 3 primeras líneas), texto del asistente con `⏺`, `⏺ Herramienta(arg)`, `⎿` con las 3 primeras líneas del resultado y «… +N líneas», y «✻ Pensando…» sin su contenido; como mucho las 500 últimas líneas (assumed).
 - Q: (fase 5) ¿Cómo se construye? → A: ruta guardada por el hook + lectura bajo demanda en main + sondeo desde el modal (assumed). Perdieron: un `fs.watch` por archivo de subagente (más estado y fugas por cada modal para ganar menos de 1 s) y buscar el archivo por la ruta del trabajo codificada en `~/.claude/projects` (depende de otra regla interna más y falla con trabajos en sitio).
 
+- Q: (revisor de spec) Varias holguras del contrato → A, todas (assumed):
+  - Una entrada antigua sin `transcript` conserva la `description` guardada.
+  - Un meta sin `description` de texto cuenta como meta ausente.
+  - Un meta que aún no existe se vuelve a leer en el siguiente cambio del archivo de entradas. Como muy tarde, en SubagentStop.
+  - El tope de 500 cuenta elementos `SubagentLine`, no filas pintadas.
+  - N es el número de líneas ocultas.
+  - El encargo es el primer `user` con contenido de texto (una cadena o su primer bloque `text`).
+  - Una herramienta sin argumento de texto se pinta `Name`.
+  - `is_error` no se distingue.
+  - Al llegar `endedAt` se pide el registro una última vez.
+  - Si la entrada desaparece, el modal se cierra.
+  - Un subagente recién lanzado sin archivo dice lo mismo que uno sin registro.
+  - Las líneas de continuación no llevan prefijo y van sangradas.
+
 ## Outcomes
 
 - Pulsar un subagente del panel abre un modal que parece una terminal y enseña lo que ha hecho y está
@@ -93,14 +107,22 @@ se maneja con teclado (foco al abrir, Tab dentro, Esc cierra y devuelve el foco 
   its `.jsonl` ending plus `/subagents/agent-<agent_id>.jsonl`, present only when `transcript_path` is a
   string ending in `.jsonl`; a PreToolUse shall never write that file.
   Proof: src/main/agent.test.ts a subagent start records its transcript
+- **W65** (amended) Atril shall install SubagentStart and SubagentStop hooks with the same command as the other
+  hook events; main shall answer `atril:subagents:get(workspaceId)` and send
+  `atril:subagents:changed(workspaceId, entries)`, both with entries shaped by W67 (`[]` without a
+  file), the push whenever the file's content changes, an `endedAt` flip included; removing a workspace
+  deletes its file.
+  Proof: src/main/subagents.test.ts the subagent list reaches the window
 - **W64** (amended) On UserPromptSubmit the hook shall drop every finished entry; the file shall keep at
   most 20 entries, dropping the oldest finished entry and never a running one (more than 20 running is
   kept as is).
   Proof: src/main/agent.test.ts the subagent list stays bounded
 - **W67** Main shall send each entry to the window without `transcript`, with `description` taken from
   the meta file beside its transcript (`agent-<id>.meta.json`, field `description`,
-  whitespace collapsed, cut to 120 characters) and no `description` when that file is missing or not
-  JSON.
+  whitespace collapsed, cut to 120 characters); an entry with no `transcript` shall keep a stored string
+  `description`; an entry with a `transcript` whose meta file is missing, not JSON or has no string
+  `description` shall carry none, and that meta shall be read again on the next change of the entries
+  file.
   Proof: src/main/subagents.test.ts the description comes from the meta file
 - **W68** When the window asks `atril:subagents:log(workspaceId, agentId)`, main shall read only the
   `transcript` stored for that agent in that workspace's file and answer its lines; if the workspace,
@@ -111,8 +133,11 @@ se maneja con teclado (foco al abrir, Tab dentro, Esc cierra y devuelve el foco 
   `tool_use` (arg = the first string among `file_path`, `command`, `pattern`, `url`, `description`,
   `skill`, `prompt`, one line, cut to 80 characters), a `result` line per `tool_result` (its first 3
   lines plus «… +N líneas» when longer, text blocks joined when the content is a list), and a
-  `thinking` line with no text per thinking block; it shall skip any other line type, any line that is
-  not JSON, and keep only the last 500 lines.
+  `thinking` line with no text per thinking block; the prompt is the first `user` line whose content is a
+  string or holds a `text` block; a `tool_use` with no string among those keys gives `Name` alone; «N» is
+  the number of hidden lines; it shall skip any other line type and any line that is not JSON, and
+  keep only the last 500 parsed lines. One fixture carries a case per clause (ceiling: a clause with no
+  case is unproven).
   Proof: src/main/subagents.test.ts the log reads like Claude Code
 
 ## Approach
@@ -200,6 +225,6 @@ La caché de descripciones en main se queda: sin ella, cada evento del vigilante
 
 ## Checklist
 
-- [ ] the hook records the transcript and drops pending; main fills the description from the meta and never sends the path · Closes: W62, W64, W67
+- [ ] the hook records the transcript and drops pending; main fills the description from the meta and never sends the path (the old proof «a subagent start takes its description» is replaced by W62's new one) · Closes: W62, W64, W65, W67
 - [ ] the log parser and `atril:subagents:log` reading only the stored transcript · waits on box 1 · Closes: W68, W69
-- [ ] the row as a button opening the terminal modal, live while it runs; sketch modal as terminal · waits on box 2 · Closes: F28
+- [ ] the row as a button opening the terminal modal, live while it runs; sketch modal as terminal (the sketch has no proof: it is a drawing) · waits on box 2 · Closes: F28
