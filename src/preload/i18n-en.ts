@@ -502,6 +502,7 @@ export const EN: Record<string, string> = {
   "Mandar al agente": "Send to the agent",
   "Descartar": "Discard",
   "Publicado": "Published",
+  "Publicado como comentario general: la forja no aceptó esa línea": "Published as a general comment: the forge did not take that line",
   "Enviado al agente": "Sent to the agent",
   'Arreglar CI con Claude': 'Fix CI with Claude',
   'Enviado a {rama}': 'Sent to {rama}',

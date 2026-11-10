@@ -327,6 +327,8 @@ export interface MrDraft {
   line?: number
   text: string
   state: 'open' | 'published' | 'sent'
+  /** M37: why a published draft went to the general comment instead of its line. */
+  note?: string
 }
 
 /** `head` is set once a review is stored (zero findings included); `stale` when the MR has a newer head (M26). */

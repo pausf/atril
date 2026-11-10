@@ -4,6 +4,7 @@ import type { SecretStore } from '../credentials/store'
 import { getLang, t } from '../lang'
 import type { Runner } from '../run'
 import { replyGone } from '../status'
+import { postLine, renames } from './linecomments'
 import { createQueue, cutDiff, fetchDiff, Failure, forgeGet, metrics, readStored, writeStored, type Queue, type ScoreTarget } from './scores'
 
 const CLAUDE_MS = 180_000
@@ -42,6 +43,8 @@ type Finding = Omit<MrDraft, 'id' | 'state'>
 interface Stored {
   head: string
   drafts: MrDraft[]
+  /** M36: renamed files of the reviewed diff, new path to old, for GitLab's line position. */
+  renames?: Record<string, string>
 }
 
 /** The schema, checked again in main: `--json-schema` is the CLI's promise, not ours. */
@@ -93,6 +96,9 @@ function commentBody(d: MrDraft): string {
   const loc = location(d)
   return `**${d.lens} · ${d.severity}**${loc ? ` — \`${loc}\`` : ''}\n\n${d.text}`
 }
+
+/** M36: on its line the location is the line itself. */
+const lineBody = (d: MrDraft): string => `**${d.lens} · ${d.severity}**\n\n${d.text}`
 
 export const namesProject = (origin: string, project: string, host: string): boolean => {
   const path = origin.trim().replace(/\/+$/, '').replace(/\.git$/, '').toLowerCase()
@@ -185,29 +191,30 @@ export function createLenses({ store, run, fetchImpl = fetch, target, listed, po
     if (answer?.is_error !== false || !validFindings(found)) return fail(t('respuesta fuera del esquema'))
 
     const drafts = (found as unknown as { findings: Finding[] }).findings.map((f): MrDraft => ({ id: randomUUID(), ...f, state: 'open' }))
-    const stored = { head, drafts }
+    const stored: Stored = { head, drafts, renames: renames(diff) }
     await writes(() => writeStored(KIND, url, stored))
     return view(url, tgt, stored, true)
   }
 
   const closed = (): MrDraftsResult => ({ error: t('Ese borrador ya no está abierto') })
 
-  /** M27, M28: the checks every action shares, then `how` runs once on an open draft. */
-  async function act(url: string, id: string, how: (d: MrDraft, tgt: ScoreTarget | undefined) => Promise<string | undefined>, after: 'mark' | 'remove', mark?: MrDraft['state']): Promise<MrDraftsResult> {
+  /** M27, M28: the checks every action shares, then `how` runs once on an open draft: a string is its error, an object goes into the marked draft. */
+  async function act(url: string, id: string, how: (d: MrDraft, tgt: ScoreTarget | undefined, stored: Stored) => Promise<string | Partial<MrDraft> | undefined>, after: 'mark' | 'remove', mark?: MrDraft['state']): Promise<MrDraftsResult> {
     if (!listed(url)) return { error: t('Esta MR ya no está en la lista: actualiza') }
     const key = `${url}\n${id}`
-    const draft = (await readDrafts(url))?.drafts.find((d) => d.id === id)
-    if (!draft || draft.state !== 'open' || busy.has(key)) return closed()
+    const current = await readDrafts(url)
+    const draft = current?.drafts.find((d) => d.id === id)
+    if (!current || !draft || draft.state !== 'open' || busy.has(key)) return closed()
     busy.add(key)
     try {
       const tgt = target(url)
-      const error = await how(draft, tgt)
-      if (error) return { error }
+      const outcome = await how(draft, tgt, current)
+      if (typeof outcome === 'string') return { error: outcome }
       const next = await writes(async () => {
         const s = await readDrafts(url)
         // A new review may have replaced the drafts while this one was on its way.
         if (!s?.drafts.some((d) => d.id === id)) return s
-        const drafts = after === 'remove' ? s.drafts.filter((d) => d.id !== id) : s.drafts.map((d) => (d.id === id ? { ...d, state: mark! } : d))
+        const drafts = after === 'remove' ? s.drafts.filter((d) => d.id !== id) : s.drafts.map((d) => (d.id === id ? { ...d, ...outcome, state: mark! } : d))
         const out = { ...s, drafts }
         await writeStored(KIND, url, out)
         return out
@@ -240,9 +247,24 @@ export function createLenses({ store, run, fetchImpl = fetch, target, listed, po
     },
 
     publish: (url: string, id: string): Promise<MrDraftsResult> =>
-      act(url, id, async (d) => {
+      act(url, id, async (d, tgt, stored) => {
+        let rejected = false
+        // M36, M37: on its line only at the drafts' own head; otherwise, or when the forge refuses the line, M27's general comment.
+        if (tgt && d.file && d.line !== undefined && !(tgt.head && tgt.head !== stored.head)) {
+          try {
+            const secret = await store.readSecret(tgt.forge).catch(() => null)
+            if (!secret?.['token']) return t('Conecta GitHub o GitLab en Ajustes')
+            const r = await postLine(tgt, secret, fetchImpl, { head: stored.head, file: d.file, oldFile: stored.renames?.[d.file] ?? d.file, line: d.line, body: lineBody(d) })
+            if (r === 'posted') return undefined
+            rejected = r === 'rejected'
+          } catch (err) {
+            if (err instanceof Failure) return err.message
+            throw err
+          }
+        }
         const r = await post(url, commentBody(d))
-        return 'error' in r ? r.error : undefined
+        if ('error' in r) return r.error
+        return rejected ? { note: t('Publicado como comentario general: la forja no aceptó esa línea') } : undefined
       }, 'mark', 'published'),
 
     send: (url: string, id: string): Promise<MrDraftsResult> =>

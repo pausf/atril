@@ -352,8 +352,9 @@ describe('mr lens drafts', () => {
     const [a, b] = await Promise.all([l.publish(GH_URL, secured.id), l.publish(GH_URL, secured.id)])
     expect(posts()).toHaveLength(1)
     expect([a, b].filter((x) => 'error' in x)).toHaveLength(1)
-    expect(posts()[0]!.url.pathname).toBe('/repos/acme/api/issues/7/comments')
-    expect(posts()[0]!.body).toEqual({ body: '**security · high** — `src/a.ts:12`\n\nEntrada sin validar.' })
+    // M27 amended: a draft with file and line goes on its line (M36); the rest is the general comment.
+    expect(posts()[0]!.url.pathname).toBe('/repos/acme/api/pulls/7/comments')
+    expect(posts()[0]!.body).toMatchObject({ body: '**security · high**\n\nEntrada sin validar.', path: 'src/a.ts', line: 12 })
     const done = [a, b].find((x) => !('error' in x))!
     expect(done).toMatchObject({ drafts: [{ id: secured.id, state: 'published' }, { id: tests.id, state: 'open' }] })
     expect(await l.draftsOf(GH_URL)).toEqual(done)
@@ -376,7 +377,7 @@ describe('mr lens drafts', () => {
     // GitLab: the MR's general note.
     const gl = await lenser()
     const g = await open(gl.l, GL_URL)
-    await gl.l.publish(GL_URL, g.drafts[0]!.id)
+    await gl.l.publish(GL_URL, g.drafts[1]!.id)
     expect(gl.forge.calls.find((c) => c.method === 'POST')!.url.pathname).toBe('/api/v4/projects/10/merge_requests/5/notes')
 
     // A failure keeps it open with M6's message, and it can be tried again.
