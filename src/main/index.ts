@@ -581,8 +581,10 @@ app.whenReady().then(async () => {
     run,
     emit: (u) => BrowserWindow.getAllWindows().forEach((w) => w.webContents.send('atril:usage:changed', u))
   })
-  ipcMain.handle('atril:usage:get', () => usage.get())
-  usage.start()
+  // ponytail: dev-only, a snapshot never reads the person's real quota (each launch was a call to api.anthropic.com).
+  const fakeUsage = { fiveHour: { pct: 34, resetsAt: null }, sevenDay: { pct: 41, resetsAt: '2026-11-12T11:00:00Z' } }
+  ipcMain.handle('atril:usage:get', () => (SNAPSHOT ? fakeUsage : usage.get()))
+  if (!SNAPSHOT) usage.start()
   const activity = createActivity({
     run,
     emit: (id, lines) => BrowserWindow.getAllWindows().forEach((w) => w.webContents.send('atril:activity:changed', id, lines))
