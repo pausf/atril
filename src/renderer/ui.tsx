@@ -1,11 +1,12 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
-import type { Theme, UiState } from '../preload/api'
+import type { Palette, Theme, UiState } from '../preload/api'
 import { translate, type Lang, type LangChoice } from '../preload/i18n'
 
 interface UiContextValue {
   /** null until ui.json has been read. */
   ui: UiState | null
   setTheme(theme: Theme): void
+  setPalette(palette: Palette): void
   /** Main answers with the resolved language, which the window then speaks (W48). */
   setLanguage(language: LangChoice): void
   setFolded(id: string, folded: boolean): void
@@ -16,6 +17,7 @@ const noop = (): void => {}
 export const UiContext = createContext<UiContextValue>({
   ui: null,
   setTheme: noop,
+  setPalette: noop,
   setLanguage: noop,
   setFolded: noop,
   markTutorialSeen: noop
@@ -66,6 +68,11 @@ export function UiProvider({ children }: { children: ReactNode }) {
     document.documentElement.dataset['theme'] = resolveTheme(theme, systemDark)
   }, [theme, systemDark])
 
+  const palette = ui?.palette ?? 'original'
+  useEffect(() => {
+    document.documentElement.dataset['palette'] = palette
+  }, [palette])
+
   const patch = useCallback((p: Partial<UiState>): void => {
     setUi((u) => (u ? { ...u, ...p, folded: { ...u.folded, ...p.folded } } : u))
     void window.atril.ui.set(p)
@@ -75,6 +82,11 @@ export function UiProvider({ children }: { children: ReactNode }) {
     () => ({
       ui,
       setTheme: (t) => patch({ theme: t }),
+      setPalette: (p) => {
+        // Set in the click itself (W73), not after the re-render.
+        document.documentElement.dataset['palette'] = p
+        patch({ palette: p })
+      },
       setLanguage: (language) => {
         setUi((u) => (u ? { ...u, language } : u))
         void window.atril.ui.set({ language }).then((next) => setUi((u) => (u ? { ...u, language: next.language, lang: next.lang } : next)))

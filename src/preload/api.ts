@@ -523,11 +523,14 @@ export type MenuAction =
   | { kind: 'palette' }
 
 export type Theme = 'light' | 'dark' | 'auto'
+export type Palette = 'original' | 'grafito'
 
 /** What the app remembers about itself in ~/.atril/ui.json. */
 export interface UiState {
   tutorialSeen: boolean
   theme: Theme
+  /** Independent of the theme; missing reads as Original. */
+  palette?: Palette
   /** Section id to folded; a missing id means the section's own default. */
   folded: Record<string, boolean>
   /** The person's choice (S14); missing reads as Sistema. */

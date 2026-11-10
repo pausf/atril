@@ -1,4 +1,4 @@
-/* Every colour lives here; theme.test.ts reads these two blocks and checks the text pairs. */
+/* Every colour lives here; theme.test.ts reads these blocks and checks the text pairs. */
 :root {
   /* the document editor is dark in both themes */
   --chg-add: #30d158;
@@ -134,6 +134,78 @@
   --shadow-sm: rgba(0, 0, 0, 0.3);
   --shadow: rgba(0, 0, 0, 0.5);
   --shadow-lg: rgba(0, 0, 0, 0.6);
+}
+/* Grafito (fase2-app.html, variant 1): cool OKLCH greys, one muted blue accent, muted green and red.
+   Only overrides; --ed-* and Jira stay as in the original. */
+[data-palette='grafito'] {
+  --chg-add: #3f704b;
+  --chg-mod: #65686b;
+  --chg-del: #9f4d48;
+  --diff-add-bg: rgba(63, 112, 75, 0.1);
+  --diff-del-bg: rgba(159, 77, 72, 0.1);
+  --bg: #e7eaed;
+  --win: #f6f9fd;
+  --card: #fdfeff;
+  --rail: #f0f3f6;
+  --line: #dfe1e5;
+  --faint: #c9ccd0;
+  --chip: #edf0f4;
+  --hover: #e7eaed;
+  --text: #1c1e21;
+  --sub: #65686b;
+  --on-text: #fdfeff;
+  --run: #446b9c;
+  --run-text: #3e6596;
+  --you: #446b9c;
+  --you-text: #3e6596;
+  --bad: #9f4d48;
+  --bad-text: #984742;
+  --bad-bg: #feebe9;
+  --ok-bg: #ebf8ec;
+  --ok-line: #c6dfca;
+  --hot: #3e6596;
+  --mode-bg: #e6f1ff;
+  --mode-text: #395f8f;
+  --ip-bg: #e6f1ff;
+  --ip-text: #395f8f;
+  --ring: #3e6596;
+  --term-bg: #111315;
+  --term-fg: #d5d8db;
+  --term-sub: #9c9fa2;
+  --term-line: #242729;
+}
+[data-palette='grafito'][data-theme='dark'] {
+  --chg-add: #93c69d;
+  --chg-mod: #b5b8bb;
+  --chg-del: #e59b94;
+  --diff-add-bg: rgba(147, 198, 157, 0.1);
+  --diff-del-bg: rgba(229, 155, 148, 0.1);
+  --bg: #0c0d10;
+  --win: #111315;
+  --card: #181a1c;
+  --rail: #0e1012;
+  --line: #242729;
+  --faint: #46484b;
+  --chip: #222427;
+  --hover: #222427;
+  --text: #e7eaed;
+  --sub: #b5b8bb;
+  --on-text: #181a1c;
+  --run: #4c73a5;
+  --run-text: #97c1f7;
+  --you: #4c73a5;
+  --you-text: #97c1f7;
+  --bad: #c06a64;
+  --bad-text: #e59b94;
+  --bad-bg: #381e1c;
+  --ok-bg: #17261a;
+  --ok-line: #2e4a34;
+  --hot: #97c1f7;
+  --mode-bg: #1a2738;
+  --mode-text: #97c1f7;
+  --ip-bg: #1a2738;
+  --ip-text: #97c1f7;
+  --ring: #97c1f7;
 }
 * {
   box-sizing: border-box;

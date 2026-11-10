@@ -2,7 +2,7 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { createElement } from 'react'
-import { act, cleanup, render, screen, waitFor } from '@testing-library/react'
+import { act, cleanup, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import type { UiState } from '../preload/api'
@@ -18,6 +18,11 @@ const tokens = (b: string): Record<string, string> =>
   Object.fromEntries([...b.matchAll(/--([a-z0-9-]+):\s*([^;]+);/g)].map((m) => [m[1]!, m[2]!.trim()]))
 const light = tokens(block(':root'))
 const dark = tokens(block("[data-theme='dark']"))
+const GRAFITO = "[data-palette='grafito']"
+const GRAFITO_DARK = "[data-palette='grafito'][data-theme='dark']"
+// What the page really wears in Grafito: the original tokens with the Grafito overrides on top.
+const grafitoLight = { ...light, ...tokens(block(GRAFITO)) }
+const grafitoDark = { ...dark, ...tokens(block(GRAFITO)), ...tokens(block(GRAFITO_DARK)) }
 
 // WCAG 2.x relative luminance and contrast ratio.
 const channel = (v: number): number => (v /= 255) <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4
@@ -29,6 +34,25 @@ const contrast = (a: string, b: string): number => {
   const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x) as [number, number]
   return (hi + 0.05) / (lo + 0.05)
 }
+
+// sRGB (hex or rgba) to OKLCH, after Björn Ottosson's OKLab matrices.
+const rgb = (c: string): [number, number, number] => {
+  const m = /rgba?\((\d+),\s*(\d+),\s*(\d+)/.exec(c)
+  if (m) return [+m[1]!, +m[2]!, +m[3]!]
+  const h = c.slice(1).length === 3 ? [...c.slice(1)].map((x) => x + x).join('') : c.slice(1, 7)
+  const n = parseInt(h, 16)
+  return [n >> 16, (n >> 8) & 255, n & 255]
+}
+const oklch = (c: string): { l: number; c: number; h: number } => {
+  const [r, g, b] = rgb(c).map((v) => ((v /= 255) <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4)) as [number, number, number]
+  const l = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b)
+  const m = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b)
+  const s = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b)
+  const A = 1.9779984951 * l - 2.428592205 * m + 0.4505937099 * s
+  const B = 0.0259040371 * l + 0.7827717662 * m - 0.808675766 * s
+  return { l: 0.2104542553 * l + 0.793617785 * m - 0.0040720468 * s, c: Math.hypot(A, B), h: ((Math.atan2(B, A) * 180) / Math.PI + 360) % 360 }
+}
+const near = (h: number, target: number, tol: number): boolean => Math.abs(((h - target + 540) % 360) - 180) <= tol
 
 // Every text colour next to the background it is really drawn on.
 const PAIRS: ReadonlyArray<[string, string]> = [
@@ -43,6 +67,7 @@ const PAIRS: ReadonlyArray<[string, string]> = [
 
 beforeEach(() => {
   delete document.documentElement.dataset['theme']
+  delete document.documentElement.dataset['palette']
 })
 afterEach(cleanup)
 
@@ -97,7 +122,11 @@ describe('theme', () => {
 
     // Both themes define the same tokens, and no colour lives outside them.
     expect(Object.keys(dark).sort()).toEqual(Object.keys(light).sort())
-    const rest = css.replace(block(':root') + '}', '').replace(block("[data-theme='dark']") + '}', '')
+    for (const b of [GRAFITO, GRAFITO_DARK]) {
+      const extra = Object.keys(tokens(block(b))).filter((k) => !(k in light))
+      expect(extra, `${b} only overrides existing tokens`).toEqual([])
+    }
+    const rest = [':root', "[data-theme='dark']", GRAFITO, GRAFITO_DARK].reduce((r, b) => r.replace(block(b) + '}', ''), css)
     expect(rest.match(/#[0-9a-fA-F]{3,8}\b|rgba?\(|hsla?\(/g)).toBeNull()
 
     // Body text keeps 4.5:1 in both.
@@ -107,5 +136,56 @@ describe('theme', () => {
         expect(ratio, `${name}: ${fg} on ${bg} (${set[fg]} / ${set[bg]})`).toBeGreaterThanOrEqual(4.5)
       }
     }
+  })
+  it('the grafito palette has one accent and keeps contrast', () => {
+    expect(css).toContain(`${GRAFITO} {`)
+    expect(css).toContain(`${GRAFITO_DARK} {`)
+    const kept = /^(ed-\d+|jira|jira-2|on-jira)$/
+    for (const [name, set] of [['light', grafitoLight], ['dark', grafitoDark]] as const) {
+      for (const [token, value] of Object.entries(set)) {
+        if (kept.test(token) || !/^(#|rgba?\()/.test(value)) continue
+        const { c, h } = oklch(value)
+        const ok = c < 0.03 || (near(h, 255, 15) || ((near(h, 150, 20) || near(h, 25, 20)) && c <= 0.13))
+        expect(ok, `grafito ${name}: --${token} ${value} is chroma ${c.toFixed(3)} hue ${h.toFixed(0)}`).toBe(true)
+      }
+    }
+    const sets = [['original light', light], ['original dark', dark], ['grafito light', grafitoLight], ['grafito dark', grafitoDark]] as const
+    for (const [name, set] of sets) {
+      for (const [fg, bg] of PAIRS) {
+        const ratio = contrast(set[fg]!, set[bg]!)
+        expect(ratio, `${name}: ${fg} on ${bg} (${set[fg]} / ${set[bg]})`).toBeGreaterThanOrEqual(4.5)
+      }
+    }
+  })
+
+  it('the palette is chosen in appearance and remembered', async () => {
+    const user = userEvent.setup()
+    mockSystemTheme(false)
+    const stored: UiState = { tutorialSeen: true, theme: 'auto', folded: {} }
+    const api = mockApi({}, stored)
+    const root = document.documentElement
+    const { unmount } = render(createElement(App))
+    await screen.findByText('Atril')
+    await user.click(screen.getByRole('button', { name: 'Ajustes' }))
+
+    const group = screen.getByRole('group', { name: 'Paleta' })
+    const pick = (name: string) => within(group).getByRole('button', { name })
+    const pressed = () => ['Original', 'Grafito'].filter((n) => pick(n).getAttribute('aria-pressed') === 'true')
+
+    // Original is the default.
+    expect(pressed()).toEqual(['Original'])
+    await waitFor(() => expect(root.dataset['palette']).toBe('original'))
+
+    await user.click(pick('Grafito'))
+    expect(root.dataset['palette']).toBe('grafito')
+    expect(pressed()).toEqual(['Grafito'])
+    expect(api.ui.set).toHaveBeenLastCalledWith({ palette: 'grafito' })
+
+    // It survives a restart.
+    unmount()
+    delete root.dataset['palette']
+    mockApi({}, stored)
+    render(createElement(App))
+    await waitFor(() => expect(root.dataset['palette']).toBe('grafito'))
   })
 })

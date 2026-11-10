@@ -1,11 +1,12 @@
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
-import type { Theme, UiState } from '../preload/api'
+import type { Palette, Theme, UiState } from '../preload/api'
 import { LANG_CHOICES, type LangChoice } from '../preload/i18n'
 import { atrilHome } from './paths'
 
-export const DEFAULT_UI: UiState = { tutorialSeen: false, theme: 'auto', folded: {}, language: 'system' }
+export const DEFAULT_UI: UiState = { tutorialSeen: false, theme: 'auto', folded: {}, language: 'system', palette: 'original' }
 const THEMES: readonly Theme[] = ['light', 'dark', 'auto']
+const PALETTES: readonly Palette[] = ['original', 'grafito']
 
 const file = (): string => join(atrilHome(), 'ui.json')
 
@@ -19,7 +20,8 @@ function clean(raw: unknown): UiState {
     tutorialSeen: r['tutorialSeen'] === true,
     theme: THEMES.includes(r['theme'] as Theme) ? (r['theme'] as Theme) : DEFAULT_UI.theme,
     folded,
-    language: LANG_CHOICES.includes(r['language'] as LangChoice) ? (r['language'] as LangChoice) : 'system'
+    language: LANG_CHOICES.includes(r['language'] as LangChoice) ? (r['language'] as LangChoice) : 'system',
+    palette: PALETTES.includes(r['palette'] as Palette) ? (r['palette'] as Palette) : 'original'
   }
 }
 
