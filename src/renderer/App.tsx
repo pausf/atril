@@ -14,6 +14,7 @@ import { useMrs } from './mr/useMrs'
 import { StartDialog } from './inbox/StartDialog'
 import { OwnTaskDialog } from './inbox/OwnTaskDialog'
 import { NextUpStrip } from './components/NextUpStrip'
+import { FocusBar } from './components/FocusBar'
 import { startOrAsk, useNextUp } from './nextup'
 import { NavigationContext } from './settings/navigation'
 import { Language } from './settings/Language'
@@ -68,6 +69,10 @@ function Shell() {
   const [workspaces, setWorkspaces] = useState<WorkspaceView[]>([])
   const [selected, setSelected] = useState<string | null>(null)
   const [screen, setScreen] = useState<Screen>('work')
+  // W77: never stored, focus is for the moment. It only holds on Trabajo with a workspace selected:
+  // elsewhere the pill is not on screen, so main must notify as usual (W78).
+  const [focusMode, setFocusMode] = useState(false)
+  const focused = focusMode && selected !== null && screen === 'work'
   const inbox = useInbox()
   const next = useNextUp()
   const mrs = useMrs()
@@ -122,6 +127,8 @@ function Shell() {
   )
 
   useEffect(() => window.atril.menu.setState(selected, workspaces.length), [selected, workspaces.length])
+  // Also on load: a reload starts with focus off, and main must know (W78).
+  useEffect(() => window.atril.menu.setFocus(focused, screen === 'work' && selected !== null), [focused, screen, selected])
   // N2: ⌘↩ only where the list is on screen or one click away.
   useEffect(() => window.atril.menu.setNext((screen === 'work' || screen === 'tasks') && next.length > 0), [screen, next.length])
 
@@ -173,10 +180,15 @@ function Shell() {
           if (!document.querySelector('[aria-modal="true"]')) setPalette('')
           return
         }
+        if (a.kind === 'focusMode') {
+          if (focused) setFocusMode(false)
+          else if (screen === 'work' && selected) setFocusMode(true)
+          return
+        }
         if (a.kind === 'tutorial') setTourOpen(true)
         else focusRegion(a.target)
       }),
-    [workspaces, next, inbox.issues]
+    [workspaces, next, inbox.issues, selected, focused, screen]
   )
 
   // Start already created the workspace in main: only the list and the inbox links are stale.
@@ -246,17 +258,23 @@ function Shell() {
           <Rail screen={screen} onChange={go} reviews={mrs.result?.review.length ?? 0} unread={avisos.unread} />
           {/* Hidden, not unmounted: the terminals must survive a visit to Ajustes. */}
           <div className="work" hidden={screen !== 'work'}>
-            <NextUpStrip items={next} workspaces={workspaces} issues={inbox.issues} onOpen={openNext} />
-            <div className="body">
-              <Sidebar
-                workspaces={workspaces}
-                selected={selected}
-                onSelect={setSelected}
-                onRemove={remove}
-                onNewWork={() => setDialog('work')}
-                inbox={inbox}
-                onOpenTasks={() => setScreen('tasks')}
-              />
+            {focused ? (
+              <FocusBar onExit={() => setFocusMode(false)} />
+            ) : (
+              <NextUpStrip items={next} workspaces={workspaces} issues={inbox.issues} onOpen={openNext} />
+            )}
+            <div className={focused ? 'body focus' : 'body'}>
+              {!focused && (
+                <Sidebar
+                  workspaces={workspaces}
+                  selected={selected}
+                  onSelect={setSelected}
+                  onRemove={remove}
+                  onNewWork={() => setDialog('work')}
+                  inbox={inbox}
+                  onOpenTasks={() => setScreen('tasks')}
+                />
+              )}
               <Workspace ws={workspaces.find((w) => w.id === selected)} />
               <FlowPanel workspaceId={selected} auto={workspaces.find((w) => w.id === selected)?.auto === true} />
             </div>

@@ -538,6 +538,7 @@ export type MenuAction =
   | { kind: 'select'; index: number }
   | { kind: 'tutorial' }
   | { kind: 'palette' }
+  | { kind: 'focusMode' }
 
 export type Theme = 'light' | 'dark' | 'auto'
 export type Palette = 'original' | 'grafito'
@@ -567,6 +568,11 @@ export interface MenuApi {
   setState(selected: string | null, count: number): void
   /** Whether «Siguiente» (⌘↩) is enabled: Trabajo or Tareas shown and something waiting. */
   setNext(enabled: boolean): void
+  /**
+   * Whether the window is in focus mode, so main keeps needs-you notifications quiet while it is in front (W78),
+   * and whether it could be turned on (Trabajo shown with a workspace selected, W77).
+   */
+  setFocus(on: boolean, available: boolean): void
   /** Returns the unsubscribe function. */
   onAction(cb: (a: MenuAction) => void): () => void
 }

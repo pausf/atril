@@ -107,6 +107,7 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
     menu: {
       setState: vi.fn(),
       setNext: vi.fn(),
+      setFocus: vi.fn(),
       onAction: (cb: (a: MenuAction) => void) => {
         menu = cb
         return off

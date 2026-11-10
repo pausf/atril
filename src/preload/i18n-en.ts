@@ -6,6 +6,8 @@ export const EN: Record<string, string> = {
   'Dividir abajo': 'Split down',
   'Siguiente': 'Next',
   'Buscar…': 'Search…',
+  'Modo foco': 'Focus mode',
+  'Salir del foco': 'Leave focus',
   'Ir a la barra lateral': 'Go to the sidebar',
   'Ir al panel de Libretto': 'Go to the Libretto panel',
   'Trabajo {n}': 'Work {n}',

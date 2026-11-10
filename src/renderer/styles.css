@@ -2053,6 +2053,40 @@ kbd {
   margin-left: auto;
 }
 
+/* Focus mode (W77–W79): no sidebar, a slim bar in place of «Qué me toca». */
+.body.focus {
+  grid-template-columns: 1fr 330px;
+}
+.focusbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 22px;
+  border-bottom: 1px solid var(--line);
+  font-size: 12.5px;
+}
+.focusbar > b {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--sub);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  margin-right: 4px;
+}
+.focusbar .exit {
+  margin-left: auto;
+  font: inherit;
+  padding: 5px 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--text);
+  cursor: pointer;
+}
+.focusbar .exit:hover {
+  background: var(--hover);
+}
+
 /* Flow documents: Spec / Plan / Checklist open in a large editor modal (F13–F17). */
 button.stg.stgbtn {
   font: inherit;
