@@ -27,6 +27,22 @@ Respuestas rápidas al agente (lista del 9 nov): cuando un agente te pregunta, b
 - Q: ¿Varias preguntas a la vez (`questions` con más de una)? → A: solo la primera; las demás se contestan
   en la terminal (assumed).
 
+- Q: (revisor de spec) Holguras → A, todas (assumed):
+  - **Qué manda la ventana.** Solo `{ option: n }` o `{ fixed: 'yes' | 'no' }`. Main traduce `yes` a «Sí,
+    sigue» y `no` a «No, espera». Nunca teclea texto que venga de la ventana.
+  - **Qué comprueba main al pulsar.** Relee el estado del trabajo. Si ya no está en needs-you, responde
+    «Ese agente ya no está esperando una respuesta.». Si la opción no está entre las guardadas, «Esa
+    opción ya no existe.».
+  - **Preguntas multiSelect.** No llevan botones de opción ni respuestas fijas; se contestan en la
+    terminal. «Other» no se ofrece.
+  - **Cuánto duran las opciones.** Se guardan mientras el estado siga en needs-you, también si llega un
+    Notification o un Stop, y se borran en cuanto el estado pasa a otro.
+  - **Después de enviar.** La fila dice «Enviado» y los botones quedan desactivados hasta que el estado
+    cambie.
+  - **Dónde van los botones.** Solo en la fila. La línea del Reading que habla del panel y del aviso queda
+    superada.
+  - **Tutorial.** El paso 4 («Trabajo en marcha») nombra las respuestas rápidas sin pasar de 3 frases.
+
 ## Outcomes
 
 - Una fila «te necesita» enseña la pregunta y, debajo, sus respuestas como botones pequeños; pulsar una se
@@ -57,16 +73,21 @@ ese trabajo; teclado; si el trabajo ya no está, «No se pudo enviar: ese trabaj
 
 - **W74** When the hook gets a PreToolUse for `AskUserQuestion`, it shall add to the needs-you state the
   labels of the first question's options (at most 4, each cut to 40 characters, whitespace collapsed);
-  any other needs-you state shall carry none.
+  a multiSelect question shall store none; the stored options shall stay while the state stays needs-you
+  (a later Notification or Stop included) and go when it leaves needs-you. One test holds a case per clause.
   Proof: src/main/agent.test.ts an asked question keeps its options
-- **W75** When the window asks `atril:status:answer(workspaceId, choice)` where choice is an option index,
-  main shall type that index plus one, then Enter, into that workspace's pane; where choice is a fixed
-  reply, it shall type it as literal text then Enter; it shall refuse an index outside the stored options
-  and, for a gone workspace, say «No se pudo enviar: ese trabajo ya no está».
+- **W75** When the window asks `atril:status:answer(workspaceId, choice)` with choice `{ option: n }` or
+  `{ fixed: 'yes' | 'no' }`, main shall re-read that workspace's state and, while it is needs-you, type
+  n plus one then Enter for an option among the stored ones, or «Sí, sigue» / «No, espera» as literal
+  text then Enter for a fixed reply, into that workspace's pane; otherwise it shall type nothing and answer
+  «Ese agente ya no está esperando una respuesta.», «Esa opción ya no existe.» or, for a gone workspace,
+  N3's message. Any other choice shape shall be refused. One test holds a case per clause.
   Proof: src/main/reply.test.ts a quick answer reaches its own pane
-- **W76** While a workspace is needs-you, its row shall show its stored options as buttons, or «Sí, sigue»
-  and «No, espera» when it has none; pressing one shall send it (W75) and show «Enviado» or the error; the
-  buttons shall go when the state leaves needs-you.
+- **W76** While a workspace is needs-you and its question is not multiSelect, its row shall show its stored
+  options as buttons (their labels as text), or «Sí, sigue» and «No, espera» when it has none; pressing
+  one, by mouse or keyboard, shall send it (W75), show «Enviado» or the error, and disable the buttons
+  until the state changes; the buttons shall go when the state leaves needs-you. One test holds a case per
+  clause.
   Proof: src/renderer/quickreplies.test.ts a waiting row answers with one press
 
 ## Approach
