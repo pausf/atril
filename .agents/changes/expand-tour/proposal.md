@@ -25,6 +25,18 @@ castellano de España, y llevarlo también al boceto `bocetos/fase1-nucleo.html`
   explican igual: si no hay elemento, el paso sale centrado, como ya hace el tutorial (assumed).
 - Q: ¿La bienvenida? → A: «Enséñamelo · 3 min» (assumed).
 
+- Q: (revisor de spec) Holguras → A, todas (assumed):
+  - Cada texto tiene **2 o 3 frases**; una frase acaba en «.», «?» o «!» seguido de espacio o del final.
+  - start-mode y palette nunca tienen elemento: el test comprueba que salen centrados, sin foco. Los
+    otros seis opcionales se dan en el mock cuando es práctico.
+  - El paso 11 ilumina la pestaña Actividad, que siempre está visible.
+  - El paso 18, «la nueva comprobación», es la que se hace al volver el foco a Atril.
+  - Los `data-tour` en rutas de otras capacidades son solo atributos al servicio del tutorial, que es de
+    workspaces; no se escribe spec en esas capacidades.
+  - La bienvenida dice «Enséñamelo · 3 min» y entra en W23.
+  - El «Out» de add-command-palette sobre un paso de tutorial para ⌘K queda superado por este cambio.
+  - Fotos: pasos 7 y 13, en `bocetos/novedades/tutorial-7.png` y `tutorial-13.png`.
+
 ## Outcomes
 
 El tutorial recorre 24 pasos que explican toda la app, sin dejar piezas sin contar: la lista y los
@@ -84,10 +96,13 @@ Textos por `t()`.
 ## Verification criteria
 
 - **W23** (amended) When Atril launches for the first time, it shall run the tutorial over the 24 steps
-  of «Pasos» in that order, each with its title and a text of two or more sentences, highlighting the
+  of «Pasos» in that order, after a welcome whose button reads «Enséñamelo · 3 min», each with its title
+  and a text of two or three sentences (a sentence ends in «.», «?» or «!» before a space or the end),
+  highlighting the
   step's `data-tour` element when it is on screen and showing the step centred when it is not — the
   ones that may be absent being next-up, flow-checklist, flow-changes, flow-subagents, start-mode,
-  mr-tools, doctor and palette; every other target shall exist when its step shows.
+  mr-tools, doctor and palette, of which start-mode and palette never have one; every other target
+  shall exist when its step shows. One test holds a case per clause.
   Proof: src/renderer/tutorial.test.ts first launch runs the tutorial over every element
 
 ## Approach
@@ -131,4 +146,4 @@ Ninguna.
 ## Checklist
 
 - [ ] the new data-tour targets and the 24 steps with checked texts and English · Closes: W23
-- [ ] the fase1 sketch's tour with the same 24 steps; photos of two steps · waits on box 1
+- [ ] the fase1 sketch's tour with the same 24 steps; photos of steps 7 and 13 (drawing and evidence, no criterion) · waits on box 1
