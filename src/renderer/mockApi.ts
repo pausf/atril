@@ -1,5 +1,5 @@
 import { vi } from 'vitest'
-import type { ActivityLine, SubagentEntry, SubagentLine, AddRepoResult, Aviso, FileChange, FlowDocs, ForgeId, ForgeStatus, Mode, MrDraft, MrDrafts, MrDraftsResult, MrFixCiResult, MrLists, MrReply, MrScoreState, MrThreads, MrWork, AgentState, QaResult, QaStatus, AtrilApi, QuickAnswer, QuickReplies, FlowStage, HistoryEntry, LibrettoState, JiraIssue, JiraSettingsStatus, MenuAction, NextItem, StartProposalResult, StartRequest, StartResult, RepoView, ToolReport, UiState, WorkCost, WorkspaceResult, WorkspaceView } from '../preload/api'
+import type { ActivityLine, SubagentEntry, SubagentLine, AddRepoResult, Aviso, FileChange, FlowDocs, ForgeId, ForgeStatus, Mode, MrDraft, MrDrafts, MrDraftsResult, MrFixCiResult, MrLists, MrReply, MrScoreState, MrThreads, MrWork, AgentState, QaResult, QaStatus, AtrilApi, QuickAnswer, QuickReplies, FlowStage, HistoryEntry, IdeaJiraResult, IdeaResult, LibrettoCounts, LibrettoState, JiraIssue, JiraSettingsStatus, MenuAction, NextItem, StartProposalResult, StartRequest, StartResult, RepoView, ToolReport, UiState, WorkCost, WorkspaceResult, WorkspaceView } from '../preload/api'
 
 export const workspace = (id: string, branch: string, alive = true): WorkspaceView => ({
   id,
@@ -294,7 +294,18 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
     libretto: {
       state: vi.fn(async (id: string): Promise<LibrettoState> => o.libretto?.[id] ?? { none: true }),
       queue: vi.fn(async () => o.librettoQueue ?? { name: 'idea' }),
-      start: vi.fn(async (_id: string, name: string): Promise<WorkspaceResult> => o.librettoStart ?? { workspace: workspace('lib00001', `feat/${name}`) })
+      start: vi.fn(async (_id: string, name: string): Promise<WorkspaceResult> => o.librettoStart ?? { workspace: workspace('lib00001', `feat/${name}`) }),
+      repos: vi.fn(async (): Promise<Record<string, LibrettoCounts>> =>
+        Object.fromEntries(
+          (o.repos ?? []).map((r) => {
+            const s = o.libretto?.[r.id]
+            return [r.id, s && 'queued' in s ? { none: false, queued: s.queued.length, inFlight: s.inFlight.length } : { none: true, queued: 0, inFlight: 0 }]
+          })
+        )
+      ),
+      edit: vi.fn(async (): Promise<IdeaResult> => ({ ok: true })),
+      drop: vi.fn(async (): Promise<IdeaResult> => ({ ok: true })),
+      jira: vi.fn(async (): Promise<IdeaJiraResult> => ({ key: 'WEB-9' }))
     },
     usage: {
       get: async () => ({ fiveHour: { pct: 20, resetsAt: null }, sevenDay: { pct: 40, resetsAt: null } }),
