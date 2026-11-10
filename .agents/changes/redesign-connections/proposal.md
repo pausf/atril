@@ -76,6 +76,58 @@ errores visibles junto al campo.
   column and Apariencia and Idioma in another.
   Proof: src/renderer/settings/connections.test.ts settings use two columns when wide
 
+## Approach
+
+### Summary
+
+Solo renderer. Un componente `ConnectionRow` común da a Jira, GitHub y GitLab la misma fila: cabecera
+con nombre, para qué sirve, estado y un botón. Al desplegarla aparecen los pasos de conexión o la
+gestión. La lógica de guardar y comprobar de `Ajustes.tsx` y `Forges.tsx` no cambia: solo se reorganiza
+cómo se presenta.
+
+### The approach
+
+- **`ConnectionRow`** recibe `name`, `purpose`, `state` (texto) y `saved`. Su cuerpo son `children`.
+  - El cuerpo se pliega y despliega con un botón que lleva `aria-expanded`.
+  - El texto del botón es «Conectar» o «Gestionar».
+- **Formulario en tres pasos.** Es una `<ol>` numerada:
+  1. El botón de crear el token, con los permisos que necesita.
+  2. Los campos.
+  3. «Comprobar y guardar».
+- **Validación local.** Antes de llamar a main se miran los campos vacíos. Si falta alguno, aparece un
+  error junto a él (con `aria-describedby`) y no se envía nada.
+- **Dos columnas.** `.settings` usa `grid-template-columns: 1fr 1fr` cuando `@media (min-width: 1100px)`.
+  Cada tarjeta lleva su clase de columna, y el test comprueba la regla CSS.
+
+### The alternatives it beat
+
+| Considered | Why it lost |
+|---|---|
+| Un asistente modal paso a paso | Más pantalla para tres campos; la fila desplegable se queda donde estás. |
+| Dejar «Guardar» deshabilitado con una pista | Es justo lo que parecía roto. |
+
+### Risks
+
+| Risk | Mitigation |
+|---|---|
+| Romper S5, S7 o S20 al mover el marcado | Sus tests existentes siguen corriendo sin tocarse. Si alguno cambia, es porque el contrato cambió, y se dice. |
+| El token se ve | El campo sigue siendo `password` y nunca se rellena (S3, S5). |
+
+### Validation and rollback
+
+Los tests nuevos de `connections.test.ts` se ven en rojo primero. Rollback: un revert.
+
+### Complexity deliberately kept
+
+`ConnectionRow` se queda aunque es un componente nuevo: lo usan tres tarjetas.
+
+## Task breakdown
+
+- `ConnectionRow` y las tres tarjetas encima.
+- Validación local y error junto al campo.
+- Dos columnas.
+- El boceto y la foto.
+
 ## Checklist
 
 - [ ] the three connection rows with Conectar/Gestionar and the three-step form · Closes: S29, S30
