@@ -10,6 +10,7 @@ import { Setup } from './components/Setup'
 import { Ajustes } from './settings/Ajustes'
 import { Inbox, useInbox } from './inbox/Inbox'
 import { MrScreen } from './mr/MrScreen'
+import { Libretto } from './libretto/Libretto'
 import { Avisos, useAvisos, type AvisoTarget } from './avisos/Avisos'
 import { useMrs } from './mr/useMrs'
 import { StartDialog } from './inbox/StartDialog'
@@ -106,7 +107,7 @@ function Shell() {
 
   useEffect(() => {
     void window.atril.snapshotView().then((v) => {
-      if (v === 'settings' || v === 'tasks' || v === 'work' || v === 'mr' || v === 'avisos') setScreen(v)
+      if (v === 'settings' || v === 'tasks' || v === 'work' || v === 'mr' || v === 'avisos' || v === 'libretto') setScreen(v)
       if (v === 'mr-score' || v === 'mr-thread' || v === 'mr-lens') setScreen('mr')
       if (v === 'tasks-board') setScreen('tasks')
       if (v === 'settings-board' || v === 'create-repo') setScreen('settings')
@@ -387,6 +388,7 @@ function Shell() {
           </div>
           {screen === 'tasks' && <Inbox inbox={inbox} onStart={(i, alt) => void beginStart(i, alt)} startError={startError} onOpenWorkspace={openWorkspace} onNewTask={() => setDialog('task')} />}
           {screen === 'mr' && <MrScreen mrs={mrs} openUrl={openUrl} />}
+          {screen === 'libretto' && <Libretto />}
           {screen === 'avisos' && <Avisos avisos={avisos} open={openAviso} />}
           {screen === 'settings' && (
             <Ajustes>

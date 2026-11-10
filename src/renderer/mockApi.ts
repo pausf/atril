@@ -1,5 +1,5 @@
 import { vi } from 'vitest'
-import type { ActivityLine, SubagentEntry, SubagentLine, AddRepoResult, Aviso, FileChange, FlowDocs, ForgeId, ForgeStatus, Mode, MrDraft, MrDrafts, MrDraftsResult, MrFixCiResult, MrLists, MrReply, MrScoreState, MrThreads, MrWork, AgentState, QaResult, QaStatus, AtrilApi, QuickAnswer, QuickReplies, FlowStage, HistoryEntry, JiraIssue, JiraSettingsStatus, MenuAction, NextItem, StartProposalResult, StartRequest, StartResult, RepoView, ToolReport, UiState, WorkCost, WorkspaceResult, WorkspaceView } from '../preload/api'
+import type { ActivityLine, SubagentEntry, SubagentLine, AddRepoResult, Aviso, FileChange, FlowDocs, ForgeId, ForgeStatus, Mode, MrDraft, MrDrafts, MrDraftsResult, MrFixCiResult, MrLists, MrReply, MrScoreState, MrThreads, MrWork, AgentState, QaResult, QaStatus, AtrilApi, QuickAnswer, QuickReplies, FlowStage, HistoryEntry, LibrettoState, JiraIssue, JiraSettingsStatus, MenuAction, NextItem, StartProposalResult, StartRequest, StartResult, RepoView, ToolReport, UiState, WorkCost, WorkspaceResult, WorkspaceView } from '../preload/api'
 
 export const workspace = (id: string, branch: string, alive = true): WorkspaceView => ({
   id,
@@ -83,6 +83,11 @@ interface Options {
   ciAgents?: Record<string, string>
   /** The stored notices, newest first; markRead changes them in place. */
   avisos?: Aviso[]
+  /** What libretto.state answers per repo id; missing means a repo without Libretto. */
+  libretto?: Record<string, LibrettoState>
+  /** What libretto.queue and libretto.start answer; missing means done (start opens a live workspace on feat/<name>). */
+  librettoQueue?: { name: string } | { error: string }
+  librettoStart?: WorkspaceResult
   /** What settings.jira.status answers; missing means a saved token. */
   jira?: JiraSettingsStatus
   /** What the doctor answers; missing means every tool is installed. */
@@ -286,6 +291,11 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
       changes: vi.fn(async () => o.changes ?? []),
       diff: vi.fn(async () => o.diff ?? '')
     },
+    libretto: {
+      state: vi.fn(async (id: string): Promise<LibrettoState> => o.libretto?.[id] ?? { none: true }),
+      queue: vi.fn(async () => o.librettoQueue ?? { name: 'idea' }),
+      start: vi.fn(async (_id: string, name: string): Promise<WorkspaceResult> => o.librettoStart ?? { workspace: workspace('lib00001', `feat/${name}`) })
+    },
     usage: {
       get: async () => ({ fiveHour: { pct: 20, resetsAt: null }, sevenDay: { pct: 40, resetsAt: null } }),
       onChange: () => off
@@ -294,8 +304,8 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
     snapshotView: async () => null,
     snapshotWorkspace: async () => false
   } as unknown as AtrilApi
-  const { menu: menuApi, jira, workspaces: ws, repos: reposApi, flow: flowApi, forge: forgeApi, mr: mrApi, avisos: avisosApi, status: statusApi, qa: qaApi } = window.atril
-  return { ui, qaApi, setQa: (id: string, q: QaStatus | null) => qa.set(id, q), stored, menuApi, jira, ws, reposApi, flowApi, forgeApi, mrApi, avisosApi, statusApi,
+  const { menu: menuApi, jira, workspaces: ws, repos: reposApi, flow: flowApi, forge: forgeApi, mr: mrApi, avisos: avisosApi, status: statusApi, qa: qaApi, libretto: librettoApi } = window.atril
+  return { ui, qaApi, setQa: (id: string, q: QaStatus | null) => qa.set(id, q), stored, menuApi, jira, ws, reposApi, flowApi, forgeApi, mrApi, avisosApi, statusApi, librettoApi,
     pushAvisos: (items: Aviso[]) => {
       avisos = items
       avisoListeners.forEach((cb) => cb(items))

@@ -12,6 +12,7 @@ interface UiContextValue {
   setFolded(id: string, folded: boolean): void
   markTutorialSeen(): void
   dismissSetup(): void
+  setLibrettoRepo(id: string): void
 }
 
 const noop = (): void => {}
@@ -22,7 +23,8 @@ export const UiContext = createContext<UiContextValue>({
   setLanguage: noop,
   setFolded: noop,
   markTutorialSeen: noop,
-  dismissSetup: noop
+  dismissSetup: noop,
+  setLibrettoRepo: noop
 })
 
 export const useUi = (): UiContextValue => useContext(UiContext)
@@ -95,7 +97,8 @@ export function UiProvider({ children }: { children: ReactNode }) {
       },
       setFolded: (id, folded) => patch({ folded: { [id]: folded } }),
       markTutorialSeen: () => patch({ tutorialSeen: true }),
-      dismissSetup: () => patch({ setupDismissed: true })
+      dismissSetup: () => patch({ setupDismissed: true }),
+      setLibrettoRepo: (id) => patch({ librettoRepo: id })
     }),
     [ui, patch]
   )
