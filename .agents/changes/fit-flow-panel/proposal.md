@@ -22,3 +22,12 @@ quepa a la vista: más compacto, secciones plegables o repartir el alto, sin per
 
 Descartado: Subagentes como pestaña (deja de verse de un vistazo). Orden: justo después de
 add-doctor-install-terminal, antes de expand-tour (assumed: el «si» respondía a la propuesta).
+
+## Pau, 10 nov, más tarde
+
+- Cinco diseños alternativos en `bocetos/fase2-nucleo.html`; recomendado el 3 (Zen) con Archivos y
+  «También» plegables.
+- Pau: «vamos a probar el 3 en fase 2 … con el diseño 3 y con el diseño 1» → `bocetos/fase2-app.html`,
+  la app entera con selector Zen / Partitura.
+- Q: ¿Los dos en la app real con un ajuste? → A: «probar en el boceto». Se construye solo el elegido,
+  con datos y presentación separados; la segunda vista y su ajuste, solo si se echa de menos.
