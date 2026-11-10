@@ -5,6 +5,9 @@ export default defineConfig({
     // Tests that open a workspace must never touch the real ~/.claude.json.
     setupFiles: ['./test/setup.ts'],
     // ponytail: real git and tmux in tests are slow when the machine is busy; 5 s flaked under load.
-    testTimeout: 20_000
+    testTimeout: 20_000,
+    // ponytail: ~10 workers each spawning real git/tmux starved one another (2 s tests took 35 s and timed out);
+    // 4 keeps the slowest under 15 s for ~15 s more wall time. Split tmux suites into their own pool if it grows.
+    maxWorkers: 4
   }
 })
