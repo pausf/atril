@@ -167,3 +167,6 @@ The contract aimed at 1080 px; Pau's window is ~900 px (his screenshots: 2880×1
 
 ## 2026-11-10 · test infra · 6
 Root cause of the day's flaky tmux/git timeouts (W62 hang, reply, workspaces, changes, status, create): vitest ran ~10 workers, each spawning real git and tmux, under a machine load of ~7. A test taking 2 s alone took up to 35 s in the full run. Measured: with `maxWorkers: 4` the slowest test fell to 14 s, zero failures, +15 s wall time; two more full runs green. Lesson: a timeout that only appears in the full run is contention until measured otherwise — time each file in a full run before raising timeouts.
+
+## 2026-11-10 · adopt-grafito · 6→7
+Reviewer found nothing against the contract (4 proofs re-run, green). Noted `UiState.palette` is optional in the type while main always fills it; kept, the same as other optional ui fields.

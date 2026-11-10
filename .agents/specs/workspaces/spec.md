@@ -157,6 +157,15 @@ The `workspaces` capability, phase 1. Its siblings in this change: `.agents/spec
 - Al volver a Atril, el doctor comprueba otra vez: lo instalado desaparece de la lista y, si ya no
   falta nada, el aviso entero.
 
+### Paleta Grafito (adopt-grafito, 10 nov 2026)
+
+- Ajustes → Apariencia tiene «Paleta: Original · Grafito» encima de «Claro · Oscuro · Automático».
+- Con Grafito, fondos, superficies, líneas y textos son la escala de grises fría de Grafito y el único
+  color de acción es su azul apagado (también «te necesita», foco, en marcha y modos); añadido y quitado
+  usan su verde y su rojo apagados. Con Original, nada cambia.
+- La elección se guarda y se aplica al abrir, como el tema.
+- El boceto `fase1-nucleo.html` ofrece la misma elección.
+
 ## Scope boundaries
 
 **In:** the three columns and footer of `bocetos/fase1-nucleo.html` (boceto 8), the
@@ -295,6 +304,15 @@ instalar varias a la vez con un botón; actualizar herramientas que ya están.
 comando de su lista (W21); un fallo al abrir Terminal se dice en el elemento; el botón se alcanza y
 se pulsa con teclado.
 
+### Paleta Grafito (adopt-grafito, 10 nov 2026)
+
+**In:** el campo `palette` en el estado de la interfaz, el selector en Apariencia, los tokens de Grafito
+en claro y oscuro, el boceto.
+**Out:** tipografía, espaciado, radios e iconos de Grafito; las variantes Salvia, Arcilla y Ciruela;
+cambiar la paleta original.
+**Never scoped out:** contraste de texto ≥ 4,5:1 en las dos paletas y los dos temas; el selector con
+teclado y estado legible (`aria-pressed`).
+
 ## Constraints
 
 - Electron (current stable) + TypeScript in strict mode, pnpm, Node 24 (installed:
@@ -392,6 +410,12 @@ se pulsa con teclado.
 - Sin dependencias nuevas; `osascript` viene con macOS.
 - El comando va dentro de una cadena AppleScript: comillas y barras invertidas escapadas.
 - Textos por `t()` con su inglés en `src/preload/i18n-en.ts`.
+
+### Paleta Grafito (adopt-grafito, 10 nov 2026)
+
+- Tokens sobrescritos bajo `[data-palette='grafito']` y `[data-palette='grafito'][data-theme='dark']`,
+  con los mismos nombres; `--ed-*` y `--jira*` no se tocan.
+- El estado vive donde vive `theme` (`src/main/ui.ts`, `UiState`), con su validación.
 
 ## Prior decisions
 
@@ -732,6 +756,38 @@ se pulsa con teclado.
   - Con el pop abierto, la lista se actualiza en sitio y el pop se va con el aviso cuando ya no falta nada.
   - El escapado se prueba con una función exportada, porque ningún comando de la lista lleva `"` ni `\`.
 
+### Paleta Grafito (adopt-grafito, 10 nov 2026)
+
+- Grafito elegido por Pau entre cuatro variantes minimalistas, como paleta adicional (10 nov).
+- Original por defecto (assumed, 10 nov).
+
+#### Alternatives that lost
+
+| Considered | Why it lost |
+|---|---|
+| Sustituir la paleta original | Pau la quiere como tema adicional. |
+| Una sola lista de cinco temas (Claro, Oscuro, Auto, Grafito claro, Grafito oscuro) | Mezcla dos ejes; Automático dejaría de valer para Grafito. |
+
+#### Decision log, answers as given (2026-11-10)
+- Q: ¿Sustituye a la original? → A: «ponlo como tema mas el original que ya tenemos».
+- Q: ¿Cómo se combina con Claro/Oscuro/Automático? → A: son dos elecciones independientes: Paleta
+  (Original · Grafito) y Tema (Claro · Oscuro · Automático); Grafito tiene claro y oscuro (assumed).
+- Q: ¿Por defecto? → A: Original, para no cambiarle la app a nadie sin pedirlo (assumed).
+- Q: ¿Solo color, o también tipografía, densidad y radios? → A: solo la paleta; lo demás, aparte si
+  Pau lo pide (assumed).
+- Q: ¿«te necesita» en Grafito? → A: en el acento, como en el boceto (assumed).
+- Q: ¿El editor (`--ed-*`) y Jira? → A: se quedan igual en las dos paletas (assumed).
+
+- Q: (revisor de spec) Holguras → A, todas (assumed):
+  - W35 se enmienda: los colores solo viven en los cuatro bloques de tokens (dos de Original y dos de
+    Grafito), y los de Grafito sobrescriben claves que ya existen. El test no se debilita.
+  - El acento también tiene tope de croma, 0,13.
+  - Un token `rgba()` se clasifica por su color.
+  - «Al momento» significa en el mismo clic, sin esperar a main.
+  - Un valor desconocido lo normaliza main al leer `ui.json`.
+  - El boceto y la foto no tienen criterio: son dibujo y evidencia.
+  - «Paleta», «Original» y «Grafito» pasan por `t()`.
+
 ## Task breakdown
 
 - App shell: Electron main, preload bridge, renderer with sidebar / centre / right panel /
@@ -854,8 +910,10 @@ se pulsa con teclado.
   in the workspace record, and show it on the workspace row. Fable is not offered.
   Proof: src/main/agent.test.ts chosen model reaches claude and the record
 - **W35** Atril shall offer three themes in Ajustes — Claro, Oscuro and Automático (default,
-  follows macOS); the choice persists across restarts, Automático switches live when the
-  system appearance changes, and every theme keeps text contrast at 4.5:1 or more.
+  follows macOS); the choice persists across restarts, Automático switches live when the system
+  appearance changes, and every theme keeps text contrast at 4.5:1 or more; colours shall live only in
+  the token blocks — `:root`, `[data-theme='dark']` and their two `[data-palette='grafito']` overrides,
+  whose keys all exist in the base blocks.
   Proof: src/renderer/theme.test.ts theme follows the choice and the system
 - **W36** If the main checkout of an in-place workspace is no longer on that workspace's
   branch when it is closed, then Atril shall refuse, say which branch it is on, and move
@@ -1136,3 +1194,17 @@ se pulsa con teclado.
   tool still missing. One test holds a case for the running text, the error, and the recheck counted
   before and after a `focus` event.
   Proof: src/renderer/doctor.test.ts install runs in the terminal and rechecks on focus
+
+### Paleta Grafito (adopt-grafito, 10 nov 2026)
+
+- **W72** Where the palette is Grafito, every colour token in both themes other than `--ed-*`,
+  `--jira`, `--jira-2` and `--on-jira` shall be a neutral (OKLCH chroma below 0.03), the accent hue
+  (255 ± 15), or the muted added/removed green (150 ± 20) and red (25 ± 20), each of those three with
+  chroma at most 0.13 (an `rgba()` token judged by its colour); and every text pair `theme.test.ts`
+  checks shall keep at least 4.5:1 in the Grafito palette in both themes. One test holds both.
+  Proof: src/renderer/theme.test.ts the grafito palette has one accent and keeps contrast
+- **W73** Ajustes → Apariencia shall offer «Original» and «Grafito» as a pressed-state group named
+  «Paleta»; choosing one shall set `data-palette` on the document (`original` or `grafito`) in the same
+  click and keep it across restarts; main shall read an unknown stored value as Original, the default.
+  One test holds a case per clause.
+  Proof: src/renderer/theme.test.ts the palette is chosen in appearance and remembered

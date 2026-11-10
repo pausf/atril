@@ -138,5 +138,5 @@ Ninguna.
 
 ## Checklist
 
-- [ ] palette state, the selector and the Grafito tokens with their tests · Closes: W35, W72, W73
-- [ ] the fase1 sketch with the same palette choice; photo of Trabajo in Grafito (drawing and evidence, no criterion) · waits on box 1
+- [x] palette state, the selector and the Grafito tokens with their tests · Closes: W35, W72, W73
+- [x] the fase1 sketch with the same palette choice; photo of Trabajo in Grafito (drawing and evidence, no criterion) · waits on box 1

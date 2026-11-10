@@ -7,11 +7,11 @@ con agentes de Claude Code en tmux, y gestiona MRs de GitHub/GitLab. Remoto PRIV
 ## Dónde lo dejamos (10 nov 2026) — empieza por aquí
 
 Las ramas van apiladas: cada una sale de la anterior y `main` no se ha movido. La última es
-**`fit-flow-panel`**, aterrizada y subida el 10 nov (panel de Libretto sin scroll a 900 px).
+**`adopt-grafito`**, aterrizada y subida el 10 nov (paleta Grafito junto a la Original).
 
-1. Hechos el 10 nov: `add-subagents-view`, `add-subagent-detail` `add-doctor-install-terminal`, `restyle-mode-picker` y `fit-flow-panel`.
-   Bocetos fase 2: `bocetos/fase2-nucleo.html` (6 diseños del panel; Pau eligió el 0) y `bocetos/fase2-app.html` (4 identidades visuales, en curso).
-2. Cola en `.agents/changes/` por `Queued:`: `expand-tour` (tutorial más extenso, Pau lo ve corto) y `redesign-connections` (Ajustes: conexiones). Deuda: los tests de tmux se cuelgan de vez en cuando con carga (ver lessons).
+1. Hechos el 10 nov: `add-subagents-view`, `add-subagent-detail` `add-doctor-install-terminal`, `restyle-mode-picker`, `fit-flow-panel`, `show-doc-buttons` y `adopt-grafito`.
+   Bocetos fase 2: `bocetos/fase2-nucleo.html` (6 diseños del panel; Pau eligió el 0) y `bocetos/fase2-app.html` (4 variantes minimalistas; Pau eligió Grafito, ya en la app como segunda paleta).
+2. Cola en `.agents/changes/` por `Queued:`: `expand-tour` (tutorial más extenso, Pau lo ve corto) y `redesign-connections` (Ajustes: conexiones). Los cuelgues de tests de tmux/git eran contención: arreglado con `maxWorkers: 4` (ver lessons).
 3. Después, la lista de mejoras que se le dio a Pau el 9 nov. Ve una por una con el flujo Libretto:
    - Estado de la CI en la fila de la MR, y «Arreglar CI con Claude».
    - Abrir un trabajo desde una MR.
