@@ -132,6 +132,8 @@ const api: AtrilApi = {
     list: () => ipcRenderer.invoke('atril:status:list'),
     quickReplies: (id) => ipcRenderer.invoke('atril:status:quickReplies', id),
     answer: (id, choice) => ipcRenderer.invoke('atril:status:answer', id, choice),
+    pause: (id) => ipcRenderer.invoke('atril:status:pause', id),
+    resume: (id) => ipcRenderer.invoke('atril:status:resume', id),
     onChange: (cb) => {
       const h = (_e: Electron.IpcRendererEvent, id: string, state: AgentState): void => cb(id, state)
       ipcRenderer.on('atril:status:change', h)

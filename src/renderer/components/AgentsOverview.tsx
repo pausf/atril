@@ -104,10 +104,29 @@ export function AgentsOverview({ workspaces, next, switcher, onOpen }: Props) {
               </button>
               {/* Outside the card's button: answering must not open it (W82). */}
               {state === 'needs-you' && <QuickReplies workspaceId={w.id} activityAt={act?.at} />}
+              {(state === 'working' || state === 'paused') && <PauseButton workspaceId={w.id} paused={state === 'paused'} />}
             </div>
           )
         })}
       </div>
     </section>
+  )
+}
+
+/** W86/W87 on a card: outside the card's button, so pressing it never opens the workspace. */
+function PauseButton({ workspaceId, paused }: { workspaceId: string; paused: boolean }) {
+  const t = useT()
+  const [error, setError] = useState('')
+  const press = (): void => {
+    setError('')
+    void (paused ? window.atril.status.resume : window.atril.status.pause)(workspaceId).then((r) => setError('error' in r ? r.error : ''))
+  }
+  return (
+    <div className="quick-replies">
+      <button type="button" className="quick-reply" onClick={press}>
+        {paused ? t('Reanudar') : t('Pausar')}
+      </button>
+      {error && <span className="bad">{error}</span>}
+    </div>
   )
 }

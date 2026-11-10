@@ -4,7 +4,7 @@ import { createActivity } from './activity'
 import { createSubagents } from './subagents'
 import { launchQa, qaStatus, stopQa } from './qa'
 import { createAvisos } from './avisos'
-import { agentState, answerAgent, createStatus, replyGone, replyPlaceholder, replyToAgent, quickReplies } from './status'
+import { agentState, answerAgent, createStatus, pauseAgent, replyGone, replyPlaceholder, replyToAgent, resumeAgent, quickReplies } from './status'
 import { getLang, setLang, t } from './lang'
 import { resolveLang } from '../preload/i18n'
 import { readDocs, saveDoc } from './flow/document'
@@ -39,7 +39,7 @@ import { installMenu } from './menu'
 import { createNotifyGate } from './focus'
 import { patchUi, readUi } from './ui'
 import { splitPane } from './tmux'
-import type { Agent, QuickChoice } from '../preload/api'
+import type { Agent, AgentState, QuickAnswer, QuickChoice } from '../preload/api'
 
 // Dev-only evidence hooks (screenshots for review). A packaged app ignores them all, so no
 // environment variable can swap real data for fake data in front of the person.
@@ -506,9 +506,16 @@ app.whenReady().then(async () => {
   ipcMain.handle('atril:snapshot-ws', () => Boolean(SNAPSHOT))
   const menu = { selected: null as string | null, count: 0, nextEnabled: false, focusOn: false, focusAvailable: false, overviewAvailable: false }
   const notifyGate = createNotifyGate(() => menu.focusOn, () => BrowserWindow.getAllWindows()[0]?.isFocused() === true)
+  // Filled once status exists; the menu is first built before it.
+  let states = (): Record<string, AgentState> => ({})
+  let togglePause: (id: string) => void = () => undefined
   const refreshMenu = (): void =>
     installMenu({
       ...menu,
+      selectedState: menu.selected ? states()[menu.selected] : undefined,
+      togglePause: () => {
+        if (menu.selected) togglePause(menu.selected)
+      },
       split: (dir) => {
         const id = menu.selected
         if (!id) return
@@ -545,6 +552,7 @@ app.whenReady().then(async () => {
     run,
     onChange: (id, state) => {
       BrowserWindow.getAllWindows().forEach((w) => w.webContents.send('atril:status:change', id, state))
+      if (id === menu.selected) refreshMenu()
       void pushNext()
     },
     notify: (ws, body) => {
@@ -615,6 +623,12 @@ app.whenReady().then(async () => {
   })
   // answerAgent checks the shape itself: the window's value is never trusted.
   ipcMain.handle('atril:status:answer', (_e, id: unknown, choice: unknown) => answerAgent(String(id), choice as QuickChoice, run))
+  // The mark is not watched: refresh at once so the row says «en pausa» without waiting for the poll.
+  const paused = async (r: Promise<QuickAnswer>): Promise<QuickAnswer> => r.finally(() => void status.refresh())
+  ipcMain.handle('atril:status:pause', (_e, id: unknown) => paused(pauseAgent(String(id), run)))
+  ipcMain.handle('atril:status:resume', (_e, id: unknown) => paused(resumeAgent(String(id), run)))
+  states = () => status.states()
+  togglePause = (id) => void paused((status.states()[id] === 'paused' ? resumeAgent : pauseAgent)(id, run))
   void writeHooksFile().then(() => status.start())
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()

@@ -1,5 +1,5 @@
 import { Menu, type MenuItemConstructorOptions } from 'electron'
-import type { MenuAction } from '../preload/api'
+import type { AgentState, MenuAction } from '../preload/api'
 import { t } from './lang'
 
 export interface MenuDeps {
@@ -13,6 +13,10 @@ export interface MenuDeps {
   focusAvailable: boolean
   /** Trabajo shown with at least one workspace: «Todos» can be toggled (W81). */
   overviewAvailable: boolean
+  /** Main's state of the selected workspace: Pausar / Reanudar follow it (W88). */
+  selectedState?: AgentState
+  /** Pauses a working selected workspace or resumes a paused one (W86, W87). */
+  togglePause?(): void
   split(direction: 'h' | 'v'): void
   send(action: MenuAction): void
 }
@@ -28,6 +32,12 @@ export function menuTemplate(d: MenuDeps): MenuItemConstructorOptions[] {
       submenu: [
         { label: t('Dividir a la derecha'), accelerator: 'CmdOrCtrl+D', enabled: !none, click: () => d.split('h') },
         { label: t('Dividir abajo'), accelerator: 'CmdOrCtrl+Shift+D', enabled: !none, click: () => d.split('v') },
+        {
+          label: d.selectedState === 'paused' ? t('Reanudar') : t('Pausar'),
+          accelerator: 'CmdOrCtrl+Shift+P',
+          enabled: d.selectedState === 'paused' || d.selectedState === 'working',
+          click: () => d.togglePause?.()
+        },
         { label: t('Siguiente'), accelerator: 'CmdOrCtrl+Return', enabled: d.nextEnabled, click: () => d.send({ kind: 'next' }) },
         { label: t('Modo foco'), accelerator: 'CmdOrCtrl+Shift+F', type: 'checkbox', checked: d.focusOn, enabled: d.focusOn || d.focusAvailable, click: () => d.send({ kind: 'focusMode' }) },
         { label: t('Todos los agentes'), accelerator: 'CmdOrCtrl+Shift+A', enabled: d.overviewAvailable, click: () => d.send({ kind: 'overview' }) },

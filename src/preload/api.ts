@@ -407,6 +407,10 @@ export interface StatusApi {
   quickReplies(workspaceId: string): Promise<QuickReplies>
   /** Sends one quick reply to that workspace's agent (W75). */
   answer(workspaceId: string, choice: QuickChoice): Promise<QuickAnswer>
+  /** Escape into a working agent and marks it paused (W86). */
+  pause(workspaceId: string): Promise<QuickAnswer>
+  /** Asks a paused agent to go on and clears the mark (W87). */
+  resume(workspaceId: string): Promise<QuickAnswer>
   /** Returns the unsubscribe function. */
   onChange(cb: (id: string, state: AgentState) => void): () => void
   /** A notification was clicked: select that workspace. */

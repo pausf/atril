@@ -203,6 +203,8 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
       list: async () => o.states ?? {},
       quickReplies: async (id: string) => o.quickReplies?.[id] ?? { options: [], multiSelect: false },
       answer: vi.fn(async (): Promise<QuickAnswer> => o.answer ?? { ok: true }),
+      pause: vi.fn(async (): Promise<QuickAnswer> => ({ ok: true })),
+      resume: vi.fn(async (): Promise<QuickAnswer> => ({ ok: true })),
       onChange: (cb: (id: string, state: AgentState) => void) => {
         stateListeners.add(cb)
         return () => stateListeners.delete(cb)
