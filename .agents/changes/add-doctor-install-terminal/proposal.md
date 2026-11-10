@@ -21,6 +21,13 @@ abra una terminal y lo lance ahí para que se vaya instalando, y que el doctor v
 - Q: ¿Cómo sabe Atril que terminó? → A: no lo sabe: al volver la ventana de Atril al frente (foco), el doctor comprueba otra vez y el aviso se actualiza o desaparece (assumed). Si eso no basta, un sondeo de 5 s mientras haya una instalación lanzada.
 - Q: (fase 5) ¿Cómo se construye? → A: un handler `atril:doctor:install(tool)` que solo acepta nombres de la lista y un listener de foco en la ventana (assumed). Perdió: pasar el comando desde la ventana (abriría una puerta para ejecutar cualquier cosa).
 
+- Q: (revisor de spec) Holguras de W70/W71 → A, todas (assumed):
+  - Se vuelve a comprobar en cada foco mientras falte algo, se haya pulsado Instalar o no.
+  - Tras cada comprobación, la herramienta que sigue faltando vuelve a mostrar «Instalar» y su error se borra.
+  - Solo llevan botón las herramientas con comando.
+  - Con el pop abierto, la lista se actualiza en sitio y el pop se va con el aviso cuando ya no falta nada.
+  - El escapado se prueba con una función exportada, porque ningún comando de la lista lleva `"` ni `\`.
+
 ## Outcomes
 
 - En el aviso «N herramienta(s) por instalar», cada herramienta con comando tiene **Instalar** al lado
@@ -66,12 +73,16 @@ se pulsa con teclado.
   `osascript` with two `-e` scripts — `tell application "Terminal" to activate` and
   `tell application "Terminal" to do script "<that tool's install command>"`, with `"` and `\` escaped —
   and answer `{ ok: true }`; if the tool is not in the list it shall run nothing and answer `{ error }`;
-  if `osascript` exits non-zero it shall answer `{ error }` with its first stderr line.
+  if `osascript` exits non-zero it shall answer `{ error }` with its first stderr line. One test holds a
+  case per clause: a listed tool, a forged name (`tmux; rm -rf /`), a non-zero exit, and the escaping
+  through the exported quoting function.
   Proof: src/main/doctor.test.ts install opens the terminal with the listed command only
-- **W71** When the person presses «Instalar» on a tool in the doctor list, Atril shall ask main to
-  install that tool by name and show «Instalando en Terminal…» on it, or the error main answered;
-  when the Atril window regains focus after that, it shall run the doctor again and show the chip only
-  for what is still missing.
+- **W71** When the person presses «Instalar» on a tool with an install command, Atril shall ask main to
+  install that tool by name and show «Instalando en Terminal…» on it, or the error main answered; while
+  any tool is missing, each time the Atril window regains focus it shall run the doctor again, show the
+  chip (and an open list) only for what is still missing, and put back «Instalar» without state on each
+  tool still missing. One test holds a case for the running text, the error, and the recheck counted
+  before and after a `focus` event.
   Proof: src/renderer/doctor.test.ts install runs in the terminal and rechecks on focus
 
 ## Approach
@@ -132,4 +143,4 @@ Ninguna.
 ## Checklist
 
 - [ ] main installs a listed tool in Terminal.app and refuses any other name · Closes: W70
-- [ ] the Instalar button, its state and the recheck on focus; sketch button · waits on box 1 · Closes: W71
+- [ ] the Instalar button, its state and the recheck on focus; sketch button (a drawing, no proof) · waits on box 1 · Closes: W71
