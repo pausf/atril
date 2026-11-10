@@ -23,6 +23,18 @@ coste a la vista en Atril.
   «Terminados». El cálculo de main (W93) y el total en el historial (W95) se quedan: no se ven y no cuestan una
   llamada (assumed). Ceiling: si nadie lo pide en un mes, borrar W93 y `cost.ts`.
 
+### Session 2026-11-11 (revisión en frío)
+- Q: ¿Qué estado y de dónde? → A: el mismo texto e icono que la fila de la lista (`LABEL[state]` de
+  `WorkspaceList`), solo en «Uno». En «Todos» la cabecera dice «Todos los agentes» y no hay estado único (assumed).
+- Q: ¿El botón en «Todos»? → A: no sale; en «Uno» sale siempre, y sin trabajo elegido está desactivado como el menú
+  (assumed).
+- Q: ¿Nombre al estar en foco? → A: siempre «Modo foco», con `aria-pressed` verdadero mientras está activo (assumed).
+- Q: ¿Tests de coste? → A: los casos se renombran a lo que prueban ahora y el `Proof:` los nombra; cada vista se
+  prueba aparte, buscando que no haya «$», «≈» ni «tokens» (assumed). `cost.ts` del renderer se borra si nada fuera de
+  sus tests lo usa (assumed).
+- Q: ¿El historial dice «Coste: la forma corta de W94»? → A: queda superado por W96 enmendado; el total sigue en el
+  archivo (W95) sin enseñarse (assumed).
+
 ## Outcomes
 
 - La cabecera de un trabajo se lee de un vistazo y Atril no enseña dinero ni tokens.
@@ -40,17 +52,18 @@ coste a la vista en Atril.
 
 ## Verification criteria
 
-- **W112** The work header shall show «{repo} · {agent}» above the branch, the workspace's state label and icon
-  beside the branch (the row's W-state text, no pill), and to the right one group with the Uno/Todos switch and an
-  icon button named «Modo foco» titled «Modo foco (⌘⇧F)» that turns focus on and off as the menu item does
-  (W77), disabled where the menu item is.
+- **W112** While «Uno» shows a workspace, the work header shall show «{repo} · {agent}» above the branch, beside the
+  branch the same state label and icon as its row in the list (no pill), and to the right one group with the
+  Uno/Todos switch and an icon button named «Modo foco», titled «Modo foco (⌘⇧F)», `aria-pressed` while focus is on,
+  that turns focus on and off as the menu item does (W77), disabled while no workspace is selected; «Todos» shall not
+  show that button. One test holds a case per clause.
   Proof: src/renderer/focus.test.ts the work header shows the state and a focus button
-- **W94** (amended) A workspace's row title and its «Todos» card shall show no cost or token text.
-  Proof: src/renderer/cost.test.ts each workspace shows its estimated cost
+- **W94** (amended) A workspace's row title and its «Todos» card shall show no text with «$», «≈» or «tokens».
+  Proof: src/renderer/cost.test.ts no workspace shows a cost
 - **W96** (amended) While history has lines, Trabajo shall show a «Terminados» section, folded by default (W28),
   its count the number of lines, with the 20 newest, each with its branch, repo, stage, «duró» as «< 1 min» /
-  «{m} min» / «{h} h {m} min» / «{d} d {h} h» when `createdAt` is known, no cost or token text, and «hoy» or
-  «hace {n} d» by calendar day; it shall update when main pushes a new line. One test holds a case per clause.
+  «{m} min» / «{h} h {m} min» / «{d} d {h} h» when `createdAt` is known, no text with «$», «≈» or «tokens», and «hoy»
+  or «hace {n} d» by calendar day; it shall update when main pushes a new line. One test holds a case per clause.
   Proof: src/renderer/history.test.ts finished works show in their own section
 
 ## Approach
@@ -64,8 +77,8 @@ React 19, vitest. El estado de cada trabajo ya llega a App (`states`); el foco l
 `src/renderer/cost.ts` se queda si main o tests lo usan; si queda sin uso en el renderer, se borra.
 
 ### The approach
-- `Workspace` recibe `state` y un nodo `tools` (switch + botón de foco) desde App; el botón llama al mismo
-  manejador que el menú.
+- `Workspace` recibe `state` (de `states[selected]`) y un nodo `tools` (switch + botón de foco) desde App; el botón
+  llama al mismo manejador que el menú. `AgentsOverview` sigue con su cabecera y solo el switch.
 - Se borran del renderer las llamadas de coste; los tests de coste pasan a probar que no hay texto de coste.
 
 ### The alternatives it beat
