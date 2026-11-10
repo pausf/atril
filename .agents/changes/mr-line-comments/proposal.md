@@ -29,6 +29,23 @@ Comentarios en la línea exacta (lista del 9 nov): en el diff de una MR, comenta
 - Q: ¿Cabeza distinta? → A: si los borradores son de una cabeza vieja (M28 «stale»), se publica en general, nunca en
   una línea que pudo moverse (assumed).
 
+- Q: (revisor de spec) Holguras → A, todas (assumed):
+  - **Antes de publicar, Atril lee la MR en la forja.** En GitHub, `GET pulls/{n}` (head sha). En GitLab,
+    `GET merge_requests/{iid}` (`diff_refs` base/start/head). Si su cabeza no es la de los borradores, se
+    publica en general. Si esa lectura falla, el borrador sigue abierto con el mensaje de M6.
+  - **Archivos renombrados (GitLab).** La posición lleva `old_path` y `new_path` del archivo, tal como salen
+    en el diff guardado.
+  - **Una línea de contexto o fuera de los hunks.** Atril no la comprueba antes: decide la forja. Un 400 o
+    422 de la forja da el respaldo general, con la nota «Publicado como comentario general: la forja no
+    aceptó esa línea».
+  - **Respaldo sin nota.** Ir a general por cabeza vieja o porque falte `file` o `line` es lo previsto y no
+    lleva nota.
+  - **Otro fallo de la publicación en línea** (red, timeout, 5xx). El borrador sigue abierto con M6 y no
+    se publica en general, para no duplicar.
+  - **Dónde vive la nota.** En el borrador publicado, en un campo `note`. La vista la enseña junto a
+    «Publicado» (M29 enmendado).
+  - **El código va en `lenses.ts`.** Ya está en el `Governs:` de mr.
+
 ## Outcomes
 
 - Un borrador de Libretto con archivo y línea aparece en la MR justo en esa línea del diff; si no se puede, como
@@ -51,14 +68,30 @@ Comentarios en la línea exacta (lista del 9 nov): en el diff de una MR, comenta
   shall post it once as a line comment — GitHub `pulls/{n}/comments` with `commit_id` the drafts' head, `path`,
   `line` and `side: "RIGHT"`; GitLab a discussion with a text position of the MR's `base_sha`, `start_sha`,
   `head_sha`, `new_path` and `new_line` — whose body is «**{lens} · {severity}**», a blank line and the text; and
-  mark the draft published. One test holds GitHub and GitLab.
+  mark the draft published; before that post it shall read the MR from the forge (GitHub `pulls/{n}` head,
+  GitLab `merge_requests/{iid}` `diff_refs`), keeping the draft open with M6's message if that read fails. One
+  test holds GitHub and GitLab, a case per clause.
   Proof: src/main/forge/linecomments.test.ts a draft lands on its line
-- **M37** If that line post answers 422 or 400, or the drafts are stale, or the draft has no `file` or `line`,
-  then Atril shall post it as M27's general comment instead, once, and the draft shall read «Publicado como
-  comentario general: esa línea no está en el diff» in the first case.
+- **M37** If the forge's head differs from the drafts' head, or the draft has no `file` or `line`, Atril shall
+  post M27's general comment instead, once, with no note; if the line post answers 400 or 422, it shall post
+  the general comment once and store the note «Publicado como comentario general: la forja no aceptó esa
+  línea»; any other failure of the line post shall keep the draft open with M6's message and post nothing
+  else. One test holds a case per clause.
   Proof: src/main/forge/linecomments.test.ts a draft that cannot land falls back to a general comment
+
+- **M27** (amended) When the person clicks Publicar on an open draft, Atril shall publish it once — on its line
+  as M36 says, or as the MR's general comment (M21) «**{lens} · {severity}** — `{file}:{line}`» (the location
+  part dropped when `file` is absent, `:{line}` when `line` is), a blank line, then the text as written, as
+  M37 says — then mark it published. A failure shall keep it open with M6's message. Publishing, sending or
+  discarding a draft that is not open, or of an MR outside the latest listing, shall be refused without a
+  request.
+  Proof: src/main/forge/lenses.test.ts a draft is published once as a general comment
+- **M29** (amended) The MR view shall show each draft as text, with Publicar, Mandar al agente (only when main
+  offers it) and Descartar while open, and «Publicado» (followed by its note when it has one, M37) or «Enviado
+  al agente» with no actions after; Descartar removes it.
+  Proof: src/renderer/mr/lenses.test.ts drafts can be published, sent or discarded
 
 ## Checklist
 
-- [ ] the line post for GitHub and GitLab with the general fallback · Closes: M36, M37
-- [ ] the draft's note in the MR view; sketch; novedades · waits on box 1
+- [ ] the line post for GitHub and GitLab with the general fallback · Closes: M27, M36, M37
+- [ ] the draft's note in the MR view; sketch; novedades · waits on box 1 · Closes: M29
