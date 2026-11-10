@@ -2,6 +2,7 @@ import { useT } from '../ui'
 import { Icon } from './Icon'
 import { useEffect, useState } from 'react'
 import type { ActivityLine, AgentState, WorkspaceView } from '../../preload/api'
+import { runningCount, useSubagents } from '../subagents'
 import { localiseActivity } from '../../preload/activity-i18n'
 
 interface Props {
@@ -17,6 +18,7 @@ export function WorkspaceList({ workspaces, selected, onSelect, onRemove }: Prop
   const [refusal, setRefusal] = useState<{ id: string; text: string } | null>(null)
   const [states, setStates] = useState<Record<string, AgentState>>({})
 
+  const subs = useSubagents(workspaces.map((w) => w.id))
   const [latest, setLatest] = useState<Record<string, ActivityLine>>({})
 
   useEffect(() => {
@@ -63,6 +65,7 @@ export function WorkspaceList({ workspaces, selected, onSelect, onRemove }: Prop
                 </span>
               )
             })()}
+            {runningCount(subs[w.id]) > 0 && <span className="ws-subs">{runningCount(subs[w.id]) === 1 ? t('1 subagente') : t('{n} subagentes', { n: runningCount(subs[w.id]) })}</span>}
             {latest[w.id] && (
               <span className="ws-act" title={latest[w.id] && localiseActivity(latest[w.id]!.text, t)}>
                 {latest[w.id] && localiseActivity(latest[w.id]!.text, t)}

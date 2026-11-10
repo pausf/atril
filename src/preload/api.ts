@@ -414,6 +414,24 @@ export interface ActivityApi {
   onChange(cb: (workspaceId: string, lines: ActivityLine[]) => void): () => void
 }
 
+export interface SubagentEntry {
+  id: string
+  type: string
+  /** Text from Claude, cut at 120 characters; absent when the Agent call was not seen. */
+  description?: string
+  /** Epoch seconds. */
+  startedAt: number
+  /** Epoch seconds; absent while it runs. */
+  endedAt?: number
+}
+
+export interface SubagentsApi {
+  /** In file order (oldest first). */
+  get(workspaceId: string): Promise<SubagentEntry[]>
+  /** Returns the unsubscribe function. */
+  onChange(cb: (workspaceId: string, entries: SubagentEntry[]) => void): () => void
+}
+
 export type StageName = 'sin-libretto' | 'entrada' | 'spec' | 'plan' | 'construir' | 'terminado' | 'aterrizado'
 
 export interface Checklist {
@@ -535,6 +553,7 @@ export interface AtrilApi {
   status: StatusApi
   nextup: NextUpApi
   activity: ActivityApi
+  subagents: SubagentsApi
   doctor(): Promise<DoctorReport>
   repos: ReposApi
   workspaces: WorkspacesApi

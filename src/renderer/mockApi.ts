@@ -1,5 +1,5 @@
 import { vi } from 'vitest'
-import type { ActivityLine, AddRepoResult, Aviso, FileChange, FlowDocs, ForgeId, ForgeStatus, Mode, MrDraft, MrDrafts, MrDraftsResult, MrLists, MrReply, MrScoreState, MrThreads, AgentState, AtrilApi, FlowStage, JiraIssue, MenuAction, NextItem, StartProposalResult, StartRequest, StartResult, RepoView, UiState, WorkspaceResult, WorkspaceView } from '../preload/api'
+import type { ActivityLine, SubagentEntry, AddRepoResult, Aviso, FileChange, FlowDocs, ForgeId, ForgeStatus, Mode, MrDraft, MrDrafts, MrDraftsResult, MrLists, MrReply, MrScoreState, MrThreads, AgentState, AtrilApi, FlowStage, JiraIssue, MenuAction, NextItem, StartProposalResult, StartRequest, StartResult, RepoView, UiState, WorkspaceResult, WorkspaceView } from '../preload/api'
 
 export const workspace = (id: string, branch: string, alive = true): WorkspaceView => ({
   id,
@@ -47,6 +47,8 @@ interface Options {
   flow?: FlowStage
   /** Newest first, per workspace id. */
   activity?: Record<string, ActivityLine[]>
+  /** Subagent entries per workspace id. */
+  subagents?: Record<string, SubagentEntry[]>
   /** What mr.list answers; missing means no forge connected. */
   mrs?: MrLists
   /** What mr.scoreOf answers per URL; missing means never scored. */
@@ -67,6 +69,7 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
   let menu: ((a: MenuAction) => void) | undefined
   let notified: ((id: string) => void) | undefined
   const activityListeners = new Set<(id: string, lines: ActivityLine[]) => void>()
+  const subagentListeners = new Set<(id: string, entries: SubagentEntry[]) => void>()
   const flowListeners = new Set<(id: string, stage: FlowStage) => void>()
   const scoreListeners = new Set<(url: string, state: MrScoreState) => void>()
   const drafts = new Map(Object.entries(o.drafts ?? {}))
@@ -185,6 +188,13 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
         return () => activityListeners.delete(cb)
       }
     },
+    subagents: {
+      get: async (id: string) => o.subagents?.[id] ?? [],
+      onChange: (cb: (id: string, entries: SubagentEntry[]) => void) => {
+        subagentListeners.add(cb)
+        return () => subagentListeners.delete(cb)
+      }
+    },
     flow: {
       get: async () => o.flow ?? null,
       onChange: (cb: (id: string, stage: FlowStage) => void) => {
@@ -211,6 +221,7 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
       avisoListeners.forEach((cb) => cb(items))
     }, menu: (a: MenuAction) => menu?.(a), clickNotification: (id: string) => notified?.(id),
     pushActivity: (id: string, lines: ActivityLine[]) => activityListeners.forEach((cb) => cb(id, lines)),
+    pushSubagents: (id: string, entries: SubagentEntry[]) => subagentListeners.forEach((cb) => cb(id, entries)),
     pushFlow: (id: string, stage: FlowStage) => flowListeners.forEach((cb) => cb(id, stage)),
     pushScore: (url: string, state: MrScoreState) => scoreListeners.forEach((cb) => cb(url, state))
   }

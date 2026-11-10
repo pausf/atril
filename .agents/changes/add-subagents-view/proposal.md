@@ -121,5 +121,5 @@ None.
 
 ## Checklist
 
-- [ ] hook and main: the three hook branches, the two installed events, the watcher and IPC · Closes: W62, W63, W64, W65
-- [ ] the window: the Subagentes section and the row count · waits on box 1 · Closes: W66, F27
+- [x] hook and main: the three hook branches, the two installed events, the watcher and IPC · Closes: W62, W63, W64, W65
+- [x] the window: the Subagentes section and the row count · waits on box 1 · Closes: W66, F27

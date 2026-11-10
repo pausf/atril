@@ -751,6 +751,44 @@ kbd {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.ws-subs {
+  grid-column: 1 / -1;
+  font-size: 12px;
+  color: var(--run-text);
+}
+.subs {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.sub {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2px 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 13px;
+}
+.sub-text {
+  overflow-wrap: anywhere;
+}
+.sub-type,
+.sub-state {
+  font-size: 11.5px;
+  color: var(--sub);
+}
+.sub-type {
+  grid-column: 1;
+}
+.sub-state {
+  grid-column: 2;
+  grid-row: 1;
+  align-self: start;
+  white-space: nowrap;
+}
+.sub.run .sub-state {
+  color: var(--run-text);
+}
 .tabs {
   display: flex;
   gap: 4px;

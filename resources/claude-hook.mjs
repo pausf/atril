@@ -47,6 +47,60 @@ function replace(file, data) {
   renameSync(tmp, file)
 }
 
+// W62-W64: Claude's subagents, one file per session. Only ids, types and the Agent call's description
+// are kept: never the prompt, the transcript path or the last message.
+const SUBAGENT_EVENTS = ['SubagentStart', 'SubagentStop']
+const MAX_ENTRIES = 20
+const MAX_PENDING = 20
+const PENDING_TTL = 600
+const MAX_DESCRIPTION = 120
+const text = (v) => (typeof v === 'string' ? v.replace(/\s+/g, ' ').trim() : '')
+
+function trackSubagents(home, name, event, payload, at) {
+  const file = join(home, 'subagents', `${name}.json`)
+  let entries = []
+  let pending = []
+  try {
+    const v = JSON.parse(readFileSync(file, 'utf8'))
+    if (Array.isArray(v.entries)) entries = v.entries
+    if (Array.isArray(v.pending)) pending = v.pending
+  } catch {
+    /* first one for this session */
+  }
+  const before = JSON.stringify({ entries, pending })
+  const type = text(payload?.agent_type)
+  const id = text(payload?.agent_id)
+
+  if (event === 'PreToolUse') {
+    if (payload?.tool_name !== 'Agent' && payload?.tool_name !== 'Task') return
+    const input = payload.tool_input
+    pending.push({ type: text(input?.subagent_type) || 'general-purpose', description: text(input?.description).slice(0, MAX_DESCRIPTION), at })
+  } else if (event === 'UserPromptSubmit') {
+    entries = entries.filter((e) => e.endedAt === undefined)
+  } else if (event === 'SubagentStart') {
+    if (!type || !id) return
+    pending = pending.filter((p) => at - p.at < PENDING_TTL)
+    const i = pending.findIndex((p) => p.type === type)
+    const [taken] = i < 0 ? [] : pending.splice(i, 1)
+    entries.push({ id, type, ...(taken?.description && { description: taken.description }), startedAt: at })
+  } else if (event === 'SubagentStop') {
+    const entry = type && id ? entries.find((e) => e.id === id && e.endedAt === undefined) : undefined
+    if (!entry) return
+    entry.endedAt = at
+  }
+
+  // Past the ceiling the oldest finished entry goes; a running one never does.
+  while (entries.length > MAX_ENTRIES) {
+    const i = entries.findIndex((e) => e.endedAt !== undefined)
+    if (i < 0) break
+    entries.splice(i, 1)
+  }
+  pending = pending.slice(-MAX_PENDING)
+  if (JSON.stringify({ entries, pending }) === before) return
+  mkdirSync(join(home, 'subagents'), { recursive: true })
+  replace(file, JSON.stringify({ entries, pending }) + '\n')
+}
+
 function session() {
   const sock = process.env.ATRIL_TMUX_SOCKET
   const env = { ...process.env, PATH: `${process.env.PATH ?? ''}:/opt/homebrew/bin:/usr/local/bin` }
@@ -55,7 +109,7 @@ function session() {
 
 try {
   const event = process.argv[2] ?? ''
-  if (!STATES[event]) process.exit(0)
+  if (!STATES[event] && !SUBAGENT_EVENTS.includes(event)) process.exit(0)
 
   let payload = {}
   try {
@@ -70,6 +124,11 @@ try {
   if (!name) process.exit(0)
   const home = process.env.ATRIL_HOME ?? join(homedir(), '.atril')
   const at = Math.floor(Date.now() / 1000)
+  // Neither subagent event is the agent working or waiting: no state, no activity line.
+  if (!STATES[event]) {
+    trackSubagents(home, name, event, payload, at)
+    process.exit(0)
+  }
   const command = payload?.tool_input?.command
   if (event === 'PreToolUse' && payload?.tool_name === 'Bash' && typeof command === 'string' && UPLOAD.test(command) && existsSync(join(home, 'auto', name))) {
     process.stdout.write(JSON.stringify(ASK))
@@ -92,6 +151,12 @@ try {
   mkdirSync(dir, { recursive: true })
   const body = state === 'needs-you' && line ? { text: line.text } : {}
   replace(join(dir, `${name}.json`), JSON.stringify({ state, at, ...body }) + '\n')
+
+  try {
+    trackSubagents(home, name, event, payload, at)
+  } catch {
+    /* the subagent list never costs the state its write */
+  }
 
   // W45: past each 400-line threshold, Claude is asked once to offer a split into smaller MRs.
   const notice = sizeNotice({ home, session: name, event, tool: payload?.tool_name })

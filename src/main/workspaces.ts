@@ -40,7 +40,7 @@ async function readJson<T>(file: string, fallback: T): Promise<T> {
   }
 }
 
-const readRecords = async (): Promise<WorkspaceRecord[]> =>
+export const readRecords = async (): Promise<WorkspaceRecord[]> =>
   (await readJson<{ workspaces: WorkspaceRecord[] }>(join(home(), 'workspaces.json'), { workspaces: [] })).workspaces
 
 async function writeRecords(workspaces: WorkspaceRecord[]): Promise<void> {
@@ -62,6 +62,10 @@ export function taskPrompt(task: unknown, auto?: boolean): string | null {
 
 /** W59/W60: the hook reads this marker by session name, never the record. */
 const autoMarker = (id: string): string => join(home(), 'auto', sessionName(id))
+
+/** W60 and W65: what the hook keeps by session name dies with the workspace. */
+const dropFiles = (id: string): Promise<unknown> =>
+  Promise.all([autoMarker(id), join(home(), 'subagents', `${sessionName(id)}.json`)].map((f) => unlink(f, { force: true })))
 
 export async function openWorktree(input: OpenInput, run: Runner = defaultRun): Promise<WorkspaceResult> {
   const { repoId, branch, agent } = input
@@ -169,13 +173,13 @@ export async function removeWorkspace(id: string, run: Runner = defaultRun): Pro
     const back = await run('git', ['-C', rec.path, 'switch', ...(/^[0-9a-f]{40}$/.test(prev) ? ['--detach'] : []), prev])
     if (back.code !== 0) return { error: back.stderr.trim() || t('git switch falló') }
     await writeRecords(records.filter((r) => r.id !== id))
-    await unlink(autoMarker(id), { force: true })
+    await dropFiles(id)
     return { ok: true }
   }
   // No --force: git itself refuses anything the status check missed.
   const rm = await run('git', ['-C', repo.path, 'worktree', 'remove', rec.path])
   if (rm.code !== 0) return { error: rm.stderr.trim() || t('git worktree remove falló') }
   await writeRecords(records.filter((r) => r.id !== id))
-  await unlink(autoMarker(id), { force: true })
+  await dropFiles(id)
   return { ok: true }
 }

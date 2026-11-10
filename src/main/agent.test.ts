@@ -36,7 +36,7 @@ describe('agentArgv', () => {
     expect(flag).toBeGreaterThan(0)
     expect(flag).toBeLessThan(argv.indexOf('--plugin-dir'))
     expect(argv[flag + 1]).toMatch(/hooks\.json$/)
-    expect(Object.keys(hooksSettings().hooks).sort()).toEqual(['Notification', 'PostToolUse', 'PreToolUse', 'Stop', 'UserPromptSubmit'])
+    expect(Object.keys(hooksSettings().hooks).sort()).toEqual(['Notification', 'PostToolUse', 'PreToolUse', 'Stop', 'SubagentStart', 'SubagentStop', 'UserPromptSubmit'])
     const command = hooksSettings().hooks['Stop']?.[0]?.hooks[0]?.command ?? ''
     expect(command).toBe(`ELECTRON_RUN_AS_NODE=1 "${process.execPath}" "${join(resourcesDir(), 'claude-hook.mjs')}" Stop`)
   })
@@ -246,4 +246,122 @@ describe('automatic mode', () => {
   it('the hook stays silent without the marker', async () => {
     expect(await runHooks(false)).toEqual(CASES.map(() => ''))
   }, 30000)
+})
+
+describe('subagents hook', () => {
+  let sock: string
+  let home: string
+  let n = 0
+  beforeEach(() => {
+    sock = tmuxSock()
+    home = tmp()
+    process.env['ATRIL_TMUX_SOCKET'] = sock
+    process.env['ATRIL_HOME'] = home
+    makeRegisteredRepo(home)
+  })
+  afterEach(() => {
+    killTmux(sock)
+    delete process.env['ATRIL_TMUX_SOCKET']
+    delete process.env['ATRIL_HOME']
+    cleanTmp()
+  })
+
+  interface Entry { id: string; type: string; description?: string; startedAt: number; endedAt?: number }
+  interface Pending { type: string; description: string; at: number }
+  interface Seed { entries?: Entry[]; pending?: Pending[] }
+  const NOW = (): number => Math.floor(Date.now() / 1000)
+  const agent = (type: string, extra: object = {}): [string, object] => ['PreToolUse', { tool_name: 'Agent', tool_input: { subagent_type: type, description: `d-${type}`, prompt: 'SECRET-PROMPT', ...extra } }]
+
+  /** Runs the real hook for each event in a fresh workspace; the optional seed is on disk before the first one. */
+  async function fireIn(events: [string, object][], seed?: Seed): Promise<{ session: string; file: Seed | undefined }> {
+    const dir = tmp()
+    const gate = join(dir, 'go')
+    const steps = events.map(([event, payload], i) => {
+      writeFileSync(join(dir, `in-${i}.json`), JSON.stringify(payload))
+      return `${hooksSettings().hooks[event]?.[0]?.hooks[0]?.command ?? ''} <'${join(dir, `in-${i}.json`)}'`
+    })
+    const r = await openWorktree({
+      repoId: 'demo',
+      branch: `feat/sub${n++}`,
+      agent: 'claude',
+      argv: ['sh', '-c', `while [ ! -f '${gate}' ]; do sleep 0.1; done; ${steps.join('; ')}; touch '${join(dir, 'done')}'; sleep 300`]
+    })
+    if (!('workspace' in r)) throw new Error(r.error)
+    const session = r.workspace.session
+    if (seed) {
+      mkdirSync(join(home, 'subagents'), { recursive: true })
+      writeFileSync(join(home, 'subagents', `${session}.json`), JSON.stringify({ entries: seed.entries ?? [], pending: seed.pending ?? [] }))
+    }
+    writeFileSync(gate, '')
+    const end = Date.now() + 15000
+    while (!existsSync(join(dir, 'done')) && Date.now() < end) await new Promise((ok) => setTimeout(ok, 100))
+    const path = join(home, 'subagents', `${session}.json`)
+    return { session, file: existsSync(path) ? JSON.parse(readFileSync(path, 'utf8')) : undefined }
+  }
+  const start = (id: string, type: string): [string, object] => ['SubagentStart', { agent_id: id, agent_type: type }]
+  const stop = (id: string, type: string): [string, object] => ['SubagentStop', { agent_id: id, agent_type: type, agent_transcript_path: '/SECRET-PATH.jsonl', last_assistant_message: 'SECRET-LAST', stop_hook_active: false }]
+  const finished = (i: number): Entry => ({ id: `f${i}`, type: 'explorer', startedAt: i, endedAt: i + 1 })
+  const running = (i: number): Entry => ({ id: `r${i}`, type: 'explorer', startedAt: 100 + i })
+
+  it('a subagent start takes its description', async () => {
+    const long = 'x'.repeat(130)
+    const stale: Pending = { type: 'explorer', description: 'viejo', at: NOW() - 700 }
+    const { session, file } = await fireIn(
+      [agent('explorer', { description: 'T5 paginación' }), agent('general-purpose', { description: long }), agent('x', { subagent_type: undefined, description: 'sin tipo' }), start('a1', 'explorer'), start('a2', 'general-purpose'), start('a3', 'explorer'), start('a4', 'general-purpose'), start('a5', 'general-purpose')],
+      { pending: [stale] }
+    )
+
+    expect(file?.entries?.map((e) => [e.id, e.type, e.description])).toEqual([
+      ['a1', 'explorer', 'T5 paginación'],
+      ['a2', 'general-purpose', 'x'.repeat(120)],
+      ['a3', 'explorer', undefined],
+      ['a4', 'general-purpose', 'sin tipo'],
+      ['a5', 'general-purpose', undefined]
+    ])
+    for (const e of file!.entries!) expect(e.startedAt).toBeGreaterThanOrEqual(NOW() - 20)
+    expect(file?.pending).toEqual([])
+    expect(readFileSync(join(home, 'subagents', `${session}.json`), 'utf8')).not.toContain('SECRET-PROMPT')
+    // The Agent call still counts as working and as activity, as before.
+    expect(JSON.parse(readFileSync(join(home, 'state', `${session}.json`), 'utf8')).state).toBe('working')
+    expect(readFileSync(join(home, 'activity', `${session}.jsonl`), 'utf8')).toContain('Lanzando un subagente: T5 paginación')
+  }, 30000)
+
+  it('subagent events never change the agent state', async () => {
+    const idle = await fireIn([start('a1', 'explorer'), start('x', ''), stop('zz', 'explorer'), stop('a1', '')])
+    expect(idle.file?.entries?.map((e) => [e.id, e.endedAt])).toEqual([['a1', undefined]])
+    // Neither event writes the state file or an activity line.
+    expect(existsSync(join(home, 'state'))).toBe(false)
+    expect(existsSync(join(home, 'activity'))).toBe(false)
+
+    const done = await fireIn([start('a1', 'explorer'), stop('a1', 'explorer')])
+    const [e] = done.file!.entries!
+    expect(e?.endedAt).toBeGreaterThanOrEqual(e!.startedAt)
+    const raw = readFileSync(join(home, 'subagents', `${done.session}.json`), 'utf8')
+    expect(raw).not.toContain('SECRET')
+    expect(existsSync(join(home, 'state', `${done.session}.json`))).toBe(false)
+  }, 30000)
+
+  it('the subagent list stays bounded', async () => {
+    // A new prompt drops what finished and keeps the running ones.
+    const prompt = await fireIn([['UserPromptSubmit', { prompt: 'sigue' }]], { entries: [finished(1), running(1), finished(2), running(2)] })
+    expect(prompt.file?.entries?.map((e) => e.id)).toEqual(['r1', 'r2'])
+
+    // 20 entries is the ceiling: the oldest finished goes, never a running one.
+    const full = await fireIn([start('new', 'explorer')], { entries: [...Array.from({ length: 18 }, (_, i) => finished(i)), running(1), running(2)] })
+    expect(full.file?.entries).toHaveLength(20)
+    expect(full.file?.entries?.map((e) => e.id)).not.toContain('f0')
+    expect(full.file?.entries?.map((e) => e.id)).toContain('f1')
+    expect(full.file?.entries?.map((e) => e.id).slice(-3)).toEqual(['r1', 'r2', 'new'])
+
+    // More than 20 running is kept as is.
+    const busy = await fireIn([start('new', 'explorer')], { entries: Array.from({ length: 22 }, (_, i) => running(i)) })
+    expect(busy.file?.entries).toHaveLength(23)
+
+    // 20 pending is the other ceiling: the oldest goes.
+    const at = NOW()
+    const pending = await fireIn([agent('explorer', { description: 'nuevo' })], { pending: Array.from({ length: 20 }, (_, i) => ({ type: 'explorer', description: `p${i}`, at: at - 100 + i })) })
+    expect(pending.file?.pending).toHaveLength(20)
+    expect(pending.file?.pending?.[0]?.description).toBe('p1')
+    expect(pending.file?.pending?.at(-1)?.description).toBe('nuevo')
+  }, 60000)
 })

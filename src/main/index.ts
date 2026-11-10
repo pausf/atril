@@ -1,6 +1,7 @@
 import { app, BrowserWindow, dialog, ipcMain, Notification, safeStorage, shell } from 'electron'
 import { MODELS, writeHooksFile } from './agent'
 import { createActivity } from './activity'
+import { createSubagents } from './subagents'
 import { createAvisos } from './avisos'
 import { agentState, createStatus, replyGone, replyPlaceholder, replyToAgent } from './status'
 import { getLang, setLang, t } from './lang'
@@ -22,7 +23,7 @@ import { jiraSettings } from './credentials/jira'
 import { searchBoards } from './credentials/boards'
 import type { JiraCreds } from './credentials/check'
 import { doctor } from './doctor'
-import type { Aviso, CreateRepoRequest, Mode, MrDrafts, MrDraftsResult, MrItem, MrLists, MrScoreState, MrThreads, UiState } from '../preload/api'
+import type { Aviso, CreateRepoRequest, Mode, MrDrafts, MrDraftsResult, MrItem, MrLists, MrScoreState, MrThreads, SubagentEntry, UiState } from '../preload/api'
 import { readInbox } from './jira/inbox'
 import { inboxGroups } from './jira/board'
 import { proposeStart, start } from './jira/start'
@@ -127,6 +128,16 @@ function fakeThreads(): MrThreads {
       }
     ]
   }
+}
+
+// ponytail: dev-only, ATRIL_SNAPSHOT_VIEW=subagents photographs two running subagents and one finished.
+function fakeSubagents(): SubagentEntry[] {
+  const at = Math.floor(Date.now() / 1000)
+  return [
+    { id: 's1', type: 'explorer', description: 'Leer cómo se calcula la fecha de entrega', startedAt: at - 200, endedAt: at - 155 }, // i18n-ignore
+    { id: 's2', type: 'general-purpose', description: 'Migrar el calendario de festivos a la nueva tabla', startedAt: at - 80 }, // i18n-ignore
+    { id: 's3', type: 'Plan', startedAt: at - 12 }
+  ]
 }
 
 // ponytail: dev-only, ATRIL_SNAPSHOT_VIEW=mr-lens photographs the Libretto drafts: open, published, sent.
@@ -542,6 +553,11 @@ app.whenReady().then(async () => {
   ipcMain.handle('atril:activity:get', (_e, id: string) => activity.get(String(id)))
   ipcMain.handle('atril:activity:latest', () => activity.latest())
   void activity.start()
+  const subagents = createSubagents({
+    emit: (id, entries) => BrowserWindow.getAllWindows().forEach((w) => w.webContents.send('atril:subagents:changed', id, entries))
+  })
+  ipcMain.handle('atril:subagents:get', (_e, id: string) => (SNAPSHOT && process.env['ATRIL_SNAPSHOT_VIEW'] === 'subagents' ? fakeSubagents() : subagents.get(String(id))))
+  void subagents.start()
   ipcMain.handle('atril:status:list', () => status.states())
   void writeHooksFile().then(() => status.start())
   app.on('activate', () => {

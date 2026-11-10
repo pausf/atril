@@ -5,6 +5,7 @@ import { useT, type T } from '../ui'
 import { ActivityFeed } from './ActivityFeed'
 import { DocModal } from './DocModal'
 import { DiffModal } from './DiffModal'
+import { Subagents } from './Subagents'
 import type { Part } from './highlight'
 import { WARN_AT } from './warn'
 
@@ -112,7 +113,14 @@ export function FlowPanel({ workspaceId, auto = false }: { workspaceId: string |
         ))}
       </div>
       <div role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`}>
-        {tab === 'activity' ? <ActivityFeed workspaceId={workspaceId} /> : <LibrettoFlow flow={flow} onOpen={setDoc} changes={changes} onDiff={setDiffOf} />}
+        {tab === 'activity' ? (
+          <ActivityFeed workspaceId={workspaceId} />
+        ) : (
+          <>
+            <LibrettoFlow flow={flow} onOpen={setDoc} changes={changes} onDiff={setDiffOf} />
+            <Subagents workspaceId={workspaceId} />
+          </>
+        )}
       </div>
       {diffOf && workspaceId && <DiffModal workspaceId={workspaceId} files={changes} start={diffOf} onClose={() => setDiffOf(null)} />}
       {doc && workspaceId && <DocModal workspaceId={workspaceId} auto={auto} part={doc} onClose={() => setDoc(null)} />}

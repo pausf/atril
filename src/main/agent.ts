@@ -6,7 +6,7 @@ import { atrilHome, resourcesDir } from './paths'
 const librettoDir = (): string => join(resourcesDir(), 'libretto')
 export const hooksFile = (): string => join(atrilHome(), 'hooks.json')
 
-const HOOK_EVENTS = ['Notification', 'Stop', 'UserPromptSubmit', 'PreToolUse', 'PostToolUse'] as const
+const HOOK_EVENTS = ['Notification', 'Stop', 'UserPromptSubmit', 'PreToolUse', 'PostToolUse', 'SubagentStart', 'SubagentStop'] as const
 
 /** Atril's own binary runs the hook as Node (ELECTRON_RUN_AS_NODE): a Finder-launched app has no node on PATH. */
 export function hooksSettings(): { hooks: Record<string, { hooks: { type: 'command'; command: string }[] }[]> } {
