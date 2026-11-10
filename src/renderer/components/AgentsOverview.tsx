@@ -8,7 +8,7 @@ import { runningCount, useSubagents } from '../subagents'
 import { costText, useCosts } from '../cost'
 import { useLocale, useT } from '../ui'
 import { Icon } from './Icon'
-import { QuickReplies } from './QuickReplies'
+import { QuickReplies, useAsking } from './QuickReplies'
 
 interface Props {
   workspaces: WorkspaceView[]
@@ -27,6 +27,7 @@ export function AgentsOverview({ workspaces, next, switcher, onOpen }: Props) {
   const ids = workspaces.map((w) => w.id)
   const states = useAgentStates()
   const latest = useLatestActivity()
+  const [asking, markAsking] = useAsking()
   const subs = useSubagents(ids)
   const flows = useFlows(ids)
   const costs = useCosts(ids)
@@ -94,21 +95,30 @@ export function AgentsOverview({ workspaces, next, switcher, onOpen }: Props) {
                     </span>
                   )
                 )}
-                <span className="ov-act">
-                  {act ? (
-                    <>
-                      <span className="ov-act-text">{localiseActivity(act.text, t)}</span>
-                      <span className="ov-ago">{ago(t, act.at, now)}</span>
-                    </>
-                  ) : (
-                    <span className="ov-act-text">{t('sin actividad')}</span>
-                  )}
-                </span>
+                {!asking.has(w.id) && (
+                  <span className="ov-act">
+                    {act ? (
+                      <>
+                        <span className="ov-act-text">{localiseActivity(act.text, t)}</span>
+                        <span className="ov-ago">{ago(t, act.at, now)}</span>
+                      </>
+                    ) : (
+                      <span className="ov-act-text">{t('sin actividad')}</span>
+                    )}
+                  </span>
+                )}
                 {cost && <span className="ov-cost">{cost}</span>}
                 {running > 0 && <span className="ov-subs">{running === 1 ? t('1 subagente') : t('{n} subagentes', { n: running })}</span>}
               </button>
               {/* Outside the card's button: answering must not open it (W82). */}
-              {state === 'needs-you' && <QuickReplies workspaceId={w.id} activityAt={act?.at} />}
+              {state === 'needs-you' && (
+                <QuickReplies
+                  workspaceId={w.id}
+                  activityAt={act?.at}
+                  question={act && localiseActivity(act.text, t)}
+                  onShown={(shown) => markAsking(w.id, shown)}
+                />
+              )}
               {(state === 'working' || state === 'paused') && <PauseButton workspaceId={w.id} paused={state === 'paused'} />}
             </div>
           )

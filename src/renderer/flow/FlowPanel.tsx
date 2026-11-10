@@ -28,7 +28,7 @@ export const stagesOf = (t: T): { name: Exclude<StageName, 'sin-libretto'>; labe
   { name: 'aterrizado', label: t('Aterrizado'), icon: 's-landed' }
 ]
 
-export function FlowPanel({ workspaceId, auto = false }: { workspaceId: string | null; auto?: boolean }) {
+export function FlowPanel({ workspaceId, auto = false, onOpenLibretto }: { workspaceId: string | null; auto?: boolean; onOpenLibretto: () => void }) {
   const t = useT()
   const TABS = tabsOf(t)
   const [flow, setFlow] = useState<FlowStage | null>(null)
@@ -124,7 +124,7 @@ export function FlowPanel({ workspaceId, auto = false }: { workspaceId: string |
           <ActivityFeed workspaceId={workspaceId} />
         ) : (
           <>
-            <LibrettoFlow flow={flow} onOpen={setDoc} changes={changes} onDiff={setDiffOf} cost={cost} />
+            <LibrettoFlow flow={flow} onOpen={setDoc} changes={changes} onDiff={setDiffOf} cost={cost} onOpenLibretto={onOpenLibretto} />
             <Subagents workspaceId={workspaceId} />
             <Qa workspaceId={workspaceId} />
           </>
@@ -149,9 +149,10 @@ interface FlowProps {
   onDiff: (path: string) => void
   /** F34: the work's cost line, or null. */
   cost: string | null
+  onOpenLibretto: () => void
 }
 
-function LibrettoFlow({ flow, onOpen, changes, onDiff, cost }: FlowProps) {
+function LibrettoFlow({ flow, onOpen, changes, onDiff, cost, onOpenLibretto }: FlowProps) {
   const t = useT()
   const STAGES = stagesOf(t)
   const current = STAGES.findIndex((s) => s.name === flow?.stage)
@@ -271,13 +272,12 @@ function LibrettoFlow({ flow, onOpen, changes, onDiff, cost }: FlowProps) {
             </FoldSection>
           )}
           {flow && flow.others.length > 0 && (
-            <FoldSection id="flow-others" title={t('Otros cambios')} count={flow.others.length} defaultFolded className="flow-fold">
-              {flow.others.map((o) => (
-                <p className="fmeta" key={o}>
-                  {o}
-                </p>
-              ))}
-            </FoldSection>
+            <p className="fmeta crow">
+              <span>{t('{n} cambios más en este repo', { n: flow.others.length })}</span>
+              <button type="button" className="fmore" onClick={onOpenLibretto}>
+                {t('Ver en Libretto')}
+              </button>
+            </p>
           )}
         </>
       )}

@@ -42,6 +42,7 @@
   --run-text: #005ecb;
   --you: #ff9f0a;
   --you-text: #8a5a00;
+  --ask-bg: #fff8ec;
   --bad: #ff3b30;
   --bad-text: #c4281c;
   --bad-bg: #ffefee;
@@ -110,6 +111,7 @@
   --run-text: #6cb2ff;
   --you: #ff9f0a;
   --you-text: #ffb340;
+  --ask-bg: #3b342b;
   --bad: #ff453a;
   --bad-text: #ff8f86;
   --bad-bg: #3d1f1d;
@@ -158,6 +160,7 @@
   --run-text: #3e6596;
   --you: #446b9c;
   --you-text: #3e6596;
+  --ask-bg: #f2f5f8;
   --bad: #9f4d48;
   --bad-text: #984742;
   --bad-bg: #feebe9;
@@ -195,6 +198,7 @@
   --run-text: #97c1f7;
   --you: #4c73a5;
   --you-text: #97c1f7;
+  --ask-bg: #1c2026;
   --bad: #c06a64;
   --bad-text: #e59b94;
   --bad-bg: #381e1c;
@@ -1026,6 +1030,56 @@ kbd {
 }
 .state.stopped {
   color: var(--bad-text);
+}
+.ws-item.asks .ws-row {
+  border-color: color-mix(in oklch, var(--you) 50%, var(--line));
+  border-radius: var(--r) var(--r) 0 0;
+}
+.ask {
+  border: 1px solid color-mix(in oklch, var(--you) 50%, var(--line));
+  border-top: 0;
+  border-radius: 0 0 var(--r) var(--r);
+  background: var(--ask-bg);
+  padding: 8px 10px 10px;
+}
+.ask-q {
+  font-size: 12.5px;
+  line-height: 1.4;
+  margin: 0 0 6px;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+.ask-opt {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  font-size: 12.5px;
+  color: var(--text);
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 5px 8px;
+  margin-top: 4px;
+  cursor: pointer;
+}
+.ask-opt:hover:not(:disabled) {
+  border-color: color-mix(in oklch, var(--you) 60%, var(--line));
+}
+.ask-opt:disabled {
+  color: var(--sub);
+  cursor: default;
+}
+.ask-opt kbd {
+  font: 11px ui-monospace, Menlo, monospace;
+  color: var(--sub);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  min-width: 18px;
+  text-align: center;
+  padding: 0 3px;
 }
 .quick-replies {
   display: flex;
@@ -2905,6 +2959,11 @@ button.stg.stgbtn .icon {
 .ov-cost,
 .fcost {
   font-variant-numeric: tabular-nums;
+}
+.ov-card .ask {
+  border: 0;
+  border-top: 1px solid color-mix(in oklch, var(--you) 50%, var(--line));
+  border-radius: 0;
 }
 .ov-card .quick-replies {
   margin: 0;

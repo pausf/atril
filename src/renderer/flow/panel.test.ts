@@ -2,7 +2,7 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { createElement } from 'react'
-import { cleanup, render, screen } from '@testing-library/react'
+import { cleanup, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import type { FileChange, FlowStage, SubagentEntry, UiState } from '../../preload/api'
@@ -63,7 +63,7 @@ describe('libretto panel', () => {
   })
 
   it('the panel sections fold and remember', async () => {
-    const flow: FlowStage = { stage: 'construir', change: 'add-x', others: ['fix-cart-rounding'], checklist: { file: 'proposal.md', closed: 3, total: 7, firstOpen: 'T4' } }
+    const flow: FlowStage = { stage: 'construir', change: 'add-x', others: ['fix-cart-rounding', 'tidy-css'], checklist: { file: 'proposal.md', closed: 3, total: 7, firstOpen: 'T4' } }
     const subs: SubagentEntry[] = [
       { id: 's1', type: 'explorer', description: 'Leer pagos', startedAt: 1, endedAt: 9 },
       { id: 's2', type: 'Plan', startedAt: 2, endedAt: 5 }
@@ -84,17 +84,11 @@ describe('libretto panel', () => {
     const title = (name: RegExp) => screen.getByRole('button', { name })
     const expanded = (name: RegExp) => title(name).getAttribute('aria-expanded')
 
-    // Each title is a button with its count; Otros cambios starts folded, the rest open.
+    // Each title is a button with its count; all start open.
     expect(expanded(/^Checklist\s*3\/7$/)).toBe('true')
     expect(expanded(/^Cambios\s*2$/)).toBe('true')
     expect(expanded(/^Subagentes\s*2$/)).toBe('true')
-    expect(expanded(/^Otros cambios\s*1$/)).toBe('false')
-    expect(screen.queryByRole('region', { name: /^Otros cambios/ })).toBeNull()
-
-    // Unfolding shows what was folded.
-    await user.click(title(/^Otros cambios/))
-    expect(expanded(/^Otros cambios\s*1$/)).toBe('true')
-    expect(screen.getByRole('region', { name: /^Otros cambios/ }).textContent).toBe('fix-cart-rounding')
+    expect(screen.queryByRole('button', { name: /^Otros cambios/ })).toBeNull()
 
     // Folding hides the body and keeps the count in the title.
     await user.click(title(/^Checklist/))
@@ -107,7 +101,7 @@ describe('libretto panel', () => {
     expect(expanded(/^Subagentes\s*2$/)).toBe('false')
     expect(screen.queryByRole('list', { name: 'Subagentes' })).toBeNull()
     expect(api.ui.set).toHaveBeenLastCalledWith({ folded: { 'flow-subagents': true } })
-    expect(stored.folded).toEqual({ 'flow-others': false, 'flow-checklist': true, 'flow-changes': true, 'flow-subagents': true })
+    expect(stored.folded).toEqual({ 'flow-checklist': true, 'flow-changes': true, 'flow-subagents': true })
 
     // Mounted again, each section comes back as it was left.
     view.unmount()
@@ -116,7 +110,42 @@ describe('libretto panel', () => {
     expect(expanded(/^Checklist\s*3\/7$/)).toBe('false')
     expect(expanded(/^Cambios\s*2$/)).toBe('false')
     expect(expanded(/^Subagentes\s*2$/)).toBe('false')
-    expect(expanded(/^Otros cambios\s*1$/)).toBe('true')
+  })
+
+  it('other changes lead to Libretto', async () => {
+    const stored: UiState = { tutorialSeen: true, theme: 'auto', folded: {} }
+    const repo = (id: string) => ({ id, path: `/r/${id}`, mode: 'worktree' as const, reason: '' })
+    const open = async (others: string[]) => {
+      mockApi(
+        {
+          repos: [repo('web'), repo('api')],
+          workspaces: [{ ...workspace('aaaaaaa1', 'PF-1', false), repoId: 'api' }],
+          states: { aaaaaaa1: 'working' },
+          flow: { stage: 'plan', change: 'add-x', others },
+          libretto: { web: { none: true }, api: { queued: [], inFlight: [] } }
+        },
+        stored
+      )
+      const user = userEvent.setup()
+      render(createElement(App))
+      await user.click(await screen.findByRole('button', { name: /^PF-1/ }))
+      await screen.findByRole('button', { name: /^Plan ahora/ })
+      return user
+    }
+
+    // Its count, no names, and a button that stores the repo and opens the screen.
+    const user = await open(['fix-cart-rounding', 'tidy-css'])
+    expect(await screen.findByText('2 cambios más en este repo')).toBeTruthy()
+    expect(screen.queryByText('fix-cart-rounding')).toBeNull()
+    await user.click(screen.getByRole('button', { name: 'Ver en Libretto' }))
+    expect(stored.librettoRepo).toBe('api')
+    expect(within(screen.getByRole('navigation', { name: 'Pantallas' })).getByRole('button', { name: /Libretto/ }).getAttribute('aria-current')).toBe('page')
+    cleanup()
+
+    // Nothing else to show: neither the line nor the button.
+    await open([])
+    expect(screen.queryByText(/cambios más en este repo/)).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Ver en Libretto' })).toBeNull()
   })
 
   it('the documents read as buttons next to the change', async () => {

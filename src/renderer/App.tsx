@@ -37,7 +37,7 @@ export function App() {
 }
 
 function Shell() {
-  const { ui, markTutorialSeen, dismissSetup } = useUi()
+  const { ui, markTutorialSeen, dismissSetup, setLibrettoRepo } = useUi()
   const t = useT()
   const [tourOpen, setTourOpen] = useState(false)
   const [tourStart, setTourStart] = useState(-1)
@@ -382,7 +382,15 @@ function Shell() {
                 ) : (
                   <Workspace ws={workspaces.find((w) => w.id === selected)} switcher={<ViewSwitch all={all} onChange={showAll} />} />
                 )}
-                <FlowPanel workspaceId={selected} auto={workspaces.find((w) => w.id === selected)?.auto === true} />
+                <FlowPanel
+                  workspaceId={selected}
+                  auto={workspaces.find((w) => w.id === selected)?.auto === true}
+                  onOpenLibretto={() => {
+                    const repoId = workspaces.find((w) => w.id === selected)?.repoId
+                    if (repoId) setLibrettoRepo(repoId)
+                    setScreen('libretto')
+                  }}
+                />
               </div>
             </div>
           </div>

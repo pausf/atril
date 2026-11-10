@@ -164,8 +164,11 @@ describe('agents overview', () => {
   })
   it('a card opens its workspace or answers in place', async () => {
     const user = userEvent.setup()
+    const base = data()
+    const asked = [{ at: Math.floor(Date.now() / 1000), kind: 'asks' as const, text: '¿Aplico el plan completo?' }]
     const api = mockApi({
-      ...data(),
+      ...base,
+      activity: { ...base.activity, aaaaaaa4: asked, aaaaaaa3: asked },
       quickReplies: { aaaaaaa4: { options: ['Sí', 'Rehaz el plan'], multiSelect: false }, aaaaaaa3: { options: ['a', 'b'], multiSelect: true } }
     })
     render(createElement(App))
@@ -178,6 +181,11 @@ describe('agents overview', () => {
     await waitFor(() => expect(replies('PF-4')).toBeTruthy())
     expect(card('PF-4').querySelector('.ov-main')?.contains(replies('PF-4'))).toBe(false)
     expect(card('PF-4').querySelector('.ov-main button')).toBeNull()
+    // The card is joined under the button and says the whole question; the button no longer repeats the cut line.
+    expect(card('PF-4').querySelector('.ask-q')?.textContent).toContain('¿Aplico el plan completo?')
+    expect(card('PF-4').querySelector('.ov-main')?.contains(card('PF-4').querySelector('.ask'))).toBe(false)
+    expect(card('PF-4').querySelector('.ov-main .ov-act-text')).toBeNull()
+    expect(card('PF-3').querySelector('.ov-main .ov-act-text')?.textContent).toContain('¿Aplico el plan completo?')
     expect(replies('PF-3')).toBeNull()
     expect(replies('PF-2')).toBeNull()
 

@@ -6,7 +6,7 @@ import { stateOf, useAgentStates, useLatestActivity } from '../agents'
 import { runningCount, useSubagents } from '../subagents'
 import { costText, useCosts } from '../cost'
 import { localiseActivity } from '../../preload/activity-i18n'
-import { QuickReplies } from './QuickReplies'
+import { QuickReplies, useAsking } from './QuickReplies'
 
 interface Props {
   workspaces: WorkspaceView[]
@@ -22,6 +22,7 @@ export function WorkspaceList({ workspaces, selected, onSelect, onRemove }: Prop
   const states = useAgentStates()
   const subs = useSubagents(workspaces.map((w) => w.id))
   const latest = useLatestActivity()
+  const [asking, markAsking] = useAsking()
   const locale = useLocale()
   const costs = useCosts(workspaces.map((w) => w.id))
 
@@ -31,7 +32,7 @@ export function WorkspaceList({ workspaces, selected, onSelect, onRemove }: Prop
   return (
     <div className="ws-list">
       {workspaces.map((w) => (
-        <div className="ws-item" key={w.id}>
+        <div className={asking.has(w.id) ? 'ws-item asks' : 'ws-item'} key={w.id}>
           <button type="button" className="ws-row" aria-pressed={selected === w.id} onClick={() => onSelect(w.id)} title={costText(t, locale, costs[w.id]) ?? undefined}>
             <span className="ws-branch">{w.branch}</span>
             <span className="ws-meta">
@@ -53,13 +54,20 @@ export function WorkspaceList({ workspaces, selected, onSelect, onRemove }: Prop
               )
             })()}
             {runningCount(subs[w.id]) > 0 && <span className="ws-subs">{runningCount(subs[w.id]) === 1 ? t('1 subagente') : t('{n} subagentes', { n: runningCount(subs[w.id]) })}</span>}
-            {latest[w.id] && (
+            {latest[w.id] && !asking.has(w.id) && (
               <span className="ws-act" title={latest[w.id] && localiseActivity(latest[w.id]!.text, t)}>
                 {latest[w.id] && localiseActivity(latest[w.id]!.text, t)}
               </span>
             )}
           </button>
-          {states[w.id] === 'needs-you' && <QuickReplies workspaceId={w.id} activityAt={latest[w.id]?.at} />}
+          {states[w.id] === 'needs-you' && (
+            <QuickReplies
+              workspaceId={w.id}
+              activityAt={latest[w.id]?.at}
+              question={latest[w.id] && localiseActivity(latest[w.id]!.text, t)}
+              onShown={(shown) => markAsking(w.id, shown)}
+            />
+          )}
           <button
             type="button"
             className="ws-remove"
