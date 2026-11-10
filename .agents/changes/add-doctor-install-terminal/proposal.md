@@ -142,5 +142,5 @@ Ninguna.
 
 ## Checklist
 
-- [ ] main installs a listed tool in Terminal.app and refuses any other name · Closes: W70
-- [ ] the Instalar button, its state and the recheck on focus; sketch button (a drawing, no proof) · waits on box 1 · Closes: W71
+- [x] main installs a listed tool in Terminal.app and refuses any other name · Closes: W70
+- [x] the Instalar button, its state and the recheck on focus; sketch button (a drawing, no proof) · waits on box 1 · Closes: W71
