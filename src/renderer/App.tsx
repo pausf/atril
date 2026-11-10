@@ -16,7 +16,6 @@ import { OwnTaskDialog } from './inbox/OwnTaskDialog'
 import { NextUpStrip } from './components/NextUpStrip'
 import { startOrAsk, useNextUp } from './nextup'
 import { NavigationContext } from './settings/navigation'
-import { Appearance } from './components/Appearance'
 import { Language } from './settings/Language'
 import { focusRegion } from './focus'
 import { Tour } from './tour/Tour'
@@ -267,7 +266,6 @@ function Shell() {
           {screen === 'avisos' && <Avisos avisos={avisos} open={openAviso} />}
           {screen === 'settings' && (
             <Ajustes>
-              <Appearance />
               <Language />
             </Ajustes>
           )}

@@ -1,4 +1,6 @@
 // @vitest-environment jsdom
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { createElement } from 'react'
 import { cleanup, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
@@ -140,5 +142,24 @@ describe('connections', () => {
     await user.type(within(j).getByLabelText('Token'), 'secret')
     await user.click(within(j).getByRole('button', { name: 'Guardar y comprobar' }))
     expect(jira.save).toHaveBeenCalledWith({ site: 'https://x.atlassian.net', email: 'pau@x.com', token: 'secret' })
+  })
+
+  it('settings use two columns when wide', async () => {
+    await openSettings()
+    const main = document.querySelector<HTMLElement>('main.ajustes')!
+    const names = (col: Element) => Array.from(col.querySelectorAll(':scope > section')).map((s) => s.querySelector('h3')?.textContent)
+    const cols = main.querySelectorAll(':scope > .ajustes-col')
+    expect(cols).toHaveLength(2)
+    expect(names(cols[0]!)).toEqual(['Conexiones', 'Repos'])
+    expect(names(cols[1]!)).toEqual(['Apariencia', 'Idioma'])
+
+    // One column, left first, by default; side by side from 1100 px of window width.
+    const css = readFileSync(join(__dirname, '..', 'styles.css'), 'utf8')
+    const base = css.match(/\n\.ajustes \{([^}]*)\}/)?.[1] ?? ''
+    expect(base).toMatch(/flex-direction: column/)
+    const wide = css.match(/@media \(min-width: 1100px\) \{([\s\S]*?)\n\}/)?.[1] ?? ''
+    const rule = wide.match(/\.ajustes \{([^}]*)\}/)?.[1] ?? ''
+    expect(rule).toMatch(/display: grid/)
+    expect(rule).toMatch(/grid-template-columns: 1fr 1fr/)
   })
 })

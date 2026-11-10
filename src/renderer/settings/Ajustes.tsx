@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import { useT } from '../ui'
 import { Repos } from './Repos'
+import { Appearance } from '../components/Appearance'
 import { ForgeCard } from './Forges'
 import { ConnectSteps, ConnectionRow, Field, Manage, useConnectionState } from './Connection'
 import type { BoardSearchResult, JiraBoard, JiraSettingsStatus } from '../../preload/api'
@@ -199,19 +200,26 @@ export function Ajustes({ children }: { children?: ReactNode }) {
   const t = useT()
   return (
     <main className="ajustes">
-      <h1>{t('Ajustes')}</h1>
-      <p className="intro">
-        {t('Tus tokens se guardan cifrados en el Llavero de tu Mac.')} <b>{t('Una vez guardados no se pueden volver a ver')}</b>
-        {t(': solo reemplazar o borrar. Tus agentes nunca los reciben.')}
-      </p>
-      <section className="scard conns" aria-labelledby="conns-h" data-tour="connections">
-        <h3 id="conns-h">{t('Conexiones')}</h3>
-        <JiraCard />
-        <ForgeCard forge="github" />
-        <ForgeCard forge="gitlab" />
-      </section>
-      <Repos />
-      {children}
+      <header className="ajustes-head">
+        <h1>{t('Ajustes')}</h1>
+        <p className="intro">
+          {t('Tus tokens se guardan cifrados en el Llavero de tu Mac.')} <b>{t('Una vez guardados no se pueden volver a ver')}</b>
+          {t(': solo reemplazar o borrar. Tus agentes nunca los reciben.')}
+        </p>
+      </header>
+      <div className="ajustes-col">
+        <section className="scard conns" aria-labelledby="conns-h" data-tour="connections">
+          <h3 id="conns-h">{t('Conexiones')}</h3>
+          <JiraCard />
+          <ForgeCard forge="github" />
+          <ForgeCard forge="gitlab" />
+        </section>
+        <Repos />
+      </div>
+      <div className="ajustes-col">
+        <Appearance />
+        {children}
+      </div>
     </main>
   )
 }
