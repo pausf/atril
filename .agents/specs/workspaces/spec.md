@@ -149,6 +149,14 @@ The `workspaces` capability, phase 1. Its siblings in this change: `.agents/spec
   lanzados a la vez ya no pueden intercambiarse la etiqueta.
 - El hook ya no guarda la cola `pending` ni lee el PreToolUse de `Agent` para los subagentes.
 
+### Instalar desde el doctor (add-doctor-install-terminal, 10 nov 2026)
+
+- En el aviso «N herramienta(s) por instalar», cada herramienta con comando tiene **Instalar** al lado
+  de Copiar. Al pulsarlo se abre Terminal.app con ese comando ya en marcha y el elemento dice
+  «Instalando en Terminal…».
+- Al volver a Atril, el doctor comprueba otra vez: lo instalado desaparece de la lista y, si ya no
+  falta nada, el aviso entero.
+
 ## Scope boundaries
 
 **In:** the three columns and footer of `bocetos/fase1-nucleo.html` (boceto 8), the
@@ -276,6 +284,17 @@ hay registro); colores por herramienta; buscar dentro del registro.
 solo lee la ruta que guardó el hook; el contenido se pinta como texto, nunca como HTML; el modal
 se maneja con teclado (foco al abrir, Tab dentro, Esc cierra y devuelve el foco a la fila).
 
+### Instalar desde el doctor (add-doctor-install-terminal, 10 nov 2026)
+
+**In:** el botón, el handler en main, el texto de estado, volver a comprobar al recuperar el foco.
+
+**Out:** elegir otra terminal; ver la instalación dentro de Atril; detectar el final de la instalación;
+instalar varias a la vez con un botón; actualizar herramientas que ya están.
+
+**Never scoped out:** la ventana solo manda el nombre de la herramienta y main ejecuta únicamente el
+comando de su lista (W21); un fallo al abrir Terminal se dice en el elemento; el botón se alcanza y
+se pulsa con teclado.
+
 ## Constraints
 
 - Electron (current stable) + TypeScript in strict mode, pnpm, Node 24 (installed:
@@ -367,6 +386,12 @@ se maneja con teclado (foco al abrir, Tab dentro, Esc cierra y devuelve el foco 
 - Sin dependencias nuevas; el modal reutiliza `useModalKeys` y las clases `modal`/`dlg`.
 - Textos por `t()` con su inglés en `src/preload/i18n-en.ts`; colores solo como tokens.
 - El hook sigue leyendo el payload una vez y solo saca de él los campos listados.
+
+### Instalar desde el doctor (add-doctor-install-terminal, 10 nov 2026)
+
+- Sin dependencias nuevas; `osascript` viene con macOS.
+- El comando va dentro de una cadena AppleScript: comillas y barras invertidas escapadas.
+- Textos por `t()` con su inglés en `src/preload/i18n-en.ts`.
 
 ## Prior decisions
 
@@ -677,6 +702,35 @@ se maneja con teclado (foco al abrir, Tab dentro, Esc cierra y devuelve el foco 
   - Si la entrada desaparece, el modal se cierra.
   - Un subagente recién lanzado sin archivo dice lo mismo que uno sin registro.
   - Las líneas de continuación no llevan prefijo y van sangradas.
+
+### Instalar desde el doctor (add-doctor-install-terminal, 10 nov 2026)
+
+- Terminal.app vía `osascript` (assumed, 10 nov). Techo: una persona con otra terminal ve Terminal.app;
+  se añade un ajuste cuando alguien lo pida.
+- Solo nombres de la lista cruzan el IPC (assumed, 10 nov): la lista de W21 es la única fuente de
+  comandos.
+- Volver a comprobar al recuperar el foco, sin seguir la instalación (assumed, 10 nov).
+
+#### Alternatives that lost
+
+| Considered | Why it lost |
+|---|---|
+| Terminal dentro de Atril con xterm y un pty | Sin pty fuera de tmux, que puede ser lo que falta; `sudo` y los diálogos de macOS van mejor fuera. |
+| La ventana manda el comando | Abriría la ejecución de cualquier texto desde el renderer. |
+| Sondear el doctor cada 5 s | Más estado para lo que el foco ya resuelve cuando vuelves. |
+
+#### Decision log, answers as given (2026-11-10)
+- Q: ¿Qué terminal? → A: Terminal.app vía `osascript` (`activate` + `do script`): viene con macOS y la persona ve y responde lo que pida el instalador (contraseña, licencia de Xcode) (assumed). Si Pau usa otra (iTerm, Ghostty), se añade un ajuste.
+- Q: ¿Una terminal dentro de Atril (xterm + pty)? → A: no: un instalador que pide `sudo` o abre un diálogo de macOS va mejor en una terminal de verdad, y Atril no tiene pty fuera de tmux, que puede ser justo lo que falta (assumed).
+- Q: ¿Cómo sabe Atril que terminó? → A: no lo sabe: al volver la ventana de Atril al frente (foco), el doctor comprueba otra vez y el aviso se actualiza o desaparece (assumed). Si eso no basta, un sondeo de 5 s mientras haya una instalación lanzada.
+- Q: (fase 5) ¿Cómo se construye? → A: un handler `atril:doctor:install(tool)` que solo acepta nombres de la lista y un listener de foco en la ventana (assumed). Perdió: pasar el comando desde la ventana (abriría una puerta para ejecutar cualquier cosa).
+
+- Q: (revisor de spec) Holguras de W70/W71 → A, todas (assumed):
+  - Se vuelve a comprobar en cada foco mientras falte algo, se haya pulsado Instalar o no.
+  - Tras cada comprobación, la herramienta que sigue faltando vuelve a mostrar «Instalar» y su error se borra.
+  - Solo llevan botón las herramientas con comando.
+  - Con el pop abierto, la lista se actualiza en sitio y el pop se va con el aviso cuando ya no falta nada.
+  - El escapado se prueba con una función exportada, porque ningún comando de la lista lleva `"` ni `\`.
 
 ## Task breakdown
 
@@ -1064,3 +1118,21 @@ se maneja con teclado (foco al abrir, Tab dentro, Esc cierra y devuelve el foco 
   keep only the last 500 parsed lines. One fixture carries a case per clause (ceiling: a clause with no
   case is unproven).
   Proof: src/main/subagents.test.ts the log reads like Claude Code
+
+### Instalar desde el doctor (add-doctor-install-terminal, 10 nov 2026)
+
+- **W70** When the window asks `atril:doctor:install(tool)` with a tool in W21's list, main shall run
+  `osascript` with two `-e` scripts — `tell application "Terminal" to activate` and
+  `tell application "Terminal" to do script "<that tool's install command>"`, with `"` and `\` escaped —
+  and answer `{ ok: true }`; if the tool is not in the list it shall run nothing and answer `{ error }`;
+  if `osascript` exits non-zero it shall answer `{ error }` with its first stderr line. One test holds a
+  case per clause: a listed tool, a forged name (`tmux; rm -rf /`), a non-zero exit, and the escaping
+  through the exported quoting function.
+  Proof: src/main/doctor.test.ts install opens the terminal with the listed command only
+- **W71** When the person presses «Instalar» on a tool with an install command, Atril shall ask main to
+  install that tool by name and show «Instalando en Terminal…» on it, or the error main answered; while
+  any tool is missing, each time the Atril window regains focus it shall run the doctor again, show the
+  chip (and an open list) only for what is still missing, and put back «Instalar» without state on each
+  tool still missing. One test holds a case for the running text, the error, and the recheck counted
+  before and after a `focus` event.
+  Proof: src/renderer/doctor.test.ts install runs in the terminal and rechecks on focus

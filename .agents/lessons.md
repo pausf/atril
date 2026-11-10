@@ -149,3 +149,12 @@ Reviewer found nothing against the contract (8 proofs re-run, all green).
 
 ## 2026-11-10 · add-subagent-detail · 6
 A full-suite gate went red once on `src/main/reply.test.ts` (20 s timeout), a tmux test this change never touched; it passed 3/3 alone and 2/2 in the next full runs. Same family as the ~1000 s W62 hang: a git/tmux call blocking under load. Not patched blind; open question for a change of its own: which call blocks (likely a synchronous `tmuxOut`/`execFileSync` in test helpers or `openWorktree` under parallel files).
+
+## 2026-11-10 · add-doctor-install-terminal · 6→7
+Reviewer found nothing against the contract (both proofs re-run, green).
+
+## 2026-11-10 · add-doctor-install-terminal · 6
+The builder's first full gate went red with 3 failures, one seen: `src/main/workspaces.test.ts` › «refuses an invalid branch name», a file the change never touched; the rerun was 224/224. Third sighting today of git/tmux tests failing only under full-suite load (with reply.test.ts and the W62 hang): it is a pattern, not noise. Needs its own change.
+
+## 2026-11-10 · add-doctor-install-terminal · 7
+Adding a `snapshotView()` call to DoctorChip broke three tests whose hand-built `window.atril` lacked it. Fixed in the test mock, not with optional chaining in the app. Lesson: a component that gains a new `window.atril` call must be checked against tests that mock the bridge by hand (`rg "window.atril = "`).
