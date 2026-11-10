@@ -212,3 +212,6 @@ Reviewer found nothing (4 proofs re-run). The session caught that the builder's 
 
 ## 2026-11-11 · work-history · 6→7
 Reviewer found nothing (2 proofs and the i18n scans re-run). The builder's mutation check (removing the append's guard turned the test red) is the kind of proof that a «failed append doesn't fail removal» clause needs.
+
+## 2026-11-11 · first-run-setup · 6→7
+Reviewer found nothing (W97 proof and ui.ts validation re-run). The builder corrected the contract's «live workspace» to «any workspace record»: the stricter reading would have shown the card beside a sidebar of stopped workspaces. Lesson: «live» is a tmux word in this app; for what a person sees, say «in the list».
