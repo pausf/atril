@@ -168,7 +168,10 @@ function JiraCard() {
       state={state}
       saved={status && status.saved}
       open={open}
-      onToggle={() => setOpen(!open)}
+      onToggle={() => {
+        setOpen(!open)
+        setReplacing(false)
+      }}
     >
       {status?.saved && !replacing ? (
         <Manage note={t('El token no se muestra nunca. Si lo pierdes, crea uno nuevo en Atlassian y pulsa Reemplazar.')} onReplace={startReplacing} onRemove={() => void remove()}>

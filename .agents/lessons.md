@@ -176,3 +176,6 @@ Reviewer found nothing against the contract (W23 proof and the i18n scan re-run,
 
 ## 2026-11-10 · expand-tour · 6
 The step table written before reading the code said four untrue things (Nueva tarea «crea en Jira», a red rail badge, a live subagent terminal, the 5 h reset). The builder caught them by checking each sentence against its component. Lesson: copy for a tutorial is a claim about the code — write it from the component, not from memory.
+
+## 2026-11-10 · redesign-connections · 6→7
+Reviewer: (1) the Paleta/Tema row labels in Appearance were scope that arrived unasked — kept, recorded here; (2) asked whether folding a row mid-Reemplazar kept `replacing` — it did, so reopening showed the steps instead of Gestionar. Fixed: the row toggle resets `replacing`; case added to «connect guides in three steps» (seen red first).

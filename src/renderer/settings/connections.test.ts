@@ -124,6 +124,11 @@ describe('connections', () => {
     expect(within(gl).getByRole('button', { name: 'Crear token en GitLab' })).toBeTruthy()
     expect(within(gl).getByLabelText('Dirección')).toBeTruthy()
     expect(within(gl).getByLabelText('Token')).toBeTruthy()
+    // Folding a row mid-replace forgets it: opening again shows Gestionar's body, not the steps.
+    await user.click(within(gl).getByRole('button', { name: 'Gestionar' }))
+    await user.click(within(gl).getByRole('button', { name: 'Gestionar' }))
+    expect(steps(gl)).toHaveLength(0)
+    expect(within(gl).getByRole('button', { name: 'Reemplazar' })).toBeTruthy()
 
     // Jira: address, email and token; only the empty ones get their error, and main is not called.
     const j = row('Jira')

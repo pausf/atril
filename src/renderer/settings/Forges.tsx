@@ -51,7 +51,10 @@ export function ForgeCard({ forge }: { forge: ForgeId }) {
       state={state}
       saved={status && status.saved}
       open={open}
-      onToggle={() => setOpen(!open)}
+      onToggle={() => {
+        setOpen(!open)
+        setReplacing(false)
+      }}
     >
       {status?.saved && !replacing ? (
         <Manage note={t('El token no se muestra nunca. Si lo pierdes, crea uno nuevo y pulsa Reemplazar.')} onReplace={() => setReplacing(true)} onRemove={() => void remove()} />
