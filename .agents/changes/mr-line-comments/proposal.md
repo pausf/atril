@@ -93,5 +93,5 @@ Comentarios en la línea exacta (lista del 9 nov): en el diff de una MR, comenta
 
 ## Checklist
 
-- [ ] the line post for GitHub and GitLab with the general fallback · Closes: M27, M36, M37
-- [ ] the draft's note in the MR view; sketch; novedades · waits on box 1 · Closes: M29
+- [x] the line post for GitHub and GitLab with the general fallback · Closes: M27, M36, M37
+- [x] the draft's note in the MR view; sketch; novedades · waits on box 1 · Closes: M29
