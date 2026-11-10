@@ -7,7 +7,7 @@ con agentes de Claude Code en tmux, y gestiona MRs de GitHub/GitLab. Remoto PRIV
 ## Dónde lo dejamos (10 nov 2026) — empieza por aquí
 
 Las ramas van apiladas: cada una sale de la anterior y `main` no se ha movido. La última es
-**`agents-overview`**, aterrizada y subida el 10 nov (Todos los agentes, ⌘⇧A). Ideas para después: `bocetos/ideas.html` (50, con ★ las favoritas).
+**`add-qa-lab`**, aterrizada y subida el 10 nov (QA en vivo: Playwright/mobile-mcp por sesión). Ideas para después: `bocetos/ideas.html` (50, con ★ las favoritas).
 
 1. Hechos el 10 nov: `add-subagents-view`, `add-subagent-detail` `add-doctor-install-terminal`, `restyle-mode-picker`, `fit-flow-panel`, `show-doc-buttons`, `adopt-grafito`, `expand-tour` y `redesign-connections`.
    Bocetos fase 2: `bocetos/fase2-nucleo.html` (6 diseños del panel; Pau eligió el 0) y `bocetos/fase2-app.html` (4 variantes minimalistas; Pau eligió Grafito, ya en la app como segunda paleta).
@@ -38,6 +38,7 @@ Sin probar con datos reales (necesita a Pau):
 - El tablero de Jira.
 - Responder desde un aviso del Mac.
 - Que el selector de opciones de Claude Code acepte el número tecleado (respuestas rápidas).
+- La QA en vivo con un Claude, un navegador y un emulador reales (solo probada con dobles).
 
 ## Cómo se trabaja aquí
 

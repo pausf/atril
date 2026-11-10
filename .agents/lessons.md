@@ -194,3 +194,6 @@ A full-run red («Unexpected end of JSON input» in tmux.test.ts) was a real bug
 
 ## 2026-11-10 · agents-overview · 6→7
 Reviewer found nothing against the contract (3 proofs re-run, green). Asked whether xterm refits after «Todos» hides it: yes, Terminal.tsx's ResizeObserver fires when the container goes from 0 to its size. No change.
+
+## 2026-11-10 · add-qa-lab · 6→7
+Reviewer found nothing (3 proofs re-run, green). Before the review the session added the Android SDK-folder lookup for adb/emulator, and found the test passed or failed depending on the machine (this Mac has ~/Library/Android/sdk): isolated HOME and ANDROID_* in the test. Lesson: a check that reads the user's home needs the test to own that home.

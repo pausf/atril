@@ -433,3 +433,12 @@ Aterrizado**.
   named «Abrir Spec» and «Abrir Plan», each only from the stage F13 makes it a button on, opening the
   same document as that stage; the stages that are buttons shall wear the action colour on their ring.
   Proof: src/renderer/flow/panel.test.ts the documents read as buttons next to the change
+
+### QA en vivo (add-qa-lab, 10 nov 2026)
+
+- **F33** While the selected workspace is classified (W83), the Libretto panel shall show a «QA» section
+  with «Probar en vivo», or «Detener QA» while its QA pane lives, and its screenshots newest first —
+  asked from main as `qa.status(id)` every 3 seconds while the section shows, received as data URLs (the
+  12 newest, each at most 2 MB) — each opening large on press; for an unclassified workspace no section
+  shall show. One test holds a case per clause.
+  Proof: src/renderer/flow/qa.test.ts the qa section shows the button and the screenshots
