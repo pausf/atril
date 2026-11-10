@@ -142,6 +142,11 @@ describe('libretto panel', () => {
     expect(within(screen.getByRole('navigation', { name: 'Pantallas' })).getByRole('button', { name: /Libretto/ }).getAttribute('aria-current')).toBe('page')
     cleanup()
 
+    // One other change reads in the singular.
+    await open(['tidy-css'])
+    expect(await screen.findByText('1 cambio más en este repo')).toBeTruthy()
+    cleanup()
+
     // Nothing else to show: neither the line nor the button.
     await open([])
     expect(screen.queryByText(/cambios más en este repo/)).toBeNull()

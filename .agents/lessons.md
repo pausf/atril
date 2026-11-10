@@ -224,3 +224,12 @@ Reviewer found nothing (W97 proof and ui.ts validation re-run). The builder corr
 
 ## 2026-11-11 · package-and-sign · 6→7
 - Whether electron-builder accepts the config is unproven: nothing may be built here. Not fixed, by design: «sin probar» entry in CLAUDE.md and the checklist in bocetos/instalar.html §4.
+
+## 2026-11-11 · ask-card · 6→7
+- F35 names a singular form the code had but the proof never exercised (only 2 and 0). Fixed: a case with one other change; forced red once by asserting a wrong text.
+
+## 2026-11-11 · ask-card · 6→7
+- The reviewer could not confirm the Grafito selectors W105 parses. Checked: both exist verbatim (styles.css:142, :180). No change.
+
+## 2026-11-11 · ask-card · 6→7
+- `.quick-replies` CSS suspected dead after the card. Checked: the Pause button in Todos still uses it. No change.
