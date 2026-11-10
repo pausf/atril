@@ -113,6 +113,8 @@ function Shell() {
       if (v === 'palette') setPalette('listado')
       // ponytail: dev-only, ATRIL_SNAPSHOT_VIEW=focus turns focus mode on over the first workspace for a photo.
       if (v === 'focus') setFocusMode(true)
+      // ponytail: dev-only, ATRIL_SNAPSHOT_VIEW=overview opens «Todos» for a photo.
+      if (v === 'overview') setAll(true)
       if (v === 'start') {
         setScreen('tasks')
         // ponytail: dev-only, ATRIL_SNAPSHOT_VIEW=start opens the dialog on a fake issue so it can be photographed without Jira.
@@ -339,7 +341,7 @@ function Shell() {
                   onOpenTasks={() => setScreen('tasks')}
                 />
               )}
-              {all && <AgentsOverview workspaces={workspaces} next={next} switcher={<ViewSwitch all={all} onChange={showAll} />} />}
+              {all && <AgentsOverview workspaces={workspaces} next={next} onOpen={pick} switcher={<ViewSwitch all={all} onChange={showAll} />} />}
               {/* Hidden, not unmounted, in «Todos»: the terminal must survive. */}
               <div className="uno" hidden={all}>
                 <Workspace ws={workspaces.find((w) => w.id === selected)} switcher={<ViewSwitch all={all} onChange={showAll} />} />

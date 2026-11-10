@@ -2771,6 +2771,9 @@ button.stg.stgbtn .icon {
   gap: 6px;
   color: var(--text);
 }
+.ov-stage.none {
+  color: var(--sub);
+}
 .ov-check {
   margin-left: auto;
   color: var(--sub);

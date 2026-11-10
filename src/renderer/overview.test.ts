@@ -162,4 +162,50 @@ describe('agents overview', () => {
     await waitFor(() => expect(none.menuApi.setOverview).toHaveBeenLastCalledWith(false))
     expect(again.menuApi.setOverview).toHaveBeenLastCalledWith(true)
   })
+  it('a card opens its workspace or answers in place', async () => {
+    const user = userEvent.setup()
+    const api = mockApi({
+      ...data(),
+      quickReplies: { aaaaaaa4: { options: ['Sí', 'Rehaz el plan'], multiSelect: false }, aaaaaaa3: { options: ['a', 'b'], multiSelect: true } }
+    })
+    render(createElement(App))
+    await screen.findByText('PF-5')
+    await user.click(screen.getByRole('button', { name: 'Todos' }))
+    await waitFor(() => expect(branches()[0]).toBe('PF-4'))
+
+    // A needs-you card carries W76's replies outside its button; multiSelect and other states carry none.
+    const replies = (b: string) => within(card(b)).queryByRole('group', { name: 'Respuestas rápidas' })
+    await waitFor(() => expect(replies('PF-4')).toBeTruthy())
+    expect(card('PF-4').querySelector('.ov-main')?.contains(replies('PF-4'))).toBe(false)
+    expect(card('PF-4').querySelector('.ov-main button')).toBeNull()
+    expect(replies('PF-3')).toBeNull()
+    expect(replies('PF-2')).toBeNull()
+
+    // Answering there sends it and leaves «Todos» on screen, nothing opened.
+    await user.click(within(replies('PF-4')!).getByRole('button', { name: 'Rehaz el plan' }))
+    expect(api.statusApi.answer).toHaveBeenLastCalledWith('aaaaaaa4', { option: 1 })
+    expect(await within(card('PF-4')).findByText('Enviado')).toBeTruthy()
+    expect(overview()).toBeTruthy()
+    expect(screen.queryByRole('heading', { name: 'PF-4' })).toBeNull()
+
+    // Pressing a card opens its workspace in «Uno», without focus mode.
+    await user.click(within(card('PF-2')).getAllByRole('button')[0]!)
+    expect(overview()).toBeNull()
+    expect(await screen.findByRole('heading', { name: 'PF-2' })).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'Salir del foco' })).toBeNull()
+    expect(screen.getByRole('button', { name: 'Uno' }).getAttribute('aria-pressed')).toBe('true')
+
+    // By keyboard too.
+    await user.click(screen.getByRole('button', { name: 'Todos' }))
+    within(card('PF-5')).getAllByRole('button')[0]!.focus()
+    await user.keyboard('{Enter}')
+    expect(overview()).toBeNull()
+    expect(await screen.findByRole('heading', { name: 'PF-5' })).toBeTruthy()
+
+    // ⌘↩ (N2) opening a workspace from «Todos» shows it in «Uno».
+    await user.click(screen.getByRole('button', { name: 'Todos' }))
+    act(() => api.menu({ kind: 'next' }))
+    expect(await screen.findByRole('heading', { name: 'PF-4' })).toBeTruthy()
+    expect(overview()).toBeNull()
+  })
 })

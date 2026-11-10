@@ -7,16 +7,19 @@ import { stagesOf } from '../flow/FlowPanel'
 import { runningCount, useSubagents } from '../subagents'
 import { useT } from '../ui'
 import { Icon } from './Icon'
+import { QuickReplies } from './QuickReplies'
 
 interface Props {
   workspaces: WorkspaceView[]
   next: NextItem[]
   /** The «Uno · Todos» switch, in this view's header. */
   switcher: ReactNode
+  /** W82: shows that workspace in «Uno». */
+  onOpen: (id: string) => void
 }
 
 /** W81: «Todos», one card per workspace in place of the terminal. */
-export function AgentsOverview({ workspaces, next, switcher }: Props) {
+export function AgentsOverview({ workspaces, next, switcher, onOpen }: Props) {
   const t = useT()
   const LABEL: Record<AgentState, string> = { working: t('trabajando'), 'needs-you': t('te necesita'), stopped: t('parado') }
   const STAGES = stagesOf(t)
@@ -68,6 +71,7 @@ export function AgentsOverview({ workspaces, next, switcher }: Props) {
                   mains.current[i] = el
                 }}
                 onKeyDown={(e) => onKey(e, i)}
+                onClick={() => onOpen(w.id)}
               >
                 <span className="ov-top">
                   <span className="ov-branch">{w.branch}</span>
@@ -77,7 +81,7 @@ export function AgentsOverview({ workspaces, next, switcher }: Props) {
                 </span>
                 <span className="ov-meta">{w.repoId}</span>
                 {flow?.stage === 'sin-libretto' ? (
-                  <span className="ov-stage">{t('sin Libretto')}</span>
+                  <span className="ov-stage none">{t('sin Libretto')}</span>
                 ) : (
                   stage && (
                     <span className="ov-stage">
@@ -98,6 +102,8 @@ export function AgentsOverview({ workspaces, next, switcher }: Props) {
                 </span>
                 {running > 0 && <span className="ov-subs">{running === 1 ? t('1 subagente') : t('{n} subagentes', { n: running })}</span>}
               </button>
+              {/* Outside the card's button: answering must not open it (W82). */}
+              {state === 'needs-you' && <QuickReplies workspaceId={w.id} activityAt={act?.at} />}
             </div>
           )
         })}
