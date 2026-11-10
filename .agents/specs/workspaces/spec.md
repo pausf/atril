@@ -229,6 +229,10 @@ textos, en «Pasos» abajo. Los que tienen elemento en pantalla lo iluminan; los
 - Cuando un agente pregunta, su fila crece en una tarjeta con la pregunta entera y las respuestas numeradas; no
   choca con la fila de abajo. El panel ya no tiene «Otros cambios»: dice «{n} cambios más en este repo» y «Ver en Libretto».
 
+### Gestionar la cola (queue-manage, 10 nov 2026)
+
+- Una idea en cola se puede corregir, quitar o mandar a Jira sin abrir archivos, y cada idea enseña de qué va.
+
 ## Scope boundaries
 
 **In:** the three columns and footer of `bocetos/fase1-nucleo.html` (boceto 8), the
@@ -461,6 +465,13 @@ pulsar; textos por `t()`; teclado; una petición vacía no se encola.
 **In:** la tarjeta en Trabajo y en «Todos», la línea a Libretto.
 **Out:** responder con la tecla del número; preguntas multiSelect (siguen sin botones, W76).
 **Never scoped out:** teclado; contraste del texto sobre el tinte; textos por `t()`; colores como tokens.
+
+### Gestionar la cola (queue-manage, 10 nov 2026)
+
+**In:** editar, borrar con confirmación, pasar a Jira, la descripción de las ideas, el nuevo diseño de la pantalla.
+**Out:** que la IA proponga ideas (`agent-suggestions`); editar cambios en curso; elegir proyecto o tipo en Jira.
+**Never scoped out:** cada commit toca solo la ruta de esa idea; borrar pide confirmación; el token de Jira no sale de
+main; si Jira falla no se borra nada; teclado; textos por `t()`.
 
 ## Constraints
 
@@ -1487,6 +1498,57 @@ Textos por `t()`.
 - Q: ¿Línea o botón? → A: texto «{n} cambios más en este repo» y un botón «Ver en Libretto» (assumed). El plegado
   `flow-others` guardado se ignora (assumed).
 
+### Gestionar la cola (queue-manage, 10 nov 2026)
+
+- Solo ideas en cola, no empezadas (assumed, 11 nov).
+- Pasar a Jira = crear y borrar la idea; Jira manda (assumed, 11 nov).
+- Commits con pathspec, como W101 (assumed, 11 nov).
+
+#### Alternatives that lost
+
+| Considered | Why it lost |
+|---|---|
+| guardar la clave de Jira en el proposal y dejar la idea | `/libretto-queue`: con clave, el tracker es la fuente; dos copias se desvían |
+| borrar sin confirmar | perder una idea por un clic |
+| abrir el `proposal.md` en el editor | la idea es solo su petición; editar el archivo entero invita a romper la plantilla |
+
+#### Decision log, answers as given (2026-11-10)
+- Q: ¿Qué se edita? → A: la petición literal de una idea en cola: «Editar» cambia la fila por una caja con ese texto;
+  «Guardar» reescribe `## The ask, verbatim` (cita línea a línea) y commitea solo ese archivo como
+  `docs(queue): edit <name>`; el nombre no cambia (assumed).
+- Q: ¿Borrar? → A: «Borrar» pide confirmación en la propia fila («¿Borrar <name>?» Sí / No) y hace `git rm -r` de la
+  carpeta y un commit solo de esa ruta, `docs(queue): drop <name>` (assumed).
+- Q: ¿Solo en cola? → A: sí; una idea «Empezada» o un cambio en curso no se editan ni borran desde aquí (assumed).
+- Q: ¿Pasar a Jira? → A: «Pasar a Jira» crea una incidencia de tipo «Task» (o el primer tipo no subtarea del
+  proyecto) en el proyecto del tablero elegido en Ajustes (S-board), con resumen = primera línea de la petición
+  (máx. 255) y descripción = la petición entera; luego borra la idea como «Borrar», con
+  `docs(queue): <KEY> en Jira, <name>`, porque `/libretto-queue` dice que una clave hace del tracker la fuente de
+  verdad. La fila dice «Creada <KEY>» y la tarea aparece en Tareas (assumed).
+- Q: ¿Sin Jira conectado o sin tablero? → A: el botón no sale; si Jira falla, el error sale en la fila y la idea se
+  queda (assumed).
+- Q: ¿El texto vacío bajo la idea? → A: `queueIdea` escribe en `## Reading` la primera línea de la petición, y la
+  lectura usa la primera línea de la petición cuando `## Reading` está vacío (ideas ya escritas) (assumed).
+
+- Q: ¿«En cola» para editar/borrar/Jira? → A: línea `Queued:` y sin rama `feat/<name>`; una idea empezada se rechaza
+  (assumed).
+- Q: ¿«Primera línea»? → A: el texto sin el `> ` de la cita (assumed). W101 y W100 se enmiendan aquí, no hay W109.
+- Q: ¿Nombre que llega por IPC? → A: el mismo `SAFE_NAME` sin `..` que `startQueued`; si no vale, error y nada se toca
+  (assumed).
+- Q: ¿Archivos sin seguir en la carpeta? → A: `git rm -r` y luego `rm -rf` de la carpeta; el commit sigue llevando solo
+  esa ruta (assumed).
+- Q: ¿Credenciales y tablero? → A: main pasa `savedJira()` y el tablero guardado (lo que da `JiraSettingsStatus.board`)
+  a `ideaToJira`; el renderer enseña «Pasar a Jira» si `atril:settings:jira` (o el IPC que ya da ese estado) devuelve
+  `saved` y `board` (assumed).
+- Q: ¿Jira crea y el borrado falla? → A: se devuelve `{ key, error }`; la fila dice «Creada {KEY}» y el error, y deja
+  de ofrecer «Pasar a Jira» mientras la pantalla siga abierta (assumed). Ceiling: al volver a la pantalla, el botón
+  vuelve; si molesta, escribir `Tracker: <KEY>` en la idea.
+- Q: ¿Mientras espera? → A: los botones de esa fila se desactivan hasta la respuesta (assumed).
+- Q: ¿Teclado? → A: todo son botones; al pedir confirmación el foco va a «No» (assumed).
+- Q: ¿Diseño de la pantalla (Pau: «más orgánico lo de ver los repos»)? → A: el del boceto 10: tarjetas de repo con
+  sus cuentas en lugar del desplegable, una línea «Apunta una idea…» que crece arriba, «En cola N» y «En curso N», la
+  fecha dentro de la línea de la idea y las acciones en gris siempre visibles; columna de 760 px como máximo
+  (assumed).
+
 ## Task breakdown
 
 - App shell: Electron main, preload bridge, renderer with sidebar / centre / right panel /
@@ -2098,19 +2160,20 @@ Textos por `t()`.
 
 ### Libretto (libretto-view, 10 nov 2026)
 
-- **W100** When Atril reads a repo's Libretto state, it shall return as the queue the folders under `.agents/changes/`
-  whose `proposal.md` holds a line `Queued: YYYY-MM-DD` before its first `## ` heading, oldest first then by name, each
-  with name, date, the first non-blank line under `## Reading`, and `started: true` when a local branch
+- **W100** When Atril reads a repo's Libretto state, it shall return as the queue the folders under
+  `.agents/changes/` whose `proposal.md` holds a line `Queued: YYYY-MM-DD` before its first `## ` heading, oldest
+  first then by name, each with name, date, the first non-blank line under `## Reading` — or, when that section is
+  empty, the first line of `## The ask, verbatim` without its `> ` — its whole request without the `> ` as `ask`, and `started: true` when a local branch
   `feat/<name>` exists; and every other folder as in flight with name and `readChecklist`'s closed, total and first
   open box (or none); and if the repo has no `.agents/changes/`, then it shall return `{ none: true }`.
   Proof: src/main/libretto.test.ts a repo's queue and work in flight are read from disk
-- **W101** When the person queues an idea, Atril shall write `.agents/changes/<name>/proposal.md` with `# <name>`,
-  `Tracker: none`, `Queued: <local date>`, `## The ask, verbatim` with every line of the text quoted, and `## Reading`,
-  the name taken from the text's first line (lowercase, accents stripped, non-alphanumerics to one dash, no edge
-  dashes, at most 40 characters including a `-2`… suffix when taken, `idea` when empty), and commit only that file as
-  `docs(queue): capture <name>`, leaving every other change in the repo uncommitted; if the text is blank or the repo
-  has no `.agents/changes/`, then it shall write nothing; if the commit fails, then it shall remove the folder and
-  return the error.
+- **W101** When the person queues an idea, Atril shall write `.agents/changes/<name>/proposal.md` with
+  `# <name>`, `Tracker: none`, `Queued: <local date>`, `## The ask, verbatim` with every line of the text quoted, and
+  `## Reading` holding the text's first line, the name taken from that line (lowercase, accents stripped,
+  non-alphanumerics to one dash, no edge dashes, at most 40 characters including a `-2`… suffix when taken, `idea`
+  when empty), and commit only that file as `docs(queue): capture <name>`, leaving every other change in the repo
+  uncommitted; if the text is blank or the repo has no `.agents/changes/`, then it shall write nothing; if the commit
+  fails, then it shall remove the folder and return the error.
   Proof: src/main/libretto.test.ts queueing an idea writes and commits only its proposal
 - **W102** When the person starts a queued idea, Atril shall open a workspace in that repo on branch `feat/<name>`,
   remove the `Queued:` line from that workspace's `proposal.md` and commit it there as `docs(queue): start <name>`,
@@ -2132,3 +2195,32 @@ Textos por `t()`.
 - **W105** The question text and the enabled answer labels shall keep a contrast of at least 4.5:1 over `--ask-bg`
   in each of the original light, original dark, Grafito light and Grafito dark token sets.
   Proof: src/renderer/quickreplies.test.ts the question card reads in every theme
+
+### Gestionar la cola (queue-manage, 10 nov 2026)
+
+- **W106** When the person saves an edited idea, Atril shall rewrite only its `## The ask, verbatim` section with
+  every line of the new text quoted, keep its name and `Queued:` line, and commit only that file as
+  `docs(queue): edit <name>`, leaving every other change uncommitted; if the text is blank, the name is unsafe, or the
+  idea has no `Queued:` line or already has its `feat/<name>` branch, then it shall write nothing and return an error.
+  Proof: src/main/libretto.test.ts editing a queued idea commits only its proposal
+- **W107** When the person confirms deleting a queued idea, Atril shall remove its folder (tracked and untracked
+  files) and commit only that path as `docs(queue): drop <name>`, leaving every other change uncommitted; if the name
+  is unsafe, or the idea has no `Queued:` line or already has its branch, then it shall remove nothing and return an
+  error.
+  Proof: src/main/libretto.test.ts deleting a queued idea commits only its removal
+- **W108** When the person sends a queued idea to Jira with saved credentials and a board, Atril shall create one
+  issue in that board's project with type «Task», or the first type whose `subtask` is false when the project has no
+  «Task», summary the request's first line cut to 255 characters and description the whole request, then remove the
+  idea as W107 with the message `docs(queue): <KEY> en Jira, <name>` and return the key; if Jira answers an error,
+  then it shall remove nothing and return the error; if the removal fails after the issue exists, then it shall
+  return both the key and the error. One test holds a case per clause.
+  Proof: src/main/libretto.test.ts sending an idea to Jira creates one issue and drops the idea
+- **W110** Each queued, not started idea in the Libretto screen shall offer «Editar» (a text box with its request,
+  «Guardar» and «Cancelar»), «Borrar» (asking «¿Borrar {name}?» with «Sí» and «No» in the row, focus on «No») and,
+  while Jira is saved with a board, «Pasar a Jira» (then «Creada {KEY}», and no second «Pasar a Jira» for it); that
+  row's buttons shall be disabled while its request is pending; an error shall show in the row and keep the idea.
+  Proof: src/renderer/libretto.test.ts a queued idea can be edited, deleted or sent to Jira
+- **W111** The Libretto screen shall show the registered repos as buttons with their counts («{q} en cola · {f} en
+  curso», «sin Libretto»), the picked one pressed, instead of a select; a one-line «Apunta una idea…» box with
+  «Encolar» above the queue; and «En cola» and «En curso» with their counts.
+  Proof: src/renderer/libretto.test.ts the Libretto screen shows each repo with its counts
