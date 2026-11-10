@@ -32,7 +32,7 @@ export function WorkspaceList({ workspaces, selected, onSelect, onRemove }: Prop
           <button type="button" className="ws-row" aria-pressed={selected === w.id} onClick={() => onSelect(w.id)}>
             <span className="ws-branch">{w.branch}</span>
             <span className="ws-meta">
-              {w.repoId} · {w.agent}
+              {w.repoId} · {w.mode === 'review' ? `${t('Revisión')} · ` : ''}{w.agent}
               {w.model && w.model !== 'default' && ` · ${w.model}`}
               {w.auto === true && (
                 <>

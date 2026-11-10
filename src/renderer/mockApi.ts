@@ -71,7 +71,7 @@ interface Options {
   drafts?: Record<string, MrDrafts>
   /** What mr.review answers per URL (stored unless it is an error); missing means no findings. */
   review?: Record<string, MrDraftsResult>
-  /** What mr.workFor answers per URL; missing means review. */
+  /** What mr.workFor answers per URL; missing means no registered repo. */
   work?: Record<string, MrWork>
   /** What mr.openWork answers per URL; missing means a new live workspace on branch «mr». */
   openWork?: Record<string, WorkspaceResult>
@@ -94,6 +94,7 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
   const flowListeners = new Set<(id: string, stage: FlowStage) => void>()
   const scoreListeners = new Set<(url: string, state: MrScoreState) => void>()
   const drafts = new Map(Object.entries(o.drafts ?? {}))
+  const opened: WorkspaceView[] = []
   const changeDrafts = (url: string, f: (d: MrDraft[]) => MrDraft[]): MrDraftsResult => {
     const next: MrDrafts = { ...(drafts.get(url) ?? { stale: false, canSend: false, drafts: [] }), drafts: [] }
     next.drafts = f(drafts.get(url)?.drafts ?? [])
@@ -132,7 +133,7 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
     doctor: async () => o.doctor ?? [],
     installTool: async () => ({ ok: true }),
     workspaces: {
-      list: async () => o.workspaces ?? [],
+      list: async () => [...(o.workspaces ?? []), ...opened],
       open: vi.fn(async (_repo: string, branch: string): Promise<WorkspaceResult> => ({ workspace: workspace('own00001', branch) }))
     },
     repos: {
@@ -182,8 +183,12 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
       discardDraft: vi.fn(async (url: string, id: string) => changeDrafts(url, (ds) => ds.filter((d) => d.id !== id))),
       ciAgent: vi.fn(async (url: string): Promise<string | null> => o.ciAgents?.[url] ?? null),
       fixCi: vi.fn(async (url: string): Promise<MrFixCiResult> => (o.ciAgents?.[url] ? { sent: o.ciAgents[url]! } : { error: 'No hay un único trabajo de esta MR abierto en Atril.' })),
-      workFor: vi.fn(async (url: string): Promise<MrWork> => o.work?.[url] ?? { kind: 'review' }),
-      openWork: vi.fn(async (url: string): Promise<WorkspaceResult> => o.openWork?.[url] ?? { workspace: workspace('mr', 'mr') })
+      workFor: vi.fn(async (url: string): Promise<MrWork> => o.work?.[url] ?? { kind: 'none', reason: 'Añade el repo en Ajustes' }),
+      openWork: vi.fn(async (url: string): Promise<WorkspaceResult> => {
+        const r = o.openWork?.[url] ?? { workspace: workspace('mr', 'mr') }
+        if ('workspace' in r) opened.push(r.workspace)
+        return r
+      })
     },
     avisos: {
       list: vi.fn(async () => avisos),

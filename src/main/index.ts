@@ -316,7 +316,10 @@ app.whenReady().then(async () => {
   })
   let latestMrs = new Map<string, MrEntry>()
   const openMr = createOpenMr({ latest: (url) => latestMrs.get(url), run })
-  ipcMain.handle('atril:mr:workFor', (_e, url: unknown) => openMr.workFor(typeof url === 'string' ? url : ''))
+  ipcMain.handle('atril:mr:workFor', (_e, url: unknown) =>
+    // ponytail: dev-only, the mr-lens photo shows «Seguir en Atril» without a registered repo.
+    SNAPSHOT && process.env['ATRIL_SNAPSHOT_VIEW'] === 'mr-lens' ? { kind: 'continue' } : openMr.workFor(typeof url === 'string' ? url : '')
+  )
   ipcMain.handle('atril:mr:openWork', (_e, url: unknown) => openMr.open(url).finally(() => void pushNext()))
   ipcMain.handle('atril:mr:list', async () => {
     // ponytail: dev-only, ATRIL_SNAPSHOT_VIEW=mr|avisos|palette photographs believable lists without any forge.

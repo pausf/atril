@@ -1700,6 +1700,15 @@ kbd {
 .mrmodal .tag.your-turn {
   color: var(--ed-17);
 }
+.mr-open {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.mr-open .btn {
+  white-space: nowrap;
+}
 .mr-lens {
   border: 1px solid var(--ed-7);
   border-radius: 10px;

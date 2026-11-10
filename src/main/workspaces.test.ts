@@ -222,7 +222,8 @@ describe('workspaces', () => {
     expect(calls.some((c) => c.includes('fetch'))).toBe(false)
     expect(git(repo, 'branch', '--show-current').trim()).toBe(before)
     expect((await readRecords()).map((r) => r.branch)).toEqual(['feat/remote', 'feat/both'])
-  })
+    // ponytail: ~7 s alone (two worktrees, two tmux sessions, a push per branch); timed out at 20 s once in a full run.
+  }, 40_000)
 
   it('a review session never touches git', async () => {
     // Read-only plumbing is all a review session may run; anything else could move a ref, the index or the files.

@@ -312,7 +312,15 @@ function Shell() {
 
   return (
     <div className="win">
-      <NavigationContext.Provider value={{ openSettings: () => setScreen('settings') }}>
+      <NavigationContext.Provider
+        value={{
+          openSettings: () => setScreen('settings'),
+          openWorkspace: (id) => void window.atril.workspaces.list().then((list) => {
+            setWorkspaces(list)
+            openWorkspace(id)
+          })
+        }}
+      >
         <TopBar problems={problems} screen={screen} />
         <div className="shell">
           <Rail screen={screen} onChange={go} reviews={mrs.result?.review.length ?? 0} unread={avisos.unread} />

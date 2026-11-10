@@ -5,6 +5,7 @@ import { useModalKeys } from '../flow/modalKeys'
 import { useT } from '../ui'
 import { FixCi } from './FixCi'
 import { LensDrafts } from './LensDrafts'
+import { OpenInAtril } from './OpenInAtril'
 
 const NAME: Record<ForgeId, string> = { github: 'GitHub', gitlab: 'GitLab' }
 
@@ -54,6 +55,7 @@ export function MrView({ m, reviewable, onClose }: { m: MrItem; reviewable: bool
           <h3 id="mr-title">{m.title}</h3>
           <span className="docchange">{m.project}</span>
           <FixCi m={m} />
+          <OpenInAtril m={m} />
           {data && 'threads' in data && <span className="tag">{t('Te toca responder: {n}', { n: threads.filter((x) => x.yourTurn).length })}</span>}
           <span className="sp" />
           <button type="button" className="linklike" onClick={() => void window.atril.mr.open(m.url)}>
