@@ -158,3 +158,9 @@ The builder's first full gate went red with 3 failures, one seen: `src/main/work
 
 ## 2026-11-10 · add-doctor-install-terminal · 7
 Adding a `snapshotView()` call to DoctorChip broke three tests whose hand-built `window.atril` lacked it. Fixed in the test mock, not with optional chaining in the app. Lesson: a component that gains a new `window.atril` call must be checked against tests that mock the bridge by hand (`rg "window.atril = "`).
+
+## 2026-11-10 · fit-flow-panel · 6→7
+Reviewer found nothing against the contract (4 proofs re-run, green). Noted Fold.tsx gained role="region" for every fold in the app, outside the approach's file list; kept.
+
+## 2026-11-10 · fit-flow-panel · 6
+The contract aimed at 1080 px; Pau's window is ~900 px (his screenshots: 2880×1768 at 2x) and the first build still scrolled there. Lesson: take the target size from the person's own screenshots, not from a round number, and look at the photo at that size before the review.

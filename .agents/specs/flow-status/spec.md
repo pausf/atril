@@ -38,6 +38,17 @@ Governs: src/main/flow/** src/renderer/flow/**
 Cada subagente del panel se pulsa y abre su registro como una terminal de solo lectura, en vivo
 mientras trabaja.
 
+### Panel sin scroll (fit-flow-panel, 10 nov 2026)
+
+- Las seis etapas ocupan una sola fila: iconos unidos por una línea; la actual lleva su nombre debajo;
+  las demás lo dicen al pasar el ratón y a un lector de pantalla. Spec, Plan y Construir siguen
+  abriendo lo suyo como hoy (F13, F20).
+- Checklist, Cambios, Otros cambios y Subagentes se pliegan pulsando su título, con su cuenta a la
+  vista; Atril recuerda cómo los dejaste; Otros cambios empieza plegado.
+- Cambios enseña como mucho 8 archivos; con más, «+N más» abre el diff del noveno.
+- Un trabajo normal (3/7, 12 archivos, 3 subagentes) cabe en el panel sin scroll en una ventana de
+  900 px de alto, la de Pau (sus capturas: 2880×1768 a 2x).
+
 ## Scope boundaries
 
 **In:** reading `.agents/changes/*/` in a workspace and deriving the stage.
@@ -80,6 +91,17 @@ subagente, pararlo, buscar en el registro, colores por herramienta.
 
 **Never scoped out:** teclado (foco, Tab dentro, Esc), el contenido como texto.
 
+### Panel sin scroll (fit-flow-panel, 10 nov 2026)
+
+**In:** la fila de etapas, las cuatro secciones plegables, el tope de Cambios, quitar la frase de cabecera.
+
+**Out:** los diseños Zen, Partitura, Río, Programa y Esfera (quedan en `bocetos/fase2-nucleo.html`); un
+ajuste para elegir diseño; la pestaña Actividad; el modal del subagente.
+
+**Never scoped out:** cada etapa conserva su nombre y su estado como texto accesible (W22); las secciones
+se pliegan con teclado; nada que hoy se pueda abrir deja de poderse abrir: como mucho queda a un clic
+(desplegar su sección).
+
 ## Constraints
 
 - Libretto's layout and checklist rule exactly as `find-work` defines them: the checklist is
@@ -112,6 +134,12 @@ subagente, pararlo, buscar en el registro, colores por herramienta.
 ### Detalle del subagente (add-subagent-detail, 10 nov 2026)
 
 Reutiliza `useModalKeys` y las clases `modal`/`dlg edmodal`; monoespaciado con los tokens de la terminal.
+
+### Panel sin scroll (fit-flow-panel, 10 nov 2026)
+
+- `FoldSection` y `useFolded` existentes; ids de sección estables para recordar el estado.
+- Textos por `t()` con su inglés; colores solo como tokens.
+- `a11y.test.ts` ya exige que cada `.stg` lleve hecho/ahora/pendiente como texto.
 
 ## Prior decisions
 
@@ -200,6 +228,44 @@ Reutiliza `useModalKeys` y las clases `modal`/`dlg edmodal`; monoespaciado con l
 - F27 cambia solo en que cada fila es un botón: va como `(amended)` (assumed).
 - Al llegar `endedAt` se pide el registro una última vez; si la entrada desaparece (W64), el modal se cierra; un subagente sin archivo todavía dice «Sin registro de este subagente» igual que uno sin ruta (assumed).
 - Sondeo de 1 s solo con el modal abierto y el subagente sin `endedAt` (assumed).
+
+### Panel sin scroll (fit-flow-panel, 10 nov 2026)
+
+- Diseño 0 elegido por Pau entre seis en `bocetos/fase2-nucleo.html` (10 nov).
+- Una sola vista, sin ajuste para cambiarla: Pau, «probar en el boceto», y luego eligió el 0 (10 nov).
+- 8 archivos como tope de Cambios (assumed, 10 nov): con más, el diff modal ya lista todos.
+
+#### Alternatives that lost
+
+| Considered | Why it lost |
+|---|---|
+| Diseños 1–5 de `fase2-nucleo.html` | Pau eligió el 0. |
+| Un componente `Stepper` aparte | Lo usaría una sola vista; es CSS sobre lo que ya hay. |
+| Scroll interno solo en Cambios | Sigue escondiendo cosas; el tope con «+N más» lo dice. |
+
+#### Decision log, answers as given (2026-11-10)
+- Q: ¿Qué diseño? → A: «nada queda con el 0 · Acordado es el que me gusta … implementa con ese».
+- Q: ¿La frase «Dónde va cada trabajo, leído de sus archivos.»? → A: se va: el panel lo dice por sí
+  mismo y son dos líneas (assumed).
+- Q: ¿Cuenta de cada sección plegada? → A: Checklist «3/7», Cambios y Otros cambios su número,
+  Subagentes su número de entradas (assumed).
+- Q: ¿Qué abre «+N más»? → A: el modal del diff en el noveno archivo, con todos en su lista (assumed).
+- Q: (fase 5) ¿Cómo? → A: reutilizar `FoldSection` (ya recuerda su estado) y CSS para la fila de
+  etapas; sin componentes nuevos salvo los que salgan solos (assumed). Perdió: un componente de
+  «stepper» genérico (una sola vista lo usa).
+
+- Q: (revisor de spec) Holguras → A, todas (assumed):
+  - F20 se enmienda: Cambios lista según F31 y el total suma todos los archivos.
+  - Construir hecho botón lleva como texto «Construir · ver N archivos», en lugar de su estado.
+  - La cuenta del Checklist es una cadena nueva, «{closed}/{total}», y `FoldSection.count` acepta texto.
+  - Checklist, Cambios y Subagentes empiezan abiertos.
+  - «Recordado» se prueba desmontando y volviendo a montar.
+  - Lo plegado queda a un clic: abrir la sección.
+  - La frase de cabecera desaparece (F29).
+  - Que no haga falta scroll no lo puede probar jsdom: se ve en la foto, y está nombrado como techo.
+
+- Q: (foto) A 900 px Subagentes quedaba cortado → A: filas de Cambios en una línea, «Leído de» al
+  `title` de «Ver checklist», que pasa a enlace junto a Siguiente; objetivo 900 px, no 1080 (assumed).
 
 ## Task breakdown
 
@@ -293,9 +359,9 @@ Aterrizado**.
   shall count an untracked symbolic link as one line without opening its target.
   Proof: src/main/flow/changes.test.ts names are literal and links are not followed
 - **F20** While the stage is Construir, Terminado or Aterrizado and the list is not empty, the
-  Libretto panel shall show «Cambios» with each file's status and +/− counts, the total of added
-  plus removed lines, and Construir as a button reading «ver N archivos»; at earlier stages
-  Construir shall not be a button and no «Cambios» section shall appear.
+  Libretto panel shall show «Cambios» with its files' status and +/− counts as F31 lists them, the
+  total of added plus removed lines over every file, and Construir as a button reading «ver N
+  archivos»; at earlier stages Construir shall not be a button and no «Cambios» section shall appear.
   Proof: src/renderer/flow/changes.test.ts changes show from construir on
 - **F21** When the person clicks Construir or a file in Cambios, Atril shall open a read-only modal
   with the changed files listed and the chosen file's diff — a snapshot with its time and an
@@ -340,3 +406,23 @@ Aterrizado**.
   close; Escape or «Cerrar» shall close it and return focus to the row. The proof drives the polling with
   fake timers.
   Proof: src/renderer/flow/subagents.test.ts a subagent opens as a terminal
+
+### Panel sin scroll (fit-flow-panel, 10 nov 2026)
+
+- **F29** The Libretto panel shall show its six stages in one row, each with its icon and, as its text,
+  its name and its state («hecho», «ahora» or «pendiente»), where only the current stage's name is
+  visible and the others' text is visually hidden — except Construir while F20 makes it a button, whose
+  text is «Construir · ver {n} archivos»; the stages F13 and F20 make buttons stay buttons with the same
+  actions; no lead sentence shall sit above the stages. Ceiling: the single row is layout, seen on the
+  photo, not in jsdom.
+  Proof: src/renderer/flow/panel.test.ts stages sit in one row and keep their names
+- **F30** Checklist, Cambios, Otros cambios and Subagentes shall each be a section whose title is a
+  button with `aria-expanded` that folds and unfolds it, showing its count while folded — Checklist
+  «{closed}/{total}», Cambios and Otros cambios their number, Subagentes its number of entries — and
+  keeping its folded state per section when the panel is mounted again; Otros cambios shall start
+  folded and the other three open. One test holds a case per clause.
+  Proof: src/renderer/flow/panel.test.ts the panel sections fold and remember
+- **F31** While the change list holds more than 8 files, «Cambios» shall list the first 8 in list order
+  and a «+{n} más» button that opens F21's modal on the ninth file; the line total (F20, F25) shall
+  still add up every file.
+  Proof: src/renderer/flow/changes.test.ts cambios shows eight and opens the rest

@@ -7,11 +7,11 @@ con agentes de Claude Code en tmux, y gestiona MRs de GitHub/GitLab. Remoto PRIV
 ## Dónde lo dejamos (10 nov 2026) — empieza por aquí
 
 Las ramas van apiladas: cada una sale de la anterior y `main` no se ha movido. La última es
-**`add-doctor-install-terminal`**, aterrizada y subida el 10 nov (botón Instalar en el doctor).
+**`fit-flow-panel`**, aterrizada y subida el 10 nov (panel de Libretto sin scroll a 900 px).
 
-1. Hechos el 10 nov: `add-subagents-view`, `add-subagent-detail` y `add-doctor-install-terminal`.
-   En curso fuera del flujo: `bocetos/fase2-nucleo.html`, 5 diseños alternativos del panel de Libretto (solo boceto).
-2. Cola en `.agents/changes/` por `Queued:`: `fit-flow-panel` (siguiente, diseño acordado en su proposal), y `expand-tour` (tutorial más extenso, Pau lo ve corto). Deuda: los tests de tmux se cuelgan de vez en cuando con carga (ver lessons).
+1. Hechos el 10 nov: `add-subagents-view`, `add-subagent-detail` `add-doctor-install-terminal`, `restyle-mode-picker` y `fit-flow-panel`.
+   Bocetos fase 2: `bocetos/fase2-nucleo.html` (6 diseños del panel; Pau eligió el 0) y `bocetos/fase2-app.html` (4 identidades visuales, en curso).
+2. Cola en `.agents/changes/` por `Queued:`: `expand-tour` (tutorial más extenso, Pau lo ve corto) y `redesign-connections` (Ajustes: conexiones). Deuda: los tests de tmux se cuelgan de vez en cuando con carga (ver lessons).
 3. Después, la lista de mejoras que se le dio a Pau el 9 nov. Ve una por una con el flujo Libretto:
    - Estado de la CI en la fila de la MR, y «Arreglar CI con Claude».
    - Abrir un trabajo desde una MR.
