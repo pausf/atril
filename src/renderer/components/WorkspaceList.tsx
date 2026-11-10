@@ -1,9 +1,10 @@
-import { useT } from '../ui'
+import { useLocale, useT } from '../ui'
 import { Icon } from './Icon'
 import { useState } from 'react'
 import type { AgentState, WorkspaceView } from '../../preload/api'
 import { stateOf, useAgentStates, useLatestActivity } from '../agents'
 import { runningCount, useSubagents } from '../subagents'
+import { costText, useCosts } from '../cost'
 import { localiseActivity } from '../../preload/activity-i18n'
 import { QuickReplies } from './QuickReplies'
 
@@ -21,6 +22,8 @@ export function WorkspaceList({ workspaces, selected, onSelect, onRemove }: Prop
   const states = useAgentStates()
   const subs = useSubagents(workspaces.map((w) => w.id))
   const latest = useLatestActivity()
+  const locale = useLocale()
+  const costs = useCosts(workspaces.map((w) => w.id))
 
   if (workspaces.length === 0) {
     return <div className="empty">{t('Aquí verás cada trabajo con su estado. Crea uno con «＋ Nuevo trabajo», arriba.')}</div>
@@ -29,7 +32,7 @@ export function WorkspaceList({ workspaces, selected, onSelect, onRemove }: Prop
     <div className="ws-list">
       {workspaces.map((w) => (
         <div className="ws-item" key={w.id}>
-          <button type="button" className="ws-row" aria-pressed={selected === w.id} onClick={() => onSelect(w.id)}>
+          <button type="button" className="ws-row" aria-pressed={selected === w.id} onClick={() => onSelect(w.id)} title={costText(t, locale, costs[w.id]) ?? undefined}>
             <span className="ws-branch">{w.branch}</span>
             <span className="ws-meta">
               {w.repoId} · {w.mode === 'review' ? `${t('Revisión')} · ` : ''}{w.agent}

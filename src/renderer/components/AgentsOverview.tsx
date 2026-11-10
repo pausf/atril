@@ -5,7 +5,8 @@ import { overviewOrder, stateOf, useAgentStates, useFlows, useLatestActivity } f
 import { ago } from '../flow/ActivityFeed'
 import { stagesOf } from '../flow/FlowPanel'
 import { runningCount, useSubagents } from '../subagents'
-import { useT } from '../ui'
+import { costText, useCosts } from '../cost'
+import { useLocale, useT } from '../ui'
 import { Icon } from './Icon'
 import { QuickReplies } from './QuickReplies'
 
@@ -28,6 +29,8 @@ export function AgentsOverview({ workspaces, next, switcher, onOpen }: Props) {
   const latest = useLatestActivity()
   const subs = useSubagents(ids)
   const flows = useFlows(ids)
+  const costs = useCosts(ids)
+  const locale = useLocale()
   const [now, setNow] = useState(Date.now())
   const mains = useRef<Array<HTMLButtonElement | null>>([])
 
@@ -62,6 +65,7 @@ export function AgentsOverview({ workspaces, next, switcher, onOpen }: Props) {
           const stage = STAGES.find((s) => s.name === flow?.stage)
           const act = latest[w.id]
           const running = runningCount(subs[w.id])
+          const cost = costText(t, locale, costs[w.id])
           return (
             <div className={`ov-card ${state}`} key={w.id}>
               <button
@@ -100,6 +104,7 @@ export function AgentsOverview({ workspaces, next, switcher, onOpen }: Props) {
                     <span className="ov-act-text">{t('sin actividad')}</span>
                   )}
                 </span>
+                {cost && <span className="ov-cost">{cost}</span>}
                 {running > 0 && <span className="ov-subs">{running === 1 ? t('1 subagente') : t('{n} subagentes', { n: running })}</span>}
               </button>
               {/* Outside the card's button: answering must not open it (W82). */}

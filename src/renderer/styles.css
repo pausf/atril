@@ -2773,6 +2773,7 @@ button.stg.stgbtn .icon {
 .ov-meta,
 .ov-stage,
 .ov-act,
+.ov-cost,
 .ov-subs {
   font-size: 12px;
   color: var(--sub);
@@ -2808,6 +2809,10 @@ button.stg.stgbtn .icon {
 }
 .ov-subs {
   color: var(--run-text);
+}
+.ov-cost,
+.fcost {
+  font-variant-numeric: tabular-nums;
 }
 .ov-card .quick-replies {
   margin: 0;

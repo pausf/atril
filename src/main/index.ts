@@ -2,6 +2,7 @@ import { app, BrowserWindow, dialog, ipcMain, Notification, safeStorage, shell }
 import { MODELS, writeHooksFile } from './agent'
 import { createActivity } from './activity'
 import { createSubagents } from './subagents'
+import { createCost } from './cost'
 import { launchQa, qaStatus, stopQa } from './qa'
 import { createAvisos } from './avisos'
 import { agentState, answerAgent, createStatus, pauseAgent, replyGone, replyPlaceholder, replyToAgent, resumeAgent, quickReplies } from './status'
@@ -628,6 +629,11 @@ app.whenReady().then(async () => {
   ipcMain.handle('atril:subagents:get', (_e, id: string) => (fakeSubs ? fakeSubagents() : subagents.get(String(id))))
   ipcMain.handle('atril:subagents:log', (_e, id: string, agentId: string) => (fakeSubs ? fakeSubagentLog() : subagents.log(String(id), String(agentId))))
   void subagents.start()
+  const cost = createCost({
+    emit: (id, c) => BrowserWindow.getAllWindows().forEach((w) => w.webContents.send('atril:cost:changed', id, c))
+  })
+  ipcMain.handle('atril:cost:get', (_e, id: unknown) => cost.get(String(id)))
+  cost.start()
   ipcMain.handle('atril:status:list', () => status.states())
   ipcMain.handle('atril:status:quickReplies', async (_e, id: unknown) => {
     const ws = (await listWorkspaces(run)).find((w) => w.id === id)

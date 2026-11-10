@@ -477,7 +477,14 @@ export interface WorkCost {
   unpriced: string[]
 }
 
-export type QaKind ='expo' | 'react-native' | 'flutter' | 'android' | 'ios' | 'web'
+export interface CostApi {
+  /** Null when the hook has not said where the workspace's transcript is. */
+  get(workspaceId: string): Promise<WorkCost | null>
+  /** Main reads at most every 30 s and pushes only a changed total. Returns the unsubscribe function. */
+  onChange(cb: (workspaceId: string, cost: WorkCost | null) => void): () => void
+}
+
+export type QaKind = 'expo' | 'react-native' | 'flutter' | 'android' | 'ios' | 'web'
 
 /** One screenshot of a QA run: `src` is a data URL, so the window never opens a local file. */
 export interface QaShot {
@@ -639,6 +646,7 @@ export interface AtrilApi {
   nextup: NextUpApi
   activity: ActivityApi
   subagents: SubagentsApi
+  cost: CostApi
   qa: QaApi
   doctor(): Promise<DoctorReport>
   installTool(tool: string): Promise<{ ok: true } | { error: string }>

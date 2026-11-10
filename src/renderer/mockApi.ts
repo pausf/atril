@@ -1,5 +1,5 @@
 import { vi } from 'vitest'
-import type { ActivityLine, SubagentEntry, SubagentLine, AddRepoResult, Aviso, FileChange, FlowDocs, ForgeId, ForgeStatus, Mode, MrDraft, MrDrafts, MrDraftsResult, MrFixCiResult, MrLists, MrReply, MrScoreState, MrThreads, MrWork, AgentState, QaResult, QaStatus, AtrilApi, QuickAnswer, QuickReplies, FlowStage, JiraIssue, MenuAction, NextItem, StartProposalResult, StartRequest, StartResult, RepoView, ToolReport, UiState, WorkspaceResult, WorkspaceView } from '../preload/api'
+import type { ActivityLine, SubagentEntry, SubagentLine, AddRepoResult, Aviso, FileChange, FlowDocs, ForgeId, ForgeStatus, Mode, MrDraft, MrDrafts, MrDraftsResult, MrFixCiResult, MrLists, MrReply, MrScoreState, MrThreads, MrWork, AgentState, QaResult, QaStatus, AtrilApi, QuickAnswer, QuickReplies, FlowStage, JiraIssue, MenuAction, NextItem, StartProposalResult, StartRequest, StartResult, RepoView, ToolReport, UiState, WorkCost, WorkspaceResult, WorkspaceView } from '../preload/api'
 
 export const workspace = (id: string, branch: string, alive = true): WorkspaceView => ({
   id,
@@ -55,6 +55,8 @@ interface Options {
   answer?: QuickAnswer
   /** Subagent entries per workspace id. */
   subagents?: Record<string, SubagentEntry[]>
+  /** What cost.get answers per workspace id; missing means no transcript. */
+  costs?: Record<string, WorkCost | null>
   /** What qa.status answers per workspace id; missing means an unclassified project. */
   qa?: Record<string, QaStatus | null>
   /** What qa.launch answers; by default it succeeds and the QA pane lives. */
@@ -91,6 +93,7 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
   const stateListeners = new Set<(id: string, state: AgentState) => void>()
   const activityListeners = new Set<(id: string, lines: ActivityLine[]) => void>()
   const subagentListeners = new Set<(id: string, entries: SubagentEntry[]) => void>()
+  const costListeners = new Set<(id: string, cost: WorkCost | null) => void>()
   const flowListeners = new Set<(id: string, stage: FlowStage) => void>()
   const scoreListeners = new Set<(url: string, state: MrScoreState) => void>()
   const drafts = new Map(Object.entries(o.drafts ?? {}))
@@ -241,6 +244,13 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
         return () => subagentListeners.delete(cb)
       }
     },
+    cost: {
+      get: async (id: string) => o.costs?.[id] ?? null,
+      onChange: (cb: (id: string, cost: WorkCost | null) => void) => {
+        costListeners.add(cb)
+        return () => costListeners.delete(cb)
+      }
+    },
     qa: {
       status: vi.fn(async (id: string) => qa.get(id) ?? null),
       launch: vi.fn(async (id: string): Promise<QaResult> => {
@@ -281,6 +291,7 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
     pushState: (id: string, state: AgentState) => stateListeners.forEach((cb) => cb(id, state)),
     pushActivity: (id: string, lines: ActivityLine[]) => activityListeners.forEach((cb) => cb(id, lines)),
     pushSubagents: (id: string, entries: SubagentEntry[]) => subagentListeners.forEach((cb) => cb(id, entries)),
+    pushCost: (id: string, cost: WorkCost | null) => costListeners.forEach((cb) => cb(id, cost)),
     pushFlow: (id: string, stage: FlowStage) => flowListeners.forEach((cb) => cb(id, stage)),
     pushScore: (url: string, state: MrScoreState) => scoreListeners.forEach((cb) => cb(url, state))
   }
