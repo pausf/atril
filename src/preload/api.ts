@@ -335,6 +335,7 @@ export interface MrDrafts {
   canSend: boolean
 }
 export type MrDraftsResult = MrDrafts | { error: string }
+export type MrFixCiResult = { sent: string } | { error: string }
 
 export interface MrApi {
   list(): Promise<MrLists>
@@ -357,6 +358,10 @@ export interface MrApi {
   publishDraft(url: string, id: string): Promise<MrDraftsResult>
   /** Types an open draft into the one agent on the MR's branch (M28). */
   sendDraft(url: string, id: string): Promise<MrDraftsResult>
+  /** M31: the branch of the one agent working on this MR, or null. */
+  ciAgent(url: string): Promise<string | null>
+  /** M30: asks that agent to fix the MR's failing CI. */
+  fixCi(url: string): Promise<MrFixCiResult>
   discardDraft(url: string, id: string): Promise<MrDraftsResult>
 }
 

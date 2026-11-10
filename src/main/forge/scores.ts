@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto'
 import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
-import type { MrAiScore, MrMetrics, MrScore, MrScoreState, MrSize } from '../../preload/api'
+import type { CiState, MrAiScore, MrMetrics, MrScore, MrScoreState, MrSize } from '../../preload/api'
 import { FORGE_NAME, forgeApi, type ForgeId } from '../credentials/forge'
 import type { SecretStore } from '../credentials/store'
 import { getLang, t } from '../lang'
@@ -17,6 +17,8 @@ export interface ScoreTarget {
   /** The MR's project and source branch, which lenses match against local workspaces (M28). */
   project?: string
   branch?: string
+  /** M30: «Arreglar CI con Claude» only on a failing CI. */
+  ci?: CiState
 }
 
 const CUT_BYTES = 120 * 1024

@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import type { LensName, LensSeverity, MrComment, MrDraft, MrDrafts, MrDraftsResult, MrMetrics, WorkspaceView } from '../../preload/api'
+import type { LensName, LensSeverity, MrComment, MrDraft, MrDrafts, MrDraftsResult, MrFixCiResult, MrMetrics, WorkspaceView } from '../../preload/api'
 import type { SecretStore } from '../credentials/store'
 import { getLang, t } from '../lang'
 import type { Runner } from '../run'
@@ -253,6 +253,30 @@ export function createLenses({ store, run, fetchImpl = fetch, target, listed, po
         return (await send(agent.id, text)) === 'sent' ? undefined : replyGone()
       }, 'mark', 'sent'),
 
-    discard: (url: string, id: string): Promise<MrDraftsResult> => act(url, id, async () => undefined, 'remove')
+    discard: (url: string, id: string): Promise<MrDraftsResult> => act(url, id, async () => undefined, 'remove'),
+
+    /** M32: the branch of M28's agent, only while the latest listing has the MR's CI failing. */
+    async ciAgent(url: string): Promise<string | null> {
+      const tgt = target(url)
+      return tgt?.ci === 'fail' ? ((await agentFor(url, tgt))?.branch ?? null) : null
+    },
+
+    /** M30: asks M28's agent to fix a failing CI, typed as one literal line; one at a time per MR. */
+    async fixCi(url: string): Promise<MrFixCiResult> {
+      const key = `fixCi\n${url}`
+      if (busy.has(key)) return { error: t('Ya se está enviando a ese trabajo') }
+      busy.add(key)
+      try {
+        const tgt = target(url)
+        if (tgt?.ci !== 'fail') return { error: t('La CI de esta MR ya no falla.') }
+        const agent = await agentFor(url, tgt)
+        if (!agent) return { error: t('No hay un único trabajo de esta MR abierto en Atril.') }
+        const cmd = tgt.forge === 'github' ? 'gh pr checks' : 'glab ci view'
+        const text = t('La CI de {url} falla. Mira qué ha fallado con {cmd}, arréglalo y avísame antes de subir nada.', { url, cmd })
+        return (await send(agent.id, text)) === 'sent' ? { sent: agent.branch } : { error: replyGone() }
+      } finally {
+        busy.delete(key)
+      }
+    }
   }
 }

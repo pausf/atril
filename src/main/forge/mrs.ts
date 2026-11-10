@@ -198,7 +198,7 @@ export async function listMrs(
   for (const r of results) {
     if (!r) continue
     out.connected.push(r.forge)
-    for (const row of [...r.lists.mine, ...r.lists.review]) targets.set(row.url, { forge: r.forge, ref: row.ref, project: row.project, ...(row.head && { head: row.head }), ...(row.branch && { branch: row.branch }) })
+    for (const row of [...r.lists.mine, ...r.lists.review]) targets.set(row.url, { forge: r.forge, ref: row.ref, project: row.project, ...(row.head && { head: row.head }), ...(row.branch && { branch: row.branch }), ...(row.ci && { ci: row.ci }) })
     for (const l of LISTS) {
       for (const row of r.lists[l]) threads.set(row.url, { forge: r.forge, ref: row.ref, author: row.author })
       out[l].push(
