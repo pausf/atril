@@ -144,5 +144,5 @@ Ninguna.
 
 ## Checklist
 
-- [ ] focus state, menu and layout; main's notification gate · Closes: W15, W77, W78
-- [ ] the pill, jump and back; tutorial step 4 mentions ⌘⇧F (no criterion); sketch; photo · waits on box 1 · Closes: N2, W79
+- [x] focus state, menu and layout; main's notification gate · Closes: W15, W77, W78
+- [x] the pill, jump and back; tutorial step 4 mentions ⌘⇧F (no criterion); sketch; photo · waits on box 1 · Closes: N2, W79
