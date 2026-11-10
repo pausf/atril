@@ -41,6 +41,12 @@ the projects you follow. Phase 2 of Atril; scores, threads and notifications bui
   branch), **Descartar**.
 - Drafts are kept per MR commit; a newer commit marks them as from an earlier commit.
 
+### Arreglar CI con Claude (fix-ci-with-claude, 10 nov 2026)
+
+- En una MR con CI «Falla» y su trabajo vivo en Atril, «Arreglar CI con Claude» escribe la petición en la
+  terminal de ese agente y dice «Enviado a {rama}».
+- Sin trabajo único en Atril, el botón no aparece.
+
 ## Scope boundaries
 
 ### MR lists (add-mr-lists, 9 nov 2026)
@@ -85,6 +91,13 @@ and written by hand in the thread).
 **Never scoped out:** Claude runs with no tools and the diff on stdin (as M11); nothing is published
 or sent without the person's click, and each click acts once; tokens stay in main; draft text is
 shown as text.
+
+### Arreglar CI con Claude (fix-ci-with-claude, 10 nov 2026)
+
+**In:** la consulta de si hay agente, la acción, el botón y su estado.
+**Out:** abrir un trabajo nuevo; leer los logs de la CI desde Atril; reintentar la CI; subir cambios.
+**Never scoped out:** el texto se escribe literal (sin teclas especiales), como W-respuestas; nada se envía
+sin pulsar; el botón se usa con teclado.
 
 ## Constraints
 
@@ -218,6 +231,39 @@ shown as text.
 - Q: (revisor) ¿Más de 12 hallazgos, texto largo, file/line ausentes, cero hallazgos? → A: fuera de esquema = fallo; sin ubicación se omite; cero es respuesta válida (assumed).
 - Q: (revisor de obra) ¿Borradores de una MR sin commit conocido? → A: se rechaza la revisión antes de gastar cuota; ¿mismo proyecto en otra forja? → A: el origin también debe nombrar el host (assumed).
 - Q: (revisor) ¿Cola compartida con las puntuaciones? → A: un solo runner, claves por tipo y URL (assumed).
+
+### Arreglar CI con Claude (fix-ci-with-claude, 10 nov 2026)
+
+- Mismo agente que M28 (assumed, 10 nov).
+- Solo bajo demanda: CLAUDE.md, «Nada de llamadas automáticas a Claude».
+
+#### Alternatives that lost
+
+| Considered | Why it lost |
+|---|---|
+| Abrir un trabajo nuevo para arreglar la CI | Es otra mejora de la lista; aquí solo con agente ya abierto. |
+| Leer el log de la CI y pasárselo a Claude | Más permisos y texto; el agente ya sabe usar gh/glab. |
+
+#### Decision log, answers as given (2026-11-10)
+- Q: ¿Dónde va el botón? → A: en la vista de la MR, junto a su estado de CI, y solo con CI «Falla» (assumed).
+- Q: ¿A qué agente? → A: al mismo que M28 elige para «Mandar al agente»: el único trabajo vivo en la rama
+  de la MR con `origin` en su proyecto; si hay cero o varios, el botón no sale (assumed).
+- Q: ¿Qué le dice? → A: una línea escrita en su terminal, como responder: «La CI de {url} falla. Mira qué
+  ha fallado con {gh pr checks|glab ci view}, arréglalo y avísame antes de subir nada.» (assumed).
+- Q: ¿Cuota? → A: no llama a Claude por su cuenta: escribe en un agente que ya está abierto, solo al pulsar (assumed).
+- Q: (fase 5) ¿Cómo? → A: reutilizar `agentFor` de lenses y el `send` que ya escribe en el panel (assumed).
+  Perdió: abrir un trabajo nuevo desde la MR (es la mejora «Abrir un trabajo desde una MR», aparte).
+
+- Q: (revisor de spec) Holguras → A, todas (assumed):
+  - **De dónde sale la CI.** Main la lee de la última lista de MR, como M27; no se fía de la ventana.
+  - **Los errores, uno por caso:**
+    - «La CI de esta MR ya no falla.»
+    - «No hay un único trabajo de esta MR abierto en Atril.»
+    - «No se pudo enviar: ese trabajo ya no está.» (el texto de N3)
+  - **`ciAgent`** tiene su propio criterio, M32. La vista lo pregunta al abrir la MR.
+  - **Doble clic.** Un segundo clic mientras el primero sigue en curso se rechaza, como en M27.
+  - **Dónde vive el código.** En `lenses.ts`, que ya está en el `Governs:` de mr, junto a `agentFor`.
+  - **Textos.** Todos por `t()`.
 
 ## Task breakdown
 
@@ -365,3 +411,23 @@ shown as text.
   offers it) and Descartar while open, and «Publicado» or «Enviado al agente» with no actions after;
   Descartar removes it.
   Proof: src/renderer/mr/lenses.test.ts drafts can be published, sent or discarded
+
+### Arreglar CI con Claude (fix-ci-with-claude, 10 nov 2026)
+
+- **M30** When the window asks `atril:mr:fixCi(url)` for an MR whose CI is «Falla» and M28 finds exactly
+  one workspace for it, main shall type into that workspace's pane, as literal text followed by Enter, «La
+  CI de {url} falla. Mira qué ha fallado con {gh pr checks|glab ci view}, arréglalo y avísame antes de subir
+  nada.» (gh for GitHub, glab for GitLab) and answer `{ sent: branch }`, judging the CI from main's latest
+  MR listing; otherwise it shall type nothing and answer `{ error }` with «La CI de esta MR ya no falla.»,
+  «No hay un único trabajo de esta MR abierto en Atril.» or «No se pudo enviar: ese trabajo ya no está.»;
+  a second call for the same MR while one is in flight shall be refused. One test holds a case per clause
+  (GitHub, GitLab, two agents, CI not failing, gone, double call).
+  Proof: src/main/forge/fixci.test.ts fix ci types into the one agent of the mr
+- **M31** While an MR's CI is «Falla» and main reports an agent for it, the MR view shall show «Arreglar CI
+  con Claude» beside the CI state; pressing it shall show «Enviado a {rama}» or the error; with no agent, or
+  any other CI state, no button shall show. One test holds the visibility, the sent text and the error.
+  Proof: src/renderer/mr/fixci.test.ts the fix ci button shows only with a failing ci and an agent
+- **M32** When the MR view opens, the window shall ask `atril:mr:ciAgent(url)`, and main shall answer the
+  branch of the one workspace M28 finds when main's latest listing has that MR's CI as «Falla», and `null`
+  otherwise.
+  Proof: src/main/forge/fixci.test.ts ci agent names the branch only for a failing ci

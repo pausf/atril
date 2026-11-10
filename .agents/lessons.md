@@ -179,3 +179,6 @@ The step table written before reading the code said four untrue things (Nueva ta
 
 ## 2026-11-10 · redesign-connections · 6→7
 Reviewer: (1) the Paleta/Tema row labels in Appearance were scope that arrived unasked — kept, recorded here; (2) asked whether folding a row mid-Reemplazar kept `replacing` — it did, so reopening showed the steps instead of Gestionar. Fixed: the row toggle resets `replacing`; case added to «connect guides in three steps» (seen red first).
+
+## 2026-11-10 · fix-ci-with-claude · 6→7
+Reviewer found nothing against the contract (3 proofs re-run, green); noted the double-call refusal text («Ya se está enviando a ese trabajo») was not among the decision log's three, which the criterion allows. No real-app photo: no snapshot fake has a failing-CI MR with an agent; the sketch shows it.
