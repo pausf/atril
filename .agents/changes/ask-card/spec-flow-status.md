@@ -8,6 +8,6 @@
   again; all three shall start open. One test holds a case per clause.
   Proof: src/renderer/flow/panel.test.ts the panel sections fold and remember
 - **F35** While the flow state's `others` is not empty, the panel shall show «{n} cambios más en este repo» (n its
-  length) with a button «Ver en Libretto» that stores that workspace's repo as the Libretto repo (W104) and opens the
+  length; «1 cambio más en este repo» for one) with a button «Ver en Libretto» that stores that workspace's repo as the Libretto repo (W104) and opens the
   Libretto screen, and no list of their names; with `others` empty, it shall show neither.
   Proof: src/renderer/flow/panel.test.ts other changes lead to Libretto

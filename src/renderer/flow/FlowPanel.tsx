@@ -273,7 +273,7 @@ function LibrettoFlow({ flow, onOpen, changes, onDiff, cost, onOpenLibretto }: F
           )}
           {flow && flow.others.length > 0 && (
             <p className="fmeta crow">
-              <span>{t('{n} cambios más en este repo', { n: flow.others.length })}</span>
+              <span>{flow.others.length === 1 ? t('1 cambio más en este repo') : t('{n} cambios más en este repo', { n: flow.others.length })}</span>
               <button type="button" className="fmore" onClick={onOpenLibretto}>
                 {t('Ver en Libretto')}
               </button>

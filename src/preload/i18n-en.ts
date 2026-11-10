@@ -214,6 +214,7 @@ export const EN: Record<string, string> = {
   'Ver checklist': 'View checklist',
   'Cambios': 'Changes',
   'Ver el diff de {path}': 'See the diff of {path}',
+  '1 cambio más en este repo': '1 more change in this repo',
   '{n} cambios más en este repo': '{n} more changes in this repo',
   'Ver en Libretto': 'Open in Libretto',
   '{lines} líneas': '{lines} lines',

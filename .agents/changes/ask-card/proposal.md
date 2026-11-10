@@ -122,5 +122,5 @@ Ninguna.
 
 ## Checklist
 
-- [ ] the question card in Trabajo and Todos, its contrast · Closes: W76, W82, W105
-- [ ] the Libretto line in place of Otros cambios; sketch; photos; novedades · waits on box 1 · Closes: F35
+- [x] the question card in Trabajo and Todos, its contrast · Closes: W76, W82, W105
+- [x] the Libretto line in place of Otros cambios; sketch; photos; novedades · waits on box 1 · Closes: F35
