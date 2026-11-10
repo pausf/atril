@@ -15,6 +15,8 @@ import { StartDialog } from './inbox/StartDialog'
 import { OwnTaskDialog } from './inbox/OwnTaskDialog'
 import { NextUpStrip } from './components/NextUpStrip'
 import { FocusBar } from './components/FocusBar'
+import { AgentsOverview } from './components/AgentsOverview'
+import { ViewSwitch } from './components/ViewSwitch'
 import { startOrAsk, useNextUp } from './nextup'
 import { NavigationContext } from './settings/navigation'
 import { Language } from './settings/Language'
@@ -79,6 +81,12 @@ function Shell() {
     setFocusMode(false)
     setReturnTo(null)
   }
+  // W81: «Todos», never stored; focus is for one workspace, so entering it turns focus off (W77).
+  const [all, setAll] = useState(false)
+  const showAll = (on: boolean): void => {
+    setAll(on)
+    if (on) exitFocus()
+  }
   const inbox = useInbox()
   const next = useNextUp()
   const mrs = useMrs()
@@ -129,6 +137,7 @@ function Shell() {
     () =>
       window.atril.status.onOpen((id) => {
         setSelected(id)
+        setAll(false)
         setScreen('work')
       }),
     []
@@ -163,8 +172,16 @@ function Shell() {
 
   const openWorkspace = (id: string): void => {
     setSelected(id)
+    setAll(false)
     setScreen('work')
   }
+  /** Choosing a workspace shows it: from «Todos» that means «Uno». */
+  const pick = (id: string): void => {
+    setSelected(id)
+    setAll(false)
+  }
+  const overviewAvailable = screen === 'work' && workspaces.length > 0
+  useEffect(() => window.atril.menu.setOverview(overviewAvailable), [overviewAvailable])
 
   const go = (s: Screen): void => {
     setOpenUrl(null)
@@ -206,7 +223,7 @@ function Shell() {
         if (a.kind === 'back') return void goBack()
         if (a.kind === 'select') {
           const ws = workspaces[a.index]
-          if (ws) setSelected(ws.id)
+          if (ws) pick(ws.id)
           return
         }
         // W54: ⌘K does nothing while any dialog, the palette included, is open.
@@ -216,13 +233,20 @@ function Shell() {
         }
         if (a.kind === 'focusMode') {
           if (focused) exitFocus()
-          else if (screen === 'work' && selected) setFocusMode(true)
+          else if (screen === 'work' && selected) {
+            setFocusMode(true)
+            setAll(false)
+          }
+          return
+        }
+        if (a.kind === 'overview') {
+          if (overviewAvailable) showAll(!all)
           return
         }
         if (a.kind === 'tutorial') setTourOpen(true)
         else focusRegion(a.target)
       }),
-    [workspaces, next, inbox.issues, selected, focused, screen, returnTo]
+    [workspaces, next, inbox.issues, selected, focused, screen, returnTo, all, overviewAvailable]
   )
 
   // Start already created the workspace in main: only the list and the inbox links are stale.
@@ -303,20 +327,24 @@ function Shell() {
             ) : (
               <NextUpStrip items={next} workspaces={workspaces} issues={inbox.issues} onOpen={openNext} />
             )}
-            <div className={focused ? 'body focus' : 'body'}>
+            <div className={focused ? 'body focus' : all ? 'body all' : 'body'}>
               {!focused && (
                 <Sidebar
                   workspaces={workspaces}
                   selected={selected}
-                  onSelect={setSelected}
+                  onSelect={pick}
                   onRemove={remove}
                   onNewWork={() => setDialog('work')}
                   inbox={inbox}
                   onOpenTasks={() => setScreen('tasks')}
                 />
               )}
-              <Workspace ws={workspaces.find((w) => w.id === selected)} />
-              <FlowPanel workspaceId={selected} auto={workspaces.find((w) => w.id === selected)?.auto === true} />
+              {all && <AgentsOverview workspaces={workspaces} next={next} switcher={<ViewSwitch all={all} onChange={showAll} />} />}
+              {/* Hidden, not unmounted, in «Todos»: the terminal must survive. */}
+              <div className="uno" hidden={all}>
+                <Workspace ws={workspaces.find((w) => w.id === selected)} switcher={<ViewSwitch all={all} onChange={showAll} />} />
+                <FlowPanel workspaceId={selected} auto={workspaces.find((w) => w.id === selected)?.auto === true} />
+              </div>
             </div>
           </div>
           {screen === 'tasks' && <Inbox inbox={inbox} onStart={(i, alt) => void beginStart(i, alt)} startError={startError} onOpenWorkspace={openWorkspace} onNewTask={() => setDialog('task')} />}

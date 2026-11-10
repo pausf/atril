@@ -1,0 +1,107 @@
+import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
+import type { AgentState, NextItem, WorkspaceView } from '../../preload/api'
+import { localiseActivity } from '../../preload/activity-i18n'
+import { overviewOrder, stateOf, useAgentStates, useFlows, useLatestActivity } from '../agents'
+import { ago } from '../flow/ActivityFeed'
+import { stagesOf } from '../flow/FlowPanel'
+import { runningCount, useSubagents } from '../subagents'
+import { useT } from '../ui'
+import { Icon } from './Icon'
+
+interface Props {
+  workspaces: WorkspaceView[]
+  next: NextItem[]
+  /** The «Uno · Todos» switch, in this view's header. */
+  switcher: ReactNode
+}
+
+/** W81: «Todos», one card per workspace in place of the terminal. */
+export function AgentsOverview({ workspaces, next, switcher }: Props) {
+  const t = useT()
+  const LABEL: Record<AgentState, string> = { working: t('trabajando'), 'needs-you': t('te necesita'), stopped: t('parado') }
+  const STAGES = stagesOf(t)
+  const ids = workspaces.map((w) => w.id)
+  const states = useAgentStates()
+  const latest = useLatestActivity()
+  const subs = useSubagents(ids)
+  const flows = useFlows(ids)
+  const [now, setNow] = useState(Date.now())
+  const mains = useRef<Array<HTMLButtonElement | null>>([])
+
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 30_000)
+    return () => clearInterval(timer)
+  }, [])
+
+  const ordered = overviewOrder(workspaces, states, latest, next)
+  const onKey = (e: KeyboardEvent, i: number): void => {
+    const step = e.key === 'ArrowRight' || e.key === 'ArrowDown' ? 1 : e.key === 'ArrowLeft' || e.key === 'ArrowUp' ? -1 : 0
+    const to = mains.current[i + step]
+    if (!step || !to) return
+    e.preventDefault()
+    to.focus()
+  }
+
+  return (
+    <section className="col center overview" aria-label={t('Todos los agentes')}>
+      <div className="whead">
+        <div>
+          <div className="m">{t('{n} trabajos', { n: workspaces.length })}</div>
+          <h1>{t('Todos los agentes')}</h1>
+        </div>
+        <span className="sp" />
+        {switcher}
+      </div>
+      <div className="ov-grid">
+        {ordered.map((w, i) => {
+          const state = stateOf(states, w)
+          const flow = flows[w.id]
+          const stage = STAGES.find((s) => s.name === flow?.stage)
+          const act = latest[w.id]
+          const running = runningCount(subs[w.id])
+          return (
+            <div className={`ov-card ${state}`} key={w.id}>
+              <button
+                type="button"
+                className="ov-main"
+                ref={(el) => {
+                  mains.current[i] = el
+                }}
+                onKeyDown={(e) => onKey(e, i)}
+              >
+                <span className="ov-top">
+                  <span className="ov-branch">{w.branch}</span>
+                  <span className={`state ${state}`}>
+                    <Icon name={state} size={16} className={state === 'working' ? 'spin' : undefined} /> {LABEL[state]}
+                  </span>
+                </span>
+                <span className="ov-meta">{w.repoId}</span>
+                {flow?.stage === 'sin-libretto' ? (
+                  <span className="ov-stage">{t('sin Libretto')}</span>
+                ) : (
+                  stage && (
+                    <span className="ov-stage">
+                      <Icon name={stage.icon} size={14} /> {stage.label}
+                      {flow?.checklist && <span className="ov-check">{t('{closed}/{total}', { closed: flow.checklist.closed, total: flow.checklist.total })}</span>}
+                    </span>
+                  )
+                )}
+                <span className="ov-act">
+                  {act ? (
+                    <>
+                      <span className="ov-act-text">{localiseActivity(act.text, t)}</span>
+                      <span className="ov-ago">{ago(t, act.at, now)}</span>
+                    </>
+                  ) : (
+                    <span className="ov-act-text">{t('sin actividad')}</span>
+                  )}
+                </span>
+                {running > 0 && <span className="ov-subs">{running === 1 ? t('1 subagente') : t('{n} subagentes', { n: running })}</span>}
+              </button>
+            </div>
+          )
+        })}
+      </div>
+    </section>
+  )
+}

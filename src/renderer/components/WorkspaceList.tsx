@@ -1,7 +1,8 @@
 import { useT } from '../ui'
 import { Icon } from './Icon'
-import { useEffect, useState } from 'react'
-import type { ActivityLine, AgentState, WorkspaceView } from '../../preload/api'
+import { useState } from 'react'
+import type { AgentState, WorkspaceView } from '../../preload/api'
+import { stateOf, useAgentStates, useLatestActivity } from '../agents'
 import { runningCount, useSubagents } from '../subagents'
 import { localiseActivity } from '../../preload/activity-i18n'
 import { QuickReplies } from './QuickReplies'
@@ -17,27 +18,9 @@ export function WorkspaceList({ workspaces, selected, onSelect, onRemove }: Prop
   const t = useT()
   const LABEL: Record<AgentState, string> = { working: t('trabajando'), 'needs-you': t('te necesita'), stopped: t('parado') }
   const [refusal, setRefusal] = useState<{ id: string; text: string } | null>(null)
-  const [states, setStates] = useState<Record<string, AgentState>>({})
-
+  const states = useAgentStates()
   const subs = useSubagents(workspaces.map((w) => w.id))
-  const [latest, setLatest] = useState<Record<string, ActivityLine>>({})
-
-  useEffect(() => {
-    void window.atril.activity.latest().then(setLatest)
-    return window.atril.activity.onChange((id, lines) =>
-      setLatest((l) => {
-        const next = { ...l }
-        if (lines[0]) next[id] = lines[0]
-        else delete next[id]
-        return next
-      })
-    )
-  }, [])
-
-  useEffect(() => {
-    void window.atril.status.list().then(setStates)
-    return window.atril.status.onChange((id, state) => setStates((s) => ({ ...s, [id]: state })))
-  }, [])
+  const latest = useLatestActivity()
 
   if (workspaces.length === 0) {
     return <div className="empty">{t('Aquí verás cada trabajo con su estado. Crea uno con «＋ Nuevo trabajo», arriba.')}</div>
@@ -59,7 +42,7 @@ export function WorkspaceList({ workspaces, selected, onSelect, onRemove }: Prop
               )}
             </span>
             {(() => {
-              const state = states[w.id] ?? (w.alive ? 'working' : 'stopped')
+              const state = stateOf(states, w)
               return (
                 <span className={`state ${state}`}>
                   <Icon name={state} size={16} className={state === 'working' ? 'spin' : undefined} /> {LABEL[state]}

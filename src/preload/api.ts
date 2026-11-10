@@ -540,6 +540,7 @@ export type MenuAction =
   | { kind: 'palette' }
   | { kind: 'focusMode' }
   | { kind: 'back' }
+  | { kind: 'overview' }
 
 export type Theme = 'light' | 'dark' | 'auto'
 export type Palette = 'original' | 'grafito'
@@ -574,6 +575,8 @@ export interface MenuApi {
    * and whether it could be turned on (Trabajo shown with a workspace selected, W77).
    */
   setFocus(on: boolean, available: boolean): void
+  /** Trabajo shown with at least one workspace: «Todos» can be toggled (W81). */
+  setOverview(available: boolean): void
   /** Returns the unsubscribe function. */
   onAction(cb: (a: MenuAction) => void): () => void
 }

@@ -18,7 +18,7 @@ const strip = () => screen.queryByRole('navigation', { name: 'Qué me toca' })
 const rail = (name: RegExp) => within(screen.getByRole('navigation', { name: 'Pantallas' })).getByRole('button', { name })
 const flow = () => document.querySelector('.col.right')
 const workItems = (focusOn: boolean, focusAvailable: boolean) => {
-  const work = menuTemplate({ selected: 'aaaaaaa1', count: 2, nextEnabled: false, focusOn, focusAvailable, split: () => {}, send: () => {} }).find((m) => m.label === 'Trabajo')
+  const work = menuTemplate({ selected: 'aaaaaaa1', count: 2, nextEnabled: false, focusOn, focusAvailable, overviewAvailable: true, split: () => {}, send: () => {} }).find((m) => m.label === 'Trabajo')
   return work?.submenu as Array<{ label?: string; accelerator?: string; enabled?: boolean; checked?: boolean }>
 }
 
@@ -84,6 +84,17 @@ describe('focus mode', () => {
     expect(sidebar()).toBeTruthy()
     expect(strip()).toBeTruthy()
     expect(screen.getByRole('heading', { name: 'WEB-2' })).toBeTruthy()
+
+    // So does entering «Todos» (W81): focus belongs to one workspace.
+    act(() => api.menu({ kind: 'focusMode' }))
+    await screen.findByRole('button', { name: 'Salir del foco' })
+    await user.click(screen.getByRole('button', { name: 'Todos' }))
+    expect(screen.queryByRole('button', { name: 'Salir del foco' })).toBeNull()
+    expect(sidebar()).toBeTruthy()
+    expect(strip()).toBeTruthy()
+    await vi.waitFor(() => expect(api.menuApi.setFocus).toHaveBeenLastCalledWith(false, true))
+    await user.click(screen.getByRole('button', { name: 'Uno' }))
+    expect(screen.queryByRole('button', { name: 'Salir del foco' })).toBeNull()
 
     // Not stored: a restart comes back without focus.
     act(() => api.menu({ kind: 'focusMode' }))

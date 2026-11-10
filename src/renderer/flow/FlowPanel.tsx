@@ -17,7 +17,7 @@ const tabsOf = (t: T) =>
   ] as const
 type TabId = ReturnType<typeof tabsOf>[number]['id']
 
-const stagesOf = (t: T): { name: Exclude<StageName, 'sin-libretto'>; label: string; icon: IconName }[] => [
+export const stagesOf = (t: T): { name: Exclude<StageName, 'sin-libretto'>; label: string; icon: IconName }[] => [
   { name: 'entrada', label: t('Entrada'), icon: 's-entrada' },
   { name: 'spec', label: t('Spec'), icon: 's-spec' },
   { name: 'plan', label: t('Plan'), icon: 's-plan' },

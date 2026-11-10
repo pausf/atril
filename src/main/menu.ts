@@ -11,6 +11,8 @@ export interface MenuDeps {
   focusOn: boolean
   /** Trabajo shown with a workspace selected: focus can be turned on (W77). */
   focusAvailable: boolean
+  /** Trabajo shown with at least one workspace: «Todos» can be toggled (W81). */
+  overviewAvailable: boolean
   split(direction: 'h' | 'v'): void
   send(action: MenuAction): void
 }
@@ -28,6 +30,7 @@ export function menuTemplate(d: MenuDeps): MenuItemConstructorOptions[] {
         { label: t('Dividir abajo'), accelerator: 'CmdOrCtrl+Shift+D', enabled: !none, click: () => d.split('v') },
         { label: t('Siguiente'), accelerator: 'CmdOrCtrl+Return', enabled: d.nextEnabled, click: () => d.send({ kind: 'next' }) },
         { label: t('Modo foco'), accelerator: 'CmdOrCtrl+Shift+F', type: 'checkbox', checked: d.focusOn, enabled: d.focusOn || d.focusAvailable, click: () => d.send({ kind: 'focusMode' }) },
+        { label: t('Todos los agentes'), accelerator: 'CmdOrCtrl+Shift+A', enabled: d.overviewAvailable, click: () => d.send({ kind: 'overview' }) },
         { label: t('Volver'), accelerator: 'CmdOrCtrl+Alt+Left', enabled: d.focusOn, click: () => d.send({ kind: 'back' }) },
         { label: t('Buscar…'), accelerator: 'CmdOrCtrl+K', click: () => d.send({ kind: 'palette' }) },
         { type: 'separator' },

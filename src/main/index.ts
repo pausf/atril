@@ -499,7 +499,7 @@ app.whenReady().then(async () => {
     return ui
   })
   ipcMain.handle('atril:snapshot-ws', () => Boolean(SNAPSHOT))
-  const menu = { selected: null as string | null, count: 0, nextEnabled: false, focusOn: false, focusAvailable: false }
+  const menu = { selected: null as string | null, count: 0, nextEnabled: false, focusOn: false, focusAvailable: false, overviewAvailable: false }
   const notifyGate = createNotifyGate(() => menu.focusOn, () => BrowserWindow.getAllWindows()[0]?.isFocused() === true)
   const refreshMenu = (): void =>
     installMenu({
@@ -521,6 +521,10 @@ app.whenReady().then(async () => {
   ipcMain.on('atril:menu:focus', (_e, on: boolean, available: boolean) => {
     menu.focusOn = on === true
     menu.focusAvailable = available === true
+    refreshMenu()
+  })
+  ipcMain.on('atril:menu:overview', (_e, available: boolean) => {
+    menu.overviewAvailable = available === true
     refreshMenu()
   })
   ipcMain.on('atril:menu:state', (_e, selected: string | null, count: number) => {

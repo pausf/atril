@@ -45,6 +45,8 @@ interface Options {
   /** What proposeStart answers; start answers with a workspace named after the key. */
   proposal?: StartProposalResult
   flow?: FlowStage
+  /** What flow.get answers per workspace id; missing falls back to `flow`. */
+  flows?: Record<string, FlowStage>
   /** Newest first, per workspace id. */
   activity?: Record<string, ActivityLine[]>
   /** What status.quickReplies answers per workspace id; missing means no options. */
@@ -108,6 +110,7 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
       setState: vi.fn(),
       setNext: vi.fn(),
       setFocus: vi.fn(),
+      setOverview: vi.fn(),
       onAction: (cb: (a: MenuAction) => void) => {
         menu = cb
         return off
@@ -217,7 +220,7 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
       }
     },
     flow: {
-      get: async () => o.flow ?? null,
+      get: async (id: string | null) => (id && o.flows?.[id]) || o.flow || null,
       onChange: (cb: (id: string, stage: FlowStage) => void) => {
         flowListeners.add(cb)
         return () => flowListeners.delete(cb)

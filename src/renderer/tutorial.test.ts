@@ -96,7 +96,7 @@ describe('tutorial', () => {
     expect(screen.queryByRole('dialog')).toBeNull()
 
     // Help -> Tutorial exists in the menu and its click reaches the app.
-    const help = menuTemplate({ selected: null, count: 0, nextEnabled: false, focusOn: false, focusAvailable: false, split: () => {}, send: () => {} }).find((m) => m.role === 'help')
+    const help = menuTemplate({ selected: null, count: 0, nextEnabled: false, focusOn: false, focusAvailable: false, overviewAvailable: false, split: () => {}, send: () => {} }).find((m) => m.role === 'help')
     const item = (help?.submenu as Array<{ label?: string; click?: () => void }>).find((i) => i.label === 'Tutorial')
     expect(item).toBeTruthy()
     act(() => again.menu({ kind: 'tutorial' }))

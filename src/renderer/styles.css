@@ -2695,3 +2695,106 @@ button.stg.stgbtn .icon {
   font-size: 12.5px;
   color: var(--sub);
 }
+
+/* «Todos» (W81): the cards take the terminal's and the flow panel's place; those stay mounted, hidden. */
+.uno {
+  display: contents;
+}
+.uno[hidden] {
+  display: none;
+}
+.body.all .overview {
+  grid-column: 2 / -1;
+}
+.whead .view-switch {
+  align-self: center;
+}
+.ov-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
+  align-content: start;
+}
+.ov-card {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--card);
+  overflow: hidden;
+}
+.ov-card.needs-you {
+  border-color: var(--you);
+}
+.ov-main {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  padding: 12px 14px;
+  font: inherit;
+  text-align: left;
+  color: var(--text);
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+.ov-main:hover {
+  background: var(--hover);
+}
+.ov-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ov-branch {
+  flex: 1;
+  min-width: 0;
+  font-weight: 600;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+.ov-top .state {
+  grid-column: auto;
+  grid-row: auto;
+}
+.ov-meta,
+.ov-stage,
+.ov-act,
+.ov-subs {
+  font-size: 12px;
+  color: var(--sub);
+}
+.ov-stage {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text);
+}
+.ov-check {
+  margin-left: auto;
+  color: var(--sub);
+  font-variant-numeric: tabular-nums;
+}
+.ov-act {
+  display: flex;
+  gap: 8px;
+  min-width: 0;
+}
+.ov-act-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ov-ago {
+  flex: none;
+}
+.ov-subs {
+  color: var(--run-text);
+}
+.ov-card .quick-replies {
+  margin: 0;
+  padding: 0 14px 12px;
+}

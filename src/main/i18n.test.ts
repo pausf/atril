@@ -30,7 +30,7 @@ describe('main language', () => {
     const { setLang } = await import('./lang')
     const { menuTemplate } = await import('./menu')
     const { replyGone, replyPlaceholder } = await import('./status')
-    const deps = { selected: 'x', count: 2, nextEnabled: true, focusOn: false, focusAvailable: false, split: () => undefined, send: () => undefined }
+    const deps = { selected: 'x', count: 2, nextEnabled: true, focusOn: false, focusAvailable: false, overviewAvailable: false, split: () => undefined, send: () => undefined }
     const labels = (): string[] => menuTemplate(deps).flatMap((m) => [m.label ?? '', ...((m.submenu as { label?: string }[] | undefined) ?? []).map((s) => s.label ?? '')]).filter(Boolean)
 
     setLang('en')

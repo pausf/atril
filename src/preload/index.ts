@@ -6,6 +6,7 @@ const api: AtrilApi = {
     setState: (selected, count) => ipcRenderer.send('atril:menu:state', selected, count),
     setNext: (enabled) => ipcRenderer.send('atril:menu:next', enabled),
     setFocus: (on, available) => ipcRenderer.send('atril:menu:focus', on, available),
+    setOverview: (available) => ipcRenderer.send('atril:menu:overview', available),
     onAction: (cb) => {
       const h = (_e: Electron.IpcRendererEvent, a: MenuAction): void => cb(a)
       ipcRenderer.on('atril:menu:action', h)
