@@ -50,3 +50,8 @@ export async function sendText(paneId: string, text: string, run: Runner = defau
   const typed = await tmux(run, ['send-keys', '-t', paneId, '-l', '--', text])
   return typed.code === 0 && (await tmux(run, ['send-keys', '-t', paneId, 'Enter'])).code === 0
 }
+
+/** Presses one key in one pane, then Enter: how Claude Code's selector takes an option's number (W75). */
+export async function sendKey(paneId: string, key: string, run: Runner = defaultRun): Promise<boolean> {
+  return (await tmux(run, ['send-keys', '-t', paneId, key])).code === 0 && (await tmux(run, ['send-keys', '-t', paneId, 'Enter'])).code === 0
+}

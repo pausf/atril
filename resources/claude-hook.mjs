@@ -94,6 +94,27 @@ function trackSubagents(home, name, event, payload, at) {
   replace(file, body)
 }
 
+// W74: the first question's labels, for the row's quick replies; an empty label would shift the numbers, so none then.
+// A multiSelect question is only flagged: the row offers nothing for it. Both last while the state stays needs-you.
+function quickReplies(event, state, payload, stateFile) {
+  if (state !== 'needs-you') return {}
+  if (event !== 'PreToolUse') {
+    try {
+      const prev = JSON.parse(readFileSync(stateFile, 'utf8'))
+      if (prev.state !== 'needs-you') return {}
+      return { ...(Array.isArray(prev.options) && { options: prev.options }), ...(prev.multiSelect === true && { multiSelect: true }) }
+    } catch {
+      return {}
+    }
+  }
+  const q = payload?.tool_input?.questions?.[0]
+  if (q?.multiSelect === true) return { multiSelect: true }
+  const list = q?.options
+  if (!Array.isArray(list) || list.length === 0) return {}
+  const labels = list.slice(0, 4).map((o) => text(o?.label).slice(0, 40))
+  return labels.every(Boolean) ? { options: labels } : {}
+}
+
 function session() {
   const sock = process.env.ATRIL_TMUX_SOCKET
   const env = { ...process.env, PATH: `${process.env.PATH ?? ''}:/opt/homebrew/bin:/usr/local/bin` }
@@ -143,7 +164,9 @@ try {
   const dir = join(home, 'state')
   mkdirSync(dir, { recursive: true })
   const body = state === 'needs-you' && line ? { text: line.text } : {}
-  replace(join(dir, `${name}.json`), JSON.stringify({ state, at, ...body }) + '\n')
+  const stateFile = join(dir, `${name}.json`)
+  Object.assign(body, quickReplies(event, state, payload, stateFile))
+  replace(stateFile, JSON.stringify({ state, at, ...body }) + '\n')
 
   try {
     trackSubagents(home, name, event, payload, at)

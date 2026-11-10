@@ -3,7 +3,7 @@ import { MODELS, writeHooksFile } from './agent'
 import { createActivity } from './activity'
 import { createSubagents } from './subagents'
 import { createAvisos } from './avisos'
-import { agentState, createStatus, replyGone, replyPlaceholder, replyToAgent } from './status'
+import { agentState, answerAgent, createStatus, replyGone, replyPlaceholder, replyToAgent, quickReplies } from './status'
 import { getLang, setLang, t } from './lang'
 import { resolveLang } from '../preload/i18n'
 import { readDocs, saveDoc } from './flow/document'
@@ -37,7 +37,7 @@ import { createFlowHub } from './flow/watch'
 import { installMenu } from './menu'
 import { patchUi, readUi } from './ui'
 import { splitPane } from './tmux'
-import type { Agent } from '../preload/api'
+import type { Agent, QuickChoice } from '../preload/api'
 
 // Dev-only evidence hooks (screenshots for review). A packaged app ignores them all, so no
 // environment variable can swap real data for fake data in front of the person.
@@ -587,6 +587,12 @@ app.whenReady().then(async () => {
   ipcMain.handle('atril:subagents:log', (_e, id: string, agentId: string) => (fakeSubs ? fakeSubagentLog() : subagents.log(String(id), String(agentId))))
   void subagents.start()
   ipcMain.handle('atril:status:list', () => status.states())
+  ipcMain.handle('atril:status:quickReplies', async (_e, id: unknown) => {
+    const ws = (await listWorkspaces(run)).find((w) => w.id === id)
+    return ws ? quickReplies(ws.session) : { options: [], multiSelect: false }
+  })
+  // answerAgent checks the shape itself: the window's value is never trusted.
+  ipcMain.handle('atril:status:answer', (_e, id: unknown, choice: unknown) => answerAgent(String(id), choice as QuickChoice, run))
   void writeHooksFile().then(() => status.start())
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()

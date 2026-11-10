@@ -333,6 +333,48 @@ describe('subagents hook', () => {
     expect(readFileSync(join(home, 'activity', `${pre.session}.jsonl`), 'utf8')).toContain('Lanzando un subagente: T5 paginación')
   }, 30000)
 
+  it('an asked question keeps its options', async () => {
+    const stateOf = (session: string): { state?: string; options?: string[]; multiSelect?: boolean } => JSON.parse(readFileSync(join(home, 'state', `${session}.json`), 'utf8'))
+    const ask = (questions: unknown): [string, object] => ['PreToolUse', { tool_name: 'AskUserQuestion', tool_input: { questions } }]
+    const long = `Usar   la\nopción ${'larga '.repeat(12)}`
+    const first = {
+      question: '¿Cómo seguimos?',
+      options: [{ label: 'Sí' }, { label: long, description: 'SECRET-DESC' }, { label: 'No' }, { label: 'Quizá' }, { label: 'Quinta' }]
+    }
+
+    // The first question's labels, at most 4, collapsed and cut to 40; a second question is ignored.
+    const asked = await fireIn([ask([first, { question: 'otra', options: [{ label: 'X' }] }])])
+    const s = stateOf(asked.session)
+    expect(s.state).toBe('needs-you')
+    expect(s.options).toEqual(['Sí', long.replace(/\s+/g, ' ').trim().slice(0, 40), 'No', 'Quizá'])
+    expect(s.options?.[1]).toHaveLength(40)
+    expect(readFileSync(join(home, 'state', `${asked.session}.json`), 'utf8')).not.toContain('SECRET')
+
+    // A multiSelect question stores none, and says so, so the row offers no quick reply at all.
+    const multi = await fireIn([ask([{ ...first, multiSelect: true }])])
+    expect(stateOf(multi.session)).toMatchObject({ state: 'needs-you', multiSelect: true })
+    expect(stateOf(multi.session).options).toBeUndefined()
+
+    // The options stay while the state stays needs-you: a later Notification or Stop keeps them.
+    const kept = await fireIn([ask([first]), ['Notification', { message: 'hola' }], ['Stop', {}]])
+    expect(stateOf(kept.session)).toMatchObject({ state: 'needs-you', options: ['Sí', expect.any(String), 'No', 'Quizá'] })
+
+    // They go when the state leaves needs-you, and do not come back with the next stop.
+    const left = await fireIn([ask([first]), ['PostToolUse', { tool_name: 'AskUserQuestion' }], ['Stop', {}]])
+    expect(stateOf(left.session)).toMatchObject({ state: 'needs-you' })
+    expect(stateOf(left.session).options).toBeUndefined()
+    const leaving = await fireIn([ask([first]), ['UserPromptSubmit', { prompt: 'sigue' }]])
+    expect(stateOf(leaving.session)).toMatchObject({ state: 'working' })
+    expect(stateOf(leaving.session).options).toBeUndefined()
+
+    // A question without options, or no questions at all, stores none.
+    for (const q of [[{ question: 'sin opciones' }], 'raro']) {
+      const none = await fireIn([ask(q)])
+      expect(stateOf(none.session)).toMatchObject({ state: 'needs-you' })
+      expect(stateOf(none.session).options).toBeUndefined()
+    }
+  }, 90000)
+
   it('subagent events never change the agent state', async () => {
     const idle = await fireIn([start('a1', 'explorer'), start('x', ''), stop('zz', 'explorer'), stop('a1', '')])
     expect(idle.file?.entries?.map((e) => [e.id, e.endedAt])).toEqual([['a1', undefined]])

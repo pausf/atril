@@ -393,8 +393,20 @@ export type ForgeStatus = { saved: false } | { saved: true; account?: string; si
 
 export type AgentState = 'working' | 'needs-you' | 'stopped'
 
+/** An option's index (W74) or one of the two fixed replies; main chooses the words (W75). */
+export type QuickChoice = { option: number } | { fixed: 'yes' | 'no' }
+export interface QuickReplies {
+  options: string[]
+  multiSelect: boolean
+}
+export type QuickAnswer = { ok: true } | { error: string }
+
 export interface StatusApi {
   list(): Promise<Record<string, AgentState>>
+  /** What that workspace's question stored (W74); empty while it is not needs-you. */
+  quickReplies(workspaceId: string): Promise<QuickReplies>
+  /** Sends one quick reply to that workspace's agent (W75). */
+  answer(workspaceId: string, choice: QuickChoice): Promise<QuickAnswer>
   /** Returns the unsubscribe function. */
   onChange(cb: (id: string, state: AgentState) => void): () => void
   /** A notification was clicked: select that workspace. */

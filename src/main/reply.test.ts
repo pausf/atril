@@ -1,4 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { mkdirSync, writeFileSync } from 'node:fs'
+import { join } from 'node:path'
 import type { WorkspaceView } from '../preload/api'
 import { cleanTmp, killTmux, makeRegisteredRepo, tmp, tmuxOut, tmuxSock } from './test-helpers'
 import type { Runner } from './run'
@@ -79,6 +81,64 @@ describe('reply', () => {
     expect(closed).toEqual({ ok: true })
     expect(await replyToAgent(b.id, 'hola', run)).toBe('gone')
     expect(await replyToAgent('nosuchid', 'hola', run)).toBe('gone')
+    expect(sent).toEqual([])
+  })
+
+  it('a quick answer reaches its own pane', async () => {
+    makeRegisteredRepo(home)
+    const { answerAgent, replyGone } = await import('./status')
+    const { removeWorkspace } = await import('./workspaces')
+    const a = await open('feat/qa')
+    const b = await open('feat/qb')
+    const asked = (ws: WorkspaceView, options?: string[], state = 'needs-you'): void => {
+      mkdirSync(join(home, 'state'), { recursive: true })
+      writeFileSync(join(home, 'state', `${ws.session}.json`), JSON.stringify({ state, at: 1, text: 'Te pregunta: ¿?', ...(options && { options }) }))
+    }
+    asked(a, ['Sí', 'No', 'Quizá'])
+    asked(b)
+    const { run, sent } = await spied()
+    const notWaiting = { error: 'Ese agente ya no está esperando una respuesta.' }
+    const noOption = { error: 'Esa opción ya no existe.' }
+
+    // An option among the stored ones: its number as a key (not literal text), then Enter, into that pane only.
+    expect(await answerAgent(a.id, { option: 1 }, run)).toEqual({ ok: true })
+    expect(sent).toEqual([
+      ['-L', sock, 'send-keys', '-t', a.paneId, '2'],
+      ['-L', sock, 'send-keys', '-t', a.paneId, 'Enter']
+    ])
+    expect(await until(() => capture(a), (s) => s.split('\n').filter((l) => l === '2').length >= 2)).toMatch(/^2$/m)
+    expect(capture(b).trim()).toBe('')
+
+    // A fixed reply: main's own words as literal text then Enter, as N3.
+    sent.length = 0
+    expect(await answerAgent(b.id, { fixed: 'yes' }, run)).toEqual({ ok: true })
+    expect(sent[0]).toEqual(['-L', sock, 'send-keys', '-t', b.paneId, '-l', '--', 'Sí, sigue'])
+    expect(await until(() => capture(b), (s) => s.includes('Sí, sigue'))).toContain('Sí, sigue')
+    expect(await answerAgent(b.id, { fixed: 'no' }, run)).toEqual({ ok: true })
+    expect(await until(() => capture(b), (s) => s.includes('No, espera'))).toContain('No, espera')
+
+    // An option not among the stored ones (or none stored): nothing typed.
+    sent.length = 0
+    for (const [ws, option] of [[a, 3], [a, -1], [a, 1.5], [b, 0]] as [WorkspaceView, number][]) {
+      expect(await answerAgent(ws.id, { option }, run)).toEqual(noOption)
+    }
+
+    // Re-read at press time: a state that left needs-you types nothing, option or fixed.
+    asked(a, ['Sí', 'No', 'Quizá'], 'working')
+    expect(await answerAgent(a.id, { option: 0 }, run)).toEqual(notWaiting)
+    expect(await answerAgent(a.id, { fixed: 'yes' }, run)).toEqual(notWaiting)
+    asked(a, ['Sí', 'No', 'Quizá'])
+
+    // Any other shape is refused: the window never gets text typed.
+    for (const choice of ['yes', 1, { fixed: 'C-c' }, { text: 'hola' }, { option: '1' }, null, { option: 0, fixed: 'yes' }]) {
+      expect(await answerAgent(a.id, choice as never, run)).toHaveProperty('error')
+    }
+    expect(sent).toEqual([])
+
+    // A gone workspace: nothing is sent and the caller says so (N3).
+    expect(await removeWorkspace(b.id)).toEqual({ ok: true })
+    expect(await answerAgent(b.id, { fixed: 'yes' }, run)).toEqual({ error: replyGone() })
+    expect(await answerAgent('nosuchid', { option: 0 }, run)).toEqual({ error: replyGone() })
     expect(sent).toEqual([])
   })
 })
