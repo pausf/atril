@@ -46,6 +46,16 @@ add-doctor-install-terminal, antes de expand-tour (assumed: el «si» respondía
   etapas; sin componentes nuevos salvo los que salgan solos (assumed). Perdió: un componente de
   «stepper» genérico (una sola vista lo usa).
 
+- Q: (revisor de spec) Holguras → A, todas (assumed):
+  - F20 se enmienda: Cambios lista según F31 y el total suma todos los archivos.
+  - Construir hecho botón lleva como texto «Construir · ver N archivos», en lugar de su estado.
+  - La cuenta del Checklist es una cadena nueva, «{closed}/{total}», y `FoldSection.count` acepta texto.
+  - Checklist, Cambios y Subagentes empiezan abiertos.
+  - «Recordado» se prueba desmontando y volviendo a montar.
+  - Lo plegado queda a un clic: abrir la sección.
+  - La frase de cabecera desaparece (F29).
+  - Que no haga falta scroll no lo puede probar jsdom: se ve en la foto, y está nombrado como techo.
+
 ## Outcomes
 
 - Las seis etapas ocupan una sola fila: iconos unidos por una línea; la actual lleva su nombre debajo;
@@ -65,7 +75,8 @@ add-doctor-install-terminal, antes de expand-tour (assumed: el «si» respondía
 ajuste para elegir diseño; la pestaña Actividad; el modal del subagente.
 
 **Never scoped out:** cada etapa conserva su nombre y su estado como texto accesible (W22); las secciones
-se pliegan con teclado; nada que hoy se pueda abrir deja de poderse abrir.
+se pliegan con teclado; nada que hoy se pueda abrir deja de poderse abrir: como mucho queda a un clic
+(desplegar su sección).
 
 ## Constraints
 
@@ -90,16 +101,20 @@ se pliegan con teclado; nada que hoy se pueda abrir deja de poderse abrir.
 
 - **F29** The Libretto panel shall show its six stages in one row, each with its icon and, as its text,
   its name and its state («hecho», «ahora» or «pendiente»), where only the current stage's name is
-  visible and the others' text is visually hidden; the stages F13 and F20 make buttons stay buttons
-  with the same actions.
+  visible and the others' text is visually hidden — except Construir while F20 makes it a button, whose
+  text is «Construir · ver {n} archivos»; the stages F13 and F20 make buttons stay buttons with the same
+  actions; no lead sentence shall sit above the stages. Ceiling: the single row is layout, seen on the
+  photo, not in jsdom.
   Proof: src/renderer/flow/panel.test.ts stages sit in one row and keep their names
 - **F30** Checklist, Cambios, Otros cambios and Subagentes shall each be a section whose title is a
   button with `aria-expanded` that folds and unfolds it, showing its count while folded — Checklist
-  «{closed}/{total}», Cambios and Otros cambios their number, Subagentes its number of entries —
-  remembered across restarts per section; Otros cambios shall start folded.
+  «{closed}/{total}», Cambios and Otros cambios their number, Subagentes its number of entries — and
+  keeping its folded state per section when the panel is mounted again; Otros cambios shall start
+  folded and the other three open. One test holds a case per clause.
   Proof: src/renderer/flow/panel.test.ts the panel sections fold and remember
 - **F31** While the change list holds more than 8 files, «Cambios» shall list the first 8 in list order
-  and a «+{n} más» button that opens F21's modal on the ninth file.
+  and a «+{n} más» button that opens F21's modal on the ninth file; the line total (F20, F25) shall
+  still add up every file.
   Proof: src/renderer/flow/changes.test.ts cambios shows eight and opens the rest
 
 ## Approach
