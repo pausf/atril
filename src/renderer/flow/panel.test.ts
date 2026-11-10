@@ -118,4 +118,22 @@ describe('libretto panel', () => {
     expect(expanded(/^Subagentes\s*2$/)).toBe('false')
     expect(expanded(/^Otros cambios\s*1$/)).toBe('true')
   })
+
+  it('the documents read as buttons next to the change', async () => {
+    // Spec reached, Plan not yet: only «Abrir Spec» beside the change name.
+    const early = await boot({ stage: 'spec', change: 'add-x', others: [] })
+    const line = await screen.findByText('add-x')
+    const docs = (): string[] => Array.from(line.closest('.fmeta')!.querySelectorAll('button')).map(text)
+    expect(docs()).toEqual(['Spec'])
+    await early.click(screen.getByRole('button', { name: 'Abrir Spec' }))
+    expect(await screen.findByRole('dialog', { name: /Spec/ })).toBeTruthy()
+    cleanup()
+
+    // From Plan on, both; they open the same documents as the stages.
+    const user = await boot({ stage: 'plan', change: 'add-x', others: [] })
+    await screen.findByText('add-x')
+    expect(Array.from(screen.getByText('add-x').closest('.fmeta')!.querySelectorAll('button')).map(text)).toEqual(['Spec', 'Plan'])
+    await user.click(screen.getByRole('button', { name: 'Abrir Plan' }))
+    expect(await screen.findByRole('dialog', { name: /Plan/ })).toBeTruthy()
+  })
 })

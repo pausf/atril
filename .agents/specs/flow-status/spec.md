@@ -426,3 +426,10 @@ Aterrizado**.
   and a «+{n} más» button that opens F21's modal on the ninth file; the line total (F20, F25) shall
   still add up every file.
   Proof: src/renderer/flow/changes.test.ts cambios shows eight and opens the rest
+
+### Documentos a la vista (show-doc-buttons, 10 nov 2026)
+
+- **F32** Beside the change's name, the Libretto panel shall show a «Spec» and a «Plan» button,
+  named «Abrir Spec» and «Abrir Plan», each only from the stage F13 makes it a button on, opening the
+  same document as that stage; the stages that are buttons shall wear the action colour on their ring.
+  Proof: src/renderer/flow/panel.test.ts the documents read as buttons next to the change

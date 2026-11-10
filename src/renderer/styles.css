@@ -1821,6 +1821,10 @@ button.stg.stgbtn:focus-visible {
   background: var(--chip);
   outline: none;
 }
+/* What opens a document wears the action colour, so it reads as pressable. */
+button.stg.stgbtn .icon {
+  border-color: var(--ring);
+}
 .dlg.edmodal:focus {
   outline: none;
 }
@@ -2349,4 +2353,37 @@ button.stg.stgbtn:focus-visible {
   align-items: baseline;
   justify-content: space-between;
   gap: 8px;
+}
+.docbtns {
+  display: inline-flex;
+  gap: 6px;
+}
+.docbtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--chip);
+  color: var(--text);
+  font: inherit;
+  font-size: 12.5px;
+  cursor: pointer;
+}
+.docbtn:hover {
+  border-color: var(--ring);
+}
+.docbtn:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+.cname {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.docbtns {
+  flex-shrink: 0;
 }

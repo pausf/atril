@@ -191,8 +191,18 @@ function LibrettoFlow({ flow, onOpen, changes, onDiff }: FlowProps) {
             })}
           </div>
           {flow?.change && (
-            <p className="fmeta">
-              {t('Cambio:')} <b>{flow.change}</b>
+            <p className="fmeta crow">
+              <span className="cname" title={flow.change}>
+                {t('Cambio:')} <b>{flow.change}</b>
+              </span>
+              <span className="docbtns">
+                {STAGES.filter((s, i) => DOC_OF[s.name] && i <= current).map((s) => (
+                  <button type="button" className="docbtn" key={s.name} aria-label={t('Abrir {doc}', { doc: s.label })} onClick={() => onOpen(DOC_OF[s.name]!)}>
+                    <Icon name={s.icon} size={14} />
+                    {s.label}
+                  </button>
+                ))}
+              </span>
             </p>
           )}
           {c && (

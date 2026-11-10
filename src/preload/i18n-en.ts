@@ -181,6 +181,7 @@ export const EN: Record<string, string> = {
   'Checklist': 'Checklist',
   'Siguiente:': 'Next:',
   'Leído de {file}': 'Read from {file}',
+  'Abrir {doc}': 'Open {doc}',
   'Ver checklist': 'View checklist',
   'Cambios': 'Changes',
   'Ver el diff de {path}': 'See the diff of {path}',
