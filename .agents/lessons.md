@@ -209,3 +209,6 @@ Reviewer found nothing (4 proofs re-run). Noted cost.ts keeps in-memory totals o
 
 ## 2026-11-10 · mr-line-comments · 6→7
 Reviewer found nothing (4 proofs re-run). The session caught that the builder's new file, linecomments.ts, was governed by no spec (mr's Governs lists files one by one): added to mr and excluded from workspaces. Lesson: a builder's new file needs a Governs check before landing, not only its tests.
+
+## 2026-11-11 · work-history · 6→7
+Reviewer found nothing (2 proofs and the i18n scans re-run). The builder's mutation check (removing the append's guard turned the test red) is the kind of proof that a «failed append doesn't fail removal» clause needs.
