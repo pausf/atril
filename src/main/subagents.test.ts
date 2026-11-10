@@ -75,6 +75,51 @@ describe('subagents', () => {
     expect(existsSync(join(home, 'subagents', `${r.workspace.session}.json`))).toBe(false)
   }, 30000)
 
+  it('the description comes from the meta file', async () => {
+    writeFileSync(join(home, 'workspaces.json'), JSON.stringify({ workspaces: [{ id: 'aaaaaaa1', session: 'atril-aaaaaaa1', path: '/x' }] }))
+    const dir = tmp()
+    const tr = (id: string): string => join(dir, `agent-${id}.jsonl`)
+    const meta = (id: string, body: string): void => writeFileSync(join(dir, `agent-${id}.meta.json`), body)
+    meta('a1', JSON.stringify({ description: '  T5\n  paginación   ya ', agentType: 'explorer' }))
+    meta('a2', JSON.stringify({ description: 'y'.repeat(130) }))
+    meta('a4', '{no es json')
+    meta('a5', JSON.stringify({ description: 5 }))
+    const stored = [
+      { id: 'a1', type: 'explorer', transcript: tr('a1'), startedAt: 1 },
+      { id: 'a2', type: 'explorer', transcript: tr('a2'), startedAt: 2 },
+      { id: 'a3', type: 'Plan', transcript: tr('a3'), description: 'guardada', startedAt: 3 },
+      { id: 'a4', type: 'Plan', transcript: tr('a4'), startedAt: 4 },
+      { id: 'a5', type: 'Plan', transcript: tr('a5'), startedAt: 5 },
+      { id: 'a6', type: 'Plan', description: 'antigua', startedAt: 6 }
+    ]
+    write('atril-aaaaaaa1', { entries: stored })
+    const emit = vi.fn()
+    const sub = createSubagents({ emit })
+    await sub.start()
+
+    const expected: SubagentEntry[] = [
+      { id: 'a1', type: 'explorer', description: 'T5 paginación ya', startedAt: 1 },
+      { id: 'a2', type: 'explorer', description: 'y'.repeat(120), startedAt: 2 },
+      { id: 'a3', type: 'Plan', startedAt: 3 },
+      { id: 'a4', type: 'Plan', startedAt: 4 },
+      { id: 'a5', type: 'Plan', startedAt: 5 },
+      { id: 'a6', type: 'Plan', description: 'antigua', startedAt: 6 }
+    ]
+    expect(await sub.get('aaaaaaa1')).toEqual(expected)
+    expect(emit).toHaveBeenLastCalledWith('aaaaaaa1', expected)
+    expect(JSON.stringify(emit.mock.calls)).not.toContain(dir)
+
+    // A meta that shows up later is read on the next change of the entries file.
+    meta('a3', JSON.stringify({ description: 'del meta' }))
+    emit.mockClear()
+    write('atril-aaaaaaa1', { entries: stored.map((e) => (e.id === 'a1' ? { ...e, endedAt: 9 } : e)) })
+    await until(() => emit.mock.calls.length > 0)
+    const [, last] = emit.mock.calls.at(-1) as [string, SubagentEntry[]]
+    expect(last.find((e) => e.id === 'a3')?.description).toBe('del meta')
+    expect(last.find((e) => e.id === 'a1')).toEqual({ ...expected[0], endedAt: 9 })
+    sub.stop()
+  }, 30000)
+
   it('the window installs both subagent hooks', async () => {
     const { hooksSettings } = await import('./agent')
     const hooks = hooksSettings().hooks

@@ -266,7 +266,7 @@ describe('subagents hook', () => {
     cleanTmp()
   })
 
-  interface Entry { id: string; type: string; description?: string; startedAt: number; endedAt?: number }
+  interface Entry { id: string; type: string; description?: string; transcript?: string; startedAt: number; endedAt?: number }
   interface Pending { type: string; description: string; at: number }
   interface Seed { entries?: Entry[]; pending?: Pending[] }
   const NOW = (): number => Math.floor(Date.now() / 1000)
@@ -298,32 +298,39 @@ describe('subagents hook', () => {
     const path = join(home, 'subagents', `${session}.json`)
     return { session, file: existsSync(path) ? JSON.parse(readFileSync(path, 'utf8')) : undefined }
   }
-  const start = (id: string, type: string): [string, object] => ['SubagentStart', { agent_id: id, agent_type: type }]
+  const start = (id: string, type: string, extra: object = {}): [string, object] => ['SubagentStart', { agent_id: id, agent_type: type, prompt: 'SECRET-PROMPT', ...extra }]
   const stop = (id: string, type: string): [string, object] => ['SubagentStop', { agent_id: id, agent_type: type, agent_transcript_path: '/SECRET-PATH.jsonl', last_assistant_message: 'SECRET-LAST', stop_hook_active: false }]
   const finished = (i: number): Entry => ({ id: `f${i}`, type: 'explorer', startedAt: i, endedAt: i + 1 })
   const running = (i: number): Entry => ({ id: `r${i}`, type: 'explorer', startedAt: 100 + i })
 
-  it('a subagent start takes its description', async () => {
-    const long = 'x'.repeat(130)
-    const stale: Pending = { type: 'explorer', description: 'viejo', at: NOW() - 700 }
+  it('a subagent start records its transcript', async () => {
+    const t = '/x/sess.jsonl'
     const { session, file } = await fireIn(
-      [agent('explorer', { description: 'T5 paginación' }), agent('general-purpose', { description: long }), agent('x', { subagent_type: undefined, description: 'sin tipo' }, 'Task'), start('a1', 'explorer'), start('a2', 'general-purpose'), start('a3', 'explorer'), start('a4', 'general-purpose'), start('a5', 'general-purpose')],
-      { pending: [stale] }
+      [
+        start('a1', 'explorer', { transcript_path: t }),
+        start('a2', 'Plan', { transcript_path: '/x/sess.txt' }),
+        start('a3', 'Plan', { transcript_path: 7 }),
+        start('a4', 'Plan')
+      ],
+      { entries: [], pending: [{ type: 'explorer', description: 'viejo', at: NOW() }] }
     )
-
-    expect(file?.entries?.map((e) => [e.id, e.type, e.description])).toEqual([
-      ['a1', 'explorer', 'T5 paginación'],
-      ['a2', 'general-purpose', 'x'.repeat(120)],
-      ['a3', 'explorer', undefined],
-      ['a4', 'general-purpose', 'sin tipo'],
-      ['a5', 'general-purpose', undefined]
+    expect(file?.entries?.map((e) => [e.id, e.type, e.transcript])).toEqual([
+      ['a1', 'explorer', '/x/sess/subagents/agent-a1.jsonl'],
+      ['a2', 'Plan', undefined],
+      ['a3', 'Plan', undefined],
+      ['a4', 'Plan', undefined]
     ])
     for (const e of file!.entries!) expect(e.startedAt).toBeGreaterThanOrEqual(NOW() - 20)
-    expect(file?.pending).toEqual([])
-    expect(readFileSync(join(home, 'subagents', `${session}.json`), 'utf8')).not.toContain('SECRET-PROMPT')
-    // The Agent call still counts as working and as activity, as before.
-    expect(JSON.parse(readFileSync(join(home, 'state', `${session}.json`), 'utf8')).state).toBe('working')
-    expect(readFileSync(join(home, 'activity', `${session}.jsonl`), 'utf8')).toContain('Lanzando un subagente: T5 paginación')
+    // The leftover pending queue is gone at the next write; no description comes from the hook.
+    expect(file?.pending).toBeUndefined()
+    expect(file?.entries?.every((e) => e.description === undefined)).toBe(true)
+    expect(readFileSync(join(home, 'subagents', `${session}.json`), 'utf8')).not.toContain('SECRET')
+
+    // A PreToolUse never writes the file; the Agent call still counts as working and as activity.
+    const pre = await fireIn([agent('explorer', { description: 'T5 paginación' }), agent('x', {}, 'Task')])
+    expect(pre.file).toBeUndefined()
+    expect(JSON.parse(readFileSync(join(home, 'state', `${pre.session}.json`), 'utf8')).state).toBe('working')
+    expect(readFileSync(join(home, 'activity', `${pre.session}.jsonl`), 'utf8')).toContain('Lanzando un subagente: T5 paginación')
   }, 30000)
 
   it('subagent events never change the agent state', async () => {
@@ -357,11 +364,7 @@ describe('subagents hook', () => {
     const busy = await fireIn([start('new', 'explorer')], { entries: Array.from({ length: 22 }, (_, i) => running(i)) })
     expect(busy.file?.entries).toHaveLength(23)
 
-    // 20 pending is the other ceiling: the oldest goes.
-    const at = NOW()
-    const pending = await fireIn([agent('explorer', { description: 'nuevo' })], { pending: Array.from({ length: 20 }, (_, i) => ({ type: 'explorer', description: `p${i}`, at: at - 100 + i })) })
-    expect(pending.file?.pending).toHaveLength(20)
-    expect(pending.file?.pending?.[0]?.description).toBe('p1')
-    expect(pending.file?.pending?.at(-1)?.description).toBe('nuevo')
+    // Nothing pending is kept any more.
+    expect(busy.file?.pending).toBeUndefined()
   }, 60000)
 })

@@ -47,43 +47,36 @@ function replace(file, data) {
   renameSync(tmp, file)
 }
 
-// W62-W64: Claude's subagents, one file per session. Only ids, types and the Agent call's description
-// are kept: never the prompt, the transcript path or the last message.
+// W62-W64: Claude's subagents, one file per session. Only ids, types and the path of each subagent's own
+// transcript are kept (main reads it on demand): never the prompt or the last message.
 const SUBAGENT_EVENTS = ['SubagentStart', 'SubagentStop']
 const MAX_ENTRIES = 20
-const MAX_PENDING = 20
-const PENDING_TTL = 600
-const MAX_DESCRIPTION = 120
 const text = (v) => (typeof v === 'string' ? v.replace(/\s+/g, ' ').trim() : '')
 
 function trackSubagents(home, name, event, payload, at) {
+  if (!SUBAGENT_EVENTS.includes(event) && event !== 'UserPromptSubmit') return
   const file = join(home, 'subagents', `${name}.json`)
   let entries = []
-  let pending = []
+  let raw = ''
   try {
-    const v = JSON.parse(readFileSync(file, 'utf8'))
+    raw = readFileSync(file, 'utf8')
+    const v = JSON.parse(raw)
     if (Array.isArray(v.entries)) entries = v.entries
-    if (Array.isArray(v.pending)) pending = v.pending
   } catch {
     /* first one for this session */
   }
-  const before = JSON.stringify({ entries, pending })
   const type = text(payload?.agent_type)
   const id = text(payload?.agent_id)
 
-  if (event === 'PreToolUse') {
-    if (payload?.tool_name !== 'Agent' && payload?.tool_name !== 'Task') return
-    const input = payload.tool_input
-    pending.push({ type: text(input?.subagent_type) || 'general-purpose', description: text(input?.description).slice(0, MAX_DESCRIPTION), at })
-  } else if (event === 'UserPromptSubmit') {
+  if (event === 'UserPromptSubmit') {
     entries = entries.filter((e) => e.endedAt === undefined)
   } else if (event === 'SubagentStart') {
     if (!type || !id) return
-    pending = pending.filter((p) => at - p.at < PENDING_TTL)
-    const i = pending.findIndex((p) => p.type === type)
-    const [taken] = i < 0 ? [] : pending.splice(i, 1)
-    entries.push({ id, type, ...(taken?.description && { description: taken.description }), startedAt: at })
-  } else if (event === 'SubagentStop') {
+    // Claude Code keeps each subagent's transcript beside the session's (internal layout, verified on disk).
+    const path = payload?.transcript_path
+    const transcript = typeof path === 'string' && path.endsWith('.jsonl') ? `${path.slice(0, -6)}/subagents/agent-${id}.jsonl` : undefined
+    entries.push({ id, type, ...(transcript && { transcript }), startedAt: at })
+  } else {
     const entry = type && id ? entries.find((e) => e.id === id && e.endedAt === undefined) : undefined
     if (!entry) return
     entry.endedAt = at
@@ -95,10 +88,10 @@ function trackSubagents(home, name, event, payload, at) {
     if (i < 0) break
     entries.splice(i, 1)
   }
-  pending = pending.slice(-MAX_PENDING)
-  if (JSON.stringify({ entries, pending }) === before) return
+  const body = JSON.stringify({ entries }) + '\n'
+  if (body === raw || (!raw && entries.length === 0)) return
   mkdirSync(join(home, 'subagents'), { recursive: true })
-  replace(file, JSON.stringify({ entries, pending }) + '\n')
+  replace(file, body)
 }
 
 function session() {

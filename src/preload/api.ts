@@ -417,7 +417,7 @@ export interface ActivityApi {
 export interface SubagentEntry {
   id: string
   type: string
-  /** Text from Claude, cut at 120 characters; absent when the Agent call was not seen. */
+  /** From the subagent's meta file (or stored by an older hook), cut at 120 characters; absent without one. */
   description?: string
   /** Epoch seconds. */
   startedAt: number
