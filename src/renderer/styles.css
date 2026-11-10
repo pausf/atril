@@ -1532,15 +1532,23 @@ kbd {
 .mr-row .tag {
   white-space: nowrap;
 }
-.mr-row .ci-fail {
+.mr-ci {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.mr-row .ci-fail,
+.mr-ci .ci-fail {
   background: var(--bad-bg);
   color: var(--bad-text);
 }
-.mr-row .ci-pass {
+.mr-row .ci-pass,
+.mr-ci .ci-pass {
   background: var(--ok-bg);
   color: var(--text);
 }
-.mr-row .ci-running {
+.mr-row .ci-running,
+.mr-ci .ci-running {
   color: var(--run-text);
 }
 /* A row plus its score cell (M12, M15). */

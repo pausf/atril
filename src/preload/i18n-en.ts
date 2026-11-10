@@ -475,6 +475,8 @@ export const EN: Record<string, string> = {
   "Descartar": "Discard",
   "Publicado": "Published",
   "Enviado al agente": "Sent to the agent",
+  'Arreglar CI con Claude': 'Fix CI with Claude',
+  'Enviado a {rama}': 'Sent to {rama}',
   "Tus tareas y empezar trabajos": "Your tasks, and starting workspaces",
   "Tus MR, revisar y crear repos": "Your MRs, reviews and new repos",
   "un token de API de Atlassian": "an Atlassian API token",
