@@ -34,7 +34,7 @@ import { listRepos, registerRepo, setOverride } from './repos'
 import * as pty from './pty'
 import { run } from './run'
 import { createUsage } from './usage'
-import { listWorkspaces, openWorktree, removeWorkspace } from './workspaces'
+import { listWorkspaces, openWorktree, removeWorkspace, flowWorkspace } from './workspaces'
 import { createFlowHub } from './flow/watch'
 import { installMenu } from './menu'
 import { createNotifyGate } from './focus'
@@ -439,24 +439,24 @@ app.whenReady().then(async () => {
   })
   const flow = createFlowHub({
     run,
-    find: async (id) => (await listWorkspaces(run)).find((w) => w.id === id),
+    find: (id) => flowWorkspace(id, run),
     emit: (id, stage) => BrowserWindow.getAllWindows().forEach((w) => w.webContents.send('atril:flow:changed', id, stage))
   })
   ipcMain.handle('atril:flow:get', (_e, id: string | null) => flow.select(id))
   ipcMain.handle('atril:flow:docs', async (_e, id: string) => {
-    const ws = (await listWorkspaces(run)).find((w) => w.id === id)
+    const ws = await flowWorkspace(id, run)
     return ws ? readDocs(ws.path) : null
   })
   ipcMain.handle('atril:flow:changes', async (_e, id: string) => {
-    const ws = (await listWorkspaces(run)).find((w) => w.id === id)
+    const ws = await flowWorkspace(id, run)
     return ws ? listChanges(ws.path, ws.baseCommit, run) : []
   })
   ipcMain.handle('atril:flow:diff', async (_e, id: string, path: unknown) => {
-    const ws = (await listWorkspaces(run)).find((w) => w.id === id)
+    const ws = await flowWorkspace(id, run)
     return ws && typeof path === 'string' ? fileDiff(ws.path, ws.baseCommit, path, run) : ''
   })
   ipcMain.handle('atril:flow:save', async (_e, id: string, change: unknown, name: unknown, text: unknown, mtimeMs: unknown) => {
-    const ws = (await listWorkspaces(run)).find((w) => w.id === id)
+    const ws = await flowWorkspace(id, run)
     if (!ws || typeof change !== 'string' || typeof name !== 'string' || typeof text !== 'string' || typeof mtimeMs !== 'number') {
       return { error: t('Ese archivo no se puede editar desde Atril') }
     }

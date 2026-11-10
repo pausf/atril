@@ -3,7 +3,8 @@ import { rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanTmp, git, killTmux, makeRegisteredRepo, tmp, tmuxOut, tmuxSock } from './test-helpers'
-import { listWorkspaces, openWorktree, readRecords, removeWorkspace, writeRecords } from './workspaces'
+import { flowWorkspace, listWorkspaces, openWorktree, readRecords, removeWorkspace, writeRecords } from './workspaces'
+import { qaStatus } from './qa'
 import { run, type Runner } from './run'
 
 const SLEEP = ['sh', '-c', 'sleep 300']
@@ -188,24 +189,26 @@ describe('workspaces', () => {
       return run(cmd, args, opts)
     }
 
-    // No local branch: a new one tracking the remote's, based on the fetched commit.
+    // The base is where the MR's branch left the main line, so Cambios shows the whole MR from the start.
+    const mainLine = git(repo, 'rev-parse', 'HEAD').trim()
+    // No local branch: a new one tracking the remote's.
     const fetched = pushBranch('feat/remote')
     const fresh = await openWorktree({ repoId: 'demo', branch: 'feat/remote', agent: 'claude', existing: true, remote: 'origin', argv: SLEEP }, spy)
     if (!('workspace' in fresh)) throw new Error(fresh.error)
     expect(calls).toContainEqual(['git', '-C', repo, 'fetch', 'origin', 'feat/remote'])
     expect(git(fresh.workspace.path, 'rev-parse', 'HEAD').trim()).toBe(fetched)
     expect(git(fresh.workspace.path, 'rev-parse', '--abbrev-ref', 'feat/remote@{upstream}').trim()).toBe('origin/feat/remote')
-    expect(fresh.workspace.baseCommit).toBe(fetched)
+    expect(fresh.workspace.baseCommit).toBe(mainLine)
 
     // A local branch already there is the one checked out, untouched.
-    const remoteTip = pushBranch('feat/both')
+    pushBranch('feat/both')
     const localTip = git(repo, 'rev-parse', 'HEAD').trim()
     git(repo, 'branch', 'feat/both', localTip)
     const both = await openWorktree({ repoId: 'demo', branch: 'feat/both', agent: 'claude', existing: true, remote: 'origin', argv: SLEEP })
     if (!('workspace' in both)) throw new Error(both.error)
     expect(git(both.workspace.path, 'branch', '--show-current').trim()).toBe('feat/both')
     expect(git(both.workspace.path, 'rev-parse', 'HEAD').trim()).toBe(localTip)
-    expect(both.workspace.baseCommit).toBe(remoteTip)
+    expect(both.workspace.baseCommit).toBe(mainLine)
 
     // A branch the remote does not have opens nothing.
     const missing = await openWorktree({ repoId: 'demo', branch: 'feat/nowhere', agent: 'claude', existing: true, remote: 'origin', argv: SLEEP })
@@ -264,6 +267,17 @@ describe('workspaces', () => {
     expect(() => tmuxOut(sock, 'has-session', '-t', r.workspace.session)).toThrow()
   })
 
+
+  it('a review session has no libretto panel of its own', async () => {
+    // Its folder is the person's own copy: the panel, Cambios and QA must not read it as the review's work.
+    const review = await openWorktree({ repoId: 'demo', branch: 'feat/rev', agent: 'claude', review: true, argv: SLEEP })
+    if (!('workspace' in review)) throw new Error(review.error)
+    const work = await openWorktree({ repoId: 'demo', branch: 'feat/work', agent: 'claude', argv: SLEEP })
+    if (!('workspace' in work)) throw new Error(work.error)
+    expect(await flowWorkspace(review.workspace.id, run)).toBeUndefined()
+    expect((await flowWorkspace(work.workspace.id, run))?.id).toBe(work.workspace.id)
+    expect(await qaStatus(review.workspace.id, run)).toBeNull()
+  }, 40000)
   it('a reader never sees a half-written workspaces file', async () => {
     // Watchers read workspaces.json while it is being written; a truncate-then-write showed them an empty file.
     const many = Array.from({ length: 3000 }, (_, n) => ({ id: `id${n}`, repoId: 'demo', branch: `b${n}`, mode: 'worktree' as const, path: '/p', baseCommit: 'x', agent: 'claude' as const, session: `s${n}`, paneId: '%1' }))

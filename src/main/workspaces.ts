@@ -45,6 +45,11 @@ async function readJson<T>(file: string, fallback: T): Promise<T> {
   }
 }
 
+/** W91: the workspace the Libretto panel, its documents, Cambios and QA may read; a review session has none. */
+export async function flowWorkspace(id: string, run: Runner = defaultRun): Promise<WorkspaceView | undefined> {
+  return (await listWorkspaces(run)).find((w) => w.id === id && w.mode !== 'review')
+}
+
 export const readRecords = async (): Promise<WorkspaceRecord[]> =>
   (await readJson<{ workspaces: WorkspaceRecord[] }>(join(home(), 'workspaces.json'), { workspaces: [] })).workspaces
 
@@ -123,6 +128,14 @@ export async function openWorktree(input: OpenInput, run: Runner = defaultRun): 
       const fetch = await run('git', ['-C', repo.path, 'fetch', remote, branch])
       if (fetch.code !== 0) return { error: t('No se pudo traer la rama: {detail}', { detail: fetch.stderr.trim() || fetch.code }) }
       fetched = (await run('git', ['-C', repo.path, 'rev-parse', `refs/remotes/${remote}/${branch}`])).stdout.trim()
+      // W89: the base is where the MR's branch left the main line, so Cambios shows the whole MR at once.
+      for (const line of [`refs/remotes/${remote}/HEAD`, `refs/remotes/${remote}/main`, `refs/remotes/${remote}/master`, 'refs/heads/main', 'refs/heads/master']) {
+        const mb = await run('git', ['-C', repo.path, 'merge-base', fetched, line])
+        if (mb.code === 0 && mb.stdout.trim()) {
+          fetched = mb.stdout.trim()
+          break
+        }
+      }
       const local = (await run('git', ['-C', repo.path, 'rev-parse', '--verify', '--quiet', `refs/heads/${branch}`])).code === 0
       where = local ? [path, branch] : ['--track', '-b', branch, path, `${remote}/${branch}`]
     }

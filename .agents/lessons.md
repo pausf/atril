@@ -200,3 +200,6 @@ Reviewer found nothing (3 proofs re-run, green). Before the review the session a
 
 ## 2026-11-10 · pause-agent · 6→7
 Reviewer found nothing against the contract (3 proofs re-run). Asked whether a removed workspace leaves its pause mark: it did; dropFiles now removes it (seen red first). Before the review, the builder flagged that Claude Code's idle Notification (~60 s at the prompt) would end a pause; the hook now ignores idle_prompt for the mark and W87 says so (seen red first). Lesson: a mark that a hook clears must name which hook events count, including the ones Claude Code sends on its own.
+
+## 2026-11-10 · open-work-from-mr · 4→6 and 6→7
+Two cold spec reviews caught the first design leaving Libretto's patterns (an Atril worktree under review-project's own; libretto-flow given an MR URL it does not take); redesigned to Libretto's own paths. Work-reviewer found nothing; it asked whether anything treats a review session as a worktree — yes: the panel, documents, Cambios and QA read its folder, the person's copy. Fixed with `flowWorkspace` (W91), and the continue base is now the merge-base with the main line so Cambios shows the whole MR (W89 amended). Both seen red first. Lesson: before wiring a command into a flow, read the command's own file for its inputs and its isolation.

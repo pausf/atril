@@ -112,7 +112,7 @@ export async function qaLive(id: string, run: Runner): Promise<boolean> {
 const starting = new Set<string>()
 
 export async function launchQa(id: string, run: Runner): Promise<QaResult> {
-  const ws = (await readRecords()).find((r) => r.id === id)
+  const ws = (await readRecords()).find((r) => r.id === id && r.mode !== 'review')
   if (!ws) return { error: t('Ese trabajo ya no existe') }
   const info = await detectQa(ws.path)
   if (!info) return { error: t('Atril no sabe probar en vivo este proyecto') }
@@ -152,7 +152,7 @@ const MAX_BYTES = 2 * 1024 * 1024
 
 /** F33: what the window shows; null for a project Atril cannot test. */
 export async function qaStatus(id: string, run: Runner): Promise<QaStatus | null> {
-  const ws = (await readRecords()).find((r) => r.id === id)
+  const ws = (await readRecords()).find((r) => r.id === id && r.mode !== 'review')
   const info = ws && (await detectQa(ws.path))
   if (!info) return null
   const dir = shotsDir(id)
