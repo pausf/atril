@@ -1319,6 +1319,117 @@ kbd {
   cursor: pointer;
 }
 
+/* S29, S30: Conexiones — one row per service, its body unfolds in place. */
+.conns h3#conns-h {
+  margin-bottom: 4px;
+}
+.conn + .conn {
+  border-top: 1px solid var(--line);
+}
+.conn-head {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+}
+.conn-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--faint);
+}
+.conn-dot.on {
+  background: var(--run);
+}
+.conn-id h3 {
+  margin: 0;
+  font-size: 14px;
+}
+.conn-id p {
+  margin: 1px 0 0;
+  color: var(--sub);
+  font-size: 12.5px;
+}
+.conn-state {
+  color: var(--sub);
+  font-size: 12.5px;
+  text-align: right;
+}
+.conn-head .btn[aria-expanded='true'] {
+  background: var(--chip);
+}
+.conn-body {
+  padding: 2px 0 16px 20px;
+}
+.steps {
+  list-style: none;
+  counter-reset: step;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.steps > li {
+  counter-increment: step;
+  position: relative;
+  padding-left: 32px;
+  font-size: 13.5px;
+}
+.steps > li::before {
+  content: counter(step);
+  position: absolute;
+  left: 0;
+  top: -1px;
+  width: 21px;
+  height: 21px;
+  border: 1px solid var(--faint);
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 11.5px;
+  color: var(--sub);
+}
+.steps > li > b {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+.step-line {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.step-note {
+  color: var(--sub);
+  font-size: 12.5px;
+}
+.steps .srow {
+  grid-template-columns: 84px 1fr;
+  align-items: start;
+}
+.steps .srow label {
+  padding-top: 7px;
+}
+.sfield {
+  display: flex;
+  flex-direction: column;
+}
+.sfield input {
+  width: 100%;
+}
+.sfield input[aria-invalid='true'] {
+  border-color: var(--bad);
+}
+.sfield .serr {
+  margin: 4px 0 0;
+}
+.manage .lockn {
+  margin-top: 8px;
+}
+
 .jira-summary {
   display: flex;
   justify-content: space-between;

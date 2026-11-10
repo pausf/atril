@@ -36,18 +36,27 @@ describe('settings screen', () => {
     const user = userEvent.setup()
     render(createElement(Ajustes))
 
-    await user.type(await screen.findByLabelText('Dirección'), 'https://x.atlassian.net')
+    await user.click(await screen.findByRole('button', { name: 'Conectar' }))
+    await user.type(screen.getByLabelText('Dirección'), 'https://x.atlassian.net')
     await user.type(screen.getByLabelText('Correo'), 'pau@x.com')
     await user.type(screen.getByLabelText('Token'), TOKEN)
     api.jira.status.mockResolvedValue({ saved: true, account: 'Pau Sánchez', site: 'https://x.atlassian.net' })
     await user.click(screen.getByRole('button', { name: 'Guardar y comprobar' }))
 
-    await screen.findByText(/Guardado/)
+    await screen.findByText('Conectado · Pau Sánchez · x.atlassian.net')
     expect(document.body.innerHTML).not.toContain(TOKEN)
     expect(screen.queryAllByDisplayValue(TOKEN)).toHaveLength(0)
-    // The saved card has no credential fields left; the board search is the only input.
+    // The saved row has no credential fields left; the board search is the only input.
     expect(document.querySelectorAll('input:not(#jira-board)')).toHaveLength(0)
-    expect(within(screen.getByRole('region', { name: 'Jira' })).getAllByRole('button').map((b) => b.textContent)).toEqual(['Reemplazar', 'Borrar'])
+    expect(within(screen.getByRole('region', { name: 'Jira' })).getAllByRole('button').map((b) => b.textContent)).toEqual(['Gestionar', 'Reemplazar', 'Borrar'])
+
+    // S5 (amended): a saved row opens with Gestionar, whose body offers only Reemplazar and Borrar.
+    cleanup()
+    render(createElement(Ajustes))
+    const row = screen.getByRole('region', { name: 'Jira' })
+    await user.click(await within(row).findByRole('button', { name: 'Gestionar' }))
+    expect(within(row.querySelector<HTMLElement>('#jira-body')!).getAllByRole('button').map((b) => b.textContent)).toEqual(['Reemplazar', 'Borrar'])
+    expect(document.body.innerHTML).not.toContain(TOKEN)
 
     await user.click(screen.getByRole('button', { name: 'Reemplazar' }))
     expect((screen.getByLabelText('Token') as HTMLInputElement).value).toBe('')
@@ -71,7 +80,8 @@ describe('settings screen', () => {
     const user = userEvent.setup()
     render(createElement(Ajustes))
 
-    await user.click(await screen.findByRole('button', { name: 'Crear token en Atlassian' }))
+    await user.click(await screen.findByRole('button', { name: 'Conectar' }))
+    await user.click(screen.getByRole('button', { name: 'Crear token en Atlassian' }))
 
     await waitFor(() => expect(api.openTokenPage).toHaveBeenCalledTimes(1))
     expect(api.openTokenPage).toHaveBeenCalledWith()
@@ -92,7 +102,8 @@ describe('board picker', () => {
     render(createElement(Ajustes))
 
     // One letter is not a search; two letters are, once, after the typing stops.
-    await user.type(await screen.findByLabelText('Tablero'), 'd')
+    await user.click(await screen.findByRole('button', { name: 'Gestionar' }))
+    await user.type(screen.getByLabelText('Tablero'), 'd')
     await new Promise((r) => setTimeout(r, 400))
     expect(api.jira.searchBoards).not.toHaveBeenCalled()
     await user.type(screen.getByLabelText('Tablero'), 'x')

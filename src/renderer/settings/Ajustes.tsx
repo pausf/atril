@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import { useT } from '../ui'
 import { Repos } from './Repos'
 import { ForgeCard } from './Forges'
+import { ConnectSteps, ConnectionRow, Field, Manage, useConnectionState } from './Connection'
 import type { BoardSearchResult, JiraBoard, JiraSettingsStatus } from '../../preload/api'
 
 type Phase = 'idle' | 'checking'
@@ -96,12 +97,15 @@ function BoardField({ board, onPicked }: { board?: JiraBoard; onPicked: () => Pr
 function JiraCard() {
   const t = useT()
   const [status, setStatus] = useState<JiraSettingsStatus | null>(null)
+  const [open, setOpen] = useState(false)
   const [replacing, setReplacing] = useState(false)
   const [phase, setPhase] = useState<Phase>('idle')
   const [error, setError] = useState<string | null>(null)
+  const [tried, setTried] = useState(false)
   const [site, setSite] = useState('')
   const [email, setEmail] = useState('')
   const [token, setToken] = useState('')
+  const state = useConnectionState(status, true)
 
   const refresh = useCallback(async () => {
     try {
@@ -118,8 +122,10 @@ function JiraCard() {
 
   const save = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault()
-    setPhase('checking')
     setError(null)
+    setTried(true)
+    if (!site || !email || !token) return
+    setPhase('checking')
     try {
       const r = await window.atril.settings.jira.save({ site, email, token })
       if ('error' in r) {
@@ -127,6 +133,7 @@ function JiraCard() {
         return
       }
       setToken('')
+      setTried(false)
       setReplacing(false)
       await refresh()
     } catch (err) {
@@ -138,6 +145,7 @@ function JiraCard() {
 
   const remove = async (): Promise<void> => {
     await window.atril.settings.jira.delete()
+    setOpen(false)
     await refresh()
   }
 
@@ -145,94 +153,45 @@ function JiraCard() {
     setSite(status?.site ?? '')
     setToken('')
     setError(null)
+    setTried(false)
     setReplacing(true)
   }
 
-  const showForm = status !== null && (!status.saved || replacing)
+  const need = (value: string, text: string): string | undefined => (tried && !value ? text : undefined)
 
   return (
-    <section className="scard" aria-labelledby="jira-h" data-tour="connections">
-      <h3 id="jira-h">Jira</h3>
-      <p className="hint2">{t('Para leer tus tareas del sprint.')}</p>
-      {status === null && <div className="lockn">{t('Cargando…')}</div>}
-      {status?.saved && !replacing && (
-        <>
-          <div className="saved">
-            <span className="lock" aria-hidden>
-              🔒
-            </span>
-            <span>
-              <b>{t('Guardado')}</b> · {status.account} · {status.site?.replace(/^https:\/\//, '')}
-            </span>
-            <span className="sp" />
-            <button className="btn" onClick={startReplacing}>
-              {t('Reemplazar')}
-            </button>
-            <button className="btn" onClick={() => void remove()}>
-              {t('Borrar')}
-            </button>
-          </div>
-          <div className="lockn">
-            {t('El token no se muestra nunca. Si lo pierdes, crea uno nuevo en Atlassian y pulsa Reemplazar.')}
-          </div>
+    <ConnectionRow
+      id="jira"
+      name="Jira"
+      purpose={t('Tus tareas y empezar trabajos')}
+      state={state}
+      saved={status && status.saved}
+      open={open}
+      onToggle={() => setOpen(!open)}
+    >
+      {status?.saved && !replacing ? (
+        <Manage note={t('El token no se muestra nunca. Si lo pierdes, crea uno nuevo en Atlassian y pulsa Reemplazar.')} onReplace={startReplacing} onRemove={() => void remove()}>
           <BoardField key={status.board?.id ?? 'none'} board={status.board} onPicked={refresh} />
-        </>
+        </Manage>
+      ) : (
+        <ConnectSteps
+          createLabel={t('Crear token en Atlassian')}
+          createNote={t('un token de API de Atlassian')}
+          onCreate={() => void window.atril.settings.openTokenPage()}
+          fields={
+            <>
+              <Field id="jira-site" label={t('Dirección')} value={site} onChange={(e) => setSite(e.target.value)} placeholder={t('https://tuempresa.atlassian.net')} error={need(site, t('Falta la dirección.'))} />
+              <Field id="jira-email" label={t('Correo')} type="email" value={email} onChange={(e) => setEmail(e.target.value)} error={need(email, t('Falta el correo.'))} />
+              <Field id="jira-token" label={t('Token')} type="password" value={token} onChange={(e) => setToken(e.target.value)} error={need(token, t('Falta el token.'))} />
+            </>
+          }
+          error={error}
+          checking={phase === 'checking'}
+          onCancel={replacing ? () => setReplacing(false) : undefined}
+          onSubmit={(e) => void save(e)}
+        />
       )}
-      {showForm && (
-        <form onSubmit={(e) => void save(e)}>
-          <div className="srow">
-            <label htmlFor="jira-site">{t('Dirección')}</label>
-            <input
-              id="jira-site"
-              value={site}
-              onChange={(e) => setSite(e.target.value)}
-              placeholder={t('https://tuempresa.atlassian.net')}
-              autoComplete="off"
-              spellCheck={false}
-            />
-          </div>
-          <div className="srow">
-            <label htmlFor="jira-email">{t('Correo')}</label>
-            <input
-              id="jira-email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              autoComplete="off"
-            />
-          </div>
-          <div className="srow">
-            <label htmlFor="jira-token">{t('Token')}</label>
-            <input
-              id="jira-token"
-              type="password"
-              value={token}
-              onChange={(e) => setToken(e.target.value)}
-              autoComplete="off"
-            />
-          </div>
-          {error && (
-            <div className="serr" role="alert">
-              ✕ {error}
-            </div>
-          )}
-          <div className="sactions">
-            <button type="button" className="btn" onClick={() => void window.atril.settings.openTokenPage()}>
-              {t('Crear token en Atlassian')}
-            </button>
-            <span className="sp" />
-            {replacing && (
-              <button type="button" className="btn" onClick={() => setReplacing(false)}>
-                {t('Cancelar')}
-              </button>
-            )}
-            <button type="submit" className="btn p" disabled={phase === 'checking' || !site || !email || !token}>
-              {phase === 'checking' ? t('Comprobando…') : t('Guardar y comprobar')}
-            </button>
-          </div>
-        </form>
-      )}
-    </section>
+    </ConnectionRow>
   )
 }
 
@@ -245,9 +204,12 @@ export function Ajustes({ children }: { children?: ReactNode }) {
         {t('Tus tokens se guardan cifrados en el Llavero de tu Mac.')} <b>{t('Una vez guardados no se pueden volver a ver')}</b>
         {t(': solo reemplazar o borrar. Tus agentes nunca los reciben.')}
       </p>
-      <JiraCard />
-      <ForgeCard forge="github" />
-      <ForgeCard forge="gitlab" />
+      <section className="scard conns" aria-labelledby="conns-h" data-tour="connections">
+        <h3 id="conns-h">{t('Conexiones')}</h3>
+        <JiraCard />
+        <ForgeCard forge="github" />
+        <ForgeCard forge="gitlab" />
+      </section>
       <Repos />
       {children}
     </main>
