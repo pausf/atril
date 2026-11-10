@@ -57,7 +57,8 @@ Sin probar con datos reales (necesita a Pau):
 - **Commits:** convencionales, sin `Co-Authored-By` ni atribución a IA.
 - **Antes de cada push**, escanea identificadores de trabajo reales con
   `git grep -niE -f ~/.config/atril/work-identifiers.txt HEAD`.
-  La lista vive fuera del repo a propósito: nunca la copies aquí. Debe salir vacío. Usa nombres de
+  La lista vive fuera del repo a propósito: nunca la copies aquí. Debe salir vacío; un hash `integrity`
+  de `pnpm-lock.yaml` coincide por azar (11 nov): esa línea no cuenta. Usa nombres de
   ejemplo (shop-web, WEB, SHOP, PF, OPS, acme).
 - **Nunca** una carpeta llamada `secrets` (hay una regla de denegación global), ni leer `~/.atril/secrets.bin`. Los tokens solo viven en main.
 - **No tocar:** los repos reales de Pau, sus sesiones de tmux por defecto ni `~/.claude.json`. Los tests usan su propio socket de tmux y un `ATRIL_HOME` temporal.
