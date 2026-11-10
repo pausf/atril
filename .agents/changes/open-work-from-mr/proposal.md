@@ -109,5 +109,5 @@ origin <rama>`, luego `git worktree add <ruta> <rama>` si la rama local existe o
 
 ## Checklist
 
-- [ ] main: workFor, the review session and the continue workspace (with W89, W90) · Closes: M33, M34, W89, W90
-- [ ] the MR view's states, the jump and the errors; tutorial «Tus MR» text (no criterion); sketch; photo · waits on box 1 · Closes: M35
+- [x] main: workFor, the review session and the continue workspace (with W89, W90) · Closes: M33, M34, W89, W90
+- [x] the MR view's states, the jump and the errors; tutorial «Tus MR» text (no criterion); sketch; photo · waits on box 1 · Closes: M35
