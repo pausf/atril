@@ -2632,6 +2632,11 @@ button.stg.stgbtn .icon {
 .lbw {
   max-width: 760px;
 }
+.lbw h1 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
 .lbrepos {
   display: flex;
   gap: 8px;

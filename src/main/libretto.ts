@@ -142,7 +142,9 @@ export async function editIdea(repoPath: string, name: string, text: string, run
   if ('error' in found) return found
   if (!ASK.test(found.text)) return { error: t('Esa idea no existe') }
   // A replacer function: the request may hold «$&» and the like.
-  await writeFile(found.file, found.text.replace(ASK, () => `## The ask, verbatim\n\n${quote(ask)}\n\n`))
+  const next = found.text.replace(ASK, () => `## The ask, verbatim\n\n${quote(ask)}\n\n`)
+  if (next === found.text) return { ok: true }
+  await writeFile(found.file, next)
   const commit = await run('git', ['-C', repoPath, 'commit', '-q', '-m', `docs(queue): edit ${name}`, '--', rel(name)])
   if (commit.code === 0) return { ok: true }
   await writeFile(found.file, found.text)

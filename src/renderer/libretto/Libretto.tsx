@@ -140,7 +140,7 @@ export function Libretto() {
               return (
                 <button key={r.id} type="button" className={`lbrepo${c?.none ? ' off' : ''}`} aria-pressed={r.id === repoId} onClick={() => setLibrettoRepo(r.id)}>
                   <b>{r.id}</b>
-                  {c !== undefined && <span>{c.none ? t('sin Libretto') : t('{q} en cola · {f} en curso', { q: c.queued, f: c.inFlight })}</span>}
+                  {c !== undefined && <span>{c.none ? t('sin Libretto') : [c.queued > 0 && t('{n} en cola', { n: c.queued }), c.inFlight > 0 && t('{n} en curso', { n: c.inFlight })].filter(Boolean).join(' · ') || t('nada en marcha')}</span>}
                 </button>
               )
             })}

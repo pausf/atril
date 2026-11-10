@@ -180,6 +180,11 @@ describe('libretto', () => {
       expect(files()).toBe('.agents/changes/my-idea/proposal.md')
       expect(dirty()).toEqual(strays)
 
+      // Saving the same text again is a quiet no-op, not a git error.
+      const same = git(repo, 'rev-parse', 'HEAD').trim()
+      expect(await editIdea(repo, 'my-idea', 'new text\n\nsecond', run)).toEqual({ ok: true })
+      expect(git(repo, 'rev-parse', 'HEAD').trim()).toBe(same)
+
       // Nothing is written for blank text, an unsafe name, a started idea or one that is not queued.
       const head = git(repo, 'rev-parse', 'HEAD').trim()
       proposal('doing', '# doing\n\n## Checklist\n\n- [ ] a\n')

@@ -76,7 +76,7 @@ main; si Jira falla no se borra nada; teclado; textos por `t()`.
 - **W100** (amended) When Atril reads a repo's Libretto state, it shall return as the queue the folders under
   `.agents/changes/` whose `proposal.md` holds a line `Queued: YYYY-MM-DD` before its first `## ` heading, oldest
   first then by name, each with name, date, the first non-blank line under `## Reading` — or, when that section is
-  empty, the first line of `## The ask, verbatim` without its `> ` — and `started: true` when a local branch
+  empty, the first line of `## The ask, verbatim` without its `> ` — its whole request without the `> ` as `ask`, and `started: true` when a local branch
   `feat/<name>` exists; and every other folder as in flight with name and `readChecklist`'s closed, total and first
   open box (or none); and if the repo has no `.agents/changes/`, then it shall return `{ none: true }`.
   Proof: src/main/libretto.test.ts a repo's queue and work in flight are read from disk
@@ -157,5 +157,5 @@ Ninguna.
 
 ## Checklist
 
-- [ ] edit, drop, to Jira, the reading line and the repo counts in main with their IPC · Closes: W100, W101, W106, W107, W108
-- [ ] the redesigned screen, row buttons, confirm, editor and Jira result; real-app drive; photo; novedades · waits on box 1 · Closes: W110, W111
+- [x] edit, drop, to Jira, the reading line and the repo counts in main with their IPC · Closes: W100, W101, W106, W107, W108
+- [x] the redesigned screen, row buttons, confirm, editor and Jira result; real-app drive; photo; novedades · waits on box 1 · Closes: W110, W111

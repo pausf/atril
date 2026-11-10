@@ -138,7 +138,7 @@ describe('libretto screen', () => {
     const web$ = screen.getByRole('button', { name: /^web/ })
     expect(web$.textContent).toBe('web2 en cola · 3 en curso')
     expect(web$.getAttribute('aria-pressed')).toBe('true')
-    expect(screen.getByRole('button', { name: /^api/ }).textContent).toBe('api0 en cola · 1 en curso')
+    expect(screen.getByRole('button', { name: /^api/ }).textContent).toBe('api1 en curso')
     expect(screen.getByRole('button', { name: /^api/ }).getAttribute('aria-pressed')).toBe('false')
     expect(screen.getByRole('button', { name: /^ops/ }).textContent).toBe('opssin Libretto')
     expect(screen.queryByRole('combobox')).toBeNull()
