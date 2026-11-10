@@ -12,10 +12,10 @@ Las ramas van apiladas: cada una sale de la anterior y `main` no se ha movido. L
 1. Hechos el 10 nov: `add-subagents-view`, `add-subagent-detail` `add-doctor-install-terminal`, `restyle-mode-picker`, `fit-flow-panel`, `show-doc-buttons`, `adopt-grafito`, `expand-tour` y `redesign-connections`.
    Bocetos fase 2: `bocetos/fase2-nucleo.html` (6 diseños del panel; Pau eligió el 0) y `bocetos/fase2-app.html` (4 variantes minimalistas; Pau eligió Grafito, ya en la app como segunda paleta).
 2. **Objetivo (Pau, 10 nov): mejorar la idea, no cambiarla** (flujo Libretto, puntuaciones, borradores…),
-   para que una persona lleve **3 tareas a la vez sin perder el foco**. Orden de la cola (en
-   `.agents/changes/`), elegido por eso: `add-qa-lab` (en curso; borrador en el scratchpad) (QA en vivo: Chrome, emuladores) → `pause-agent` → `open-work-from-mr` → `cost-per-work` → `mr-line-comments` →
-   `work-history` (en curso) → `first-run-setup` → `package-and-sign`. Los cuelgues de tests de tmux/git eran
-   contención: arreglado con `maxWorkers: 4` (ver lessons).
+   para que una persona lleve **3 tareas a la vez sin perder el foco**. Hecho el 10–11 nov: CI, respuestas
+   rápidas, foco, Todos, QA en vivo, pausa, abrir MR, coste, comentarios en línea. Cola (en `.agents/changes/`):
+   `work-history` (en curso) → `first-run-setup` → `package-and-sign`; después, las ★ de `bocetos/ideas.html`.
+   Los cuelgues de tests de tmux/git eran contención: arreglado con `maxWorkers: 4` (ver lessons).
 3. Después, la lista de mejoras que se le dio a Pau el 9 nov. Ve una por una con el flujo Libretto:
    - Estado de la CI en la fila de la MR, y «Arreglar CI con Claude».
    - Abrir un trabajo desde una MR.
