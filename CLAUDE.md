@@ -7,18 +7,12 @@ con agentes de Claude Code en tmux, y gestiona MRs de GitHub/GitLab. Remoto PRIV
 ## Dónde lo dejamos (10 nov 2026) — empieza por aquí
 
 Las ramas van apiladas: cada una sale de la anterior y `main` no se ha movido. La última es
-**`add-subagents-view`**, aterrizada y subida el 10 nov (la vista de subagentes, con foto en novedades).
+**`add-subagent-detail`**, aterrizada y subida el 10 nov (modal terminal del subagente, foto en novedades).
 
-1. Hecho: `add-subagents-view`. Cola en `.agents/changes/` por `Queued:`:
-   `add-subagent-detail`, `add-doctor-install-terminal` (botón «Instalar» que abre una terminal) y
-   `expand-tour` (tutorial más extenso; Pau lo ve corto y con cosas en el aire).
-2. **Siguiente: `add-subagent-detail`** (encolado en `.agents/changes/add-subagent-detail/proposal.md`).
-   - Pau quiere que, al pulsar un subagente, se abra un **modal que sea un terminal** con lo que hace el Claude de ese subagente.
-   - Cómo:
-     - Leer en vivo `<transcript sin .jsonl>/subagents/agent-<agent_id>.jsonl` y pintarlo al estilo Claude Code (`⏺ Tool(arg)`, `⎿` resultado, texto, «✻ Pensando…» sin contenido).
-     - `agent-<id>.meta.json` trae `description`/`agentType`. Con eso sobra el emparejamiento por orden de add-subagents-view: bórralo.
-   - Ojo: es un formato interno de Claude Code, no documentado.
-   - El boceto `bocetos/fase1-nucleo.html` ya tiene un modal de subagente, pero como lista. Hay que pasarlo a terminal.
+1. Hechos el 10 nov: `add-subagents-view` y `add-subagent-detail`.
+2. Cola en `.agents/changes/` por `Queued:`: `add-doctor-install-terminal` (botón «Instalar» que abre una
+   terminal), `expand-tour` (tutorial más extenso, Pau lo ve corto) y `fit-flow-panel` (el panel de
+   Libretto sin scroll). Deuda: los tests de tmux se cuelgan de vez en cuando con carga (ver lessons).
 3. Después, la lista de mejoras que se le dio a Pau el 9 nov. Ve una por una con el flujo Libretto:
    - Estado de la CI en la fila de la MR, y «Arreglar CI con Claude».
    - Abrir un trabajo desde una MR.

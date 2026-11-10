@@ -140,6 +140,15 @@ The `workspaces` capability, phase 1. Its siblings in this change: `.agents/spec
 - SubagentStart and SubagentStop never change the workspace's own state (working / needs-you); the
   Agent call itself and the subagent's tool calls still count as working, as today.
 
+### Detalle del subagente (add-subagent-detail, 10 nov 2026)
+
+- Pulsar un subagente del panel abre un modal que parece una terminal y enseña lo que ha hecho y está
+  haciendo ese Claude, leído de su archivo local, sin gastar cuota.
+- Mientras el subagente trabaja, el modal se actualiza solo cada segundo; al terminar se queda quieto.
+- La descripción de cada subagente sale de su `meta.json`, así que dos subagentes del mismo tipo
+  lanzados a la vez ya no pueden intercambiarse la etiqueta.
+- El hook ya no guarda la cola `pending` ni lee el PreToolUse de `Agent` para los subagentes.
+
 ## Scope boundaries
 
 **In:** the three columns and footer of `bocetos/fase1-nucleo.html` (boceto 8), the
@@ -249,10 +258,23 @@ the mode from task size automatically, a setting for the default mode.
 ### Subagentes (add-subagents-view, 10 nov 2026)
 
 **In:** the two hook events, the description from the Agent tool, the list per workspace, the row
-count. **Out:** reading a subagent's transcript or output, stopping a subagent from Atril, subagents of
+count. **Out:** reading a subagent's transcript or output (superseded by add-subagent-detail), stopping a subagent from Atril, subagents of
 subagents shown as a tree, history past the next prompt.
 
 **Never scoped out:** the hook payload is read once and only the listed fields leave it (as today).
+
+### Detalle del subagente (add-subagent-detail, 10 nov 2026)
+
+**In:** la ruta del archivo en la entrada (solo en main), la descripción desde el meta, el registro
+del subagente como líneas, el modal terminal y su refresco.
+
+**Out:** escribirle al subagente o pararlo; ver el razonamiento (`thinking`) por dentro; subagentes de
+subagentes; registros de subagentes de antes de este cambio (no tienen ruta: el modal dice que no
+hay registro); colores por herramienta; buscar dentro del registro.
+
+**Never scoped out:** la ventana nunca manda una ruta: pide por id de trabajo e id de subagente y main
+solo lee la ruta que guardó el hook; el contenido se pinta como texto, nunca como HTML; el modal
+se maneja con teclado (foco al abrir, Tab dentro, Esc cierra y devuelve el foco a la fila).
 
 ## Constraints
 
@@ -337,6 +359,14 @@ subagents shown as a tree, history past the next prompt.
 
 - The hook stays one script; the new events install alongside the existing ones in `agent.ts`' `HOOK_EVENTS`.
 - Descriptions are text from Claude: shown as text, cut at 120 characters.
+
+### Detalle del subagente (add-subagent-detail, 10 nov 2026)
+
+- El formato del transcript y del meta es interno de Claude Code, no documentado: todo campo se
+  comprueba por tipo y lo que no encaja se salta, sin romper.
+- Sin dependencias nuevas; el modal reutiliza `useModalKeys` y las clases `modal`/`dlg`.
+- Textos por `t()` con su inglés en `src/preload/i18n-en.ts`; colores solo como tokens.
+- El hook sigue leyendo el payload una vez y solo saca de él los campos listados.
 
 ## Prior decisions
 
@@ -586,8 +616,8 @@ subagents shown as a tree, history past the next prompt.
 
 ### Subagentes (add-subagents-view, 10 nov 2026)
 
-- **Events only** (assumed): the transcript would cost reading and could leak content.
-- **Pairing by order** (assumed): SubagentStart carries no description, so it takes the oldest unpaired
+- **Events only** (assumed): the transcript would cost reading and could leak content. Superseded by add-subagent-detail (10 nov).
+- **Pairing by order** (assumed, superseded by add-subagent-detail: the description comes from the meta file): SubagentStart carries no description, so it takes the oldest unpaired
   Agent PreToolUse description of the same `subagent_type`; if none, the type alone is shown.
 
 #### Alternatives that lost
@@ -607,6 +637,46 @@ subagents shown as a tree, history past the next prompt.
 - Q: (revisor) ¿El PreToolUse de Agent deja de marcar «trabajando»? → A: no, sigue igual; solo SubagentStart/Stop no tocan el estado (assumed).
 - Q: (revisor) ¿Sin subagent_type? ¿Pendientes que nunca emparejan? → A: cuenta como general-purpose; los pendientes caducan a los 10 min (assumed).
 - Q: (revisor) ¿Unidades y formato? → A: segundos epoch; «45 s», «1 min 20 s»; terminado muestra la duración (assumed).
+
+### Detalle del subagente (add-subagent-detail, 10 nov 2026)
+
+- (add-subagents-view, 10 nov) «Events only» y «Pairing by order» quedan sustituidas: Pau pidió el
+  9 nov ver lo que hace el subagente como terminal y borrar el emparejamiento (assumed en el cómo).
+- La ruta vive en `$ATRIL_HOME/subagents/<session>.json` y no sale de main (assumed).
+- Refresco por sondeo de 1 s solo con el modal abierto (assumed); techo: relee el archivo entero,
+  pasar a leer la cola cuando un registro pese varios MB.
+- 500 líneas como mucho en el modal (assumed): un subagente largo enseña su final.
+
+#### Alternatives that lost
+
+| Considered | Why it lost |
+|---|---|
+| `fs.watch` por archivo de subagente y empujar líneas | Un vigilante por modal, que hay que cerrar bien, para ganar menos de 1 s de latencia. |
+| Localizar el archivo por `~/.claude/projects/<ruta codificada>/*/subagents/` | Una regla interna más (la codificación de la ruta) y un glob por sesiones. |
+| xterm.js en el modal | Sin entrada no aporta nada y añade otro terminal vivo con su tamaño. |
+| Mantener el emparejamiento por orden para la descripción | Se intercambia con dos del mismo tipo a la vez; el meta da la de verdad. |
+
+#### Decision log, answers as given (2026-11-10)
+- Q: ¿Dónde está el archivo del subagente? → A: el hook lo deriva en SubagentStart de `transcript_path` (campo documentado de todo hook): `<transcript_path sin .jsonl>/subagents/agent-<agent_id>.jsonl`, comprobado en disco con Claude Code de hoy; se guarda en main y nunca sale a la ventana (assumed). Si cambia el formato, el modal sale vacío y la lista sigue igual.
+- Q: ¿Se borra el emparejamiento por orden? → A: sí, como pide la propuesta: la descripción sale de `agent-<id>.meta.json`; sin meta, solo el tipo (assumed). Si el meta deja de existir, se pierden las descripciones, no la lista.
+- Q: ¿Terminal de verdad (xterm) o texto con aspecto de terminal? → A: texto monoespaciado de solo lectura con el estilo de Claude Code; xterm no aporta nada sin entrada (assumed).
+- Q: ¿En vivo cómo? → A: la ventana pide el registro cada segundo mientras el modal está abierto y el subagente trabaja; main relee el archivo (assumed). Techo: archivos de varios MB; leer solo la cola si pesa.
+- Q: ¿Qué se pinta? → A: el encargo (`> ` y sus 3 primeras líneas), texto del asistente con `⏺`, `⏺ Herramienta(arg)`, `⎿` con las 3 primeras líneas del resultado y «… +N líneas», y «✻ Pensando…» sin su contenido; como mucho las 500 últimas líneas (assumed).
+- Q: (fase 5) ¿Cómo se construye? → A: ruta guardada por el hook + lectura bajo demanda en main + sondeo desde el modal (assumed). Perdieron: un `fs.watch` por archivo de subagente (más estado y fugas por cada modal para ganar menos de 1 s) y buscar el archivo por la ruta del trabajo codificada en `~/.claude/projects` (depende de otra regla interna más y falla con trabajos en sitio).
+
+- Q: (revisor de spec) Varias holguras del contrato → A, todas (assumed):
+  - Una entrada antigua sin `transcript` conserva la `description` guardada.
+  - Un meta sin `description` de texto cuenta como meta ausente.
+  - Un meta que aún no existe se vuelve a leer en el siguiente cambio del archivo de entradas. Como muy tarde, en SubagentStop.
+  - El tope de 500 cuenta elementos `SubagentLine`, no filas pintadas.
+  - N es el número de líneas ocultas.
+  - El encargo es el primer `user` con contenido de texto (una cadena o su primer bloque `text`).
+  - Una herramienta sin argumento de texto se pinta `Name`.
+  - `is_error` no se distingue.
+  - Al llegar `endedAt` se pide el registro una última vez.
+  - Si la entrada desaparece, el modal se cierra.
+  - Un subagente recién lanzado sin archivo dice lo mismo que uno sin registro.
+  - Las líneas de continuación no llevan prefijo y van sangradas.
 
 ## Task breakdown
 
@@ -946,26 +1016,51 @@ subagents shown as a tree, history past the next prompt.
 
 ### Subagentes (add-subagents-view, 10 nov 2026)
 
-- **W62** When the hook gets a PreToolUse for tool `Agent` (or `Task`, its older name), it shall keep its existing state and
-  activity writes and also append `{ type: subagent_type or "general-purpose", description (cut to 120
-  characters), at }` to `pending` in `$ATRIL_HOME/subagents/<session>.json`; on SubagentStart with a
-  non-empty `agent_type` it shall add `{ id: agent_id, type, description?, startedAt }` (epoch seconds),
-  taking and removing the oldest pending entry of that type younger than 10 minutes, and dropping
-  pending entries older than that.
-  Proof: src/main/agent.test.ts a subagent start takes its description
+- **W62** On SubagentStart with a non-empty `agent_type` and `agent_id`, the hook shall add
+  `{ id: agent_id, type, startedAt, transcript? }` (epoch seconds) to `entries` in
+  `$ATRIL_HOME/subagents/<session>.json`, where `transcript` is the payload's `transcript_path` without
+  its `.jsonl` ending plus `/subagents/agent-<agent_id>.jsonl`, present only when `transcript_path` is a
+  string ending in `.jsonl`; a PreToolUse shall never write that file.
+  Proof: src/main/agent.test.ts a subagent start records its transcript
 - **W63** On SubagentStop with that `agent_id` the hook shall set `endedAt`; SubagentStart and
   SubagentStop with an empty `agent_type`, or an unknown `agent_id` on stop, shall change nothing; neither
   event shall write the state file or an activity line.
   Proof: src/main/agent.test.ts subagent events never change the agent state
-- **W64** On UserPromptSubmit the hook shall drop every finished entry; the file shall keep at most 20
-  entries plus 20 pending, dropping the oldest finished entry, then the oldest pending, and never a
-  running one (more than 20 running is kept as is).
+- **W64** On UserPromptSubmit the hook shall drop every finished entry; the file shall keep at
+  most 20 entries, dropping the oldest finished entry and never a running one (more than 20 running is
+  kept as is).
   Proof: src/main/agent.test.ts the subagent list stays bounded
 - **W65** Atril shall install SubagentStart and SubagentStop hooks with the same command as the other
-  hook events; main shall answer `atril:subagents:get(workspaceId)` with the entries only (no
-  `pending`; `[]` without a file) and send `atril:subagents:changed(workspaceId, entries)` whenever the
-  file's content changes, an `endedAt` flip included; removing a workspace deletes its file.
+  hook events; main shall answer `atril:subagents:get(workspaceId)` and send
+  `atril:subagents:changed(workspaceId, entries)`, both with entries shaped by W67 (`[]` without a
+  file), the push whenever the file's content changes, an `endedAt` flip included; removing a workspace
+  deletes its file.
   Proof: src/main/subagents.test.ts the subagent list reaches the window
 - **W66** A workspace row shall show «{n} subagentes» («1 subagente») while n > 0 of its entries have
   no `endedAt`, and nothing otherwise.
   Proof: src/renderer/subagents.test.ts the row counts running subagents
+
+### Detalle del subagente (add-subagent-detail, 10 nov 2026)
+
+- **W67** Main shall send each entry to the window without `transcript`, with `description` taken from
+  the meta file beside its transcript (`agent-<id>.meta.json`, field `description`,
+  whitespace collapsed, cut to 120 characters); an entry with no `transcript` shall keep a stored string
+  `description`; an entry with a `transcript` whose meta file is missing, not JSON or has no string
+  `description` shall carry none, and that meta shall be read again on the next change of the entries
+  file.
+  Proof: src/main/subagents.test.ts the description comes from the meta file
+- **W68** When the window asks `atril:subagents:log(workspaceId, agentId)`, main shall read only the
+  `transcript` stored for that agent in that workspace's file and answer its lines; if the workspace,
+  the agent or its `transcript` is unknown, or the file cannot be read, it shall answer `[]`.
+  Proof: src/main/subagents.test.ts the log reads only the stored transcript
+- **W69** The log parser shall turn each JSONL line into, in order: a `prompt` line for the first user
+  text (its first 3 lines), a `text` line per assistant text block, a `tool` line `Name(arg)` per
+  `tool_use` (arg = the first string among `file_path`, `command`, `pattern`, `url`, `description`,
+  `skill`, `prompt`, one line, cut to 80 characters), a `result` line per `tool_result` (its first 3
+  lines plus «… +N líneas» when longer, text blocks joined when the content is a list), and a
+  `thinking` line with no text per thinking block; the prompt is the first `user` line whose content is a
+  string or holds a `text` block; a `tool_use` with no string among those keys gives `Name` alone; «N» is
+  the number of hidden lines; it shall skip any other line type and any line that is not JSON, and
+  keep only the last 500 parsed lines. One fixture carries a case per clause (ceiling: a clause with no
+  case is unproven).
+  Proof: src/main/subagents.test.ts the log reads like Claude Code

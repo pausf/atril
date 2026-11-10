@@ -143,3 +143,9 @@ The hook accepted PreToolUse for `Task` as well as `Agent`, but W62 named only `
 
 ## 2026-11-10 · add-subagents-view · 6→7
 Reviewer noted stale pending entries are dropped only on SubagentStart, so an unmatched queue is trimmed by the 20-entry cap alone. Not a violation of W62; no code change.
+
+## 2026-11-10 · add-subagent-detail · 6→7
+Reviewer found nothing against the contract (8 proofs re-run, all green).
+
+## 2026-11-10 · add-subagent-detail · 6
+A full-suite gate went red once on `src/main/reply.test.ts` (20 s timeout), a tmux test this change never touched; it passed 3/3 alone and 2/2 in the next full runs. Same family as the ~1000 s W62 hang: a git/tmux call blocking under load. Not patched blind; open question for a change of its own: which call blocks (likely a synchronous `tmuxOut`/`execFileSync` in test helpers or `openWorktree` under parallel files).
