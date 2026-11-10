@@ -19,6 +19,7 @@ import { NextUpStrip } from './components/NextUpStrip'
 import { FocusBar } from './components/FocusBar'
 import { AgentsOverview } from './components/AgentsOverview'
 import { ViewSwitch } from './components/ViewSwitch'
+import { FocusButton } from './components/FocusButton'
 import { startOrAsk, useNextUp } from './nextup'
 import { NavigationContext } from './settings/navigation'
 import { Language } from './settings/Language'
@@ -87,8 +88,15 @@ function Shell() {
     setFocusMode(false)
     setReturnTo(null)
   }
-  // W81: «Todos», never stored; focus is for one workspace, so entering it turns focus off (W77).
   const [all, setAll] = useState(false)
+  const toggleFocus = (): void => {
+    if (focused) exitFocus()
+    else if (screen === 'work' && selected) {
+      setFocusMode(true)
+      setAll(false)
+    }
+  }
+  // W81: «Todos», never stored; focus is for one workspace, so entering it turns focus off (W77).
   const showAll = (on: boolean): void => {
     setAll(on)
     if (on) exitFocus()
@@ -253,11 +261,7 @@ function Shell() {
           return
         }
         if (a.kind === 'focusMode') {
-          if (focused) exitFocus()
-          else if (screen === 'work' && selected) {
-            setFocusMode(true)
-            setAll(false)
-          }
+          toggleFocus()
           return
         }
         if (a.kind === 'overview') {
@@ -380,7 +384,15 @@ function Shell() {
                     onDismiss={dismissSetup}
                   />
                 ) : (
-                  <Workspace ws={workspaces.find((w) => w.id === selected)} switcher={<ViewSwitch all={all} onChange={showAll} />} />
+                  <Workspace
+                    ws={workspaces.find((w) => w.id === selected)}
+                    switcher={
+                      <>
+                        <ViewSwitch all={all} onChange={showAll} />
+                        <FocusButton on={focused} disabled={selected === null} onClick={toggleFocus} />
+                      </>
+                    }
+                  />
                 )}
                 <FlowPanel
                   workspaceId={selected}

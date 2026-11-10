@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
-import type { AgentState, NextItem, WorkspaceView } from '../../preload/api'
+import type { NextItem, WorkspaceView } from '../../preload/api'
 import { localiseActivity } from '../../preload/activity-i18n'
 import { overviewOrder, stateOf, useAgentStates, useFlows, useLatestActivity } from '../agents'
 import { ago } from '../flow/ActivityFeed'
 import { stagesOf } from '../flow/FlowPanel'
 import { runningCount, useSubagents } from '../subagents'
-import { costText, useCosts } from '../cost'
-import { useLocale, useT } from '../ui'
+import { useT } from '../ui'
 import { Icon } from './Icon'
+import { StateLabel } from './StateLabel'
 import { QuickReplies, useAsking } from './QuickReplies'
 
 interface Props {
@@ -22,7 +22,6 @@ interface Props {
 /** W81: «Todos», one card per workspace in place of the terminal. */
 export function AgentsOverview({ workspaces, next, switcher, onOpen }: Props) {
   const t = useT()
-  const LABEL: Record<AgentState, string> = { working: t('trabajando'), 'needs-you': t('te necesita'), paused: t('en pausa'), stopped: t('parado') }
   const STAGES = stagesOf(t)
   const ids = workspaces.map((w) => w.id)
   const states = useAgentStates()
@@ -30,8 +29,6 @@ export function AgentsOverview({ workspaces, next, switcher, onOpen }: Props) {
   const [asking, markAsking] = useAsking()
   const subs = useSubagents(ids)
   const flows = useFlows(ids)
-  const costs = useCosts(ids)
-  const locale = useLocale()
   const [now, setNow] = useState(Date.now())
   const mains = useRef<Array<HTMLButtonElement | null>>([])
 
@@ -66,7 +63,6 @@ export function AgentsOverview({ workspaces, next, switcher, onOpen }: Props) {
           const stage = STAGES.find((s) => s.name === flow?.stage)
           const act = latest[w.id]
           const running = runningCount(subs[w.id])
-          const cost = costText(t, locale, costs[w.id])
           return (
             <div className={`ov-card ${state}`} key={w.id}>
               <button
@@ -80,9 +76,7 @@ export function AgentsOverview({ workspaces, next, switcher, onOpen }: Props) {
               >
                 <span className="ov-top">
                   <span className="ov-branch">{w.branch}</span>
-                  <span className={`state ${state}`}>
-                    <Icon name={state} size={16} className={state === 'working' ? 'spin' : undefined} /> {LABEL[state]}
-                  </span>
+                  <StateLabel state={state} />
                 </span>
                 <span className="ov-meta">{w.repoId}</span>
                 {flow?.stage === 'sin-libretto' ? (
@@ -107,7 +101,6 @@ export function AgentsOverview({ workspaces, next, switcher, onOpen }: Props) {
                     )}
                   </span>
                 )}
-                {cost && <span className="ov-cost">{cost}</span>}
                 {running > 0 && <span className="ov-subs">{running === 1 ? t('1 subagente') : t('{n} subagentes', { n: running })}</span>}
               </button>
               {/* Outside the card's button: answering must not open it (W82). */}

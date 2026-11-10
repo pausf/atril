@@ -1,10 +1,9 @@
-import { useLocale, useT } from '../ui'
-import { Icon } from './Icon'
+import { useT } from '../ui'
+import { StateLabel } from './StateLabel'
 import { useState } from 'react'
-import type { AgentState, WorkspaceView } from '../../preload/api'
+import type { WorkspaceView } from '../../preload/api'
 import { stateOf, useAgentStates, useLatestActivity } from '../agents'
 import { runningCount, useSubagents } from '../subagents'
-import { costText, useCosts } from '../cost'
 import { localiseActivity } from '../../preload/activity-i18n'
 import { QuickReplies, useAsking } from './QuickReplies'
 
@@ -17,14 +16,11 @@ interface Props {
 
 export function WorkspaceList({ workspaces, selected, onSelect, onRemove }: Props) {
   const t = useT()
-  const LABEL: Record<AgentState, string> = { working: t('trabajando'), 'needs-you': t('te necesita'), paused: t('en pausa'), stopped: t('parado') }
   const [refusal, setRefusal] = useState<{ id: string; text: string } | null>(null)
   const states = useAgentStates()
   const subs = useSubagents(workspaces.map((w) => w.id))
   const latest = useLatestActivity()
   const [asking, markAsking] = useAsking()
-  const locale = useLocale()
-  const costs = useCosts(workspaces.map((w) => w.id))
 
   if (workspaces.length === 0) {
     return <div className="empty">{t('Aquí verás cada trabajo con su estado. Crea uno con «＋ Nuevo trabajo», arriba.')}</div>
@@ -33,7 +29,7 @@ export function WorkspaceList({ workspaces, selected, onSelect, onRemove }: Prop
     <div className="ws-list">
       {workspaces.map((w) => (
         <div className={asking.has(w.id) ? 'ws-item asks' : 'ws-item'} key={w.id}>
-          <button type="button" className="ws-row" aria-pressed={selected === w.id} onClick={() => onSelect(w.id)} title={costText(t, locale, costs[w.id]) ?? undefined}>
+          <button type="button" className="ws-row" aria-pressed={selected === w.id} onClick={() => onSelect(w.id)}>
             <span className="ws-branch">{w.branch}</span>
             <span className="ws-meta">
               {w.repoId} · {w.mode === 'review' ? `${t('Revisión')} · ` : ''}{w.agent}
@@ -45,14 +41,7 @@ export function WorkspaceList({ workspaces, selected, onSelect, onRemove }: Prop
                 </>
               )}
             </span>
-            {(() => {
-              const state = stateOf(states, w)
-              return (
-                <span className={`state ${state}`}>
-                  <Icon name={state} size={16} className={state === 'working' ? 'spin' : undefined} /> {LABEL[state]}
-                </span>
-              )
-            })()}
+            <StateLabel state={stateOf(states, w)} />
             {runningCount(subs[w.id]) > 0 && <span className="ws-subs">{runningCount(subs[w.id]) === 1 ? t('1 subagente') : t('{n} subagentes', { n: runningCount(subs[w.id]) })}</span>}
             {latest[w.id] && !asking.has(w.id) && (
               <span className="ws-act" title={latest[w.id] && localiseActivity(latest[w.id]!.text, t)}>

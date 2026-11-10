@@ -2941,8 +2941,41 @@ button.stg.stgbtn .icon {
 .body.all .overview {
   grid-column: 2 / -1;
 }
+.whead .state {
+  font-size: 13px;
+}
 .whead .view-switch {
   align-self: center;
+}
+.tline {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+.wtools {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  align-self: center;
+}
+.ibtn {
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 30px;
+  border-radius: 999px;
+  border: 0;
+  background: var(--chip);
+  color: var(--sub);
+  cursor: pointer;
+}
+.ibtn:hover:not(:disabled),
+.ibtn[aria-pressed='true'] {
+  color: var(--text);
+}
+.ibtn:disabled {
+  opacity: 0.4;
+  cursor: default;
 }
 .ov-grid {
   display: grid;
@@ -2996,7 +3029,6 @@ button.stg.stgbtn .icon {
 .ov-meta,
 .ov-stage,
 .ov-act,
-.ov-cost,
 .ov-subs {
   font-size: 12px;
   color: var(--sub);
@@ -3032,10 +3064,6 @@ button.stg.stgbtn .icon {
 }
 .ov-subs {
   color: var(--run-text);
-}
-.ov-cost,
-.fcost {
-  font-variant-numeric: tabular-nums;
 }
 .ov-card .ask {
   border: 0;

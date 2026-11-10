@@ -1,8 +1,7 @@
 import { Fragment, useEffect, useState } from 'react'
 import type { HistoryEntry } from '../../preload/api'
-import { costShort } from '../cost'
 import { stagesOf } from '../flow/FlowPanel'
-import { useLocale, useT, type T } from '../ui'
+import { useT, type T } from '../ui'
 import { FoldSection } from './Fold'
 
 const SHOWN = 20
@@ -27,7 +26,7 @@ function age(t: T, closedAt: number): string {
 /** W96: what was removed from Trabajo, newest first; absent until there is something. */
 export function History() {
   const t = useT()
-  const locale = useLocale()
+
   const [entries, setEntries] = useState<HistoryEntry[]>([])
   useEffect(() => {
     let live = true
@@ -59,7 +58,6 @@ export function History() {
                 e.repoId,
                 stageLabel(e),
                 e.createdAt !== undefined && t('duró {d}', { d: lasted(t, e.closedAt - e.createdAt) }),
-                costShort(t, locale, e.cost),
                 age(t, e.closedAt)
               ]
                 .filter(Boolean)

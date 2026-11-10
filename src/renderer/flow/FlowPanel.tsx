@@ -2,8 +2,7 @@ import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import type { FileChange, FlowStage, StageName } from '../../preload/api'
 import { FoldSection } from '../components/Fold'
 import { Icon, type IconName } from '../components/Icon'
-import { useLocale, useT, type T } from '../ui'
-import { costText, useCosts } from '../cost'
+import { useT, type T } from '../ui'
 import { ActivityFeed } from './ActivityFeed'
 import { DocModal } from './DocModal'
 import { DiffModal } from './DiffModal'
@@ -37,9 +36,6 @@ export function FlowPanel({ workspaceId, auto = false, onOpenLibretto }: { works
   const [changes, setChanges] = useState<FileChange[]>([])
   const [diffOf, setDiffOf] = useState<string | null>(null)
   const building = flow !== null && BUILDING.includes(flow.stage)
-  const locale = useLocale()
-  const costs = useCosts(workspaceId ? [workspaceId] : [])
-  const cost = workspaceId ? costText(t, locale, costs[workspaceId]) : null
 
   // F22: the list is asked for again every 3 s from Construir on, never twice at once.
   useEffect(() => {
@@ -124,7 +120,7 @@ export function FlowPanel({ workspaceId, auto = false, onOpenLibretto }: { works
           <ActivityFeed workspaceId={workspaceId} />
         ) : (
           <>
-            <LibrettoFlow flow={flow} onOpen={setDoc} changes={changes} onDiff={setDiffOf} cost={cost} onOpenLibretto={onOpenLibretto} />
+            <LibrettoFlow flow={flow} onOpen={setDoc} changes={changes} onDiff={setDiffOf} onOpenLibretto={onOpenLibretto} />
             <Subagents workspaceId={workspaceId} />
             <Qa workspaceId={workspaceId} />
           </>
@@ -147,12 +143,10 @@ interface FlowProps {
   onOpen: (p: Part) => void
   changes: FileChange[]
   onDiff: (path: string) => void
-  /** F34: the work's cost line, or null. */
-  cost: string | null
   onOpenLibretto: () => void
 }
 
-function LibrettoFlow({ flow, onOpen, changes, onDiff, cost, onOpenLibretto }: FlowProps) {
+function LibrettoFlow({ flow, onOpen, changes, onDiff, onOpenLibretto }: FlowProps) {
   const t = useT()
   const STAGES = stagesOf(t)
   const current = STAGES.findIndex((s) => s.name === flow?.stage)
@@ -216,7 +210,6 @@ function LibrettoFlow({ flow, onOpen, changes, onDiff, cost, onOpenLibretto }: F
             </p>
           )}
           {/* F34: under «Cambio», the same line as the card. */}
-          {cost && <p className="fmeta fcost">{cost}</p>}
           {c && (
             <FoldSection id="flow-checklist" title={t('Checklist')} count={t('{closed}/{total}', { closed: c.closed, total: c.total })} className="flow-fold" tour="flow-checklist">
               <div className="prog">

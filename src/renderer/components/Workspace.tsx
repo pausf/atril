@@ -1,19 +1,25 @@
 import type { ReactNode } from 'react'
 import type { WorkspaceView } from '../../preload/api'
+import { stateOf, useAgentStates } from '../agents'
 import { useT } from '../ui'
+import { StateLabel } from './StateLabel'
 import { Terminal } from './Terminal'
 
 export function Workspace({ ws, switcher }: { ws: WorkspaceView | undefined; switcher?: ReactNode }) {
   const t = useT()
+  const states = useAgentStates()
   return (
     <main className="col center">
       <div className="whead">
         <div>
           <div className="m">{ws ? `${ws.repoId} · ${ws.agent}` : t('Ningún trabajo abierto')}</div>
-          <h1>{ws ? ws.branch : t('Elige un trabajo')}</h1>
+          <div className="tline">
+            <h1>{ws ? ws.branch : t('Elige un trabajo')}</h1>
+            {ws && <StateLabel state={stateOf(states, ws)} />}
+          </div>
         </div>
         <span className="sp" />
-        {switcher}
+        {switcher && <span className="wtools">{switcher}</span>}
       </div>
       <div className="panes">
         <div className="pane" data-tour="terminal">

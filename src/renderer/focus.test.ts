@@ -108,6 +108,51 @@ describe('focus mode', () => {
     expect(screen.queryByRole('button', { name: 'Salir del foco' })).toBeNull()
   })
 
+  it('the work header shows the state and a focus button', async () => {
+    const api = mockApi(data())
+    const user = userEvent.setup()
+    render(createElement(App))
+    await screen.findByRole('button', { name: 'WEB-2 te necesita' })
+    const head = (): HTMLElement => document.querySelector<HTMLElement>('.col.center .whead')!
+    const button = (): HTMLElement => within(head()).getByRole('button', { name: 'Modo foco' })
+
+    // No workspace: the button is there, off and disabled; the switch sits in the same group.
+    expect((button() as HTMLButtonElement).disabled).toBe(true)
+    expect(button().getAttribute('title')).toBe('Modo foco (⌘⇧F)')
+    expect(button().closest('.wtools')?.contains(within(head()).getByRole('group', { name: 'Vista de trabajo' }))).toBe(true)
+
+    // A workspace: «{repo} · {agent}» above the branch, the row's state label and icon beside it, no pill.
+    act(() => api.menu({ kind: 'select', index: 0 }))
+    await screen.findByRole('heading', { name: 'WEB-1' })
+    const m = head().querySelector('.m')!
+    const h1 = head().querySelector('h1')!
+    expect(m.textContent).toMatch(/ · /)
+    expect(m.compareDocumentPosition(h1) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    const state = head().querySelector('.state')!
+    expect(state.textContent?.trim()).toBe('parado')
+    expect(state.querySelector('svg')).toBeTruthy()
+    expect(h1.parentElement?.contains(state)).toBe(true)
+    expect((button() as HTMLButtonElement).disabled).toBe(false)
+    expect(button().getAttribute('aria-pressed')).toBe('false')
+
+    // It turns focus on and off as the menu item does; its name stays «Modo foco».
+    await user.click(button())
+    expect(await screen.findByRole('button', { name: 'Salir del foco' })).toBeTruthy()
+    expect(sidebar()).toBeNull()
+    expect(button().getAttribute('aria-pressed')).toBe('true')
+    await user.click(button())
+    expect(screen.queryByRole('button', { name: 'Salir del foco' })).toBeNull()
+    expect(sidebar()).toBeTruthy()
+    expect(button().getAttribute('aria-pressed')).toBe('false')
+
+    // «Todos» has the switch and no focus button.
+    await user.click(screen.getByRole('button', { name: 'Todos' }))
+    const all = document.querySelector<HTMLElement>('.overview .whead')!
+    expect(within(all).getByRole('group', { name: 'Vista de trabajo' })).toBeTruthy()
+    expect(within(all).queryByRole('button', { name: 'Modo foco' })).toBeNull()
+    expect(all.querySelector('.state')).toBeNull()
+  })
+
   it('jump to the waiting agent and back', async () => {
     // Trabajo → Volver, ⌘⌥←, only while focus is on.
     const back = (on: boolean) => workItems(on, true).find((i) => i.label === 'Volver')

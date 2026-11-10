@@ -67,9 +67,9 @@ describe('history', () => {
     expect(meta('old/14')).toBeDefined()
     expect(meta('old/15')).toBeUndefined()
 
-    // Repo, stage, how long it lasted, the short cost (no note, nothing at 0 tokens), and the calendar age.
-    expect(meta('feat/short')).toBe('shop-web · Aterrizado · duró < 1 min · ≈ 0,42 $ · 850 tokens · hoy')
-    expect(meta('feat/minutes')).toBe('shop-web · Construir · duró 45 min · < 0,01 $ · 12,3 k tokens · hoy')
+    // Repo, stage, how long it lasted, no cost even when the line has one, and the calendar age.
+    expect(meta('feat/short')).toBe('shop-web · Aterrizado · duró < 1 min · hoy')
+    expect(meta('feat/minutes')).toBe('shop-web · Construir · duró 45 min · hoy')
     expect(meta('feat/hours')).toBe('shop-web · Aterrizado · duró 2 h 5 min · hace 1 d')
     expect(meta('feat/days')).toBe('shop-web · sin Libretto · duró 3 d 4 h · hace 3 d')
     expect(meta('feat/old')).toBe('shop-web · Spec · hace 10 d')
@@ -78,6 +78,7 @@ describe('history', () => {
     act(() => api.pushHistory([entry('feat/new', t0, { createdAt: t0 - 3600 }), ...history]))
     expect(section().textContent).toMatch(/26$/)
     expect(rows()[0]?.querySelector('.hist-branch')?.textContent).toBe('feat/new')
+    expect(section().textContent).not.toMatch(/[$≈]|tokens/)
     expect(meta('feat/new')).toBe('shop-web · Aterrizado · duró 1 h 0 min · hoy')
   })
 })
