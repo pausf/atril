@@ -77,5 +77,5 @@ guarda aún).
 
 ## Checklist
 
-- [ ] createdAt, the history line on removal and the 200 cap · Closes: W95
-- [ ] the Terminados section; sketch; photo; novedades · waits on box 1 · Closes: W96
+- [x] createdAt, the history line on removal and the 200 cap · Closes: W95
+- [x] the Terminados section; sketch; photo; novedades · waits on box 1 · Closes: W96
