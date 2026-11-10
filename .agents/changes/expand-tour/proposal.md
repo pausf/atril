@@ -37,6 +37,11 @@ castellano de España, y llevarlo también al boceto `bocetos/fase1-nucleo.html`
   - El «Out» de add-command-palette sobre un paso de tutorial para ⌘K queda superado por este cambio.
   - Fotos: pasos 7 y 13, en `bocetos/novedades/tutorial-7.png` y `tutorial-13.png`.
 
+- Q: (constructor) Sin elemento, el paso salía en una esquina, no centrado como pide W23 → A: se añade
+  `.tip.centred` y una línea en `Tour.tsx`; único cambio al motor, a favor de W23 (assumed). Los textos se
+  corrigieron donde la tabla no era verdad: Nueva tarea abre un trabajo (no crea en Jira), el número del
+  rail sin color, el registro del subagente «como una terminal», el reinicio semanal de la cuota.
+
 ## Outcomes
 
 El tutorial recorre 24 pasos que explican toda la app, sin dejar piezas sin contar: la lista y los
@@ -145,5 +150,5 @@ Ninguna.
 
 ## Checklist
 
-- [ ] the new data-tour targets and the 24 steps with checked texts and English · Closes: W23
-- [ ] the fase1 sketch's tour with the same 24 steps; photos of steps 7 and 13 (drawing and evidence, no criterion) · waits on box 1
+- [x] the new data-tour targets and the 24 steps with checked texts and English · Closes: W23
+- [x] the fase1 sketch's tour with the same 24 steps; photos of steps 7 and 13 (drawing and evidence, no criterion) · waits on box 1
