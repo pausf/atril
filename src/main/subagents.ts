@@ -1,7 +1,8 @@
 import { watch, type FSWatcher } from 'node:fs'
 import { mkdir, readFile } from 'node:fs/promises'
 import { join } from 'node:path'
-import type { SubagentEntry } from '../preload/api'
+import type { SubagentEntry, SubagentLine } from '../preload/api'
+import { parseSubagentLog } from './subagent-log'
 import { atrilHome } from './paths'
 import { readRecords } from './workspaces'
 
@@ -95,6 +96,18 @@ export function createSubagents({ emit }: SubagentsOptions) {
       const ws = (await readRecords()).find((w) => w.id === id)
       const stored = ws && (await readSubagents(ws.session))
       return stored ? toWindow(stored) : []
+    },
+    /** W68: only the path the hook stored for this agent in this workspace is ever read. */
+    // ponytail: rereads the whole transcript on every poll; read only its tail once one weighs several MB.
+    log: async (id: string, agentId: string): Promise<SubagentLine[]> => {
+      const ws = (await readRecords()).find((w) => w.id === id)
+      const transcript = ws && (await readSubagents(ws.session))?.find((e) => e.id === agentId)?.transcript
+      if (!transcript) return []
+      try {
+        return parseSubagentLog(await readFile(transcript, 'utf8'))
+      } catch {
+        return []
+      }
     },
     async start(): Promise<void> {
       await mkdir(subagentsDir(), { recursive: true })

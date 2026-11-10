@@ -1,5 +1,5 @@
 import { vi } from 'vitest'
-import type { ActivityLine, SubagentEntry, AddRepoResult, Aviso, FileChange, FlowDocs, ForgeId, ForgeStatus, Mode, MrDraft, MrDrafts, MrDraftsResult, MrLists, MrReply, MrScoreState, MrThreads, AgentState, AtrilApi, FlowStage, JiraIssue, MenuAction, NextItem, StartProposalResult, StartRequest, StartResult, RepoView, UiState, WorkspaceResult, WorkspaceView } from '../preload/api'
+import type { ActivityLine, SubagentEntry, SubagentLine, AddRepoResult, Aviso, FileChange, FlowDocs, ForgeId, ForgeStatus, Mode, MrDraft, MrDrafts, MrDraftsResult, MrLists, MrReply, MrScoreState, MrThreads, AgentState, AtrilApi, FlowStage, JiraIssue, MenuAction, NextItem, StartProposalResult, StartRequest, StartResult, RepoView, UiState, WorkspaceResult, WorkspaceView } from '../preload/api'
 
 export const workspace = (id: string, branch: string, alive = true): WorkspaceView => ({
   id,
@@ -49,6 +49,8 @@ interface Options {
   activity?: Record<string, ActivityLine[]>
   /** Subagent entries per workspace id. */
   subagents?: Record<string, SubagentEntry[]>
+  /** What subagents.log answers per subagent id. */
+  subagentLogs?: Record<string, SubagentLine[]>
   /** What mr.list answers; missing means no forge connected. */
   mrs?: MrLists
   /** What mr.scoreOf answers per URL; missing means never scored. */
@@ -190,6 +192,7 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
     },
     subagents: {
       get: async (id: string) => o.subagents?.[id] ?? [],
+      log: async (_id: string, agentId: string) => o.subagentLogs?.[agentId] ?? [],
       onChange: (cb: (id: string, entries: SubagentEntry[]) => void) => {
         subagentListeners.add(cb)
         return () => subagentListeners.delete(cb)

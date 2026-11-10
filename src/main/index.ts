@@ -557,6 +557,7 @@ app.whenReady().then(async () => {
     emit: (id, entries) => BrowserWindow.getAllWindows().forEach((w) => w.webContents.send('atril:subagents:changed', id, entries))
   })
   ipcMain.handle('atril:subagents:get', (_e, id: string) => (SNAPSHOT && process.env['ATRIL_SNAPSHOT_VIEW'] === 'subagents' ? fakeSubagents() : subagents.get(String(id))))
+  ipcMain.handle('atril:subagents:log', (_e, id: string, agentId: string) => subagents.log(String(id), String(agentId)))
   void subagents.start()
   ipcMain.handle('atril:status:list', () => status.states())
   void writeHooksFile().then(() => status.start())

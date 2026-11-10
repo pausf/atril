@@ -78,6 +78,7 @@ const api: AtrilApi = {
   },
   subagents: {
     get: (id) => ipcRenderer.invoke('atril:subagents:get', id),
+    log: (id, agentId) => ipcRenderer.invoke('atril:subagents:log', id, agentId),
     onChange: (cb) => {
       const h = (_e: Electron.IpcRendererEvent, id: string, entries: SubagentEntry[]): void => cb(id, entries)
       ipcRenderer.on('atril:subagents:changed', h)

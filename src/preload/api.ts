@@ -425,9 +425,18 @@ export interface SubagentEntry {
   endedAt?: number
 }
 
+/** One line of a subagent's own transcript, Claude Code style; `more` is how many result lines were hidden. */
+export interface SubagentLine {
+  kind: 'prompt' | 'text' | 'tool' | 'result' | 'thinking'
+  text: string
+  more?: number
+}
+
 export interface SubagentsApi {
   /** In file order (oldest first). */
   get(workspaceId: string): Promise<SubagentEntry[]>
+  /** The subagent's transcript as lines, read in main from the path the hook stored; [] when there is none. */
+  log(workspaceId: string, agentId: string): Promise<SubagentLine[]>
   /** Returns the unsubscribe function. */
   onChange(cb: (workspaceId: string, entries: SubagentEntry[]) => void): () => void
 }
