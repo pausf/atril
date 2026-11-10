@@ -225,6 +225,6 @@ La caché de descripciones en main se queda: sin ella, cada evento del vigilante
 
 ## Checklist
 
-- [ ] the hook records the transcript and drops pending; main fills the description from the meta and never sends the path (the old proof «a subagent start takes its description» is replaced by W62's new one) · Closes: W62, W64, W65, W67
-- [ ] the log parser and `atril:subagents:log` reading only the stored transcript · waits on box 1 · Closes: W68, W69
-- [ ] the row as a button opening the terminal modal, live while it runs; sketch modal as terminal (the sketch has no proof: it is a drawing) · waits on box 2 · Closes: F28
+- [x] the hook records the transcript and drops pending; main fills the description from the meta and never sends the path (the old proof «a subagent start takes its description» is replaced by W62's new one) · Closes: W62, W64, W65, W67
+- [x] the log parser and `atril:subagents:log` reading only the stored transcript · waits on box 1 · Closes: W68, W69
+- [x] the row as a button opening the terminal modal, live while it runs; sketch modal as terminal (the sketch has no proof: it is a drawing) · waits on box 2 · Closes: F28
