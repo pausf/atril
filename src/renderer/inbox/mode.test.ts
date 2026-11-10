@@ -10,7 +10,11 @@ import { issue, mockApi, mockSystemTheme, workspace } from '../mockApi'
 const repos: RepoView[] = [{ id: 'web', path: '/w', mode: 'worktree', reason: '' }]
 const proposal = { repoId: 'web', branch: 'PF-10', mode: 'worktree' as const, reason: '', command: 'claude' }
 const rail = (name: RegExp) => within(screen.getByRole('navigation', { name: 'Pantallas' })).getByRole('button', { name })
-const LINE = 'Automático: sin parar en spec y plan; antes de subir te pregunta'
+const MANUAL = 'Se para con la spec y el plan escritos y te pregunta'
+const AUTO = 'Sin parar en spec y plan; antes de subir te pregunta'
+/** Each option explains itself: its text is the radio's accessible description, not a loose line below. */
+const described = (radio: HTMLElement): string =>
+  (radio.getAttribute('aria-describedby') ?? '').split(' ').map((id) => document.getElementById(id)?.textContent ?? '').join(' ')
 
 beforeEach(() => mockSystemTheme(false))
 afterEach(cleanup)
@@ -32,7 +36,8 @@ describe('start modes', () => {
     const { user: u1, dialog } = await startDialog()
     const group = within(dialog).getByRole('radiogroup', { name: 'Modo' })
     expect((within(group).getByRole('radio', { name: 'Manual' }) as HTMLInputElement).checked).toBe(true)
-    expect(within(dialog).getByText(LINE)).toBeTruthy()
+    expect(described(within(group).getByRole('radio', { name: 'Manual' }))).toBe(MANUAL)
+    expect(described(within(group).getByRole('radio', { name: 'Automático' }))).toBe(AUTO)
     await u1.click(within(group).getByRole('radio', { name: 'Automático' }))
     await vi.waitFor(() => expect((within(dialog).getByLabelText('Repo') as HTMLSelectElement).value).toBe('web'))
     await u1.click(within(dialog).getByRole('button', { name: 'Empezar' }))

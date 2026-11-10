@@ -1063,11 +1063,11 @@ se pulsa con teclado.
   starts, and deleted when the workspace is removed or its session fails to start.
   Proof: src/main/agent.test.ts the automatic marker lives as long as the workspace
 - **W61** Empezar's dialog, Nueva tarea and Nuevo trabajo once it has text shall offer Manual (default)
-  and Automático with the line «Automático: sin parar en spec y plan; antes de subir te pregunta»; Nuevo trabajo
-  without text offers none; Empezar's one click (I20) is always Manual; an automatic workspace's row
-  shows «Auto».
+  and Automático as two selectable cards in one radio group, each radio named by its title and described
+  by its own line — Manual «Se para con la spec y el plan escritos y te pregunta», Automático «Sin parar
+  en spec y plan; antes de subir te pregunta»; Nuevo trabajo without text offers none; Empezar's one
+  click (I20) is always Manual; an automatic workspace's row shows «Auto».
   Proof: src/renderer/inbox/mode.test.ts the start dialogs offer manual or automatic
-
 ### Subagentes (add-subagents-view, 10 nov 2026)
 
 - **W62** On SubagentStart with a non-empty `agent_type` and `agent_id`, the hook shall add
