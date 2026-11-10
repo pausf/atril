@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
 import { basename, join } from 'node:path'
 import type { AddRepoResult, Mode, RepoView } from '../preload/api'
 import type { Runner } from './run'
@@ -45,7 +45,10 @@ async function writeState(state: State): Promise<void> {
   const file = stateFile()
   await mkdir(join(file, '..'), { recursive: true })
   const { jiraRepos, repos } = state
-  await writeFile(file, JSON.stringify(Object.keys(jiraRepos).length ? { repos, jiraRepos } : { repos }, null, 2) + '\n')
+  // Same as workspaces.json: a reader during the write must see the old file or the new one, never half.
+  const temp = `${file}.${process.pid}.${Date.now()}.tmp`
+  await writeFile(temp, JSON.stringify(Object.keys(jiraRepos).length ? { repos, jiraRepos } : { repos }, null, 2) + '\n')
+  await rename(temp, file)
 }
 
 const readRepos = async (): Promise<Repo[]> => (await readState()).repos

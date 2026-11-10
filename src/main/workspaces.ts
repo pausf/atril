@@ -1,5 +1,5 @@
 import { randomInt } from 'node:crypto'
-import { mkdir, readFile, rm as unlink, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, rename, rm as unlink, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import type { Agent, Model, RemoveResult, WorkspaceRecord, WorkspaceResult, WorkspaceView } from '../preload/api'
 import { agentArgv } from './agent'
@@ -43,9 +43,13 @@ async function readJson<T>(file: string, fallback: T): Promise<T> {
 export const readRecords = async (): Promise<WorkspaceRecord[]> =>
   (await readJson<{ workspaces: WorkspaceRecord[] }>(join(home(), 'workspaces.json'), { workspaces: [] })).workspaces
 
-async function writeRecords(workspaces: WorkspaceRecord[]): Promise<void> {
+export async function writeRecords(workspaces: WorkspaceRecord[]): Promise<void> {
   await mkdir(home(), { recursive: true })
-  await writeFile(join(home(), 'workspaces.json'), JSON.stringify({ workspaces }, null, 2) + '\n')
+  // Readers (watchers, the status poll) run while this writes: a temp file and a rename keep them whole.
+  const file = join(home(), 'workspaces.json')
+  const temp = `${file}.${process.pid}.${newId()}.tmp`
+  await writeFile(temp, JSON.stringify({ workspaces }, null, 2) + '\n')
+  await rename(temp, file)
 }
 
 const MAX_TASK = 2000

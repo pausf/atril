@@ -35,7 +35,7 @@ import { createUsage } from './usage'
 import { listWorkspaces, openWorktree, removeWorkspace } from './workspaces'
 import { createFlowHub } from './flow/watch'
 import { installMenu } from './menu'
-import { showsNotification } from './focus'
+import { createNotifyGate } from './focus'
 import { patchUi, readUi } from './ui'
 import { splitPane } from './tmux'
 import type { Agent, QuickChoice } from '../preload/api'
@@ -500,6 +500,7 @@ app.whenReady().then(async () => {
   })
   ipcMain.handle('atril:snapshot-ws', () => Boolean(SNAPSHOT))
   const menu = { selected: null as string | null, count: 0, nextEnabled: false, focusOn: false, focusAvailable: false }
+  const notifyGate = createNotifyGate(() => menu.focusOn, () => BrowserWindow.getAllWindows()[0]?.isFocused() === true)
   const refreshMenu = (): void =>
     installMenu({
       ...menu,
@@ -540,7 +541,9 @@ app.whenReady().then(async () => {
     notify: (ws, body) => {
       void avisos.onNeedsYou(ws).catch(() => undefined)
       // W78: minimised, hidden or on another Space is not focused; a quieted entry is never notified later.
-      if (!showsNotification(menu.focusOn, BrowserWindow.getAllWindows()[0]?.isFocused() === true)) return
+      let allowed = false
+      notifyGate(() => (allowed = true))
+      if (!allowed) return
       const n = new Notification({ title: 'Atril', subtitle: ws.branch, body, hasReply: true, replyPlaceholder: replyPlaceholder() })
       // W38: only a click brings Atril forward; a reply types into the pane and leaves the window alone.
       // ponytail: macOS may follow a reply with a click; one within 1 s of a reply is ignored (N3).

@@ -3,7 +3,7 @@ import { rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanTmp, git, killTmux, makeRegisteredRepo, tmp, tmuxSock } from './test-helpers'
-import { listWorkspaces, openWorktree, removeWorkspace } from './workspaces'
+import { listWorkspaces, openWorktree, readRecords, removeWorkspace, writeRecords } from './workspaces'
 import { run, type Runner } from './run'
 
 const SLEEP = ['sh', '-c', 'sleep 300']
@@ -165,5 +165,14 @@ describe('workspaces', () => {
       expect(git(repo, 'branch', '--list', 'feat/ip').trim()).not.toBe('')
       expect(await listWorkspaces()).toEqual([])
     })
+  })
+
+  it('a reader never sees a half-written workspaces file', async () => {
+    // Watchers read workspaces.json while it is being written; a truncate-then-write showed them an empty file.
+    const many = Array.from({ length: 3000 }, (_, n) => ({ id: `id${n}`, repoId: 'demo', branch: `b${n}`, mode: 'worktree' as const, path: '/p', baseCommit: 'x', agent: 'claude' as const, session: `s${n}`, paneId: '%1' }))
+    await writeRecords(many)
+    const races = Array.from({ length: 60 }, (_, n) => (n % 2 ? writeRecords(many) : readRecords().then((r) => r.length)))
+    const lengths = (await Promise.all(races)).filter((x): x is number => typeof x === 'number')
+    expect(lengths.every((l) => l === 3000)).toBe(true)
   })
 })

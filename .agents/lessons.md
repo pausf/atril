@@ -185,3 +185,9 @@ Reviewer found nothing against the contract (3 proofs re-run, green); noted the 
 
 ## 2026-11-10 · quick-replies · 6→7
 Reviewer found nothing (3 proofs re-run, green). Before the review the session caught that a failed send kept the buttons disabled (no retry); W76 amended and fixed, seen red first. Unverified on a real Claude Code: that its AskUserQuestion selector takes a typed digit plus Enter — listed under «Sin probar con datos reales».
+
+## 2026-11-10 · focus-mode · 6→7
+Reviewer: (1) W78's proof tested only the pure table, not main's wiring — a broken isFocused read or replay would pass. Fixed: `createNotifyGate` holds the wiring and its test proves a quieted entry is never replayed (mutation seen red: gate always showing). (2) asked whether «Volver a» survives leaving Trabajo — decided yes, latent focus, logged. (3) a removed remembered workspace kept `returnTo` set — now cleared when the list loses it. Lesson: when a proof is a pure helper, the wiring around it needs its own seam or it is unproven.
+
+## 2026-11-10 · atomic-records · 6
+A full-run red («Unexpected end of JSON input» in tmux.test.ts) was a real bug, not load: `writeRecords` truncated then wrote workspaces.json while watchers read it. Reproduced 3/3 with a write/read race test; fixed with temp file + rename (and repos.json, same pattern). Lesson: a parse error in a test is evidence of a race in the code, not of a slow machine — reproduce before blaming contention.

@@ -1345,3 +1345,9 @@ Textos por `t()`.
   state changes — or show the error and keep the buttons live; the buttons shall go when the state leaves needs-you. One test holds a case per
   clause.
   Proof: src/renderer/quickreplies.test.ts a waiting row answers with one press
+
+### Escritura atómica (atomic-records, 10 nov 2026)
+
+- **W80** Atril shall replace `workspaces.json` and `repos.json` by writing a temporary file and renaming it,
+  so a reader during a write sees either the old file or the new one, never a partial one.
+  Proof: src/main/workspaces.test.ts a reader never sees a half-written workspaces file

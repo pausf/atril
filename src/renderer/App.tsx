@@ -145,6 +145,10 @@ function Shell() {
     if (returnTo === null) setReturnTo(selected)
     setSelected(id)
   }
+  // A workspace removed while remembered is forgotten, so the next jump can remember a new one.
+  useEffect(() => {
+    if (returnTo !== null && !workspaces.some((w) => w.id === returnTo)) setReturnTo(null)
+  }, [workspaces, returnTo])
   const goBack = async (): Promise<void> => {
     if (returnTo === null) return
     setReturnTo(null)

@@ -55,6 +55,9 @@ saltas a él y vuelves exactamente a donde estabas.
   - **Tutorial:** se nombra en el paso 4.
   - **Textos:** «Modo foco» y «Volver» van por `t()`.
 
+- Q: (revisor de obra) ¿Al ir a Tareas o Ajustes con el foco puesto, se olvida «Volver a»? → A: no: el foco
+  queda latente y al volver a Trabajo sigue con su destino; solo se aplica en Trabajo (assumed).
+
 ## Outcomes
 
 - ⌘⇧F deja a la vista solo el trabajo elegido: su terminal y su panel; ⌘⇧F otra vez, o «Salir del foco», lo
