@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { DoctorReport, JiraIssue, NextItem, WorkspaceView } from '../preload/api'
 import { FlowPanel } from './flow/FlowPanel'
 import { Footer } from './components/Footer'
@@ -47,15 +47,24 @@ function Shell() {
     markTutorialSeen()
   }
   const [report, setReport] = useState<DoctorReport | null>(null)
+  const problems = useMemo(() => (report ?? []).filter((r) => !r.ok), [report])
+  const missing = problems.length > 0
 
-  useEffect(() => {
+  const check = (): void => {
     window.atril
       .doctor()
       .then(setReport)
       .catch((err: unknown) =>
         setReport([{ tool: 'doctor', ok: false, problem: t('no se pudo comprobar: {detail}', { detail: String(err) }), install: '' }])
       )
-  }, [])
+  }
+  useEffect(check, [])
+  // A tool installed in another window shows up as soon as the person comes back (W71).
+  useEffect(() => {
+    if (!missing) return
+    window.addEventListener('focus', check)
+    return () => window.removeEventListener('focus', check)
+  }, [missing])
 
   const [workspaces, setWorkspaces] = useState<WorkspaceView[]>([])
   const [selected, setSelected] = useState<string | null>(null)
@@ -204,7 +213,6 @@ function Shell() {
     return null
   }
 
-  const problems = (report ?? []).filter((r) => !r.ok)
 
   const items = () =>
     paletteItems({

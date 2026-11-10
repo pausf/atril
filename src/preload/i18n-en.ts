@@ -51,6 +51,8 @@ export const EN: Record<string, string> = {
   '{n} herramientas por instalar': '{n} tools to install',
   'Herramientas que faltan': 'Missing tools',
   'Copiado': 'Copied',
+  'Instalar': 'Install',
+  'Instalando en Terminal…': 'Installing in Terminal…',
   'Copiar': 'Copy',
   'Sin conectar': 'Not connected',
   'Tu sesión · Ajustes': 'Your session · Settings',

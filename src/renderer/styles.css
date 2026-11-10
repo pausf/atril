@@ -540,6 +540,9 @@ h2[tabindex]:focus {
 .doctor-item b {
   color: var(--bad-text);
 }
+.doctor-error {
+  color: var(--bad-text);
+}
 .doctor-problem {
   color: var(--text);
 }

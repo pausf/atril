@@ -6,7 +6,11 @@ export function DoctorChip({ problems }: { problems: ToolReport[] }) {
   const t = useT()
   const [open, setOpen] = useState(false)
   const [copied, setCopied] = useState<string | null>(null)
+  /** Per tool: 'running' or main's error text; cleared by each recheck, which hands in new problems. */
+  const [installs, setInstalls] = useState<Record<string, string>>({})
   const root = useRef<HTMLSpanElement>(null)
+
+  useEffect(() => setInstalls({}), [problems])
 
   useEffect(() => {
     if (!open) return
@@ -30,6 +34,11 @@ export function DoctorChip({ problems }: { problems: ToolReport[] }) {
     void navigator.clipboard?.writeText(cmd).then(() => setCopied(cmd))
   }
 
+  const install = (tool: string): void => {
+    setInstalls((s) => ({ ...s, [tool]: 'running' }))
+    void window.atril.installTool(tool).then((r) => setInstalls((s) => ({ ...s, [tool]: 'error' in r ? r.error : 'running' })))
+  }
+
   return (
     <span className="doctor-chip" ref={root}>
       <button className="chip bad" aria-haspopup="dialog" aria-expanded={open} onClick={() => setOpen(!open)}>
@@ -47,8 +56,15 @@ export function DoctorChip({ problems }: { problems: ToolReport[] }) {
                   <button className="btn" onClick={() => copy(p.install)}>
                     {copied === p.install ? t('Copiado') : t('Copiar')}
                   </button>
+                  {installs[p.tool] !== 'running' && (
+                    <button className="btn p" onClick={() => install(p.tool)}>
+                      {t('Instalar')}
+                    </button>
+                  )}
                 </span>
               )}
+              {installs[p.tool] === 'running' && <span className="doctor-problem">{t('Instalando en Terminal…')}</span>}
+              {installs[p.tool] !== undefined && installs[p.tool] !== 'running' && <span className="doctor-error" role="alert">{installs[p.tool]}</span>}
             </div>
           ))}
         </div>
