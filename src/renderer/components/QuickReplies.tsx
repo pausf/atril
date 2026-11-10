@@ -37,7 +37,7 @@ export function QuickReplies({ workspaceId, activityAt }: Props) {
   return (
     <div className="quick-replies" role="group" aria-label={t('Respuestas rápidas')}>
       {choices.map(([label, choice]) => (
-        <button key={label} type="button" className="quick-reply" disabled={result !== null} onClick={() => press(choice)}>
+        <button key={label} type="button" className="quick-reply" disabled={result?.sent === true} onClick={() => press(choice)}>
           {label}
         </button>
       ))}

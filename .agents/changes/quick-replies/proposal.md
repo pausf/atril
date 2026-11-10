@@ -85,8 +85,8 @@ ese trabajo; teclado; si el trabajo ya no está, «No se pudo enviar: ese trabaj
   Proof: src/main/reply.test.ts a quick answer reaches its own pane
 - **W76** While a workspace is needs-you and its question is not multiSelect, its row shall show its stored
   options as buttons (their labels as text), or «Sí, sigue» and «No, espera» when it has none; pressing
-  one, by mouse or keyboard, shall send it (W75), show «Enviado» or the error, and disable the buttons
-  until the state changes; the buttons shall go when the state leaves needs-you. One test holds a case per
+  one, by mouse or keyboard, shall send it (W75) and show «Enviado» — disabling the buttons until the
+  state changes — or show the error and keep the buttons live; the buttons shall go when the state leaves needs-you. One test holds a case per
   clause.
   Proof: src/renderer/quickreplies.test.ts a waiting row answers with one press
 
@@ -121,5 +121,5 @@ Ninguna.
 
 ## Checklist
 
-- [ ] hook stores the options and main answers by index or text · Closes: W74, W75
-- [ ] the row's quick reply buttons; tutorial step 4 mentions them; sketch; photo · waits on box 1 · Closes: W76
+- [x] hook stores the options and main answers by index or text · Closes: W74, W75
+- [x] the row's quick reply buttons; tutorial step 4 mentions them; sketch; photo · waits on box 1 · Closes: W76

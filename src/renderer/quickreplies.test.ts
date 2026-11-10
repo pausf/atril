@@ -62,5 +62,7 @@ describe('quick replies', () => {
     await user.click(within(replies('PF-1')!).getByRole('button', { name: 'Sí' }))
     expect(api.statusApi.answer).toHaveBeenLastCalledWith('aaaaaaa1', { option: 0 })
     expect(await within(item('PF-1')).findByText('Esa opción ya no existe.')).toBeTruthy()
+    // A failed send leaves the buttons live, so the person can try again.
+    expect(within(replies('PF-1')!).getAllByRole('button').some((b) => (b as HTMLButtonElement).disabled)).toBe(false)
   })
 })
