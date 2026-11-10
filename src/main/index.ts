@@ -33,7 +33,7 @@ import { inboxGroups } from './jira/board'
 import { proposeStart, start } from './jira/start'
 import type { InboxGroup, InboxResult, JiraIssue, Model, NextItem, StartIssue, StartRequest } from '../preload/api'
 import { listRepos, readRepos, registerRepo, setOverride } from './repos'
-import { librettoState, queueIdea, startQueued } from './libretto'
+import { dropIdea, editIdea, ideaToJira, librettoCounts, librettoState, queueIdea, startQueued } from './libretto'
 import * as pty from './pty'
 import { run } from './run'
 import { createUsage } from './usage'
@@ -459,6 +459,25 @@ app.whenReady().then(async () => {
     return typeof text === 'string' ? queueIdea(path, text, run) : { error: t('Escribe la idea antes de encolarla.') }
   })
   ipcMain.handle('atril:libretto:start', (_e, id: unknown, name: unknown) => startQueued(String(id), name as string, run))
+  ipcMain.handle('atril:libretto:repos', async () =>
+    Object.fromEntries(await Promise.all((await readRepos()).map(async (r) => [r.id, await librettoCounts(r.path, run)] as const)))
+  )
+  ipcMain.handle('atril:libretto:edit', async (_e, id: unknown, name: unknown, text: unknown) => {
+    const path = await repoPath(id)
+    return path === undefined ? noRepo(id) : editIdea(path, name as string, text as string, run)
+  })
+  ipcMain.handle('atril:libretto:drop', async (_e, id: unknown, name: unknown) => {
+    const path = await repoPath(id)
+    return path === undefined ? noRepo(id) : dropIdea(path, name as string, run)
+  })
+  ipcMain.handle('atril:libretto:jira', async (_e, id: unknown, name: unknown) => {
+    const path = await repoPath(id)
+    if (path === undefined) return noRepo(id)
+    const board = (await secretStore.hasSecret('jira')).board ?? null
+    const r = await ideaToJira(path, name as string, { run, creds: await savedJira(), board })
+    void pushNext()
+    return r
+  })
   ipcMain.handle('atril:flow:get', (_e, id: string | null) => flow.select(id))
   ipcMain.handle('atril:flow:docs', async (_e, id: string) => {
     const ws = await flowWorkspace(id, run)

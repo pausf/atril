@@ -573,6 +573,8 @@ export interface LibrettoQueued {
   name: string
   /** YYYY-MM-DD from the `Queued:` line. */
   date: string
+  /** The request as written, without the quote marks; what «Editar» opens. */
+  ask: string
   reading?: string
   /** A local branch feat/<name> exists. */
   started: boolean
@@ -586,10 +588,25 @@ export interface LibrettoInFlight {
 }
 export type LibrettoState = { none: true } | { queued: LibrettoQueued[]; inFlight: LibrettoInFlight[] } | { error: string }
 
+/** What each repo card on the Libretto screen counts; `none` is a repo without `.agents/changes/`. */
+export interface LibrettoCounts {
+  none: boolean
+  queued: number
+  inFlight: number
+}
+export type IdeaResult = { ok: true } | { error: string }
+/** `key` with `error`: the issue exists but the idea could not be removed. */
+export type IdeaJiraResult = { key: string; error?: string } | { error: string }
+
 export interface LibrettoApi {
   state(repoId: string): Promise<LibrettoState>
+  /** Counts for every registered repo, by id. */
+  repos(): Promise<Record<string, LibrettoCounts>>
   queue(repoId: string, text: string): Promise<{ name: string } | { error: string }>
   start(repoId: string, name: string): Promise<WorkspaceResult>
+  edit(repoId: string, name: string, text: string): Promise<IdeaResult>
+  drop(repoId: string, name: string): Promise<IdeaResult>
+  jira(repoId: string, name: string): Promise<IdeaJiraResult>
 }
 
 export interface FlowApi {

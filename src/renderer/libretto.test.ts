@@ -15,8 +15,8 @@ const repo = (id: string): RepoView => ({ id, path: `/r/${id}`, mode: 'worktree'
 const repos = [repo('web'), repo('api')]
 const web: LibrettoState = {
   queued: [
-    { name: 'add-discounts', date: '2026-11-01', reading: 'Descuentos relativos', started: false },
-    { name: 'add-export', date: '2026-11-02', started: true }
+    { name: 'add-discounts', date: '2026-11-01', ask: 'Descuentos relativos\nsegunda línea', reading: 'Descuentos relativos', started: false },
+    { name: 'add-export', date: '2026-11-02', ask: 'Exportar', started: true }
   ],
   inFlight: [
     { name: 'fix-login', closed: 1, total: 3, firstOpen: 'write the tests' },

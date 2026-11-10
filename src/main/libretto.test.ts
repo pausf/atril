@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { agentSpy, cleanTmp, git, killTmux, makeRegisteredRepo, tmp, tmuxSock } from './test-helpers'
-import { librettoState, queueIdea, startQueued } from './libretto'
+import { dropIdea, editIdea, ideaToJira, librettoCounts, librettoState, queueIdea, startQueued } from './libretto'
 import { run } from './run'
 
 let sock: string
@@ -42,6 +42,8 @@ describe('libretto', () => {
     proposal('b-idea', queuedBody('b-idea', '2026-11-02'))
     proposal('a-idea', queuedBody('a-idea', '2026-11-02', 'first reading'))
     proposal('old-idea', queuedBody('old-idea', '2026-10-01'))
+    // An empty «## Reading» falls back to the first line of the request, without its «> ».
+    proposal('bare', '# bare\n\nTracker: none\nQueued: 2026-11-03\n\n## The ask, verbatim\n\n> Pedir descuentos\n> más\n\n## Reading\n\n')
     // «Queued:» after the first heading does not count: that folder is in flight.
     proposal('late', '# late\n\n## Reading\n\nQueued: 2026-09-01\n')
     proposal('doing', '# doing\n\nTracker: none\n\n## Checklist\n\n- [x] one\n- [ ] two\n- [ ] three\n')
@@ -53,12 +55,15 @@ describe('libretto', () => {
     const s = await librettoState(repo)
     if (!('queued' in s)) throw new Error('expected a state')
     expect(s.queued).toEqual([
-      { name: 'old-idea', date: '2026-10-01', reading: 'something', started: false },
-      { name: 'a-idea', date: '2026-11-02', reading: 'first reading', started: true },
-      { name: 'b-idea', date: '2026-11-02', reading: 'something', started: false }
+      { name: 'old-idea', date: '2026-10-01', ask: 'x', reading: 'something', started: false },
+      { name: 'a-idea', date: '2026-11-02', ask: 'x', reading: 'first reading', started: true },
+      { name: 'b-idea', date: '2026-11-02', ask: 'x', reading: 'something', started: false },
+      { name: 'bare', date: '2026-11-03', ask: 'Pedir descuentos\nmás', reading: 'Pedir descuentos', started: false }
     ])
     const flight = Object.fromEntries(s.inFlight.map((f) => [f.name, f]))
     expect(Object.keys(flight).sort()).toEqual(['doing', 'empty', 'late', 'nobox'])
+    expect(await librettoCounts(repo)).toEqual({ none: false, queued: 4, inFlight: 4 })
+    expect(await librettoCounts(join(repo, 'nowhere'))).toEqual({ none: true, queued: 0, inFlight: 0 })
     expect(flight['doing']).toEqual({ name: 'doing', closed: 1, total: 3, firstOpen: 'two' })
     expect(flight['nobox']).toEqual({ name: 'nobox', closed: 0, total: 0 })
   })
@@ -80,7 +85,7 @@ describe('libretto', () => {
     const today = new Date()
     const iso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
     expect(readFileSync(file, 'utf8')).toBe(
-      `# anadir-descuentos-relativos\n\nTracker: none\nQueued: ${iso}\n\n## The ask, verbatim\n\n> Añadir «descuentos» relativos!!\n> segunda línea\n\n## Reading\n\n`
+      `# anadir-descuentos-relativos\n\nTracker: none\nQueued: ${iso}\n\n## The ask, verbatim\n\n> Añadir «descuentos» relativos!!\n> segunda línea\n\n## Reading\n\nAñadir «descuentos» relativos!!\n`
     )
     expect(git(repo, 'log', '-1', '--format=%s').trim()).toBe('docs(queue): capture anadir-descuentos-relativos')
     expect(git(repo, 'diff-tree', '--no-commit-id', '--name-only', '-r', 'HEAD').trim()).toBe('.agents/changes/anadir-descuentos-relativos/proposal.md')
@@ -147,5 +152,163 @@ describe('libretto', () => {
     expect(git(repo, 'branch', '--list', 'feat/ghost').trim()).toBe('')
     expect(git(repo, 'worktree', 'list').trim().split('\n')).toHaveLength(1)
     expect(git(repo, 'rev-parse', 'HEAD').trim()).toBe(head)
+  })
+
+  describe('managing the queue', () => {
+    const seed = (name = 'my-idea', body = `# ${name}\n\nTracker: none\nQueued: 2026-11-02\n\n## The ask, verbatim\n\n> old\n\n## Reading\n\nold\n`): void => {
+      proposal(name, body)
+      commitAll()
+    }
+    const dirty = (): string[] => git(repo, 'status', '--porcelain').split('\n').filter(Boolean).sort()
+    const strayChanges = (): void => {
+      writeFileSync(join(repo, 'staged.txt'), 's')
+      git(repo, 'add', 'staged.txt')
+      writeFileSync(join(repo, 'a.txt'), 'dirty')
+    }
+    const strays = [' M a.txt', 'A  staged.txt']
+    const files = (): string => git(repo, 'diff-tree', '--no-commit-id', '--name-only', '-r', 'HEAD').trim()
+
+    it('editing a queued idea commits only its proposal', async () => {
+      seed()
+      strayChanges()
+      const r = await editIdea(repo, 'my-idea', ' new text\n\nsecond ', run)
+      expect(r).toEqual({ ok: true })
+      expect(readFileSync(join(changes(), 'my-idea', 'proposal.md'), 'utf8')).toBe(
+        '# my-idea\n\nTracker: none\nQueued: 2026-11-02\n\n## The ask, verbatim\n\n> new text\n>\n> second\n\n## Reading\n\nold\n'
+      )
+      expect(git(repo, 'log', '-1', '--format=%s').trim()).toBe('docs(queue): edit my-idea')
+      expect(files()).toBe('.agents/changes/my-idea/proposal.md')
+      expect(dirty()).toEqual(strays)
+
+      // Nothing is written for blank text, an unsafe name, a started idea or one that is not queued.
+      const head = git(repo, 'rev-parse', 'HEAD').trim()
+      proposal('doing', '# doing\n\n## Checklist\n\n- [ ] a\n')
+      proposal('begun', queuedBody('begun', '2026-11-02'))
+      git(repo, 'add', '.agents')
+      git(repo, 'commit', '-q', '-m', 'more', '--', '.agents')
+      git(repo, 'branch', 'feat/begun')
+      const after = git(repo, 'rev-parse', 'HEAD').trim()
+      for (const [name, text] of [['my-idea', '  \n '], ['../x', 'a'], ['doing', 'a'], ['begun', 'a'], ['ghost', 'a']] as const) {
+        expect('error' in (await editIdea(repo, name, text, run))).toBe(true)
+      }
+      expect(head).not.toBe(after)
+      expect(git(repo, 'rev-parse', 'HEAD').trim()).toBe(after)
+      expect(readFileSync(join(changes(), 'doing', 'proposal.md'), 'utf8')).toBe('# doing\n\n## Checklist\n\n- [ ] a\n')
+      expect(readFileSync(join(changes(), 'begun', 'proposal.md'), 'utf8')).toBe(queuedBody('begun', '2026-11-02'))
+      expect(dirty()).toEqual(strays)
+    })
+
+    it('deleting a queued idea commits only its removal', async () => {
+      seed()
+      proposal('keep', queuedBody('keep', '2026-11-03'))
+      commitAll()
+      // An untracked file inside the folder goes too; other dirt stays.
+      writeFileSync(join(changes(), 'my-idea', 'notes.md'), 'scratch')
+      strayChanges()
+      expect(await dropIdea(repo, 'my-idea', run)).toEqual({ ok: true })
+      expect(existsSync(join(changes(), 'my-idea'))).toBe(false)
+      expect(existsSync(join(changes(), 'keep', 'proposal.md'))).toBe(true)
+      expect(git(repo, 'log', '-1', '--format=%s').trim()).toBe('docs(queue): drop my-idea')
+      expect(files()).toBe('.agents/changes/my-idea/proposal.md')
+      expect(dirty()).toEqual(strays)
+
+      // Unsafe, unknown, not queued or started: nothing is removed.
+      proposal('doing', '# doing\n\n## Checklist\n\n- [ ] a\n')
+      proposal('begun', queuedBody('begun', '2026-11-02'))
+      commitAll()
+      git(repo, 'branch', 'feat/begun')
+      const head = git(repo, 'rev-parse', 'HEAD').trim()
+      for (const name of ['../keep', 'doing', 'begun', 'ghost']) expect('error' in (await dropIdea(repo, name, run))).toBe(true)
+      expect(git(repo, 'rev-parse', 'HEAD').trim()).toBe(head)
+      expect(existsSync(join(changes(), 'doing'))).toBe(true)
+      expect(existsSync(join(changes(), 'begun'))).toBe(true)
+
+      // A failed commit puts the folder back.
+      const failing: typeof run = (cmd, args, opts) => (args.includes('commit') ? Promise.resolve({ code: 1, stdout: '', stderr: 'boom' }) : run(cmd, args, opts))
+      expect(await dropIdea(repo, 'keep', failing)).toEqual({ error: 'boom' })
+      expect(readFileSync(join(changes(), 'keep', 'proposal.md'), 'utf8')).toBe(queuedBody('keep', '2026-11-03'))
+      expect(dirty()).toEqual([])
+    })
+
+    describe('to Jira', () => {
+      const creds = { site: 'https://shop.atlassian.net/', email: 'a@b.c', token: 'tok' }
+      const board = { id: 7, name: 'TEAM' }
+      type Call = { url: string; method: string; auth: string | null; body?: unknown }
+      const fake = (opts: { types?: unknown; postStatus?: number } = {}): { calls: Call[]; fetchImpl: typeof fetch } => {
+        const calls: Call[] = []
+        const json = (data: unknown, status = 200): Response => new Response(JSON.stringify(data), { status })
+        const fetchImpl = (async (input: URL | string, init?: RequestInit) => {
+          const url = String(input)
+          const method = init?.method ?? 'GET'
+          calls.push({ url, method, auth: new Headers(init?.headers).get('authorization'), ...(init?.body !== undefined && { body: JSON.parse(String(init.body)) }) })
+          if (url.endsWith('/rest/agile/1.0/board/7')) return json({ location: { projectKey: 'WEB' } })
+          if (url.endsWith('/rest/api/3/issue/createmeta/WEB/issuetypes'))
+            return json(opts.types ?? { issueTypes: [{ id: '1', name: 'Sub-task', subtask: true }, { id: '2', name: 'Bug', subtask: false }, { id: '3', name: 'Task', subtask: false }] })
+          if (url.endsWith('/rest/api/3/issue') && method === 'POST')
+            return opts.postStatus ? json({ errors: { x: 'secret detail' } }, opts.postStatus) : json({ key: 'WEB-9' }, 201)
+          return json({}, 404)
+        }) as typeof fetch
+        return { calls, fetchImpl }
+      }
+      const seedIdea = (text = 'Primera línea\nsegunda\n\ntercera'): void => {
+        const quoted = text.split('\n').map((l) => `> ${l}`.trimEnd()).join('\n')
+        seed('my-idea', `# my-idea\n\nTracker: none\nQueued: 2026-11-02\n\n## The ask, verbatim\n\n${quoted}\n\n## Reading\n\n`)
+      }
+
+      it('sending an idea to Jira creates one issue and drops the idea', async () => {
+        // The proposal's clauses, one case each.
+        seedIdea()
+        const ok = fake()
+        expect(await ideaToJira(repo, 'my-idea', { creds, board, fetchImpl: ok.fetchImpl, run })).toEqual({ key: 'WEB-9' })
+        expect(ok.calls.map((c) => `${c.method} ${c.url}`)).toEqual([
+          'GET https://shop.atlassian.net/rest/agile/1.0/board/7',
+          'GET https://shop.atlassian.net/rest/api/3/issue/createmeta/WEB/issuetypes',
+          'POST https://shop.atlassian.net/rest/api/3/issue'
+        ])
+        expect(ok.calls[0]?.auth).toBe(`Basic ${Buffer.from('a@b.c:tok').toString('base64')}`)
+        const text = (s: string): unknown => ({ type: 'paragraph', content: [{ type: 'text', text: s }] })
+        expect(ok.calls[2]?.body).toEqual({
+          fields: {
+            project: { key: 'WEB' },
+            issuetype: { id: '3' },
+            summary: 'Primera línea',
+            description: { type: 'doc', version: 1, content: [text('Primera línea'), text('segunda'), { type: 'paragraph', content: [] }, text('tercera')] }
+          }
+        })
+        expect(existsSync(join(changes(), 'my-idea'))).toBe(false)
+        expect(git(repo, 'log', '-1', '--format=%s').trim()).toBe('docs(queue): WEB-9 en Jira, my-idea')
+
+        // No «Task»: the first type that is not a subtask, read from `values`; the summary is cut to 255.
+        seedIdea('x'.repeat(300))
+        const noTask = fake({ types: { values: [{ id: '1', name: 'Sub-task', subtask: true }, { id: '2', name: 'Story', subtask: false }] } })
+        expect(await ideaToJira(repo, 'my-idea', { creds, board, fetchImpl: noTask.fetchImpl, run })).toEqual({ key: 'WEB-9' })
+        const sent = (noTask.calls[2]?.body as { fields: { issuetype: unknown; summary: string } }).fields
+        expect(sent.issuetype).toEqual({ id: '2' })
+        expect(sent.summary).toBe('x'.repeat(255))
+
+        // Jira answers an error: nothing removed, and what Jira said is not echoed.
+        seedIdea()
+        const head = git(repo, 'rev-parse', 'HEAD').trim()
+        const bad = fake({ postStatus: 400 })
+        const failed = await ideaToJira(repo, 'my-idea', { creds, board, fetchImpl: bad.fetchImpl, run })
+        expect(failed).toEqual({ error: expect.stringContaining('400') })
+        expect(JSON.stringify(failed)).not.toContain('secret detail')
+        expect(existsSync(join(changes(), 'my-idea', 'proposal.md'))).toBe(true)
+        expect(git(repo, 'rev-parse', 'HEAD').trim()).toBe(head)
+
+        // No credentials or no board: Jira is not even asked.
+        const none = fake()
+        expect('error' in (await ideaToJira(repo, 'my-idea', { creds: null, board, fetchImpl: none.fetchImpl, run }))).toBe(true)
+        expect('error' in (await ideaToJira(repo, 'my-idea', { creds, board: null, fetchImpl: none.fetchImpl, run }))).toBe(true)
+        expect('error' in (await ideaToJira(repo, '../x', { creds, board, fetchImpl: none.fetchImpl, run }))).toBe(true)
+        expect(none.calls).toEqual([])
+
+        // The issue exists but the removal fails: both the key and the error come back, the idea stays.
+        const failing: typeof run = (cmd, args, opts) => (args.includes('commit') ? Promise.resolve({ code: 1, stdout: '', stderr: 'boom' }) : run(cmd, args, opts))
+        expect(await ideaToJira(repo, 'my-idea', { creds, board, fetchImpl: fake().fetchImpl, run: failing })).toEqual({ key: 'WEB-9', error: 'boom' })
+        expect(existsSync(join(changes(), 'my-idea', 'proposal.md'))).toBe(true)
+        expect(git(repo, 'rev-parse', 'HEAD').trim()).toBe(head)
+      })
+    })
   })
 })

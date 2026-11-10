@@ -64,7 +64,11 @@ const api: AtrilApi = {
   libretto: {
     state: (repoId) => ipcRenderer.invoke('atril:libretto:state', repoId),
     queue: (repoId, text) => ipcRenderer.invoke('atril:libretto:queue', repoId, text),
-    start: (repoId, name) => ipcRenderer.invoke('atril:libretto:start', repoId, name)
+    start: (repoId, name) => ipcRenderer.invoke('atril:libretto:start', repoId, name),
+    repos: () => ipcRenderer.invoke('atril:libretto:repos'),
+    edit: (repoId, name, text) => ipcRenderer.invoke('atril:libretto:edit', repoId, name, text),
+    drop: (repoId, name) => ipcRenderer.invoke('atril:libretto:drop', repoId, name),
+    jira: (repoId, name) => ipcRenderer.invoke('atril:libretto:jira', repoId, name)
   },
   flow: {
     get: (id) => ipcRenderer.invoke('atril:flow:get', id),
