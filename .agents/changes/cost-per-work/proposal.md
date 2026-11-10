@@ -88,7 +88,7 @@ como mucho cada 30 s y solo los bytes nuevos.
   appended since the previous one. One test holds a case per clause.
   Proof: src/main/cost.test.ts usage is totalled once per message and priced by model
 - **W94** A workspace's card and its row's title shall show «≈ {coste} $ · {tokens} tokens» with «estimado a
-  precio de API» — cost as «0,42 $» or «< 0,01 $», tokens as «850», «12,3 k» or «1,2 M», plus «(sin precio para
+  precio de API» — cost as «≈ 0,42 $», or «< 0,01 $» without «≈» under a cent, tokens as «850», «12,3 k» or «1,2 M», plus «(sin precio para
   {modelo})» when a model is unpriced — updated when main pushes a change, and nothing when the total is 0
   tokens or there is no transcript. One test holds a case per clause.
   Proof: src/renderer/cost.test.ts each workspace shows its estimated cost
@@ -103,5 +103,5 @@ como mucho cada 30 s y solo los bytes nuevos.
 
 ## Checklist
 
-- [ ] hook keeps the transcript path; main totals and prices usage · Closes: W92, W93
-- [ ] card, panel and row show it; sketch; photo · waits on box 1 · Closes: W94, F34
+- [x] hook keeps the transcript path; main totals and prices usage · Closes: W92, W93
+- [x] card, panel and row show it; sketch; photo · waits on box 1 · Closes: W94, F34

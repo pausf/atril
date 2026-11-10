@@ -177,6 +177,7 @@ export const EN: Record<string, string> = {
   'Subagentes': 'Subagents',
   '1 subagente': '1 subagent',
   '{tokens} tokens': '{tokens} tokens',
+  '< {cost} $ · {tokens} tokens': '< {cost} $ · {tokens} tokens',
   '≈ {cost} $ · {tokens} tokens': '≈ ${cost} · {tokens} tokens',
   '(sin precio para {model})': '(no price for {model})',
   'estimado a precio de API': 'estimated at API prices',

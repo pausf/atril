@@ -34,8 +34,14 @@ export function costText(t: T, locale: string, cost: WorkCost | null | undefined
   if (!cost || cost.tokens <= 0) return null
   const n = cost.tokens
   const tokens = n < 1000 ? String(n) : n < 1e6 ? `${(n / 1000).toLocaleString(locale, { maximumFractionDigits: 1 })} k` : `${(n / 1e6).toLocaleString(locale, { maximumFractionDigits: 1 })} M`
-  const usd = cost.usd === null ? null : cost.usd < 0.01 ? `< ${fixed(locale, 0.01, 2)}` : fixed(locale, cost.usd, 2)
-  const line = usd === null ? t('{tokens} tokens', { tokens }) : t('≈ {cost} $ · {tokens} tokens', { cost: usd, tokens })
+  const usd = cost.usd === null ? null : fixed(locale, cost.usd, 2)
+  // Under a cent the bound already says it is approximate: no «≈» in front of «<».
+  const line =
+    usd === null
+      ? t('{tokens} tokens', { tokens })
+      : cost.usd !== null && cost.usd < 0.01
+        ? t('< {cost} $ · {tokens} tokens', { cost: fixed(locale, 0.01, 2), tokens })
+        : t('≈ {cost} $ · {tokens} tokens', { cost: usd, tokens })
   const unpriced = cost.unpriced.length ? ` ${t('(sin precio para {model})', { model: cost.unpriced.map((m) => m || '?').join(', ') })}` : ''
   return `${line}${unpriced} · ${t('estimado a precio de API')}`
 }

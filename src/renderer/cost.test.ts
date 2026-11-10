@@ -33,7 +33,7 @@ describe('cost', () => {
 
     // The row says it in its title, with the note; a cost under a cent and thousands of tokens.
     await waitFor(() => expect(row('PF-1').getAttribute('title')).toBe(`≈ 0,42 $ · 850 tokens · ${NOTE}`))
-    expect(row('PF-2').getAttribute('title')).toBe(`≈ < 0,01 $ · 12,3 k tokens · ${NOTE}`)
+    expect(row('PF-2').getAttribute('title')).toBe(`< 0,01 $ · 12,3 k tokens · ${NOTE}`)
     // Millions, and the model without a price named.
     expect(row('PF-3').getAttribute('title')).toBe(`≈ 3,50 $ · 1,2 M tokens (sin precio para claude-mystery-9) · ${NOTE}`)
     // Nothing at 0 tokens or without a transcript.
