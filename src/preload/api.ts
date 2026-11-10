@@ -53,6 +53,8 @@ export interface WorkspaceRecord {
   auto?: boolean
   session: string
   paneId: string
+  /** Epoch seconds; records older than W95 have none. */
+  createdAt?: number
 }
 
 export interface WorkspaceView extends WorkspaceRecord {
@@ -484,6 +486,26 @@ export interface CostApi {
   get(workspaceId: string): Promise<WorkCost | null>
   /** Main reads at most every 30 s and pushes only a changed total. Returns the unsubscribe function. */
   onChange(cb: (workspaceId: string, cost: WorkCost | null) => void): () => void
+}
+
+/** W95: one line of $ATRIL_HOME/history.jsonl per workspace removed; never content. */
+export interface HistoryEntry {
+  branch: string
+  repoId: string
+  jiraKey?: string
+  mode: WorkspaceRecord['mode']
+  stage?: StageName
+  change?: string
+  createdAt?: number
+  closedAt: number
+  cost: WorkCost | null
+}
+
+export interface HistoryApi {
+  /** Newest first, at most 20 (W96). */
+  list(): Promise<HistoryEntry[]>
+  /** Returns the unsubscribe function. */
+  onChange(cb: (entries: HistoryEntry[]) => void): () => void
 }
 
 export type QaKind = 'expo' | 'react-native' | 'flutter' | 'android' | 'ios' | 'web'

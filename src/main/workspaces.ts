@@ -8,6 +8,7 @@ import { run as defaultRun, type Runner } from './run'
 import { trustFolder } from './trust'
 import { hasSession, killSession, newSession, sessionName } from './tmux'
 import { atrilHome } from './paths'
+import { appendHistory, historyEntry } from './history'
 import { t } from './lang'
 
 export interface OpenInput {
@@ -173,7 +174,8 @@ export async function openWorktree(input: OpenInput, run: Runner = defaultRun): 
     ...(input.jiraKey && { jiraKey: input.jiraKey }),
     ...(auto && { auto }),
     session: sessionName(id),
-    paneId
+    paneId,
+    createdAt: Math.floor(Date.now() / 1000)
   }
   await writeRecords([...(await readRecords()), record])
   return { workspace: { ...record, alive: true } }
@@ -210,20 +212,24 @@ export async function removeWorkspace(id: string, run: Runner = defaultRun): Pro
       return { error: t('El repo está en la rama «{current}», no en «{branch}»: vuelve a «{branch}» antes de cerrar', { current: current || t('HEAD suelto'), branch: rec.branch }) }
   }
 
+  // W95: read before the folder and the transcript list go; written only once the removal got through.
+  const entry = await historyEntry(rec, run)
+  const done = async (): Promise<RemoveResult> => {
+    await writeRecords(records.filter((r) => r.id !== id))
+    await dropFiles(id)
+    await appendHistory(entry).catch(() => undefined)
+    return { ok: true }
+  }
   await killSession(id, run)
   if (rec.mode === 'in-place') {
     // Never delete the branch: the person's commits live there.
     const prev = rec.previousBranch ?? ''
     const back = await run('git', ['-C', rec.path, 'switch', ...(/^[0-9a-f]{40}$/.test(prev) ? ['--detach'] : []), prev])
     if (back.code !== 0) return { error: back.stderr.trim() || t('git switch falló') }
-    await writeRecords(records.filter((r) => r.id !== id))
-    await dropFiles(id)
-    return { ok: true }
+    return done()
   }
   // No --force: git itself refuses anything the status check missed.
   const rm = await run('git', ['-C', repo.path, 'worktree', 'remove', rec.path])
   if (rm.code !== 0) return { error: rm.stderr.trim() || t('git worktree remove falló') }
-  await writeRecords(records.filter((r) => r.id !== id))
-  await dropFiles(id)
-  return { ok: true }
+  return done()
 }
