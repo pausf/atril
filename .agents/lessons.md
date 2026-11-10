@@ -197,3 +197,6 @@ Reviewer found nothing against the contract (3 proofs re-run, green). Asked whet
 
 ## 2026-11-10 · add-qa-lab · 6→7
 Reviewer found nothing (3 proofs re-run, green). Before the review the session added the Android SDK-folder lookup for adb/emulator, and found the test passed or failed depending on the machine (this Mac has ~/Library/Android/sdk): isolated HOME and ANDROID_* in the test. Lesson: a check that reads the user's home needs the test to own that home.
+
+## 2026-11-10 · pause-agent · 6→7
+Reviewer found nothing against the contract (3 proofs re-run). Asked whether a removed workspace leaves its pause mark: it did; dropFiles now removes it (seen red first). Before the review, the builder flagged that Claude Code's idle Notification (~60 s at the prompt) would end a pause; the hook now ignores idle_prompt for the mark and W87 says so (seen red first). Lesson: a mark that a hook clears must name which hook events count, including the ones Claude Code sends on its own.

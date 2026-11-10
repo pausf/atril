@@ -188,6 +188,8 @@ describe('pause', () => {
     // A gone workspace: nothing is sent and the caller says so.
     expect(await pauseAgent(a.id, run)).toEqual({ ok: true })
     expect(await removeWorkspace(a.id)).toEqual({ ok: true })
+    // Removing a paused workspace takes its mark with it.
+    expect(existsSync(join(home, 'paused', a.session))).toBe(false)
     sent.length = 0
     expect(await resumeAgent(a.id, run)).toEqual({ error: replyGone() })
     expect(sent).toEqual([])
