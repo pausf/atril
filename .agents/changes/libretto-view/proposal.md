@@ -122,10 +122,12 @@ Electron 45, React 19, vitest. Reutiliza `changeFolders`/`readChecklist` (`src/m
 - `librettoState(repoPath)` → `{ none: true } | { queued: Queued[], inFlight: InFlight[] }`.
 - `queueIdea(repoPath, text, run)` → `{ name } | { error }`: `git add -- <file>` y
   `git commit -m … -- <file>` (pathspec: no arrastra nada más del índice ni del árbol).
-- `startQueued(repoId, name, run)` → `openWorktree({ repoId, branch: 'feat/'+name, agent: 'claude' })` sin prompt;
-  luego quita `Queued:` en `<ws.path>/.agents/changes/<name>/proposal.md`, `git commit -- <file>` en el worktree, y
-  envía `/libretto:write-spec <name>` con `replyToAgent` (o el `prompt` de `openWorktree` si el commit puede hacerse
-  antes de que arranque Claude: el constructor elige y lo dice). `started` sale de `git branch --list 'feat/*'`.
+- `startQueued(repoId, name, run)` → `openWorktree({ repoId, branch: 'feat/'+name, agent: 'claude', prompt:
+  '/libretto:write-spec '+name }, run, prepare)`: `openWorktree` gana un tercer parámetro `prepare(path)` que corre
+  antes de arrancar a Claude; aquí quita `Queued:` y commitea en el worktree. Si `prepare` falla, `openWorktree`
+  deshace el worktree (o vuelve la rama en in-place) y borra la rama solo si la creó. Escribir en un Claude que aún
+  arranca (`replyToAgent`) se descartó por carrera. `started` sale de `git branch --list 'feat/*'`.
+- Un id de repo desconocido devuelve `{ error }` y la pantalla lo enseña como alerta.
 - La pantalla guarda el repo elegido en el estado de interfaz existente.
 
 ### The alternatives it beat
@@ -149,5 +151,5 @@ Ninguna.
 
 ## Checklist
 
-- [ ] read, queue and start in main with their IPC · Closes: W100, W101, W102
-- [ ] the Libretto screen, rail, ⌘K, remembered repo, refresh, tour mention; sketch; photo; novedades; CLAUDE.md «sin probar» · waits on box 1 · Closes: W103, W104
+- [x] read, queue and start in main with their IPC · Closes: W100, W101, W102
+- [x] the Libretto screen, rail, ⌘K, remembered repo, refresh, tour mention; sketch; photo; novedades; CLAUDE.md «sin probar» · waits on box 1 · Closes: W103, W104

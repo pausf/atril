@@ -42,7 +42,7 @@ describe('libretto screen', () => {
     expect(within(row('add-export')).getByText('Empezada · feat/add-export')).toBeTruthy()
     // In flight: the count and the first open box, or «Lista para aterrizar».
     expect(within(row('fix-login')).getByText('1/3')).toBeTruthy()
-    expect(within(row('fix-login')).getByText('write the tests')).toBeTruthy()
+    expect(within(row('fix-login')).getByText('Siguiente: write the tests')).toBeTruthy()
     expect(within(row('tidy-css')).getByText('2/2')).toBeTruthy()
     expect(within(row('tidy-css')).getByText('Lista para aterrizar')).toBeTruthy()
     expect(within(row('no-list')).getByText('Sin checklist')).toBeTruthy()

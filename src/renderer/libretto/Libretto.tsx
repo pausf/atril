@@ -135,7 +135,7 @@ export function Libretto() {
                 <div className="lb-main">
                   <span className="lb-name">{f.name}</span>
                   <span className="lb-sub">
-                    {f.total === 0 ? t('Sin checklist') : f.closed === f.total ? t('Lista para aterrizar') : f.firstOpen}
+                    {f.total === 0 ? t('Sin checklist') : f.closed === f.total ? t('Lista para aterrizar') : `${t('Siguiente:')} ${f.firstOpen ?? ''}`}
                   </span>
                 </div>
                 {f.total > 0 && <span className="lb-meta">{`${f.closed}/${f.total}`}</span>}

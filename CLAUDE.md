@@ -39,6 +39,7 @@ Sin probar con datos reales (necesita a Pau):
 - Que el selector de opciones de Claude Code acepte el número tecleado (respuestas rápidas).
 - La QA en vivo con un Claude, un navegador y un emulador reales (solo probada con dobles).
 - Publicar un borrador en su línea contra un GitHub/GitLab real.
+- «Empezar» en la pantalla Libretto: que Claude Code tome `/libretto:write-spec <nombre>` como primer mensaje y siga el flujo.
 - `pnpm dist` y abrir el `.dmg` instalado: la lista de `bocetos/instalar.html` §4 (la sesión no construye).
 - Que Esc pause a Claude sin eventos sueltos y que «Sigue donde lo dejaste.» se tome como mensaje nuevo.
 
