@@ -191,3 +191,6 @@ Reviewer: (1) W78's proof tested only the pure table, not main's wiring — a br
 
 ## 2026-11-10 · atomic-records · 6
 A full-run red («Unexpected end of JSON input» in tmux.test.ts) was a real bug, not load: `writeRecords` truncated then wrote workspaces.json while watchers read it. Reproduced 3/3 with a write/read race test; fixed with temp file + rename (and repos.json, same pattern). Lesson: a parse error in a test is evidence of a race in the code, not of a slow machine — reproduce before blaming contention.
+
+## 2026-11-10 · agents-overview · 6→7
+Reviewer found nothing against the contract (3 proofs re-run, green). Asked whether xterm refits after «Todos» hides it: yes, Terminal.tsx's ResizeObserver fires when the container goes from 0 to its size. No change.
