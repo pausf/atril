@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import type { FileChange, FlowStage, StageName } from '../../preload/api'
+import { FoldSection } from '../components/Fold'
 import { Icon, type IconName } from '../components/Icon'
 import { useT, type T } from '../ui'
 import { ActivityFeed } from './ActivityFeed'
@@ -131,6 +132,8 @@ export function FlowPanel({ workspaceId, auto = false }: { workspaceId: string |
 // F13: a stage opens its document once the flow has reached it.
 const DOC_OF: Partial<Record<StageName, Part>> = { spec: 'spec', plan: 'plan' }
 const BUILDING: StageName[] = ['construir', 'terminado', 'aterrizado']
+// F31: past this, the rest of the list lives in the diff modal.
+const MAX_FILES = 8
 
 interface FlowProps {
   flow: FlowStage | null
@@ -192,13 +195,7 @@ function LibrettoFlow({ flow, onOpen, changes, onDiff }: FlowProps) {
             </p>
           )}
           {c && (
-            <div className="sec">
-              <h2>{t('Checklist')}</h2>
-              <p className="fmeta">
-                <b>
-                  {t('{closed} de {total}', { closed: c.closed, total: c.total })}
-                </b>
-              </p>
+            <FoldSection id="flow-checklist" title={t('Checklist')} count={t('{closed}/{total}', { closed: c.closed, total: c.total })} className="flow-fold">
               <div className="prog">
                 <i style={{ width: `${(c.closed / c.total) * 100}%` }} />
               </div>
@@ -213,16 +210,13 @@ function LibrettoFlow({ flow, onOpen, changes, onDiff }: FlowProps) {
               <button type="button" className="btn" onClick={() => onOpen('checklist')}>
                 {t('Ver checklist')}
               </button>
-            </div>
+            </FoldSection>
           )}
           {changes.length > 0 && (
-            <section className="sec" aria-labelledby="changes-h">
-              <h2 id="changes-h">
-                {t('Cambios')} <span className="n">{changes.length}</span>
-              </h2>
+            <FoldSection id="flow-changes" title={t('Cambios')} count={changes.length} className="flow-fold">
               <ChangeTotal lines={changes.reduce((n, f) => n + f.added + f.removed, 0)} />
               <ul className="fchanges">
-                {changes.map((f) => {
+                {changes.slice(0, MAX_FILES).map((f) => {
                   const slash = f.path.lastIndexOf('/')
                   const total = f.added + f.removed || 1
                   return (
@@ -245,17 +239,21 @@ function LibrettoFlow({ flow, onOpen, changes, onDiff }: FlowProps) {
                   )
                 })}
               </ul>
-            </section>
+              {changes.length > MAX_FILES && (
+                <button type="button" className="fmore" onClick={() => onDiff(changes[MAX_FILES]!.path)}>
+                  {t('+{n} más', { n: changes.length - MAX_FILES })}
+                </button>
+              )}
+            </FoldSection>
           )}
           {flow && flow.others.length > 0 && (
-            <div className="sec">
-              <h2>{t('Otros cambios')}</h2>
+            <FoldSection id="flow-others" title={t('Otros cambios')} count={flow.others.length} defaultFolded className="flow-fold">
               {flow.others.map((o) => (
                 <p className="fmeta" key={o}>
                   {o}
                 </p>
               ))}
-            </div>
+            </FoldSection>
           )}
         </>
       )}

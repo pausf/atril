@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { SubagentEntry } from '../../preload/api'
+import { FoldSection } from '../components/Fold'
 import { runningCount, useSubagents } from '../subagents'
 import { useT, type T } from '../ui'
 import { SubagentModal } from './SubagentModal'
@@ -38,22 +39,21 @@ export function Subagents({ workspaceId }: { workspaceId: string | null }) {
   // An entry that left the list (W64) takes its modal with it.
   const shown = entries.find((e) => e.id === open)
   return (
-    <section className="sec" aria-labelledby="subagents-h">
-      <h2 id="subagents-h">
-        {t('Subagentes')}
-      </h2>
-      <ul className="subs" aria-label={t('Subagentes')}>
-        {[...entries].sort(newest).map((e) => (
-          <li key={e.id}>
-            <button type="button" className={`sub ${e.endedAt === undefined ? 'run' : 'end'}`} onClick={() => setOpen(e.id)}>
-              <span className="sub-text">{e.description || e.type}</span>
-              {e.description && <span className="sub-type">{e.type}</span>}
-              <span className="sub-state">{state(e)}</span>
-            </button>
-          </li>
-        ))}
-      </ul>
+    <>
+      <FoldSection id="flow-subagents" title={t('Subagentes')} count={entries.length} className="flow-fold">
+        <ul className="subs" aria-label={t('Subagentes')}>
+          {[...entries].sort(newest).map((e) => (
+            <li key={e.id}>
+              <button type="button" className={`sub ${e.endedAt === undefined ? 'run' : 'end'}`} onClick={() => setOpen(e.id)}>
+                <span className="sub-text">{e.description || e.type}</span>
+                {e.description && <span className="sub-type">{e.type}</span>}
+                <span className="sub-state">{state(e)}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      </FoldSection>
       {workspaceId && shown && <SubagentModal workspaceId={workspaceId} entry={shown} state={state(shown)} onClose={() => setOpen(null)} />}
-    </section>
+    </>
   )
 }

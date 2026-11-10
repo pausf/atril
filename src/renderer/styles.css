@@ -2077,6 +2077,23 @@ button.stg.stgbtn:focus-visible {
 }
 
 /* File changes: the Cambios list and its diff modal (F18–F23). */
+.flow-fold {
+  border-top: 1px solid var(--line);
+  padding-top: 6px;
+  margin: 6px 0 0;
+}
+.fmore {
+  border: 0;
+  background: none;
+  padding: 4px 6px;
+  font: inherit;
+  font-size: 12.5px;
+  color: var(--run-text);
+  cursor: pointer;
+}
+.fmore:hover {
+  text-decoration: underline;
+}
 .fchanges {
   list-style: none;
   margin: 6px 0 4px;

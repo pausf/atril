@@ -106,4 +106,25 @@ describe('file changes', () => {
     expect(warn.textContent).toBe('⚠ 500 líneas: rama grande (más de 400). Atril le ha pedido a Claude que te proponga separarla en MRs más pequeñas.')
     expect(within(section).queryByText('500 líneas')).toBeNull()
   })
+
+  it('cambios shows eight and opens the rest', async () => {
+    const many: FileChange[] = Array.from({ length: 12 }, (_, i) => ({ path: `src/F${i + 1}.php`, status: 'M' as const, added: i + 1, removed: 1 }))
+    const api = mockApi({ workspaces: [workspace('aaaaaaa1', 'PF-1', false)], states: { aaaaaaa1: 'working' }, flow: building, changes: many })
+    const user = userEvent.setup()
+    render(createElement(App))
+    await user.click(await screen.findByRole('button', { name: /^PF-1/ }))
+    const section = await screen.findByRole('region', { name: /Cambios/ })
+    await within(section).findByText('+4 más')
+
+    // The first eight in list order, then «+4 más»; the total still counts all twelve (78 + 12).
+    const rows = within(section).getAllByRole('button')
+    expect(rows.map((r) => r.textContent)).toEqual([...many.slice(0, 8).map((f) => expect.stringContaining(f.path.slice(4))), '+4 más'])
+    expect(within(section).getByText('90 líneas')).toBeTruthy()
+
+    // «+4 más» opens the diff modal on the ninth file, with all twelve in its list.
+    await user.click(within(section).getByRole('button', { name: '+4 más' }))
+    const dialog = await screen.findByRole('dialog', { name: /Cambios/ })
+    expect(api.flowApi.diff).toHaveBeenLastCalledWith('aaaaaaa1', 'src/F9.php')
+    expect(within(dialog).getByRole('button', { name: /F12\.php/ })).toBeTruthy()
+  })
 })

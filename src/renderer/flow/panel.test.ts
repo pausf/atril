@@ -5,7 +5,7 @@ import { createElement } from 'react'
 import { cleanup, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import type { FileChange, FlowStage } from '../../preload/api'
+import type { FileChange, FlowStage, SubagentEntry, UiState } from '../../preload/api'
 import { App } from '../App'
 import { mockApi, mockSystemTheme, workspace } from '../mockApi'
 
@@ -60,5 +60,62 @@ describe('libretto panel', () => {
     await boot({ stage: 'terminado', change: 'add-x', others: [] })
     const build = await screen.findByRole('button', { name: 'Construir · ver 1 archivos' })
     expect(build.querySelector('.stg-t')!.classList.contains('sr-only')).toBe(true)
+  })
+
+  it('the panel sections fold and remember', async () => {
+    const flow: FlowStage = { stage: 'construir', change: 'add-x', others: ['fix-cart-rounding'], checklist: { file: 'proposal.md', closed: 3, total: 7, firstOpen: 'T4' } }
+    const subs: SubagentEntry[] = [
+      { id: 's1', type: 'explorer', description: 'Leer pagos', startedAt: 1, endedAt: 9 },
+      { id: 's2', type: 'Plan', startedAt: 2, endedAt: 5 }
+    ]
+    const files: FileChange[] = [...changes, { path: 'src/B.php', status: 'M', added: 1, removed: 1 }]
+    const stored: UiState = { tutorialSeen: true, theme: 'auto', folded: {} }
+    const data = { workspaces: [workspace('aaaaaaa1', 'PF-1', false)], states: { aaaaaaa1: 'working' as const }, flow, changes: files, subagents: { aaaaaaa1: subs } }
+    const open = async () => {
+      const user = userEvent.setup()
+      const view = render(createElement(App))
+      await user.click(await screen.findByRole('button', { name: /^PF-1/ }))
+      await screen.findByRole('button', { name: /^Cambios\s*2$/ })
+      await screen.findByRole('button', { name: /^Subagentes\s*2$/ })
+      return { user, view }
+    }
+    const api = mockApi(data, stored)
+    const { user, view } = await open()
+    const title = (name: RegExp) => screen.getByRole('button', { name })
+    const expanded = (name: RegExp) => title(name).getAttribute('aria-expanded')
+
+    // Each title is a button with its count; Otros cambios starts folded, the rest open.
+    expect(expanded(/^Checklist\s*3\/7$/)).toBe('true')
+    expect(expanded(/^Cambios\s*2$/)).toBe('true')
+    expect(expanded(/^Subagentes\s*2$/)).toBe('true')
+    expect(expanded(/^Otros cambios\s*1$/)).toBe('false')
+    expect(screen.queryByRole('region', { name: /^Otros cambios/ })).toBeNull()
+
+    // Unfolding shows what was folded.
+    await user.click(title(/^Otros cambios/))
+    expect(expanded(/^Otros cambios\s*1$/)).toBe('true')
+    expect(screen.getByRole('region', { name: /^Otros cambios/ }).textContent).toBe('fix-cart-rounding')
+
+    // Folding hides the body and keeps the count in the title.
+    await user.click(title(/^Checklist/))
+    expect(expanded(/^Checklist\s*3\/7$/)).toBe('false')
+    expect(screen.queryByRole('button', { name: 'Ver checklist' })).toBeNull()
+    await user.click(title(/^Cambios/))
+    expect(expanded(/^Cambios\s*2$/)).toBe('false')
+    expect(screen.queryByRole('button', { name: /src\/B\.php/ })).toBeNull()
+    await user.click(title(/^Subagentes/))
+    expect(expanded(/^Subagentes\s*2$/)).toBe('false')
+    expect(screen.queryByRole('list', { name: 'Subagentes' })).toBeNull()
+    expect(api.ui.set).toHaveBeenLastCalledWith({ folded: { 'flow-subagents': true } })
+    expect(stored.folded).toEqual({ 'flow-others': false, 'flow-checklist': true, 'flow-changes': true, 'flow-subagents': true })
+
+    // Mounted again, each section comes back as it was left.
+    view.unmount()
+    mockApi(data, stored)
+    await open()
+    expect(expanded(/^Checklist\s*3\/7$/)).toBe('false')
+    expect(expanded(/^Cambios\s*2$/)).toBe('false')
+    expect(expanded(/^Subagentes\s*2$/)).toBe('false')
+    expect(expanded(/^Otros cambios\s*1$/)).toBe('true')
   })
 })

@@ -29,7 +29,7 @@ describe('subagents', () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime.bind(vi) })
     render(createElement(App))
     await user.click(await screen.findByRole('button', { name: /^PF-1/ }))
-    await screen.findByRole('heading', { name: 'Subagentes' })
+    await screen.findByRole('heading', { name: /^Subagentes/ })
 
     // Newest first; the type alone when there is no description; text, never markup.
     expect(items()).toEqual([
@@ -47,7 +47,7 @@ describe('subagents', () => {
     act(() => api.pushSubagents('aaaaaaa1', [{ ...entries[1]!, endedAt: NOW + 5 }]))
     expect(items()).toEqual(['<img src=x onerror=alert(1)> migrargeneral-purposeterminado · 1 min 25 s'])
     act(() => api.pushSubagents('aaaaaaa1', []))
-    expect(screen.queryByRole('heading', { name: 'Subagentes' })).toBeNull()
+    expect(screen.queryByRole('heading', { name: /^Subagentes/ })).toBeNull()
   })
 
   it('a subagent opens as a terminal', async () => {

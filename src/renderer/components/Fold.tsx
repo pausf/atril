@@ -4,7 +4,7 @@ import { useFolded } from '../ui'
 interface Props {
   id: string
   title: string
-  count: number
+  count: number | string
   defaultFolded?: boolean
   className?: string
   tour?: string
@@ -15,17 +15,18 @@ interface Props {
 export function FoldSection({ id, title, count, defaultFolded = false, className, tour, children }: Props) {
   const [folded, toggle] = useFolded(id, defaultFolded)
   const body = useId()
+  const head = useId()
   return (
     <section className={`fold${className ? ` ${className}` : ''}`} data-section={id} data-tour={tour}>
       <h2 className="fold-h">
-        <button type="button" aria-expanded={!folded} aria-controls={body} onClick={toggle}>
+        <button type="button" id={head} aria-expanded={!folded} aria-controls={body} onClick={toggle}>
           <span className="chev" aria-hidden>
             ▾
           </span>
           {title} <span className="n">{count}</span>
         </button>
       </h2>
-      <div id={body} hidden={folded}>
+      <div id={body} role="region" aria-labelledby={head} hidden={folded}>
         {children}
       </div>
     </section>
