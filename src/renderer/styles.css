@@ -765,9 +765,21 @@ kbd {
   display: grid;
   grid-template-columns: 1fr auto;
   gap: 2px 8px;
+  width: 100%;
   padding: 8px 0;
+  border: 0;
   border-bottom: 1px solid var(--line);
+  background: none;
+  color: inherit;
+  font: inherit;
   font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+.sub:hover,
+.sub:focus-visible {
+  background: var(--chip);
+  outline: none;
 }
 .sub-text {
   overflow-wrap: anywhere;
@@ -1773,6 +1785,32 @@ button.stg.stgbtn:focus-visible {
   background: var(--ed-1);
   color: var(--ed-2);
   overflow: hidden;
+}
+.dlg.edmodal.submodal {
+  width: min(960px, 94vw);
+  background: var(--term-bg);
+  color: var(--term-fg);
+}
+.submodal .edhead {
+  border-bottom-color: var(--term-line);
+}
+.submodal .edhead h3 {
+  color: var(--term-fg);
+}
+.submodal .edhead .docchange {
+  color: var(--term-sub);
+}
+.sublog .sl {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.sublog .sl.cont {
+  padding-left: 2ch;
+}
+.sublog .sl.result,
+.sublog .sl.thinking,
+.sublog .sl.prompt .slp {
+  color: var(--term-sub);
 }
 .edhead {
   display: flex;

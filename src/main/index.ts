@@ -23,7 +23,7 @@ import { jiraSettings } from './credentials/jira'
 import { searchBoards } from './credentials/boards'
 import type { JiraCreds } from './credentials/check'
 import { doctor } from './doctor'
-import type { Aviso, CreateRepoRequest, Mode, MrDrafts, MrDraftsResult, MrItem, MrLists, MrScoreState, MrThreads, SubagentEntry, UiState } from '../preload/api'
+import type { Aviso, CreateRepoRequest, Mode, MrDrafts, MrDraftsResult, MrItem, MrLists, MrScoreState, MrThreads, SubagentEntry, SubagentLine, UiState } from '../preload/api'
 import { readInbox } from './jira/inbox'
 import { inboxGroups } from './jira/board'
 import { proposeStart, start } from './jira/start'
@@ -130,13 +130,31 @@ function fakeThreads(): MrThreads {
   }
 }
 
-// ponytail: dev-only, ATRIL_SNAPSHOT_VIEW=subagents photographs two running subagents and one finished.
+// ponytail: dev-only, ATRIL_SNAPSHOT_VIEW=subagents|subagent-log photographs two running subagents and one finished.
 function fakeSubagents(): SubagentEntry[] {
   const at = Math.floor(Date.now() / 1000)
   return [
     { id: 's1', type: 'explorer', description: 'Leer cómo se calcula la fecha de entrega', startedAt: at - 200, endedAt: at - 155 }, // i18n-ignore
     { id: 's2', type: 'general-purpose', description: 'Migrar el calendario de festivos a la nueva tabla', startedAt: at - 80 }, // i18n-ignore
     { id: 's3', type: 'Plan', startedAt: at - 12 }
+  ]
+}
+
+// ponytail: dev-only, every fake subagent answers the same believable log.
+function fakeSubagentLog(): SubagentLine[] {
+  return [
+    { kind: 'prompt', text: 'Migra el calendario de festivos de shop-web a la tabla holidays.\nMantén la API de HolidayCalendar.' }, // i18n-ignore
+    { kind: 'thinking', text: '' },
+    { kind: 'text', text: 'Primero miro dónde se lee el calendario.' }, // i18n-ignore
+    { kind: 'tool', text: 'Grep(HolidayCalendar)' },
+    { kind: 'result', text: 'src/Delivery/PromiseDate.php\nsrc/Delivery/HolidayCalendar.php\ntests/Delivery/PromiseDateTest.php', more: 2 },
+    { kind: 'tool', text: 'Read(src/Delivery/HolidayCalendar.php)' },
+    { kind: 'result', text: '<?php\nnamespace Shop\\Delivery;\nfinal class HolidayCalendar', more: 41 },
+    { kind: 'text', text: 'Lee un YAML por provincia. Lo cambio por un repositorio sobre holidays.' }, // i18n-ignore
+    { kind: 'tool', text: 'Edit(src/Delivery/HolidayCalendar.php)' },
+    { kind: 'result', text: 'The file src/Delivery/HolidayCalendar.php has been updated.' },
+    { kind: 'tool', text: 'Bash(vendor/bin/phpunit tests/Delivery)' },
+    { kind: 'thinking', text: '' }
   ]
 }
 
@@ -556,8 +574,9 @@ app.whenReady().then(async () => {
   const subagents = createSubagents({
     emit: (id, entries) => BrowserWindow.getAllWindows().forEach((w) => w.webContents.send('atril:subagents:changed', id, entries))
   })
-  ipcMain.handle('atril:subagents:get', (_e, id: string) => (SNAPSHOT && process.env['ATRIL_SNAPSHOT_VIEW'] === 'subagents' ? fakeSubagents() : subagents.get(String(id))))
-  ipcMain.handle('atril:subagents:log', (_e, id: string, agentId: string) => subagents.log(String(id), String(agentId)))
+  const fakeSubs = SNAPSHOT && /^(subagents|subagent-log)$/.test(process.env['ATRIL_SNAPSHOT_VIEW'] ?? '')
+  ipcMain.handle('atril:subagents:get', (_e, id: string) => (fakeSubs ? fakeSubagents() : subagents.get(String(id))))
+  ipcMain.handle('atril:subagents:log', (_e, id: string, agentId: string) => (fakeSubs ? fakeSubagentLog() : subagents.log(String(id), String(agentId))))
   void subagents.start()
   ipcMain.handle('atril:status:list', () => status.states())
   void writeHooksFile().then(() => status.start())
