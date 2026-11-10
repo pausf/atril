@@ -551,7 +551,7 @@ export const EN: Record<string, string> = {
   '{d} d {h} h': '{d} d {h} h',
   'hoy': 'today',
   'Primeros pasos': 'First steps',
-  'Lo que falta para tu primer trabajo. Cada paso se marca solo cuando lo haces.': 'What is left before your first workspace. Each step ticks itself once you do it.',
+  'Lo que falta para empezar. Cada paso se marca solo.': 'What is left to get started. Each step ticks itself.',
   'Herramientas listas': 'Tools ready',
   'Ver qué falta': 'See what is missing',
   'Añade un repo': 'Add a repo',

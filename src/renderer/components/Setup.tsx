@@ -55,7 +55,7 @@ export function Setup({ report, active, onTools, onNewWork, onDismiss }: {
     <main className="col center">
       <section className="setup" aria-labelledby="setup-h">
         <h1 id="setup-h">{t('Primeros pasos')}</h1>
-        <p className="setup-lead">{t('Lo que falta para tu primer trabajo. Cada paso se marca solo cuando lo haces.')}</p>
+        <p className="setup-lead">{t('Lo que falta para empezar. Cada paso se marca solo.')}</p>
         <ol>
           {steps.map((s, i) => (
             <li key={s.name} className={s.done ? 'done' : undefined}>
