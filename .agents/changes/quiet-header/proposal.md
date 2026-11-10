@@ -100,4 +100,4 @@ Ninguna.
 
 ## Checklist
 
-- [ ] the header with state and focus button; no cost in row, Todos, panel and Terminados; real-app drive; photo; novedades · Closes: W112, W94, W96, F34
+- [x] the header with state and focus button; no cost in row, Todos, panel and Terminados; real-app drive; photo; novedades · Closes: W112, W94, W96, F34

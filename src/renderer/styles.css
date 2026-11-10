@@ -2964,10 +2964,13 @@ button.stg.stgbtn .icon {
   width: 32px;
   height: 30px;
   border-radius: 999px;
-  border: 0;
+  border: 1px solid transparent;
   background: var(--chip);
   color: var(--sub);
   cursor: pointer;
+}
+.ibtn[aria-pressed='true'] {
+  border-color: var(--text);
 }
 .ibtn:hover:not(:disabled),
 .ibtn[aria-pressed='true'] {
