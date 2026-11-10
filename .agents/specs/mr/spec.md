@@ -1,6 +1,6 @@
 # MR
 
-Governs: src/main/forge/mrs.ts src/main/forge/scores.ts src/main/forge/threads.ts src/main/forge/lenses.ts src/renderer/mr/**
+Governs: src/main/forge/mrs.ts src/main/forge/scores.ts src/main/forge/threads.ts src/main/forge/lenses.ts src/main/forge/openmr.ts src/renderer/mr/**
 
 The MR screen: your merge requests on GitHub and GitLab, the ones you review, and the ones in
 the projects you follow. Phase 2 of Atril; scores, threads and notifications build on it.

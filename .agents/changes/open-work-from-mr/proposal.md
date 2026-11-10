@@ -2,7 +2,7 @@
 
 Tracker: none
 Targets: mr
-Durable decisions: the three in Prior decisions below
+Durable decisions: the four in Prior decisions below
 
 ## The ask, verbatim
 
@@ -15,52 +15,75 @@ Abrir un trabajo desde una MR (de la lista del 9 nov): en una MR a revisar o pro
 ## Decision log
 
 ### Session 2026-11-10
-- Q: ¿Qué hace? → A: en la vista de una MR, «Abrir en Atril» crea un trabajo en la rama de la MR, en el repo
-  registrado cuyo `origin` es el proyecto de la MR (la misma regla que M28), y lanza Claude con Libretto
+- Q: ¿Qué hace? → A: desde la vista de una MR, abrirla en Atril por el camino de Libretto que le toca (assumed).
+- Q: (revisor de spec) `/libretto-review` prepara su propio worktree y `/libretto-flow` no acepta una URL de MR →
+  A: rediseñado para no salirse de Libretto (assumed):
+  - **Revisar** (Me toca revisar, Sigo): «Revisar en Atril» abre una *sesión de revisión*: una sesión de tmux en
+    la carpeta del repo registrado, sin que Atril toque git, con `/libretto:libretto-review <url>`; el skill
+    review-project hace su worktree aislado y lo quita al acabar, como cuando lo lanzas a mano.
+  - **Seguir lo tuyo** (Mías): «Seguir en Atril» crea un trabajo en la rama de la MR traída de `origin` y lanza
+    `/libretto:libretto-flow` sin argumento: find-work retoma el cambio en curso de esa rama.
+- Q: ¿Qué repo? → A: el registrado con algún remote que nombre el proyecto (la regla de review-project, que mira
+  todos los remotes); varios → se dice y no se abre nada; ninguno → «Añade el repo de {proyecto} en Ajustes»
   (assumed).
-- Q: ¿Con qué comando? → A: una MR a revisar (Me toca revisar o Sigo) arranca con
-  `/libretto:libretto-review <url>`, el skill de Libretto para revisar MRs en un worktree; una tuya (Mías)
-  con `/libretto:libretto-flow <url>`, para seguir su flujo (assumed: Libretto es la llave; ninguno inventa
-  un flujo nuevo).
-- Q: ¿Y si ya hay un trabajo en esa rama? → A: el botón dice «Ir al trabajo» y lo abre, no crea otro (assumed).
-- Q: ¿Y si ningún repo registrado es de ese proyecto? → A: el botón no sale y la vista dice «Añade el repo de
-  {proyecto} en Ajustes» con enlace (assumed).
-- Q: ¿Modo? → A: siempre manual: revisar o continuar una MR no salta la parada (assumed).
+- Q: ¿Ya hay un trabajo? → A: cualquier registro (vivo o no) en esa rama del repo → «Ir al trabajo» (assumed).
+- Q: ¿Repo en modo en sitio? → A: «Seguir en Atril» se rechaza con «Este repo trabaja en tu copia: cambia de rama
+  a mano» (no se toca la copia de la persona); revisar sí, porque no toca git (assumed).
+- Q: ¿De qué lista viene la MR? → A: de la última lista de main (como M27), nunca de la ventana (assumed).
+- Q: ¿La URL? → A: se valida (https, sin NUL, sin empezar por «-») y va como un elemento del argv (assumed).
+- Q: (fase 5) ¿Dónde? → A: `src/main/forge/openmr.ts` (el `Governs:` de mr lo añade); `openWorktree` gana el
+  modo de rama existente y la sesión de revisión (delta de workspaces) (assumed).
 
 ## Outcomes
 
-- Desde una MR, un clic deja un trabajo en su rama con Claude ya leyéndola por el flujo de Libretto adecuado.
-- Si ya existe, te lleva a él; si falta el repo, te dice dónde añadirlo.
+- En una MR a revisar, un clic abre a Claude revisándola con Libretto, en su propio worktree de review-project.
+- En una MR tuya, un clic deja un trabajo en su rama con Libretto retomando el cambio en curso.
+- Si ya hay trabajo, te lleva a él; si falta el repo, te dice dónde añadirlo; si hay un error, lo ves en la MR.
 
 ## Scope boundaries
 
-**In:** el botón en la vista de la MR, la elección del repo, crear el trabajo en la rama existente (traída de
-`origin`), el comando según la lista, «Ir al trabajo».
-**Out:** clonar repos que no están registrados; MRs de forks (la rama no está en `origin`); elegir otro comando.
-**Never scoped out:** la rama y la URL viajan como un elemento del argv (W40/W41); nada se lanza sin pulsar; la
-rama de la persona no se toca (worktree, o se rechaza si el repo está en modo en sitio con cambios).
+**In:** los tres estados del botón en la vista de la MR, la elección del repo, la sesión de revisión, el trabajo
+en rama existente, «Ir al trabajo», los errores en la vista.
+**Out:** clonar repos; MRs de forks sin remote que las nombre; elegir el comando; automático.
+**Never scoped out:** la copia de la persona no se toca; la URL validada como un elemento del argv; nada sin pulsar.
 
 ## Prior decisions
 
-- review-project para revisar, libretto-flow para lo tuyo (assumed, 10 nov).
-- Mismo emparejamiento repo↔proyecto que M28 (assumed, 10 nov).
-- Siempre en modo manual (assumed, 10 nov).
+- Revisar con review-project en su propio worktree; seguir con libretto-flow sin argumento (assumed, 10 nov).
+- Repo por cualquier remote, como review-project (assumed, 10 nov).
+- En sitio, solo revisar (assumed, 10 nov).
+- Lista y rama de la MR desde la última lista de main (assumed, 10 nov).
 
 ## Verification criteria
 
-- **M33** When the person presses «Abrir en Atril» on an MR whose project matches exactly one registered repo
-  (M28's `origin` rule) and no workspace exists on its source branch, main shall fetch that branch from `origin`,
-  open a workspace on it and start Claude with `/libretto:libretto-review <url>` for an MR from Me toca revisar
-  or Sigo, or `/libretto:libretto-flow <url>` for one from Mías, as one argv element, in manual mode; with a
-  workspace already on that branch it shall answer that workspace instead; with no matching repo it shall answer
-  `{ error }` and start nothing. One test holds a case per clause.
-  Proof: src/main/forge/openmr.test.ts an mr opens as a workspace on its branch
-- **M34** The MR view shall show «Abrir en Atril» when a matching repo exists and no workspace is on the branch,
-  «Ir al trabajo» when one is, and «Añade el repo de {proyecto} en Ajustes» (a link to Repos) when none matches;
-  pressing either button shall end on Trabajo with that workspace selected.
+- **M33** When the window asks `atril:mr:workFor(url)` for an MR in main's latest listing, main shall answer
+  `{ kind: 'existing', workspaceId }` when a workspace record has that MR's branch in a matching repo,
+  `{ kind: 'review' }` for an MR from Me toca revisar or Sigo, `{ kind: 'continue' }` for one from Mías, or
+  `{ kind: 'none', reason }` with «Añade el repo de {proyecto} en Ajustes» when no registered repo has a remote
+  naming the project and «Varios repos registrados son de {proyecto}» when several do. One test holds a case per
+  clause.
+  Proof: src/main/forge/openmr.test.ts an mr knows how it opens in atril
+- **M34** When the person opens an MR as review, main shall start a review session in the matching repo's folder,
+  touching no git ref, with `/libretto:libretto-review` and the validated URL as separate argv elements; as
+  continue, it shall open a workspace on the MR's branch fetched from `origin` (W89) and start
+  `/libretto:libretto-flow` with no argument, refusing an in-place repo with «Este repo trabaja en tu copia:
+  cambia de rama a mano»; a URL that is not https, holds a NUL or starts with «-» shall start nothing. One test
+  holds a case per clause.
+  Proof: src/main/forge/openmr.test.ts an mr opens through libretto's own path
+- **M35** The MR view shall show «Revisar en Atril», «Seguir en Atril», «Ir al trabajo» or the `none` reason with a
+  link to Ajustes → Repos, as M33 answers; pressing a button shall end on Trabajo with that workspace selected, or
+  show the error in the view.
   Proof: src/renderer/mr/openmr.test.ts the mr view opens or finds its workspace
+
+## Approach
+
+`workFor` lee la última lista (url → list, branch, project, forge) y los repos con `git remote -v`. La sesión de
+revisión es un registro de trabajo `mode: 'review'` cuyo `path` es la raíz del repo: no se crea rama ni worktree,
+y quitarlo solo cierra la sesión de tmux. «Seguir» usa `openWorktree` con `existing: true` (W89): `git fetch
+origin <rama>`, luego `git worktree add <ruta> <rama>` si la rama local existe o `git worktree add --track -b
+<rama> <ruta> origin/<rama>` si no. Perdió: un worktree de Atril para revisar (lo duplica review-project).
 
 ## Checklist
 
-- [ ] main: match, fetch, open, the command per list, the existing case · Closes: M33
-- [ ] the MR view's three states and the jump to Trabajo; tutorial step 15/16 text; sketch; photo · waits on box 1 · Closes: M34
+- [ ] main: workFor, the review session and the continue workspace (with W89, W90) · Closes: M33, M34, W89, W90
+- [ ] the MR view's states, the jump and the errors; tutorial «Tus MR» text (no criterion); sketch; photo · waits on box 1 · Closes: M35
