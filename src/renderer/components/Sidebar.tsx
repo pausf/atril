@@ -2,6 +2,7 @@ import type { WorkspaceView } from '../../preload/api'
 import { useT } from '../ui'
 import { JiraSummary, type InboxState } from '../inbox/Inbox'
 import { FoldSection } from './Fold'
+import { History } from './History'
 import { WorkspaceList } from './WorkspaceList'
 
 interface Props {
@@ -26,6 +27,7 @@ export function Sidebar({ workspaces, selected, onSelect, onRemove, inbox, onOpe
         <p className="lead">{t('Cada trabajo, con su agente.')}</p>
         <WorkspaceList workspaces={workspaces} selected={selected} onSelect={onSelect} onRemove={onRemove} />
       </FoldSection>
+      <History />
     </aside>
   )
 }

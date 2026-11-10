@@ -502,9 +502,9 @@ export interface HistoryEntry {
 }
 
 export interface HistoryApi {
-  /** Newest first, at most 20 (W96). */
+  /** Every line of the file (at most 200), newest first. */
   list(): Promise<HistoryEntry[]>
-  /** Returns the unsubscribe function. */
+  /** Main pushes the whole list after each line it appends. Returns the unsubscribe function. */
   onChange(cb: (entries: HistoryEntry[]) => void): () => void
 }
 
@@ -671,6 +671,7 @@ export interface AtrilApi {
   activity: ActivityApi
   subagents: SubagentsApi
   cost: CostApi
+  history: HistoryApi
   qa: QaApi
   doctor(): Promise<DoctorReport>
   installTool(tool: string): Promise<{ ok: true } | { error: string }>

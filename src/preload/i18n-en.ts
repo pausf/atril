@@ -543,4 +543,11 @@ export const EN: Record<string, string> = {
   'Seguir en Atril': 'Continue in Atril',
   'Ajustes → Repos': 'Settings → Repos',
   'Revisión': 'Review',
+  'Terminados': 'Finished',
+  'duró {d}': 'took {d}',
+  '< 1 min': '< 1 min',
+  '{m} min': '{m} min',
+  '{h} h {m} min': '{h} h {m} min',
+  '{d} d {h} h': '{d} d {h} h',
+  'hoy': 'today',
 }

@@ -29,8 +29,8 @@ export function useCosts(ids: string[]): Record<string, WorkCost | null> {
 const fixed = (locale: string, n: number, digits: number): string =>
   n.toLocaleString(locale, { minimumFractionDigits: digits, maximumFractionDigits: digits, useGrouping: false })
 
-/** W94: «≈ 0,42 $ · 12,3 k tokens · estimado a precio de API»; null when there is nothing to say. */
-export function costText(t: T, locale: string, cost: WorkCost | null | undefined): string | null {
+/** W94's short form, «≈ 0,42 $ · 12,3 k tokens», without the note; null when there is nothing to say. */
+export function costShort(t: T, locale: string, cost: WorkCost | null | undefined): string | null {
   if (!cost || cost.tokens <= 0) return null
   const n = cost.tokens
   const tokens = n < 1000 ? String(n) : n < 1e6 ? `${(n / 1000).toLocaleString(locale, { maximumFractionDigits: 1 })} k` : `${(n / 1e6).toLocaleString(locale, { maximumFractionDigits: 1 })} M`
@@ -43,5 +43,11 @@ export function costText(t: T, locale: string, cost: WorkCost | null | undefined
         ? t('< {cost} $ · {tokens} tokens', { cost: fixed(locale, 0.01, 2), tokens })
         : t('≈ {cost} $ · {tokens} tokens', { cost: usd, tokens })
   const unpriced = cost.unpriced.length ? ` ${t('(sin precio para {model})', { model: cost.unpriced.map((m) => m || '?').join(', ') })}` : ''
-  return `${line}${unpriced} · ${t('estimado a precio de API')}`
+  return `${line}${unpriced}`
+}
+
+/** W94: «≈ 0,42 $ · 12,3 k tokens · estimado a precio de API»; null when there is nothing to say. */
+export function costText(t: T, locale: string, cost: WorkCost | null | undefined): string | null {
+  const short = costShort(t, locale, cost)
+  return short && `${short} · ${t('estimado a precio de API')}`
 }

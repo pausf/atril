@@ -3,6 +3,7 @@ import { MODELS, writeHooksFile } from './agent'
 import { createActivity } from './activity'
 import { createSubagents } from './subagents'
 import { createCost } from './cost'
+import { readHistory } from './history'
 import { launchQa, qaStatus, stopQa } from './qa'
 import { createAvisos } from './avisos'
 import { agentState, answerAgent, createStatus, pauseAgent, replyGone, replyPlaceholder, replyToAgent, resumeAgent, quickReplies } from './status'
@@ -477,8 +478,12 @@ app.whenReady().then(async () => {
   ipcMain.handle('atril:ws:remove', async (e, id: string) => {
     pty.detach(id)
     flow.forget(id)
-    return removeWorkspace(id, run).finally(() => void pushNext())
+    const r = await removeWorkspace(id, run).finally(() => void pushNext())
+    // W96: a removal that got through has appended its line.
+    if ('ok' in r) void readHistory().then((h) => BrowserWindow.getAllWindows().forEach((w) => w.webContents.send('atril:history:changed', h)))
+    return r
   })
+  ipcMain.handle('atril:history:list', () => readHistory())
   ipcMain.handle('atril:term:attach', async (e, id: string, cols: number, rows: number) => {
     const ws = (await listWorkspaces(run)).find((w) => w.id === id)
     if (!ws?.alive) return

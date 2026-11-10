@@ -8,7 +8,6 @@ import { atrilHome } from './paths'
 import type { Runner } from './run'
 
 const KEEP = 200
-const SHOWN = 20
 const file = (): string => join(atrilHome(), 'history.jsonl')
 
 /** W95: read before the removal starts, while the folder and the transcript list still exist. */
@@ -47,11 +46,10 @@ export function appendHistory(entry: HistoryEntry): Promise<void> {
   return next
 }
 
-/** W96: newest first; a line that does not parse is skipped. */
+/** W96: every line, newest first; the window shows 20 and counts them all. A line that does not parse is skipped. */
 export async function readHistory(): Promise<HistoryEntry[]> {
   const out: HistoryEntry[] = []
   for (const line of (await readLines()).reverse()) {
-    if (out.length === SHOWN) break
     try {
       const e = JSON.parse(line) as HistoryEntry
       if (e && typeof e.branch === 'string' && typeof e.closedAt === 'number') out.push(e)

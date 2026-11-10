@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron'
-import type { ActivityLine, SubagentEntry, AgentState, Aviso, AtrilApi, FlowStage, MenuAction, MrScoreState, NextItem, UsageResult, WorkCost } from './api'
+import type { ActivityLine, SubagentEntry, AgentState, Aviso, AtrilApi, FlowStage, HistoryEntry, MenuAction, MrScoreState, NextItem, UsageResult, WorkCost } from './api'
 
 const api: AtrilApi = {
   menu: {
@@ -89,6 +89,14 @@ const api: AtrilApi = {
       const h = (_e: Electron.IpcRendererEvent, id: string, entries: SubagentEntry[]): void => cb(id, entries)
       ipcRenderer.on('atril:subagents:changed', h)
       return () => ipcRenderer.removeListener('atril:subagents:changed', h)
+    }
+  },
+  history: {
+    list: () => ipcRenderer.invoke('atril:history:list'),
+    onChange: (cb) => {
+      const h = (_e: Electron.IpcRendererEvent, entries: HistoryEntry[]): void => cb(entries)
+      ipcRenderer.on('atril:history:changed', h)
+      return () => ipcRenderer.removeListener('atril:history:changed', h)
     }
   },
   cost: {
