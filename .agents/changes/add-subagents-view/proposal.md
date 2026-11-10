@@ -52,7 +52,7 @@ subagents shown as a tree, history past the next prompt.
 
 ## Verification criteria
 
-- **W62** When the hook gets a PreToolUse for tool `Agent`, it shall keep its existing state and
+- **W62** When the hook gets a PreToolUse for tool `Agent` (or `Task`, its older name), it shall keep its existing state and
   activity writes and also append `{ type: subagent_type or "general-purpose", description (cut to 120
   characters), at }` to `pending` in `$ATRIL_HOME/subagents/<session>.json`; on SubagentStart with a
   non-empty `agent_type` it shall add `{ id: agent_id, type, description?, startedAt }` (epoch seconds),

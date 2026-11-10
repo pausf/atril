@@ -270,7 +270,7 @@ describe('subagents hook', () => {
   interface Pending { type: string; description: string; at: number }
   interface Seed { entries?: Entry[]; pending?: Pending[] }
   const NOW = (): number => Math.floor(Date.now() / 1000)
-  const agent = (type: string, extra: object = {}): [string, object] => ['PreToolUse', { tool_name: 'Agent', tool_input: { subagent_type: type, description: `d-${type}`, prompt: 'SECRET-PROMPT', ...extra } }]
+  const agent = (type: string, extra: object = {}, tool = 'Agent'): [string, object] => ['PreToolUse', { tool_name: tool, tool_input: { subagent_type: type, description: `d-${type}`, prompt: 'SECRET-PROMPT', ...extra } }]
 
   /** Runs the real hook for each event in a fresh workspace; the optional seed is on disk before the first one. */
   async function fireIn(events: [string, object][], seed?: Seed): Promise<{ session: string; file: Seed | undefined }> {
@@ -307,7 +307,7 @@ describe('subagents hook', () => {
     const long = 'x'.repeat(130)
     const stale: Pending = { type: 'explorer', description: 'viejo', at: NOW() - 700 }
     const { session, file } = await fireIn(
-      [agent('explorer', { description: 'T5 paginación' }), agent('general-purpose', { description: long }), agent('x', { subagent_type: undefined, description: 'sin tipo' }), start('a1', 'explorer'), start('a2', 'general-purpose'), start('a3', 'explorer'), start('a4', 'general-purpose'), start('a5', 'general-purpose')],
+      [agent('explorer', { description: 'T5 paginación' }), agent('general-purpose', { description: long }), agent('x', { subagent_type: undefined, description: 'sin tipo' }, 'Task'), start('a1', 'explorer'), start('a2', 'general-purpose'), start('a3', 'explorer'), start('a4', 'general-purpose'), start('a5', 'general-purpose')],
       { pending: [stale] }
     )
 

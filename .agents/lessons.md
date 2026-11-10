@@ -134,3 +134,12 @@ W23 promises a tutorial step per element, but five changes added screens and con
 - A safety regex written from the spec's own examples missed how agents really push (`bash -c "git push"`, `/usr/bin/git`, `--no-pager`). For a guard, test the realistic false negatives first; a false positive only costs a question.
 - A side file written before a step that can throw (the marker before tmux) needs cleanup on that throw, not only on the happy removal.
 - Contract slip: replacing the whole criteria section dropped F26; re-count criteria after any section rewrite.
+
+## 2026-11-10 · add-subagents-view · 6→7
+Reviewer asked whether the earlier W62 tmux hang and W66 failure only show in the full run. Investigated: W66 was a race in the test — it asserted the row counts right after `findByText`, before `subagents.get` resolved; failed 3/5 under load. Fixed with `waitFor` (6/6 green). The ~1000 s W62 hang never reproduced in 11 runs and the test caps itself at 30 s, so it was tmux outside the test; no code change. Lesson: a renderer assertion on data from a second async IPC must wait for that data, not for the first render.
+
+## 2026-11-10 · add-subagents-view · 6→7
+The hook accepted PreToolUse for `Task` as well as `Agent`, but W62 named only `Agent`: code with no outcome. Fixed (assumed: keep it, `Task` is the tool's older name in Claude Code) by amending W62 and making the "sin tipo" call use `Task` in the proof (seen red without it).
+
+## 2026-11-10 · add-subagents-view · 6→7
+Reviewer noted stale pending entries are dropped only on SubagentStart, so an unmatched queue is trimmed by the 20-entry cap alone. Not a violation of W62; no code change.
