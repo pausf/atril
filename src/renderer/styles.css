@@ -995,6 +995,9 @@ kbd {
 .state.needs-you {
   color: var(--you-text);
 }
+.state.paused {
+  color: var(--sub);
+}
 .state.stopped {
   color: var(--bad-text);
 }

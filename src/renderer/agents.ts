@@ -52,14 +52,14 @@ export function useFlows(ids: string[]): Record<string, FlowStage | null> {
   return map
 }
 
-/** W81: needs-you in N1 order, then working by latest activity, then stopped by branch; ties by id. */
+/** W81: needs-you in N1 order, then working by latest activity, then stopped (paused included) by branch; ties by id. */
 export function overviewOrder(
   workspaces: WorkspaceView[],
   states: Record<string, AgentState>,
   latest: Record<string, ActivityLine>,
   next: NextItem[]
 ): WorkspaceView[] {
-  const RANK: Record<AgentState, number> = { 'needs-you': 0, working: 1, stopped: 2 }
+  const RANK: Record<AgentState, number> = { 'needs-you': 0, working: 1, paused: 2, stopped: 2 }
   const waited = (id: string): number => {
     const i = next.findIndex((n) => n.kind === 'agent' && n.id === id)
     return i < 0 ? Infinity : i
@@ -67,7 +67,8 @@ export function overviewOrder(
   return [...workspaces].sort((a, b) => {
     const sa = stateOf(states, a)
     const sb = stateOf(states, b)
-    if (sa !== sb) return RANK[sa] - RANK[sb]
+    // A paused agent sits with the stopped ones (W86).
+    if (RANK[sa] !== RANK[sb]) return RANK[sa] - RANK[sb]
     const by =
       sa === 'needs-you'
         ? waited(a.id) - waited(b.id)

@@ -16,7 +16,7 @@ interface Props {
 
 export function WorkspaceList({ workspaces, selected, onSelect, onRemove }: Props) {
   const t = useT()
-  const LABEL: Record<AgentState, string> = { working: t('trabajando'), 'needs-you': t('te necesita'), stopped: t('parado') }
+  const LABEL: Record<AgentState, string> = { working: t('trabajando'), 'needs-you': t('te necesita'), paused: t('en pausa'), stopped: t('parado') }
   const [refusal, setRefusal] = useState<{ id: string; text: string } | null>(null)
   const states = useAgentStates()
   const subs = useSubagents(workspaces.map((w) => w.id))

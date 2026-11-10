@@ -1,16 +1,18 @@
-import { watch, type FSWatcher } from 'node:fs'
-import { mkdir, readFile } from 'node:fs/promises'
+import { existsSync, watch, type FSWatcher } from 'node:fs'
+import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import type { AgentState, QuickAnswer, QuickChoice, QuickReplies, WorkspaceView } from '../preload/api'
 import { atrilHome } from './paths'
 import { run as defaultRun, type Runner } from './run'
-import { sendKey, sendText, tmuxArgs } from './tmux'
+import { pressKey, sendKey, sendText, tmuxArgs } from './tmux'
 import type { AgentSnapshot } from './nextup'
 import { listWorkspaces } from './workspaces'
 import { t } from './lang'
 import { localiseActivity } from '../preload/activity-i18n'
 
 export const stateDir = (): string => join(atrilHome(), 'state')
+/** W86: one file per paused session, written by main; main (Reanudar) or the hook (W87) removes it. */
+const pauseFile = (session: string): string => join(atrilHome(), 'paused', session)
 
 /** One notification per entry into needs-you (W15, W27). */
 export const shouldNotify = (prev: AgentState | undefined, next: AgentState): boolean =>
@@ -26,6 +28,8 @@ async function hookFile(session: string): Promise<{ state?: string; text?: strin
 }
 
 async function hookState(session: string): Promise<AgentState> {
+  // W86: the mark outranks the hook's state until the hook removes it (UserPromptSubmit or needs-you) or Reanudar does.
+  if (existsSync(pauseFile(session))) return 'paused'
   const { state } = await hookFile(session)
   return state === 'needs-you' || state === 'working' ? state : 'working'
 }
@@ -100,6 +104,32 @@ export async function answerAgent(id: string, choice: QuickChoice, run: Runner =
   }
   const words = choice.fixed === 'yes' ? t('Sí, sigue') : t('No, espera')
   return (await sendText(ws.paneId, words, run)) ? { ok: true } : { error: replyGone() }
+}
+
+async function liveWorkspace(id: string, run: Runner): Promise<WorkspaceView | undefined> {
+  const ws = (await listWorkspaces(run)).find((w) => w.id === id)
+  return ws?.alive && /^%\d+$/.test(ws.paneId) && !(await paneDead(ws.paneId, run)) ? ws : undefined
+}
+
+/** W86: Escape in that workspace's pane, offered only while it works; the session stays alive. */
+export async function pauseAgent(id: string, run: Runner = defaultRun): Promise<QuickAnswer> {
+  const ws = await liveWorkspace(id, run)
+  if (!ws) return { error: replyGone() }
+  if ((await hookState(ws.session)) !== 'working') return { error: t('Ese agente no está trabajando.') }
+  if (!(await pressKey(ws.paneId, 'Escape', run))) return { error: replyGone() }
+  await mkdir(join(atrilHome(), 'paused'), { recursive: true })
+  await writeFile(pauseFile(ws.session), String(Math.floor(Date.now() / 1000)))
+  return { ok: true }
+}
+
+/** W87: asks a paused agent to go on with main's own words, then forgets the pause. */
+export async function resumeAgent(id: string, run: Runner = defaultRun): Promise<QuickAnswer> {
+  const ws = await liveWorkspace(id, run)
+  if (!ws) return { error: replyGone() }
+  if ((await hookState(ws.session)) !== 'paused') return { error: t('Ese agente no está en pausa.') }
+  if (!(await sendText(ws.paneId, t('Sigue donde lo dejaste.'), run))) return { error: replyGone() }
+  await rm(pauseFile(ws.session), { force: true })
+  return { ok: true }
 }
 
 export interface StatusOptions {

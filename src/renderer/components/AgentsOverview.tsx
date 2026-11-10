@@ -21,7 +21,7 @@ interface Props {
 /** W81: «Todos», one card per workspace in place of the terminal. */
 export function AgentsOverview({ workspaces, next, switcher, onOpen }: Props) {
   const t = useT()
-  const LABEL: Record<AgentState, string> = { working: t('trabajando'), 'needs-you': t('te necesita'), stopped: t('parado') }
+  const LABEL: Record<AgentState, string> = { working: t('trabajando'), 'needs-you': t('te necesita'), paused: t('en pausa'), stopped: t('parado') }
   const STAGES = stagesOf(t)
   const ids = workspaces.map((w) => w.id)
   const states = useAgentStates()

@@ -2,7 +2,7 @@
 // Atril's own Electron is the Node here: a Finder-launched app has no node or jq on PATH.
 // The payload is read once and never written anywhere; only a short summary leaves this process.
 import { execFileSync } from 'node:child_process'
-import { closeSync, existsSync, mkdirSync, openSync, readFileSync, readSync, renameSync, fstatSync, writeFileSync } from 'node:fs'
+import { closeSync, existsSync, mkdirSync, openSync, readFileSync, readSync, renameSync, rmSync, fstatSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import process from 'node:process'
@@ -160,6 +160,9 @@ try {
     }
     replace(file, [...kept, JSON.stringify({ at, ...line })].join('\n') + '\n')
   }
+
+  // W87: Atril's pause mark goes when the person types or the agent waits; a late tool event keeps it.
+  if (event === 'UserPromptSubmit' || state === 'needs-you') rmSync(join(home, 'paused', name), { force: true })
 
   const dir = join(home, 'state')
   mkdirSync(dir, { recursive: true })

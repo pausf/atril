@@ -72,3 +72,8 @@ export async function sendText(paneId: string, text: string, run: Runner = defau
 export async function sendKey(paneId: string, key: string, run: Runner = defaultRun): Promise<boolean> {
   return (await tmux(run, ['send-keys', '-t', paneId, key])).code === 0 && (await tmux(run, ['send-keys', '-t', paneId, 'Enter'])).code === 0
 }
+
+/** Presses one key in one pane and nothing else: Escape interrupts Claude Code's turn without closing it (W86). */
+export async function pressKey(paneId: string, key: string, run: Runner = defaultRun): Promise<boolean> {
+  return (await tmux(run, ['send-keys', '-t', paneId, key])).code === 0
+}

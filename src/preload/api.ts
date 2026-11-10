@@ -391,7 +391,7 @@ export interface AvisosApi {
 
 export type ForgeStatus = { saved: false } | { saved: true; account?: string; site?: string }
 
-export type AgentState = 'working' | 'needs-you' | 'stopped'
+export type AgentState = 'working' | 'needs-you' | 'paused' | 'stopped'
 
 /** An option's index (W74) or one of the two fixed replies; main chooses the words (W75). */
 export type QuickChoice = { option: number } | { fixed: 'yes' | 'no' }
