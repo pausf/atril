@@ -44,6 +44,23 @@ export async function splitPane(id: string, direction: 'h' | 'v', cwd: string, r
   if (r.code !== 0) throw new Error(t('tmux split-window falló: {detail}', { detail: r.stderr.trim() }))
 }
 
+/** Splits the workspace's pane to the right with `argv` running in the new pane; returns its pane id. */
+export async function splitCommand(id: string, cwd: string, argv: string[], run: Runner = defaultRun): Promise<string> {
+  const r = await tmux(run, ['split-window', '-h', '-t', `=${sessionName(id)}:`, '-c', cwd, '-P', '-F', '#{pane_id}', ...argv])
+  if (r.code !== 0) throw new Error(t('tmux split-window falló: {detail}', { detail: r.stderr.trim() }))
+  return r.stdout.trim()
+}
+
+/** Pane ids are reused after a server restart: only a pane listed in this workspace's session counts. */
+export async function hasPane(id: string, paneId: string, run: Runner = defaultRun): Promise<boolean> {
+  const r = await tmux(run, ['list-panes', '-s', '-t', `=${sessionName(id)}`, '-F', '#{pane_id}'])
+  return r.code === 0 && r.stdout.split('\n').includes(paneId)
+}
+
+export async function killPane(paneId: string, run: Runner = defaultRun): Promise<void> {
+  await tmux(run, ['kill-pane', '-t', paneId])
+}
+
 /** Types `text` into one pane as literal characters, then Enter. `-l` keeps `C-c` or `Enter` from being read as key names. */
 export async function sendText(paneId: string, text: string, run: Runner = defaultRun): Promise<boolean> {
   // `--` so text that starts with a dash is not parsed as a flag.

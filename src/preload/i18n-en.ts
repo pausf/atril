@@ -506,5 +506,14 @@ export const EN: Record<string, string> = {
   "Conectar": "Connect",
   "Crea el token": "Create the token",
   "Pégalo aquí": "Paste it here",
-  "Comprueba y guarda": "Check and save"
+  "Comprueba y guarda": "Check and save",
+  'lo que promete la spec del cambio en {proposal}': 'what the change\'s spec in {proposal} promises',
+  'lo que cambia la rama {branch} respecto a su base ({base})': 'what branch {branch} changes against its base ({base})',
+  'Eres el QA de este trabajo, una app {kind}. Arranca la app con «{command}» en un puerto libre, ábrela con el navegador de Playwright y recorre {target}. Guarda una captura de cada paso en {shots} (sin nombre de archivo, Playwright las deja ahí). No cambies código ni hagas commits; al terminar, resume qué funciona y qué no.':
+    'You are the QA of this work, a {kind} app. Start the app with «{command}» on a free port, open it with the Playwright browser and walk through {target}. Save a screenshot of each step in {shots} (without a file name, Playwright puts them there). Do not change code or commit; when done, sum up what works and what does not.',
+  'Eres el QA de este trabajo, una app {kind}. Si no hay ningún emulador o simulador en marcha, arranca uno. Arranca la app con «{command}» y recorre {target} con mobile-mcp. Guarda una captura PNG de cada paso en {shots} (con la herramienta de captura de mobile-mcp, `adb exec-out screencap -p > archivo.png` o `xcrun simctl io booted screenshot archivo.png`). No cambies código ni hagas commits; al terminar, resume qué funciona y qué no.':
+    'You are the QA of this work, a {kind} app. If no emulator or simulator is running, start one. Start the app with «{command}» and walk through {target} with mobile-mcp. Save a PNG screenshot of each step in {shots} (with mobile-mcp\'s screenshot tool, `adb exec-out screencap -p > file.png` or `xcrun simctl io booted screenshot file.png`). Do not change code or commit; when done, sum up what works and what does not.',
+  'Atril no sabe probar en vivo este proyecto': 'Atril does not know how to test this project live',
+  'Ya hay un QA en marcha en este trabajo': 'A QA is already running in this work',
+  'Para probar en vivo falta: {tools}': 'Testing live needs: {tools}',
 }

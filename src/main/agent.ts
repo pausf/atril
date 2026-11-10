@@ -28,13 +28,17 @@ export async function writeHooksFile(): Promise<void> {
 
 export const MODELS: readonly Model[] = ['default', 'opus', 'sonnet', 'haiku']
 
-/** `prompt` goes last: claude takes it as its positional argument. 'default' adds no flag. */
-export const agentArgv = (opts: { model?: Model; prompt?: string } = {}): string[] => [
+/**
+ * `prompt` goes last: claude takes it as its positional argument. 'default' adds no flag.
+ * `hooks: false` (the QA agent): the hook reports by session, so a second claude in the same session would
+ * speak for the work's own agent. `mcpConfig` loads only that file's MCP servers, never the person's.
+ */
+export const agentArgv = (opts: { model?: Model; prompt?: string; mcpConfig?: string; hooks?: false } = {}): string[] => [
   'claude',
-  '--settings',
-  hooksFile(),
+  ...(opts.hooks === false ? [] : ['--settings', hooksFile()]),
   '--plugin-dir',
   librettoDir(),
   ...(opts.model && opts.model !== 'default' ? ['--model', opts.model] : []),
+  ...(opts.mcpConfig ? ['--mcp-config', opts.mcpConfig, '--strict-mcp-config'] : []),
   ...(opts.prompt ? [opts.prompt] : [])
 ]
