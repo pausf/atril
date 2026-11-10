@@ -1,6 +1,5 @@
 # add-subagent-detail
 
-Queued: 2026-11-09
 Tracker: none
 
 Pau, 9 nov: «pero cómo se puede ver el otro subagente lo que hace?» — after add-subagents-view lists them.
