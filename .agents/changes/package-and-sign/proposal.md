@@ -76,8 +76,8 @@ Libretto dentro del paquete.
   a built app.
   Proof: src/main/packaging.test.ts the packaging config asks for a signed arm64 app
 - **W99** When packaged, `resourcesDir()` shall return `process.resourcesPath`, and in dev the repo's `resources/`;
-  and every file the main process joins onto `resourcesDir()` (`claude-hook.mjs`, `summarise.mjs`, `libretto/`)
-  shall exist in `resources/`, so the flat copy of W98 places it where it is looked for.
+  and every file the main process joins onto `resourcesDir()` (`claude-hook.mjs`, `libretto/`), and every
+  local module the hook imports (`summarise.mjs`), shall exist in `resources/`, so the flat copy of W98 places it where it is looked for.
   Proof: src/main/paths.test.ts resources resolve packaged and in dev
 
 ## Approach
@@ -121,5 +121,5 @@ Config en JS y no YAML: la caída a ad-hoc lo pide.
 
 ## Checklist
 
-- [ ] the pinned dependency, the config, the entitlements, the dist script, Governs and both tests · Closes: W98, W99
-- [ ] bocetos/instalar.html (build, sign, open, what to check by hand); novedades section without photo; CLAUDE.md «sin probar» entry for `pnpm dist` · waits on box 1
+- [x] the pinned dependency, the config, the entitlements, the dist script, Governs and both tests · Closes: W98, W99
+- [x] bocetos/instalar.html (build, sign, open, what to check by hand); novedades section without photo; CLAUDE.md «sin probar» entry for `pnpm dist` · waits on box 1
