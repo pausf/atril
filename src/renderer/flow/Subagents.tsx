@@ -40,7 +40,7 @@ export function Subagents({ workspaceId }: { workspaceId: string | null }) {
   const shown = entries.find((e) => e.id === open)
   return (
     <>
-      <FoldSection id="flow-subagents" title={t('Subagentes')} count={entries.length} className="flow-fold">
+      <FoldSection id="flow-subagents" title={t('Subagentes')} count={entries.length} className="flow-fold" tour="flow-subagents">
         <ul className="subs" aria-label={t('Subagentes')}>
           {[...entries].sort(newest).map((e) => (
             <li key={e.id}>

@@ -41,7 +41,7 @@ export function DoctorChip({ problems }: { problems: ToolReport[] }) {
   }
 
   return (
-    <span className="doctor-chip" ref={root}>
+    <span className="doctor-chip" ref={root} data-tour="doctor">
       <button className="chip bad" aria-haspopup="dialog" aria-expanded={open} onClick={() => setOpen(!open)}>
         {problems.length === 1 ? t('{n} herramienta por instalar', { n: 1 }) : t('{n} herramientas por instalar', { n: problems.length })}
       </button>

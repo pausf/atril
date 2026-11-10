@@ -1757,6 +1757,14 @@ kbd {
   box-shadow: 0 24px 60px var(--shadow-lg);
   transition: left 0.35s cubic-bezier(0.2, 0.8, 0.2, 1), top 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
+/* A step whose element is not on screen sits centred over the scrim, like the welcome. */
+.tip.centred {
+  right: auto;
+  bottom: auto;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
 .tip.welcome {
   right: auto;
   bottom: auto;

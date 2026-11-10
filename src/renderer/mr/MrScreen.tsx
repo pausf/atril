@@ -113,7 +113,7 @@ function ScoreCell({ m, state, onScore, onView }: { m: MrItem; state: MrScoreSta
     )
   }
   return (
-    <span className="mr-score">
+    <span className="mr-score" data-tour="mr-tools">
       {state.state === 'error' && <span className="mr-score-error">{state.text}</span>}
       <button type="button" className="linklike" onClick={onScore}>
         {t('Puntuar')}

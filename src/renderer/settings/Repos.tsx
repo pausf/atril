@@ -64,7 +64,7 @@ export function Repos() {
   const idValid = pending ? ID_RE.test(pending.id) : true
 
   return (
-    <section className="scard" aria-labelledby="repos-h">
+    <section className="scard" aria-labelledby="repos-h" data-tour="repos">
       <h3 id="repos-h">{t('Repos')}</h3>
       <p className="hint2">{t('Atril decide si cada trabajo va en un worktree o en la rama de tu copia. Puedes forzarlo.')}</p>
       {repos.length === 0 && <p className="hint2">{t('Aún no hay ninguno: añade la carpeta de un repo git.')}</p>}

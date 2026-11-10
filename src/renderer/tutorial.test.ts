@@ -8,7 +8,7 @@ import { App } from './App'
 import { issue, mockApi, mockSystemTheme, workspace } from './mockApi'
 import { STEPS } from './tour/Tour'
 
-const data = { workspaces: [workspace('aaaaaaa1', 'PF-1')], issues: [issue('PF-10', 'todo')] }
+const data = { workspaces: [workspace('aaaaaaa1', 'PF-1', false)], issues: [issue('PF-10', 'todo')] }
 
 beforeEach(() => mockSystemTheme(false))
 afterEach(cleanup)
@@ -19,22 +19,57 @@ const spot = () => document.querySelector<HTMLElement>('.spot')
 describe('tutorial', () => {
   it('first launch runs the tutorial over every element', async () => {
     const user = userEvent.setup()
-    mockApi(data, { tutorialSeen: false, theme: 'auto', folded: {} })
+    // Seeded so every optional target that can exist does: the agent waits, the flow builds, an MR is listed, a tool is missing.
+    mockApi(
+      {
+        workspaces: [workspace('aaaaaaa1', 'PF-1', false)],
+        issues: [issue('PF-10', 'todo')],
+        states: { aaaaaaa1: 'needs-you' },
+        nextup: [{ kind: 'agent', id: 'aaaaaaa1' }],
+        flow: { stage: 'construir', change: 'add-x', others: [], checklist: { file: 'proposal.md', closed: 2, total: 5, firstOpen: 'T3' } },
+        changes: [{ path: 'src/a.ts', status: 'M', added: 10, removed: 2 }],
+        subagents: { aaaaaaa1: [{ id: 's1', type: 'Explore', description: 'Buscar los usos', startedAt: 10 }] },
+        mrs: { connected: ['github'], mine: [{ forge: 'github', url: 'https://github.com/acme/web/pull/1', title: 'Envío', project: 'acme/web', author: 'pau', updatedAt: new Date().toISOString() }], review: [], following: [], more: { mine: [], review: [], following: [] }, errors: [] },
+        doctor: [{ tool: 'tmux', ok: false, problem: 'no está', install: 'brew install tmux' }]
+      },
+      { tutorialSeen: false, theme: 'auto', folded: {} }
+    )
     render(createElement(App))
 
+    // The welcome, centred and with its button.
     expect((await screen.findByRole('heading', { name: 'Bienvenido a Atril' })).textContent).toBeTruthy()
     expect(spot()).toBeNull()
-    await user.click(screen.getByRole('button', { name: /Enséñamelo/ }))
+    await user.click(await screen.findByText('PF-1', { selector: '.ws-branch' }))
+    await user.click(screen.getByRole('button', { name: 'Enséñamelo · 3 min' }))
 
-    expect(STEPS.map((s) => s.target)).toEqual(['rail', 'new-work', 'tasks', 'workspaces', 'terminal', 'flow', 'mr', 'avisos', 'usage', 'session', 'appearance'])
+    // The 24 steps of «Pasos», in order.
+    expect(STEPS.map((s) => s.target)).toEqual([
+      'rail', 'next-up', 'new-work', 'workspaces', 'terminal', 'flow', 'stages', 'flow-checklist', 'flow-changes', 'flow-subagents', 'activity', 'tasks',
+      'start-mode', 'new-task', 'mr', 'mr-tools', 'avisos', 'doctor', 'palette', 'usage', 'session', 'connections', 'repos', 'appearance'
+    ])
+    const NEVER = ['start-mode', 'palette']
     for (const [n, step] of STEPS.entries()) {
-      // The step switches screens so its target is on screen, then spotlights that real element.
-      await waitFor(() => expect(spot()?.dataset['target']).toBe(step.target))
-      const target = document.querySelector(`[data-tour="${step.target}"]`)
-      expect(target, `[data-tour=${step.target}] exists`).not.toBeNull()
-      expect(target?.closest('[hidden]')).toBeNull()
-      expect(tip().textContent).toContain(`Paso ${n + 1} de ${STEPS.length}`)
+      await waitFor(() => expect(tip().textContent).toContain(`Paso ${n + 1} de ${STEPS.length}`))
       expect(screen.getByRole('heading', { name: step.title, level: 4 })).toBeTruthy()
+      // Two or three sentences: a sentence ends in . ? or ! before a space or the end.
+      const text = tip().querySelector('p')?.textContent ?? ''
+      const sentences = text.trim().match(/[.?!](?=\s|$)/g)?.length ?? 0
+      expect(sentences, `${step.target}: «${text}»`).toBeGreaterThanOrEqual(2)
+      expect(sentences, `${step.target}: «${text}»`).toBeLessThanOrEqual(3)
+      if (NEVER.includes(step.target)) {
+        // No element: the step shows centred over the scrim.
+        expect(document.querySelector(`[data-tour="${step.target}"]`)).toBeNull()
+        expect(spot()).toBeNull()
+        expect(document.querySelector('.tour .scrim')).not.toBeNull()
+        expect(tip().classList.contains('centred')).toBe(true)
+      } else {
+        // The step switches screens so its target is on screen, then spotlights that real element.
+        await waitFor(() => expect(spot()?.dataset['target']).toBe(step.target))
+        const target = document.querySelector(`[data-tour="${step.target}"]`)
+        expect(target, `[data-tour=${step.target}] exists`).not.toBeNull()
+        expect(target?.closest('[hidden]')).toBeNull()
+        expect(tip().classList.contains('centred')).toBe(false)
+      }
       await user.click(screen.getByRole('button', { name: n === STEPS.length - 1 ? 'Terminar' : 'Siguiente' }))
     }
     expect(screen.queryByRole('dialog')).toBeNull()
@@ -87,13 +122,13 @@ describe('tutorial', () => {
 
     // → and ← move, Enter on the focused primary advances.
     await user.keyboard('{ArrowRight}')
-    await waitFor(() => expect(spot()?.dataset['target']).toBe('new-work'))
+    await waitFor(() => expect(tip().textContent).toContain('Paso 2 de'))
     await user.keyboard('{ArrowRight}')
-    await waitFor(() => expect(spot()?.dataset['target']).toBe('tasks'))
-    await user.keyboard('{ArrowLeft}')
     await waitFor(() => expect(spot()?.dataset['target']).toBe('new-work'))
+    await user.keyboard('{ArrowLeft}')
+    await waitFor(() => expect(tip().textContent).toContain('Paso 2 de'))
     await user.keyboard('{Enter}')
-    await waitFor(() => expect(spot()?.dataset['target']).toBe('tasks'))
+    await waitFor(() => expect(spot()?.dataset['target']).toBe('new-work'))
 
     // Tab never leaves the tip, in either direction.
     for (let i = 0; i < 7; i++) {

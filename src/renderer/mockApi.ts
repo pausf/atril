@@ -1,5 +1,5 @@
 import { vi } from 'vitest'
-import type { ActivityLine, SubagentEntry, SubagentLine, AddRepoResult, Aviso, FileChange, FlowDocs, ForgeId, ForgeStatus, Mode, MrDraft, MrDrafts, MrDraftsResult, MrLists, MrReply, MrScoreState, MrThreads, AgentState, AtrilApi, FlowStage, JiraIssue, MenuAction, NextItem, StartProposalResult, StartRequest, StartResult, RepoView, UiState, WorkspaceResult, WorkspaceView } from '../preload/api'
+import type { ActivityLine, SubagentEntry, SubagentLine, AddRepoResult, Aviso, FileChange, FlowDocs, ForgeId, ForgeStatus, Mode, MrDraft, MrDrafts, MrDraftsResult, MrLists, MrReply, MrScoreState, MrThreads, AgentState, AtrilApi, FlowStage, JiraIssue, MenuAction, NextItem, StartProposalResult, StartRequest, StartResult, RepoView, ToolReport, UiState, WorkspaceResult, WorkspaceView } from '../preload/api'
 
 export const workspace = (id: string, branch: string, alive = true): WorkspaceView => ({
   id,
@@ -63,6 +63,8 @@ interface Options {
   review?: Record<string, MrDraftsResult>
   /** The stored notices, newest first; markRead changes them in place. */
   avisos?: Aviso[]
+  /** What the doctor answers; missing means every tool is installed. */
+  doctor?: ToolReport[]
 }
 
 /** ui.json lives in `stored`; pass the same object to a second mock to simulate a restart. */
@@ -103,7 +105,7 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
         return off
       }
     },
-    doctor: async () => [],
+    doctor: async () => o.doctor ?? [],
     installTool: async () => ({ ok: true }),
     workspaces: {
       list: async () => o.workspaces ?? [],

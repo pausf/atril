@@ -151,7 +151,7 @@ function JiraCard() {
   const showForm = status !== null && (!status.saved || replacing)
 
   return (
-    <section className="scard" aria-labelledby="jira-h">
+    <section className="scard" aria-labelledby="jira-h" data-tour="connections">
       <h3 id="jira-h">Jira</h3>
       <p className="hint2">{t('Para leer tus tareas del sprint.')}</p>
       {status === null && <div className="lockn">{t('Cargando…')}</div>}

@@ -67,7 +67,7 @@ export function Inbox({ inbox, onStart, startError, onOpenWorkspace, onNewTask }
         <button className="refresh" onClick={() => void refresh()} disabled={loading}>
           {loading ? t('Actualizando…') : t('Actualizar')}
         </button>
-        <button className="refresh" onClick={onNewTask}>
+        <button className="refresh" onClick={onNewTask} data-tour="new-task">
           {t('Nueva tarea')}
         </button>
       </h1>

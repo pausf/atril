@@ -104,6 +104,7 @@ export function FlowPanel({ workspaceId, auto = false }: { workspaceId: string |
             id={`tab-${x.id}`}
             aria-selected={tab === x.id}
             aria-controls={`panel-${x.id}`}
+            data-tour={x.id === 'activity' ? 'activity' : undefined}
             ref={(el) => {
               tabs.current[x.id] = el
             }}
@@ -154,7 +155,7 @@ function LibrettoFlow({ flow, onOpen, changes, onDiff }: FlowProps) {
         <div className="empty">{t('sin Libretto: este trabajo no tiene carpeta .agents')}</div>
       ) : (
         <>
-          <div className="stages">
+          <div className="stages" data-tour="stages">
             {STAGES.map((s, i) => {
               const now = i === current
               const cls = `stg ${i < current ? 'd' : now ? 'c' : 'p'}`
@@ -206,7 +207,7 @@ function LibrettoFlow({ flow, onOpen, changes, onDiff }: FlowProps) {
             </p>
           )}
           {c && (
-            <FoldSection id="flow-checklist" title={t('Checklist')} count={t('{closed}/{total}', { closed: c.closed, total: c.total })} className="flow-fold">
+            <FoldSection id="flow-checklist" title={t('Checklist')} count={t('{closed}/{total}', { closed: c.closed, total: c.total })} className="flow-fold" tour="flow-checklist">
               <div className="prog">
                 <i style={{ width: `${(c.closed / c.total) * 100}%` }} />
               </div>
@@ -223,7 +224,7 @@ function LibrettoFlow({ flow, onOpen, changes, onDiff }: FlowProps) {
             </FoldSection>
           )}
           {changes.length > 0 && (
-            <FoldSection id="flow-changes" title={t('Cambios')} count={changes.length} className="flow-fold">
+            <FoldSection id="flow-changes" title={t('Cambios')} count={changes.length} className="flow-fold" tour="flow-changes">
               <BigWarning lines={lines} />
               <ul className="fchanges">
                 {changes.slice(0, MAX_FILES).map((f) => {

@@ -29,7 +29,7 @@ export function NextUpStrip({ items, workspaces, issues, onOpen }: Props) {
   })
   if (chips.length === 0) return null
   return (
-    <nav className="nextup" aria-label={t('Qué me toca')}>
+    <nav className="nextup" aria-label={t('Qué me toca')} data-tour="next-up">
       <b>{t('Qué me toca')}</b>
       {chips.slice(0, MAX).map((c) => (
         <button key={`${c.cls}-${c.id}`} type="button" className={`nx ${c.cls}`} onClick={() => onOpen(c.item)}>
