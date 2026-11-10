@@ -96,4 +96,93 @@ describe('focus mode', () => {
     expect(sidebar()).toBeTruthy()
     expect(screen.queryByRole('button', { name: 'Salir del foco' })).toBeNull()
   })
+
+  it('jump to the waiting agent and back', async () => {
+    // Trabajo → Volver, ⌘⌥←, only while focus is on.
+    const back = (on: boolean) => workItems(on, true).find((i) => i.label === 'Volver')
+    expect(back(true)?.accelerator).toBe('CmdOrCtrl+Alt+Left')
+    expect(back(true)?.enabled).toBe(true)
+    expect(back(false)?.enabled).toBe(false)
+
+    // N1 order from main: WEB-1 (the one open) waits longest, then WEB-3, then WEB-2; a task after them.
+    const workspaces = ['WEB-1', 'WEB-2', 'WEB-3', 'WEB-4'].map((b, n) => workspace(`aaaaaaa${n + 1}`, b, false))
+    const api = mockApi({
+      workspaces,
+      nextup: [{ kind: 'agent', id: 'aaaaaaa1' }, { kind: 'agent', id: 'aaaaaaa3' }, { kind: 'agent', id: 'aaaaaaa2' }, { kind: 'task', key: 'WEB-10' }]
+    })
+    const setNext = vi.mocked(api.menuApi.setNext)
+    render(createElement(App))
+    await screen.findByRole('button', { name: 'WEB-1 te necesita' })
+    act(() => api.menu({ kind: 'select', index: 0 }))
+    await screen.findByRole('heading', { name: 'WEB-1' })
+    act(() => api.menu({ kind: 'focusMode' }))
+    await screen.findByRole('button', { name: 'Salir del foco' })
+
+    // The pill names the oldest waiting one other than the open one, «+1» for the rest; selection unchanged.
+    const pill = await screen.findByRole('button', { name: 'WEB-3 te necesita' })
+    expect(pill.parentElement?.textContent).toContain('+1')
+    expect(screen.queryByRole('button', { name: 'WEB-1 te necesita' })).toBeNull()
+    expect(screen.getByRole('heading', { name: 'WEB-1' })).toBeTruthy()
+    expect(screen.queryByRole('button', { name: /^Volver a/ })).toBeNull()
+    await vi.waitFor(() => expect(setNext).toHaveBeenLastCalledWith(true))
+
+    // ⌘↩ jumps to it and keeps focus on.
+    act(() => api.menu({ kind: 'next' }))
+    expect(await screen.findByRole('heading', { name: 'WEB-3' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Salir del foco' })).toBeTruthy()
+    expect(screen.queryByRole('dialog')).toBeNull()
+
+    // A later jump (pressing the pill) and a manual switch do not change where «Volver» goes.
+    const user = userEvent.setup()
+    await user.click(await screen.findByRole('button', { name: 'WEB-1 te necesita' }))
+    expect(await screen.findByRole('heading', { name: 'WEB-1' })).toBeTruthy()
+    act(() => api.menu({ kind: 'select', index: 3 }))
+    expect(await screen.findByRole('heading', { name: 'WEB-4' })).toBeTruthy()
+    // «Volver a» returns to the workspace of the first jump, then is forgotten.
+    await user.click(await screen.findByRole('button', { name: 'Volver a WEB-1' }))
+    expect(await screen.findByRole('heading', { name: 'WEB-1' })).toBeTruthy()
+    expect(screen.queryByRole('button', { name: /^Volver a/ })).toBeNull()
+    expect(screen.getByRole('button', { name: 'Salir del foco' })).toBeTruthy()
+
+    // ⌘⌥← does the same.
+    act(() => api.menu({ kind: 'next' }))
+    await screen.findByRole('heading', { name: 'WEB-3' })
+    act(() => api.menu({ kind: 'back' }))
+    expect(await screen.findByRole('heading', { name: 'WEB-1' })).toBeTruthy()
+    expect(screen.queryByRole('button', { name: /^Volver a/ })).toBeNull()
+
+    // Leaving focus forgets it.
+    act(() => api.menu({ kind: 'next' }))
+    await screen.findByRole('button', { name: 'Volver a WEB-1' })
+    await user.click(screen.getByRole('button', { name: 'Salir del foco' }))
+    act(() => api.menu({ kind: 'focusMode' }))
+    await screen.findByRole('button', { name: 'Salir del foco' })
+    expect(screen.queryByRole('button', { name: /^Volver a/ })).toBeNull()
+
+    // So does removing that workspace: ⌘⌥← then stays where it is.
+    act(() => api.menu({ kind: 'select', index: 1 }))
+    await screen.findByRole('heading', { name: 'WEB-2' })
+    act(() => api.menu({ kind: 'next' }))
+    await screen.findByRole('heading', { name: 'WEB-1' })
+    await screen.findByRole('button', { name: 'Volver a WEB-2' })
+    workspaces.splice(1, 1)
+    act(() => api.menu({ kind: 'back' }))
+    await vi.waitFor(() => expect(screen.queryByRole('button', { name: /^Volver a/ })).toBeNull())
+    expect(screen.getByRole('heading', { name: 'WEB-1' })).toBeTruthy()
+
+    // Nobody waiting but the open one: no pill, ⌘↩ disabled and never opens the task.
+    cleanup()
+    const alone = mockApi({ workspaces: workspaces.slice(0, 1), nextup: [{ kind: 'agent', id: 'aaaaaaa1' }, { kind: 'task', key: 'WEB-10' }] })
+    render(createElement(App))
+    await screen.findByRole('button', { name: 'WEB-1 te necesita' })
+    act(() => alone.menu({ kind: 'select', index: 0 }))
+    await screen.findByRole('heading', { name: 'WEB-1' })
+    act(() => alone.menu({ kind: 'focusMode' }))
+    await screen.findByRole('button', { name: 'Salir del foco' })
+    await vi.waitFor(() => expect(vi.mocked(alone.menuApi.setNext)).toHaveBeenLastCalledWith(false))
+    expect(screen.queryByRole('button', { name: /te necesita$/ })).toBeNull()
+    act(() => alone.menu({ kind: 'next' }))
+    expect(screen.queryByRole('dialog')).toBeNull()
+    expect(screen.getByRole('heading', { name: 'WEB-1' })).toBeTruthy()
+  })
 })

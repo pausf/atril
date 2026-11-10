@@ -73,6 +73,12 @@ function Shell() {
   // elsewhere the pill is not on screen, so main must notify as usual (W78).
   const [focusMode, setFocusMode] = useState(false)
   const focused = focusMode && selected !== null && screen === 'work'
+  /** W79: the workspace open at the first jump; later jumps and manual switches leave it alone. */
+  const [returnTo, setReturnTo] = useState<string | null>(null)
+  const exitFocus = (): void => {
+    setFocusMode(false)
+    setReturnTo(null)
+  }
   const inbox = useInbox()
   const next = useNextUp()
   const mrs = useMrs()
@@ -97,6 +103,8 @@ function Shell() {
       }
       // ponytail: dev-only, ATRIL_SNAPSHOT_VIEW=palette opens it with a query typed for a photo.
       if (v === 'palette') setPalette('listado')
+      // ponytail: dev-only, ATRIL_SNAPSHOT_VIEW=focus turns focus mode on over the first workspace for a photo.
+      if (v === 'focus') setFocusMode(true)
       if (v === 'start') {
         setScreen('tasks')
         // ponytail: dev-only, ATRIL_SNAPSHOT_VIEW=start opens the dialog on a fake issue so it can be photographed without Jira.
@@ -129,8 +137,25 @@ function Shell() {
   useEffect(() => window.atril.menu.setState(selected, workspaces.length), [selected, workspaces.length])
   // Also on load: a reload starts with focus off, and main must know (W78).
   useEffect(() => window.atril.menu.setFocus(focused, screen === 'work' && selected !== null), [focused, screen, selected])
-  // N2: ⌘↩ only where the list is on screen or one click away.
-  useEffect(() => window.atril.menu.setNext((screen === 'work' || screen === 'tasks') && next.length > 0), [screen, next.length])
+  // W79: in focus, the agents waiting except the open one, in N1 order; tasks never count.
+  const waiting = focused
+    ? next.flatMap((n) => (n.kind === 'agent' && n.id !== selected ? workspaces.filter((w) => w.id === n.id) : []))
+    : []
+  const jump = (id: string): void => {
+    if (returnTo === null) setReturnTo(selected)
+    setSelected(id)
+  }
+  const goBack = async (): Promise<void> => {
+    if (returnTo === null) return
+    setReturnTo(null)
+    // Re-listed: a workspace closed meanwhile is not gone back to.
+    const list = await window.atril.workspaces.list()
+    setWorkspaces(list)
+    if (list.some((w) => w.id === returnTo)) setSelected(returnTo)
+  }
+  // N2: ⌘↩ only where the list is on screen or one click away; in focus, only for a waiting agent (W79).
+  const nextEnabled = focused ? waiting.length > 0 : (screen === 'work' || screen === 'tasks') && next.length > 0
+  useEffect(() => window.atril.menu.setNext(nextEnabled), [nextEnabled])
 
   const openWorkspace = (id: string): void => {
     setSelected(id)
@@ -169,7 +194,12 @@ function Shell() {
   useEffect(
     () =>
       window.atril.menu.onAction((a) => {
-        if (a.kind === 'next') return openNext(next[0])
+        if (a.kind === 'next') {
+          if (!focused) return openNext(next[0])
+          if (waiting[0]) jump(waiting[0].id)
+          return
+        }
+        if (a.kind === 'back') return void goBack()
         if (a.kind === 'select') {
           const ws = workspaces[a.index]
           if (ws) setSelected(ws.id)
@@ -181,14 +211,14 @@ function Shell() {
           return
         }
         if (a.kind === 'focusMode') {
-          if (focused) setFocusMode(false)
+          if (focused) exitFocus()
           else if (screen === 'work' && selected) setFocusMode(true)
           return
         }
         if (a.kind === 'tutorial') setTourOpen(true)
         else focusRegion(a.target)
       }),
-    [workspaces, next, inbox.issues, selected, focused, screen]
+    [workspaces, next, inbox.issues, selected, focused, screen, returnTo]
   )
 
   // Start already created the workspace in main: only the list and the inbox links are stale.
@@ -259,7 +289,13 @@ function Shell() {
           {/* Hidden, not unmounted: the terminals must survive a visit to Ajustes. */}
           <div className="work" hidden={screen !== 'work'}>
             {focused ? (
-              <FocusBar onExit={() => setFocusMode(false)} />
+              <FocusBar
+                waiting={waiting}
+                back={workspaces.find((w) => w.id === returnTo)}
+                onJump={jump}
+                onBack={() => void goBack()}
+                onExit={exitFocus}
+              />
             ) : (
               <NextUpStrip items={next} workspaces={workspaces} issues={inbox.issues} onOpen={openNext} />
             )}

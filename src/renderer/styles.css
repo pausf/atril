@@ -2073,8 +2073,19 @@ kbd {
   letter-spacing: 0.07em;
   margin-right: 4px;
 }
+.focusbar .fpill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.focusbar .more {
+  color: var(--sub);
+}
 .focusbar .exit {
   margin-left: auto;
+}
+.focusbar .back,
+.focusbar .exit {
   font: inherit;
   padding: 5px 12px;
   border: 1px solid var(--line);
@@ -2083,6 +2094,7 @@ kbd {
   color: var(--text);
   cursor: pointer;
 }
+.focusbar .back:hover,
 .focusbar .exit:hover {
   background: var(--hover);
 }

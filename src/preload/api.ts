@@ -539,6 +539,7 @@ export type MenuAction =
   | { kind: 'tutorial' }
   | { kind: 'palette' }
   | { kind: 'focusMode' }
+  | { kind: 'back' }
 
 export type Theme = 'light' | 'dark' | 'auto'
 export type Palette = 'original' | 'grafito'
