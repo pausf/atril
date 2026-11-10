@@ -28,6 +28,24 @@ Primer arranque para alguien nuevo: una lista de puesta en marcha (herramientas,
   primero; la tarjeta aparece al cerrarlo (assumed).
 - Q: ¿Opcionales? → A: Jira y forja se marcan «opcional» y no impiden terminar (assumed).
 
+- Q: (revisor de spec) Holguras → A, todas (assumed):
+  - **Cuándo sale.** Mientras no haya ningún trabajo vivo, el historial (W96) esté vacío y no exista
+    `setupDismissed`. Quien ya trabajó no la vuelve a ver.
+  - **El paso 5** es solo su botón «Nuevo trabajo». Nunca sale marcado, porque la tarjeta se va en cuanto hay
+    un trabajo.
+  - **El paso 1** está hecho cuando git, tmux y claude no tienen problema; jira es del paso 3, que es opcional.
+    Mientras llega el informe del doctor, el paso dice «Comprobando…». Su botón abre la lista del aviso de
+    herramientas (W32), donde está «Instalar».
+  - **El paso 4** está hecho con cualquier forja guardada, GitHub o GitLab.
+  - **El tutorial.** Mientras está abierto, en el primer arranque o desde Ayuda, la tarjeta no se ve; sale al
+    cerrarlo. W23 y W24 no cambian.
+  - **«Ya lo tengo»** guarda `setupDismissed` en `ui.json`, validado como `tutorialSeen`, y se recuerda al
+    reiniciar.
+  - **El estado real** sale de llamadas que ya existen y no exponen tokens: `doctor()`, `repos.list()`,
+    `settings.jira.status()` y `settings.forge.status(forge)`, todas con su `saved`.
+  - **Los botones de Ajustes** usan la navegación que ya usa M35 («Ajustes → Repos»).
+  - **La foto** se saca con `ATRIL_SNAPSHOT_VIEW=work`, un `ATRIL_HOME` vacío y `tutorialSeen: true`.
+
 ## Outcomes
 
 - Alguien que abre Atril por primera vez ve qué falta para empezar, cada cosa con su botón, y los pasos se marcan
@@ -47,13 +65,14 @@ Primer arranque para alguien nuevo: una lista de puesta en marcha (herramientas,
 
 ## Verification criteria
 
-- **W97** While Trabajo has no workspace and `setupDismissed` is not set, it shall show «Primeros pasos» with the
-  five steps of the Decision log, each marked done from the live state — no doctor problem, at least one repo, a
-  saved Jira token, a saved forge, a workspace — the third and fourth marked «opcional», each undone step with a
-  button that goes where it is done; «Ya lo tengo» shall set `setupDismissed` and hide it; the card shall not show
-  while the tutorial runs. One test holds a case per clause.
+- **W97** While Trabajo has no live workspace, the history (W96) is empty, `setupDismissed` is not set and the
+  tutorial is not open, it shall show «Primeros pasos» with five steps — 1 git, tmux and claude without a doctor
+  problem («Comprobando…» until the report arrives; its button opens W32's list), 2 at least one repo, 3 a saved
+  Jira token («opcional»), 4 a saved GitHub or GitLab token («opcional»), 5 «Nuevo trabajo» (a button, never
+  marked) — each of 1–4 marked done from the live state, with a button where it is done while undone; «Ya lo
+  tengo» shall set `setupDismissed`, kept across restarts. One test holds a case per clause.
   Proof: src/renderer/setup.test.ts a new person sees what is left to start
 
 ## Checklist
 
-- [ ] the card, its live steps, buttons and dismiss; tutorial order; sketch; photo; novedades · Closes: W97
+- [ ] the card, its live steps, buttons and dismiss (with setupDismissed in ui.json); tutorial order; sketch; photo; novedades · Closes: W97
