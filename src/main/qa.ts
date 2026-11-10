@@ -1,14 +1,15 @@
-import { mkdir, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises'
+import { lstat, mkdir, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { agentArgv } from './agent'
 import { changeFolders } from './flow/stage'
 import { t } from './lang'
 import { atrilHome } from './paths'
+import type { QaKind, QaResult, QaShot, QaStatus } from '../preload/api'
 import type { Runner } from './run'
 import { hasPane, killPane, splitCommand } from './tmux'
 import { readRecords } from './workspaces'
 
-export type QaKind = 'expo' | 'react-native' | 'flutter' | 'android' | 'ios' | 'web'
+export type { QaKind }
 export interface QaInfo {
   kind: QaKind
   command: string
@@ -84,12 +85,8 @@ async function qaPrompt(info: QaInfo, path: string, branch: string, base: string
     : t('lo que cambia la rama {branch} respecto a su base ({base})', { branch, base })
   const vars = { kind: info.kind, command: info.command, target, shots }
   return info.kind === 'web'
-    ? t('Eres el QA de este trabajo, una app {kind}. Arranca la app con «{command}» en un puerto libre, ábrela con el navegador de Playwright y recorre {target}. Guarda una captura de cada paso en {shots} (sin nombre de archivo, Playwright las deja ahí). No cambies código ni hagas commits; al terminar, resume qué funciona y qué no.',
-        vars
-      )
-    : t('Eres el QA de este trabajo, una app {kind}. Si no hay ningún emulador o simulador en marcha, arranca uno. Arranca la app con «{command}» y recorre {target} con mobile-mcp. Guarda una captura PNG de cada paso en {shots} (con la herramienta de captura de mobile-mcp, `adb exec-out screencap -p > archivo.png` o `xcrun simctl io booted screenshot archivo.png`). No cambies código ni hagas commits; al terminar, resume qué funciona y qué no.',
-        vars
-      )
+    ? t('Eres el QA de este trabajo, una app {kind}. Arranca la app con «{command}» en un puerto libre, ábrela con el navegador de Playwright y recorre {target}. Guarda una captura de cada paso en {shots} (sin nombre de archivo, Playwright las deja ahí). No cambies código ni hagas commits; al terminar, resume qué funciona y qué no.', vars)
+    : t('Eres el QA de este trabajo, una app {kind}. Si no hay ningún emulador o simulador en marcha, arranca uno. Arranca la app con «{command}» y recorre {target} con mobile-mcp. Guarda una captura PNG de cada paso en {shots} (con la herramienta de captura de mobile-mcp, `adb exec-out screencap -p > archivo.png` o `xcrun simctl io booted screenshot archivo.png`). No cambies código ni hagas commits; al terminar, resume qué funciona y qué no.', vars)
 }
 
 /** W84: the QA pane lives while tmux still lists it in the workspace's session. */
@@ -101,7 +98,7 @@ export async function qaLive(id: string, run: Runner): Promise<boolean> {
 // Two presses at once both find no pane yet: the first one holds the workspace until its pane is kept.
 const starting = new Set<string>()
 
-export async function launchQa(id: string, run: Runner): Promise<{ ok: true } | { error: string }> {
+export async function launchQa(id: string, run: Runner): Promise<QaResult> {
   const ws = (await readRecords()).find((r) => r.id === id)
   if (!ws) return { error: t('Ese trabajo ya no existe') }
   const info = await detectQa(ws.path)
@@ -128,9 +125,33 @@ export async function launchQa(id: string, run: Runner): Promise<{ ok: true } | 
 }
 
 /** Kills only the QA pane; its MCP file and screenshots stay. */
-export async function stopQa(id: string, run: Runner): Promise<{ ok: true } | { error: string }> {
+export async function stopQa(id: string, run: Runner): Promise<QaResult> {
+  // The id names files under qa/: only a recorded workspace's id gets that far.
+  if (!(await readRecords()).some((r) => r.id === id)) return { error: t('Ese trabajo ya no existe') }
   const pane = (await text(paneFile(id)))?.trim()
   if (pane && (await hasPane(id, pane, run))) await killPane(pane, run)
   await rm(paneFile(id), { force: true })
   return { ok: true }
+}
+
+const MAX_SHOTS = 12
+const MAX_BYTES = 2 * 1024 * 1024
+
+/** F33: what the window shows; null for a project Atril cannot test. */
+export async function qaStatus(id: string, run: Runner): Promise<QaStatus | null> {
+  const ws = (await readRecords()).find((r) => r.id === id)
+  const info = ws && (await detectQa(ws.path))
+  if (!info) return null
+  const dir = shotsDir(id)
+  const pngs = (await readdir(dir).catch(() => [] as string[])).filter((n) => n.toLowerCase().endsWith('.png'))
+  const sized = await Promise.all(pngs.map(async (name) => ({ name, st: await lstat(join(dir, name)).catch(() => null) })))
+  const newest = sized
+    // lstat: a link in the folder is never followed out of it.
+    .filter((f) => f.st?.isFile() && f.st.size <= MAX_BYTES)
+    .sort((a, b) => b.st!.mtimeMs - a.st!.mtimeMs || a.name.localeCompare(b.name))
+    .slice(0, MAX_SHOTS)
+  const shots: QaShot[] = await Promise.all(
+    newest.map(async (f) => ({ name: f.name, at: f.st!.mtimeMs, src: `data:image/png;base64,${(await readFile(join(dir, f.name))).toString('base64')}` }))
+  )
+  return { kind: info.kind, live: await qaLive(id, run), shots }
 }

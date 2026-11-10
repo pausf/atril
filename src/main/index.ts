@@ -2,6 +2,7 @@ import { app, BrowserWindow, dialog, ipcMain, Notification, safeStorage, shell }
 import { MODELS, writeHooksFile } from './agent'
 import { createActivity } from './activity'
 import { createSubagents } from './subagents'
+import { launchQa, qaStatus, stopQa } from './qa'
 import { createAvisos } from './avisos'
 import { agentState, answerAgent, createStatus, replyGone, replyPlaceholder, replyToAgent, quickReplies } from './status'
 import { getLang, setLang, t } from './lang'
@@ -449,6 +450,10 @@ app.whenReady().then(async () => {
     }
     return saveDoc(ws.path, await agentState(ws, run), change, name, text, mtimeMs)
   })
+  // W84: only a press reaches launch; nothing here starts a QA on its own.
+  ipcMain.handle('atril:qa:status', (_e, id: unknown) => qaStatus(String(id), run))
+  ipcMain.handle('atril:qa:launch', (_e, id: unknown) => launchQa(String(id), run))
+  ipcMain.handle('atril:qa:stop', (_e, id: unknown) => stopQa(String(id), run))
   ipcMain.handle('atril:ws:list', () => listWorkspaces(run))
   ipcMain.handle('atril:ws:open', (_e, repoId: string, branch: string, agent: Agent, model?: Model, task?: unknown, auto?: unknown) =>
     openWorktree(

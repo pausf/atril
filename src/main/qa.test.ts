@@ -1,8 +1,8 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, symlinkSync, utimesSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { resourcesDir } from './paths'
-import { detectQa, launchQa, qaLive, stopQa } from './qa'
+import { detectQa, launchQa, qaLive, qaStatus, stopQa } from './qa'
 import type { Runner } from './run'
 import { cleanTmp, tmp } from './test-helpers'
 
@@ -164,5 +164,30 @@ describe('launchQa', () => {
     expect(await launchQa('nchqa001', fake)).toEqual({ ok: true })
     const mobileless = splits.at(-1)!.at(-1)!
     for (const part of ['feat/nchqa001', 'abc123', 'npm run start']) expect(mobileless).toContain(part)
+  })
+  it('qa status sends the newest screenshots as data urls', async () => {
+    const web = project({ 'package.json': pkg({ scripts: ['dev'] }) })
+    const plain = project({})
+    writeFileSync(join(home, 'workspaces.json'), JSON.stringify({ workspaces: [{ id: 'stqa0001', path: web }, { id: 'stqa0002', path: plain }] }))
+    const none: Runner = async () => ({ code: 1, stdout: '', stderr: '' })
+    expect(await qaStatus('stqa0002', none)).toBeNull()
+    expect(await qaStatus('nobody00', none)).toBeNull()
+
+    const dir = join(home, 'qa', 'stqa0001')
+    mkdirSync(dir, { recursive: true })
+    for (let i = 0; i < 14; i++) {
+      writeFileSync(join(dir, `s${i}.png`), `png${i}`)
+      utimesSync(join(dir, `s${i}.png`), 1000 + i, 1000 + i)
+    }
+    writeFileSync(join(dir, 'big.png'), Buffer.alloc(2 * 1024 * 1024 + 1))
+    utimesSync(join(dir, 'big.png'), 5000, 5000)
+    writeFileSync(join(dir, 'notes.txt'), 'x')
+    symlinkSync(join(web, 'package.json'), join(dir, 'link.png'))
+
+    const s = await qaStatus('stqa0001', none)
+    expect(s?.kind).toBe('web')
+    expect(s?.live).toBe(false)
+    expect(s?.shots.map((x) => x.name)).toEqual(['s13.png', 's12.png', 's11.png', 's10.png', 's9.png', 's8.png', 's7.png', 's6.png', 's5.png', 's4.png', 's3.png', 's2.png'])
+    expect(s?.shots[0]?.src).toBe(`data:image/png;base64,${Buffer.from('png13').toString('base64')}`)
   })
 })

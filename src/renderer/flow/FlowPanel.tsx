@@ -6,6 +6,7 @@ import { useT, type T } from '../ui'
 import { ActivityFeed } from './ActivityFeed'
 import { DocModal } from './DocModal'
 import { DiffModal } from './DiffModal'
+import { Qa } from './Qa'
 import { Subagents } from './Subagents'
 import type { Part } from './highlight'
 import { WARN_AT } from './warn'
@@ -121,6 +122,7 @@ export function FlowPanel({ workspaceId, auto = false }: { workspaceId: string |
           <>
             <LibrettoFlow flow={flow} onOpen={setDoc} changes={changes} onDiff={setDiffOf} />
             <Subagents workspaceId={workspaceId} />
+            <Qa workspaceId={workspaceId} />
           </>
         )}
       </div>

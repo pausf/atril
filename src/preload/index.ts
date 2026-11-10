@@ -89,6 +89,11 @@ const api: AtrilApi = {
       return () => ipcRenderer.removeListener('atril:subagents:changed', h)
     }
   },
+  qa: {
+    status: (id) => ipcRenderer.invoke('atril:qa:status', id),
+    launch: (id) => ipcRenderer.invoke('atril:qa:launch', id),
+    stop: (id) => ipcRenderer.invoke('atril:qa:stop', id)
+  },
   doctor: () => ipcRenderer.invoke('atril:doctor'),
   installTool: (tool) => ipcRenderer.invoke('atril:doctor:install', tool),
   repos: {

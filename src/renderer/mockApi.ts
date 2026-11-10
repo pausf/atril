@@ -1,5 +1,5 @@
 import { vi } from 'vitest'
-import type { ActivityLine, SubagentEntry, SubagentLine, AddRepoResult, Aviso, FileChange, FlowDocs, ForgeId, ForgeStatus, Mode, MrDraft, MrDrafts, MrDraftsResult, MrFixCiResult, MrLists, MrReply, MrScoreState, MrThreads, AgentState, AtrilApi, QuickAnswer, QuickReplies, FlowStage, JiraIssue, MenuAction, NextItem, StartProposalResult, StartRequest, StartResult, RepoView, ToolReport, UiState, WorkspaceResult, WorkspaceView } from '../preload/api'
+import type { ActivityLine, SubagentEntry, SubagentLine, AddRepoResult, Aviso, FileChange, FlowDocs, ForgeId, ForgeStatus, Mode, MrDraft, MrDrafts, MrDraftsResult, MrFixCiResult, MrLists, MrReply, MrScoreState, MrThreads, AgentState, QaResult, QaStatus, AtrilApi, QuickAnswer, QuickReplies, FlowStage, JiraIssue, MenuAction, NextItem, StartProposalResult, StartRequest, StartResult, RepoView, ToolReport, UiState, WorkspaceResult, WorkspaceView } from '../preload/api'
 
 export const workspace = (id: string, branch: string, alive = true): WorkspaceView => ({
   id,
@@ -55,6 +55,10 @@ interface Options {
   answer?: QuickAnswer
   /** Subagent entries per workspace id. */
   subagents?: Record<string, SubagentEntry[]>
+  /** What qa.status answers per workspace id; missing means an unclassified project. */
+  qa?: Record<string, QaStatus | null>
+  /** What qa.launch answers; by default it succeeds and the QA pane lives. */
+  qaLaunch?: QaResult
   /** What subagents.log answers per subagent id. */
   subagentLogs?: Record<string, SubagentLine[]>
   /** What mr.list answers; missing means no forge connected. */
@@ -104,6 +108,11 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
     })
   }
   const off = (): void => {}
+  const qa = new Map(Object.entries(o.qa ?? {}))
+  const setLive = (id: string, live: boolean): void => {
+    const q = qa.get(id)
+    if (q) qa.set(id, { ...q, live })
+  }
   window.atril = {
     ui,
     menu: {
@@ -219,6 +228,18 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
         return () => subagentListeners.delete(cb)
       }
     },
+    qa: {
+      status: vi.fn(async (id: string) => qa.get(id) ?? null),
+      launch: vi.fn(async (id: string): Promise<QaResult> => {
+        if (o.qaLaunch) return o.qaLaunch
+        setLive(id, true)
+        return { ok: true }
+      }),
+      stop: vi.fn(async (id: string): Promise<QaResult> => {
+        setLive(id, false)
+        return { ok: true }
+      })
+    },
     flow: {
       get: async (id: string | null) => (id && o.flows?.[id]) || o.flow || null,
       onChange: (cb: (id: string, stage: FlowStage) => void) => {
@@ -238,8 +259,8 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
     snapshotView: async () => null,
     snapshotWorkspace: async () => false
   } as unknown as AtrilApi
-  const { menu: menuApi, jira, workspaces: ws, repos: reposApi, flow: flowApi, forge: forgeApi, mr: mrApi, avisos: avisosApi, status: statusApi } = window.atril
-  return { ui, stored, menuApi, jira, ws, reposApi, flowApi, forgeApi, mrApi, avisosApi, statusApi,
+  const { menu: menuApi, jira, workspaces: ws, repos: reposApi, flow: flowApi, forge: forgeApi, mr: mrApi, avisos: avisosApi, status: statusApi, qa: qaApi } = window.atril
+  return { ui, qaApi, setQa: (id: string, q: QaStatus | null) => qa.set(id, q), stored, menuApi, jira, ws, reposApi, flowApi, forgeApi, mrApi, avisosApi, statusApi,
     pushAvisos: (items: Aviso[]) => {
       avisos = items
       avisoListeners.forEach((cb) => cb(items))

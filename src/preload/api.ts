@@ -458,6 +458,33 @@ export interface SubagentsApi {
   onChange(cb: (workspaceId: string, entries: SubagentEntry[]) => void): () => void
 }
 
+export type QaKind = 'expo' | 'react-native' | 'flutter' | 'android' | 'ios' | 'web'
+
+/** One screenshot of a QA run: `src` is a data URL, so the window never opens a local file. */
+export interface QaShot {
+  name: string
+  /** mtime in ms. */
+  at: number
+  src: string
+}
+
+export interface QaStatus {
+  kind: QaKind
+  /** The QA pane is still in tmux. */
+  live: boolean
+  /** Newest first, the 12 newest of at most 2 MB each. */
+  shots: QaShot[]
+}
+
+export type QaResult = { ok: true } | { error: string }
+
+export interface QaApi {
+  /** null: Atril does not know how to test this workspace's project (W83). */
+  status(workspaceId: string): Promise<QaStatus | null>
+  launch(workspaceId: string): Promise<QaResult>
+  stop(workspaceId: string): Promise<QaResult>
+}
+
 export type StageName = 'sin-libretto' | 'entrada' | 'spec' | 'plan' | 'construir' | 'terminado' | 'aterrizado'
 
 export interface Checklist {
@@ -593,6 +620,7 @@ export interface AtrilApi {
   nextup: NextUpApi
   activity: ActivityApi
   subagents: SubagentsApi
+  qa: QaApi
   doctor(): Promise<DoctorReport>
   installTool(tool: string): Promise<{ ok: true } | { error: string }>
   repos: ReposApi

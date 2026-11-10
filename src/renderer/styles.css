@@ -2801,3 +2801,55 @@ button.stg.stgbtn .icon {
   margin: 0;
   padding: 0 14px 12px;
 }
+
+/* F33: the QA section's screenshots, two per row, and one large in its modal. */
+.qa-err {
+  margin: 4px 0 6px;
+  padding: 7px 10px;
+  border-radius: 8px;
+  background: var(--bad-bg);
+  color: var(--bad-text);
+  font-size: 12.5px;
+}
+.qa-shots {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+.qa-shots button {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--chip);
+  overflow: hidden;
+  cursor: zoom-in;
+}
+.qa-shots button:focus-visible {
+  outline: 2px solid var(--ring);
+}
+.qa-shots img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  object-fit: cover;
+  object-position: top;
+}
+.qa-big {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: var(--chip);
+}
+.qa-big img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
