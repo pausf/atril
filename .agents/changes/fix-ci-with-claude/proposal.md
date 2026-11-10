@@ -109,5 +109,5 @@ Ninguna.
 
 ## Checklist
 
-- [ ] main: ciAgent and fixCi over agentFor and send · Closes: M30, M32
-- [ ] the MR view button with its state; sketch; photo · waits on box 1 · Closes: M31
+- [x] main: ciAgent and fixCi over agentFor and send · Closes: M30, M32
+- [x] the MR view button with its state; sketch; photo · waits on box 1 · Closes: M31
