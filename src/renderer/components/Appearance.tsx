@@ -19,19 +19,29 @@ export function Appearance() {
     <section className="scard" aria-labelledby="appearance-h" data-tour="appearance">
       <h3 id="appearance-h">{t('Apariencia')}</h3>
       <p className="hint2">{t('Automático sigue la apariencia de tu Mac y cambia en cuanto tú la cambias.')}</p>
-      <div className="seg" role="group" aria-label={t('Paleta')}>
-        {PALETTES.map((c) => (
-          <button key={c.value} type="button" aria-pressed={palette === c.value} onClick={() => setPalette(c.value)}>
-            {c.label}
-          </button>
-        ))}
+      <div className="arow">
+        <span className="alabel" aria-hidden>
+          {t('Paleta')}
+        </span>
+        <div className="seg" role="group" aria-label={t('Paleta')}>
+          {PALETTES.map((c) => (
+            <button key={c.value} type="button" aria-pressed={palette === c.value} onClick={() => setPalette(c.value)}>
+              {c.label}
+            </button>
+          ))}
+        </div>
       </div>
-      <div className="seg" role="group" aria-label={t('Tema')}>
-        {CHOICES.map((c) => (
-          <button key={c.value} type="button" aria-pressed={current === c.value} onClick={() => setTheme(c.value)}>
-            {c.label}
-          </button>
-        ))}
+      <div className="arow">
+        <span className="alabel" aria-hidden>
+          {t('Tema')}
+        </span>
+        <div className="seg" role="group" aria-label={t('Tema')}>
+          {CHOICES.map((c) => (
+            <button key={c.value} type="button" aria-pressed={current === c.value} onClick={() => setTheme(c.value)}>
+              {c.label}
+            </button>
+          ))}
+        </div>
       </div>
     </section>
   )

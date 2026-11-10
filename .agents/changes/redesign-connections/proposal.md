@@ -165,5 +165,5 @@ Los tests nuevos de `connections.test.ts` se ven en rojo primero. Rollback: un r
 
 ## Checklist
 
-- [ ] the three connection rows with Conectar/Gestionar and the three-step form · Closes: S5, S29, S30
-- [ ] two columns when wide; sketch and photo · waits on box 1 · Closes: S31
+- [x] the three connection rows with Conectar/Gestionar and the three-step form · Closes: S5, S29, S30
+- [x] two columns when wide; sketch and photo · waits on box 1 · Closes: S31
