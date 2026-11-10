@@ -234,6 +234,7 @@ export const EN: Record<string, string> = {
   'Enséñamelo · 1 min': 'Show me · 1 min',
   'Conecta Jira en Ajustes.': 'Connect Jira in Settings.',
   'Ese archivo no se puede editar desde Atril': 'That file cannot be edited from Atril',
+  'herramienta desconocida: {tool}': 'unknown tool: {tool}',
   'no responde a {args}: {detail}': 'does not respond to {args}: {detail}',
   '{args} falló con código {code}': '{args} failed with code {code}',
   'tmux new-session falló: {detail}': 'tmux new-session failed: {detail}',

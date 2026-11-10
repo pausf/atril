@@ -104,6 +104,7 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
       }
     },
     doctor: async () => [],
+    installTool: async () => ({ ok: true }),
     workspaces: {
       list: async () => o.workspaces ?? [],
       open: vi.fn(async (_repo: string, branch: string): Promise<WorkspaceResult> => ({ workspace: workspace('own00001', branch) }))

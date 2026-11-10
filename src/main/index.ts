@@ -22,7 +22,7 @@ import { createSecretStore } from './credentials/store'
 import { jiraSettings } from './credentials/jira'
 import { searchBoards } from './credentials/boards'
 import type { JiraCreds } from './credentials/check'
-import { doctor } from './doctor'
+import { doctor, installTool } from './doctor'
 import type { Aviso, CreateRepoRequest, Mode, MrDrafts, MrDraftsResult, MrItem, MrLists, MrScoreState, MrThreads, SubagentEntry, SubagentLine, UiState } from '../preload/api'
 import { readInbox } from './jira/inbox'
 import { inboxGroups } from './jira/board'
@@ -241,6 +241,7 @@ app.whenReady().then(async () => {
   // Packaged builds take build/icon.icns from the bundle; in dev the Dock needs telling.
   if (!app.isPackaged) app.dock?.setIcon(join(__dirname, '../../build/icon.png'))
   ipcMain.handle('atril:doctor', () => doctor(run))
+  ipcMain.handle('atril:doctor:install', (_e, tool: unknown) => installTool(tool, run))
   ipcMain.handle('atril:repos:list', () => listRepos(run))
   ipcMain.handle('atril:repos:add', async () => {
     const picked = await dialog.showOpenDialog({ properties: ['openDirectory'] })

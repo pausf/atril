@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { doctor } from './doctor'
+import { doctor, installTool, quoteAppleScript } from './doctor'
 import type { Runner } from './run'
 
 const INSTALL = {
@@ -41,5 +41,30 @@ describe('doctor', () => {
     await doctor(fake)
 
     expect(calls).toEqual(['git --version', 'tmux -V', 'claude --version', 'jira version'])
+  })
+})
+
+describe('install', () => {
+  it('opens the terminal with the listed command only', async () => {
+    const calls: Array<[string, string[]]> = []
+    const ok: Runner = async (cmd, args) => {
+      calls.push([cmd, args])
+      return { code: 0, stdout: '', stderr: '' }
+    }
+
+    expect(await installTool('tmux', ok)).toEqual({ ok: true })
+    expect(calls).toEqual([
+      ['osascript', ['-e', 'tell application "Terminal" to activate', '-e', 'tell application "Terminal" to do script "brew install tmux"']]
+    ])
+
+    calls.length = 0
+    expect(await installTool('tmux; rm -rf /', ok)).toHaveProperty('error')
+    expect(await installTool('', ok)).toHaveProperty('error')
+    expect(calls).toEqual([])
+
+    const denied: Runner = async () => ({ code: 1, stdout: '', stderr: 'not allowed\nsecond line' })
+    expect(await installTool('git', denied)).toEqual({ error: 'not allowed' })
+
+    expect(quoteAppleScript('echo "a\\b"')).toBe('echo \\"a\\\\b\\"')
   })
 })

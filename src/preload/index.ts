@@ -86,6 +86,7 @@ const api: AtrilApi = {
     }
   },
   doctor: () => ipcRenderer.invoke('atril:doctor'),
+  installTool: (tool) => ipcRenderer.invoke('atril:doctor:install', tool),
   repos: {
     list: () => ipcRenderer.invoke('atril:repos:list'),
     add: () => ipcRenderer.invoke('atril:repos:add'),

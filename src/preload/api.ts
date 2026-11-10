@@ -564,6 +564,7 @@ export interface AtrilApi {
   activity: ActivityApi
   subagents: SubagentsApi
   doctor(): Promise<DoctorReport>
+  installTool(tool: string): Promise<{ ok: true } | { error: string }>
   repos: ReposApi
   workspaces: WorkspacesApi
   term: TermApi
