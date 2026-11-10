@@ -224,6 +224,11 @@ textos, en «Pasos» abajo. Los que tienen elemento en pantalla lo iluminan; los
 - Desde Atril se encola una idea sin abrir una terminal, se ve la cola y lo que está en curso de cada repo, y una idea
   encolada se empieza con un clic en su propio trabajo, siguiendo Libretto.
 
+### Tarjeta de pregunta (ask-card, 10 nov 2026)
+
+- Cuando un agente pregunta, su fila crece en una tarjeta con la pregunta entera y las respuestas numeradas; no
+  choca con la fila de abajo. El panel ya no tiene «Otros cambios»: dice «{n} cambios más en este repo» y «Ver en Libretto».
+
 ## Scope boundaries
 
 **In:** the three columns and footer of `bocetos/fase1-nucleo.html` (boceto 8), the
@@ -450,6 +455,12 @@ Libretto dentro del paquete.
 cola (la cola es FIFO y «Empezar» en cualquiera ya reordena).
 **Never scoped out:** el commit solo toca el `proposal.md` nuevo, nunca otros cambios del repo; nada se escribe sin
 pulsar; textos por `t()`; teclado; una petición vacía no se encola.
+
+### Tarjeta de pregunta (ask-card, 10 nov 2026)
+
+**In:** la tarjeta en Trabajo y en «Todos», la línea a Libretto.
+**Out:** responder con la tecla del número; preguntas multiSelect (siguen sin botones, W76).
+**Never scoped out:** teclado; contraste del texto sobre el tinte; textos por `t()`; colores como tokens.
 
 ## Constraints
 
@@ -1435,6 +1446,47 @@ Textos por `t()`.
 - Q: ¿Qué sale en curso? → A: toda carpeta no en cola, con o sin `proposal.md`; las que tienen todas las casillas
   cerradas dicen «Lista para aterrizar» (assumed).
 
+### Tarjeta de pregunta (ask-card, 10 nov 2026)
+
+- Pregunta y respuestas dentro de la tarjeta de la fila (assumed, 11 nov).
+- «Otros cambios» se sustituye por un enlace a Libretto (assumed, 11 nov).
+
+#### Alternatives that lost
+
+| Considered | Why it lost |
+|---|---|
+| dejar los chips y separarlos con margen | sigue sin decir de qué fila son |
+| pregunta en un modal | rompe el «sin dejar lo que haces» de las respuestas rápidas |
+| explicar «Otros cambios» con un subtítulo | sigue sin acción; Libretto ya enseña esos cambios con sentido |
+
+#### Decision log, answers as given (2026-11-10)
+- Q: ¿Cómo se ve? → A: la fila y la pregunta forman una sola tarjeta: la fila pierde las esquinas de abajo y
+  su borde toma el color «te necesita»; debajo, pegada, la pregunta entera (sin cortar) y una respuesta por fila
+  con su número (1, 2, 3…), como el selector de Claude Code; fondo tintado muy suave con `--you`. El boceto 10
+  ya lo enseña (assumed).
+- Q: ¿La línea de actividad cortada de la fila? → A: mientras está la tarjeta no se repite: la pregunta va entera
+  dentro (assumed).
+- Q: ¿En «Todos»? → A: igual, dentro de su tarjeta (assumed).
+- Q: ¿Teclado? → A: los números son solo dibujo; las respuestas siguen siendo botones con Tab/Enter (assumed).
+- Q: ¿«Otros cambios»? → A: es el resto de carpetas de `.agents/changes/` sin contexto y sin acción. Se quita la
+  sección; en su lugar una línea «{n} cambios más en este repo → Libretto» que abre la pantalla Libretto con ese
+  repo elegido (assumed).
+
+- Q: ¿«Entera» desde dónde? → A: la línea de actividad tal como la guarda el hook (ya cortada a 200 en
+  `summarise.mjs`); en la tarjeta solo se quita la elipsis de CSS. Nada cambia en main (assumed).
+- Q: ¿Dónde se prueba que la fila no repite la línea? → A: en `quickreplies.test.ts`, montando `WorkspaceList`, como
+  ya hace hoy ese test (el constructor lo comprueba); al dejar de estar needs-you vuelve la línea en el mismo render
+  (assumed).
+- Q: ¿Todos? → A: W82 se enmienda aquí: en «Todos» la tarjeta va pegada bajo el botón de la tarjeta, fuera de él, y
+  el botón no repite la línea cortada; su prueba sigue en `overview.test.ts` (assumed).
+- Q: ¿Contraste de qué? → A: texto de la pregunta y etiquetas activas sobre `--ask-bg`; los números (`aria-hidden`),
+  el borde y lo desactivado quedan fuera. El tinte es un token `--ask-bg` por tema y paleta (los cuatro: original
+  claro y oscuro, Grafito claro y oscuro), sin `color-mix`, para que el test lea lo mismo que se pinta (assumed).
+- Q: ¿Libretto con qué repo? → A: «Ver en Libretto» guarda ese repo como el elegido (W104) y cambia de pantalla; la
+  cuenta es `flow.others.length` (assumed).
+- Q: ¿Línea o botón? → A: texto «{n} cambios más en este repo» y un botón «Ver en Libretto» (assumed). El plegado
+  `flow-others` guardado se ignora (assumed).
+
 ## Task breakdown
 
 - App shell: Electron main, preload bridge, renderer with sidebar / centre / right panel /
@@ -1876,13 +1928,13 @@ Textos por `t()`.
   «Ese agente ya no está esperando una respuesta.», «Esa opción ya no existe.» or, for a gone workspace,
   N3's message. Any other choice shape shall be refused. One test holds a case per clause.
   Proof: src/main/reply.test.ts a quick answer reaches its own pane
-- **W76** While a workspace is needs-you and its question is not multiSelect, its row shall show its stored
-  options as buttons (their labels as text), or «Sí, sigue» and «No, espera» when it has none; pressing
-  one, by mouse or keyboard, shall send it (W75) and show «Enviado» — disabling the buttons until the
-  state changes — or show the error and keep the buttons live; the buttons shall go when the state leaves needs-you. One test holds a case per
-  clause.
+- **W76** While a workspace is needs-you and its question is not multiSelect, its row shall be joined by
+  a card holding the question's full text (its latest activity line, uncut) and its stored options as numbered
+  buttons — «1», «2»… then the label — or «Sí, sigue» and «No, espera» when it has none, and the row shall not repeat
+  the cut activity line; pressing one, by mouse or keyboard, shall send it (W75) and show «Enviado» — disabling the
+  buttons until the state changes — or show the error and keep the buttons live; the card shall go when the state
+  leaves needs-you. One test holds a case per clause.
   Proof: src/renderer/quickreplies.test.ts a waiting row answers with one press
-
 ### Escritura atómica (atomic-records, 10 nov 2026)
 
 - **W80** Atril shall replace `workspaces.json` and `repos.json` by writing a temporary file and renaming it,
@@ -1923,10 +1975,10 @@ Textos por `t()`.
   mode shall not be stored across restarts. One test holds a case per clause.
   Proof: src/renderer/overview.test.ts all agents show as ordered cards
 - **W82** Pressing a card shall open that workspace in «Uno» without focus mode; while a card's workspace
-  is needs-you and its question is not multiSelect it shall carry W76's quick replies outside the card's
-  button, and answering there shall not open it. One test holds a case per clause.
+  is needs-you and its question is not multiSelect, W76's question card shall sit joined under the card's button,
+  outside it, the button shall not repeat the cut activity line, and answering there shall not open it. One test
+  holds a case per clause.
   Proof: src/renderer/overview.test.ts a card opens its workspace or answers in place
-
 ### QA en vivo (add-qa-lab, 10 nov 2026)
 
 - **W83** Atril shall classify a workspace's folder as expo (an `app.json` or `app.config.*` and an `expo`
@@ -2074,3 +2126,9 @@ Textos por `t()`.
   restarts in the interface state, and read the state again on entering, on changing repo, after queueing or starting,
   and on «Actualizar».
   Proof: src/renderer/libretto.test.ts the Libretto screen is reachable and keeps its repo
+
+### Tarjeta de pregunta (ask-card, 10 nov 2026)
+
+- **W105** The question text and the enabled answer labels shall keep a contrast of at least 4.5:1 over `--ask-bg`
+  in each of the original light, original dark, Grafito light and Grafito dark token sets.
+  Proof: src/renderer/quickreplies.test.ts the question card reads in every theme

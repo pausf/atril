@@ -416,11 +416,10 @@ Aterrizado**.
   actions; no lead sentence shall sit above the stages. Ceiling: the single row is layout, seen on the
   photo, not in jsdom.
   Proof: src/renderer/flow/panel.test.ts stages sit in one row and keep their names
-- **F30** Checklist, Cambios, Otros cambios and Subagentes shall each be a section whose title is a
-  button with `aria-expanded` that folds and unfolds it, showing its count while folded — Checklist
-  «{closed}/{total}», Cambios and Otros cambios their number, Subagentes its number of entries — and
-  keeping its folded state per section when the panel is mounted again; Otros cambios shall start
-  folded and the other three open. One test holds a case per clause.
+- **F30** Checklist, Cambios and Subagentes shall each be a section whose title is a button with
+  `aria-expanded` that folds and unfolds it, showing its count while folded — Checklist «{closed}/{total}», Cambios
+  its number, Subagentes its number of entries — and keeping its folded state per section when the panel is mounted
+  again; all three shall start open. One test holds a case per clause.
   Proof: src/renderer/flow/panel.test.ts the panel sections fold and remember
 - **F31** While the change list holds more than 8 files, «Cambios» shall list the first 8 in list order
   and a «+{n} más» button that opens F21's modal on the ninth file; the line total (F20, F25) shall
@@ -448,3 +447,10 @@ Aterrizado**.
 - **F34** While the selected workspace has a non-zero total (W93), the Libretto panel shall show, under «Cambio»,
   the same «≈ {coste} $ · {tokens} tokens» line as W94 with «estimado a precio de API».
   Proof: src/renderer/flow/cost.test.ts the panel shows the work's estimated cost
+
+### Tarjeta de pregunta (ask-card, 10 nov 2026)
+
+- **F35** While the flow state's `others` is not empty, the panel shall show «{n} cambios más en este repo» (n its
+  length; «1 cambio más en este repo» for one) with a button «Ver en Libretto» that stores that workspace's repo as the Libretto repo (W104) and opens the
+  Libretto screen, and no list of their names; with `others` empty, it shall show neither.
+  Proof: src/renderer/flow/panel.test.ts other changes lead to Libretto
