@@ -240,7 +240,12 @@ function createWindow(): void {
 app.whenReady().then(async () => {
   // Packaged builds take build/icon.icns from the bundle; in dev the Dock needs telling.
   if (!app.isPackaged) app.dock?.setIcon(join(__dirname, '../../build/icon.png'))
-  ipcMain.handle('atril:doctor', () => doctor(run))
+  // ponytail: dev-only, ATRIL_SNAPSHOT_VIEW=doctor photographs two missing tools with the list open.
+  ipcMain.handle('atril:doctor', () =>
+    SNAPSHOT && process.env['ATRIL_SNAPSHOT_VIEW'] === 'doctor'
+      ? doctor(async (cmd) => (cmd === 'tmux' || cmd === 'jira' ? { code: 127, stdout: '', stderr: `${cmd}: command not found` } : { code: 0, stdout: `${cmd} 1.0`, stderr: '' }))
+      : doctor(run)
+  )
   ipcMain.handle('atril:doctor:install', (_e, tool: unknown) => installTool(tool, run))
   ipcMain.handle('atril:repos:list', () => listRepos(run))
   ipcMain.handle('atril:repos:add', async () => {

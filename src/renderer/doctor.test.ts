@@ -14,7 +14,7 @@ const problems: ToolReport[] = [
 ]
 
 beforeEach(() => {
-  window.atril = { settings: { jira: { status: vi.fn().mockResolvedValue({ saved: false }) } } } as unknown as AtrilApi
+  window.atril = { settings: { jira: { status: vi.fn().mockResolvedValue({ saved: false }) } }, snapshotView: async () => null } as unknown as AtrilApi
 })
 afterEach(cleanup)
 

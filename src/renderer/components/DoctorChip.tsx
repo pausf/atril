@@ -11,6 +11,7 @@ export function DoctorChip({ problems }: { problems: ToolReport[] }) {
   const root = useRef<HTMLSpanElement>(null)
 
   useEffect(() => setInstalls({}), [problems])
+  useEffect(() => void window.atril.snapshotView().then((v) => v === 'doctor' && setOpen(true)), [])
 
   useEffect(() => {
     if (!open) return
