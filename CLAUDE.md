@@ -14,7 +14,7 @@ Las ramas van apiladas: cada una sale de la anterior y `main` no se ha movido. L
 2. **Objetivo (Pau, 10 nov): mejorar la idea, no cambiarla** (flujo Libretto, puntuaciones, borradores…),
    para que una persona lleve **3 tareas a la vez sin perder el foco**. Orden de la cola (en
    `.agents/changes/`), elegido por eso: `focus-mode` (en curso)
-   → `agents-overview` → `pause-agent` → `open-work-from-mr` → `cost-per-work` → `mr-line-comments` →
+   → `agents-overview` → `add-qa-lab` (QA en vivo: Chrome, emuladores) → `pause-agent` → `open-work-from-mr` → `cost-per-work` → `mr-line-comments` →
    `work-history` → `first-run-setup` → `package-and-sign`. Los cuelgues de tests de tmux/git eran
    contención: arreglado con `maxWorkers: 4` (ver lessons).
 3. Después, la lista de mejoras que se le dio a Pau el 9 nov. Ve una por una con el flujo Libretto:
