@@ -27,6 +27,16 @@ El boceto `bocetos/fase1-nucleo.html` gana el mismo selector.
 - Q: ¿«te necesita» en Grafito? → A: en el acento, como en el boceto (assumed).
 - Q: ¿El editor (`--ed-*`) y Jira? → A: se quedan igual en las dos paletas (assumed).
 
+- Q: (revisor de spec) Holguras → A, todas (assumed):
+  - W35 se enmienda: los colores solo viven en los cuatro bloques de tokens (dos de Original y dos de
+    Grafito), y los de Grafito sobrescriben claves que ya existen. El test no se debilita.
+  - El acento también tiene tope de croma, 0,13.
+  - Un token `rgba()` se clasifica por su color.
+  - «Al momento» significa en el mismo clic, sin esperar a main.
+  - Un valor desconocido lo normaliza main al leer `ui.json`.
+  - El boceto y la foto no tienen criterio: son dibujo y evidencia.
+  - «Paleta», «Original» y «Grafito» pasan por `t()`.
+
 ## Outcomes
 
 - Ajustes → Apariencia tiene «Paleta: Original · Grafito» encima de «Claro · Oscuro · Automático».
@@ -67,13 +77,22 @@ teclado y estado legible (`aria-pressed`).
 
 - **W72** Where the palette is Grafito, every colour token in both themes other than `--ed-*`,
   `--jira`, `--jira-2` and `--on-jira` shall be a neutral (OKLCH chroma below 0.03), the accent hue
-  (255 ± 15), or the muted added/removed green (150 ± 20) and red (25 ± 20) with chroma at most 0.13;
-  and every text pair `theme.test.ts` checks shall keep at least 4.5:1 in both palettes and themes.
+  (255 ± 15), or the muted added/removed green (150 ± 20) and red (25 ± 20), each of those three with
+  chroma at most 0.13 (an `rgba()` token judged by its colour); and every text pair `theme.test.ts`
+  checks shall keep at least 4.5:1 in the Grafito palette in both themes. One test holds both.
   Proof: src/renderer/theme.test.ts the grafito palette has one accent and keeps contrast
 - **W73** Ajustes → Apariencia shall offer «Original» and «Grafito» as a pressed-state group named
-  «Paleta»; choosing one shall set `data-palette` on the document (`original` or `grafito`) at once and
-  keep it across restarts; an unknown stored value shall read as Original, the default.
+  «Paleta»; choosing one shall set `data-palette` on the document (`original` or `grafito`) in the same
+  click and keep it across restarts; main shall read an unknown stored value as Original, the default.
+  One test holds a case per clause.
   Proof: src/renderer/theme.test.ts the palette is chosen in appearance and remembered
+
+- **W35** (amended) Atril shall offer three themes in Ajustes — Claro, Oscuro and Automático (default,
+  follows macOS); the choice persists across restarts, Automático switches live when the system
+  appearance changes, and every theme keeps text contrast at 4.5:1 or more; colours shall live only in
+  the token blocks — `:root`, `[data-theme='dark']` and their two `[data-palette='grafito']` overrides,
+  whose keys all exist in the base blocks.
+  Proof: src/renderer/theme.test.ts theme follows the choice and the system
 
 ## Approach
 
@@ -119,5 +138,5 @@ Ninguna.
 
 ## Checklist
 
-- [ ] palette state, the selector and the Grafito tokens with their tests · Closes: W72, W73
-- [ ] the fase1 sketch with the same palette choice; photo of Trabajo in Grafito · waits on box 1 · Closes: W72
+- [ ] palette state, the selector and the Grafito tokens with their tests · Closes: W35, W72, W73
+- [ ] the fase1 sketch with the same palette choice; photo of Trabajo in Grafito (drawing and evidence, no criterion) · waits on box 1
