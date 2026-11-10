@@ -1,4 +1,6 @@
 import { lstat, mkdir, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises'
+import { existsSync } from 'node:fs'
+import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { agentArgv } from './agent'
 import { changeFolders } from './flow/stage'
@@ -56,9 +58,20 @@ export async function detectQa(path: string): Promise<QaInfo | null> {
 
 const VERSION_ARGS: Record<string, string[]> = { node: ['--version'], adb: ['version'], emulator: ['-version'], xcrun: ['--version'] }
 
+/** adb and emulator often live only in the Android SDK folder, not on PATH. */
+function sdkPaths(tool: string): string[] {
+  const sub = tool === 'adb' ? join('platform-tools', 'adb') : tool === 'emulator' ? join('emulator', 'emulator') : null
+  if (!sub) return []
+  const roots = [process.env['ANDROID_HOME'], process.env['ANDROID_SDK_ROOT'], join(homedir(), 'Library', 'Android', 'sdk')]
+  return roots.flatMap((r) => (r && existsSync(join(r, sub)) ? [join(r, sub)] : []))
+}
+
 /** W84: every tool the kind needs that does not answer; the cross-platform kinds need one of adb or xcrun. */
 async function missingTools(kind: QaKind, run: Runner): Promise<string[]> {
-  const ok = async (tool: string): Promise<boolean> => (await run(tool, VERSION_ARGS[tool]!)).code === 0
+  const ok = async (tool: string): Promise<boolean> => {
+    for (const cmd of [tool, ...sdkPaths(tool)]) if ((await run(cmd, VERSION_ARGS[tool]!)).code === 0) return true
+    return false
+  }
   const need = kind === 'android' ? ['node', 'adb', 'emulator'] : kind === 'ios' ? ['node', 'xcrun'] : ['node']
   const missing = (await Promise.all(need.map(async (tool) => ((await ok(tool)) ? null : tool)))).filter((x): x is string => x !== null)
   if (kind === 'expo' || kind === 'react-native' || kind === 'flutter') {

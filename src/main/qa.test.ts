@@ -1,4 +1,5 @@
-import { existsSync, mkdirSync, readFileSync, symlinkSync, utimesSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, utimesSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { resourcesDir } from './paths'
@@ -106,9 +107,27 @@ describe('launchQa', () => {
     expect(await launchQa('plnqa001', fake)).toHaveProperty('error')
 
     // Case: a missing tool starts nothing and every missing one is named.
+    // No SDK anywhere: this machine's own ~/Library/Android/sdk must not count.
+    const realHome = process.env['HOME']
+    process.env['HOME'] = mkdtempSync(join(tmpdir(), 'atril-nohome-'))
+    delete process.env['ANDROID_HOME']
+    delete process.env['ANDROID_SDK_ROOT']
     missing = new Set(['adb', 'emulator', 'node'])
     const refused = await launchQa('andqa001', fake)
     expect('error' in refused && refused.error).toMatch(/node.*adb.*emulator|node, adb, emulator/)
+    // The Android tools often live only in the SDK folder, not on PATH: found there, they count.
+    const sdk = mkdtempSync(join(tmpdir(), 'atril-sdk-'))
+    mkdirSync(join(sdk, 'emulator'), { recursive: true })
+    mkdirSync(join(sdk, 'platform-tools'), { recursive: true })
+    writeFileSync(join(sdk, 'emulator', 'emulator'), '')
+    writeFileSync(join(sdk, 'platform-tools', 'adb'), '')
+    process.env['ANDROID_HOME'] = sdk
+    missing = new Set(['adb', 'emulator'])
+    expect(await launchQa('andqa001', fake)).toEqual({ ok: true })
+    delete process.env['ANDROID_HOME']
+    rmSync(join(qa, 'andqa001.pane'), { force: true })
+    rmSync(join(qa, 'andqa001.mcp.json'), { force: true })
+    splits.length = 0
     missing = new Set(['adb', 'xcrun'])
     const noMobile = await launchQa('expqa001', fake)
     expect('error' in noMobile && noMobile.error).toMatch(/adb.*xcrun/)
@@ -119,6 +138,7 @@ describe('launchQa', () => {
     expect(splits).toHaveLength(1)
     expect(existsSync(join(qa, 'andqa001.mcp.json'))).toBe(false)
     missing = new Set()
+    process.env['HOME'] = realHome
 
     // Case: the MCP file, the split with claude, the prompt; two presses at once start one.
     const both = await Promise.all([launchQa('webqa001', fake), launchQa('webqa001', fake)])

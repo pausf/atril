@@ -55,6 +55,7 @@ nada arranque solo (cuota y recursos).
   - **El panel de QA.** Se abre con un comando, dividiendo el panel del trabajo. Su id de tmux se guarda en
     `$ATRIL_HOME/qa/<id>.pane`. «Vive» mientras tmux tenga ese panel; si lo cierras a mano, se nota en la
     siguiente consulta.
+  - **adb y emulator** también cuentan si están en la carpeta del SDK de Android (ANDROID_HOME, ANDROID_SDK_ROOT o ~/Library/Android/sdk), no solo en el PATH (añadido al construir).
   - **El emulador o el simulador.** Si no hay ninguno en marcha, lo arranca el Claude de QA según su prompt.
     La decisión 2 queda corregida.
   - **Capturas en móvil.** El prompt pide guardarlas en la carpeta (con la herramienta de mobile-mcp,
@@ -150,5 +151,5 @@ Ninguna.
 
 ## Checklist
 
-- [ ] detection, the MCP file, launch and stop with the tool check · Closes: W83, W84
-- [ ] the QA section with screenshots; tutorial mention (no criterion); sketch; photo · waits on box 1 · Closes: F33
+- [x] detection, the MCP file, launch and stop with the tool check · Closes: W83, W84
+- [x] the QA section with screenshots; tutorial mention (no criterion); sketch; photo · waits on box 1 · Closes: F33
