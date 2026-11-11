@@ -7,7 +7,7 @@ con agentes de Claude Code en tmux, y gestiona MRs de GitHub/GitLab. Remoto PRIV
 ## Dónde lo dejamos (10 nov 2026) — empieza por aquí
 
 Las ramas van apiladas: cada una sale de la anterior y `main` no se ha movido. La última es
-**`quiet-header`**, aterrizada y subida el 11 nov (cabecera con estado y botón de foco; el coste ya no se ve). Ideas para después: `bocetos/ideas.html` (120, con ★ las favoritas; 51–120 añadidas el 11 nov).
+**`panel-c`**, aterrizada y subida el 11 nov (seis tramos encima del trabajo, casillas con su código en vivo, ⌘⇧E para ampliar). Ideas para después: `bocetos/ideas.html` (120, con ★ las favoritas; 51–120 añadidas el 11 nov).
 
 1. Hechos el 10 nov: `add-subagents-view`, `add-subagent-detail` `add-doctor-install-terminal`, `restyle-mode-picker`, `fit-flow-panel`, `show-doc-buttons`, `adopt-grafito`, `expand-tour` y `redesign-connections`.
    Bocetos fase 2: `bocetos/fase2-nucleo.html` (6 diseños del panel; Pau eligió el 0) y `bocetos/fase2-app.html` (4 variantes minimalistas; Pau eligió Grafito, ya en la app como segunda paleta).
