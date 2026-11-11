@@ -290,3 +290,6 @@ Dos reopen del mismo trabajo a la vez (ventana recargada) veían los dos «sin s
 
 ## 2026-11-11 · reopen-work · prueba en la app real
 Matar tmux con un trabajo abierto bloqueaba Atril entero: `term:resize` llegaba a un cliente pty muerto, node-pty lanzaba EBADF dentro de un `ipcMain.on` y Electron mostraba un NSAlert modal. Los tests no lo veían porque no usan node-pty real; solo salió al probar en la app. W149.
+
+## 2026-11-11 · state-files · 6→7
+Aceptado sin arreglar: si `workspaces.json` se daña entre la comprobación inicial de «Quitar» y su escritura final, el worktree ya se ha quitado y la escritura falla sin sobrescribir nada. Abrir sí deshace (W146). Ventana de milisegundos; si aparece en la práctica, quitar debe escribir el registro antes de borrar.
