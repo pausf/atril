@@ -269,6 +269,12 @@ textos, en «Pasos» abajo. Los que tienen elemento en pantalla lo iluminan; los
 - Cerrar un trabajo con el agente vivo pide confirmación en la fila.
 - El aviso de un cierre rechazado se puede cerrar.
 
+### Modelo y esfuerzo (model-pick, 11 nov 2026)
+
+- Al abrir un trabajo eliges también el esfuerzo; el agente arranca con `--effort` y el trabajo lo recuerda.
+- Si la tarea parece un arreglo acotado o un cambio grande, el diálogo sugiere modelo y esfuerzo con su porqué; «Usar» lo aplica.
+- El coste por trabajo cuenta la lectura de caché de Fable y el tramo largo de Haiku.
+
 ## Scope boundaries
 
 **In:** the three columns and footer of `bocetos/fase1-nucleo.html` (boceto 8), the
@@ -552,6 +558,10 @@ Nunca fuera: validar `.atril/qa.json` (lo escribe el repo, no Atril); la ventana
 
 **Out:** «Volver a abrir» un trabajo parado (hallazgo 8, siguiente cambio); Jira, MR, Libretto y Ajustes (siguen en la auditoría); renombrar «Quitar».
 
+### Modelo y esfuerzo (model-pick, 11 nov 2026)
+
+**In:** `agent.ts` (`--effort`), `workspaces.ts` (campo `effort` del registro), IPC de abrir y de Empezar (Jira), `OwnTaskDialog.tsx` y `StartDialog.tsx`, un `suggest.ts` en el renderer, `prices.ts` y `cost.ts`. **Out:** reintentar con más esfuerzo (va con «Volver a abrir», siguiente cambio); modelos de los subagentes de Libretto (cambio aparte); medir modelos con tareas reales.
+
 ## Constraints
 
 - Electron (current stable) + TypeScript in strict mode, pnpm, Node 24 (installed:
@@ -689,6 +699,11 @@ Textos por `t()`.
 - La ventana nunca manda una ruta ni un comando: solo ids que main busca en sus registros.
 - La ruta que main pasa a Terminal va entre comillas simples escapadas.
 - Nada cambia en disco cuando se rechaza un cierre (W9 y W10 siguen).
+
+### Modelo y esfuerzo (model-pick, 11 nov 2026)
+
+- Solo valores de una lista llegan a la línea de órdenes (W41: nada del texto como bandera).
+- Nada llama a Claude para sugerir.
 
 ## Prior decisions
 
@@ -1833,6 +1848,26 @@ Textos por `t()`.
 - Q: ¿Y si la carpeta del trabajo ya no es un repo o no existe? → A: «Quitar de la lista igualmente»: cierra su sesión de tmux, borra el registro y sus archivos, no ejecuta git y no escribe historial (assumed).
 - Q: ¿Cuándo se confirma «Quitar»? → A: solo con la sesión viva, en la propia fila; un trabajo parado se quita a la primera (assumed).
 
+### Modelo y esfuerzo (model-pick, 11 nov 2026)
+
+- Atril sugiere modelo y esfuerzo con reglas fijas y su porqué; nunca los cambia por la persona.
+
+#### Alternatives that lost
+
+| Considered | Why it lost |
+|---|---|
+| Preguntar a Claude qué modelo usar | gasta cuota en cada trabajo, y la regla es nada de llamadas automáticas |
+| Aplicar la sugerencia sola | decide por la persona; el artículo dice medir antes de cambiar |
+
+#### Decision log, answers as given (2026-11-11)
+- Q: (constructor) `suggest.ts`, `SuggestLine.tsx` y los diálogos viven bajo el `Governs:` de work-inbox → A: los criterios se quedan en workspaces, que ya gobierna el modelo y el comando (W34); la línea compartida es una pieza de la ventana (assumed).
+- Q: (constructor) ¿Cómo se ve la sugerencia? → A: «Sugerido: Sonnet · Medio. {porqué} [Usar]», en una línea gris (assumed).
+- Q: (revisión en frío) ¿Qué texto mira la sugerencia en «Empezar»? → A: el resumen y el tipo de Jira (assumed).
+- Q: (revisión en frío) ¿Un esfuerzo raro por IPC? → A: se rechaza en main como un modelo raro (assumed).
+- Q: ¿La sugerencia se aplica sola? → A: no: sale debajo del modelo con su porqué y un botón «Usar»; la persona decide (assumed, como la nota de MR de 540: la persona decide).
+- Q: ¿De qué sale la sugerencia? → A: de reglas fijas sobre el texto y el tipo de Jira, sin llamar a Claude (CLAUDE.md: nada de llamadas automáticas) (assumed).
+- Q: ¿Qué niveles de esfuerzo? → A: Por defecto, bajo, medio, alto y muy alto (`xhigh`); `max` se queda fuera del selector (assumed: es caro y el artículo no lo recomienda para empezar).
+
 ## Task breakdown
 
 - App shell: Electron main, preload bridge, renderer with sidebar / centre / right panel /
@@ -1953,9 +1988,7 @@ Textos por `t()`.
   `--plugin-dir` and never passes `--setting-sources`, `--bare` or anything else that drops
   them.
   Proof: src/main/agent.test.ts claude keeps the person's own skills
-- **W34** Where the person picks a model in Start or in "Nuevo trabajo", Atril shall launch
-  Claude with `--model <alias>` (`opus`, `sonnet`, `haiku`; no flag for "Por defecto"), store it
-  in the workspace record, and show it on the workspace row. Fable is not offered.
+- **W34** Where the person picks a model in Start or in "Nuevo trabajo", Atril shall launch Claude with `--model <alias>` (`opus`, `sonnet`, `haiku`; no flag for "Por defecto"), store it in the workspace record, and show it on the workspace row; the effort picker beside it offers Por defecto, Bajo, Medio, Alto and Muy alto (`low`, `medium`, `high`, `xhigh`). Fable is not offered.
   Proof: src/main/agent.test.ts chosen model reaches claude and the record
 - **W35** Atril shall offer three themes in Ajustes — Claro, Oscuro and Automático (default,
   follows macOS); the choice persists across restarts, Automático switches live when the system
@@ -2375,13 +2408,9 @@ Textos por `t()`.
   add that path as a line to `$ATRIL_HOME/transcripts/<session>` (W62's session name) when it is not there yet,
   and write nothing else from the payload; other events leave the file as it is.
   Proof: src/main/agent.test.ts the hook keeps where the transcript is
-- **W93** Main shall total a workspace's usage over its transcript and every `subagents/*.jsonl` beside it,
-  counting each `message.id` once, as input, output, cache-write and cache-read tokens per model, and price them
-  with the dated table (cache write 1.25× input; cache read the published price or 0.1× input), leaving the cost
-  out for a model the table does not name (matching an exact id or the id plus `-YYYYMMDD`); lines that are not
-  JSON or lack usage are skipped, and a line without `message.id` counts once; a later read covers only the bytes
-  appended since the previous one. One test holds a case per clause.
+- **W93** Main shall total a workspace's usage over its transcript and every `subagents/*.jsonl` beside it, counting each `message.id` once, as input, output, cache-write and cache-read tokens per model, and price each message with the dated table (cache write 1.25× that message's input price; cache read the published price or 0.1× input — Fable 5.2's published 0,20 included), where `claude-haiku-5-5` (or it plus `-YYYYMMDD`) uses 0,50 / 2,50 $ per million and cache read 0,05 for a message whose input, cache write and cache read add up to more than 100 000 tokens, and 0,10 / 0,50 with cache read 0,01 otherwise (exactly 100 000 is the short price); leaving the cost out for a model the table does not name (matching an exact id or the id plus `-YYYYMMDD`); lines that are not JSON or lack usage are skipped, and a line without `message.id` counts once; a later read covers only the bytes appended since the previous one; the table's date is 2026-11-11. One test holds a case per clause.
   Proof: src/main/cost.test.ts usage is totalled once per message and priced by model
+  Proof: src/main/cost.test.ts haiku long prompts and fable cache use their prices
 - **W94** A workspace's row title and its «Todos» card shall show no text with «$», «≈» or «tokens».
   Proof: src/renderer/cost.test.ts no workspace shows a cost
 ### Historial (work-history, 10 nov 2026)
@@ -2565,11 +2594,10 @@ Textos por `t()`.
 
 - **W129** When opening is asked with `worktree: true`, Atril shall open that workspace as a worktree even for an `in-place` repo, leave the main checkout's branch and files as they were, and keep the repo's mode.
   Proof: src/main/workspaces.test.ts worktree this time leaves the dirty copy alone
-- **W130** When the new-work or the start dialog gets an error with a `fix`, it shall show it as a problem titled with main's sentence, «No he creado el trabajo.» under it, the detail folded and a button by its `fix`: «Usar un worktree esta vez» asks to open the same repo, branch, model, text and mode with `worktree: true`; «Abrir en Terminal» asks main to open Terminal for that repo.
+- **W130** When the new-work or the start dialog gets an error with a `fix`, it shall show it as a problem titled with main's sentence, «No he creado el trabajo.» under it, the detail folded and a button by its `fix`: «Usar un worktree esta vez» asks to open the same repo, branch, model, effort, text and mode with `worktree: true`; «Abrir en Terminal» asks main to open Terminal for that repo.
   Proof: src/renderer/newwork.test.ts a dirty copy offers a worktree this time
   Proof: src/renderer/newwork.test.ts a blank dirty retry opens plain claude in a worktree
   Proof: src/renderer/newwork.test.ts a git failure offers terminal for the repo
-
 ### Abrir y cerrar sin errores crudos (ws-errors, 11 nov 2026)
 
 - **W131** If a git step or tmux fails while opening a workspace, then Atril shall create no record and answer one sentence per step — reading the repo's state: «No puedo leer el estado de git de {repo}.»; switching the copy: «git no me deja pasar tu copia a {branch}.»; fetching: «No he podido traer {branch} de {remote}.»; adding the worktree when its stderr matches `/already (checked out|used by worktree)/` (git's own wording; Atril runs git with its default English messages): «La rama {branch} ya está abierta en otra carpeta.», otherwise «git no ha podido crear la carpeta del trabajo.»; starting tmux: «tmux no ha podido arrancar el agente.» — with the command's stderr (or the thrown message) as `detail`, never inside the sentence, and `fix: 'terminal'` with the repo id.
@@ -2584,3 +2612,14 @@ Textos por `t()`.
   Proof: src/renderer/closework.test.ts a refused close shows its fix and can be dismissed
 - **W136** While a workspace's session is alive (its `alive` field from the workspace list), «Quitar» shall first ask in its row «¿Cerrar {branch}? Su agente se para y el trabajo pasa a Terminados.» with «Cerrar» and «Cancelar», and close only on «Cerrar»; a stopped workspace closes on the first click.
   Proof: src/renderer/closework.test.ts closing a live agent asks first
+
+### Modelo y esfuerzo (model-pick, 11 nov 2026)
+
+- **W137** When a workspace opens from «Nuevo trabajo» or «Empezar» with an effort of `low`, `medium`, `high` or `xhigh`, the agent command (and the command «Empezar» shows) shall carry `--effort <level>` before the prompt and the record shall keep `effort`; with `default` or no effort the command has no `--effort` and the record has no `effort` field; any other value is refused in main with ««{effort}» no es un esfuerzo disponible» before anything runs.
+  Proof: src/main/agent.test.ts effort reaches the command only from the list
+  Proof: src/main/jira/start.test.ts an unknown effort is refused before anything runs
+- **W138** The suggestion shall come from the task text in «Nuevo trabajo», or the Jira summary and type in «Empezar», matched case-insensitively: a Jira type Bug, or a word starting with `arregl`, `fallo`, `error`, `bug`, `fix`, `typo`, `corrige` or `errata`, gives `sonnet` with `medium` and «Un arreglo acotado: Sonnet lo hace bien a mitad de precio que Opus.»; else a word starting with `refactor`, `migra`, `arquitectura`, `reescrib` or `rediseñ` gives `opus` with `high` and «Un cambio grande: mejor Opus con más esfuerzo.»; else none. A missing Jira type counts as not Bug. («fixture» counts as a fix: the rule is a hint, not a classifier.)
+  Proof: src/renderer/inbox/suggest.test.ts the rules pick model and effort with their reason
+- **W139** While a dialog has a suggestion and the chosen model or the chosen effort differs from it, the dialog shall show «Sugerido: {model} · {effort}» with its reason and a «Usar» button that sets both; with no suggestion, or both already equal, nothing shows; the dialog never changes the model or effort by itself.
+  Proof: src/renderer/newwork.test.ts a suggestion is shown and used only on click
+  Proof: src/renderer/inbox/start.test.ts the start dialog suggests from the jira type
