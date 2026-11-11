@@ -760,7 +760,7 @@ Textos por `t()`.
 - **AI through the Claude Code CLI on the subscription, never an API key** — agreed 9 nov.
 - **Libretto ships inside Atril** — Pau, 9 nov (decision log). Loaded as a plugin, its flow
   command is `/libretto:libretto-flow` (observed in Claude's autocomplete, box 4); the bundle
-  pins libretto-automata `171db90`. A pinned copy of
+  pins libretto-automata `171db90`, plus Atril's `model: sonnet` line on its five reviewers (W151). A pinned copy of
   libretto-automata's payload (MIT, with its vendored MIT items) lives in `resources/libretto/`
   as a Claude Code plugin; every Claude agent is launched with `--plugin-dir` pointing at it,
   for that session only. Nobody installs Libretto, and the person's `~/.claude` is untouched.

@@ -299,3 +299,6 @@ W150 decía «cualquier error HTTP» y el cambio solo tocó las llamadas de su l
 
 ## 2026-11-11 · net-errors · pendiente
 `forge/scores.ts:225` y `forge/lenses.ts:175` pueden pasar `err.message` a la frase si lo que se lanza no es un `Failure`. Va con el rediseño de la MR.
+
+## 2026-11-11 · libretto-models · 6→7
+El Decision log decía que la frase «la copia es `171db90`» de la spec cambiaba, y el commit no la tocaba: una decisión que nombra un cambio en la spec viva se hace en el mismo commit, no se deja a `land.py`.
