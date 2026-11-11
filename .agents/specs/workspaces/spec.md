@@ -263,6 +263,12 @@ textos, en «Pasos» abajo. Los que tienen elemento en pantalla lo iluminan; los
 
 - Al abrir un trabajo en un repo que trabaja en tu copia, si tiene cambios o ya tiene un trabajo, el diálogo dice qué pasa con cifras y ramas, que no se ha creado nada, y trae «Usar un worktree esta vez»; los ficheros van plegados.
 
+### Abrir y cerrar sin errores crudos (ws-errors, 11 nov 2026)
+
+- Ningún fallo al abrir o cerrar un trabajo enseña stderr en la frase: dice qué paso falló, qué no se ha hecho y trae su botón; la salida de git o tmux va en «Ver detalle».
+- Cerrar un trabajo con el agente vivo pide confirmación en la fila.
+- El aviso de un cierre rechazado se puede cerrar.
+
 ## Scope boundaries
 
 **In:** the three columns and footer of `bocetos/fase1-nucleo.html` (boceto 8), the
@@ -540,6 +546,12 @@ Nunca fuera: validar `.atril/qa.json` (lo escribe el repo, no Atril); la ventana
 
 **In:** `openWorktree` (errores de W7 y W8, opción `worktree`), IPC `atril:ws:open`, `OwnTaskDialog.tsx`, tipos. **Out:** el resto de errores de abrir y cerrar trabajos: van en el barrido de errores que sale de la auditoría y la prueba de romper la app.
 
+### Abrir y cerrar sin errores crudos (ws-errors, 11 nov 2026)
+
+**In:** `openWorktree` y `removeWorkspace` (`src/main/workspaces.ts`), una función `forgetWorkspace`, IPC `atril:ws:terminal` y `atril:ws:forget`, `Problem.tsx` (botón de cerrar opcional), `WorkspaceList.tsx`, `OwnTaskDialog.tsx`, `StartDialog.tsx`, tipos e i18n.
+
+**Out:** «Volver a abrir» un trabajo parado (hallazgo 8, siguiente cambio); Jira, MR, Libretto y Ajustes (siguen en la auditoría); renombrar «Quitar».
+
 ## Constraints
 
 - Electron (current stable) + TypeScript in strict mode, pnpm, Node 24 (installed:
@@ -671,6 +683,12 @@ Textos por `t()`.
 
 - Nada cambia en la copia de la persona cuando se rechaza (W8 sigue).
 - Textos por `t()` con inglés; el aviso usa `Problem`.
+
+### Abrir y cerrar sin errores crudos (ws-errors, 11 nov 2026)
+
+- La ventana nunca manda una ruta ni un comando: solo ids que main busca en sus registros.
+- La ruta que main pasa a Terminal va entre comillas simples escapadas.
+- Nada cambia en disco cuando se rechaza un cierre (W9 y W10 siguen).
 
 ## Prior decisions
 
@@ -1794,6 +1812,27 @@ Textos por `t()`.
 - Q: ¿Y el segundo trabajo en un repo in-place (W7)? → A: el mismo botón (assumed).
 - Q: ¿Qué va en «Ver detalle»? → A: las líneas de `git status --porcelain` (hasta 20) y por qué el repo trabaja en tu copia (assumed).
 
+### Abrir y cerrar sin errores crudos (ws-errors, 11 nov 2026)
+
+- Un fallo de git o tmux nunca sale crudo en la frase: frase por paso, salida plegada y «Abrir en Terminal» en esa carpeta.
+
+#### Alternatives that lost
+
+| Considered | Why it lost |
+|---|---|
+| Mandar la ruta desde la ventana | la ventana no es de fiar; main ya sabe la ruta por id |
+| `confirm()` nativo | un diálogo del sistema para una fila; la pregunta en la fila no tapa nada |
+
+#### Decision log, answers as given (2026-11-11)
+- Q: (constructor) ¿Cómo llega «Usar un worktree esta vez» desde «Empezar» de Jira? → A: `StartRequest.worktree`, que `jira/start.ts` pasa solo si es `true`; sin test propio del diálogo de Jira (assumed).
+- Q: (constructor) `Problem` sin arreglo → A: `fix`/`onFix` opcionales y «Ver detalle» solo con detalle; «No hay ningún repo» no trae botón (assumed).
+- Q: (revisión en frío) ¿Y si git falla después de parar al agente? → A: el registro se queda y la frase dice que el agente ya está parado; no se reordena (assumed: `git worktree remove` sobre una carpeta con el agente vivo sería peor).
+- Q: (revisión en frío) ¿Un `git status` que falla ofrece olvidar? → A: solo si la carpeta no existe; si existe, «Abrir en Terminal» (assumed).
+- Q: (romper la app, hallazgo 1) ¿Olvidar deja la rama bloqueada por el worktree? → A: `git worktree prune` en el repo, que solo borra entradas cuya carpeta ya no está (assumed).
+- Q: ¿Qué botón arregla un fallo de git al abrir o cerrar? → A: «Abrir en Terminal», que abre Terminal en la carpeta con `git status`; la ventana manda el id del repo o del trabajo, nunca una ruta (assumed).
+- Q: ¿Y si la carpeta del trabajo ya no es un repo o no existe? → A: «Quitar de la lista igualmente»: cierra su sesión de tmux, borra el registro y sus archivos, no ejecuta git y no escribe historial (assumed).
+- Q: ¿Cuándo se confirma «Quitar»? → A: solo con la sesión viva, en la propia fila; un trabajo parado se quita a la primera (assumed).
+
 ## Task breakdown
 
 - App shell: Electron main, preload bridge, renderer with sidebar / centre / right panel /
@@ -1840,9 +1879,7 @@ Textos por `t()`.
 - **W9** When an `in-place` workspace is closed, Atril shall check out the previous branch
   from its workspace record; if the branch has uncommitted changes, it shall refuse instead.
   Proof: src/main/workspaces.test.ts in-place close restores the previous branch
-- **W10** If a worktree has uncommitted changes, then Atril shall refuse to remove it and say
-  to commit or discard first; a clean worktree is removed with `git worktree remove` (never a
-  recursive delete) and its agent session ended.
+- **W10** If a worktree has uncommitted changes, then Atril shall refuse to remove it and change nothing, answering «{branch} tiene {changes} sin commitear: no lo cierro para no perderlos.» — `{changes}` being «1 cambio» or «{n} cambios» — with up to 20 `git status --porcelain` lines as `detail` and `fix: 'terminal'`; a clean worktree is removed with `git worktree remove` (never a recursive delete) and its agent session ended.
   Proof: src/main/workspaces.test.ts refuses to remove a dirty worktree
 - **W11** When a workspace opens, Atril shall write its workspace record and start its agent
   in a tmux session named `atril-<workspace id>` with `remain-on-exit on`, recording the
@@ -2528,6 +2565,22 @@ Textos por `t()`.
 
 - **W129** When opening is asked with `worktree: true`, Atril shall open that workspace as a worktree even for an `in-place` repo, leave the main checkout's branch and files as they were, and keep the repo's mode.
   Proof: src/main/workspaces.test.ts worktree this time leaves the dirty copy alone
-- **W130** When the open dialog gets an error with `fix: 'worktree'`, it shall show it as a problem with «No he creado el trabajo.», the button «Usar un worktree esta vez» and the detail folded; the button shall ask to open the same repo, branch, model, text and mode with `worktree: true`.
+- **W130** When the new-work or the start dialog gets an error with a `fix`, it shall show it as a problem titled with main's sentence, «No he creado el trabajo.» under it, the detail folded and a button by its `fix`: «Usar un worktree esta vez» asks to open the same repo, branch, model, text and mode with `worktree: true`; «Abrir en Terminal» asks main to open Terminal for that repo.
   Proof: src/renderer/newwork.test.ts a dirty copy offers a worktree this time
   Proof: src/renderer/newwork.test.ts a blank dirty retry opens plain claude in a worktree
+  Proof: src/renderer/newwork.test.ts a git failure offers terminal for the repo
+
+### Abrir y cerrar sin errores crudos (ws-errors, 11 nov 2026)
+
+- **W131** If a git step or tmux fails while opening a workspace, then Atril shall create no record and answer one sentence per step — reading the repo's state: «No puedo leer el estado de git de {repo}.»; switching the copy: «git no me deja pasar tu copia a {branch}.»; fetching: «No he podido traer {branch} de {remote}.»; adding the worktree when its stderr matches `/already (checked out|used by worktree)/` (git's own wording; Atril runs git with its default English messages): «La rama {branch} ya está abierta en otra carpeta.», otherwise «git no ha podido crear la carpeta del trabajo.»; starting tmux: «tmux no ha podido arrancar el agente.» — with the command's stderr (or the thrown message) as `detail`, never inside the sentence, and `fix: 'terminal'` with the repo id.
+  Proof: src/main/workspaces.test.ts a failing step when opening says which and folds its output
+- **W132** If closing a workspace is refused before anything runs, then Atril shall change nothing and answer — the in-place copy on another branch: «Tu copia está en {current}, no en {branch}: vuelve a {branch} antes de cerrar.» with `fix: 'terminal'`; the workspace folder missing: «La carpeta de {branch} ya no existe.» with `fix: 'forget'`; `git status` failing on a folder that exists: «No puedo leer el estado de git de {branch}.» with its stderr as `detail` and `fix: 'terminal'`. If a git step fails after the agent's session was ended (`git switch` back, `git worktree remove`), then it shall keep the record and answer «git no ha podido cerrar {branch}; su agente ya está parado.» with its stderr as `detail` and `fix: 'terminal'`. Stderr never appears in a sentence.
+  Proof: src/main/workspaces.test.ts close refusals say what and how to get past
+- **W133** When forgetting a workspace is asked by id, Atril shall end its tmux session, drop its record and Atril's own files for it by session name (as W60, W65 and W92) — never the work's folder —, run no git command other than `git worktree prune` in the repo for a worktree record, and write no history line; an unknown id answers «Ese trabajo ya no existe».
+  Proof: src/main/workspaces.test.ts forgetting a broken work runs no git
+- **W134** When the window asks to open Terminal for a repo id or a workspace id, main shall look the folder up in its own records and open Terminal there running `git status`, with the folder single-quoted (a `'` inside becomes `'\''`), so a path with `'`, `"` or `\` reaches `cd` whole; an id it does not know answers an error and opens nothing.
+  Proof: src/main/workspaces.test.ts terminal opens only a known folder, quoted
+- **W135** When a close is refused, the workspace row shall show it as a problem whose title is main's sentence, with «{branch} sigue en la lista.» under it, the button «Abrir en Terminal» or «Quitar de la lista igualmente» by its `fix`, the detail folded, and a «Cerrar aviso» button that hides it.
+  Proof: src/renderer/closework.test.ts a refused close shows its fix and can be dismissed
+- **W136** While a workspace's session is alive (its `alive` field from the workspace list), «Quitar» shall first ask in its row «¿Cerrar {branch}? Su agente se para y el trabajo pasa a Terminados.» with «Cerrar» and «Cancelar», and close only on «Cerrar»; a stopped workspace closes on the first click.
+  Proof: src/renderer/closework.test.ts closing a live agent asks first

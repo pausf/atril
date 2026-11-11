@@ -272,3 +272,9 @@ Nada contra el contrato. Duda del revisor: un `$SHELL` fish, ¿une `"$PATH"` con
 
 ## 2026-11-11 · dirty-copy · 6→7
 El reintento con texto vacío (Claude a secas en un worktree) no tenía test: un criterio que dice «el mismo texto y modo» cubre dos ramas del código, y el test solo probaba una. Añadido «a blank dirty retry opens plain claude in a worktree».
+
+## 2026-11-11 · ws-errors · 6→7
+«Olvidar» nunca borra la carpeta, pero su test borra la carpeta antes de olvidar: no podría ver un borrado. Una cláusula «nunca X» necesita un caso donde X sería visible.
+
+## 2026-11-11 · ws-errors · 6→7
+`atril:ws:forget` acepta cualquier id, también uno vivo con su carpeta; solo la ventana lo limita al caso roto. Aceptado: no toca la carpeta y el registro se puede volver a crear abriendo la rama.
