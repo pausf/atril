@@ -326,6 +326,10 @@ textos, en «Pasos» abajo. Los que tienen elemento en pantalla lo iluminan; los
 
 - En Terminados ves cuánto tardó cada trabajo en cada tramo y en cuál se te va el tiempo normalmente.
 
+### QA en la MR (qa-to-mr, 11 nov 2026)
+
+- Quien revisa la MR ve qué criterios se probaron en vivo y con qué resultado, sin salir de GitHub o GitLab.
+
 ## Scope boundaries
 
 **In:** the three columns and footer of `bocetos/fase1-nucleo.html` (boceto 8), the
@@ -657,6 +661,10 @@ Nunca fuera: validar `.atril/qa.json` (lo escribe el repo, no Atril); la ventana
 
 **In:** `src/main/history.ts` (`historyEntry` gana `steps`), una función pura que los calcula, la pantalla de Terminados, i18n. **Out:** tiempos de trabajos abiertos; tiempos de la MR en la forja; gráficas.
 
+### QA en la MR (qa-to-mr, 11 nov 2026)
+
+**In:** `atril:qa:mrFor(id)` y una función en main que arma el texto y lo publica por la API de la forja que ya usa Atril (`src/main/forge/threads.ts` o la que publique comentarios generales), IPC `atril:qa:publish(id)`, el botón en `src/renderer/qa/QaScreen.tsx`, i18n. **Out:** subir capturas; editar un comentario anterior; publicar sin pulsar.
+
 ## Constraints
 
 - Electron (current stable) + TypeScript in strict mode, pnpm, Node 24 (installed:
@@ -851,6 +859,12 @@ Textos por `t()`.
 
 - Se calcula una sola vez, al cerrar; ningún coste mientras el trabajo está abierto.
 - Un trabajo sin cambio de Libretto no tiene tramos: su fila no cambia.
+
+### QA en la MR (qa-to-mr, 11 nov 2026)
+
+- El token no sale de main; la ventana manda solo el id del trabajo.
+- Textos del comentario por `t()` en el idioma de la app.
+- Los errores siguen W150 (frase por causa, botón, detalle plegado).
 
 ## Prior decisions
 
@@ -2191,6 +2205,27 @@ Textos por `t()`.
 - Q: (al construir) ¿Cómo se redondea {d}? → A: hacia abajo, en una sola unidad (105 min → «1 h»); «Cierre» en inglés es «Wrap-up» (assumed).
 - Q: ¿Dónde se ve? → A: en Terminados: los tramos de cada trabajo en su fila y, arriba, el tramo con la mediana más alta de los últimos 20 (assumed).
 
+### QA en la MR (qa-to-mr, 11 nov 2026)
+
+- La QA llega a la MR como un comentario que la persona publica; nunca sola.
+
+#### Alternatives that lost
+
+| Considered | Why it lost |
+|---|---|
+| Ponerlo en la descripción de la MR | la escribe el agente al crearla; reescribirla pisa lo suyo |
+| Subir capturas | GitHub no tiene API para imágenes en comentarios; GitLab sí: queda para después |
+
+#### Decision log, answers as given (2026-11-11)
+- Q: (revisión en frío) ¿Qué MR, exactamente? → A: una de «Mías» (la persona es la autora, así se puede comentar) cuya rama es la del trabajo y cuyo proyecto resuelve al repo del trabajo con la misma búsqueda que `openmr`; con varias, la actualizada más tarde; sin ninguna, no hay botón (assumed).
+- Q: (revisión en frío) ¿Y si nunca se abrió la pantalla MR? → A: main pide la lista de MRs él mismo, reutilizando la última si tiene menos de 60 s (assumed).
+- Q: (revisión en frío) ¿Idioma y criterios sin pasos? → A: el comentario va en el idioma de la app; un criterio que falla lleva su nota, o si no su último paso, como cita (`> `); sin objetivo, la primera línea no lo nombra (assumed).
+- Q: (construcción) ¿Cómo lleva el fallo del comentario W150 completo? → A: `threads.reply` devuelve también `detail` y `fix` cuando la forja falla (`MrReply` los admite); `threads.test.ts` exige ahora los tres; y `openmr.ts` exporta `remoteNaming` para que la QA resuelva el repo igual que «Seguir en Atril» (assumed).
+- Q: (construcción) ¿Formato del comentario? → A: cada línea es su propio párrafo (líneas separadas por una en blanco) para que la cita `> ` no se trague la siguiente; el texto del criterio sin su id; el objetivo como su pestaña («Chrome», «Android · app») (assumed).
+- Q: ¿Cuándo llega a la MR? → A: solo cuando la persona pulsa «Publicar en la MR» en la pantalla QA; Atril no crea la MR (la abre el agente) ni publica solo (assumed).
+- Q: ¿Qué se publica? → A: un comentario general con el objetivo probado y una línea por criterio — Pasa, Falla o Sin probar — y, en los que fallan, su último paso; las capturas no (GitHub no tiene API para subir imágenes a un comentario): el comentario dice que están en Atril (assumed).
+- Q: ¿Cómo sabe Atril cuál es la MR? → A: la MR abierta de la lista de MRs cuya rama y repo coinciden con los del trabajo (assumed).
+
 ## Task breakdown
 
 - App shell: Electron main, preload bridge, renderer with sidebar / centre / right panel /
@@ -3049,3 +3084,12 @@ Textos por `t()`.
   Proof: src/main/history.test.ts missing marks leave their steps out
 - **W173** Terminados shall show, under each entry with steps, its steps in order as «Spec {d} · Plan {d} · Construir {d} · Cierre {d}» (only those it has), with {d} as «<1 min», «{n} min», «{n} h» or «{n} d»; and at the top of the unfolded list, when at least three of the 20 newest entries have steps, «Donde más tiempo se va: {step} (mediana {d})» for the step with the highest median over the entries that have it (an even count takes the mean of the two middle values; a tie goes to the earlier step).
   Proof: src/renderer/history.test.ts each finished work shows its steps and the slowest one leads
+
+### QA en la MR (qa-to-mr, 11 nov 2026)
+
+- **W170** When «Publicar en la MR» is pressed for a workspace that has its MR (Decision log), main shall post one general comment on that MR: «Pruebas en vivo con Atril · {target}» (or without « · {target}» when there is none), one line per criterion «{Pasa|Falla|Sin probar} · {criterion text}», each failing one followed by a quoted line (`> `) with its note or else its last step, and «Las capturas están en Atril.» — all in the app's language; the screen then shows «Publicado en la MR» with a link to the MR and the button becomes «Publicar de nuevo».
+  Proof: src/main/qa-publish.test.ts the qa summary reaches the mr as one comment
+- **W174** The QA screen shall ask main (`atril:qa:mrFor(id)`) which MR the workspace has, by the Decision log's rule, listing MRs itself when its last list is older than 60 s.
+  Proof: src/main/qa-publish.test.ts the work's own mr is found by repo and branch
+- **W171** While the workspace has no MR, the QA screen shall show «Abre la MR para poder publicar aquí la QA.» instead of the button; while a post runs the button is disabled, so a second press sends nothing; if posting fails, it shall show the W150 problem with its button and post nothing more.
+  Proof: src/renderer/qa-publish.test.ts without an mr the button is not offered and a failure says why

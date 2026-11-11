@@ -62,6 +62,10 @@ the projects you follow. Phase 2 of Atril; scores, threads and notifications bui
 
 - Con la forja caída o el token rechazado, la lista de MRs dice la causa con su botón y no enseña «Ninguna MR.».
 
+### QA en la MR (qa-to-mr, 11 nov 2026)
+
+- Un fallo al publicar en una MR trae, además de su frase, el código plegado y su arreglo (W150), también desde la QA.
+
 ## Scope boundaries
 
 ### MR lists (add-mr-lists, 9 nov 2026)
@@ -131,6 +135,10 @@ en rama existente, «Ir al trabajo», los errores en la vista.
 
 **In:** `src/main/forge/mrs.ts`, `src/renderer/mr/MrScreen.tsx`. **Out:** hilos, puntuaciones, lentes y comentarios en línea (solo toman la frase nueva).
 
+### QA en la MR (qa-to-mr, 11 nov 2026)
+
+**In:** `src/main/forge/threads.ts` (`reply`), `src/main/forge/openmr.ts` (`remoteNaming` exportado). **Out:** el resto de la pantalla MR.
+
 ## Constraints
 
 ### MR lists (add-mr-lists, 9 nov 2026)
@@ -157,6 +165,10 @@ en rama existente, «Ir al trabajo», los errores en la vista.
 ### Jira, GitHub y GitLab (net-errors, 11 nov 2026)
 
 - Ningún número de estado ni nombre de excepción en la frase.
+
+### QA en la MR (qa-to-mr, 11 nov 2026)
+
+- El token no sale de main.
 
 ## Prior decisions
 
@@ -484,12 +496,7 @@ en rama existente, «Ir al trabajo», los errores en la vista.
   Proof: src/main/forge/threads.test.ts your turn is the last word of someone else
 - **M24** The MR view's header shall show how many threads are marked «Te toca responder».
   Proof: src/renderer/mr/threads.test.ts a row opens the mr view with its threads
-- **M21** When the person writes a reply and clicks Enviar, Atril shall post it once — GitHub `POST
-  /repos/{o}/{r}/pulls/{n}/comments/{root}/replies` for a review thread and `POST
-  /repos/{o}/{r}/issues/{n}/comments` for «General»; GitLab `POST
-  /projects/:id/merge_requests/:iid/discussions/:id/notes` for a discussion and `POST
-  /projects/:id/merge_requests/:iid/notes` for «General» — then show it in the thread; an empty reply
-  shall not be sent, and a failure shall keep the text in the box with M6's message.
+- **M21** When the person writes a reply and clicks Enviar, Atril shall post it once — GitHub `POST /repos/{o}/{r}/pulls/{n}/comments/{root}/replies` for a review thread and `POST /repos/{o}/{r}/issues/{n}/comments` for «General»; GitLab `POST /projects/:id/merge_requests/:iid/discussions/:id/notes` for a discussion and `POST /projects/:id/merge_requests/:iid/notes` for «General» — then show it in the thread; an empty reply shall not be sent, and a failure shall keep the text in the box with M6's message, answering also W150's `detail` and `fix` when the forge answered.
   Proof: src/main/forge/threads.test.ts a reply is posted once to the right place
   Proof: src/renderer/mr/threads.test.ts a reply is sent with one click and kept on failure
 - **M22** If the MR is not in main's latest listing, then reading or posting its threads shall be
