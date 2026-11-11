@@ -34,7 +34,7 @@ Hallazgo 14 de `bocetos/hallazgos.md`: el diff de una casilla enseña la cabecer
 
 ## Verification criteria
 
-- **F45** The diff shown for a box's file, small or large, shall leave out git's header lines — `diff --git`, `index`, `new file mode`, `deleted file mode`, `similarity`, `rename from`/`rename to`, `---` and `+++` before the first `@@` — and keep every `@@`, added, removed and context line in order.
+- **F45** The diff shown for a box's file, small or large, shall leave out git's header lines — `diff --git`, `index`, `new file mode`, `deleted file mode`, `similarity`, `rename from`/`rename to`, `---` and `+++` before the first `@@` — and keep every `@@`, added, removed and context line in order, coloured as added or removed even when it starts with `---` or `+++`; a diff with no hunk (a pure rename, a mode change, a binary file) keeps its informative lines.
   Proof: src/renderer/flow/difftext.test.ts a box diff starts at its first hunk
 
 ## Approach

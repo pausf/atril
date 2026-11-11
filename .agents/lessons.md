@@ -323,3 +323,6 @@ En el Mac de Pau cada proceso cuesta ~125 ms en reposo y 300–800 ms con carga 
 
 ## 2026-11-11 · grafito-you · 6→7
 Cambié `--run` a gris para la etiqueta «trabajando» sin buscar quién más lo usaba: el punto de aviso sin leer, la selección del buscador, el paso actual y «conectado» perdían el acento. Antes de cambiar un token, `rg "var(--token)"`; si el cambio es para un solo sitio, token nuevo.
+
+## 2026-11-11 · diff-header · 6→7
+Quitar la cabecera dejó a la vista que `diffLine` coloreaba como cabecera cualquier `--- x`, también una línea borrada; y un renombrado sin cambios quedaba en blanco. Un test de texto no ve clases: si el cambio es de cómo se ve, el test mira el marcado.

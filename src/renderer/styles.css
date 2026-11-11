@@ -2579,9 +2579,6 @@ kbd {
 .hl .dhunk {
   color: var(--ed-14);
 }
-.hl .dmeta {
-  color: var(--ed-5);
-}
 
 /* F25: a branch past the hook's threshold. */
 .fbig {

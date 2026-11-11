@@ -1,9 +1,7 @@
 import type { ReactNode } from 'react'
 
 function diffLine(l: string, i: number): ReactNode {
-  const cls = /^(diff --git|index |new file|deleted file|--- |\+\+\+ )/.test(l)
-    ? 'dmeta'
-    : l.startsWith('@@')
+  const cls = l.startsWith('@@')
       ? 'dhunk'
       : l.startsWith('+')
         ? 'dadd'
@@ -18,13 +16,12 @@ function diffLine(l: string, i: number): ReactNode {
   )
 }
 
-const HEADER = /^(diff --git|index |new file mode|deleted file mode|similarity |rename (from|to) |--- |\+\+\+ )/
-
 /** A unified diff as text: lines are React text nodes, never markup. F45: git's header is left out (the file is named above);
  * only before the first hunk, since `--- x` after it is a removed line. */
 export function diffLines(diff: string): ReactNode[] {
   const lines = diff.replace(/\n$/, '').split('\n')
   const first = lines.findIndex((l) => l.startsWith('@@'))
-  const body = first === -1 ? lines.filter((l) => !HEADER.test(l)) : lines.slice(first)
+  // With no hunk (a pure rename, a mode change, a binary file) the rename, mode or «Binary files» lines are all there is to show.
+  const body = first === -1 ? lines.filter((l) => !/^(diff --git|index |--- |\+\+\+ )/.test(l)) : lines.slice(first)
   return body.map(diffLine)
 }
