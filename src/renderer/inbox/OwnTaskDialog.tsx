@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import type { Model, RepoView, WorkspaceView } from '../../preload/api'
 import { modelOptions } from '../components/models'
+import { Problem } from '../components/Problem'
 import { useT } from '../ui'
 import { slugBranch } from './branch'
 import { ModePicker } from './ModePicker'
@@ -25,6 +26,8 @@ export function OwnTaskDialog({ textOptional = false, onClose, onOpenSettings, o
   const [model, setModel] = useState<Model>('default')
   const [auto, setAuto] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // W130: a refusal main can get past with a worktree this once.
+  const [problem, setProblem] = useState<{ error: string; detail?: string } | null>(null)
   const [busy, setBusy] = useState(false)
   const branch = edited ?? slugBranch(text)
 
@@ -42,15 +45,20 @@ export function OwnTaskDialog({ textOptional = false, onClose, onOpenSettings, o
   const title = textOptional ? t('Nuevo trabajo') : t('Nueva tarea')
   const ready = (textOptional || !blank) && repoId !== '' && branch.trim() !== '' && !busy
 
-  const submit = async (): Promise<void> => {
+  const submit = async (worktree = false): Promise<void> => {
     if (!ready) return
     setBusy(true)
     setError(null)
+    setProblem(null)
     try {
-      const r = await (blank
-        ? window.atril.workspaces.open(repoId, branch.trim(), 'claude', model)
-        : auto ? window.atril.workspaces.open(repoId, branch.trim(), 'claude', model, text, true) : window.atril.workspaces.open(repoId, branch.trim(), 'claude', model, text))
-      if ('error' in r) return setError(r.error)
+      const r = await (worktree
+        ? window.atril.workspaces.open(repoId, branch.trim(), 'claude', model, blank ? undefined : text, !blank && auto, true)
+        : blank
+          ? window.atril.workspaces.open(repoId, branch.trim(), 'claude', model)
+          : auto
+            ? window.atril.workspaces.open(repoId, branch.trim(), 'claude', model, text, true)
+            : window.atril.workspaces.open(repoId, branch.trim(), 'claude', model, text))
+      if ('error' in r) return r.fix === 'worktree' ? setProblem(r) : setError(r.error)
       await onStarted(r.workspace)
     } catch (e) {
       setError(String(e))
@@ -136,6 +144,16 @@ export function OwnTaskDialog({ textOptional = false, onClose, onOpenSettings, o
           <code aria-label={t('Comando que se ejecutará')}>{blank && textOptional ? 'claude' : auto ? t('/libretto:libretto-attacca «tu texto»') : t('/libretto:libretto-flow «tu texto»')}</code>
         </div>
 
+        {problem && (
+          <Problem
+            what={problem.error}
+            cant={t('No he creado el trabajo.')}
+            fix={t('Usar un worktree esta vez')}
+            busy={busy}
+            onFix={() => void submit(true)}
+            detail={problem.detail ?? ''}
+          />
+        )}
         {error && (
           <div className="bad" role="alert">
             {error}

@@ -61,13 +61,14 @@ export interface WorkspaceView extends WorkspaceRecord {
   alive: boolean
 }
 
-export type WorkspaceResult = { workspace: WorkspaceView } | { error: string }
+/** W7/W8: `fix: 'worktree'` means opening again with `worktree: true` gets past it. */
+export type WorkspaceResult = { workspace: WorkspaceView } | { error: string; detail?: string; fix?: 'worktree' }
 export type RemoveResult = { ok: true } | { error: string }
 
 export interface WorkspacesApi {
   list(): Promise<WorkspaceView[]>
   /** `task`: an own task's text; main turns it into the Libretto flow's request (W40). */
-  open(repoId: string, branch: string, agent: Agent, model?: Model, task?: string, auto?: boolean): Promise<WorkspaceResult>
+  open(repoId: string, branch: string, agent: Agent, model?: Model, task?: string, auto?: boolean, worktree?: boolean): Promise<WorkspaceResult>
   remove(id: string): Promise<RemoveResult>
 }
 

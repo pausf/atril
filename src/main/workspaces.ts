@@ -28,6 +28,8 @@ export interface OpenInput {
   remote?: string
   /** W90: a review session in the repo's own folder; Atril runs no git that changes anything. */
   review?: boolean
+  /** W129: a worktree this once, even for an in-place repo; the repo keeps its mode. */
+  worktree?: boolean
   /** Tests swap the agent for a harmless long-running command; the prompt is still appended. */
   argv?: string[]
 }
@@ -105,7 +107,7 @@ export async function openWorktree(
 
   const review = input.review === true
   const detected = review ? null : repo.override ? { mode: repo.override, reason: '' } : await detectMode(repo.path, run)
-  const inPlace = detected !== null && effectiveMode(repo, detected).mode === 'in-place'
+  const inPlace = detected !== null && input.worktree !== true && effectiveMode(repo, detected).mode === 'in-place'
   if (inPlace && input.existing === true) return { error: t('Este repo trabaja en tu copia: cambia de rama a mano') }
 
   let path: string
@@ -115,13 +117,21 @@ export async function openWorktree(
   if (review) {
     path = repo.path
   } else if (inPlace) {
-    if ((await readRecords()).some((r) => r.repoId === repoId && r.mode === 'in-place')) {
-      return { error: t('Este repo trabaja in-place y ya tiene un trabajo abierto: ciérralo antes') }
-    }
+    const open = (await readRecords()).find((r) => r.repoId === repoId && r.mode === 'in-place')
+    // W7: a worktree this once is the way out that leaves the open work alone.
+    if (open) return { error: t('{repo} trabaja en tu copia y ya tiene un trabajo abierto ({branch}).', { repo: repoId, branch: open.branch }), fix: 'worktree' }
     const status = await run('git', ['-C', repo.path, 'status', '--porcelain'])
     if (status.code !== 0) return { error: status.stderr.trim() || t('git status falló') }
-    if (status.stdout.trim() !== '') {
-      return { error: t('La copia principal tiene cambios sin commitear: haz commit o descártalos antes') }
+    const dirty = status.stdout.split('\n').filter((l) => l.trim() !== '')
+    if (dirty.length > 0) {
+      // W8: what is dirty and why the repo works in place go folded; the fix never touches those changes.
+      const current = (await run('git', ['-C', repo.path, 'branch', '--show-current'])).stdout.trim() || t('HEAD suelto')
+      const changes = dirty.length === 1 ? t('1 cambio') : t('{n} cambios', { n: dirty.length })
+      return {
+        error: t('Tu copia de {repo} tiene {changes} sin commitear en {branch}: no puedo pasarla a {new} sin mezclarlos.', { repo: repoId, changes, branch: current, new: branch }),
+        detail: `${dirty.slice(0, 20).join('\n')}\n\n${t('Trabaja en tu copia: {reason}', { reason: effectiveMode(repo, detected!).reason })}`,
+        fix: 'worktree'
+      }
     }
     const current = (await run('git', ['-C', repo.path, 'branch', '--show-current'])).stdout.trim()
     // Detached HEAD has no branch name: the sha is what close switches back to.

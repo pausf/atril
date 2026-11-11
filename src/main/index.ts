@@ -521,9 +521,17 @@ app.whenReady().then(async () => {
     qaBug(String(id), req, { run, creds: await savedJira(), board: (await secretStore.hasSecret('jira')).board ?? null })
   )
   ipcMain.handle('atril:ws:list', () => listWorkspaces(run))
-  ipcMain.handle('atril:ws:open', (_e, repoId: string, branch: string, agent: Agent, model?: Model, task?: unknown, auto?: unknown) =>
+  ipcMain.handle('atril:ws:open', (_e, repoId: string, branch: string, agent: Agent, model?: Model, task?: unknown, auto?: unknown, worktree?: unknown) =>
     openWorktree(
-      { repoId, branch, agent, ...(model && MODELS.includes(model) && { model }), ...(task !== undefined && { task: task as string }), ...(auto === true && { auto: true }) },
+      {
+        repoId,
+        branch,
+        agent,
+        ...(model && MODELS.includes(model) && { model }),
+        ...(task !== undefined && { task: task as string }),
+        ...(auto === true && { auto: true }),
+        ...(worktree === true && { worktree: true })
+      },
       run
     ).finally(() => void pushNext())
   )

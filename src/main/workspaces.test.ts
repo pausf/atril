@@ -113,7 +113,7 @@ describe('workspaces', () => {
 
       const second = await openWorktree({ repoId: 'demo', branch: 'feat/two', agent: 'claude', argv: SLEEP })
 
-      expect(second).toEqual({ error: 'Este repo trabaja in-place y ya tiene un trabajo abierto: ciérralo antes' })
+      expect(second).toEqual({ error: 'demo trabaja en tu copia y ya tiene un trabajo abierto (feat/one).', fix: 'worktree' })
       expect(git(repo, 'branch', '--show-current').trim()).toBe('feat/one')
       expect(git(repo, 'branch', '--list', 'feat/two').trim()).toBe('')
     })
@@ -124,11 +124,29 @@ describe('workspaces', () => {
 
       const r = await openWorktree({ repoId: 'demo', branch: 'feat/dirty', agent: 'claude', argv: SLEEP })
 
-      expect(r).toEqual({ error: 'La copia principal tiene cambios sin commitear: haz commit o descártalos antes' })
+      expect(r).toEqual({
+        error: `Tu copia de demo tiene 1 cambio sin commitear en ${before}: no puedo pasarla a feat/dirty sin mezclarlos.`,
+        detail: '?? wip.txt\n\nTrabaja en tu copia: elegido por ti',
+        fix: 'worktree'
+      })
       expect(git(repo, 'branch', '--show-current').trim()).toBe(before)
       expect(git(repo, 'branch', '--list', 'feat/dirty').trim()).toBe('')
       expect(existsSync(join(repo, 'wip.txt'))).toBe(true)
       expect(existsSync(join(home, 'workspaces.json'))).toBe(false)
+    })
+
+    it('worktree this time leaves the dirty copy alone', async () => {
+      const before = git(repo, 'branch', '--show-current').trim()
+      writeFileSync(join(repo, 'wip.txt'), 'uncommitted')
+
+      const r = await openWorktree({ repoId: 'demo', branch: 'feat/apart', agent: 'claude', argv: SLEEP, worktree: true })
+
+      if (!('workspace' in r)) throw new Error(r.error)
+      expect(r.workspace.mode).toBe('worktree')
+      expect(r.workspace.path).toBe(join(home, 'wt', 'demo', 'feat/apart'))
+      expect(git(repo, 'branch', '--show-current').trim()).toBe(before)
+      expect(readFileSync(join(repo, 'wip.txt'), 'utf8')).toBe('uncommitted')
+      expect(JSON.parse(readFileSync(join(home, 'repos.json'), 'utf8')).repos[0].override).toBe('in-place')
     })
 
     it('in-place close refuses when the branch was changed by hand', async () => {
