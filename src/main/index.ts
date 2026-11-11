@@ -21,7 +21,7 @@ import { createLenses } from './forge/lenses'
 import { createOpenMr, type MrEntry } from './forge/openmr'
 import { createQueue, createScorer } from './forge/scores'
 import { createThreads } from './forge/threads'
-import { boxDiff, boxRanges } from './flow/boxes'
+import { boxDiff, boxRanges, forgetPlans } from './flow/boxes'
 import { changeFolders } from './flow/stage'
 import { nextUp } from './nextup'
 import { writeFile } from 'node:fs/promises'
@@ -556,9 +556,15 @@ app.whenReady().then(async () => {
       run
     ).finally(() => void pushNext())
   })
+  // F44: a closed or forgotten work keeps no cached box plans.
+  const dropPlans = async (id: string): Promise<void> => {
+    const ws = (await listWorkspacesOrNone(run)).find((w) => w.id === id)
+    if (ws) forgetPlans(ws.path)
+  }
   ipcMain.handle('atril:ws:remove', async (e, id: string) => {
     pty.detach(id)
     flow.forget(id)
+    await dropPlans(id)
     const r = await removeWorkspace(id, run).finally(() => void pushNext())
     // W96: a removal that got through has appended its line.
     if ('ok' in r) void readHistory().then((h) => BrowserWindow.getAllWindows().forEach((w) => w.webContents.send('atril:history:changed', h)))
@@ -567,6 +573,7 @@ app.whenReady().then(async () => {
   ipcMain.handle('atril:ws:forget', async (_e, id: unknown) => {
     pty.detach(String(id))
     flow.forget(String(id))
+    await dropPlans(String(id))
     return forgetWorkspace(String(id), run).finally(() => void pushNext())
   })
   // The window sends the id and whether to go one effort up; main builds the command (W141).

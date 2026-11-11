@@ -57,9 +57,10 @@ export async function listChanges(path: string, base: string, run: Runner, to?: 
   return (await entries(path, base, run, to)).map((e) => ({ path: e.path, status: e.status, added: e.added, removed: e.removed }))
 }
 
-/** F19, F23: the diff of one listed file only, cut at 1 MB. */
-export async function fileDiff(path: string, base: string, file: string, run: Runner, to?: string): Promise<string> {
-  const entry = (await entries(path, base, run, to)).find((e) => e.path === file)
+/** F19, F23: the diff of one listed file only, cut at 1 MB. `known`: a committed range's list already read (F42). */
+export async function fileDiff(path: string, base: string, file: string, run: Runner, to?: string, known?: FileChange[]): Promise<string> {
+  const list: Entry[] | undefined = to && known ? known.map((f) => ({ ...f, untracked: false })) : undefined
+  const entry = (list ?? (await entries(path, base, run, to))).find((e) => e.path === file)
   if (!entry) return ''
   const r = entry.untracked
     ? await run('git', ['--literal-pathspecs', '-C', path, 'diff', '--no-index', '--', '/dev/null', file])

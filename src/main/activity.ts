@@ -5,6 +5,7 @@ import type { ActivityLine } from '../preload/api'
 import { atrilHome } from './paths'
 import { run as defaultRun, type Runner } from './run'
 import { listWorkspacesOrNone } from './workspaces'
+import { burst } from './burst'
 
 export const activityDir = (): string => join(atrilHome(), 'activity')
 
@@ -49,7 +50,7 @@ export function createActivity({ run = defaultRun, emit }: ActivityOptions) {
     }
   }
 
-  return {
+  const api = {
     refresh,
     get: async (id: string): Promise<ActivityLine[]> => {
       const ws = (await listWorkspacesOrNone(run)).find((w) => w.id === id)
@@ -67,10 +68,14 @@ export function createActivity({ run = defaultRun, emit }: ActivityOptions) {
       await mkdir(activityDir(), { recursive: true })
       // Like the watcher's: a damaged workspaces.json (W145) must not reject the app's start.
       await refresh().catch(() => undefined)
-      watcher = watch(activityDir(), () => void refresh().catch(() => undefined))
+      watcher = watch(activityDir(), poke)
     },
     stop(): void {
       watcher?.close()
+      poke.cancel()
     }
   }
+  // Through `api` so a test can count what a burst of activity writes costs.
+  const poke = burst(() => void api.refresh().catch(() => undefined))
+  return api
 }

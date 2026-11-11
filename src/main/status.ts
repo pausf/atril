@@ -4,12 +4,13 @@ import { join } from 'node:path'
 import type { AgentState, QuickAnswer, QuickChoice, QuickReplies, WorkspaceView } from '../preload/api'
 import { atrilHome } from './paths'
 import { run as defaultRun, type Runner } from './run'
-import { paneDead, pressKey, sendKey, sendText } from './tmux'
+import { paneDead, paneListedDead, pressKey, sendKey, sendText } from './tmux'
 import type { AgentSnapshot } from './nextup'
 import { listWorkspaces } from './workspaces'
 import { orProblem, readState, StateError } from './state'
 import { t } from './lang'
 import { localiseActivity } from '../preload/activity-i18n'
+import { burst } from './burst'
 
 export const stateDir = (): string => join(atrilHome(), 'state')
 /** W86: one file per paused session, written by main; main (Reanudar) or the hook (W87) removes it. */
@@ -42,7 +43,7 @@ export async function notificationBody(ws: WorkspaceView): Promise<string> {
 }
 
 export async function agentState(ws: WorkspaceView, run: Runner = defaultRun): Promise<AgentState> {
-  if (!ws.alive || (await paneDead(ws.paneId, run))) return 'stopped'
+  if (!ws.alive || (await paneListedDead(ws.paneId, run))) return 'stopped'
   return hookState(ws.session)
 }
 
@@ -178,19 +179,23 @@ export function createStatus({ run = defaultRun, onChange, notify }: StatusOptio
     }
   }
 
-  return {
+  const api = {
     refresh,
     states: (): Record<string, AgentState> => Object.fromEntries(known),
     snapshot: (): AgentSnapshot[] => [...known].map(([id, state]) => ({ id, state, at: since.get(id) ?? 0 })),
     async start(): Promise<void> {
       await mkdir(stateDir(), { recursive: true })
-      watcher = watch(stateDir(), () => void refresh())
+      watcher = watch(stateDir(), poke)
       timer = setInterval(() => void refresh(), 2000)
       await refresh()
     },
     stop(): void {
       watcher?.close()
+      poke.cancel()
       clearInterval(timer)
     }
   }
+  // Through `api` so a test can count what a burst of hook writes costs.
+  const poke = burst(() => void api.refresh())
+  return api
 }

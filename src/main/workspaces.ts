@@ -8,7 +8,7 @@ import { detectMode, effectiveMode, gitBroken, readRepos, repoHealth } from './r
 import { readState, StateError, stateBlock, stateProblem, statePath } from './state'
 import { run as defaultRun, type Runner, type RunResult } from './run'
 import { trustFolder } from './trust'
-import { hasPane, hasSession, killSession, newSession, paneDead, sessionName } from './tmux'
+import { hasPane, hasSession, killSession, newSession, paneDead, sessionListed, sessionName } from './tmux'
 import { atrilHome } from './paths'
 import { appendHistory, historyEntry } from './history'
 import { t } from './lang'
@@ -270,7 +270,7 @@ export async function openWorktree(
 export const listWorkspacesOrNone = (run: Runner = defaultRun): Promise<WorkspaceView[]> => listWorkspaces(run).catch(noneIfDamaged<WorkspaceView>)
 
 export async function listWorkspaces(run: Runner = defaultRun): Promise<WorkspaceView[]> {
-  return Promise.all((await readRecords()).map(async (r) => ({ ...r, alive: await hasSession(r.id, run) })))
+  return Promise.all((await readRecords()).map(async (r) => ({ ...r, alive: await sessionListed(r.id, run) })))
 }
 
 export async function removeWorkspace(id: string, run: Runner = defaultRun): Promise<RemoveResult> {

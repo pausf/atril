@@ -1,6 +1,7 @@
 import { existsSync, readFileSync, realpathSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { Runner } from './run'
 import { cleanTmp, killTmux, makeRegisteredRepo, tmp, tmuxOut, tmuxSock } from './test-helpers'
 
 const SLEEP = ['sh', '-c', 'sleep 300']
@@ -112,5 +113,62 @@ describe('tmux', () => {
     expect(decoyPanes()).toBe(1)
     expect(panes().map((p) => realpathSync(p))).toEqual([realpathSync(ws.path), realpathSync(ws.path)])
     expect(tmuxOut(sock, 'list-panes', '-t', ws.session, '-F', '#{pane_id}').split('\n')).toContain(ws.paneId)
+  })
+
+  it('the snapshot is shared for a second and dropped by any session change', async () => {
+    const { run } = await import('./run')
+    const tmux = await import('./tmux')
+    const cwd = tmp()
+    let lists = 0
+    const spy: Runner = (cmd, args, opts) => {
+      if (cmd === 'tmux' && args.includes('list-panes')) lists++
+      return run(cmd, args, opts)
+    }
+    const a = await tmux.newSession('aaaa', cwd, SLEEP)
+    vi.useFakeTimers({ toFake: ['Date'] })
+    try {
+      // Many readers within a second: one tmux command.
+      expect(await tmux.sessionListed('aaaa', spy)).toBe(true)
+      expect(await tmux.paneListedDead(a, spy)).toBe(false)
+      expect(await tmux.sessionListed('bbbb', spy)).toBe(false)
+      expect(lists).toBe(1)
+      vi.setSystemTime(Date.now() + 999)
+      await tmux.sessionListed('aaaa', spy)
+      expect(lists).toBe(1)
+      vi.setSystemTime(Date.now() + 2)
+      await tmux.sessionListed('aaaa', spy)
+      expect(lists).toBe(2)
+
+      // Creating, splitting, killing: each is seen at once.
+      const b = await tmux.newSession('bbbb', cwd, SLEEP)
+      expect(await tmux.sessionListed('bbbb', spy)).toBe(true)
+      expect(lists).toBe(3)
+      await tmux.splitPane('bbbb', 'h', cwd)
+      expect((await tmux.panes(spy)).filter((p) => p.session === 'atril-bbbb')).toHaveLength(2)
+      expect(lists).toBe(4)
+      await tmux.killPane(b)
+      expect(await tmux.paneListedDead(b, spy)).toBe(true)
+      expect(lists).toBe(5)
+      await tmux.killSession('aaaa')
+      expect(await tmux.sessionListed('aaaa', spy)).toBe(false)
+      expect(await tmux.paneListedDead(a, spy)).toBe(true)
+      expect(lists).toBe(6)
+      // An agent that exits keeps its session, with its pane marked dead (remain-on-exit).
+      const c = await tmux.newSession('cccc', cwd, ['true'])
+      const end = Date.now() + 5000
+      vi.useRealTimers()
+      while (!(await tmux.paneListedDead(c, spy)) && Date.now() < end) {
+        tmux.dropPanes()
+        await new Promise((ok) => setTimeout(ok, 50))
+      }
+      expect(await tmux.paneListedDead(c, spy)).toBe(true)
+      expect(await tmux.sessionListed('cccc', spy)).toBe(true)
+      // No server at all: nothing is listed, nothing throws.
+      killTmux(sock)
+      tmux.dropPanes()
+      expect(await tmux.panes(spy)).toEqual([])
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })

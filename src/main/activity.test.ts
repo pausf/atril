@@ -283,4 +283,27 @@ describe('activity', () => {
     expect(branchSize(repo, base)).toBe(listed)
     expect(THRESHOLD).toBe(WARN_AT)
   })
+
+  it('a burst of activity writes refreshes once', async () => {
+    const { createActivity, activityDir } = await import('./activity')
+    const activity = createActivity({ emit: () => {} })
+    await activity.start()
+    try {
+      const refresh = vi.spyOn(activity, 'refresh')
+      const pause = (ms: number) => new Promise((ok) => setTimeout(ok, ms))
+      const write = (i: number): void => writeFileSync(join(activityDir(), 'atril-burst.jsonl'), `${JSON.stringify({ at: i, kind: 'tool', text: `paso ${i}` })}\n`, { flag: 'a' })
+      for (let i = 0; i < 10; i++) write(i)
+      await pause(900)
+      expect(refresh).toHaveBeenCalledTimes(1)
+      // Events that never stop still refresh at least once a second.
+      refresh.mockClear()
+      for (let i = 0; i < 14; i++) {
+        write(100 + i)
+        await pause(100)
+      }
+      expect(refresh.mock.calls.length).toBeGreaterThanOrEqual(1)
+    } finally {
+      activity.stop()
+    }
+  }, 30_000)
 })

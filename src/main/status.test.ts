@@ -4,6 +4,7 @@ import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { WorkspaceView } from '../preload/api'
 import { hooksSettings } from './agent'
+import type { Runner } from './run'
 import { cleanTmp, killTmux, makeRegisteredRepo, tmp, tmuxOut, tmuxSock } from './test-helpers'
 
 const SLEEP = ['sh', '-c', 'sleep 300']
@@ -165,4 +166,40 @@ describe('status', () => {
     expect(onChange).toHaveBeenCalledTimes(1)
     expect(notify).not.toHaveBeenCalled()
   })
+
+  it('one tmux call per tick whatever the number of works', async () => {
+    const { run } = await import('./run')
+    const { createStatus } = await import('./status')
+    const works = [await open(SLEEP, 'feat/a'), await open(SLEEP, 'feat/b'), await open(SLEEP, 'feat/c')]
+    setHook(works[1]!.session, 'needs-you')
+    const calls: string[][] = []
+    const spy: Runner = (cmd, args, opts) => (cmd === 'tmux' && calls.push(args), run(cmd, args, opts))
+    const status = createStatus({ run: spy, onChange: () => {}, notify: () => {} })
+    await status.refresh()
+    expect(status.states()).toEqual({ [works[0]!.id]: 'working', [works[1]!.id]: 'needs-you', [works[2]!.id]: 'working' })
+    expect(calls.map((a) => a.find((x) => !x.startsWith('-') && x !== sock))).toEqual(['list-panes'])
+  }, 30_000)
+
+  it('a burst of hook writes refreshes once', async () => {
+    const { createStatus } = await import('./status')
+    const ws = await open(SLEEP)
+    const status = createStatus({ onChange: () => {}, notify: () => {} })
+    await status.start()
+    try {
+      const refresh = vi.spyOn(status, 'refresh')
+      const pause = (ms: number) => new Promise((ok) => setTimeout(ok, ms))
+      for (let i = 0; i < 10; i++) setHook(ws.session, i % 2 ? 'working' : 'needs-you')
+      await pause(900)
+      expect(refresh).toHaveBeenCalledTimes(1)
+      // Events that never stop still refresh at least once a second.
+      refresh.mockClear()
+      for (let i = 0; i < 14; i++) {
+        setHook(ws.session, i % 2 ? 'working' : 'needs-you')
+        await pause(100)
+      }
+      expect(refresh.mock.calls.length).toBeGreaterThanOrEqual(1)
+    } finally {
+      status.stop()
+    }
+  }, 30_000)
 })

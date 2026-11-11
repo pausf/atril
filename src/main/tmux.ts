@@ -10,7 +10,59 @@ export function tmuxArgs(): string[] {
   return sock ? ['-L', sock] : []
 }
 
-const tmux = (run: Runner, args: string[]) => run('tmux', [...tmuxArgs(), ...args])
+// W163: each spawn costs ~125 ms on the person's Mac, so readers that only show state share one listing per second.
+let snapshot: { sock: string; at: number; rows: Promise<PaneRow[]> } | undefined
+
+// Commands that add, remove or restart a pane: the snapshot is stale once any of them ran.
+const CHANGES = new Set(['new-session', 'kill-session', 'kill-pane', 'respawn-pane', 'split-window', 'kill-server'])
+
+async function tmux(run: Runner, args: string[]) {
+  const r = await run('tmux', [...tmuxArgs(), ...args])
+  if (CHANGES.has(args[0]!)) snapshot = undefined
+  return r
+}
+
+export interface PaneRow {
+  session: string
+  pane: string
+  dead: boolean
+}
+
+export function dropPanes(): void {
+  snapshot = undefined
+}
+
+/** Every pane of every session, at most a second old; no server lists nothing. */
+export function panes(run: Runner = defaultRun): Promise<PaneRow[]> {
+  const sock = tmuxArgs().join(' ')
+  const now = Date.now()
+  if (snapshot && snapshot.sock === sock && now - snapshot.at < 1000) return snapshot.rows
+  const rows = run('tmux', [...tmuxArgs(), 'list-panes', '-a', '-F', '#{session_name} #{pane_id} #{pane_dead}']).then((r) =>
+    r.code !== 0
+      ? []
+      : r.stdout
+          .split('\n')
+          .filter(Boolean)
+          .map((line): PaneRow => {
+            // The session name may hold spaces; the last two fields never do.
+            const [dead, pane, ...name] = line.split(' ').reverse()
+            return { session: name.reverse().join(' '), pane: pane ?? '', dead: dead === '1' }
+          })
+  )
+  snapshot = { sock, at: now, rows }
+  return rows
+}
+
+/** For readers that only show state; acting paths ask tmux with hasSession. */
+export async function sessionListed(id: string, run: Runner = defaultRun): Promise<boolean> {
+  return (await panes(run)).some((p) => p.session === sessionName(id))
+}
+
+/** For readers that only show state; acting paths ask tmux with paneDead. */
+export async function paneListedDead(paneId: string, run: Runner = defaultRun): Promise<boolean> {
+  const row = (await panes(run)).find((p) => p.pane === paneId)
+  return !row || row.dead
+}
 
 /** Starts the agent detached and returns its pane id. */
 export async function newSession(id: string, cwd: string, argv: string[], run: Runner = defaultRun): Promise<string> {
