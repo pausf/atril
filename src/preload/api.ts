@@ -603,7 +603,8 @@ export interface QaApi {
   bug(workspaceId: string, req: QaBugRequest): Promise<QaBugResult>
   /** null: Atril does not know how to test this workspace's project (W83). */
   status(workspaceId: string): Promise<QaStatus | null>
-  launch(workspaceId: string): Promise<QaResult>
+  /** `key`: the target to launch; the repo's chosen one when absent. */
+  launch(workspaceId: string, key?: string): Promise<QaResult>
   stop(workspaceId: string): Promise<QaResult>
   /** W123: the tab pressed, remembered for the repo. */
   choose(workspaceId: string, key: string): Promise<QaTargets | { error: string }>

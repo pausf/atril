@@ -505,7 +505,7 @@ app.whenReady().then(async () => {
   })
   // W84: only a press reaches launch; nothing here starts a QA on its own.
   ipcMain.handle('atril:qa:status', (_e, id: unknown) => qaStatus(String(id), run))
-  ipcMain.handle('atril:qa:launch', (_e, id: unknown) => launchQa(String(id), run))
+  ipcMain.handle('atril:qa:launch', (_e, id: unknown, key: unknown) => launchQa(String(id), run, undefined, typeof key === 'string' ? key : undefined))
   ipcMain.handle('atril:qa:stop', (_e, id: unknown) => stopQa(String(id), run))
   ipcMain.handle('atril:qa:report', (_e, id: unknown) => qaReport(String(id), run))
   ipcMain.handle('atril:qa:choose', (_e, id: unknown, key: unknown) => chooseTarget(String(id), key))

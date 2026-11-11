@@ -1,5 +1,4 @@
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, utimesSync, writeFileSync } from 'node:fs'
-import { tmpdir } from 'node:os'
+import { existsSync, mkdirSync, readFileSync, symlinkSync, utimesSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { resourcesDir } from './paths'
@@ -71,119 +70,175 @@ describe('launchQa', () => {
     delete process.env['ATRIL_HOME']
   })
 
-  it('live qa starts one scoped agent with its tools', async () => {
-    const web = project({ 'package.json': pkg({ scripts: ['dev'] }), 'pnpm-lock.yaml': '', '.agents/changes/add-cart/proposal.md': '# add-cart' })
-    const android = project({ 'settings.gradle': '', 'app/src/main/AndroidManifest.xml': '<manifest/>' })
-    const expo = project({ 'app.json': '{}', 'package.json': pkg({ deps: ['expo'] }) })
-    const plain = project({ 'README.md': 'hi' })
-    const rec = (id: string, path: string) => ({ id, repoId: 'demo', branch: `feat/${id}`, mode: 'worktree', path, baseCommit: 'abc123', agent: 'claude', session: `atril-${id}`, paneId: '%1' })
-    writeFileSync(join(home, 'workspaces.json'), JSON.stringify({ workspaces: [rec('webqa001', web), rec('andqa001', android), rec('expqa001', expo), rec('plnqa001', plain)] }))
+  const rec = (id: string, path: string, repoId = 'demo') => ({ id, repoId, branch: `feat/${id}`, mode: 'worktree', path, baseCommit: 'abc123', agent: 'claude', session: `atril-${id}`, paneId: '%1' })
+  const seed = (...records: ReturnType<typeof rec>[]): void => writeFileSync(join(home, 'workspaces.json'), JSON.stringify({ workspaces: records }))
+  const SIMS = JSON.stringify({
+    devices: {
+      'com.apple.CoreSimulator.SimRuntime.iOS-26-0': [
+        { name: 'iPad Pro 13-inch (M4)', udid: 'IPAD-1', isAvailable: true },
+        { name: 'iPhone 17', udid: 'UDID-17', isAvailable: true },
+        { name: 'iPhone 17 Pro', udid: 'UDID-17P', isAvailable: true }
+      ],
+      'com.apple.CoreSimulator.SimRuntime.watchOS-26-0': [{ name: 'Apple Watch', udid: 'W-1', isAvailable: true }]
+    }
+  })
 
-    const splits: string[][] = []
-    const kills: string[] = []
-    let panes = ['%1']
-    let missing = new Set<string>()
-    const fake: Runner = async (cmd, args) => {
-      if (missing.has(cmd)) return { code: 127, stdout: '', stderr: `spawn ${cmd} ENOENT` }
+  /** A fake tmux with the workspace pane %1, the person's devices, and every tool answering unless `missing` names it. */
+  function fake() {
+    const f = {
+      splits: [] as string[][],
+      kills: [] as string[],
+      panes: ['%1'],
+      missing: new Set<string>(),
+      avds: 'Pixel_8\n',
+      sims: SIMS,
+      calls: [] as string[][],
+      run: undefined as unknown as Runner
+    }
+    f.run = async (cmd, args) => {
+      f.calls.push([cmd, ...args])
+      if (f.missing.has(cmd) || (cmd === 'xcrun' && args[1] === 'mcpbridge' && f.missing.has('mcpbridge'))) return { code: 127, stdout: '', stderr: `spawn ${cmd} ENOENT` }
       if (cmd === 'tmux' && args.includes('split-window')) {
-        splits.push(args)
+        f.splits.push(args)
         await new Promise((r) => setTimeout(r, 5))
-        panes.push(`%${40 + splits.length}`)
-        return { code: 0, stdout: `%${40 + splits.length}\n`, stderr: '' }
+        const pane = `%${40 + f.splits.length}`
+        f.panes.push(pane)
+        return { code: 0, stdout: `${pane}\n`, stderr: '' }
       }
-      if (cmd === 'tmux' && args.includes('list-panes')) return { code: 0, stdout: panes.join('\n') + '\n', stderr: '' }
+      if (cmd === 'tmux' && args.includes('list-panes')) return { code: 0, stdout: f.panes.join('\n') + '\n', stderr: '' }
       if (cmd === 'tmux' && args.includes('kill-pane')) {
-        kills.push(args.at(-1)!)
-        panes = panes.filter((p) => p !== args.at(-1))
+        f.kills.push(args.at(-1)!)
+        f.panes = f.panes.filter((p) => p !== args.at(-1))
         return { code: 0, stdout: '', stderr: '' }
       }
+      if (cmd === 'emulator' && args[0] === '-list-avds') return { code: 0, stdout: f.avds, stderr: '' }
+      if (cmd === 'xcrun' && args[0] === 'simctl') return { code: 0, stdout: f.sims, stderr: '' }
       return { code: 0, stdout: 'v1\n', stderr: '' }
     }
+    return f
+  }
+  const promptOf = (split: string[]): string => split.at(-1)!
+  const mcpOf = (id: string): unknown => JSON.parse(readFileSync(join(home, 'qa', `${id}.mcp.json`), 'utf8'))
+  const devices = (): unknown => JSON.parse(readFileSync(join(home, 'qa', 'devices.json'), 'utf8'))
+  const playwright = (browser: string, shots: string) => ({ mcpServers: { playwright: { command: 'npx', args: ['-y', '@playwright/mcp@0.0.84', '--browser', browser, '--isolated', '--output-dir', shots] } } })
+  const mobile = { command: 'npx', args: ['-y', '@mobilenext/mobile-mcp@1.0.16'] }
+  const android = (): string => project({ 'settings.gradle': '', 'app/src/main/AndroidManifest.xml': '<manifest/>' })
+  const ios = (): string => project({ 'Shop.xcodeproj/': null })
+
+  it('live qa starts one scoped agent with its tools', async () => {
+    const web = project({ 'package.json': pkg({ scripts: ['dev'] }), 'pnpm-lock.yaml': '', '.agents/changes/add-cart/proposal.md': '# add-cart' })
+    const mono = project({ 'apps/web/package.json': pkg({ scripts: ['dev'] }), 'apps/mobile/settings.gradle': '', 'apps/mobile/app/src/main/AndroidManifest.xml': '<manifest/>' })
+    seed(rec('webqa001', web), rec('andqa001', android()), rec('iosqa001', ios()), rec('monqa001', mono, 'mono'))
+    const f = fake()
     const qa = join(home, 'qa')
     const mcpFile = join(qa, 'webqa001.mcp.json')
     const shots = join(qa, 'webqa001')
 
-    // Case: an unclassified workspace starts nothing.
-    expect(await launchQa('plnqa001', fake)).toHaveProperty('error')
-
-    // Case: a missing tool starts nothing and every missing one is named.
-    // No SDK anywhere: this machine's own ~/Library/Android/sdk must not count.
-    const realHome = process.env['HOME']
-    process.env['HOME'] = mkdtempSync(join(tmpdir(), 'atril-nohome-'))
-    delete process.env['ANDROID_HOME']
-    delete process.env['ANDROID_SDK_ROOT']
-    missing = new Set(['adb', 'emulator', 'node'])
-    const refused = await launchQa('andqa001', fake)
-    expect('error' in refused && refused.error).toMatch(/node.*adb.*emulator|node, adb, emulator/)
-    // The Android tools often live only in the SDK folder, not on PATH: found there, they count.
-    const sdk = mkdtempSync(join(tmpdir(), 'atril-sdk-'))
-    mkdirSync(join(sdk, 'emulator'), { recursive: true })
-    mkdirSync(join(sdk, 'platform-tools'), { recursive: true })
-    writeFileSync(join(sdk, 'emulator', 'emulator'), '')
-    writeFileSync(join(sdk, 'platform-tools', 'adb'), '')
-    process.env['ANDROID_HOME'] = sdk
-    missing = new Set(['adb', 'emulator'])
-    expect(await launchQa('andqa001', fake)).toEqual({ ok: true })
-    delete process.env['ANDROID_HOME']
-    rmSync(join(qa, 'andqa001.pane'), { force: true })
-    rmSync(join(qa, 'andqa001.mcp.json'), { force: true })
-    splits.length = 0
-    missing = new Set(['adb', 'xcrun'])
-    const noMobile = await launchQa('expqa001', fake)
-    expect('error' in noMobile && noMobile.error).toMatch(/adb.*xcrun/)
-    // expo needs one mobile tool, not both
-    missing = new Set(['adb'])
-    expect(await launchQa('expqa001', fake)).toEqual({ ok: true })
-    expect(JSON.parse(readFileSync(join(qa, 'expqa001.mcp.json'), 'utf8'))).toEqual({ mcpServers: { 'mobile-mcp': { command: 'npx', args: ['-y', '@mobilenext/mobile-mcp@1.0.16'] } } })
-    expect(splits).toHaveLength(1)
-    expect(existsSync(join(qa, 'andqa001.mcp.json'))).toBe(false)
-    missing = new Set()
-    process.env['HOME'] = realHome
-
-    // Case: the MCP file, the split with claude, the prompt; two presses at once start one.
-    const both = await Promise.all([launchQa('webqa001', fake), launchQa('webqa001', fake)])
+    // Case: chrome, the first target: Playwright on Chrome; the split with claude and the prompt; two presses at once start one.
+    const both = await Promise.all([launchQa('webqa001', f.run), launchQa('webqa001', f.run)])
     expect(both.filter((r) => 'ok' in r)).toHaveLength(1)
     expect(both.filter((r) => 'error' in r)).toHaveLength(1)
-    expect(JSON.parse(readFileSync(mcpFile, 'utf8'))).toEqual({
-      mcpServers: { playwright: { command: 'npx', args: ['-y', '@playwright/mcp@0.0.84', '--isolated', '--output-dir', shots] } }
-    })
+    expect(mcpOf('webqa001')).toEqual(playwright('chrome', shots))
     expect(existsSync(shots)).toBe(true)
-    expect(splits).toHaveLength(2)
-    const split = splits[1]!
+    expect(f.splits).toHaveLength(1)
+    const split = f.splits[0]!
     const at = split.indexOf('#{pane_id}') + 1
     expect(split.slice(0, at)).toEqual(['split-window', '-h', '-t', '=atril-webqa001:', '-c', web, '-P', '-F', '#{pane_id}'])
     const argv = split.slice(at)
-    const prompt = argv.at(-1)!
+    const prompt = promptOf(split)
     expect(argv).toEqual(['claude', '--plugin-dir', join(resourcesDir(), 'libretto'), '--mcp-config', mcpFile, '--strict-mcp-config', prompt])
-    for (const part of ['web', 'pnpm run dev', join(web, '.agents', 'changes', 'add-cart', 'proposal.md'), shots]) expect(prompt).toContain(part)
-    expect(readFileSync(join(qa, 'webqa001.pane'), 'utf8').trim()).toBe('%42')
-    expect(await qaLive('webqa001', fake)).toBe(true)
+    for (const part of ['Chrome', 'pnpm run dev', join(web, '.agents', 'changes', 'add-cart', 'proposal.md'), shots]) expect(prompt).toContain(part)
+    expect(readFileSync(join(qa, 'webqa001.pane'), 'utf8').trim()).toBe('%41')
+    expect(await qaLive('webqa001', f.run)).toBe(true)
 
     // Case: a second press while the pane lives is refused.
-    expect(await launchQa('webqa001', fake)).toHaveProperty('error')
-    expect(splits).toHaveLength(2)
+    expect(await launchQa('webqa001', f.run)).toHaveProperty('error')
+    expect(f.splits).toHaveLength(1)
 
-    // Case: a pane closed by hand is noticed on the next query.
-    panes = panes.filter((p) => p !== '%42')
-    expect(await qaLive('webqa001', fake)).toBe(false)
-    expect(await launchQa('webqa001', fake)).toEqual({ ok: true })
-    expect(splits).toHaveLength(3)
+    // Case: a pane closed by hand is noticed on the next query; safari, by its key: Playwright on WebKit.
+    f.panes = f.panes.filter((p) => p !== '%41')
+    expect(await qaLive('webqa001', f.run)).toBe(false)
+    expect(await launchQa('webqa001', f.run, undefined, 'safari:')).toEqual({ ok: true })
+    expect(mcpOf('webqa001')).toEqual(playwright('webkit', shots))
+    expect(promptOf(f.splits[1]!)).toContain('Safari')
 
     // Case: «Detener QA» kills only that pane; the MCP file and the screenshots stay.
     writeFileSync(join(shots, 'a.png'), 'png')
-    expect(await stopQa('webqa001', fake)).toEqual({ ok: true })
-    expect(kills).toEqual(['%43'])
-    expect(await qaLive('webqa001', fake)).toBe(false)
+    expect(await stopQa('webqa001', f.run)).toEqual({ ok: true })
+    expect(f.kills).toEqual(['%42'])
+    expect(await qaLive('webqa001', f.run)).toBe(false)
     expect(existsSync(mcpFile)).toBe(true)
     expect(existsSync(join(shots, 'a.png'))).toBe(true)
-    expect(panes).toContain('%1')
+    expect(f.panes).toContain('%1')
+
+    // Case: android, mobile-mcp, and the reserved device named in the prompt.
+    expect(await launchQa('andqa001', f.run)).toEqual({ ok: true })
+    expect(mcpOf('andqa001')).toEqual({ mcpServers: { 'mobile-mcp': mobile } })
+    for (const part of ['Android', './gradlew installDebug', 'Pixel_8', 'emulator -avd Pixel_8', join(qa, 'andqa001')]) expect(promptOf(f.splits.at(-1)!)).toContain(part)
+
+    // Case: ios, Xcode's own MCP and mobile-mcp, and the reserved simulator.
+    expect(await launchQa('iosqa001', f.run)).toEqual({ ok: true })
+    expect(mcpOf('iosqa001')).toEqual({ mcpServers: { xcode: { command: 'xcrun', args: ['mcpbridge'] }, 'mobile-mcp': mobile } })
+    for (const part of ['iOS', 'xcodebuild', 'iPhone 17', 'xcrun simctl boot UDID-17']) expect(promptOf(f.splits.at(-1)!)).toContain(part)
+
+    // Case: «Detener QA» frees the device.
+    expect(devices()).toEqual({ Pixel_8: 'andqa001', 'UDID-17': 'iosqa001' })
+    expect(await stopQa('andqa001', f.run)).toEqual({ ok: true })
+    expect(devices()).toEqual({ 'UDID-17': 'iosqa001' })
+
+    // Case: the agent starts in the target's folder.
+    expect(await launchQa('monqa001', f.run, undefined, 'chrome:apps/web')).toEqual({ ok: true })
+    expect(f.splits.at(-1)!.slice(4, 6)).toEqual(['-c', join(mono, 'apps/web')])
+    expect(await launchQa('monqa001', f.run, undefined, 'ios:nowhere')).toHaveProperty('error')
 
     // Case: with no open change the prompt names the branch and its base.
     const noChange = project({ 'package.json': pkg({ scripts: ['start'] }) })
-    writeFileSync(join(home, 'workspaces.json'), JSON.stringify({ workspaces: [rec('nchqa001', noChange)] }))
-    expect(await launchQa('nchqa001', fake)).toEqual({ ok: true })
-    const mobileless = splits.at(-1)!.at(-1)!
-    for (const part of ['feat/nchqa001', 'abc123', 'npm run start']) expect(mobileless).toContain(part)
+    seed(rec('nchqa001', noChange))
+    expect(await launchQa('nchqa001', f.run)).toEqual({ ok: true })
+    for (const part of ['feat/nchqa001', 'abc123', 'npm run start']) expect(promptOf(f.splits.at(-1)!)).toContain(part)
+  })
+
+  it('each live qa gets its own device', async () => {
+    seed(rec('dev00001', android()), rec('dev00002', android()), rec('dev00003', android()), rec('dev00004', android()), rec('ios00001', ios()), rec('ios00002', ios()))
+    const f = fake()
+    f.avds = 'Pixel_8\nPixel_9\n'
+    const deviceIn = (): string => promptOf(f.splits.at(-1)!)
+
+    // The first free device of the person's list, written down for the workspace.
+    expect(await launchQa('dev00001', f.run)).toEqual({ ok: true })
+    expect(deviceIn()).toContain('emulator -avd Pixel_8')
+    expect(await launchQa('dev00002', f.run)).toEqual({ ok: true })
+    expect(deviceIn()).toContain('emulator -avd Pixel_9')
+    expect(deviceIn()).not.toContain('Pixel_8')
+    expect(devices()).toEqual({ Pixel_8: 'dev00001', Pixel_9: 'dev00002' })
+
+    // A hold whose pane no longer lives counts as free.
+    f.panes = f.panes.filter((p) => p !== '%42')
+    expect(await launchQa('dev00003', f.run)).toEqual({ ok: true })
+    expect(deviceIn()).toContain('emulator -avd Pixel_9')
+    expect(devices()).toEqual({ Pixel_8: 'dev00001', Pixel_9: 'dev00003' })
+
+    // Every device held by a live QA: nothing starts.
+    const splits = f.splits.length
+    expect(await launchQa('dev00004', f.run)).toHaveProperty('error')
+    expect(f.splits).toHaveLength(splits)
+
+    // iPhone simulators only, by udid.
+    expect(await launchQa('ios00001', f.run)).toEqual({ ok: true })
+    expect(deviceIn()).toContain('xcrun simctl boot UDID-17')
+    expect(await launchQa('ios00002', f.run)).toEqual({ ok: true })
+    expect(deviceIn()).toContain('xcrun simctl boot UDID-17P')
+
+    // Two workspaces launching at once with one free device: one gets it, the other is told every device is held.
+    await stopQa('dev00001', f.run)
+    await stopQa('dev00003', f.run)
+    f.avds = 'Pixel_8\n'
+    const race = await Promise.all([launchQa('dev00002', f.run), launchQa('dev00004', f.run)])
+    expect(race.filter((r) => 'ok' in r)).toHaveLength(1)
+    const lost = race.find((r) => 'error' in r)!
+    expect('error' in lost && lost.error).toBe('Todos los emuladores están ocupados por otro QA')
+    const winner = race[0] && 'ok' in race[0] ? 'dev00002' : 'dev00004'
+    expect(devices()).toEqual({ Pixel_8: winner, 'UDID-17': 'ios00001', 'UDID-17P': 'ios00002' })
   })
   it('qa status sends the newest screenshots as data urls', async () => {
     const web = project({ 'package.json': pkg({ scripts: ['dev'] }) })

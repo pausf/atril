@@ -1,4 +1,5 @@
-import { lstat, mkdir, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises'
+import { randomUUID } from 'node:crypto'
+import { lstat, mkdir, readdir, readFile, rename, rm, stat, writeFile } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
@@ -6,9 +7,10 @@ import { agentArgv } from './agent'
 import { readCriteria } from './qa-criteria'
 import { t } from './lang'
 import { atrilHome } from './paths'
-import type { QaKind, QaResult, QaShot, QaStatus } from '../preload/api'
+import type { QaKind, QaPlatform, QaResult, QaShot, QaStatus, QaTarget } from '../preload/api'
 import type { Runner } from './run'
 import { hasPane, killPane, splitCommand } from './tmux'
+import { qaTargets } from './qa-targets'
 import { readRecords } from './workspaces'
 
 export type { QaKind }
@@ -70,45 +72,141 @@ function sdkPaths(tool: string): string[] {
   return roots.flatMap((r) => (r && existsSync(join(r, sub)) ? [join(r, sub)] : []))
 }
 
-/** W84: every tool the kind needs that does not answer; the cross-platform kinds need one of adb or xcrun. */
-async function missingTools(kind: QaKind, run: Runner): Promise<string[]> {
-  const ok = async (tool: string): Promise<boolean> => {
-    for (const cmd of [tool, ...sdkPaths(tool)]) if ((await run(cmd, VERSION_ARGS[tool]!)).code === 0) return true
-    return false
+/** The first way to call `tool` that answers, or null. */
+async function which(tool: string, run: Runner): Promise<string | null> {
+  for (const cmd of [tool, ...sdkPaths(tool)]) if ((await run(cmd, VERSION_ARGS[tool]!)).code === 0) return cmd
+  return null
+}
+
+const NEEDS: Record<QaPlatform, string[]> = { chrome: ['node'], safari: ['node'], android: ['node', 'adb', 'emulator'], ios: ['node', 'xcrun'] }
+
+/** W125: every tool the platform needs that does not answer; Xcode's MCP counts only when `xcrun --find mcpbridge` finds it. */
+async function tools(platform: QaPlatform, run: Runner): Promise<{ missing: string[]; emulator: string | null }> {
+  const found = await Promise.all(NEEDS[platform].map(async (tool) => [tool, await which(tool, run)] as const))
+  const missing = found.filter(([, cmd]) => cmd === null).map(([tool]) => tool)
+  if (platform === 'ios' && !missing.includes('xcrun') && (await run('xcrun', ['--find', 'mcpbridge'])).code !== 0) missing.push('mcpbridge')
+  return { missing, emulator: found.find(([tool]) => tool === 'emulator')?.[1] ?? null }
+}
+
+export interface QaDevice {
+  id: string
+  name: string
+  boot: string
+}
+
+/** W124: the person's devices in their own order: AVDs, or available iPhone simulators. */
+async function listDevices(platform: QaPlatform, emulator: string | null, run: Runner): Promise<QaDevice[]> {
+  if (platform === 'android') {
+    const r = await run(emulator ?? 'emulator', ['-list-avds'])
+    if (r.code !== 0) return []
+    return r.stdout
+      .split('\n')
+      .map((n) => n.trim())
+      .filter((n) => /^[\w.-]+$/.test(n))
+      .map((n) => ({ id: n, name: n, boot: `emulator -avd ${n}` }))
   }
-  const need = kind === 'android' ? ['node', 'adb', 'emulator'] : kind === 'ios' ? ['node', 'xcrun'] : ['node']
-  const missing = (await Promise.all(need.map(async (tool) => ((await ok(tool)) ? null : tool)))).filter((x): x is string => x !== null)
-  if (kind === 'expo' || kind === 'react-native' || kind === 'flutter') {
-    const [adb, xcrun] = await Promise.all([ok('adb'), ok('xcrun')])
-    if (!adb && !xcrun) missing.push('adb', 'xcrun')
+  const r = await run('xcrun', ['simctl', 'list', 'devices', 'available', '-j'])
+  try {
+    const runtimes = (JSON.parse(r.stdout) as { devices?: Record<string, unknown> }).devices ?? {}
+    return Object.entries(runtimes)
+      .filter(([runtime]) => runtime.includes('iOS'))
+      .flatMap(([, list]) => (Array.isArray(list) ? (list as Array<{ name?: unknown; udid?: unknown }>) : []))
+      .filter((d): d is { name: string; udid: string } => typeof d.name === 'string' && d.name.startsWith('iPhone') && typeof d.udid === 'string' && /^[\w-]+$/.test(d.udid))
+      .map((d) => ({ id: d.udid, name: d.name, boot: `xcrun simctl boot ${d.udid}` }))
+  } catch {
+    return []
   }
-  return missing
 }
 
 const qaDir = (): string => join(atrilHome(), 'qa')
 export const shotsDir = (id: string): string => join(qaDir(), id)
 const paneFile = (id: string): string => join(qaDir(), `${id}.pane`)
 export const reportFile = (id: string): string => join(shotsDir(id), 'report.json')
+const holdsFile = (): string => join(qaDir(), 'devices.json')
 
-function mcpConfig(kind: QaKind, shots: string): object {
-  return kind === 'web'
-    ? { mcpServers: { playwright: { command: 'npx', args: ['-y', PLAYWRIGHT, '--isolated', '--output-dir', shots] } } }
-    : { mcpServers: { 'mobile-mcp': { command: 'npx', args: ['-y', MOBILE] } } }
+type Holds = Record<string, string>
+
+async function readHolds(): Promise<Holds> {
+  try {
+    const v = JSON.parse(await readFile(holdsFile(), 'utf8')) as unknown
+    return typeof v === 'object' && v !== null && !Array.isArray(v) ? (v as Holds) : {}
+  } catch {
+    return {}
+  }
 }
+
+// W124: every read and write of devices.json goes through this chain, so two launches never both take one device.
+let holding: Promise<unknown> = Promise.resolve()
+
+function withHolds<T>(fn: (held: Holds) => Promise<{ value: T; write: boolean }>): Promise<T> {
+  const next = holding.then(async () => {
+    const held = await readHolds()
+    const { value, write } = await fn(held)
+    if (write) {
+      await mkdir(qaDir(), { recursive: true })
+      const temp = `${holdsFile()}.${process.pid}.${randomUUID()}.tmp`
+      await writeFile(temp, JSON.stringify(held, null, 2) + '\n')
+      await rename(temp, holdsFile())
+    }
+    return value
+  })
+  holding = next.catch(() => undefined)
+  return next
+}
+
+/** W124: a hold counts while its workspace is starting or its QA pane lives. */
+function reserve(id: string, devices: QaDevice[], run: Runner): Promise<QaDevice | null> {
+  return withHolds(async (held) => {
+    for (const d of devices) {
+      const by = held[d.id]
+      if (by && by !== id && /^[\w-]+$/.test(by) && (starting.has(by) || (await qaLive(by, run)))) continue
+      for (const [k, v] of Object.entries(held)) if (v === id) delete held[k]
+      held[d.id] = id
+      return { value: d, write: true }
+    }
+    return { value: null, write: false }
+  })
+}
+
+const release = (id: string): Promise<void> =>
+  withHolds(async (held) => {
+    const mine = Object.keys(held).filter((k) => held[k] === id)
+    for (const k of mine) delete held[k]
+    return { value: undefined, write: mine.length > 0 }
+  })
+
+function mcpConfig(platform: QaPlatform, shots: string): object {
+  const mobile = { command: 'npx', args: ['-y', MOBILE] }
+  switch (platform) {
+    case 'chrome':
+    case 'safari':
+      return { mcpServers: { playwright: { command: 'npx', args: ['-y', PLAYWRIGHT, '--browser', platform === 'chrome' ? 'chrome' : 'webkit', '--isolated', '--output-dir', shots] } } }
+    case 'android':
+      return { mcpServers: { 'mobile-mcp': mobile } }
+    case 'ios':
+      return { mcpServers: { xcode: { command: 'xcrun', args: ['mcpbridge'] }, 'mobile-mcp': mobile } }
+  }
+}
+
+export const PLATFORM_LABEL: Record<QaPlatform, string> = { chrome: 'Chrome', safari: 'Safari', android: 'Android', ios: 'iOS' }
 
 const REPORT_SHAPE = '{"criteria":[{"id":"W1","status":"pass","note":"one sentence","steps":[{"text":"what you did","ms":1200,"shot":"captura.png"}]}]}'
 
-/** W84, W119: the prompt names the change, and asks for a report.json per criterion; `request` goes last (W116). */
-export async function qaPrompt(info: QaInfo, path: string, branch: string, base: string, shots: string, id: string, request?: string): Promise<string> {
+/** W84, W119: the prompt names the platform, the device, the change, and asks for a report.json per criterion; `request` goes last (W116). */
+export async function qaPrompt(target: QaTarget, device: QaDevice | null, path: string, branch: string, base: string, shots: string, id: string, request?: string): Promise<string> {
   const { change, criteria } = await readCriteria(path)
-  const target = change
+  const what = change
     ? t('lo que promete la spec del cambio en {proposal}', { proposal: join(path, '.agents', 'changes', change, 'proposal.md') })
     : t('lo que cambia la rama {branch} respecto a su base ({base})', { branch, base })
-  const vars = { kind: info.kind, command: info.command, target, shots }
-  const intro =
-    info.kind === 'web'
-      ? t('Eres el QA de este trabajo, una app {kind}. Arranca la app con «{command}» en un puerto libre, ábrela con el navegador de Playwright y recorre {target}. Guarda una captura de cada paso en {shots} (sin nombre de archivo, Playwright las deja ahí). No cambies código ni hagas commits; al terminar, resume qué funciona y qué no.', vars)
-      : t('Eres el QA de este trabajo, una app {kind}. Si no hay ningún emulador o simulador en marcha, arranca uno. Arranca la app con «{command}» y recorre {target} con mobile-mcp. Guarda una captura PNG de cada paso en {shots} (con la herramienta de captura de mobile-mcp, `adb exec-out screencap -p > archivo.png` o `xcrun simctl io booted screenshot archivo.png`). No cambies código ni hagas commits; al terminar, resume qué funciona y qué no.', vars)
+  const vars = { platform: PLATFORM_LABEL[target.platform], command: target.command, target: what, shots }
+  const intro = !device
+    ? t('Eres el QA de este trabajo en {platform}. Arranca la app con «{command}» en un puerto libre, ábrela con el navegador de Playwright y recorre {target}. Guarda una captura de cada paso en {shots} (sin nombre de archivo, Playwright las deja ahí). No cambies código ni hagas commits; al terminar, resume qué funciona y qué no.', vars)
+    : t('Eres el QA de este trabajo en {platform}. Usa solo {device}, reservado para este trabajo (los demás son de otros QA); si no está en marcha, arráncalo con «{boot}». Arranca la app con «{command}» y recorre {target} con {tools}. Guarda una captura PNG de cada paso en {shots} con la herramienta de captura de mobile-mcp. No cambies código ni hagas commits; al terminar, resume qué funciona y qué no.', {
+        ...vars,
+        device: device.name,
+        boot: device.boot,
+        tools: target.platform === 'ios' ? t('mobile-mcp y el MCP de Xcode') : 'mobile-mcp'
+      })
   const parts = [intro]
   if (criteria.length > 0) {
     parts.push(
@@ -137,24 +235,30 @@ export async function qaLive(id: string, run: Runner): Promise<boolean> {
 // Two presses at once both find no pane yet: the first one holds the workspace until its pane is kept.
 const starting = new Set<string>()
 
-/** `request`: W116's ask, appended to the prompt when a retest has to start QA. */
-export async function launchQa(id: string, run: Runner, request?: string): Promise<QaResult> {
+/** `request`: W116's ask, appended to the prompt when a retest has to start QA. `key`: the target; the repo's chosen one when absent. */
+export async function launchQa(id: string, run: Runner, request?: string, key?: string): Promise<QaResult> {
   const ws = (await readRecords()).find((r) => r.id === id && r.mode !== 'review')
   if (!ws) return { error: t('Ese trabajo ya no existe') }
-  const info = await detectQa(ws.path)
-  if (!info) return { error: t('Atril no sabe probar en vivo este proyecto') }
+  const listed = await qaTargets(id)
+  const target = listed?.targets.find((x) => x.key === (key ?? listed.chosen))
+  if (!target) return { error: key === undefined ? t('Atril no sabe probar en vivo este proyecto') : t('Ese objetivo no existe') }
   if (starting.has(id)) return { error: t('Ya hay un QA en marcha en este trabajo') }
   starting.add(id)
   try {
     if (await qaLive(id, run)) return { error: t('Ya hay un QA en marcha en este trabajo') }
-    const missing = await missingTools(info.kind, run)
+    const { missing, emulator } = await tools(target.platform, run)
     if (missing.length > 0) return { error: t('Para probar en vivo falta: {tools}', { tools: missing.join(', ') }) }
+    let device: QaDevice | null = null
+    if (target.platform === 'android' || target.platform === 'ios') {
+      device = await reserve(id, await listDevices(target.platform, emulator, run), run)
+      if (!device) return { error: target.platform === 'android' ? t('Todos los emuladores están ocupados por otro QA') : t('Todos los simuladores están ocupados por otro QA') }
+    }
     const shots = shotsDir(id)
     await mkdir(shots, { recursive: true })
     const config = join(qaDir(), `${id}.mcp.json`)
-    await writeFile(config, JSON.stringify(mcpConfig(info.kind, shots), null, 2) + '\n')
-    const prompt = await qaPrompt(info, ws.path, ws.branch, ws.baseCommit, shots, id, request)
-    const pane = await splitCommand(id, ws.path, agentArgv({ hooks: false, mcpConfig: config, prompt }), run)
+    await writeFile(config, JSON.stringify(mcpConfig(target.platform, shots), null, 2) + '\n')
+    const prompt = await qaPrompt(target, device, ws.path, ws.branch, ws.baseCommit, shots, id, request)
+    const pane = await splitCommand(id, join(ws.path, target.dir), agentArgv({ hooks: false, mcpConfig: config, prompt }), run)
     await writeFile(paneFile(id), pane + '\n')
     return { ok: true }
   } catch (err) {
@@ -164,13 +268,14 @@ export async function launchQa(id: string, run: Runner, request?: string): Promi
   }
 }
 
-/** Kills only the QA pane; its MCP file and screenshots stay. */
+/** Kills only the QA pane and frees its device; its MCP file and screenshots stay. */
 export async function stopQa(id: string, run: Runner): Promise<QaResult> {
   // The id names files under qa/: only a recorded workspace's id gets that far.
   if (!(await readRecords()).some((r) => r.id === id)) return { error: t('Ese trabajo ya no existe') }
   const pane = (await text(paneFile(id)))?.trim()
   if (pane && (await hasPane(id, pane, run))) await killPane(pane, run)
   await rm(paneFile(id), { force: true })
+  await release(id)
   return { ok: true }
 }
 

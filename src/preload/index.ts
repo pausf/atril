@@ -119,7 +119,7 @@ const api: AtrilApi = {
   },
   qa: {
     status: (id) => ipcRenderer.invoke('atril:qa:status', id),
-    launch: (id) => ipcRenderer.invoke('atril:qa:launch', id),
+    launch: (id, key) => ipcRenderer.invoke('atril:qa:launch', id, key),
     stop: (id) => ipcRenderer.invoke('atril:qa:stop', id),
     report: (id) => ipcRenderer.invoke('atril:qa:report', id),
     retest: (id, criterion) => ipcRenderer.invoke('atril:qa:retest', id, criterion),
