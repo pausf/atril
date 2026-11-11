@@ -306,6 +306,10 @@ textos, en «Pasos» abajo. Los que tienen elemento en pantalla lo iluminan; los
 
 - Si la terminal no engancha, el centro lo dice, dice que el agente sigue trabajando y trae «Volver a intentar»; nada queda sin capturar.
 
+### Panel más rápido (fast-panel, 11 nov 2026)
+
+- El estado de los agentes cuesta un proceso de tmux por vuelta y los observadores juntan ráfagas.
+
 ## Scope boundaries
 
 **In:** the three columns and footer of `bocetos/fase1-nucleo.html` (boceto 8), the
@@ -617,6 +621,10 @@ Nunca fuera: validar `.atril/qa.json` (lo escribe el repo, no Atril); la ventana
 
 **In:** `src/main/pty.ts` (`attach` devuelve el resultado), `src/main/index.ts` (`atril:term:attach`), `src/preload/{api,index}.ts`, `src/renderer/components/Terminal.tsx`, i18n. **Out:** abrir la sesión en Terminal.app; reparar node-pty.
 
+### Panel más rápido (fast-panel, 11 nov 2026)
+
+**In:** src/main/status.ts, src/main/tmux.ts, src/main/activity.ts, src/main/workspaces.ts. **Out:** sondeos de MR y Jira.
+
 ## Constraints
 
 - Electron (current stable) + TypeScript in strict mode, pnpm, Node 24 (installed:
@@ -788,6 +796,10 @@ Textos por `t()`.
 ### Terminal que no engancha (term-attach, 11 nov 2026)
 
 - Un fallo deja el mapa de clientes como estaba: nada enganchado a medias.
+
+### Panel más rápido (fast-panel, 11 nov 2026)
+
+- Nada se enseña más de 1 s viejo respecto a hoy.
 
 ## Prior decisions
 
@@ -2868,3 +2880,12 @@ Textos por `t()`.
   Proof: src/renderer/terminal.test.ts a terminal that cannot attach says so
 - **W162** «Volver a intentar» shall ask to attach again with the terminal's current size; on `{ ok: true }` the problem goes, and on another error it is replaced by the new one.
   Proof: src/renderer/terminal.test.ts retrying hides the problem or shows the new one
+
+### Panel más rápido (fast-panel, 11 nov 2026)
+
+- **W163** The status poll and `listWorkspaces` shall read tmux through one shared snapshot (`tmux list-panes -a` with session name, pane id and dead flag), taken at most once per second, so a status tick costs one tmux command whatever the number of works; creating, killing or respawning a session drops the snapshot, and decisions that act — sending a reply or keys, pausing, reopening — ask tmux directly instead.
+  Proof: src/main/status.test.ts one tmux call per tick whatever the number of works
+  Proof: src/main/tmux.test.ts the snapshot is shared for a second and dropped by any session change
+- **W164** State-folder events (status) and activity-file events (activity) shall refresh 200 ms after the last event of a burst, and at least once per second while events keep coming.
+  Proof: src/main/status.test.ts a burst of hook writes refreshes once
+  Proof: src/main/activity.test.ts a burst of activity writes refreshes once

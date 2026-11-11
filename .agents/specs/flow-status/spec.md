@@ -59,6 +59,12 @@ mientras trabaja.
 - Se ve qué subagentes trabajan para la casilla que se está construyendo, qué hace cada uno y cuánto llevan, sin una
   sección aparte.
 
+### Panel más rápido (fast-panel, 11 nov 2026)
+
+- Elegir un trabajo enseña sus casillas, y abrir el código de una casilla, sin rehacer todo el trabajo de git cada vez.
+- El estado de los agentes cuesta un proceso por vuelta, no dos por trabajo.
+- En reposo, Atril lanza muchos menos procesos.
+
 ## Scope boundaries
 
 **In:** reading `.agents/changes/*/` in a workspace and deriving the stage.
@@ -125,6 +131,10 @@ nombres accesibles; tokens de color.
 **Out:** asignar subagentes a casillas concretas (todos cuelgan de la en curso); cambiar el modal de F28.
 **Never scoped out:** teclado (cada rama es un botón); textos por `t()`; tokens; el registro como texto.
 
+### Panel más rápido (fast-panel, 11 nov 2026)
+
+**In:** `src/main/flow/boxes.ts`, `src/main/flow/changes.ts`, `src/main/flow/watch.ts` (si hace falta la clave), `src/main/status.ts`, `src/main/tmux.ts`, `src/main/activity.ts`, `src/main/workspaces.ts` (`listWorkspaces` con la foto de tmux). **Out:** cambiar el antivirus o el git del Mac; reescribir el panel; los sondeos de MR y Jira.
+
 ## Constraints
 
 - Libretto's layout and checklist rule exactly as `find-work` defines them: the checklist is
@@ -163,6 +173,11 @@ Reutiliza `useModalKeys` y las clases `modal`/`dlg edmodal`; monoespaciado con l
 - `FoldSection` y `useFolded` existentes; ids de sección estables para recordar el estado.
 - Textos por `t()` con su inglés; colores solo como tokens.
 - `a11y.test.ts` ya exige que cada `.stg` lleve hecho/ahora/pendiente como texto.
+
+### Panel más rápido (fast-panel, 11 nov 2026)
+
+- Nada se enseña viejo: un commit nuevo, un cambio del checklist o un archivo tocado en el tramo abierto se ven en la siguiente vuelta.
+- Las cachés viven en memoria de main y se vacían al cerrar un trabajo.
 
 ## Prior decisions
 
@@ -376,6 +391,26 @@ Reutiliza `useModalKeys` y las clases `modal`/`dlg edmodal`; monoespaciado con l
   `Boxes`, que pinta `Branches` dentro de la casilla en curso; `Subagents.tsx` se queda con el modal y `duration()`
   y deja de pintar la sección; el test «subagents show in the panel» se reescribe como el de F27 (assumed).
 
+### Panel más rápido (fast-panel, 11 nov 2026)
+
+- Spawning es caro en el Mac de la persona (~125 ms): Atril cuenta procesos; lo que no cambia se guarda en memoria con una clave que cambia cuando debe.
+
+#### Alternatives that lost
+
+| Considered | Why it lost |
+|---|---|
+| Un proceso git largo (`git cat-file --batch`) | más código y estado; la caché quita la mayoría sin eso |
+| Sondear menos a menudo | lo nuevo tardaría más en verse; la caché no lo retrasa |
+
+#### Decision log, answers as given (2026-11-11)
+- Q: (revisión en frío) ¿Qué tramos se guardan? → A: solo los cerrados por un commit (con `to`); el tramo abierto y los marcados solo en el árbol de trabajo se listan siempre, con sus cambios sin commitear (assumed).
+- Q: (revisión en frío) ¿Qué clave exacta? → A: carpeta, cambio, `baseCommit`, `HEAD`, y del archivo del checklist que se lea (`proposal.md`, `tasks.md` o `plan.md`) su ruta, `mtimeMs` y tamaño; dos ediciones en el mismo milisegundo con el mismo tamaño quedan como riesgo aceptado (assumed).
+- Q: (revisión en frío) ¿Cuándo se vacía? → A: al cerrar u olvidar el trabajo (`flow.forget`), y la caché nunca guarda más que los trabajos abiertos (assumed).
+- Q: (revisión en frío) `useFlow.ts` → A: fuera: el ahorro está en main (assumed).
+- Q: ¿Qué se arregla? → A: las tres causas medidas: el plan de casillas en caché, una sola llamada a tmux por vuelta, y menos sondeo en reposo (assumed).
+- Q: ¿Con qué clave la caché del plan? → A: carpeta, `HEAD`, nombre del cambio y fecha de modificación del documento del checklist; los tramos ya cerrados por un commit no cambian nunca (assumed).
+- Q: ¿Cuánto se espera para juntar avisos de archivos? → A: 200 ms (assumed).
+
 ## Task breakdown
 
 - Checklist reader with Libretto's rule.
@@ -576,3 +611,13 @@ Aterrizado**.
   line, in place of the description until the pointer leaves or focus moves; an answer arriving after that is
   ignored; an empty log keeps the description.
   Proof: src/renderer/flow/subagents.test.ts a branch shows what its subagent did last
+
+### Panel más rápido (fast-panel, 11 nov 2026)
+
+- **F42** When `boxDiff` is asked for a file of a box closed by a commit and the plan key is unchanged since the last `boxRanges`, the flow shall run exactly two git commands: one reading `HEAD` and the file's diff over that range — no `log`, `show` or listing.
+  Proof: src/main/flow/boxes.test.ts a closed box's diff costs two git commands once planned
+- **F43** When `boxRanges` is asked again with the plan key unchanged, the flow shall run no `git log`, no `git show` and no listing of a range closed by a commit; the whole branch and every range without a commit are listed again, so an uncommitted edit shows on the next read.
+  Proof: src/main/flow/boxes.test.ts a second read with nothing new reuses the closed ranges
+  Proof: src/main/flow/boxes.test.ts an uncommitted edit shows on the next read
+- **F44** When `HEAD`, the base commit, or the checklist file's path, mtime or size changes, the next `boxRanges` or `boxDiff` shall plan again; closing or forgetting a workspace drops its cached plans.
+  Proof: src/main/flow/boxes.test.ts a new commit or checklist edit plans again
