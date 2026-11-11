@@ -56,4 +56,15 @@ describe('packaging', () => {
     expect(pkg.devDependencies['electron-builder']).toMatch(/^\d+\.\d+\.\d+$/)
     expect(pkg.scripts.dist).toBe('electron-vite build && electron-builder --mac')
   })
+
+  it('bundled reviewers run on sonnet', () => {
+    const model = (name: string): string | null => {
+      const text = readFileSync(join(__dirname, '..', '..', 'resources', 'libretto', 'agents', `${name}.md`), 'utf8')
+      const front = /^---\n([\s\S]*?)\n---\n/.exec(text)![1]!
+      return /^model: (.+)$/m.exec(front)?.[1] ?? null
+    }
+    for (const name of ['converge-reader', 'review-lens-reliability', 'review-lens-security', 'spec-reviewer', 'work-reviewer', 'review-lens-design']) expect(model(name), name).toBe('sonnet')
+    for (const name of ['review-lens-intent', 'review-lens-tests']) expect(model(name), name).toBe('haiku')
+    expect(model('spec-writer')).toBeNull()
+  })
 })

@@ -3,10 +3,11 @@
 // tree) into resources/libretto/ as a Claude Code plugin.
 import { execFileSync } from 'node:child_process'
 import process from 'node:process'
-import { cpSync, lstatSync, mkdirSync, mkdtempSync, readdirSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
+import { cpSync, lstatSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
 import { homedir, tmpdir } from 'node:os'
 import { dirname, join, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { pinModels } from './libretto-models.mjs'
 
 const SOURCE = join(homedir(), 'gitrepos/libretto-automata')
 const ITEMS = ['skills', 'agents', 'commands', 'LICENSE', 'THIRD-PARTY.md', 'licenses']
@@ -58,6 +59,12 @@ try {
     note = `${version} dirty-copy`
   }
 
+  // W151: Atril's model choice for Libretto's reviewers, applied before the copy lands.
+  const agents = join(stage, 'agents')
+  for (const f of readdirSync(agents).filter((f) => f.endsWith('.md'))) {
+    const p = join(agents, f)
+    writeFileSync(p, pinModels(readFileSync(p, 'utf8'), f.slice(0, -3)))
+  }
   rmSync(OUT, { recursive: true, force: true })
   mkdirSync(join(OUT, '.claude-plugin'), { recursive: true })
   for (const item of ITEMS) cpSync(join(stage, item), join(OUT, item), { recursive: true, dereference: true })

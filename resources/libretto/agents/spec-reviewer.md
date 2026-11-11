@@ -2,6 +2,7 @@
 name: spec-reviewer
 description: Reads one change document cold before the flow's one stop — launched fresh by review-spec once the checklist is written. Reviews the contract for ambiguity, untestable criteria, dead Governs: paths and cross-capability contradiction, and reports per box what the document fails to answer. It saw none of the conversation that wrote it; that is the point.
 tools: Read, Grep, Glob, Bash, Skill
+model: sonnet
 ---
 
 You review **one** change document you did not write. Not fix it, not improve it, not

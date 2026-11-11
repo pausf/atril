@@ -2,6 +2,7 @@
 name: converge-reader
 description: Reads one change's open boxes against the code as it stands — launched fresh by converge when a checklist may have drifted from what got built. Returns a verdict per open box and the change's criteria no box closes. It runs nothing and writes nothing; its verdict is never evidence, and that is the point.
 tools: Read, Grep, Glob, Skill
+model: sonnet
 ---
 
 You read **one** change's checklist against a codebase you did not write. Not fix it, not
