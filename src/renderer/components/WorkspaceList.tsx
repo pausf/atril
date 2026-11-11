@@ -1,22 +1,24 @@
 import { useT } from '../ui'
 import { StateLabel } from './StateLabel'
 import { useState } from 'react'
-import type { RemoveResult, WorkspaceView } from '../../preload/api'
+import type { RemoveResult, StateProblem, WorkspaceView } from '../../preload/api'
 import { stateOf, useAgentStates, useLatestActivity } from '../agents'
 import { runningCount, useSubagents } from '../subagents'
 import { localiseActivity } from '../../preload/activity-i18n'
 import { QuickReplies, useAsking } from './QuickReplies'
-import { Problem } from './Problem'
+import { fixLabel, Problem } from './Problem'
 
 interface Props {
   workspaces: WorkspaceView[]
+  /** W145: workspaces.json is damaged; shown instead of the empty state. */
+  problem?: StateProblem | null
   selected: string | null
   onSelect: (id: string) => void
   onRemove: (id: string) => Promise<RemoveResult>
   onForget: (id: string) => Promise<RemoveResult>
 }
 
-export function WorkspaceList({ workspaces, selected, onSelect, onRemove, onForget }: Props) {
+export function WorkspaceList({ workspaces, problem, selected, onSelect, onRemove, onForget }: Props) {
   const t = useT()
   const [refusal, setRefusal] = useState<{ id: string; result: Exclude<RemoveResult, { ok: true }> } | null>(null)
   // W136: a live agent is only stopped after a second, explicit «Cerrar».
@@ -36,11 +38,22 @@ export function WorkspaceList({ workspaces, selected, onSelect, onRemove, onForg
       .finally(() => setClosing(null))
   }
 
+  const damaged = problem && (
+    <Problem
+      what={problem.error}
+      cant={t('Tus agentes siguen en tmux, pero no puedo enseñártelos.')}
+      fix={fixLabel(t, 'reveal')}
+      onFix={() => void window.atril.revealState(problem.file)}
+      detail={problem.detail}
+    />
+  )
   if (workspaces.length === 0) {
+    if (damaged) return damaged
     return <div className="empty">{t('Aquí verás cada trabajo con su estado. Crea uno con «＋ Nuevo trabajo», arriba.')}</div>
   }
   return (
     <div className="ws-list">
+      {damaged}
       {workspaces.map((w) => (
         <div className={asking.has(w.id) ? 'ws-item asks' : 'ws-item'} key={w.id}>
           <button type="button" className="ws-row" aria-pressed={selected === w.id} onClick={() => onSelect(w.id)}>
@@ -94,8 +107,14 @@ export function WorkspaceList({ workspaces, selected, onSelect, onRemove, onForg
             <Problem
               what={refusal.result.error}
               cant={t('{branch} sigue en la lista.', { branch: w.branch })}
-              fix={refusal.result.fix === 'terminal' ? t('Abrir en Terminal') : refusal.result.fix === 'forget' ? t('Quitar de la lista igualmente') : undefined}
-              onFix={() => (refusal.result.fix === 'forget' ? close(w.id, onForget) : void window.atril.workspaces.terminal({ id: w.id }))}
+              fix={fixLabel(t, refusal.result.fix)}
+              onFix={() =>
+                refusal.result.fix === 'forget'
+                  ? close(w.id, onForget)
+                  : refusal.result.fix === 'reveal'
+                    ? void window.atril.revealState(refusal.result.file ?? 'workspaces')
+                    : void window.atril.workspaces.terminal({ id: w.id })
+              }
               detail={refusal.result.detail ?? ''}
               busy={closing === w.id}
               onClose={() => setRefusal(null)}

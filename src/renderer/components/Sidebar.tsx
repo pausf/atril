@@ -1,4 +1,4 @@
-import type { RemoveResult, WorkspaceView } from '../../preload/api'
+import type { RemoveResult, StateProblem, WorkspaceView } from '../../preload/api'
 import { useT } from '../ui'
 import { JiraSummary, type InboxState } from '../inbox/Inbox'
 import { FoldSection } from './Fold'
@@ -7,6 +7,7 @@ import { WorkspaceList } from './WorkspaceList'
 
 interface Props {
   workspaces: WorkspaceView[]
+  problem: StateProblem | null
   selected: string | null
   onSelect: (id: string) => void
   onRemove: (id: string) => Promise<RemoveResult>
@@ -16,7 +17,7 @@ interface Props {
   onNewWork: () => void
 }
 
-export function Sidebar({ workspaces, selected, onSelect, onRemove, onForget, inbox, onOpenTasks, onNewWork }: Props) {
+export function Sidebar({ workspaces, problem, selected, onSelect, onRemove, onForget, inbox, onOpenTasks, onNewWork }: Props) {
   const t = useT()
   return (
     <aside className="col left">
@@ -26,7 +27,7 @@ export function Sidebar({ workspaces, selected, onSelect, onRemove, onForget, in
       <JiraSummary inbox={inbox} onOpen={onOpenTasks} />
       <FoldSection id="work" title={t('Trabajo en marcha')} count={workspaces.length} tour="workspaces">
         <p className="lead">{t('Cada trabajo, con su agente.')}</p>
-        <WorkspaceList workspaces={workspaces} selected={selected} onSelect={onSelect} onRemove={onRemove} onForget={onForget} />
+        <WorkspaceList workspaces={workspaces} problem={problem} selected={selected} onSelect={onSelect} onRemove={onRemove} onForget={onForget} />
       </FoldSection>
       <History />
     </aside>

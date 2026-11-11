@@ -90,7 +90,7 @@ export async function cloneAndRegister(created: Created, folder: string, run: Ru
   }
   let reg = await registerRepo(dest, run)
   if ('error' in reg && reg.error === 'invalid-id') reg = await registerRepo(dest, run, { id: 'repo' })
-  if ('error' in reg && reg.error === 'id-taken') reg = await registerRepo(dest, run, { id: reg.suggested })
+  if ('suggested' in reg) reg = await registerRepo(dest, run, { id: reg.suggested })
   if ('error' in reg) return { cloneError: t('Clonado en {detail}, pero no se ha podido añadir a Atril.', { detail: dest }), cloneCommand }
   return { registered: reg.repo.id }
 }

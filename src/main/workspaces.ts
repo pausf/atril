@@ -1,10 +1,11 @@
 import { randomInt } from 'node:crypto'
 import { existsSync } from 'node:fs'
-import { mkdir, readFile, rename, rm as unlink, writeFile } from 'node:fs/promises'
+import { mkdir, rename, rm as unlink, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
-import type { Agent, Effort, Model, RemoveResult, WorkspaceRecord, WorkspaceResult, WorkspaceView } from '../preload/api'
+import type { Agent, Effort, Model, RemoveResult, WorkRefusal, WorkspaceRecord, WorkspaceResult, WorkspaceView } from '../preload/api'
 import { agentArgv, EFFORTS } from './agent'
-import { detectMode, effectiveMode, type Repo } from './repos'
+import { detectMode, effectiveMode, readRepos } from './repos'
+import { readState, StateError, stateBlock, stateProblem, statePath } from './state'
 import { run as defaultRun, type Runner } from './run'
 import { trustFolder } from './trust'
 import { hasPane, hasSession, killSession, newSession, paneDead, sessionName } from './tmux'
@@ -42,27 +43,20 @@ export const worktreePath = (repoId: string, branch: string): string => join(hom
 const ALPHABET = 'abcdefghijklmnopqrstuvwxyz0123456789'
 const newId = (): string => Array.from({ length: 8 }, () => ALPHABET[randomInt(ALPHABET.length)]).join('')
 
-async function readJson<T>(file: string, fallback: T): Promise<T> {
-  try {
-    return JSON.parse(await readFile(file, 'utf8')) as T
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return fallback
-    throw err
-  }
-}
-
 /** W91: the workspace the Libretto panel, its documents, Cambios and QA may read; a review session has none. */
 export async function flowWorkspace(id: string, run: Runner = defaultRun): Promise<WorkspaceView | undefined> {
   return (await listWorkspaces(run)).find((w) => w.id === id && w.mode !== 'review')
 }
 
-export const readRecords = async (): Promise<WorkspaceRecord[]> =>
-  (await readJson<{ workspaces: WorkspaceRecord[] }>(join(home(), 'workspaces.json'), { workspaces: [] })).workspaces
+/** W144: a damaged file throws StateError, never reads as empty. */
+export const readRecords = async (): Promise<WorkspaceRecord[]> => (await readState('workspaces')).workspaces
 
 export async function writeRecords(workspaces: WorkspaceRecord[]): Promise<void> {
+  // Never over a file that could not be read: its works would be lost.
+  await readState('workspaces')
   await mkdir(home(), { recursive: true })
   // Readers (watchers, the status poll) run while this writes: a temp file and a rename keep them whole.
-  const file = join(home(), 'workspaces.json')
+  const file = statePath('workspaces')
   const temp = `${file}.${process.pid}.${newId()}.tmp`
   await writeFile(temp, JSON.stringify({ workspaces }, null, 2) + '\n')
   await rename(temp, file)
@@ -83,10 +77,17 @@ export function taskPrompt(task: unknown, auto?: boolean): string | null {
 /** W59/W60: the hook reads this marker by session name, never the record. */
 const autoMarker = (id: string): string => join(home(), 'auto', sessionName(id))
 
-const readRepos = async (): Promise<Repo[]> => (await readJson<{ repos: Repo[] }>(join(home(), 'repos.json'), { repos: [] })).repos
-
 /** W131/W132: git's or tmux's own words go folded in `detail`, never in the sentence. */
 const failed = (error: string, detail: string): { error: string; detail: string; fix: 'terminal' } => ({ error, detail: detail.trim(), fix: 'terminal' })
+
+const READ_ONLY = new Set(['EACCES', 'EPERM', 'EROFS'])
+/** W146: Atril's own folder refused a write; `other` answers any other failure. */
+function unwritable(err: unknown, other?: string): WorkRefusal | undefined {
+  if (err instanceof StateError) return stateProblem(err)
+  const code = (err as NodeJS.ErrnoException).code ?? String(err)
+  if (READ_ONLY.has(code)) return { error: t('No puedo escribir en la carpeta de Atril ({home}).', { home: home() }), detail: code, fix: 'reveal', file: 'workspaces' }
+  return other === undefined ? undefined : { error: other, detail: code }
+}
 
 /** W60, W65 and W92: what the hook keeps by session name dies with the workspace. */
 const dropFiles = (id: string): Promise<unknown> =>
@@ -109,6 +110,8 @@ export async function openWorktree(
     return { error: t('«{branch}» no es un nombre de rama válido', { branch }) }
   }
 
+  const blocked = await stateBlock()
+  if (blocked) return blocked
   const repo = (await readRepos()).find((r) => r.id === repoId)
   if (!repo) return { error: t('No hay ningún repo «{id}»', { id: repoId }) }
 
@@ -167,7 +170,13 @@ export async function openWorktree(
       const local = (await run('git', ['-C', repo.path, 'rev-parse', '--verify', '--quiet', `refs/heads/${branch}`])).code === 0
       where = local ? [path, branch] : ['--track', '-b', branch, path, `${remote}/${branch}`]
     }
-    await mkdir(join(path, '..'), { recursive: true })
+    try {
+      await mkdir(join(path, '..'), { recursive: true })
+    } catch (err) {
+      const refusal = unwritable(err)
+      if (refusal) return refusal
+      throw err
+    }
     const add = await run('git', ['-C', repo.path, 'worktree', 'add', ...where])
     if (add.code !== 0) {
       // Atril runs git with its default English messages: this is git's own wording for a branch held elsewhere.
@@ -227,7 +236,15 @@ export async function openWorktree(
     paneId,
     createdAt: Math.floor(Date.now() / 1000)
   }
-  await writeRecords([...(await readRecords()), record])
+  try {
+    await writeRecords([...(await readRecords()), record])
+  } catch (err) {
+    // W146: a work Atril cannot list would run on unseen: everything this attempt made goes.
+    if (auto) await unlink(autoMarker(id), { force: true })
+    await killSession(id, run)
+    await undo()
+    return unwritable(err, t('No he podido guardar el trabajo.'))!
+  }
   return { workspace: { ...record, alive: true } }
 }
 
@@ -237,6 +254,8 @@ export async function listWorkspaces(run: Runner = defaultRun): Promise<Workspac
 }
 
 export async function removeWorkspace(id: string, run: Runner = defaultRun): Promise<RemoveResult> {
+  const blocked = await stateBlock()
+  if (blocked) return blocked
   const records = await readRecords()
   const rec = records.find((r) => r.id === id)
   if (!rec) return { error: t('Ese trabajo ya no existe') }
@@ -291,6 +310,8 @@ export async function removeWorkspace(id: string, run: Runner = defaultRun): Pro
 
 /** W133: for a work whose folder or git is broken; the folder itself is never touched. */
 export async function forgetWorkspace(id: string, run: Runner = defaultRun): Promise<RemoveResult> {
+  const blocked = await stateBlock()
+  if (blocked) return blocked
   const records = await readRecords()
   const rec = records.find((r) => r.id === id)
   if (!rec) return { error: t('Ese trabajo ya no existe') }
@@ -322,6 +343,8 @@ export async function reopenWorkspace(id: string, opts: { more?: boolean }, run:
 }
 
 async function reopenOnce(id: string, opts: { more?: boolean }, run: Runner): Promise<WorkspaceResult> {
+  const blocked = await stateBlock()
+  if (blocked) return blocked
   const records = await readRecords()
   const rec = records.find((r) => r.id === id)
   if (!rec) return { error: t('Ese trabajo ya no existe') }

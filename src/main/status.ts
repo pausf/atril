@@ -7,6 +7,7 @@ import { run as defaultRun, type Runner } from './run'
 import { paneDead, pressKey, sendKey, sendText } from './tmux'
 import type { AgentSnapshot } from './nextup'
 import { listWorkspaces } from './workspaces'
+import { orProblem, readState, StateError } from './state'
 import { t } from './lang'
 import { localiseActivity } from '../preload/activity-i18n'
 
@@ -107,6 +108,8 @@ export async function liveWorkspace(id: string, run: Runner): Promise<WorkspaceV
 
 /** W86: Escape in that workspace's pane, offered only while it works; the session stays alive. */
 export async function pauseAgent(id: string, run: Runner = defaultRun): Promise<QuickAnswer> {
+  const blocked = await orProblem(() => readState('workspaces'))
+  if ('error' in blocked) return { error: blocked.error }
   const ws = await liveWorkspace(id, run)
   if (!ws) return { error: replyGone() }
   if ((await hookState(ws.session)) !== 'working') return { error: t('Ese agente no está trabajando.') }
@@ -118,6 +121,8 @@ export async function pauseAgent(id: string, run: Runner = defaultRun): Promise<
 
 /** W87: asks a paused agent to go on with main's own words, then forgets the pause. */
 export async function resumeAgent(id: string, run: Runner = defaultRun): Promise<QuickAnswer> {
+  const blocked = await orProblem(() => readState('workspaces'))
+  if ('error' in blocked) return { error: blocked.error }
   const ws = await liveWorkspace(id, run)
   if (!ws) return { error: replyGone() }
   if ((await hookState(ws.session)) !== 'paused') return { error: t('Ese agente no está en pausa.') }
@@ -144,7 +149,14 @@ export function createStatus({ run = defaultRun, onChange, notify }: StatusOptio
     if (busy) return
     busy = true
     try {
-      const list = await listWorkspaces(run)
+      let list: WorkspaceView[]
+      try {
+        list = await listWorkspaces(run)
+      } catch (err) {
+        // W145: the poll is fired with `void`; a damaged list waits for the person, states as last seen.
+        if (err instanceof StateError) return
+        throw err
+      }
       for (const ws of list) {
         const next = await agentState(ws, run)
         const prev = known.get(ws.id)

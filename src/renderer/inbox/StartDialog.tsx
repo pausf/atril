@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
-import type { Effort, JiraIssue, Model, RepoView, StartProposal, WorkFix, WorkspaceView } from '../../preload/api'
+import type { Effort, JiraIssue, Model, RepoView, StartProposal, WorkRefusal, WorkspaceView } from '../../preload/api'
 import { Icon } from '../components/Icon'
 import { effortOptions, modelOptions } from '../components/models'
-import { Problem } from '../components/Problem'
+import { fixLabel, Problem } from '../components/Problem'
 import { ModePicker } from './ModePicker'
 import { suggest, type Suggestion } from './suggest'
 import { SuggestLine } from './SuggestLine'
@@ -31,7 +31,7 @@ export function StartDialog({ issue, onClose, onStarted, onOpenWorkspace }: Prop
   const [proposal, setProposal] = useState<StartProposal | null>(null)
   const [error, setError] = useState<string | null>(null)
   // W130: a refusal with its way past (a worktree this once, or Terminal in the repo).
-  const [problem, setProblem] = useState<{ error: string; detail?: string; fix?: WorkFix } | null>(null)
+  const [problem, setProblem] = useState<WorkRefusal | null>(null)
   const [busy, setBusy] = useState(false)
   const [warning, setWarning] = useState<{ ws: WorkspaceView; text: string } | null>(null)
   const suggestion = warning ? null : suggest(t, issue.summary, issue.type)
@@ -42,14 +42,14 @@ export function StartDialog({ issue, onClose, onStarted, onOpenWorkspace }: Prop
 
   useEffect(() => {
     const opener = document.activeElement as HTMLElement | null
-    window.atril.repos.list().then(setRepos, (e: unknown) => setError(String(e)))
+    window.atril.repos.list().then((r) => (Array.isArray(r) ? setRepos(r) : setProblem(r.problem)), (e: unknown) => setError(String(e)))
     return () => opener?.focus?.()
   }, [])
 
   // The repo decides the branch (taken names get a suffix); model and effort only change the command line.
   useEffect(() => {
     void window.atril.jira.proposeStart(issue, repoId || undefined, model, auto, effort).then((p) => {
-      if ('error' in p) return setError(p.error)
+      if ('error' in p) return 'fix' in p ? setProblem(p) : setError(p.error)
       setProposal(p)
       if (p.repoId && !repoId) setRepoId(p.repoId)
       if (p.branch && lastRepo.current !== p.repoId) setBranch(p.branch)
@@ -185,9 +185,9 @@ export function StartDialog({ issue, onClose, onStarted, onOpenWorkspace }: Prop
           <Problem
             what={problem.error}
             cant={t('No he creado el trabajo.')}
-            fix={problem.fix === 'worktree' ? t('Usar un worktree esta vez') : t('Abrir en Terminal')}
+            fix={fixLabel(t, problem.fix)}
             busy={busy}
-            onFix={() => void (problem.fix === 'worktree' ? submit(true) : openTerminal())}
+            onFix={() => void (problem.fix === 'worktree' ? submit(true) : problem.fix === 'reveal' ? window.atril.revealState(problem.file ?? 'repos') : openTerminal())}
             detail={problem.detail ?? ''}
           />
         )}

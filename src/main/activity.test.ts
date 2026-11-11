@@ -242,7 +242,7 @@ describe('activity', () => {
     const base = git(repo, 'rev-parse', 'HEAD').trim()
     writeFileSync(
       join(home, 'workspaces.json'),
-      JSON.stringify({ workspaces: [{ id: 't1', session: 'atril-t1', path: repo, baseCommit: base }, { id: 't2', session: 'atril-t2', path: repo, baseCommit: base }] })
+      JSON.stringify({ workspaces: [{ id: 't1', branch: 'b1', session: 'atril-t1', path: repo, baseCommit: base }, { id: 't2', branch: 'b2', session: 'atril-t2', path: repo, baseCommit: base }] })
     )
     const grow = (n: number): void => writeFileSync(join(repo, 'big.txt'), 'línea\n'.repeat(n))
     const ask = (tool = 'Edit', session = 'atril-t1'): string | null => sizeNotice({ home, session, event: 'PostToolUse', tool })

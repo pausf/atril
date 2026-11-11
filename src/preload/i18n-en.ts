@@ -725,4 +725,11 @@ export const EN: Record<string, string> = {
   "Un arreglo acotado: Sonnet lo hace bien a mitad de precio que Opus.": "A contained fix: Sonnet does it well at half Opus's price.",
   "Un cambio grande: mejor Opus con más esfuerzo.": "A big change: better Opus with more effort.",
   "«{effort}» no es un esfuerzo disponible": "«{effort}» is not an available effort",
+  "No puedo leer workspaces.json: está dañado. No abro ni cierro trabajos hasta que se arregle.": "I can't read workspaces.json: it is damaged. I won't open or close workspaces until it is fixed.",
+  "No puedo leer repos.json: está dañado. No puedo usar ni cambiar tus repos hasta que se arregle.": "I can't read repos.json: it is damaged. I can't use or change your repos until it is fixed.",
+  "No puedo escribir en la carpeta de Atril ({home}).": "I can't write to Atril's folder ({home}).",
+  "No he podido guardar el trabajo.": "I couldn't save the workspace.",
+  "Tus agentes siguen en tmux, pero no puedo enseñártelos.": "Your agents are still running in tmux, but I can't show them to you.",
+  "Mostrar en Finder": "Show in Finder",
+  "Atril no toca el archivo: arréglalo o quítalo y vuelve aquí.": "Atril leaves the file alone: fix it or move it away and come back here.",
 }

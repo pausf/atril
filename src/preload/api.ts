@@ -19,18 +19,30 @@ export interface RepoView {
   override?: Mode
 }
 
+/** W144/W148: Atril's two state files; the window names one to reveal, never a path. */
+export type StateFile = 'workspaces' | 'repos'
+/** A state file that exists but cannot be used: nothing is written over it until the person fixes it. */
+export interface StateProblem {
+  error: string
+  detail: string
+  fix: 'reveal'
+  file: StateFile
+}
+export type Listed<T> = T[] | { problem: StateProblem }
+
 export type AddRepoResult =
   | { repo: RepoView }
+  | StateProblem
   | { error: 'not-a-git-repo' }
   | { error: 'invalid-id' }
   | { error: 'id-taken'; suggested: string }
 
 export interface ReposApi {
-  list(): Promise<RepoView[]>
+  list(): Promise<Listed<RepoView>>
   /** Opens the folder picker in main; null when the person cancels. */
   add(): Promise<(AddRepoResult & { path: string }) | null>
   addWithId(path: string, id: string): Promise<AddRepoResult>
-  setOverride(id: string, mode: Mode | null): Promise<RepoView[]>
+  setOverride(id: string, mode: Mode | null): Promise<Listed<RepoView>>
 }
 
 
@@ -67,14 +79,16 @@ export interface WorkspaceView extends WorkspaceRecord {
 
 /**
  * W7/W8: `fix: 'worktree'` means opening again with `worktree: true` gets past it; `'terminal'` opens Terminal in the
- * folder (W131/W132); `'forget'` drops a work whose folder is gone (W133). `detail` is git's or tmux's own output.
+ * folder (W131/W132); `'forget'` drops a work whose folder is gone (W133); `'reveal'` shows `file` in Finder (W147).
+ * `detail` is git's or tmux's own output.
  */
-export type WorkFix = 'worktree' | 'terminal' | 'forget'
-export type WorkspaceResult = { workspace: WorkspaceView } | { error: string; detail?: string; fix?: WorkFix }
-export type RemoveResult = { ok: true } | { error: string; detail?: string; fix?: WorkFix }
+export type WorkFix = 'worktree' | 'terminal' | 'forget' | 'reveal'
+export type WorkRefusal = { error: string; detail?: string; fix?: WorkFix; file?: StateFile }
+export type WorkspaceResult = { workspace: WorkspaceView } | WorkRefusal
+export type RemoveResult = { ok: true } | WorkRefusal
 
 export interface WorkspacesApi {
-  list(): Promise<WorkspaceView[]>
+  list(): Promise<Listed<WorkspaceView>>
   /** `task`: an own task's text; main turns it into the Libretto flow's request (W40). */
   open(repoId: string, branch: string, agent: Agent, model?: Model, task?: string, auto?: boolean, worktree?: boolean, effort?: Effort): Promise<WorkspaceResult>
   remove(id: string): Promise<RemoveResult>
@@ -125,7 +139,7 @@ export interface StartProposal {
   /** The exact command line Start will run, built in main. */
   command: string
 }
-export type StartProposalResult = StartProposal | { error: string }
+export type StartProposalResult = StartProposal | { error: string } | StateProblem
 
 export interface StartRequest extends StartIssue {
   repoId: string
@@ -137,7 +151,7 @@ export interface StartRequest extends StartIssue {
   worktree?: boolean
 }
 /** The workspace stays open when only the Jira transition failed. */
-export type StartResult = { workspace: WorkspaceView; transitionError?: string } | { error: string; detail?: string; fix?: WorkFix }
+export type StartResult = { workspace: WorkspaceView; transitionError?: string } | WorkRefusal
 
 /** One section of Tareas: a board column or a status category, already ordered and filtered in main. */
 export interface InboxGroup {
@@ -862,6 +876,8 @@ export interface AtrilApi {
   installTool(tool: string): Promise<{ ok: true } | { error: string }>
   repos: ReposApi
   workspaces: WorkspacesApi
+  /** W147: shows that state file in Finder (Atril's folder if it is missing); any other name shows nothing. */
+  revealState(file: StateFile): Promise<boolean>
   term: TermApi
   jira: JiraApi
   settings: SettingsApi

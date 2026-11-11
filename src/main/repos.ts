@@ -1,8 +1,8 @@
-import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
+import { mkdir, rename, writeFile } from 'node:fs/promises'
 import { basename, join } from 'node:path'
-import type { AddRepoResult, Mode, RepoView } from '../preload/api'
+import type { AddRepoResult, Listed, Mode, RepoView, StateProblem } from '../preload/api'
 import type { Runner } from './run'
-import { atrilHome } from './paths'
+import { orProblem, readState as readStrict, statePath } from './state'
 import { t } from './lang'
 
 export interface Repo {
@@ -23,7 +23,6 @@ const HEAVY_DEPS_KB = 2 * 1024 * 1024
 const ID_RE = /^[a-z0-9-]+$/
 
 const segments = (entry: string): string[] => entry.split('/').filter(Boolean)
-const stateFile = (): string => join(atrilHome(), 'repos.json')
 
 interface State {
   repos: Repo[]
@@ -31,18 +30,15 @@ interface State {
   jiraRepos: Record<string, string>
 }
 
+// W148: a damaged file throws StateError; nothing below writes over it.
 async function readState(): Promise<State> {
-  try {
-    const raw = JSON.parse(await readFile(stateFile(), 'utf8')) as Partial<State>
-    return { repos: raw.repos ?? [], jiraRepos: raw.jiraRepos ?? {} }
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return { repos: [], jiraRepos: {} }
-    throw err
-  }
+  const raw = await readStrict('repos')
+  return { repos: raw.repos, jiraRepos: raw.jiraRepos ?? {} }
 }
 
 async function writeState(state: State): Promise<void> {
-  const file = stateFile()
+  await readState()
+  const file = statePath('repos')
   await mkdir(join(file, '..'), { recursive: true })
   const { jiraRepos, repos } = state
   // Same as workspaces.json: a reader during the write must see the old file or the new one, never half.
@@ -96,7 +92,9 @@ async function view(repo: Repo, run: Runner): Promise<RepoView> {
   return { ...repo, ...eff }
 }
 
-export async function registerRepo(path: string, run: Runner, opts: { id?: string } = {}): Promise<AddRepoResult> {
+export const registerRepo = (path: string, run: Runner, opts: { id?: string } = {}): Promise<AddRepoResult> => orProblem(() => register(path, run, opts))
+
+async function register(path: string, run: Runner, opts: { id?: string }): Promise<AddRepoResult> {
   const top = await run('git', ['-C', path, 'rev-parse', '--show-toplevel'])
   if (top.code !== 0) return { error: 'not-a-git-repo' }
   const toplevel = top.stdout.trim()
@@ -119,18 +117,21 @@ export async function registerRepo(path: string, run: Runner, opts: { id?: strin
   return { repo: await view(repo, run) }
 }
 
-export async function setOverride(id: string, mode: Mode | null): Promise<void> {
-  const repos = await readRepos()
-  await writeRepos(
-    repos.map((r) => {
-      if (r.id !== id) return r
-      const next: Repo = { id: r.id, path: r.path }
-      if (mode) next.override = mode
-      return next
-    })
-  )
-}
+export const setOverride = async (id: string, mode: Mode | null): Promise<StateProblem | undefined> =>
+  orProblem(async () => {
+    const repos = await readRepos()
+    await writeRepos(
+      repos.map((r) => {
+        if (r.id !== id) return r
+        const next: Repo = { id: r.id, path: r.path }
+        if (mode) next.override = mode
+        return next
+      })
+    )
+    return undefined
+  })
 
-export async function listRepos(run: Runner): Promise<RepoView[]> {
-  return Promise.all((await readRepos()).map((r) => view(r, run)))
+export async function listRepos(run: Runner): Promise<Listed<RepoView>> {
+  const repos = await orProblem(readRepos)
+  return Array.isArray(repos) ? Promise.all(repos.map((r) => view(r, run))) : { problem: repos }
 }

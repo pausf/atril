@@ -39,6 +39,7 @@ export async function proposeStart(
   if (opts.model !== undefined && !MODELS.includes(opts.model)) return { error: t('«{model}» no es un modelo disponible', { model: String(opts.model) }) }
   const command = display(agentArgv({ model: opts.model, effort: opts.effort, prompt: flowPrompt(issue.key, opts.auto) }))
   const repos = await listRepos(run)
+  if (!Array.isArray(repos)) return repos.problem
   const wanted = opts.repoId ?? (await rememberedRepo(memoryKey(issue)))
   const repo = repos.find((r) => r.id === wanted)
   if (!repo) return { command }

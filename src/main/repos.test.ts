@@ -1,3 +1,4 @@
+import type { RepoView } from '../preload/api'
 import { execFileSync } from 'node:child_process'
 import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -92,7 +93,7 @@ describe('repos', () => {
     await setOverride(added.repo.id, 'in-place')
 
     // a fresh call re-reads repos.json from disk, as a restart would
-    const after = (await listRepos(run))[0]!
+    const after = (await listRepos(run) as RepoView[])[0]!
     expect(after.mode).toBe('in-place')
     expect(after.reason).toBe('elegido por ti')
   })

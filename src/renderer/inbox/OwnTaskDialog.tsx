@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
-import type { Effort, Model, RepoView, WorkFix, WorkspaceView } from '../../preload/api'
+import type { Effort, Model, RepoView, WorkRefusal, WorkspaceView } from '../../preload/api'
 import { effortOptions, modelOptions } from '../components/models'
-import { Problem } from '../components/Problem'
+import { fixLabel, Problem } from '../components/Problem'
 import { useT } from '../ui'
 import { slugBranch } from './branch'
 import { ModePicker } from './ModePicker'
@@ -30,7 +30,7 @@ export function OwnTaskDialog({ textOptional = false, onClose, onOpenSettings, o
   const [auto, setAuto] = useState(false)
   const [error, setError] = useState<string | null>(null)
   // W130: a refusal main can get past with a worktree this once, or from Terminal in the repo.
-  const [problem, setProblem] = useState<{ error: string; detail?: string; fix?: WorkFix } | null>(null)
+  const [problem, setProblem] = useState<WorkRefusal | null>(null)
   const [busy, setBusy] = useState(false)
   const branch = edited ?? slugBranch(text)
   const suggestion = suggest(t, text)
@@ -42,6 +42,7 @@ export function OwnTaskDialog({ textOptional = false, onClose, onOpenSettings, o
   useEffect(() => {
     const opener = document.activeElement as HTMLElement | null
     window.atril.repos.list().then((r) => {
+      if (!Array.isArray(r)) return setProblem(r.problem)
       setRepos(r)
       if (r.length === 1 && r[0]) setRepoId(r[0].id)
     }, (e: unknown) => setError(String(e)))
@@ -170,9 +171,9 @@ export function OwnTaskDialog({ textOptional = false, onClose, onOpenSettings, o
           <Problem
             what={problem.error}
             cant={t('No he creado el trabajo.')}
-            fix={problem.fix === 'worktree' ? t('Usar un worktree esta vez') : t('Abrir en Terminal')}
+            fix={fixLabel(t, problem.fix)}
             busy={busy}
-            onFix={() => void (problem.fix === 'worktree' ? submit(true) : openTerminal())}
+            onFix={() => void (problem.fix === 'worktree' ? submit(true) : problem.fix === 'reveal' ? window.atril.revealState(problem.file ?? 'repos') : openTerminal())}
             detail={problem.detail ?? ''}
           />
         )}

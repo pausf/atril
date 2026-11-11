@@ -3,7 +3,7 @@ import type { FlowStage, RemoveResult, WorkspaceResult, WorkspaceView } from '..
 import { stateOf, useAgentStates } from '../agents'
 import { Steps } from '../flow/Steps'
 import { useT } from '../ui'
-import { Problem } from './Problem'
+import { fixLabel, Problem } from './Problem'
 import { StateLabel } from './StateLabel'
 import { Terminal } from './Terminal'
 
@@ -36,8 +36,14 @@ function Stopped({ ws, onReopened, onForget }: { ws: WorkspaceView; onReopened: 
         <Problem
           what={refusal.error}
           cant={t('Su agente no sigue hasta que lo vuelvas a abrir.')}
-          fix={refusal.fix === 'terminal' ? t('Abrir en Terminal') : refusal.fix === 'forget' ? t('Quitar de la lista igualmente') : undefined}
-          onFix={() => void (refusal.fix === 'forget' ? onForget(ws.id) : window.atril.workspaces.terminal({ id: ws.id }))}
+          fix={fixLabel(t, refusal.fix)}
+          onFix={() =>
+            void (refusal.fix === 'forget'
+              ? onForget(ws.id)
+              : refusal.fix === 'reveal'
+                ? window.atril.revealState(refusal.file ?? 'workspaces')
+                : window.atril.workspaces.terminal({ id: ws.id }))
+          }
           detail={refusal.detail ?? ''}
           busy={busy}
           onClose={() => setRefusal(null)}

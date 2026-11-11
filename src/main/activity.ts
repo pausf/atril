@@ -65,7 +65,8 @@ export function createActivity({ run = defaultRun, emit }: ActivityOptions) {
     },
     async start(): Promise<void> {
       await mkdir(activityDir(), { recursive: true })
-      await refresh()
+      // Like the watcher's: a damaged workspaces.json (W145) must not reject the app's start.
+      await refresh().catch(() => undefined)
       watcher = watch(activityDir(), () => void refresh().catch(() => undefined))
     },
     stop(): void {

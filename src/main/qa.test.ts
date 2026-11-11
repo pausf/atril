@@ -337,7 +337,7 @@ describe('launchQa', () => {
   it('qa status sends the newest screenshots as data urls', async () => {
     const web = project({ 'package.json': pkg({ scripts: ['dev'] }) })
     const plain = project({})
-    writeFileSync(join(home, 'workspaces.json'), JSON.stringify({ workspaces: [{ id: 'stqa0001', path: web }, { id: 'stqa0002', path: plain }] }))
+    writeFileSync(join(home, 'workspaces.json'), JSON.stringify({ workspaces: [rec('stqa0001', web), rec('stqa0002', plain)] }))
     const none: Runner = async () => ({ code: 1, stdout: '', stderr: '' })
     expect(await qaStatus('stqa0002', none)).toEqual({ target: null, live: false, shots: [] })
     expect(await qaStatus('nobody00', none)).toBeNull()

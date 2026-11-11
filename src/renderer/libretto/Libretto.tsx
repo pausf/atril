@@ -31,7 +31,7 @@ export function Libretto() {
 
   useEffect(() => {
     let live = true
-    void window.atril.repos.list().then((l) => live && setRepos(l), () => live && setRepos([]))
+    void window.atril.repos.list().then((l) => live && setRepos(Array.isArray(l) ? l : []), () => live && setRepos([]))
     void window.atril.settings.jira.status().then((s) => live && setJiraReady(s.saved && s.board !== undefined), () => undefined)
     return () => {
       live = false

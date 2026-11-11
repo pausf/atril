@@ -39,7 +39,7 @@ describe('subagents', () => {
   it('the subagent list reaches the window', async () => {
     writeFileSync(
       join(home, 'workspaces.json'),
-      JSON.stringify({ workspaces: ['aaaaaaa1', 'aaaaaaa2'].map((id) => ({ id, session: `atril-${id}`, path: '/x' })) })
+      JSON.stringify({ workspaces: ['aaaaaaa1', 'aaaaaaa2'].map((id) => ({ id, branch: `b-${id}`, session: `atril-${id}`, path: '/x' })) })
     )
     write('atril-aaaaaaa1', { entries: [running], pending: [{ type: 'explorer', description: 'pendiente', at: 1 }] })
     const emit = vi.fn()
@@ -77,7 +77,7 @@ describe('subagents', () => {
   }, 30000)
 
   it('the description comes from the meta file', async () => {
-    writeFileSync(join(home, 'workspaces.json'), JSON.stringify({ workspaces: [{ id: 'aaaaaaa1', session: 'atril-aaaaaaa1', path: '/x' }] }))
+    writeFileSync(join(home, 'workspaces.json'), JSON.stringify({ workspaces: [{ id: 'aaaaaaa1', branch: 'b', session: 'atril-aaaaaaa1', path: '/x' }] }))
     const dir = tmp()
     const tr = (id: string): string => join(dir, `agent-${id}.jsonl`)
     const meta = (id: string, body: string): void => writeFileSync(join(dir, `agent-${id}.meta.json`), body)
@@ -124,7 +124,7 @@ describe('subagents', () => {
   it('the log reads only the stored transcript', async () => {
     writeFileSync(
       join(home, 'workspaces.json'),
-      JSON.stringify({ workspaces: ['aaaaaaa1', 'aaaaaaa2'].map((id) => ({ id, session: `atril-${id}`, path: '/x' })) })
+      JSON.stringify({ workspaces: ['aaaaaaa1', 'aaaaaaa2'].map((id) => ({ id, branch: `b-${id}`, session: `atril-${id}`, path: '/x' })) })
     )
     const dir = tmp()
     const tr = join(dir, 'agent-a1.jsonl')

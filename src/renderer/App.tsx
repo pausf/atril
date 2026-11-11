@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import type { DoctorReport, JiraIssue, NextItem, RemoveResult, WorkspaceView } from '../preload/api'
+import type { DoctorReport, JiraIssue, NextItem, RemoveResult, StateProblem, WorkspaceView } from '../preload/api'
 import { FlowPanel } from './flow/FlowPanel'
 import { BigCode } from './flow/BigCode'
 import { useBoxes, useFlow } from './flow/useFlow'
@@ -76,6 +76,18 @@ function Shell() {
   }, [missing])
 
   const [workspaces, setWorkspaces] = useState<WorkspaceView[]>([])
+  // W145: a damaged workspaces.json; the list keeps what it last showed, so open terminals stay.
+  const [wsProblem, setWsProblem] = useState<StateProblem | null>(null)
+  const listWorkspaces = async (): Promise<WorkspaceView[] | null> => {
+    const r = await window.atril.workspaces.list()
+    if (!Array.isArray(r)) {
+      setWsProblem(r.problem)
+      return null
+    }
+    setWsProblem(null)
+    setWorkspaces(r)
+    return r
+  }
   /** False until listed: the setup card must not flash before the real list arrives. */
   const [listed, setListed] = useState(false)
   const [worked, setWorked] = useState<boolean | null>(null)
@@ -157,11 +169,10 @@ function Shell() {
 
   useEffect(() => {
     void (async () => {
-      const list = await window.atril.workspaces.list()
-      setWorkspaces(list)
+      const list = await listWorkspaces()
       setListed(true)
       // Dev snapshot: show the first workspace without a click.
-      if (list[0] && (await window.atril.snapshotWorkspace())) setSelected(list[0].id)
+      if (list?.[0] && (await window.atril.snapshotWorkspace())) setSelected(list[0].id)
     })()
   }, [])
 
@@ -175,7 +186,7 @@ function Shell() {
   }, [])
   // W97: only for someone who never worked here, and never over the tutorial. A live workspace is any listed one,
   // stopped in tmux or not; the closed ones are in the history.
-  const setup = listed && worked === false && ui !== null && !ui.setupDismissed && !tourOpen && workspaces.length === 0
+  const setup = listed && worked === false && ui !== null && !ui.setupDismissed && !tourOpen && workspaces.length === 0 && wsProblem === null
 
   // A notification click must show the workspace, not just select it behind another screen (W38).
   useEffect(
@@ -207,9 +218,8 @@ function Shell() {
     if (returnTo === null) return
     setReturnTo(null)
     // Re-listed: a workspace closed meanwhile is not gone back to.
-    const list = await window.atril.workspaces.list()
-    setWorkspaces(list)
-    if (list.some((w) => w.id === returnTo)) setSelected(returnTo)
+    const list = await listWorkspaces()
+    if (list?.some((w) => w.id === returnTo)) setSelected(returnTo)
   }
   // N2: ⌘↩ only where the list is on screen or one click away; in focus, only for a waiting agent (W79).
   const nextEnabled = focused ? waiting.length > 0 : (screen === 'work' || screen === 'tasks') && next.length > 0
@@ -298,7 +308,7 @@ function Shell() {
 
   // Start already created the workspace in main: only the list and the inbox links are stale.
   const started = async (ws: WorkspaceView): Promise<void> => {
-    setWorkspaces(await window.atril.workspaces.list())
+    await listWorkspaces()
     setSelected(ws.id)
   }
 
@@ -325,7 +335,7 @@ function Shell() {
     const r = await (forget ? window.atril.workspaces.forget(id) : window.atril.workspaces.remove(id))
     if ('error' in r) return r
     if (selected === id) setSelected(null)
-    setWorkspaces(await window.atril.workspaces.list())
+    await listWorkspaces()
     return r
   }
 
@@ -360,10 +370,7 @@ function Shell() {
       <NavigationContext.Provider
         value={{
           openSettings: () => setScreen('settings'),
-          openWorkspace: (id) => void window.atril.workspaces.list().then((list) => {
-            setWorkspaces(list)
-            openWorkspace(id)
-          })
+          openWorkspace: (id) => void listWorkspaces().then(() => openWorkspace(id))
         }}
       >
         <TopBar problems={problems} screen={screen} openDoctor={openDoctor} />
@@ -386,6 +393,7 @@ function Shell() {
               {!focused && (
                 <Sidebar
                   workspaces={workspaces}
+                  problem={wsProblem}
                   selected={selected}
                   onSelect={pick}
                   onRemove={remove}
@@ -410,7 +418,7 @@ function Shell() {
                   <Workspace
                     ws={workspaces.find((w) => w.id === selected)}
                     flow={flow}
-                    onReopened={async () => setWorkspaces(await window.atril.workspaces.list())}
+                    onReopened={async () => void (await listWorkspaces())}
                     onForget={(id) => remove(id, true)}
                     big={bigBox && selected ? <BigCode key={bigBox.index} workspaceId={selected} box={bigBox} tick={boxes.tick} start={big?.file} onClose={() => setBig(null)} /> : null}
                     switcher={

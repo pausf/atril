@@ -1,5 +1,5 @@
 import { vi } from 'vitest'
-import type { ActivityLine, SubagentEntry, SubagentLine, AddRepoResult, Aviso, FileChange, FlowBoxes, FlowDocs, ForgeId, ForgeStatus, Mode, MrDraft, MrDrafts, MrDraftsResult, MrFixCiResult, MrLists, MrReply, MrScoreState, MrThreads, MrWork, AgentState, QaBugResult, QaLaunchResult, QaManualRequest, QaReport, QaResult, QaStatus, QaTargets, AtrilApi, RemoveResult, QuickAnswer, QuickReplies, FlowStage, HistoryEntry, IdeaJiraResult, IdeaResult, LibrettoCounts, LibrettoState, JiraIssue, JiraSettingsStatus, MenuAction, NextItem, StartProposalResult, StartRequest, StartResult, RepoView, ToolReport, UiState, WorkCost, WorkspaceResult, WorkspaceView } from '../preload/api'
+import type { ActivityLine, SubagentEntry, SubagentLine, AddRepoResult, Aviso, FileChange, FlowBoxes, FlowDocs, ForgeId, ForgeStatus, Mode, MrDraft, MrDrafts, MrDraftsResult, MrFixCiResult, MrLists, MrReply, MrScoreState, MrThreads, MrWork, AgentState, StateProblem, QaBugResult, QaLaunchResult, QaManualRequest, QaReport, QaResult, QaStatus, QaTargets, AtrilApi, RemoveResult, QuickAnswer, QuickReplies, FlowStage, HistoryEntry, IdeaJiraResult, IdeaResult, LibrettoCounts, LibrettoState, JiraIssue, JiraSettingsStatus, MenuAction, NextItem, StartProposalResult, StartRequest, StartResult, RepoView, ToolReport, UiState, WorkCost, WorkspaceResult, WorkspaceView } from '../preload/api'
 
 export const workspace = (id: string, branch: string, alive = true): WorkspaceView => ({
   id,
@@ -106,6 +106,10 @@ interface Options {
   remove?: Record<string, RemoveResult>
   /** What workspaces.reopen answers per id; missing means reopened (the work turns alive). */
   reopen?: Record<string, WorkspaceResult>
+  /** What workspaces.list answers when workspaces.json is damaged (W145). */
+  wsProblem?: StateProblem
+  /** What repos.list and setOverride answer when repos.json is damaged (S33). */
+  reposProblem?: StateProblem
 }
 
 /** ui.json lives in `stored`; pass the same object to a second mock to simulate a restart. */
@@ -168,7 +172,7 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
     doctor: async () => o.doctor ?? [],
     installTool: async () => ({ ok: true }),
     workspaces: {
-      list: async () => [...(o.workspaces ?? []), ...opened].filter((w) => !gone.has(w.id)).map((w) => (revived.has(w.id) ? { ...w, alive: true } : w)),
+      list: async () => o.wsProblem ? { problem: o.wsProblem } : [...(o.workspaces ?? []), ...opened].filter((w) => !gone.has(w.id)).map((w) => (revived.has(w.id) ? { ...w, alive: true } : w)),
       open: vi.fn(async (_repo: string, branch: string): Promise<WorkspaceResult> => ({ workspace: workspace('own00001', branch) })),
       remove: vi.fn(async (id: string): Promise<RemoveResult> => {
         const r = o.remove?.[id] ?? { ok: true }
@@ -187,7 +191,7 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
       terminal: vi.fn(async () => ({ ok: true as const }))
     },
     repos: {
-      list: async () => o.repos ?? [],
+      list: async () => (o.reposProblem ? { problem: o.reposProblem } : o.repos ?? []),
       add: vi.fn(async () => o.addRepo ?? null),
       addWithId: vi.fn(async (path: string, id: string): Promise<AddRepoResult> => ({ repo: { id, path, mode: 'worktree', reason: '' } })),
       setOverride: vi.fn(async (id: string, mode: Mode | null): Promise<RepoView[]> =>
@@ -376,6 +380,7 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
       fix: vi.fn(async () => ({ ok: true as const }))
     },
     term: { onData: () => off, input: vi.fn(), attach: vi.fn(async () => undefined), resize: vi.fn(), detach: vi.fn() },
+    revealState: vi.fn(async () => true),
     snapshotView: async () => null,
     snapshotWorkspace: async () => false
   } as unknown as AtrilApi

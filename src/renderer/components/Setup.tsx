@@ -32,7 +32,7 @@ export function Setup({ report, active, onTools, onNewWork, onDismiss }: {
     let on = true
     const saved = (p: Promise<{ saved: boolean }>): Promise<boolean> => p.then((s) => s.saved, () => false)
     void Promise.all([
-      window.atril.repos.list().then((r) => r.length > 0, () => false),
+      window.atril.repos.list().then((r) => Array.isArray(r) && r.length > 0, () => false),
       saved(window.atril.settings.jira.status()),
       Promise.all(FORGES.map((f) => saved(window.atril.settings.forge.status(f)))).then((s) => s.includes(true))
     ]).then(([repos, jira, forge]) => on && setLive({ repos, jira, forge }))

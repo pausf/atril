@@ -111,7 +111,8 @@ export function createSubagents({ emit }: SubagentsOptions) {
     },
     async start(): Promise<void> {
       await mkdir(subagentsDir(), { recursive: true })
-      await refresh()
+      // Like the watcher's: a damaged workspaces.json (W145) must not reject the app's start.
+      await refresh().catch(() => undefined)
       watcher = watch(subagentsDir(), () => void refresh().catch(() => undefined))
     },
     stop(): void {

@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process'
-import { existsSync, mkdirSync, readFileSync } from 'node:fs'
+import { chmodSync, existsSync, mkdirSync, readFileSync } from 'node:fs'
 import { rmSync, writeFileSync } from 'node:fs'
 import type { Effort } from '../preload/api'
 import { join } from 'node:path'
@@ -138,6 +138,43 @@ describe('workspaces', () => {
     expect(git(repo, 'branch', '--list', 'feat/iptmux').trim()).toBe('')
 
     expect(existsSync(join(home, 'workspaces.json'))).toBe(false)
+  }, 40_000)
+
+  it('a read-only atril home undoes the open and says so', async () => {
+    const sentence = `No puedo escribir en la carpeta de Atril (${home}).`
+    const sessions = (): string => {
+      try {
+        return tmuxOut(sock, 'list-sessions', '-F', '#{session_name}').trim()
+      } catch {
+        return ''
+      }
+    }
+    try {
+      // The worktree's parent cannot be made: nothing was made, so nothing to undo.
+      chmodSync(home, 0o555)
+      const early = await openWorktree({ repoId: 'demo', branch: 'feat/ro', agent: 'claude', argv: SLEEP })
+      expect(early).toEqual({ error: sentence, detail: 'EACCES', fix: 'reveal', file: 'workspaces' })
+      expect(git(repo, 'branch', '--list', 'feat/ro').trim()).toBe('')
+      chmodSync(home, 0o755)
+
+      // The record cannot be written once the agent is up: the session, the worktree and the branch go.
+      const lockAfterStart: Runner = async (cmd, args, opts) => {
+        const r = await run(cmd, args, opts)
+        if (cmd === 'tmux' && args.includes('respawn-pane')) chmodSync(home, 0o555)
+        return r
+      }
+      const late = await openWorktree({ repoId: 'demo', branch: 'feat/late', agent: 'claude', argv: SLEEP }, lockAfterStart)
+      expect(late).toEqual({ error: sentence, detail: 'EACCES', fix: 'reveal', file: 'workspaces' })
+      chmodSync(home, 0o755)
+      expect(sessions()).toBe('')
+      expect(existsSync(join(home, 'wt', 'demo', 'feat', 'late'))).toBe(false)
+      expect(git(repo, 'branch', '--list', 'feat/late').trim()).toBe('')
+      expect(git(repo, 'worktree', 'list')).not.toContain('feat/late')
+      expect(existsSync(join(home, 'workspaces.json'))).toBe(false)
+
+    } finally {
+      chmodSync(home, 0o755)
+    }
   }, 40_000)
 
   it('close refusals say what and how to get past', async () => {

@@ -37,6 +37,7 @@ import { inboxGroups } from './jira/board'
 import { proposeStart, start } from './jira/start'
 import type { Effort, InboxGroup, InboxResult, JiraIssue, Model, NextItem, QaBugRequest, StartIssue, StartRequest } from '../preload/api'
 import { listRepos, readRepos, registerRepo, setOverride } from './repos'
+import { orProblem, revealState } from './state'
 import { dropIdea, editIdea, ideaToJira, librettoCounts, librettoState, queueIdea, startQueued } from './libretto'
 import * as pty from './pty'
 import { loginPath } from './login-path'
@@ -271,9 +272,10 @@ app.whenReady().then(async () => {
   })
   ipcMain.handle('atril:repos:addWithId', (_e, path: string, id: string) => registerRepo(path, run, { id }))
   ipcMain.handle('atril:repos:setOverride', async (_e, id: string, mode: Mode | null) => {
-    await setOverride(id, mode)
-    return listRepos(run)
+    const problem = await setOverride(id, mode)
+    return problem ? { problem } : listRepos(run)
   })
+  ipcMain.handle('atril:state:reveal', (_e, file: unknown) => revealState(file, (path) => shell.showItemInFolder(path)))
   const secretStore = createSecretStore({
     isAvailable: () => safeStorage.isEncryptionAvailable(),
     encrypt: (s) => safeStorage.encryptString(s),
@@ -520,7 +522,11 @@ app.whenReady().then(async () => {
   ipcMain.handle('atril:qa:bug', async (_e, id: unknown, req: QaBugRequest) =>
     qaBug(String(id), req, { run, creds: await savedJira(), board: (await secretStore.hasSecret('jira')).board ?? null })
   )
-  ipcMain.handle('atril:ws:list', () => listWorkspaces(run))
+  // W145: a damaged list is shown as such, never as a rejection or an empty list.
+  ipcMain.handle('atril:ws:list', async () => {
+    const listed = await orProblem(() => listWorkspaces(run))
+    return Array.isArray(listed) ? listed : { problem: listed }
+  })
   ipcMain.handle('atril:ws:open', async (_e, repoId: string, branch: string, agent: Agent, model?: Model, task?: unknown, auto?: unknown, worktree?: unknown, effort?: Effort) => {
     const badEffort = effortError(effort)
     if (badEffort) return { error: badEffort }
