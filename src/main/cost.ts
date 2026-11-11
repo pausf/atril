@@ -2,7 +2,7 @@ import { open, readdir, readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import type { WorkCost } from '../preload/api'
 import { atrilHome } from './paths'
-import { priceOf } from './prices'
+import { LONG_PROMPT, priceOf } from './prices'
 import { readRecords } from './workspaces'
 
 export interface Usage {
@@ -63,28 +63,28 @@ function take(work: Work, text: string): void {
   }
 }
 
+// Priced message by message: a long-prompt tier depends on each request, not on the model's total.
 function total(work: Work): Totals {
   const models: Record<string, Usage> = {}
-  for (const { model, usage } of work.messages.values()) {
-    const m = (models[model] ??= { input: 0, output: 0, cacheWrite: 0, cacheRead: 0 })
-    m.input += usage.input
-    m.output += usage.output
-    m.cacheWrite += usage.cacheWrite
-    m.cacheRead += usage.cacheRead
-  }
   let tokens = 0
   let usd: number | null = null
-  const unpriced: string[] = []
-  for (const [model, u] of Object.entries(models)) {
+  const unpriced = new Set<string>()
+  for (const { model, usage: u } of work.messages.values()) {
+    const m = (models[model] ??= { input: 0, output: 0, cacheWrite: 0, cacheRead: 0 })
+    m.input += u.input
+    m.output += u.output
+    m.cacheWrite += u.cacheWrite
+    m.cacheRead += u.cacheRead
     tokens += u.input + u.output + u.cacheWrite + u.cacheRead
-    const p = priceOf(model)
-    if (!p) {
-      unpriced.push(model)
+    const base = priceOf(model)
+    if (!base) {
+      unpriced.add(model)
       continue
     }
+    const p = base.long && u.input + u.cacheWrite + u.cacheRead > LONG_PROMPT ? base.long : base
     usd = (usd ?? 0) + (u.input * p.input + u.output * p.output + u.cacheWrite * p.input * 1.25 + u.cacheRead * (p.cacheRead ?? p.input * 0.1)) / 1e6
   }
-  return { tokens, usd, unpriced, models }
+  return { tokens, usd, unpriced: [...unpriced], models }
 }
 
 const POLL_MS = 30_000

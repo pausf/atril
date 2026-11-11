@@ -23,7 +23,9 @@ describe('new work dialog', () => {
     await user.type(screen.getByRole('textbox', { name: /Qué hay que hacer/ }), 'haz un QA')
     await user.clear(await screen.findByLabelText('Rama'))
     await user.type(screen.getByLabelText('Rama'), 'qa-auto')
+    await user.selectOptions(screen.getByLabelText('Esfuerzo'), 'high')
     await user.click(screen.getByRole('button', { name: 'Empezar' }))
+    expect(open).toHaveBeenLastCalledWith('shop-web', 'qa-auto', 'claude', 'default', 'haz un QA', false, false, 'high')
 
     const alert = await screen.findByRole('alert')
     expect(alert.textContent).toContain('Tu copia de shop-web tiene 5 cambios')
@@ -33,7 +35,7 @@ describe('new work dialog', () => {
     expect(folded.querySelector('code')!.textContent).toBe(' M main.js')
 
     await user.click(screen.getByRole('button', { name: 'Usar un worktree esta vez' }))
-    expect(open).toHaveBeenLastCalledWith('shop-web', 'qa-auto', 'claude', 'default', 'haz un QA', false, true)
+    expect(open).toHaveBeenLastCalledWith('shop-web', 'qa-auto', 'claude', 'default', 'haz un QA', false, true, 'high')
     expect(onStarted).toHaveBeenCalledWith(started)
   })
   it('a blank dirty retry opens plain claude in a worktree', async () => {
@@ -48,6 +50,35 @@ describe('new work dialog', () => {
     await user.click(screen.getByRole('button', { name: 'Empezar' }))
     await user.click(await screen.findByRole('button', { name: 'Usar un worktree esta vez' }))
     expect(open).toHaveBeenLastCalledWith('shop-web', 'solo', 'claude', 'default', undefined, false, true)
+  })
+  it('a suggestion is shown and used only on click', async () => {
+    const open = vi.fn().mockResolvedValue({ workspace: { id: 'w3', branch: 'b' } as WorkspaceView })
+    window.atril = { repos: { list: async () => [{ id: 'shop-web', path: '/r', mode: 'worktree', reason: '' }] }, workspaces: { open } } as unknown as AtrilApi
+    const user = userEvent.setup()
+    render(createElement(OwnTaskDialog, { textOptional: true, onClose: () => undefined, onOpenSettings: () => undefined, onStarted: async () => undefined }))
+    const model = screen.getByLabelText<HTMLSelectElement>('Modelo')
+    const effort = screen.getByLabelText<HTMLSelectElement>('Esfuerzo')
+    const shown = (): HTMLElement | null => screen.queryByText(/Sugerido:/)
+
+    await user.type(screen.getByRole('textbox', { name: /Qué hay que hacer/ }), 'Añadir filtro')
+    expect(shown()).toBeNull()
+    await user.type(screen.getByRole('textbox', { name: /Qué hay que hacer/ }), ' y arregla el fallo del carrito')
+    expect(shown()!.textContent).toContain('Sugerido: Sonnet · Medio')
+    expect(shown()!.textContent).toContain('Un arreglo acotado: Sonnet lo hace bien a mitad de precio que Opus.')
+    // Never by itself: the selects keep the person's choice until «Usar».
+    expect([model.value, effort.value]).toEqual(['default', 'default'])
+
+    await user.click(screen.getByRole('button', { name: 'Usar' }))
+    expect([model.value, effort.value]).toEqual(['sonnet', 'medium'])
+    expect(shown()).toBeNull()
+    // One of the two moved away: it shows again.
+    await user.selectOptions(effort, 'high')
+    expect(shown()).not.toBeNull()
+    await user.selectOptions(effort, 'medium')
+    expect(shown()).toBeNull()
+
+    await user.click(screen.getByRole('button', { name: 'Empezar' }))
+    expect(open).toHaveBeenLastCalledWith('shop-web', expect.any(String), 'claude', 'sonnet', 'Añadir filtro y arregla el fallo del carrito', false, false, 'medium')
   })
   it('a git failure offers terminal for the repo', async () => {
     const open = vi.fn().mockResolvedValue({ error: 'git no ha podido crear la carpeta del trabajo.', detail: "fatal: '/wt/x' already exists", fix: 'terminal' })

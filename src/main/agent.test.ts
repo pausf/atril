@@ -2,12 +2,14 @@ import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { agentArgv, hooksSettings } from './agent'
+import type { Effort } from '../preload/api'
+import { effortOptions, modelOptions } from '../renderer/components/models'
+import { agentArgv, EFFORTS, hooksSettings, MODELS } from './agent'
 import { resourcesDir } from './paths'
 import { run } from './run'
 import { agentSpy, cleanTmp, killTmux, makeRegisteredRepo, tmp, tmuxSock } from './test-helpers'
 import { updateClaudeConfig, withTrust } from './trust'
-import { start } from './jira/start'
+import { proposeStart, start } from './jira/start'
 import { openWorktree, removeWorkspace } from './workspaces'
 
 describe('agentArgv', () => {
@@ -77,6 +79,57 @@ describe('model', () => {
     expect(argv.slice(argv.indexOf('--model'), argv.indexOf('--model') + 2)).toEqual(['--model', 'haiku'])
     const stored = JSON.parse(readFileSync(join(home, 'workspaces.json'), 'utf8')).workspaces[0]
     expect(stored.model).toBe('haiku')
+
+    // W34: Fable is not offered; the effort picker beside the model offers default plus the four levels.
+    const id = (es: string): string => es
+    expect(MODELS).toEqual(['default', 'opus', 'sonnet', 'haiku'])
+    expect(modelOptions(id).map((m) => m.value)).toEqual([...MODELS])
+    expect(effortOptions(id)).toEqual([
+      { value: 'default', label: 'Por defecto' },
+      { value: 'low', label: 'Bajo' },
+      { value: 'medium', label: 'Medio' },
+      { value: 'high', label: 'Alto' },
+      { value: 'xhigh', label: 'Muy alto' }
+    ])
+  })
+
+  it('effort reaches the command only from the list', async () => {
+    expect(EFFORTS).toEqual(['low', 'medium', 'high', 'xhigh'])
+    const prompt = '/libretto:libretto-flow PF-1'
+    for (const effort of EFFORTS) {
+      const argv = agentArgv({ model: 'opus', effort, prompt })
+      expect(argv.slice(argv.indexOf('--effort'), argv.indexOf('--effort') + 2)).toEqual(['--effort', effort])
+      expect(argv.at(-1)).toBe(prompt)
+    }
+    for (const effort of ['default', undefined, 'max', '--dangerously-skip-permissions'] as Array<Effort | undefined>) {
+      expect(agentArgv({ effort, prompt })).toEqual(agentArgv({ prompt }))
+    }
+
+    const spy = agentSpy(run)
+    const r = await openWorktree({ repoId: 'demo', branch: 'feat/e', agent: 'claude', effort: 'xhigh' }, spy.run)
+    if (!('workspace' in r)) throw new Error(r.error)
+    expect(spy.argvs[0]!.slice(spy.argvs[0]!.indexOf('--effort'), spy.argvs[0]!.indexOf('--effort') + 2)).toEqual(['--effort', 'xhigh'])
+    const plain = await openWorktree({ repoId: 'demo', branch: 'feat/d', agent: 'claude', effort: 'default' }, spy.run)
+    if (!('workspace' in plain)) throw new Error(plain.error)
+    expect(spy.argvs[1]).not.toContain('--effort')
+    const stored = JSON.parse(readFileSync(join(home, 'workspaces.json'), 'utf8')).workspaces
+    expect(stored[0].effort).toBe('xhigh')
+    expect(stored[1]).not.toHaveProperty('effort')
+
+    // «Empezar»: the command it shows and the one it runs carry the effort before the prompt; the record keeps it.
+    const shown = await proposeStart({ key: 'PF-7', components: [] }, { effort: 'high' })
+    if ('error' in shown) throw new Error(shown.error)
+    expect(shown.command).toMatch(/ --effort high "\/libretto:libretto-flow PF-7"$/)
+    const jira = await start({ key: 'PF-8', components: [], repoId: 'demo', branch: 'PF-8', model: 'sonnet', effort: 'medium', group: 'doing' }, { run: spy.run, creds: null })
+    if (!('workspace' in jira)) throw new Error(jira.error)
+    const argv = spy.argvs[2]!
+    expect(argv.slice(argv.indexOf('--effort'), argv.indexOf('--effort') + 2)).toEqual(['--effort', 'medium'])
+    expect(argv.indexOf('--effort')).toBeLessThan(argv.length - 1)
+    expect(jira.workspace.effort).toBe('medium')
+    const none = await start({ key: 'PF-9', components: [], repoId: 'demo', branch: 'PF-9', model: 'default', group: 'doing' }, { run: spy.run, creds: null })
+    if (!('workspace' in none)) throw new Error(none.error)
+    expect(spy.argvs[3]).not.toContain('--effort')
+    expect(none.workspace).not.toHaveProperty('effort')
   })
 })
 

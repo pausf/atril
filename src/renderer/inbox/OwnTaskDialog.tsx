@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
-import type { Model, RepoView, WorkFix, WorkspaceView } from '../../preload/api'
-import { modelOptions } from '../components/models'
+import type { Effort, Model, RepoView, WorkFix, WorkspaceView } from '../../preload/api'
+import { effortOptions, modelOptions } from '../components/models'
 import { Problem } from '../components/Problem'
 import { useT } from '../ui'
 import { slugBranch } from './branch'
 import { ModePicker } from './ModePicker'
+import { suggest, type Suggestion } from './suggest'
+import { SuggestLine } from './SuggestLine'
 
 interface Props {
   /** «Nuevo trabajo» from Trabajo: without text the agent is plain Claude (I27). */
@@ -24,12 +26,18 @@ export function OwnTaskDialog({ textOptional = false, onClose, onOpenSettings, o
   const [repoId, setRepoId] = useState('')
   const [edited, setEdited] = useState<string | null>(null)
   const [model, setModel] = useState<Model>('default')
+  const [effort, setEffort] = useState<Effort>('default')
   const [auto, setAuto] = useState(false)
   const [error, setError] = useState<string | null>(null)
   // W130: a refusal main can get past with a worktree this once, or from Terminal in the repo.
   const [problem, setProblem] = useState<{ error: string; detail?: string; fix?: WorkFix } | null>(null)
   const [busy, setBusy] = useState(false)
   const branch = edited ?? slugBranch(text)
+  const suggestion = suggest(t, text)
+  const use = (s: Suggestion): void => {
+    setModel(s.model)
+    setEffort(s.effort)
+  }
 
   useEffect(() => {
     const opener = document.activeElement as HTMLElement | null
@@ -51,13 +59,10 @@ export function OwnTaskDialog({ textOptional = false, onClose, onOpenSettings, o
     setError(null)
     setProblem(null)
     try {
-      const r = await (worktree
-        ? window.atril.workspaces.open(repoId, branch.trim(), 'claude', model, blank ? undefined : text, !blank && auto, true)
-        : blank
-          ? window.atril.workspaces.open(repoId, branch.trim(), 'claude', model)
-          : auto
-            ? window.atril.workspaces.open(repoId, branch.trim(), 'claude', model, text, true)
-            : window.atril.workspaces.open(repoId, branch.trim(), 'claude', model, text))
+      const args: Parameters<typeof window.atril.workspaces.open> = [repoId, branch.trim(), 'claude', model, blank ? undefined : text, !blank && auto, worktree, effort === 'default' ? undefined : effort]
+      // Trailing options left unset are not sent: main reads a missing argument as off.
+      while (args.length > 4 && (args.at(-1) === undefined || args.at(-1) === false)) args.pop()
+      const r = await window.atril.workspaces.open(...args)
       if ('error' in r) return r.fix ? setProblem(r) : setError(r.error)
       await onStarted(r.workspace)
     } catch (e) {
@@ -141,6 +146,18 @@ export function OwnTaskDialog({ textOptional = false, onClose, onOpenSettings, o
             ))}
           </select>
         </div>
+
+        <div className="f">
+          <label htmlFor="own-effort">{t('Esfuerzo')}</label>
+          <select id="own-effort" value={effort} onChange={(e) => setEffort(e.target.value as Effort)}>
+            {effortOptions(t).map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+        </div>
+        <SuggestLine suggestion={suggestion} model={model} effort={effort} onUse={use} />
 
         {!blank && <ModePicker auto={auto} onChange={setAuto} />}
 

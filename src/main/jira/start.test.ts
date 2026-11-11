@@ -5,6 +5,7 @@ import { hasSession } from '../tmux'
 import { run } from '../run'
 import { listWorkspaces } from '../workspaces'
 import { agentSpy, cleanTmp, git, killTmux, makeRegisteredRepo, tmp, tmuxSock } from '../test-helpers'
+import type { Effort } from '../../preload/api'
 import { proposeStart, start } from './start'
 
 const CREDS = { site: 'https://acme.atlassian.net', email: 'ada@example.com', token: 'tok-SECRET-123' }
@@ -103,6 +104,19 @@ describe('start', () => {
     for (const key of ['pf-1', 'PF-', 'PF-1; rm -rf ~', '1PF-1', 'PF-1\n']) {
       expect(await start({ ...req, key }, { run: spy.run, creds: CREDS, fetchImpl: jira.fetch })).toHaveProperty('error')
       expect(await proposeStart({ key, components: [] })).toHaveProperty('error')
+    }
+    expect(spy.argvs).toHaveLength(0)
+    expect(jira.calls).toHaveLength(0)
+    expect(await listWorkspaces()).toEqual([])
+  })
+
+  it('an unknown effort is refused before anything runs', async () => {
+    const spy = agentSpy(run)
+    const jira = fakeJira()
+    for (const effort of ['max', 'turbo', '--dangerously-skip-permissions']) {
+      const bad = { ...req, effort: effort as Effort }
+      expect(await start(bad, { run: spy.run, creds: CREDS, fetchImpl: jira.fetch })).toEqual({ error: `«${effort}» no es un esfuerzo disponible` })
+      expect(await proposeStart(issue, { repoId: 'demo', effort: effort as Effort })).toEqual({ error: `«${effort}» no es un esfuerzo disponible` })
     }
     expect(spy.argvs).toHaveLength(0)
     expect(jira.calls).toHaveLength(0)

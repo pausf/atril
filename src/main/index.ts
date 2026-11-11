@@ -1,5 +1,5 @@
 import { app, BrowserWindow, dialog, ipcMain, Notification, safeStorage, shell } from 'electron'
-import { MODELS, writeHooksFile } from './agent'
+import { effortError, MODELS, writeHooksFile } from './agent'
 import { createActivity } from './activity'
 import { createSubagents } from './subagents'
 import { createCost } from './cost'
@@ -35,7 +35,7 @@ import type { Aviso, CreateRepoRequest, Mode, MrDrafts, MrDraftsResult, MrItem, 
 import { readInbox } from './jira/inbox'
 import { inboxGroups } from './jira/board'
 import { proposeStart, start } from './jira/start'
-import type { InboxGroup, InboxResult, JiraIssue, Model, NextItem, QaBugRequest, StartIssue, StartRequest } from '../preload/api'
+import type { Effort, InboxGroup, InboxResult, JiraIssue, Model, NextItem, QaBugRequest, StartIssue, StartRequest } from '../preload/api'
 import { listRepos, readRepos, registerRepo, setOverride } from './repos'
 import { dropIdea, editIdea, ideaToJira, librettoCounts, librettoState, queueIdea, startQueued } from './libretto'
 import * as pty from './pty'
@@ -441,8 +441,8 @@ app.whenReady().then(async () => {
     const creds = await savedJira()
     return readInbox(creds, fetch, await listWorkspaces(run), (await secretStore.hasSecret('jira')).board)
   }
-  ipcMain.handle('atril:jira:proposeStart', (_e, issue: StartIssue, repoId?: string, model?: Model, auto?: unknown) =>
-    proposeStart(issue, { repoId, model, auto: auto === true }, run)
+  ipcMain.handle('atril:jira:proposeStart', (_e, issue: StartIssue, repoId?: string, model?: Model, auto?: unknown, effort?: Effort) =>
+    proposeStart(issue, { repoId, model, auto: auto === true, effort }, run)
   )
   ipcMain.handle('atril:jira:start', async (_e, req: StartRequest) => {
     const r = await start(req, { run, creds: await savedJira() })
@@ -521,20 +521,23 @@ app.whenReady().then(async () => {
     qaBug(String(id), req, { run, creds: await savedJira(), board: (await secretStore.hasSecret('jira')).board ?? null })
   )
   ipcMain.handle('atril:ws:list', () => listWorkspaces(run))
-  ipcMain.handle('atril:ws:open', (_e, repoId: string, branch: string, agent: Agent, model?: Model, task?: unknown, auto?: unknown, worktree?: unknown) =>
-    openWorktree(
+  ipcMain.handle('atril:ws:open', async (_e, repoId: string, branch: string, agent: Agent, model?: Model, task?: unknown, auto?: unknown, worktree?: unknown, effort?: Effort) => {
+    const badEffort = effortError(effort)
+    if (badEffort) return { error: badEffort }
+    return openWorktree(
       {
         repoId,
         branch,
         agent,
         ...(model && MODELS.includes(model) && { model }),
+        ...(effort && { effort }),
         ...(task !== undefined && { task: task as string }),
         ...(auto === true && { auto: true }),
         ...(worktree === true && { worktree: true })
       },
       run
     ).finally(() => void pushNext())
-  )
+  })
   ipcMain.handle('atril:ws:remove', async (e, id: string) => {
     pty.detach(id)
     flow.forget(id)

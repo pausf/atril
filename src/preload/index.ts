@@ -140,14 +140,14 @@ const api: AtrilApi = {
   },
   workspaces: {
     list: () => ipcRenderer.invoke('atril:ws:list'),
-    open: (repoId, branch, agent, model, task, auto, worktree) => ipcRenderer.invoke('atril:ws:open', repoId, branch, agent, model, task, auto, worktree),
+    open: (repoId, branch, agent, model, task, auto, worktree, effort) => ipcRenderer.invoke('atril:ws:open', repoId, branch, agent, model, task, auto, worktree, effort),
     remove: (id) => ipcRenderer.invoke('atril:ws:remove', id),
     forget: (id) => ipcRenderer.invoke('atril:ws:forget', id),
     terminal: (target) => ipcRenderer.invoke('atril:ws:terminal', target)
   },
   jira: {
     inbox: () => ipcRenderer.invoke('atril:jira:inbox'),
-    proposeStart: (issue, repoId, model, auto) => ipcRenderer.invoke('atril:jira:proposeStart', issue, repoId, model, auto),
+    proposeStart: (issue, repoId, model, auto, effort) => ipcRenderer.invoke('atril:jira:proposeStart', issue, repoId, model, auto, effort),
     start: (req) => ipcRenderer.invoke('atril:jira:start', req)
   },
   settings: {

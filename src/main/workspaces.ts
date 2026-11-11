@@ -2,8 +2,8 @@ import { randomInt } from 'node:crypto'
 import { existsSync } from 'node:fs'
 import { mkdir, readFile, rename, rm as unlink, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
-import type { Agent, Model, RemoveResult, WorkspaceRecord, WorkspaceResult, WorkspaceView } from '../preload/api'
-import { agentArgv } from './agent'
+import type { Agent, Effort, Model, RemoveResult, WorkspaceRecord, WorkspaceResult, WorkspaceView } from '../preload/api'
+import { agentArgv, EFFORTS } from './agent'
 import { detectMode, effectiveMode, type Repo } from './repos'
 import { run as defaultRun, type Runner } from './run'
 import { trustFolder } from './trust'
@@ -18,6 +18,7 @@ export interface OpenInput {
   branch: string
   agent: Agent
   model?: Model
+  effort?: Effort
   jiraKey?: string
   /** First message the agent receives (Start passes the Libretto flow command). */
   prompt?: string
@@ -197,7 +198,7 @@ export async function openWorktree(
     await mkdir(join(home(), 'auto'), { recursive: true })
     await writeFile(autoMarker(id), '')
   }
-  const argv = input.argv ? [...input.argv, ...(prompt ? [prompt] : [])] : agentArgv({ model: input.model, prompt })
+  const argv = input.argv ? [...input.argv, ...(prompt ? [prompt] : [])] : agentArgv({ model: input.model, effort: input.effort, prompt })
   let paneId: string
   try {
     paneId = await newSession(id, path, argv, run)
@@ -219,6 +220,7 @@ export async function openWorktree(
     ...(previousBranch !== undefined && { previousBranch }),
     agent,
     ...(input.model && { model: input.model }),
+    ...(input.effort && EFFORTS.includes(input.effort) && { effort: input.effort }),
     ...(input.jiraKey && { jiraKey: input.jiraKey }),
     ...(auto && { auto }),
     session: sessionName(id),

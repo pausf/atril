@@ -36,6 +36,8 @@ export interface ReposApi {
 
 export type Agent = 'claude'
 export type Model = 'default' | 'opus' | 'sonnet' | 'haiku'
+/** Claude Code's `--effort`; 'default' adds no flag (W137). */
+export type Effort = 'default' | 'low' | 'medium' | 'high' | 'xhigh'
 
 export interface WorkspaceRecord {
   id: string
@@ -48,6 +50,8 @@ export interface WorkspaceRecord {
   previousBranch?: string
   agent: Agent
   model?: Model
+  /** Set only for a level from the list, never 'default'. */
+  effort?: Effort
   jiraKey?: string
   /** Automatic: Libretto's attacca instead of flow; set only when true (W58). */
   auto?: boolean
@@ -72,7 +76,7 @@ export type RemoveResult = { ok: true } | { error: string; detail?: string; fix?
 export interface WorkspacesApi {
   list(): Promise<WorkspaceView[]>
   /** `task`: an own task's text; main turns it into the Libretto flow's request (W40). */
-  open(repoId: string, branch: string, agent: Agent, model?: Model, task?: string, auto?: boolean, worktree?: boolean): Promise<WorkspaceResult>
+  open(repoId: string, branch: string, agent: Agent, model?: Model, task?: string, auto?: boolean, worktree?: boolean, effort?: Effort): Promise<WorkspaceResult>
   remove(id: string): Promise<RemoveResult>
   /** W133: drops a broken work's record, session and files; no git but `worktree prune`. */
   forget(id: string): Promise<RemoveResult>
@@ -125,6 +129,7 @@ export interface StartRequest extends StartIssue {
   repoId: string
   branch: string
   model: Model
+  effort?: Effort
   auto?: boolean
   /** W130: a worktree this once, even for an in-place repo. */
   worktree?: boolean
@@ -153,7 +158,7 @@ export type InboxResult =
 
 export interface JiraApi {
   inbox(): Promise<InboxResult>
-  proposeStart(issue: StartIssue, repoId?: string, model?: Model, auto?: boolean): Promise<StartProposalResult>
+  proposeStart(issue: StartIssue, repoId?: string, model?: Model, auto?: boolean, effort?: Effort): Promise<StartProposalResult>
   start(req: StartRequest): Promise<StartResult>
 }
 

@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
-import type { JiraIssue, Model, RepoView, StartProposal, WorkFix, WorkspaceView } from '../../preload/api'
+import type { Effort, JiraIssue, Model, RepoView, StartProposal, WorkFix, WorkspaceView } from '../../preload/api'
 import { Icon } from '../components/Icon'
-import { modelOptions } from '../components/models'
+import { effortOptions, modelOptions } from '../components/models'
 import { Problem } from '../components/Problem'
 import { ModePicker } from './ModePicker'
+import { suggest, type Suggestion } from './suggest'
+import { SuggestLine } from './SuggestLine'
 import { useT } from '../ui'
 
 interface Props {
@@ -24,6 +26,7 @@ export function StartDialog({ issue, onClose, onStarted, onOpenWorkspace }: Prop
   const [repoId, setRepoId] = useState('')
   const [branch, setBranch] = useState('')
   const [model, setModel] = useState<Model>('default')
+  const [effort, setEffort] = useState<Effort>('default')
   const [auto, setAuto] = useState(false)
   const [proposal, setProposal] = useState<StartProposal | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -31,6 +34,11 @@ export function StartDialog({ issue, onClose, onStarted, onOpenWorkspace }: Prop
   const [problem, setProblem] = useState<{ error: string; detail?: string; fix?: WorkFix } | null>(null)
   const [busy, setBusy] = useState(false)
   const [warning, setWarning] = useState<{ ws: WorkspaceView; text: string } | null>(null)
+  const suggestion = warning ? null : suggest(t, issue.summary, issue.type)
+  const use = (s: Suggestion): void => {
+    setModel(s.model)
+    setEffort(s.effort)
+  }
 
   useEffect(() => {
     const opener = document.activeElement as HTMLElement | null
@@ -38,16 +46,16 @@ export function StartDialog({ issue, onClose, onStarted, onOpenWorkspace }: Prop
     return () => opener?.focus?.()
   }, [])
 
-  // The repo decides the branch (taken names get a suffix); the model only changes the command line.
+  // The repo decides the branch (taken names get a suffix); model and effort only change the command line.
   useEffect(() => {
-    void window.atril.jira.proposeStart(issue, repoId || undefined, model, auto).then((p) => {
+    void window.atril.jira.proposeStart(issue, repoId || undefined, model, auto, effort).then((p) => {
       if ('error' in p) return setError(p.error)
       setProposal(p)
       if (p.repoId && !repoId) setRepoId(p.repoId)
       if (p.branch && lastRepo.current !== p.repoId) setBranch(p.branch)
       lastRepo.current = p.repoId
     })
-  }, [issue, repoId, model, auto])
+  }, [issue, repoId, model, auto, effort])
 
   useEffect(() => dialog.current?.querySelector<HTMLElement>(FOCUSABLE)?.focus(), [repos])
 
@@ -59,7 +67,7 @@ export function StartDialog({ issue, onClose, onStarted, onOpenWorkspace }: Prop
     setError(null)
     setProblem(null)
     try {
-      const r = await window.atril.jira.start({ key: issue.key, components: issue.components, group: issue.group, repoId, branch: branch.trim(), model, ...(auto && { auto: true }), ...(worktree && { worktree: true }) })
+      const r = await window.atril.jira.start({ key: issue.key, components: issue.components, group: issue.group, repoId, branch: branch.trim(), model, ...(effort !== 'default' && { effort }), ...(auto && { auto: true }), ...(worktree && { worktree: true }) })
       if ('error' in r) return r.fix ? setProblem(r) : setError(r.error)
       await onStarted(r.workspace)
       if (r.transitionError) setWarning({ ws: r.workspace, text: r.transitionError })
@@ -149,6 +157,18 @@ export function StartDialog({ issue, onClose, onStarted, onOpenWorkspace }: Prop
             ))}
           </select>
         </div>
+
+        <div className="f">
+          <label htmlFor="start-effort">{t('Esfuerzo')}</label>
+          <select id="start-effort" value={effort} onChange={(e) => setEffort(e.target.value as Effort)} disabled={!!warning}>
+            {effortOptions(t).map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+        </div>
+        <SuggestLine suggestion={suggestion} model={model} effort={effort} onUse={use} />
 
         <ModePicker auto={auto} onChange={setAuto} disabled={!!warning} />
 

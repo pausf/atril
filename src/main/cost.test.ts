@@ -30,7 +30,7 @@ describe('cost', () => {
   })
 
   it('usage is totalled once per message and priced by model', async () => {
-    expect(PRICES_AT).toBe('2026-11-03')
+    expect(PRICES_AT).toBe('2026-11-11')
     const dir = join(home, 'claude')
     const transcript = join(dir, 'sess.jsonl')
     mkdirSync(join(dir, 'sess', 'subagents'), { recursive: true })
@@ -77,9 +77,10 @@ describe('cost', () => {
     expect(first?.tokens).toBe(1_007_000 + 111_000 + 500 + 200_000 + 128_000 + 2_000_000)
     expect(first?.unpriced).toEqual(['claude-mystery-9'])
     // Opus 5.5 4/20, write 1.25× input, its published cache read 0.20: 0.004 + 0.04 + 0.02 + 0.2.
-    // Sonnet 5 2/10, cache read 0.1× input: 0.02 + 0.01 + 0.02. Opus 5 5/25: 1. Haiku 5.5 0.10/0.50: 0.01 + 0.01 + 0.001.
+    // Sonnet 5 2/10, cache read 0.1× input: 0.02 + 0.01 + 0.02. Opus 5 5/25: 1.
+    // Haiku 5.5 with 108 000 tokens in is a long prompt, 0.50/2.50: 0.05 + 0.05 + 0.005.
     // Sonnet 5.5 2/10, its published cache read 0.10: 2 + 0.1.
-    expect(first?.usd).toBeCloseTo(0.264 + 0.05 + 1 + 0.021 + 2.1, 9)
+    expect(first?.usd).toBeCloseTo(0.264 + 0.05 + 1 + 0.105 + 2.1, 9)
 
     // Only the bytes appended since the last read: rewriting m1's id in place would count a new message if reread.
     writeFileSync(transcript, readFileSync(transcript, 'utf8').replace(/"m1"/g, '"m9"'))
@@ -96,5 +97,33 @@ describe('cost', () => {
     writeFileSync(lone, line('u1', 'claude-opus-5-6', { input: 10 }))
     writeFileSync(join(home, 'transcripts', 's2'), lone)
     expect(await costs.forSession('s2')).toMatchObject({ tokens: 10, usd: null, unpriced: ['claude-opus-5-6'] })
+  })
+
+  it('haiku long prompts and fable cache use their prices', async () => {
+    const transcript = join(home, 'h.jsonl')
+    writeFileSync(
+      transcript,
+      [
+        // Exactly 100 000 in (input + cache write + cache read) is the short price: 0.10/0.50, cache read 0.01.
+        line('h1', 'claude-haiku-5-5', { input: 60_000, output: 1000, write: 20_000, read: 20_000 }),
+        // One more token, under a dated id, is the long price: 0.50/2.50.
+        line('h2', 'claude-haiku-5-5-20261001', { input: 100_001, output: 1000 }),
+        // Long by its cache read alone, which then costs 0.05.
+        line('h3', 'claude-haiku-5-5', { input: 1000, read: 200_000 }),
+        // Fable 5.2 reads its cache at the published 0.20, not 0.1× its 8.
+        line('f1', 'claude-fable-5-2', { input: 1000, read: 1_000_000 })
+      ].join('')
+    )
+    mkdirSync(join(home, 'transcripts'), { recursive: true })
+    writeFileSync(join(home, 'transcripts', 's3'), transcript)
+
+    const got = await createCost({ emit: () => {} }).forSession('s3')
+    expect(got?.models['claude-haiku-5-5']).toEqual({ input: 61_000, output: 1000, cacheWrite: 20_000, cacheRead: 220_000 })
+    expect(got?.unpriced).toEqual([])
+    const short = 0.006 + 0.0005 + 0.0025 + 0.0002
+    const long = 0.0500005 + 0.0025
+    const longRead = 0.0005 + 0.01
+    const fable = 0.008 + 0.2
+    expect(got?.usd).toBeCloseTo(short + long + longRead + fable, 9)
   })
 })

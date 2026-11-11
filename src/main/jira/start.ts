@@ -1,7 +1,7 @@
 import { existsSync } from 'node:fs'
-import { agentArgv, MODELS } from '../agent'
+import { agentArgv, effortError, MODELS } from '../agent'
 import type { JiraCreds } from '../credentials/check'
-import type { Model, StartIssue, StartProposalResult, StartRequest, StartResult } from '../../preload/api'
+import type { Effort, Model, StartIssue, StartProposalResult, StartRequest, StartResult } from '../../preload/api'
 import { listRepos, rememberedRepo, rememberRepo } from '../repos'
 import { run as defaultRun, type Runner } from '../run'
 import { flowPrompt, openWorktree, worktreePath } from '../workspaces'
@@ -29,11 +29,13 @@ async function freeBranch(repo: { id: string; path: string }, key: string, run: 
 
 export async function proposeStart(
   issue: StartIssue,
-  opts: { repoId?: string; model?: Model; auto?: boolean } = {},
+  opts: { repoId?: string; model?: Model; auto?: boolean; effort?: Effort } = {},
   run: Runner = defaultRun
 ): Promise<StartProposalResult> {
   if (!KEY_RE.test(issue.key)) return { error: BAD_KEY(issue.key) }
-  const command = display(agentArgv({ model: opts.model, prompt: flowPrompt(issue.key, opts.auto) }))
+  const badEffort = effortError(opts.effort)
+  if (badEffort) return { error: badEffort }
+  const command = display(agentArgv({ model: opts.model, effort: opts.effort, prompt: flowPrompt(issue.key, opts.auto) }))
   const repos = await listRepos(run)
   const wanted = opts.repoId ?? (await rememberedRepo(memoryKey(issue)))
   const repo = repos.find((r) => r.id === wanted)
@@ -54,9 +56,11 @@ export async function start(req: StartRequest, deps: Deps): Promise<StartResult>
   const { run = defaultRun } = deps
   if (!KEY_RE.test(req.key)) return { error: BAD_KEY(req.key) }
   if (!MODELS.includes(req.model)) return { error: t('«{model}» no es un modelo disponible', { model: String(req.model) }) }
+  const badEffort = effortError(req.effort)
+  if (badEffort) return { error: badEffort }
 
   const opened = await openWorktree(
-    { repoId: req.repoId, branch: req.branch, agent: 'claude', model: req.model, jiraKey: req.key, auto: req.auto, prompt: flowPrompt(req.key, req.auto), ...(req.worktree === true && { worktree: true }) },
+    { repoId: req.repoId, branch: req.branch, agent: 'claude', model: req.model, effort: req.effort, jiraKey: req.key, auto: req.auto, prompt: flowPrompt(req.key, req.auto), ...(req.worktree === true && { worktree: true }) },
     run
   )
   if ('error' in opened) return opened
