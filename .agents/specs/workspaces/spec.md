@@ -275,6 +275,12 @@ textos, en «Pasos» abajo. Los que tienen elemento en pantalla lo iluminan; los
 - Si la tarea parece un arreglo acotado o un cambio grande, el diálogo sugiere modelo y esfuerzo con su porqué; «Usar» lo aplica.
 - El coste por trabajo cuenta la lectura de caché de Fable y el tramo largo de Haiku.
 
+### Volver a abrir (reopen-work, 11 nov 2026)
+
+- Un trabajo parado dice por qué está parado y trae «Volver a abrir»; al pulsarlo, la terminal vuelve con el agente siguiendo su conversación.
+- «Seguir con más esfuerzo» hace lo mismo un nivel por encima y lo recuerda.
+- Un trabajo parado no enseña «Escribe en la terminal como siempre».
+
 ## Scope boundaries
 
 **In:** the three columns and footer of `bocetos/fase1-nucleo.html` (boceto 8), the
@@ -562,6 +568,10 @@ Nunca fuera: validar `.atril/qa.json` (lo escribe el repo, no Atril); la ventana
 
 **In:** `agent.ts` (`--effort`), `workspaces.ts` (campo `effort` del registro), IPC de abrir y de Empezar (Jira), `OwnTaskDialog.tsx` y `StartDialog.tsx`, un `suggest.ts` en el renderer, `prices.ts` y `cost.ts`. **Out:** reintentar con más esfuerzo (va con «Volver a abrir», siguiente cambio); modelos de los subagentes de Libretto (cambio aparte); medir modelos con tareas reales.
 
+### Volver a abrir (reopen-work, 11 nov 2026)
+
+**In:** `src/main/pty.ts` (W149), `reopenWorkspace` en `src/main/workspaces.ts`, `agentArgv({ resume: true })` en `agent.ts`, IPC `atril:ws:reopen`, la vista parada de `Workspace.tsx`. **Out:** relanzar todos los parados de golpe; subagentes cortados (hallazgo 12); reiniciar un agente vivo.
+
 ## Constraints
 
 - Electron (current stable) + TypeScript in strict mode, pnpm, Node 24 (installed:
@@ -704,6 +714,11 @@ Textos por `t()`.
 
 - Solo valores de una lista llegan a la línea de órdenes (W41: nada del texto como bandera).
 - Nada llama a Claude para sugerir.
+
+### Volver a abrir (reopen-work, 11 nov 2026)
+
+- La ventana manda el id y, como mucho, `more: true`; main decide el comando.
+- Nunca dos sesiones para un trabajo: si la sesión existe, no se relanza.
 
 ## Prior decisions
 
@@ -1868,6 +1883,28 @@ Textos por `t()`.
 - Q: ¿De qué sale la sugerencia? → A: de reglas fijas sobre el texto y el tipo de Jira, sin llamar a Claude (CLAUDE.md: nada de llamadas automáticas) (assumed).
 - Q: ¿Qué niveles de esfuerzo? → A: Por defecto, bajo, medio, alto y muy alto (`xhigh`); `max` se queda fuera del selector (assumed: es caro y el artículo no lo recomienda para empezar).
 
+### Volver a abrir (reopen-work, 11 nov 2026)
+
+- Un trabajo parado se retoma con `claude --continue` en su carpeta; más esfuerzo es un nivel más, nunca otro modelo.
+
+#### Alternatives that lost
+
+| Considered | Why it lost |
+|---|---|
+| `claude --resume <id>` con el id de sesión guardado | Atril no guarda el id de la conversación; `--continue` toma la última de esa carpeta, que es la del trabajo |
+| Abrir un trabajo nuevo en la misma rama | pierde la conversación y choca con la rama que ya existe |
+
+#### Decision log, answers as given (2026-11-11)
+- Q: (prueba en la app real) al matar tmux, `term:resize` llega a un cliente muerto, node-pty lanza EBADF y Electron bloquea la app con «A JavaScript error occurred in the main process» → A: se arregla aquí (W149): el cliente muerto se olvida y nada de la terminal lanza.
+- Q: (revisión en frío) ¿Y el modo auto? → A: su marca `auto/<sesión>` sobrevive a la sesión muerta (solo `dropFiles` la borra): reabrir no la toca.
+- Q: (revisión en frío) ¿Y los trabajos abiertos con un `argv` a medida? → A: `input.argv` solo lo usan los tests; todo trabajo real sale de `agentArgv`, y reabrir usa `agentArgv`.
+- Q: (revisión en frío) ¿`--continue` sin conversación? → A: solo se pone si Atril tiene apuntado un transcript del trabajo (`transcripts/<sesión>`); si no, arranca de cero (assumed).
+- Q: (revisión en frío) ¿Sesión viva con el agente muerto (W16)? → A: también se reabre: primero se cierra esa sesión (assumed).
+- Q: (revisión en frío) orden con `model-pick` → A: esta rama sale de `model-pick` aterrizado; `--continue` va tras `--plugin-dir`, antes de `--model` y `--effort`.
+- Q: ¿Cómo se relanza? → A: una sesión de tmux nueva con el mismo id, en la misma carpeta, con `claude --continue` (la última conversación de esa carpeta), el mismo modelo, esfuerzo y modo auto (assumed).
+- Q: ¿Qué es «más esfuerzo»? → A: un nivel más que el guardado: por defecto o medio → alto, bajo → medio, alto → muy alto; con muy alto no se ofrece (assumed, del artículo).
+- Q: ¿Se ofrece con el agente vivo? → A: no: reiniciar a un agente que trabaja corta lo que hace; solo con la sesión muerta (assumed).
+
 ## Task breakdown
 
 - App shell: Electron main, preload bridge, renderer with sidebar / centre / right panel /
@@ -2623,3 +2660,14 @@ Textos por `t()`.
 - **W139** While a dialog has a suggestion and the chosen model or the chosen effort differs from it, the dialog shall show «Sugerido: {model} · {effort}» with its reason and a «Usar» button that sets both; with no suggestion, or both already equal, nothing shows; the dialog never changes the model or effort by itself.
   Proof: src/renderer/newwork.test.ts a suggestion is shown and used only on click
   Proof: src/renderer/inbox/start.test.ts the start dialog suggests from the jira type
+
+### Volver a abrir (reopen-work, 11 nov 2026)
+
+- **W141** When reopening a workspace is asked by id while its agent is stopped — no session, or a session whose recorded pane is dead (W16), which is ended first — and its folder exists, Atril shall start a tmux session with the same name in that folder running `agentArgv` with the record's model and effort, plus `--continue` only when a transcript is recorded for it (`transcripts/<session>`), leaving its auto marker as it is, store the new pane id, and answer the workspace as alive; with `more: true` the effort goes one level up (none or `medium` → `high`, `low` → `medium`, `high` → `xhigh`) and is stored.
+  Proof: src/main/workspaces.test.ts a stopped work reopens where it was
+- **W142** If reopening is asked for an unknown id, a workspace whose agent is not stopped, a folder that no longer exists, or `more: true` at `xhigh`, then Atril shall start nothing and answer — «Ese trabajo ya no existe», «Este trabajo ya está abierto.», «La carpeta de {branch} ya no existe.» with `fix: 'forget'`, «Ya está en el esfuerzo más alto.»; if tmux fails to start, it shall end any half-made session and answer «tmux no ha podido arrancar el agente.» with the message as `detail` and `fix: 'terminal'`.
+  Proof: src/main/workspaces.test.ts reopening refuses what it cannot do
+- **W143** While the selected workspace's agent is stopped (dead session, or dead pane: the bar then sits above the terminal), the centre shall show «{branch} está parado: su sesión de tmux ya no existe (un reinicio o tmux cerrado).», «Su agente no sigue hasta que lo vuelvas a abrir.», a «Volver a abrir» button and, below `xhigh`, «Seguir con más esfuerzo»; the terminal tip shall not show; both buttons are disabled while a reopen runs, so a second click sends nothing; a refusal shows with `Problem`, its button as in W135.
+  Proof: src/renderer/reopen.test.ts a stopped work offers to reopen
+- **W149** If the terminal's tmux client has exited or its descriptor is closed, then typing, resizing or detaching that terminal shall do nothing and never throw, and an exited client shall be forgotten so nothing more is sent to it.
+  Proof: src/main/pty.test.ts a dead terminal client never throws
