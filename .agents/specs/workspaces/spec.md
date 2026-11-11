@@ -318,6 +318,10 @@ textos, en «Pasos» abajo. Los que tienen elemento en pantalla lo iluminan; los
 
 - Con tres trabajos en el mismo repo, si dos tocan `src/cart.ts`, sus dos filas lo dicen antes de abrir ninguna MR.
 
+### Lecciones para cada agente (lessons-first, 11 nov 2026)
+
+- En un repo con lecciones, cada agente que abre Atril (nuevo, reabierto o de QA no) empieza sabiendo que existen y leyéndolas.
+
 ## Scope boundaries
 
 **In:** the three columns and footer of `bocetos/fase1-nucleo.html` (boceto 8), the
@@ -641,6 +645,10 @@ Nunca fuera: validar `.atril/qa.json` (lo escribe el repo, no Atril); la ventana
 
 **In:** `src/main/radar.ts` (nuevo), IPC `atril:radar:get`, `src/main/flow/quiet.ts` (tope a 12), `src/renderer/components/WorkspaceList.tsx`, un `useRadar` en la ventana, i18n. **Out:** resolver el choque; avisar entre repos distintos; cola de merge.
 
+### Lecciones para cada agente (lessons-first, 11 nov 2026)
+
+**In:** `src/main/agent.ts` (`agentArgv({ lessons })`), `src/main/workspaces.ts` (abrir y reabrir), `src/main/jira/start.ts` (`proposeStart`). **Out:** el agente de QA; escribir lecciones; resumirlas.
+
 ## Constraints
 
 - Electron (current stable) + TypeScript in strict mode, pnpm, Node 24 (installed:
@@ -825,6 +833,11 @@ Textos por `t()`.
 
 - En reposo, el radar no lanza procesos (usa `quietly`).
 - La ventana recibe ramas y rutas relativas al repo, nada más.
+
+### Lecciones para cada agente (lessons-first, 11 nov 2026)
+
+- La frase es fija y sale de main (W41: nada de la persona como bandera).
+- Un enlace simbólico no cuenta (no se le pide leer algo de fuera del repo).
 
 ## Prior decisions
 
@@ -2124,6 +2137,24 @@ Textos por `t()`.
 - Q: (al construir) ¿Quién pregunta cada 10 s? → A: la lista de trabajos de la barra lateral, mientras está montada (assumed).
 - Q: (al construir) El test de tope con 13 vigilantes tarda ~50 s en este Mac (cada proceso es caro) → A: su límite pasa de 60 s a 120 s; los del radar, a 90 s (assumed).
 
+### Lecciones para cada agente (lessons-first, 11 nov 2026)
+
+- Atril recuerda a cada agente las lecciones del repo con una frase fija; el contenido lo lee el agente.
+
+#### Alternatives that lost
+
+| Considered | Why it lost |
+|---|---|
+| Pegar el contenido en el prompt | se queda viejo y engorda el contexto; el agente puede leerlo |
+| Ponerlo en el `CLAUDE.md` del repo | escribe en el repo de la persona |
+
+#### Decision log, answers as given (2026-11-11)
+- Q: (revisión en frío) ¿Y el comando que enseña «Empezar»? → A: mira el archivo en la carpeta del repo elegido (el worktree sale de ella); sin repo elegido, no lo lleva. El que se lanza mira la carpeta del trabajo (assumed).
+- Q: (revisión en frío) ¿QA y el `argv` a medida? → A: el agente de QA no lo lleva; el `argv` a medida es solo de tests (assumed).
+- Q: (revisión en frío) ¿Enlaces? → A: ni `.agents` ni `lessons.md` pueden ser enlaces (`lstat` de los dos) (assumed).
+- Q: ¿Cómo llegan las lecciones al agente? → A: Atril añade al arrancar `--append-system-prompt` con una frase fija que le pide leer `.agents/lessons.md` antes de empezar; no copia el contenido (el agente lo lee del repo, siempre al día) (assumed).
+- Q: ¿Siempre? → A: solo si `.agents/lessons.md` es un archivo normal dentro de la carpeta del trabajo (no un enlace); si no, nada cambia (assumed).
+
 ## Task breakdown
 
 - App shell: Electron main, preload bridge, renderer with sidebar / centre / right panel /
@@ -2966,3 +2997,11 @@ Textos por `t()`.
 - **W168** A workspace row with collisions shall show, under its repo line and in the secondary grey, «Choca con {branch} en {file}» for its first collision's first file, followed by « y {n} más» where n is the total of files across all its collisions minus one, with every «{branch}: {file}» as the line's title; a row without collisions shows no such line. The window asks the radar every 10 s.
   Proof: src/renderer/radar.test.ts a colliding row says with whom and where
   Proof: src/renderer/radar.test.ts a row without collisions shows nothing new
+
+### Lecciones para cada agente (lessons-first, 11 nov 2026)
+
+- **W169** `agentArgv({ lessons: true })` shall add `--append-system-prompt` with «Este repo guarda en .agents/lessons.md los errores que ya se pagaron aquí. Léelo antes de empezar y no los repitas.» before the prompt, and nothing without it.
+  Proof: src/main/agent.test.ts lessons are pointed out only when the repo keeps them
+- **W175** When a workspace's agent starts or is reopened, it shall get `lessons: true` exactly when, in the workspace's folder, `.agents` is a real directory and `.agents/lessons.md` a regular file (`lstat`, no links); the command «Empezar» shows applies the same rule to the chosen repo's folder; the QA agent never gets it.
+  Proof: src/main/workspaces.test.ts a new or reopened work is told about lessons only with a real file
+  Proof: src/main/jira/start.test.ts the shown command points at lessons only when the chosen repo keeps them
