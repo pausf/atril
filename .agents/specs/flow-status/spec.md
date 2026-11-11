@@ -77,6 +77,10 @@ mientras trabaja.
 
 - El panel nunca está en blanco: o dice que está leyendo, o enseña las casillas, o dice por qué aún no hay.
 
+### Radar de choques (radar, 11 nov 2026)
+
+- Caben 12 vigilantes a la vez: el radar y el panel no se expulsan con varios trabajos.
+
 ## Scope boundaries
 
 **In:** reading `.agents/changes/*/` in a workspace and deriving the stage.
@@ -159,6 +163,10 @@ nombres accesibles; tokens de color.
 
 **In:** `src/renderer/flow/FlowPanel.tsx`, i18n. **Out:** abrir la spec desde aquí (ya lo hacen los botones de documento).
 
+### Radar de choques (radar, 11 nov 2026)
+
+**In:** `src/main/flow/quiet.ts`. **Out:** el resto del vigilante.
+
 ## Constraints
 
 - Libretto's layout and checklist rule exactly as `find-work` defines them: the checklist is
@@ -215,6 +223,10 @@ Reutiliza `useModalKeys` y las clases `modal`/`dlg edmodal`; monoespaciado con l
 ### Panel nunca en blanco (flow-empty, 11 nov 2026)
 
 - Textos por `t()`.
+
+### Radar de choques (radar, 11 nov 2026)
+
+- Nada más cambia en F46–F47.
 
 ## Prior decisions
 
@@ -718,9 +730,8 @@ Aterrizado**.
   Proof: src/main/flow/quiet.test.ts an answer older than thirty seconds is computed again
 - **F47** When a file of the workspace is written or a commit is made, a `boxRanges` asked one second later or more shall compute again and show it.
   Proof: src/main/flow/quiet.test.ts an edit or a commit is seen on the next read
-- **F48** At most four workspaces shall have a watcher open; opening a fifth closes the least recently asked; closing or forgetting a workspace shall close its watcher and drop its saved answer.
+- **F48** At most twelve workspaces shall have a watcher open; opening a thirteenth closes the least recently asked; closing or forgetting a workspace shall close its watcher and drop its saved answer.
   Proof: src/main/flow/quiet.test.ts watchers are bounded and close with their work
-
 ### Panel nunca en blanco (flow-empty, 11 nov 2026)
 
 - **F49** While a workspace is selected and its flow has not answered yet, the Libretto tab shall show «Leyendo el flujo de este trabajo…».

@@ -314,6 +314,10 @@ textos, en «Pasos» abajo. Los que tienen elemento en pantalla lo iluminan; los
 
 - En Grafito, la fila que te necesita es la única en azul.
 
+### Radar de choques (radar, 11 nov 2026)
+
+- Con tres trabajos en el mismo repo, si dos tocan `src/cart.ts`, sus dos filas lo dicen antes de abrir ninguna MR.
+
 ## Scope boundaries
 
 **In:** the three columns and footer of `bocetos/fase1-nucleo.html` (boceto 8), the
@@ -633,6 +637,10 @@ Nunca fuera: validar `.atril/qa.json` (lo escribe el repo, no Atril); la ventana
 
 **In:** un token nuevo `--working` en las cuatro paletas de `src/renderer/styles.css`, usado solo por la etiqueta «trabajando». **Out:** la paleta Original.
 
+### Radar de choques (radar, 11 nov 2026)
+
+**In:** `src/main/radar.ts` (nuevo), IPC `atril:radar:get`, `src/main/flow/quiet.ts` (tope a 12), `src/renderer/components/WorkspaceList.tsx`, un `useRadar` en la ventana, i18n. **Out:** resolver el choque; avisar entre repos distintos; cola de merge.
+
 ## Constraints
 
 - Electron (current stable) + TypeScript in strict mode, pnpm, Node 24 (installed:
@@ -812,6 +820,11 @@ Textos por `t()`.
 ### Grafito: te necesita (grafito-you, 11 nov 2026)
 
 - W72 sigue: el gris es neutro; contraste de texto ≥ 4,5:1.
+
+### Radar de choques (radar, 11 nov 2026)
+
+- En reposo, el radar no lanza procesos (usa `quietly`).
+- La ventana recibe ramas y rutas relativas al repo, nada más.
 
 ## Prior decisions
 
@@ -2088,6 +2101,29 @@ Textos por `t()`.
 - Q: (revisión del trabajo) `--run` también pinta el punto de aviso sin leer, la selección del buscador, el paso actual y «conectado» → A: `--run` sigue azul; un token nuevo `--working` solo para la etiqueta «trabajando» (gris en Grafito, igual que antes en Original).
 - Q: ¿Qué color cambia? → A: «trabajando» pasa al gris de los textos secundarios (`--sub`) y el único acento azul queda para «te necesita»: gris más un acento, como pidió Pau (assumed).
 
+### Radar de choques (radar, 11 nov 2026)
+
+- Atril avisa de choques entre trabajos del mismo repo por archivo; no decide nada ni toca ramas.
+
+#### Alternatives that lost
+
+| Considered | Why it lost |
+|---|---|
+| Comparar diffs línea a línea | más caro; el archivo ya avisa a tiempo |
+| Avisar solo al abrir la MR | llega tarde: el choque ya está hecho |
+
+#### Decision log, answers as given (2026-11-11)
+- Q: (revisión en frío) ¿Qué base? → A: la `baseCommit` del registro de cada trabajo, también en los que trabajan en tu copia (assumed).
+- Q: (revisión en frío) ¿Qué trabajos entran? → A: todo registro que no sea de revisión, vivo o parado, como afectado y como «con quién» (assumed).
+- Q: (revisión en frío) ¿Y pasado el tope de vigilantes? → A: el tope sube a 12 (F48 enmendado); más allá, el más antiguo se cierra y ese trabajo recalcula: riesgo aceptado. Radar y panel comparten el vigilante de cada carpeta (assumed).
+- Q: ¿Qué cuenta como choque? → A: dos trabajos abiertos del mismo repo (ninguno de revisión) que cambian el mismo archivo respecto a su base, con commits o sin ellos (assumed).
+- Q: ¿Dónde se ve? → A: en la fila de cada trabajo afectado, una línea gris «Choca con {rama} en {archivo}» (y «y N más»), con la lista entera al pasar el ratón; sin color nuevo: gris más un acento (assumed).
+- Q: ¿Cuánto cuesta? → A: la lista de archivos de cada trabajo pasa por el vigilante de `quiet-panel`: sin cambios, cero procesos; el tope de vigilantes sube de 4 a 12 para que el radar y el panel no se expulsen (assumed).
+
+- Q: (al construir) ¿Cómo se separan los «{rama}: {archivo}» del título? → A: uno por línea (`\n`) (assumed).
+- Q: (al construir) ¿Quién pregunta cada 10 s? → A: la lista de trabajos de la barra lateral, mientras está montada (assumed).
+- Q: (al construir) El test de tope con 13 vigilantes tarda ~50 s en este Mac (cada proceso es caro) → A: su límite pasa de 60 s a 120 s; los del radar, a 90 s (assumed).
+
 ## Task breakdown
 
 - App shell: Electron main, preload bridge, renderer with sidebar / centre / right panel /
@@ -2920,3 +2956,13 @@ Textos por `t()`.
 
 - **W165** Where the palette is Grafito, in both themes, the «trabajando» label's `--working` shall be a neutral (OKLCH chroma below 0.03) while `--run` (unread dots, selection, current step) and `--you`/`--you-text` keep the accent, so a working row and a needs-you row never share a colour.
   Proof: src/renderer/theme.test.ts grafito tells needs-you from working
+
+### Radar de choques (radar, 11 nov 2026)
+
+- **W166** Main shall answer, for every workspace record that is not a review, the other non-review records of the same repo that change at least one of the same files against their own `baseCommit` (committed or not), as `{ id, branch, files }` with repo-relative files sorted; records of different repos never collide, and a record sharing no file gets an empty list.
+  Proof: src/main/radar.test.ts two works on one file collide and nothing else does
+- **W167** While nothing counted (F46) changed in any workspace, asking the radar again within 30 s of the last computation shall run no process; after that, each workspace computes again at most once per 30 s.
+  Proof: src/main/radar.test.ts the radar costs nothing while nothing changes
+- **W168** A workspace row with collisions shall show, under its repo line and in the secondary grey, «Choca con {branch} en {file}» for its first collision's first file, followed by « y {n} más» where n is the total of files across all its collisions minus one, with every «{branch}: {file}» as the line's title; a row without collisions shows no such line. The window asks the radar every 10 s.
+  Proof: src/renderer/radar.test.ts a colliding row says with whom and where
+  Proof: src/renderer/radar.test.ts a row without collisions shows nothing new
