@@ -54,7 +54,9 @@ const close = (w: Watch): void => {
 
 async function arm(w: Watch, path: string, run: Runner): Promise<void> {
   const r = await run('git', ['-C', path, 'rev-parse', '--path-format=absolute', '--git-dir', '--git-common-dir'])
-  if (w.closed || r.code !== 0) return
+  if (w.closed) return
+  // A failed rev-parse closes this watcher; the next ask arms a fresh one instead of computing forever.
+  if (r.code !== 0) return close(w)
   try {
     const gitDirs = r.stdout.split('\n').filter(Boolean).map((p) => realpathSync(p))
     const roots = [realpathSync(path), ...gitDirs]
@@ -75,8 +77,9 @@ async function arm(w: Watch, path: string, run: Runner): Promise<void> {
 
 function open(path: string, run: Runner): Watch {
   let w = watchers.get(path)
-  if (w) watchers.delete(path)
-  else {
+  watchers.delete(path)
+  // A watcher that errored (or never armed) is replaced, never kept as a dead slot.
+  if (!w || w.closed) {
     w = { version: 0, ok: false, closed: false, ws: [], answers: new Map(), ready: Promise.resolve() }
     w.ready = arm(w, path, run)
   }

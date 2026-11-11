@@ -326,3 +326,9 @@ Cambié `--run` a gris para la etiqueta «trabajando» sin buscar quién más lo
 
 ## 2026-11-11 · diff-header · 6→7
 Quitar la cabecera dejó a la vista que `diffLine` coloreaba como cabecera cualquier `--- x`, también una línea borrada; y un renombrado sin cambios quedaba en blanco. Un test de texto no ve clases: si el cambio es de cómo se ve, el test mira el marcado.
+
+## 2026-11-11 · quiet-panel · 6→7
+Un vigilante que fallaba (error de `fs.watch` o `rev-parse` caído una vez) quedaba muerto en su hueco para siempre y ese trabajo calculaba en cada vuelta. Un recurso que falla se sustituye en la siguiente petición, no se guarda. Aceptados sin arreglar: el reloj de pared hacia atrás alarga el tope de 30 s; un trabajo que ya no está en la lista conserva su vigilante hasta que lo saca el quinto.
+
+## 2026-11-11 · quiet-panel · medición
+Con 4 trabajos: casillas repetidas 1,6 s → 0–1 ms; volver a un trabajo 2,4 s → 62 ms; reposo 5 → 2,2 procesos/s. Quedan: la primera visita (~6 s, plan en frío) y el diff de la casilla abierta, que se repite cada 3 s.
