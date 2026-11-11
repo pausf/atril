@@ -54,6 +54,11 @@ mientras trabaja.
 - Mientras el agente construye, el panel enseña en qué paso va, qué casillas cerró con qué código y el código que está
   escribiendo ahora, y ese código se puede ver en grande en el centro.
 
+### Subagentes como ramas (subagent-branches, 11 nov 2026)
+
+- Se ve qué subagentes trabajan para la casilla que se está construyendo, qué hace cada uno y cuánto llevan, sin una
+  sección aparte.
+
 ## Scope boundaries
 
 **In:** reading `.agents/changes/*/` in a workspace and deriving the stage.
@@ -113,6 +118,12 @@ se pliegan con teclado; nada que hoy se pueda abrir deja de poderse abrir: como 
 **Out:** subagentes como ramas (`panel-c-subagents`); QA como pantalla propia (`qa-screen`); el globo de preguntas (`ask-balloon`); editar código; comentar líneas.
 **Never scoped out:** el diff como texto (nunca HTML); rutas literales a git (F24); el corte de 1 MB (F23); teclado y
 nombres accesibles; tokens de color.
+
+### Subagentes como ramas (subagent-branches, 11 nov 2026)
+
+**In:** las ramas bajo la casilla, la última acción al pasar el ratón, quitar la sección.
+**Out:** asignar subagentes a casillas concretas (todos cuelgan de la en curso); cambiar el modal de F28.
+**Never scoped out:** teclado (cada rama es un botón); textos por `t()`; tokens; el registro como texto.
 
 ## Constraints
 
@@ -332,6 +343,39 @@ Reutiliza `useModalKeys` y las clases `modal`/`dlg edmodal`; monoespaciado con l
 - Q: ¿Terminal al ampliar? → A: se oculta, no se desmonta; al volver, el foco vuelve al terminal; Escape en la vista
   ampliada no llega a xterm (assumed).
 
+### Subagentes como ramas (subagent-branches, 11 nov 2026)
+
+- Todos los subagentes vivos cuelgan de la casilla en curso (assumed, 11 nov).
+- Última acción solo al pasar el ratón o con el foco (assumed, 11 nov).
+
+#### Alternatives that lost
+
+| Considered | Why it lost |
+|---|---|
+| asignar cada subagente a su casilla | el hook no sabe para qué casilla trabaja |
+| última acción siempre visible | sondear el registro de cada subagente cada segundo, para nada |
+
+#### Decision log, answers as given (2026-11-11)
+- Q: ¿Dónde? → A: bajo la casilla en curso de la línea de tiempo (F38), antes de su código; una rama por subagente
+  con su descripción (o su tipo), su tipo, un punto que late mientras trabaja o «✓» al terminar, y su duración; la
+  sección «Subagentes» desaparece (assumed).
+- Q: ¿Lo último que hizo? → A: al pasar el ratón o al llegar con el teclado, la descripción se cambia por la última
+  línea de su registro (F28), pedida en ese momento; sin registro, se queda la descripción (assumed).
+- Q: ¿Pulsar? → A: abre el modal de F28, igual que hoy (assumed).
+- Q: ¿Sin casilla en curso (sin checklist o todo cerrado)? → A: las ramas cuelgan de la línea «Cambio: …» (assumed).
+
+- Q: ¿Y QA, que también se pliega? → A: QA sigue plegable hasta que tenga su pantalla (`qa-screen`); F30 habla solo
+  de QA (assumed).
+- Q: ¿Sin cambio de Libretto? → A: las ramas cuelgan de una línea «Subagentes» arriba del panel (assumed).
+- Q: ¿Accesible? → A: cada rama lleva en su nombre accesible «trabajando · {d}» o «terminado · {d}» (assumed).
+- Q: ¿«Una vez»? → A: una petición por cada vez que entra el ratón o el foco; si llega después de salir, se ignora
+  (assumed).
+- Q: ¿Qué línea? → A: la última línea no vacía del registro de F28 sin su prefijo (`⏺ `, `⎿ `, `> `); si es de
+  pensar, «Pensando…»; si el registro está vacío, la descripción (assumed).
+- Q: ¿Quién lleva qué? → A: `FlowPanel` sigue dueño de las entradas, del reloj de 1 s y del modal; se los pasa a
+  `Boxes`, que pinta `Branches` dentro de la casilla en curso; `Subagents.tsx` se queda con el modal y `duration()`
+  y deja de pintar la sección; el test «subagents show in the panel» se reescribe como el de F27 (assumed).
+
 ## Task breakdown
 
 - Checklist reader with Libretto's rule.
@@ -446,25 +490,23 @@ Aterrizado**.
   Proof: src/renderer/flow/documents.test.ts automatic documents are read-only
 ### Subagentes (add-subagents-view, 10 nov 2026)
 
-- **F27** While the selected workspace has subagent entries, the flow panel shall show a
-  «Subagentes» section, newest `startedAt` first, each as a button labelled with: its description (or
-  its type when it has none), its type when a description is shown, and «trabajando · {d}» (now −
-  startedAt, refreshed every second while any runs) or «terminado · {d}» (endedAt − startedAt), where
-  {d} is «45 s» under a minute and «1 min 20 s» from there.
-  Proof: src/renderer/flow/subagents.test.ts subagents show in the panel
-
+- **F27** While the selected workspace has subagent entries, the panel shall show them as branches under
+  the current box of the timeline (F38) — or under the «Cambio» line when there is no current box, or under a «Subagentes» line at the top of the panel when there is no change — newest
+  `startedAt` first, each a button labelled with its description (or its type), its type when a description is
+  shown, a live dot while it runs or «✓» when it ended, and «{d}» (F27's durations, refreshed every second while
+  any runs), its accessible name ending in «trabajando · {d}» or «terminado · {d}»; no «Subagentes» section shall show. One test holds a case per clause.
+  Proof: src/renderer/flow/subagents.test.ts subagents hang from the current box
 ### Detalle del subagente (add-subagent-detail, 10 nov 2026)
 
-- **F28** When a subagent row in the flow panel is pressed, the panel shall open a modal titled with its
+- **F28** When a subagent branch (F27) is pressed, the panel shall open a modal titled with its
   description (or its type), showing its type and «trabajando · {d}» or «terminado · {d}», and its log
   as monospace text: `> ` before the prompt, `⏺ ` before text and tool lines, `⎿ ` before the first
-  result line, «✻ Pensando…» for thinking, and «Sin registro de este subagente» when the log is empty; continuation lines of a
-  line carry no prefix; while the subagent has no `endedAt` the panel shall ask for the log again every
+  result line, «✻ Pensando…» for thinking, and «Sin registro de este subagente» when the log is empty; continuation
+  lines of a line carry no prefix; while the subagent has no `endedAt` the panel shall ask for the log again every
   second, and once more when `endedAt` arrives, then stop; when the entry leaves the list the modal shall
-  close; Escape or «Cerrar» shall close it and return focus to the row. The proof drives the polling with
+  close; Escape or «Cerrar» shall close it and return focus to the branch. The proof drives the polling with
   fake timers.
   Proof: src/renderer/flow/subagents.test.ts a subagent opens as a terminal
-
 ### Panel sin scroll (fit-flow-panel, 10 nov 2026)
 
 - **F29** While the selected workspace has a Libretto change, the centre of Trabajo shall show, above the
@@ -473,9 +515,9 @@ Aterrizado**.
   empty — where Spec and Plan are buttons as F13 makes them; and while F25's total applies, its warning line at the
   top of the panel. The Libretto panel shall not show the stages.
   Proof: src/renderer/flow/panel.test.ts the steps show as six named segments above the work
-- **F30** The panel's foldable sections (Subagentes) shall keep their folded state per section when the
-  panel is mounted again and start open.
-  Proof: src/renderer/flow/panel.test.ts the panel sections fold and remember
+- **F30** The Libretto panel's only foldable section shall be QA (F33), whose title is a button with
+  `aria-expanded` that folds and unfolds it and keeps its folded state when the panel is mounted again, starting open.
+  Proof: src/renderer/flow/subagents.test.ts the panel sections fold and remember
 - **F31** The Libretto panel shall show no list of the branch's files and no «+{n} más» files button.
   Proof: src/renderer/flow/changes.test.ts the panel shows no list of changes
 ### Documentos a la vista (show-doc-buttons, 10 nov 2026)
@@ -532,3 +574,11 @@ Aterrizado**.
   Escape in the large view shall close it and not reach the terminal; the menu item shall be disabled unless Trabajo
   shows «Uno» with a workspace selected.
   Proof: src/renderer/flow/boxes.test.ts the large code opens and closes from the menu and the keyboard
+
+### Subagentes como ramas (subagent-branches, 11 nov 2026)
+
+- **F41** Each time the pointer enters a branch or the branch takes focus (both together counting as one entry), the panel shall ask that subagent's log
+  once and show its last non-empty line without its F28 prefix (`⏺ `, `⎿ `, `> `), or «Pensando…» for a thinking
+  line, in place of the description until the pointer leaves or focus moves; an answer arriving after that is
+  ignored; an empty log keeps the description.
+  Proof: src/renderer/flow/subagents.test.ts a branch shows what its subagent did last
