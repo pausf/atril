@@ -36,7 +36,7 @@ afterEach(() => {
 })
 
 describe('libretto', () => {
-  it('a repo\'s queue and work in flight are read from disk', async () => {
+  it("a repo's queue and work in flight are read from disk", async () => {
     expect(await librettoState(repo)).toEqual({ none: true })
 
     proposal('b-idea', queuedBody('b-idea', '2026-11-02'))
