@@ -106,4 +106,4 @@ Ninguna.
 
 ## Checklist
 
-- [ ] the branches under the current box, the last action on hover and focus, the section removed; real-app drive; photo; novedades · Closes: F27, F41, F30
+- [x] the branches under the current box, the last action on hover and focus, the section removed; real-app drive; photo; novedades · Closes: F27, F41, F30
