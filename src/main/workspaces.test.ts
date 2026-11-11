@@ -1,6 +1,6 @@
 import { execFileSync } from 'node:child_process'
 import { chmodSync, existsSync, mkdirSync, readFileSync } from 'node:fs'
-import { rmSync, writeFileSync } from 'node:fs'
+import { rmSync, symlinkSync, writeFileSync } from 'node:fs'
 import type { Effort } from '../preload/api'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -669,4 +669,32 @@ describe('workspaces', () => {
       expect(sessionUp(session)).toBe(false)
     }, 40_000)
   })
+  it('a new or reopened work is told about lessons only with a real file', async () => {
+    const spy = agentSpy(run)
+    const told = (argv: string[]): boolean => argv.includes('--append-system-prompt')
+    // No lessons in the repo: nothing extra.
+    const plain = await openWorktree({ repoId: 'demo', branch: 'feat/plain', agent: 'claude' }, spy.run)
+    if (!('workspace' in plain)) throw new Error(plain.error)
+    expect(told(spy.argvs.at(-1)!)).toBe(false)
+    // A real lessons file, committed: a new work is told, and so is its reopen.
+    mkdirSync(join(repo, '.agents'), { recursive: true })
+    writeFileSync(join(repo, '.agents', 'lessons.md'), '## 2026-11-11 · x\nno repetir\n')
+    git(repo, 'add', '.')
+    git(repo, 'commit', '-qm', 'lessons')
+    const kept = await openWorktree({ repoId: 'demo', branch: 'feat/kept', agent: 'claude' }, spy.run)
+    if (!('workspace' in kept)) throw new Error(kept.error)
+    expect(told(spy.argvs.at(-1)!)).toBe(true)
+    tmuxOut(sock, 'kill-session', '-t', `=${kept.workspace.session}`)
+    const again = await reopenWorkspace(kept.workspace.id, {}, spy.run)
+    if (!('workspace' in again)) throw new Error(again.error)
+    expect(told(spy.argvs.at(-1)!)).toBe(true)
+    // A link is never followed.
+    const linked = join(kept.workspace.path, '.agents', 'lessons.md')
+    rmSync(linked)
+    symlinkSync('/etc/hosts', linked)
+    tmuxOut(sock, 'kill-session', '-t', `=${kept.workspace.session}`)
+    const viaLink = await reopenWorkspace(kept.workspace.id, {}, spy.run)
+    if (!('workspace' in viaLink)) throw new Error(viaLink.error)
+    expect(told(spy.argvs.at(-1)!)).toBe(false)
+  }, 60_000)
 })

@@ -1,4 +1,4 @@
-import { mkdir, writeFile } from 'node:fs/promises'
+import { lstat, mkdir, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import type { Effort, Model } from '../preload/api'
 import { t } from './lang'
@@ -39,7 +39,17 @@ export const effortError = (effort: unknown): string | null =>
  * `hooks: false` (the QA agent): the hook reports by session, so a second claude in the same session would
  * speak for the work's own agent. `mcpConfig` loads only that file's MCP servers, never the person's.
  */
-export const agentArgv = (opts: { model?: Model; effort?: Effort; prompt?: string; mcpConfig?: string; hooks?: false; resume?: true } = {}): string[] => [
+/** W169: a fixed sentence from main, never the person's text. */
+export const LESSONS_NOTE = 'Este repo guarda en .agents/lessons.md los errores que ya se pagaron aquí. Léelo antes de empezar y no los repitas.'
+
+/** W175: `.agents` a real folder and `lessons.md` a regular file in it; a link never counts. */
+export async function hasLessons(folder: string): Promise<boolean> {
+  const dir = await lstat(join(folder, '.agents')).catch(() => null)
+  if (!dir?.isDirectory()) return false
+  return (await lstat(join(folder, '.agents', 'lessons.md')).catch(() => null))?.isFile() === true
+}
+
+export const agentArgv = (opts: { model?: Model; effort?: Effort; prompt?: string; mcpConfig?: string; hooks?: false; resume?: true; lessons?: boolean } = {}): string[] => [
   'claude',
   ...(opts.hooks === false ? [] : ['--settings', hooksFile()]),
   '--plugin-dir',
@@ -48,6 +58,7 @@ export const agentArgv = (opts: { model?: Model; effort?: Effort; prompt?: strin
   ...(opts.resume === true ? ['--continue'] : []),
   ...(opts.model && opts.model !== 'default' ? ['--model', opts.model] : []),
   ...(opts.effort && EFFORTS.includes(opts.effort) ? ['--effort', opts.effort] : []),
+  ...(opts.lessons === true ? ['--append-system-prompt', LESSONS_NOTE] : []),
   ...(opts.mcpConfig ? ['--mcp-config', opts.mcpConfig, '--strict-mcp-config'] : []),
   ...(opts.prompt ? [opts.prompt] : [])
 ]

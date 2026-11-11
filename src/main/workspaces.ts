@@ -3,7 +3,7 @@ import { existsSync } from 'node:fs'
 import { mkdir, rename, rm as unlink, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import type { Agent, Effort, Model, RemoveResult, WorkRefusal, WorkspaceRecord, WorkspaceResult, WorkspaceView } from '../preload/api'
-import { agentArgv, EFFORTS } from './agent'
+import { agentArgv, hasLessons, EFFORTS } from './agent'
 import { detectMode, effectiveMode, gitBroken, readRepos, repoHealth } from './repos'
 import { readState, StateError, stateBlock, stateProblem, statePath } from './state'
 import { run as defaultRun, type Runner, type RunResult } from './run'
@@ -225,7 +225,7 @@ export async function openWorktree(
     await mkdir(join(home(), 'auto'), { recursive: true })
     await writeFile(autoMarker(id), '')
   }
-  const argv = input.argv ? [...input.argv, ...(prompt ? [prompt] : [])] : agentArgv({ model: input.model, effort: input.effort, prompt })
+  const argv = input.argv ? [...input.argv, ...(prompt ? [prompt] : [])] : agentArgv({ model: input.model, effort: input.effort, prompt, lessons: await hasLessons(path) })
   let paneId: string
   try {
     paneId = await newSession(id, path, argv, run)
@@ -378,7 +378,7 @@ async function reopenOnce(id: string, opts: { more?: boolean }, run: Runner): Pr
   const resume = existsSync(join(home(), 'transcripts', sessionName(id))) ? (true as const) : undefined
   let paneId: string
   try {
-    paneId = await newSession(id, rec.path, agentArgv({ model: rec.model, effort, resume }), run)
+    paneId = await newSession(id, rec.path, agentArgv({ model: rec.model, effort, resume, lessons: await hasLessons(rec.path) }), run)
   } catch (err) {
     await killSession(id, run)
     return failed(t('tmux no ha podido arrancar el agente.'), err instanceof Error ? err.message : String(err))

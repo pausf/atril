@@ -489,4 +489,11 @@ describe('subagents hook', () => {
     // Nothing pending is kept any more.
     expect(busy.file?.pending).toBeUndefined()
   }, 60000)
+  it('lessons are pointed out only when the repo keeps them', () => {
+    const with_ = agentArgv({ prompt: 'go', lessons: true })
+    const at = with_.indexOf('--append-system-prompt')
+    expect(with_[at + 1]).toBe('Este repo guarda en .agents/lessons.md los errores que ya se pagaron aquí. Léelo antes de empezar y no los repitas.')
+    expect(at).toBeLessThan(with_.indexOf('go'))
+    expect(agentArgv({ prompt: 'go' })).not.toContain('--append-system-prompt')
+  })
 })

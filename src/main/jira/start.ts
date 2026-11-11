@@ -1,5 +1,5 @@
 import { existsSync } from 'node:fs'
-import { agentArgv, effortError, MODELS } from '../agent'
+import { agentArgv, hasLessons, effortError, MODELS } from '../agent'
 import type { JiraCreds } from '../credentials/check'
 import type { Effort, Model, StartIssue, StartProposalResult, StartRequest, StartResult } from '../../preload/api'
 import { listRepos, rememberedRepo, rememberRepo } from '../repos'
@@ -38,11 +38,12 @@ export async function proposeStart(
   if (badEffort) return { error: badEffort }
   // W41: the shown command is built from the same lists as the one that runs.
   if (opts.model !== undefined && !MODELS.includes(opts.model)) return { error: t('«{model}» no es un modelo disponible', { model: String(opts.model) }) }
-  const command = display(agentArgv({ model: opts.model, effort: opts.effort, prompt: flowPrompt(issue.key, opts.auto) }))
   const repos = await listRepos(run)
   if (!Array.isArray(repos)) return repos.problem
   const wanted = opts.repoId ?? (await rememberedRepo(memoryKey(issue)))
   const repo = repos.find((r) => r.id === wanted)
+  // W175: the shown command looks at the chosen repo's folder, which the worktree is made from.
+  const command = display(agentArgv({ model: opts.model, effort: opts.effort, prompt: flowPrompt(issue.key, opts.auto), lessons: repo ? await hasLessons(repo.path) : false }))
   if (!repo) return { command }
   const free = await freeBranch(repo, issue.key, run)
   if (!free) return { error: t('Todas las ramas {key}, {key}B… {key}Z están ocupadas', { key: issue.key }) }
