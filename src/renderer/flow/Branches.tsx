@@ -28,8 +28,12 @@ export function Branches({ view }: { view: SubView }) {
   const t = useT()
   const [peek, setPeek] = useState<{ id: string; text: string } | null>(null)
   const asked = useRef(0)
+  // Hover then focus (a click) is one entry, not two asks.
+  const inside = useRef<string | null>(null)
 
   const enter = (id: string): void => {
+    if (inside.current === id) return
+    inside.current = id
     const n = ++asked.current
     setPeek(null)
     void window.atril.subagents.log(view.workspaceId, id).then((log) => {
@@ -39,6 +43,7 @@ export function Branches({ view }: { view: SubView }) {
     })
   }
   const leave = (): void => {
+    inside.current = null
     asked.current++
     setPeek(null)
   }

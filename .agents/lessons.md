@@ -239,3 +239,9 @@ Reviewer found nothing (W97 proof and ui.ts validation re-run). The builder corr
 
 ## 2026-11-11 · panel-c · real app
 - jsdom passed while the real window was broken: new step classes reused global `.seg` and `.bar`, and a 3 s poll cancelled a 2.7 s git diff forever. Caught only by driving the real app with Playwright. Every UI change is driven in the real app before landing.
+
+## 2026-11-11 · subagent-branches · 6→7
+- A click fires mouseenter then focus, so "ask once per entry" asked twice. Fixed: an entry is keyed by the branch until leave; a test hovers then focuses and counts one ask (watched red first).
+
+## 2026-11-11 · subagent-branches · 6→7
+- F28 still said «row» after rows became branches. Amended in the change; the stale panel prose (Subagentes folds) is superseded by F27/F30 amended.

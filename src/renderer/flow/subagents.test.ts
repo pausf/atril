@@ -114,7 +114,12 @@ describe('subagents', () => {
     expect(branch('Leer pagos').textContent).toContain('Leer pagos')
     await user.hover(branch('Leer pagos'))
     await waitFor(() => expect(calls).toHaveBeenCalledTimes(2))
+    // A click while hovered also focuses the branch: still one ask for this entry.
+    act(() => branch('Leer pagos').focus())
+    await act(() => vi.advanceTimersByTimeAsync(0))
+    expect(calls).toHaveBeenCalledTimes(2)
     await user.unhover(branch('Leer pagos'))
+    act(() => branch('Leer pagos').blur())
 
     // Focus does the same; a thinking line reads «Pensando…».
     act(() => branch('Leer pagos').focus())

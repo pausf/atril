@@ -63,7 +63,7 @@ Los subagentes dejan de ser una sección aparte del panel y cuelgan, como ramas,
   shown, a live dot while it runs or «✓» when it ended, and «{d}» (F27's durations, refreshed every second while
   any runs), its accessible name ending in «trabajando · {d}» or «terminado · {d}»; no «Subagentes» section shall show. One test holds a case per clause.
   Proof: src/renderer/flow/subagents.test.ts subagents hang from the current box
-- **F41** Each time the pointer enters a branch or the branch takes focus, the panel shall ask that subagent's log
+- **F41** Each time the pointer enters a branch or the branch takes focus (both together counting as one entry), the panel shall ask that subagent's log
   once and show its last non-empty line without its F28 prefix (`⏺ `, `⎿ `, `> `), or «Pensando…» for a thinking
   line, in place of the description until the pointer leaves or focus moves; an answer arriving after that is
   ignored; an empty log keeps the description.
@@ -71,6 +71,16 @@ Los subagentes dejan de ser una sección aparte del panel y cuelgan, como ramas,
 - **F30** (amended) The Libretto panel's only foldable section shall be QA (F33), whose title is a button with
   `aria-expanded` that folds and unfolds it and keeps its folded state when the panel is mounted again, starting open.
   Proof: src/renderer/flow/subagents.test.ts the panel sections fold and remember
+
+- **F28** (amended) When a subagent branch (F27) is pressed, the panel shall open a modal titled with its
+  description (or its type), showing its type and «trabajando · {d}» or «terminado · {d}», and its log
+  as monospace text: `> ` before the prompt, `⏺ ` before text and tool lines, `⎿ ` before the first
+  result line, «✻ Pensando…» for thinking, and «Sin registro de este subagente» when the log is empty; continuation
+  lines of a line carry no prefix; while the subagent has no `endedAt` the panel shall ask for the log again every
+  second, and once more when `endedAt` arrives, then stop; when the entry leaves the list the modal shall
+  close; Escape or «Cerrar» shall close it and return focus to the branch. The proof drives the polling with
+  fake timers.
+  Proof: src/renderer/flow/subagents.test.ts a subagent opens as a terminal
 
 ## Approach
 
