@@ -2,7 +2,7 @@ import type { MrComment, MrReply, MrThread, MrThreads } from '../../preload/api'
 import { FORGE_NAME, forgeApi, type ForgeId } from '../credentials/forge'
 import type { SecretStore } from '../credentials/store'
 import { t } from '../lang'
-import { networkText, statusText } from './mrs'
+import { netProblem, type NetProblem } from '../net-problem'
 
 /** What main keeps per listed row (all three lists): the API path never leaves main. */
 export interface ThreadTarget {
@@ -42,7 +42,14 @@ interface GlDiscussion {
   notes?: GlNote[]
 }
 
-class Failure extends Error {}
+class Failure extends Error {
+  constructor(readonly problem: NetProblem | { error: string; detail?: string; fix?: NetProblem['fix'] }) {
+    super(problem.error)
+  }
+}
+
+/** W150 for a post: the sentence, and when the forge answered, its code and its fix. */
+const failed = ({ problem: p }: Failure): { error: string; detail?: string; fix?: NetProblem['fix'] } => ({ error: p.error, ...(p.detail && { detail: p.detail }), ...(p.fix && { fix: p.fix }) })
 
 const comment = (c: GhComment | GlNote): MrComment => ({
   id: String(c.id),
@@ -119,9 +126,9 @@ interface Deps {
 export function createThreads({ store, fetchImpl = fetch, target }: Deps) {
   async function session(url: string) {
     const tgt = target(url)
-    if (!tgt) throw new Failure(t('Esta MR ya no está en la lista: actualiza'))
+    if (!tgt) throw new Failure({ error: t('Esta MR ya no está en la lista: actualiza') })
     const secret = await store.readSecret(tgt.forge).catch(() => null)
-    if (!secret?.['token']) throw new Failure(t('Conecta GitHub o GitLab en Ajustes'))
+    if (!secret?.['token']) throw new Failure({ error: t('Conecta GitHub o GitLab en Ajustes'), fix: 'settings' })
     const name = FORGE_NAME[tgt.forge]
     const { base, headers } = forgeApi(tgt.forge, secret['site'] ?? 'https://gitlab.com', secret['token'])
     const call = async (path: string, init: RequestInit = {}): Promise<Response> => {
@@ -130,9 +137,9 @@ export function createThreads({ store, fetchImpl = fetch, target }: Deps) {
         // A redirect would carry the token to another host.
         res = await fetchImpl(new URL(`${base}${path}`), { ...init, headers: { ...headers, ...(init.body && { 'Content-Type': 'application/json' }) }, redirect: 'error', signal: AbortSignal.timeout(10_000) })
       } catch (err) {
-        throw new Failure(networkText(name, err))
+        throw new Failure(netProblem(name, { error: err }))
       }
-      if (!res.ok) throw new Failure(statusText(name, res.status))
+      if (!res.ok) throw new Failure(netProblem(name, { status: res.status }))
       return res
     }
     const you = (await store.hasSecret(tgt.forge)).account ?? ''
@@ -175,10 +182,10 @@ export function createThreads({ store, fetchImpl = fetch, target }: Deps) {
     /** M21: one request per call; the window disables Enviar while it runs. */
     async reply(url: string, threadId: string, body: string): Promise<MrReply> {
       try {
-        if (!body.trim()) throw new Failure(t('Escribe una respuesta'))
+        if (!body.trim()) throw new Failure({ error: t('Escribe una respuesta') })
         const { tgt, call } = await session(url)
         const valid = threadId === GENERAL || (tgt.forge === 'github' ? /^\d+$/ : /^[0-9a-f]+$/).test(threadId)
-        if (!valid) throw new Failure(t('Ese hilo no es de esta MR'))
+        if (!valid) throw new Failure({ error: t('Ese hilo no es de esta MR') })
         const path =
           tgt.forge === 'github'
             ? threadId === GENERAL ? `${issueRef(tgt.ref)}/comments` : `${tgt.ref}/comments/${threadId}/replies`
@@ -186,7 +193,7 @@ export function createThreads({ store, fetchImpl = fetch, target }: Deps) {
         const res = await call(path, { method: 'POST', body: JSON.stringify({ body }) })
         return { comment: comment((await res.json()) as GhComment) }
       } catch (err) {
-        if (err instanceof Failure) return { error: err.message }
+        if (err instanceof Failure) return failed(err)
         throw err
       }
     }

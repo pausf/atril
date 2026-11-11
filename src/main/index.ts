@@ -21,6 +21,7 @@ import { createLenses } from './forge/lenses'
 import { createOpenMr, type MrEntry } from './forge/openmr'
 import { createQueue, createScorer } from './forge/scores'
 import { createThreads } from './forge/threads'
+import { createQaPublish } from './qa-publish'
 import { boxDiff, boxRanges, forgetPlans } from './flow/boxes'
 import { closeQuiet } from './flow/quiet'
 import { radar } from './radar'
@@ -349,7 +350,8 @@ app.whenReady().then(async () => {
     SNAPSHOT && process.env['ATRIL_SNAPSHOT_VIEW'] === 'mr-lens' ? { kind: 'continue' } : openMr.workFor(typeof url === 'string' ? url : '')
   )
   ipcMain.handle('atril:mr:openWork', (_e, url: unknown) => openMr.open(url).finally(() => void pushNext()))
-  ipcMain.handle('atril:mr:list', async () => {
+  let lastMrs: { at: number; lists: MrLists } | null = null
+  const listAllMrs = async (): Promise<MrLists> => {
     // ponytail: dev-only, ATRIL_SNAPSHOT_VIEW=mr|avisos|palette photographs believable lists without any forge.
     const fake = SNAPSHOT && /^(mr|avisos|palette)/.test(process.env['ATRIL_SNAPSHOT_VIEW'] ?? '')
     const r = fake ? fakeMrs() : await listMrs(secretStore, fetch, guards.scorable, guards.threadable)
@@ -361,8 +363,10 @@ app.whenReady().then(async () => {
     // Avisos come from comparing listings; a failure there must never break the listing itself.
     // Fake photo listings never reach the real feed.
     if (!fake) void avisos.onListing(r).catch(() => undefined)
+    lastMrs = { at: Date.now(), lists: r }
     return r
-  })
+  }
+  ipcMain.handle('atril:mr:list', listAllMrs)
   const fakeFeed = SNAPSHOT && process.env['ATRIL_SNAPSHOT_VIEW'] === 'avisos'
   const avisos = createAvisos((items) => BrowserWindow.getAllWindows().forEach((w) => w.webContents.send('atril:avisos:changed', items)))
   ipcMain.handle('atril:avisos:list', () => (fakeFeed ? fakeAvisos() : avisos.list()))
@@ -395,6 +399,10 @@ app.whenReady().then(async () => {
     // ponytail: dev-only, ATRIL_SNAPSHOT_VIEW=mr-thread|mr-lens photographs two believable threads.
     SNAPSHOT && /^mr-(thread|lens)$/.test(process.env['ATRIL_SNAPSHOT_VIEW'] ?? '') ? Promise.resolve(fakeThreads()) : threads.read(typeof url === 'string' ? url : '')
   )
+  // W174: the QA screen's MR, from the last listing when it is under a minute old.
+  const qaPublish = createQaPublish({ run, last: () => lastMrs, list: listAllMrs, post: (url, body) => threads.reply(url, 'general', body) })
+  ipcMain.handle('atril:qa:mrFor', (_e, id: unknown) => qaPublish.mrFor(String(id)))
+  ipcMain.handle('atril:qa:publish', (_e, id: unknown) => qaPublish.publish(String(id)))
   ipcMain.handle('atril:mr:reply', (_e, url: unknown, threadId: unknown, body: unknown) =>
     typeof url === 'string' && typeof threadId === 'string' && typeof body === 'string' ? threads.reply(url, threadId, body) : { error: t('Escribe una respuesta') }
   )

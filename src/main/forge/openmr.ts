@@ -23,19 +23,19 @@ type Found = { kind: 'review' | 'continue'; mr: MrEntry & { branch: string }; re
 /** M34: the URL becomes one argv element; anything that could read as a flag or cut a string never gets there. */
 const validUrl = (url: unknown): url is string => typeof url === 'string' && url.startsWith('https://') && !url.includes('\0') && !url.startsWith('-')
 
+/** The first remote of the repo at `path` that names the project on the MR's host, like review-project's rule. */
+export async function remoteNaming(run: Runner, path: string, project: string, host: string): Promise<string | undefined> {
+  const r = await run('git', ['-C', path, 'remote', '-v'], { timeoutMs: 5000 })
+  if (r.code !== 0) return undefined
+  for (const line of r.stdout.split('\n')) {
+    const [name, url] = line.split(/\s+/)
+    if (name && url && namesProject(url, project, host)) return name
+  }
+  return undefined
+}
+
 /** M33, M34: an MR of the latest listing opened through Libretto's own path in the one repo of its project. */
 export function createOpenMr({ latest, run }: Deps) {
-  /** The first remote of `repo` that names the project on the MR's host, like review-project's rule. */
-  async function remoteOf(repo: Repo, project: string, host: string): Promise<string | undefined> {
-    const r = await run('git', ['-C', repo.path, 'remote', '-v'], { timeoutMs: 5000 })
-    if (r.code !== 0) return undefined
-    for (const line of r.stdout.split('\n')) {
-      const [name, url] = line.split(/\s+/)
-      if (name && url && namesProject(url, project, host)) return name
-    }
-    return undefined
-  }
-
   async function find(url: string): Promise<Found> {
     const mr = latest(url)
     if (!mr) return { kind: 'none', reason: t('Esta MR ya no está en la lista: actualiza') }
@@ -44,7 +44,7 @@ export function createOpenMr({ latest, run }: Deps) {
     const host = new URL(url).hostname
     const matches: Array<{ repo: Repo; remote: string }> = []
     for (const repo of await readRepos()) {
-      const remote = await remoteOf(repo, mr.project, host)
+      const remote = await remoteNaming(run, repo.path, mr.project, host)
       if (remote) matches.push({ repo, remote })
     }
     if (matches.length === 0) return { kind: 'none', reason: t('Añade el repo de {project} en Ajustes', { project: mr.project }) }

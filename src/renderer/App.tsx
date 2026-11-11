@@ -446,7 +446,7 @@ function Shell() {
           {screen === 'tasks' && <Inbox inbox={inbox} onStart={(i, alt) => void beginStart(i, alt)} startError={startError} onOpenWorkspace={openWorkspace} onNewTask={() => setDialog('task')} />}
           {screen === 'mr' && <MrScreen mrs={mrs} openUrl={openUrl} />}
           {screen === 'libretto' && <Libretto />}
-          {screen === 'qa' && <QaScreen workspaces={workspaces} selected={selected} pending={qaPending} setPending={setQaPending} />}
+          {screen === 'qa' && <QaScreen workspaces={workspaces} selected={selected} pending={qaPending} setPending={setQaPending} openSettings={() => setScreen('settings')} />}
           {screen === 'avisos' && <Avisos avisos={avisos} open={openAviso} />}
           {screen === 'settings' && (
             <Ajustes>

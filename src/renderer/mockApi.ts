@@ -1,5 +1,5 @@
 import { vi } from 'vitest'
-import type { ActivityLine, SubagentEntry, SubagentLine, AddRepoResult, Aviso, FileChange, FlowBoxes, FlowDocs, ForgeId, ForgeStatus, Mode, MrDraft, MrDrafts, MrDraftsResult, MrFixCiResult, MrLists, MrReply, MrScoreState, MrThreads, MrWork, AgentState, StateProblem, QaBugResult, QaLaunchResult, QaManualRequest, QaReport, QaResult, QaStatus, QaTargets, AtrilApi, RemoveResult, QuickAnswer, QuickReplies, RadarHit, FlowStage, HistoryEntry, IdeaJiraResult, IdeaResult, LibrettoCounts, LibrettoState, JiraIssue, JiraSettingsStatus, MenuAction, NextItem, StartProposalResult, StartRequest, StartResult, RepoResult, RepoView, ToolReport, UiState, WorkCost, WorkspaceResult, WorkspaceView } from '../preload/api'
+import type { ActivityLine, SubagentEntry, SubagentLine, AddRepoResult, Aviso, FileChange, FlowBoxes, FlowDocs, ForgeId, ForgeStatus, Mode, MrDraft, MrDrafts, MrDraftsResult, MrFixCiResult, MrLists, MrReply, MrScoreState, MrThreads, MrWork, AgentState, StateProblem, QaBugResult, QaLaunchResult, QaManualRequest, QaMr, QaPublishResult, QaReport, QaResult, QaStatus, QaTargets, AtrilApi, RemoveResult, QuickAnswer, QuickReplies, RadarHit, FlowStage, HistoryEntry, IdeaJiraResult, IdeaResult, LibrettoCounts, LibrettoState, JiraIssue, JiraSettingsStatus, MenuAction, NextItem, StartProposalResult, StartRequest, StartResult, RepoResult, RepoView, ToolReport, UiState, WorkCost, WorkspaceResult, WorkspaceView } from '../preload/api'
 
 export const workspace = (id: string, branch: string, alive = true): WorkspaceView => ({
   id,
@@ -75,6 +75,10 @@ interface Options {
   qaRetest?: QaResult
   /** What qa.bug answers; by default Jira makes QA-1. */
   qaBug?: QaBugResult
+  /** What qa.mrFor answers per workspace id; missing means no MR. */
+  qaMrs?: Record<string, QaMr>
+  /** What qa.publish answers; by default it reaches the workspace's MR. */
+  qaPublish?: (id: string) => Promise<QaPublishResult>
   /** What subagents.log answers per subagent id. */
   subagentLogs?: Record<string, SubagentLine[]>
   /** What mr.list answers; missing means no forge connected. */
@@ -367,7 +371,9 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
         }
         return targetsOf(id)
       }),
-      fix: vi.fn(async () => ({ ok: true as const }))
+      fix: vi.fn(async () => ({ ok: true as const })),
+      mrFor: vi.fn(async (id: string): Promise<QaMr> => o.qaMrs?.[id] ?? null),
+      publish: vi.fn(async (id: string): Promise<QaPublishResult> => (o.qaPublish ? o.qaPublish(id) : { url: o.qaMrs?.[id]?.url ?? '' }))
     },
     flow: {
       get: async (id: string | null) => (id && o.flows?.[id]) || o.flow || null,

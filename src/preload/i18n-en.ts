@@ -762,4 +762,12 @@ export const EN: Record<string, string> = {
   "Aún no hay casillas: salen cuando el plan tenga su checklist.": "No boxes yet: they appear once the plan has its checklist.",
   "Este trabajo aún no tiene cambio de Libretto: lo crea el primer paso.": "This work has no Libretto change yet: the first step creates it.",
   "Este trabajo no sigue el flujo de Libretto.": "This work does not follow the Libretto flow.",
+  "Pruebas en vivo con Atril · {target}": "Live tests with Atril · {target}",
+  "Pruebas en vivo con Atril": "Live tests with Atril",
+  "Las capturas están en Atril.": "The screenshots are in Atril.",
+  "Abre la MR para poder publicar aquí la QA.": "Open the MR to publish the QA here.",
+  "Publicar en la MR": "Publish on the MR",
+  "Publicar de nuevo": "Publish again",
+  "Publicado en la MR": "Published on the MR",
+  "La QA no ha llegado a la MR.": "The QA did not reach the MR.",
 }

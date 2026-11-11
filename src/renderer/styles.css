@@ -3427,6 +3427,16 @@ button.fx-bt {
   gap: 12px;
   margin-bottom: 14px;
 }
+/* W170/W171: the QA's way to its MR, under the bar. */
+.qa-mr {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  margin: -6px 0 12px;
+  font-size: 12.5px;
+  color: var(--sub);
+}
 .qa-grow {
   flex: 1;
   min-width: 0;

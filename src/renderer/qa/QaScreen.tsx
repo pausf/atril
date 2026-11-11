@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react'
-import type { QaCriterion, QaEntry, QaLaunchResult, QaProblem, QaReport, QaShot, QaStatus, QaTargets, WorkspaceView } from '../../preload/api'
-import { Problem } from '../components/Problem'
+import type { QaCriterion, QaEntry, QaLaunchResult, QaMr, QaProblem, QaPublishResult, QaReport, QaShot, QaStatus, QaTargets, WorkspaceView } from '../../preload/api'
+import { fixLabel as netFixLabel, Problem } from '../components/Problem'
 import { useLocale, useT } from '../ui'
 import { useModalKeys } from '../flow/modalKeys'
 import { QaBug } from './QaBug'
@@ -12,7 +12,7 @@ import { settled, TESTING_MS, type QaPending } from './pending'
 const POLL_MS = 3000
 
 /** W113: the QA screen; it asks main only while it is shown. «Probando…» lives in the App (`pending`), so it survives a visit elsewhere. */
-export function QaScreen({ workspaces, selected, pending, setPending }: { workspaces: WorkspaceView[]; selected: string | null; pending: Record<string, QaPending>; setPending: Dispatch<SetStateAction<Record<string, QaPending>>> }) {
+export function QaScreen({ workspaces, selected, pending, setPending, openSettings }: { workspaces: WorkspaceView[]; selected: string | null; pending: Record<string, QaPending>; setPending: Dispatch<SetStateAction<Record<string, QaPending>>>; openSettings: () => void }) {
   const t = useT()
   const list = workspaces.filter((w) => w.mode !== 'review')
   const [picked, setPicked] = useState<string | null>(null)
@@ -26,6 +26,10 @@ export function QaScreen({ workspaces, selected, pending, setPending }: { worksp
   const [big, setBig] = useState<QaShot | null>(null)
   const [how, setHow] = useState<string | null>(null)
   const [bug, setBug] = useState<{ id: string; fromHow: boolean } | null>(null)
+  const [mrs, setMrs] = useState<Record<string, QaMr>>({})
+  const [posting, setPosting] = useState(false)
+  const [published, setPublished] = useState<Record<string, string>>({})
+  const [postFail, setPostFail] = useState<Exclude<QaPublishResult, { url: string }> | null>(null)
   const mounted = useRef(true)
   const asked = useRef(new Set<string>())
   const idsKey = list.map((w) => w.id).join(',')
@@ -71,8 +75,15 @@ export function QaScreen({ workspaces, selected, pending, setPending }: { worksp
     }
   }, [idsKey, id])
 
+  // W174: main finds the work's MR once per visit to it; it may list MRs to do so.
+  useEffect(() => {
+    if (id === null) return
+    void window.atril.qa.mrFor(id).then((m) => mounted.current && setMrs((x) => ({ ...x, [id]: m })), () => undefined)
+  }, [id])
+
   useEffect(() => {
     setError(null)
+    setPostFail(null)
     setProblem(null)
     setPicking(false)
     setBig(null)
@@ -148,6 +159,18 @@ export function QaScreen({ workspaces, selected, pending, setPending }: { worksp
     const ids = cid === null ? report.criteria.map((c) => c.id) : [cid]
     setPending((p) => ({ ...p, ...Object.fromEntries(ids.map((c) => [`${id}:${c}`, { since, live: false }])) }))
     void load(id)
+  }
+
+  // W170/W171: one post per press; the disabled button keeps a second press from sending another.
+  const publish = async (): Promise<void> => {
+    if (id === null || posting) return
+    setPosting(true)
+    setPostFail(null)
+    const r = await window.atril.qa.publish(id)
+    if (!mounted.current) return
+    setPosting(false)
+    if ('url' in r) setPublished((x) => ({ ...x, [id]: r.url }))
+    else setPostFail(r)
   }
 
   const crit = (cid: string | null): QaCriterion | undefined => report?.criteria.find((c) => c.id === cid)
@@ -237,6 +260,34 @@ export function QaScreen({ workspaces, selected, pending, setPending }: { worksp
                 </button>
               )}
             </div>
+            {id && id in mrs && (
+              <div className="qa-mr">
+                {mrs[id] ? (
+                  <>
+                    {published[id] && !postFail && (
+                      <button type="button" className="lnk" onClick={() => void window.atril.mr.open(published[id]!)}>
+                        {t('Publicado en la MR')}
+                      </button>
+                    )}
+                    <button type="button" className="btn" disabled={posting} onClick={() => void publish()}>
+                      {published[id] ? t('Publicar de nuevo') : t('Publicar en la MR')}
+                    </button>
+                  </>
+                ) : (
+                  <span>{t('Abre la MR para poder publicar aquí la QA.')}</span>
+                )}
+              </div>
+            )}
+            {postFail && (
+              <Problem
+                what={postFail.error}
+                cant={t('La QA no ha llegado a la MR.')}
+                fix={netFixLabel(t, postFail.fix)}
+                busy={posting}
+                onFix={() => (postFail.fix === 'settings' ? openSettings() : void publish())}
+                detail={postFail.detail ?? ''}
+              />
+            )}
             {problem && <Problem what={problem.what} cant={problem.cant} fix={fixLabel(t, problem.fix)} detail={problem.detail} busy={busy} onFix={() => void fix(problem)} />}
             {error && (
               <p className="qa-err" role="alert">

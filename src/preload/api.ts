@@ -366,7 +366,8 @@ export interface MrThread {
 
 /** `more`: an endpoint had more than the 3 pages read (M19). Errors are already in the person's language. */
 export type MrThreads = { threads: MrThread[]; more: boolean } | { error: string }
-export type MrReply = { comment: MrComment } | { error: string }
+/** `detail` and `fix` when the forge itself failed (W150). */
+export type MrReply = { comment: MrComment } | { error: string; detail?: string; fix?: NetFix }
 
 export type LensName = 'intent' | 'security' | 'design' | 'reliability' | 'tests'
 export type LensSeverity = 'high' | 'medium' | 'low'
@@ -675,6 +676,12 @@ export interface QaBugRequest {
 
 export type QaBugResult = { key: string } | { ok: true } | { error: string }
 
+/** W174: the work's own MR, null when it has none. */
+export type QaMr = { url: string } | null
+
+/** W170/W171: the MR it reached, or W150's sentence with its fix and folded code. */
+export type QaPublishResult = { url: string } | { error: string; detail?: string; fix?: NetFix }
+
 export interface QaApi {
   /** null: no such workspace. */
   report(workspaceId: string): Promise<QaReport | null>
@@ -693,6 +700,10 @@ export interface QaApi {
   /** W122: «Elegir a mano»; refused with a sentence. */
   manual(workspaceId: string, req: QaManualRequest): Promise<QaTargets | { error: string }>
   unmanual(workspaceId: string, key: string): Promise<QaTargets | { error: string }>
+  /** W174: the work's MR among the person's own (Mías), by repo and branch. */
+  mrFor(workspaceId: string): Promise<QaMr>
+  /** W170: one general comment with the QA's result on that MR. */
+  publish(workspaceId: string): Promise<QaPublishResult>
 }
 
 export type StageName = 'sin-libretto' | 'entrada' | 'spec' | 'plan' | 'construir' | 'terminado' | 'aterrizado'

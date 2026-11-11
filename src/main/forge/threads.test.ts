@@ -190,12 +190,12 @@ describe('mr threads', () => {
     expect(await s.reply(GH_URL, '../../x', 'hola')).toMatchObject({ error: expect.any(String) })
     expect(forge.calls).toHaveLength(0)
 
-    // A failure says which forge and why.
+    // A failure says which forge and why, with W150's fix and its code folded.
     const down = fakeForge({}, { post: new Response('{}', { status: 403 }) })
-    expect(await (await threads(down)).reply(GL_URL, 'general', 'hola')).toEqual({ error: 'GitLab no te deja ver esto con ese token.' })
+    expect(await (await threads(down)).reply(GL_URL, 'general', 'hola')).toEqual({ error: 'GitLab no te deja ver esto con ese token.', detail: 'HTTP 403', fix: 'settings' })
     expect(down.calls).toHaveLength(1)
     const off = fakeForge({}, { down: true })
-    expect(await (await threads(off)).reply(GH_URL, 'general', 'hola')).toEqual({ error: 'No llego a GitHub: ¿hay conexión?' })
+    expect(await (await threads(off)).reply(GH_URL, 'general', 'hola')).toEqual({ error: 'No llego a GitHub: ¿hay conexión?', detail: 'ECONNRESET', fix: 'retry' })
     expect(await (await threads(off)).read(GH_URL)).toEqual({ error: 'No llego a GitHub: ¿hay conexión?' })
   })
 
