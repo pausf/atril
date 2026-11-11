@@ -36,7 +36,7 @@ import { readInbox } from './jira/inbox'
 import { inboxGroups } from './jira/board'
 import { proposeStart, start } from './jira/start'
 import type { Effort, InboxGroup, InboxResult, JiraIssue, Model, NextItem, QaBugRequest, StartIssue, StartRequest } from '../preload/api'
-import { listRepos, readRepos, registerRepo, setOverride } from './repos'
+import { listRepos, readRepos, registerRepo, relocateRepo, removeRepo, setOverride } from './repos'
 import { orProblem, revealState } from './state'
 import { dropIdea, editIdea, ideaToJira, librettoCounts, librettoState, queueIdea, startQueued } from './libretto'
 import * as pty from './pty'
@@ -275,6 +275,18 @@ app.whenReady().then(async () => {
     const problem = await setOverride(id, mode)
     return problem ? { problem } : listRepos(run)
   })
+  // The window sends an id only: main opens the picker (W158).
+  ipcMain.handle('atril:repos:remove', (_e, id: unknown) => removeRepo(String(id)))
+  ipcMain.handle('atril:repos:relocate', (_e, id: unknown) =>
+    relocateRepo(
+      String(id),
+      async () => {
+        const picked = await dialog.showOpenDialog({ properties: ['openDirectory'] })
+        return picked.canceled ? null : (picked.filePaths[0] ?? null)
+      },
+      run
+    )
+  )
   ipcMain.handle('atril:state:reveal', (_e, file: unknown) => revealState(file, (path) => shell.showItemInFolder(path)))
   const secretStore = createSecretStore({
     isAvailable: () => safeStorage.isEncryptionAvailable(),

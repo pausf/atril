@@ -7,7 +7,7 @@ import type { RepoView } from '../../preload/api'
 import { App } from '../App'
 import { mockApi, mockSystemTheme } from '../mockApi'
 
-const repos: RepoView[] = [{ id: 'web', path: '/w', mode: 'worktree', reason: '' }]
+const repos: RepoView[] = [{ id: 'web', path: '/w', mode: 'worktree', reason: '', health: 'ok' }]
 const rail = (name: RegExp) => within(screen.getByRole('navigation', { name: 'Pantallas' })).getByRole('button', { name })
 
 async function openDialog() {

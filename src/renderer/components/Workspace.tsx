@@ -1,15 +1,17 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 import type { FlowStage, RemoveResult, WorkspaceResult, WorkspaceView } from '../../preload/api'
 import { stateOf, useAgentStates } from '../agents'
 import { Steps } from '../flow/Steps'
 import { useT } from '../ui'
-import { fixLabel, Problem } from './Problem'
+import { fixLabel, Problem, sharedFix } from './Problem'
+import { NavigationContext } from '../settings/navigation'
 import { StateLabel } from './StateLabel'
 import { Terminal } from './Terminal'
 
 /** W143: why the work stopped and the way back; the refusal reuses W135's fixes. */
 function Stopped({ ws, onReopened, onForget }: { ws: WorkspaceView; onReopened: (paneId: string) => Promise<void>; onForget: (id: string) => Promise<RemoveResult> }) {
   const t = useT()
+  const { openSettings } = useContext(NavigationContext)
   const [busy, setBusy] = useState(false)
   const [refusal, setRefusal] = useState<Exclude<WorkspaceResult, { workspace: WorkspaceView }> | null>(null)
   const reopen = (more: boolean): void => {
@@ -38,6 +40,7 @@ function Stopped({ ws, onReopened, onForget }: { ws: WorkspaceView; onReopened: 
           cant={t('Su agente no sigue hasta que lo vuelvas a abrir.')}
           fix={fixLabel(t, refusal.fix)}
           onFix={() =>
+            sharedFix(refusal.fix, openSettings) ||
             void (refusal.fix === 'forget'
               ? onForget(ws.id)
               : refusal.fix === 'reveal'

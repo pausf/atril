@@ -4,9 +4,9 @@ import { mkdir, rename, rm as unlink, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import type { Agent, Effort, Model, RemoveResult, WorkRefusal, WorkspaceRecord, WorkspaceResult, WorkspaceView } from '../preload/api'
 import { agentArgv, EFFORTS } from './agent'
-import { detectMode, effectiveMode, readRepos } from './repos'
+import { detectMode, effectiveMode, gitBroken, readRepos, repoHealth } from './repos'
 import { readState, StateError, stateBlock, stateProblem, statePath } from './state'
-import { run as defaultRun, type Runner } from './run'
+import { run as defaultRun, type Runner, type RunResult } from './run'
 import { trustFolder } from './trust'
 import { hasPane, hasSession, killSession, newSession, paneDead, sessionName } from './tmux'
 import { atrilHome } from './paths'
@@ -86,6 +86,9 @@ const autoMarker = (id: string): string => join(home(), 'auto', sessionName(id))
 
 /** W131/W132: git's or tmux's own words go folded in `detail`, never in the sentence. */
 const failed = (error: string, detail: string): { error: string; detail: string; fix: 'terminal' } => ({ error, detail: detail.trim(), fix: 'terminal' })
+/** W156: a git that cannot run is said as such, never as the step's own failure. */
+const noGit = (stderr: string): WorkRefusal => ({ error: t('git no funciona en este Mac.'), detail: stderr.trim(), fix: 'git' })
+const gitFailed = (r: RunResult, error: string): WorkRefusal => (gitBroken(r) ? noGit(r.stderr) : failed(error, r.stderr))
 
 const READ_ONLY = new Set(['EACCES', 'EPERM', 'EROFS'])
 /** W146: Atril's own folder refused a write; `other` answers any other failure. */
@@ -112,15 +115,23 @@ export async function openWorktree(
   const { repoId, branch, agent } = input
   const prompt = input.task === undefined ? input.prompt : taskPrompt(input.task, input.auto)
   if (prompt === null) return { error: t('El texto de la tarea no es válido (máx. 2000 caracteres).') }
-  // W6: nothing else runs before the branch name is validated.
-  if ((await run('git', ['check-ref-format', '--branch', branch])).code !== 0) {
-    return { error: t('«{branch}» no es un nombre de rama válido', { branch }) }
+  // W6: nothing else runs before the branch name is validated; only git's own words blame the name.
+  const name = await run('git', ['check-ref-format', '--branch', branch])
+  if (name.code !== 0) {
+    if (gitBroken(name)) return noGit(name.stderr)
+    if (name.stderr.includes('is not a valid branch name')) return { error: t('«{branch}» no es un nombre de rama válido', { branch }) }
+    return failed(t('git no ha podido comprobar el nombre {branch}.', { branch }), name.stderr)
   }
 
   const blocked = await stateBlock()
   if (blocked) return blocked
   const repo = (await readRepos()).find((r) => r.id === repoId)
   if (!repo) return { error: t('No hay ningún repo «{id}»', { id: repoId }) }
+  // W155: before any git that writes and any tmux.
+  const health = await repoHealth(repo.path, run)
+  if (typeof health !== 'string') return noGit(health.broken)
+  if (health === 'missing') return { error: t('La carpeta de {repo} ya no existe ({path}).', { repo: repoId, path: repo.path }), fix: 'settings' }
+  if (health === 'not-git') return { error: t('La carpeta de {repo} no es un repo de git ({path}).', { repo: repoId, path: repo.path }), fix: 'settings' }
 
   const review = input.review === true
   const detected = review ? null : repo.override ? { mode: repo.override, reason: '' } : await detectMode(repo.path, run)
@@ -138,7 +149,7 @@ export async function openWorktree(
     // W7: a worktree this once is the way out that leaves the open work alone.
     if (open) return { error: t('{repo} trabaja en tu copia y ya tiene un trabajo abierto ({branch}).', { repo: repoId, branch: open.branch }), fix: 'worktree' }
     const status = await run('git', ['-C', repo.path, 'status', '--porcelain'])
-    if (status.code !== 0) return failed(t('No puedo leer el estado de git de {repo}.', { repo: repoId }), status.stderr)
+    if (status.code !== 0) return gitFailed(status, t('No puedo leer el estado de git de {repo}.', { repo: repoId }))
     const dirty = status.stdout.split('\n').filter((l) => l.trim() !== '')
     if (dirty.length > 0) {
       // W8: what is dirty and why the repo works in place go folded; the fix never touches those changes.
@@ -156,7 +167,7 @@ export async function openWorktree(
     const exists = (await run('git', ['-C', repo.path, 'rev-parse', '--verify', '--quiet', `refs/heads/${branch}`])).code === 0
     madeBranch = !exists
     const sw = await run('git', ['-C', repo.path, 'switch', ...(exists ? [] : ['-c']), branch])
-    if (sw.code !== 0) return failed(t('git no me deja pasar tu copia a {branch}.', { branch }), sw.stderr)
+    if (sw.code !== 0) return gitFailed(sw, t('git no me deja pasar tu copia a {branch}.', { branch }))
     path = repo.path
   } else {
     path = worktreePath(repoId, branch)
@@ -164,7 +175,7 @@ export async function openWorktree(
     if (input.existing === true) {
       const remote = input.remote ?? 'origin'
       const fetch = await run('git', ['-C', repo.path, 'fetch', remote, branch])
-      if (fetch.code !== 0) return failed(t('No he podido traer {branch} de {remote}.', { branch, remote }), fetch.stderr)
+      if (fetch.code !== 0) return gitFailed(fetch, t('No he podido traer {branch} de {remote}.', { branch, remote }))
       fetched = (await run('git', ['-C', repo.path, 'rev-parse', `refs/remotes/${remote}/${branch}`])).stdout.trim()
       // W89: the base is where the MR's branch left the main line, so Cambios shows the whole MR at once.
       for (const line of [`refs/remotes/${remote}/HEAD`, `refs/remotes/${remote}/main`, `refs/remotes/${remote}/master`, 'refs/heads/main', 'refs/heads/master']) {
@@ -188,7 +199,7 @@ export async function openWorktree(
     if (add.code !== 0) {
       // Atril runs git with its default English messages: this is git's own wording for a branch held elsewhere.
       const held = /already (checked out|used by worktree)/.test(add.stderr)
-      return failed(held ? t('La rama {branch} ya está abierta en otra carpeta.', { branch }) : t('git no ha podido crear la carpeta del trabajo.'), add.stderr)
+      return gitFailed(add, held ? t('La rama {branch} ya está abierta en otra carpeta.', { branch }) : t('git no ha podido crear la carpeta del trabajo.'))
     }
   }
 
@@ -282,7 +293,7 @@ export async function removeWorkspace(id: string, run: Runner = defaultRun): Pro
   const branch = rec.branch
   if (!existsSync(rec.path)) return { error: t('La carpeta de {branch} ya no existe.', { branch }), fix: 'forget' }
   const status = await run('git', ['-C', rec.path, 'status', '--porcelain'])
-  if (status.code !== 0) return failed(t('No puedo leer el estado de git de {branch}.', { branch }), status.stderr)
+  if (status.code !== 0) return gitFailed(status, t('No puedo leer el estado de git de {branch}.', { branch }))
   const dirty = status.stdout.split('\n').filter((l) => l.trim() !== '')
   if (dirty.length > 0) {
     const changes = dirty.length === 1 ? t('1 cambio') : t('{n} cambios', { n: dirty.length })
@@ -308,12 +319,12 @@ export async function removeWorkspace(id: string, run: Runner = defaultRun): Pro
     // Never delete the branch: the person's commits live there.
     const prev = rec.previousBranch ?? ''
     const back = await run('git', ['-C', rec.path, 'switch', ...(/^[0-9a-f]{40}$/.test(prev) ? ['--detach'] : []), prev])
-    if (back.code !== 0) return failed(t('git no ha podido cerrar {branch}; su agente ya está parado.', { branch }), back.stderr)
+    if (back.code !== 0) return gitFailed(back, t('git no ha podido cerrar {branch}; su agente ya está parado.', { branch }))
     return done()
   }
   // No --force: git itself refuses anything the status check missed.
   const rm = await run('git', ['-C', repo.path, 'worktree', 'remove', rec.path])
-  if (rm.code !== 0) return failed(t('git no ha podido cerrar {branch}; su agente ya está parado.', { branch }), rm.stderr)
+  if (rm.code !== 0) return gitFailed(rm, t('git no ha podido cerrar {branch}; su agente ya está parado.', { branch }))
   return done()
 }
 

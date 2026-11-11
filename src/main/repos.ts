@@ -1,6 +1,7 @@
+import { existsSync } from 'node:fs'
 import { mkdir, rename, writeFile } from 'node:fs/promises'
 import { basename, join } from 'node:path'
-import type { AddRepoResult, Listed, Mode, RepoView, StateProblem } from '../preload/api'
+import type { AddRepoResult, Listed, Mode, RepoHealth, RepoResult, RepoView, StateProblem } from '../preload/api'
 import type { Runner } from './run'
 import { orProblem, readState as readStrict, statePath } from './state'
 import { t } from './lang'
@@ -87,9 +88,24 @@ export function effectiveMode(repo: Repo, detected: Detected): Detected {
   return repo.override ? { mode: repo.override, reason: t('elegido por ti') } : detected
 }
 
+/** W154: a git that cannot run leaves `ok`; only git's own «not a git repository» says the folder is not one. */
+export async function repoHealth(path: string, run: Runner): Promise<RepoHealth | { broken: string }> {
+  if (!existsSync(path)) return 'missing'
+  const r = await run('git', ['-C', path, 'rev-parse', '--git-dir'])
+  if (r.code === 0) return 'ok'
+  if (gitBroken(r)) return { broken: r.stderr.trim() }
+  return r.stderr.includes('not a git repository') ? 'not-git' : 'ok'
+}
+
+/** W156: git missing (127) or only the Xcode stub answering. */
+export const gitBroken = (r: { code: number; stderr: string }): boolean => r.code === 127 || r.stderr.includes('xcode-select')
+
 async function view(repo: Repo, run: Runner): Promise<RepoView> {
+  const h = await repoHealth(repo.path, run)
+  const health = typeof h === 'string' ? h : 'ok'
+  if (health !== 'ok') return { ...repo, mode: repo.override ?? 'worktree', reason: '', health }
   const eff = effectiveMode(repo, repo.override ? { mode: repo.override, reason: '' } : await detectMode(repo.path, run))
-  return { ...repo, ...eff }
+  return { ...repo, ...eff, health }
 }
 
 export const registerRepo = (path: string, run: Runner, opts: { id?: string } = {}): Promise<AddRepoResult> => orProblem(() => register(path, run, opts))
@@ -130,6 +146,34 @@ export const setOverride = async (id: string, mode: Mode | null): Promise<StateP
     )
     return undefined
   })
+
+/** W157: only the entry goes; the folder, its branches and the Jira memory stay. */
+export const removeRepo = (id: string): Promise<RepoResult> =>
+  orProblem(async () => {
+    const works = (await readStrict('workspaces')).workspaces
+    const state = await readState()
+    if (!state.repos.some((r) => r.id === id)) return { error: t('No hay ningún repo «{id}»', { id }) }
+    if (works.some((w) => w.repoId === id)) return { error: t('{repo} tiene trabajos abiertos: ciérralos antes.', { repo: id }) }
+    await writeState({ ...state, repos: state.repos.filter((r) => r.id !== id) })
+    return { ok: true as const }
+  })
+
+/** W158: `pick` is main's folder dialog; null (cancelled) changes nothing. */
+export async function relocateRepo(id: string, pick: () => Promise<string | null>, run: Runner): Promise<RepoResult | null> {
+  const path = await pick()
+  if (path === null) return null
+  return orProblem(async () => {
+    const top = await run('git', ['-C', path, 'rev-parse', '--show-toplevel'])
+    if (top.code !== 0) return { error: t('Esa carpeta no es un repositorio git.') }
+    const toplevel = top.stdout.trim()
+    const state = await readState()
+    if (!state.repos.some((r) => r.id === id)) return { error: t('No hay ningún repo «{id}»', { id }) }
+    const taken = state.repos.find((r) => r.path === toplevel && r.id !== id)
+    if (taken) return { error: t('Esa carpeta ya es el repo {id}.', { id: taken.id }) }
+    await writeState({ ...state, repos: state.repos.map((r) => (r.id === id ? { ...r, path: toplevel } : r)) })
+    return { ok: true as const }
+  })
+}
 
 export async function listRepos(run: Runner): Promise<Listed<RepoView>> {
   const repos = await orProblem(readRepos)

@@ -1,10 +1,10 @@
 import type { RepoView } from '../preload/api'
 import { execFileSync } from 'node:child_process'
-import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, renameSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { detectMode, listRepos, registerRepo, setOverride } from './repos'
+import { detectMode, listRepos, registerRepo, relocateRepo, rememberRepo, removeRepo, setOverride } from './repos'
 import { run, type Runner } from './run'
 
 const made: string[] = []
@@ -96,5 +96,76 @@ describe('repos', () => {
     const after = (await listRepos(run) as RepoView[])[0]!
     expect(after.mode).toBe('in-place')
     expect(after.reason).toBe('elegido por ti')
+  })
+
+  it('each repo says whether its folder is there and is git', async () => {
+    const ok = makeRepo(NOISE, [])
+    const gone = makeRepo(NOISE, [])
+    const plain = makeRepo(NOISE, [])
+    for (const [id, path] of [['ok', ok], ['gone', gone], ['plain', plain]] as const) await registerRepo(path, run, { id })
+    rmSync(gone, { recursive: true, force: true })
+    rmSync(join(plain, '.git'), { recursive: true, force: true })
+
+    const health = async (runner: Runner) => Object.fromEntries((await listRepos(runner) as RepoView[]).map((r) => [r.id, r.health]))
+    expect(await health(run)).toEqual({ ok: 'ok', gone: 'missing', plain: 'not-git' })
+
+    // A git that cannot run says nothing about the folder (W156 says it when git is used).
+    const xcode: Runner = (cmd, args, opts) =>
+      cmd === 'git' ? Promise.resolve({ code: 1, stdout: '', stderr: 'xcode-select: note: No developer tools were found, requesting install.' }) : run(cmd, args, opts)
+    expect(await health(xcode)).toEqual({ ok: 'ok', gone: 'missing', plain: 'ok' })
+  })
+
+  it('removing a repo forgets it and never touches the folder', async () => {
+    const home = process.env['ATRIL_HOME']!
+    const root = makeRepo(NOISE, [])
+    const other = makeRepo(NOISE, [])
+    await registerRepo(root, run, { id: 'shop' })
+    await registerRepo(other, run, { id: 'cms' })
+    git(root, 'branch', 'feat/keep')
+    await rememberRepo('PF|', 'shop')
+    const file = join(home, 'repos.json')
+
+    // A work of that repo is open: nothing changes.
+    const workspaces = join(home, 'workspaces.json')
+    writeFileSync(workspaces, JSON.stringify({ workspaces: [{ id: 'w1', repoId: 'shop', path: '/x', branch: 'b', session: 's' }] }))
+    const before = readFileSync(file, 'utf8')
+    expect(await removeRepo('shop')).toEqual({ error: 'shop tiene trabajos abiertos: ciérralos antes.' })
+    expect(readFileSync(file, 'utf8')).toBe(before)
+
+    // workspaces.json damaged: W144's sentence, nothing changes.
+    writeFileSync(workspaces, '{')
+    const damaged = await removeRepo('shop')
+    expect('error' in damaged && damaged.error).toBe('No puedo leer workspaces.json: está dañado. No abro ni cierro trabajos hasta que se arregle.')
+    expect(readFileSync(file, 'utf8')).toBe(before)
+
+    writeFileSync(workspaces, JSON.stringify({ workspaces: [] }))
+    expect(await removeRepo('shop')).toEqual({ ok: true })
+    expect((await listRepos(run) as RepoView[]).map((r) => r.id)).toEqual(['cms'])
+    expect(existsSync(join(root, 'a.txt'))).toBe(true)
+    expect(execFileSync('git', ['-C', root, 'branch', '--list', 'feat/keep'], { encoding: 'utf8' })).toContain('feat/keep')
+    expect(JSON.parse(readFileSync(file, 'utf8')).jiraRepos).toEqual({ 'PF|': 'shop' })
+  })
+
+  it('a repo can be pointed at its new folder', async () => {
+    const root = makeRepo(NOISE, [], ['sub/x.txt'])
+    const other = makeRepo(NOISE, [])
+    await registerRepo(root, run, { id: 'shop' })
+    await registerRepo(other, run, { id: 'cms' })
+    await setOverride('shop', 'in-place')
+    const file = join(process.env['ATRIL_HOME']!, 'repos.json')
+    const moved = join(tmp(), 'moved')
+    renameSync(root, moved)
+
+    // Cancelled, not git, or already another repo: nothing changes.
+    const before = readFileSync(file, 'utf8')
+    expect(await relocateRepo('shop', async () => null, run)).toBeNull()
+    expect(await relocateRepo('shop', async () => tmp(), run)).toEqual({ error: 'Esa carpeta no es un repositorio git.' })
+    expect(await relocateRepo('shop', async () => other, run)).toEqual({ error: 'Esa carpeta ya es el repo cms.' })
+    expect(readFileSync(file, 'utf8')).toBe(before)
+
+    // A folder inside the repo stores its top level; id and mode stay.
+    expect(await relocateRepo('shop', async () => join(moved, 'sub'), run)).toEqual({ ok: true })
+    const shop = (await listRepos(run) as RepoView[]).find((r) => r.id === 'shop')!
+    expect(shop).toMatchObject({ id: 'shop', path: moved, override: 'in-place', health: 'ok' })
   })
 })

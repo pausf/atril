@@ -7,7 +7,7 @@ import type { RepoView } from '../../preload/api'
 import { App } from '../App'
 import { issue, mockApi, mockSystemTheme, workspace } from '../mockApi'
 
-const repos: RepoView[] = [{ id: 'web', path: '/w', mode: 'worktree', reason: '' }]
+const repos: RepoView[] = [{ id: 'web', path: '/w', mode: 'worktree', reason: '', health: 'ok' }]
 const proposal = { repoId: 'web', branch: 'PF-10', mode: 'worktree' as const, reason: '', command: 'claude' }
 const rail = (name: RegExp) => within(screen.getByRole('navigation', { name: 'Pantallas' })).getByRole('button', { name })
 const MANUAL = 'Se para con la spec y el plan escritos y te pregunta'

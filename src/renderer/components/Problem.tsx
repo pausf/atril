@@ -1,7 +1,7 @@
 import type { NetFix, WorkFix } from '../../preload/api'
 import { useT, type T } from '../ui'
 
-/** The one button each fix gets (W130, W133, W135, W147, W150); no fix, no button. */
+/** The one button each fix gets (W130, W133, W135, W147, W150, W159); no fix, no button. */
 export const fixLabel = (t: T, fix: WorkFix | NetFix | undefined): string | undefined =>
   fix === 'worktree'
     ? t('Usar un worktree esta vez')
@@ -15,7 +15,17 @@ export const fixLabel = (t: T, fix: WorkFix | NetFix | undefined): string | unde
             ? t('Abrir Ajustes')
             : fix === 'retry'
               ? t('Volver a comprobar')
-              : undefined
+              : fix === 'git'
+                ? t('Instalar herramientas de Xcode')
+                : undefined
+
+/** W159: the two fixes every workspace problem does the same way; false leaves the fix to the caller. */
+export function sharedFix(fix: WorkFix | undefined, openSettings: () => void): boolean {
+  if (fix === 'settings') openSettings()
+  else if (fix === 'git') void window.atril.installTool('git')
+  else return false
+  return true
+}
 
 /**
  * What happened, what that stops, one button that fixes it and the technical detail folded («Ver detalle»).

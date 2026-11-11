@@ -10,8 +10,8 @@ import { App } from './App'
 import { issue, mockApi, mockSystemTheme, workspace } from './mockApi'
 
 const repos: RepoView[] = [
-  { id: 'web', path: '/w', mode: 'worktree', reason: 'worktree: no signal found' },
-  { id: 'api', path: '/a', mode: 'in-place', reason: 'in-place: build reads an ignored file' }
+  { id: 'web', path: '/w', mode: 'worktree', reason: 'worktree: no signal found', health: 'ok' },
+  { id: 'api', path: '/a', mode: 'in-place', reason: 'in-place: build reads an ignored file', health: 'ok' }
 ]
 
 beforeEach(() => mockSystemTheme(false))

@@ -3,8 +3,13 @@ import { createElement } from 'react'
 import { cleanup, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import type { AtrilApi, WorkspaceView } from '../preload/api'
+import type { AtrilApi, JiraIssue, WorkRefusal, WorkspaceView } from '../preload/api'
 import { OwnTaskDialog } from './inbox/OwnTaskDialog'
+import { StartDialog } from './inbox/StartDialog'
+import { WorkspaceList } from './components/WorkspaceList'
+import { Workspace } from './components/Workspace'
+import { NavigationContext } from './settings/navigation'
+import { mockApi } from './mockApi'
 
 afterEach(cleanup)
 
@@ -99,5 +104,76 @@ describe('new work dialog', () => {
     await user.click(screen.getByRole('button', { name: 'Abrir en Terminal' }))
     expect(terminal).toHaveBeenCalledWith({ repoId: 'shop-web' })
     expect(open).toHaveBeenCalledTimes(1)
+  })
+
+  it('settings and git fixes do what they say', async () => {
+    const SETTINGS: WorkRefusal = { error: 'La carpeta de shop-web ya no existe (/r).', fix: 'settings' }
+    const GIT: WorkRefusal = { error: 'git no funciona en este Mac.', detail: 'xcode-select: note: No developer tools were found, requesting install.', fix: 'git' }
+    const installTool = vi.fn().mockResolvedValue({ ok: true })
+    const openSettings = vi.fn()
+    const ws = { id: 'w1', repoId: 'shop-web', branch: 'feat/x', mode: 'worktree', path: '/wt', alive: false, agent: 'claude', session: 's', paneId: '%1', baseCommit: 'a' } as WorkspaceView
+    // A full mock per place, with the one answer that place gets swapped in.
+    const api = (patch: (a: AtrilApi) => void): void => {
+      mockApi({ repos: [{ id: 'shop-web', path: '/r', mode: 'worktree', reason: '', health: 'ok' }] })
+      window.atril.installTool = installTool
+      patch(window.atril)
+    }
+    const user = userEvent.setup()
+    // Each place a workspace problem shows up: press its fix, then check it did what it said.
+    const press = async (refusal: WorkRefusal): Promise<void> => {
+      const button = await screen.findByRole('button', { name: refusal.fix === 'settings' ? 'Abrir Ajustes' : 'Instalar herramientas de Xcode' })
+      await user.click(button)
+    }
+    const expectDone = (refusal: WorkRefusal, settingsCalls: number): void => {
+      if (refusal.fix === 'settings') expect(openSettings).toHaveBeenCalledTimes(settingsCalls)
+      else expect(installTool).toHaveBeenLastCalledWith('git')
+    }
+    const withNav = (el: ReturnType<typeof createElement>) => createElement(NavigationContext.Provider, { value: { openSettings, openWorkspace: () => undefined } }, el)
+    const issue: JiraIssue = { key: 'PF-1', summary: 'x', type: 'Task', status: 'To Do', statusId: '1', project: 'PF', components: [], group: 'todo' }
+
+    let settingsCalls = 0
+    for (const refusal of [SETTINGS, GIT]) {
+      if (refusal.fix === 'settings') settingsCalls++
+      // New work.
+      api((a) => (a.workspaces.open = vi.fn().mockResolvedValue(refusal)))
+      render(createElement(OwnTaskDialog, { textOptional: true, onClose: () => undefined, onOpenSettings: openSettings, onStarted: async () => undefined }))
+      await user.type(await screen.findByLabelText('Rama'), 'x')
+      await user.click(screen.getByRole('button', { name: 'Empezar' }))
+      await press(refusal)
+      expectDone(refusal, settingsCalls)
+      cleanup()
+
+      // Start from Jira.
+      if (refusal.fix === 'settings') settingsCalls++
+      api((a) => {
+        a.jira.proposeStart = vi.fn().mockResolvedValue({ repoId: 'shop-web', branch: 'PF-1', mode: 'worktree', reason: '', command: 'claude' })
+        a.jira.start = vi.fn().mockResolvedValue(refusal)
+      })
+      render(withNav(createElement(StartDialog, { issue, onClose: () => undefined, onStarted: async () => undefined, onOpenWorkspace: () => undefined })))
+      const start = await screen.findByRole<HTMLButtonElement>('button', { name: 'Empezar' })
+      await vi.waitFor(() => expect(start.disabled).toBe(false))
+      await user.click(start)
+      await press(refusal)
+      expectDone(refusal, settingsCalls)
+      cleanup()
+
+      // The workspace row (closing) in the sidebar.
+      if (refusal.fix === 'settings') settingsCalls++
+      api(() => undefined)
+      render(withNav(createElement(WorkspaceList, { workspaces: [ws], selected: null, onSelect: () => undefined, onRemove: async () => refusal, onForget: async () => ({ ok: true as const }) })))
+      await user.click(screen.getByRole('button', { name: 'Quitar feat/x' }))
+      await press(refusal)
+      expectDone(refusal, settingsCalls)
+      cleanup()
+
+      // The reopen bar of a stopped work.
+      if (refusal.fix === 'settings') settingsCalls++
+      api((a) => (a.workspaces.reopen = vi.fn().mockResolvedValue(refusal)))
+      render(withNav(createElement(Workspace, { ws, flow: null })))
+      await user.click(await screen.findByRole('button', { name: 'Volver a abrir' }))
+      await press(refusal)
+      expectDone(refusal, settingsCalls)
+      cleanup()
+    }
   })
 })

@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
+import { useContext, useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import type { Effort, JiraIssue, Model, RepoView, StartProposal, WorkRefusal, WorkspaceView } from '../../preload/api'
 import { Icon } from '../components/Icon'
 import { effortOptions, modelOptions } from '../components/models'
-import { fixLabel, Problem } from '../components/Problem'
+import { fixLabel, Problem, sharedFix } from '../components/Problem'
+import { NavigationContext } from '../settings/navigation'
 import { ModePicker } from './ModePicker'
 import { suggest, type Suggestion } from './suggest'
 import { SuggestLine } from './SuggestLine'
@@ -20,6 +21,7 @@ const FOCUSABLE = 'button:not(:disabled), select:not(:disabled), input:not(:disa
 
 export function StartDialog({ issue, onClose, onStarted, onOpenWorkspace }: Props) {
   const t = useT()
+  const { openSettings } = useContext(NavigationContext)
   const dialog = useRef<HTMLDivElement>(null)
   const lastRepo = useRef<string | undefined>(undefined)
   const [repos, setRepos] = useState<RepoView[] | null>(null)
@@ -187,7 +189,7 @@ export function StartDialog({ issue, onClose, onStarted, onOpenWorkspace }: Prop
             cant={t('No he creado el trabajo.')}
             fix={fixLabel(t, problem.fix)}
             busy={busy}
-            onFix={() => void (problem.fix === 'worktree' ? submit(true) : problem.fix === 'reveal' ? window.atril.revealState(problem.file ?? 'repos') : openTerminal())}
+            onFix={() => sharedFix(problem.fix, openSettings) || void (problem.fix === 'worktree' ? submit(true) : problem.fix === 'reveal' ? window.atril.revealState(problem.file ?? 'repos') : openTerminal())}
             detail={problem.detail ?? ''}
           />
         )}

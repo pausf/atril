@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { CreateRepoDialog } from './CreateRepo'
-import type { AddRepoResult, Listed, Mode, RepoView, StateProblem } from '../../preload/api'
+import type { AddRepoResult, Listed, Mode, RepoResult, RepoView, StateProblem } from '../../preload/api'
 import { fixLabel, Problem } from '../components/Problem'
 import { useT } from '../ui'
 
@@ -21,6 +21,8 @@ export function Repos() {
   const [creating, setCreating] = useState(false)
   // S33: repos.json is damaged; nothing here may write it, so only the way to the file is offered.
   const [problem, setProblem] = useState<StateProblem | null>(null)
+  // S35: a refused remove or relocate, shown under its row.
+  const [refusal, setRefusal] = useState<{ id: string; error: string } | null>(null)
   const show = (r: Listed<RepoView>): void => {
     if (!Array.isArray(r)) return setProblem(r.problem)
     setProblem(null)
@@ -72,6 +74,14 @@ export function Repos() {
     show(await window.atril.repos.setOverride(repo.id, value === 'auto' ? null : value))
   }
 
+  const settleRow = async (id: string, r: RepoResult | null): Promise<void> => {
+    if (r === null) return
+    if ('fix' in r) return setProblem(r)
+    if ('error' in r) return setRefusal({ id, error: r.error })
+    setRefusal(null)
+    show(await window.atril.repos.list())
+  }
+
   const idValid = pending ? ID_RE.test(pending.id) : true
 
   return (
@@ -96,11 +106,26 @@ export function Repos() {
               <div className="path">{repo.path}</div>
               {repo.mode === 'in-place' && <div className="why">{repo.reason}</div>}
             </div>
-            <select aria-label={t('Modo de {id}', { id: repo.id })} title={repo.reason} value={repo.override ?? 'auto'} onChange={(e) => void choose(repo, e.target.value as Choice)}>
-              <option value="auto">{t('Auto · {mode}', { mode: repo.mode })}</option>
-              <option value="worktree">Worktree</option>
-              <option value="in-place">In-place</option>
-            </select>
+            {repo.health === 'missing' || repo.health === 'not-git' ? (
+              <>
+                <span className="bad">{repo.health === 'missing' ? t('Carpeta no encontrada') : t('No es un repo de git')}</span>
+                <button type="button" className="pill" onClick={() => void window.atril.repos.relocate(repo.id).then((r) => settleRow(repo.id, r))}>
+                  {t('Buscar la carpeta…')}
+                </button>
+              </>
+            ) : (
+              <select aria-label={t('Modo de {id}', { id: repo.id })} title={repo.reason} value={repo.override ?? 'auto'} onChange={(e) => void choose(repo, e.target.value as Choice)}>
+                <option value="auto">{t('Auto · {mode}', { mode: repo.mode })}</option>
+                <option value="worktree">Worktree</option>
+                <option value="in-place">In-place</option>
+              </select>
+            )}
+            <button type="button" className="pill" onClick={() => void window.atril.repos.remove(repo.id).then((r) => settleRow(repo.id, r))}>
+              {t('Quitar el repo')}
+            </button>
+            {refusal?.id === repo.id && (
+              <Problem what={refusal.error} cant={t('{id} sigue como estaba.', { id: repo.id })} detail="" onClose={() => setRefusal(null)} />
+            )}
           </li>
         ))}
       </ul>

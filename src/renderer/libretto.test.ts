@@ -11,7 +11,7 @@ beforeEach(() => mockSystemTheme(false))
 afterEach(cleanup)
 
 const rail = (name: RegExp) => within(screen.getByRole('navigation', { name: 'Pantallas' })).getByRole('button', { name })
-const repo = (id: string): RepoView => ({ id, path: `/r/${id}`, mode: 'worktree', reason: '' })
+const repo = (id: string): RepoView => ({ id, path: `/r/${id}`, mode: 'worktree', reason: '', health: 'ok' })
 const repos = [repo('web'), repo('api')]
 const web: LibrettoState = {
   queued: [

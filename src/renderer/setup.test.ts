@@ -22,7 +22,7 @@ describe('first-run setup', () => {
     // Read at call time: the test changes them as the person would.
     const o = {
       doctor: [missing('tmux')],
-      repos: [{ id: 'web', path: '/Users/pau/web', mode: 'worktree' as const, reason: '' }],
+      repos: [{ id: 'web', path: '/Users/pau/web', mode: 'worktree' as const, reason: '', health: 'ok' as const }],
       jira: { saved: false } as JiraSettingsStatus,
       forges: { gitlab: { saved: true as const, account: 'pau' } }
     }

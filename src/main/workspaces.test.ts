@@ -66,11 +66,69 @@ describe('workspaces', () => {
     }
     const r = await openWorktree({ repoId: 'demo', branch: 'bad..name', agent: 'claude', argv: SLEEP }, spy)
 
-    expect('error' in r).toBe(true)
+    expect(r).toEqual({ error: '«bad..name» no es un nombre de rama válido' })
     expect(calls).toHaveLength(1)
     expect(calls[0]?.slice(0, 3)).toEqual(['git', 'check-ref-format', '--branch'])
     expect(existsSync(join(home, 'wt'))).toBe(false)
   })
+
+  it('a missing or non-git repo is refused with its fix', async () => {
+    const calls: string[][] = []
+    const spy: Runner = (cmd, args, opts) => {
+      calls.push([cmd, ...args])
+      return run(cmd, args, opts)
+    }
+    const readOnly = (): void => {
+      // Only the name check and the read-only health probe may run: no git that writes, no tmux.
+      expect(calls.filter((c) => !(c[1] === 'check-ref-format' || (c[0] === 'git' && c.includes('rev-parse') && c.includes('--git-dir'))))).toEqual([])
+      calls.length = 0
+    }
+
+    rmSync(repo, { recursive: true, force: true })
+    expect(await openWorktree({ repoId: 'demo', branch: 'feat/x', agent: 'claude', argv: SLEEP }, spy)).toEqual({ error: `La carpeta de demo ya no existe (${repo}).`, fix: 'settings' })
+    readOnly()
+
+    const plain = tmp()
+    writeFileSync(join(home, 'repos.json'), JSON.stringify({ repos: [{ id: 'demo', path: plain, override: 'in-place' }] }))
+    expect(await openWorktree({ repoId: 'demo', branch: 'feat/x', agent: 'claude', argv: SLEEP }, spy)).toEqual({ error: `La carpeta de demo no es un repo de git (${plain}).`, fix: 'settings' })
+    readOnly()
+    expect(existsSync(join(home, 'wt'))).toBe(false)
+    expect(existsSync(join(home, 'workspaces.json'))).toBe(false)
+  })
+
+  it('a broken git is never blamed on the branch name', async () => {
+    const XCODE = 'xcode-select: note: No developer tools were found, requesting install.'
+    const broken = (code: number, stderr: string, when: (args: string[]) => boolean = () => true): Runner => (cmd, args, opts) =>
+      cmd === 'git' && when(args) ? Promise.resolve({ code, stdout: '', stderr }) : run(cmd, args, opts)
+    const opening = (branch: string, runner: Runner) => openWorktree({ repoId: 'demo', branch, agent: 'claude', argv: SLEEP }, runner)
+
+    // Whatever the name, a git that cannot run is said as such.
+    for (const branch of ['feat/x', 'bad..name']) {
+      expect(await opening(branch, broken(1, XCODE))).toEqual({ error: 'git no funciona en este Mac.', detail: XCODE, fix: 'git' })
+      expect(await opening(branch, broken(127, 'sh: git: command not found'))).toEqual({ error: 'git no funciona en este Mac.', detail: 'sh: git: command not found', fix: 'git' })
+    }
+
+    // A later step breaking: nothing it had not made is left behind.
+    const add = await opening('feat/add', broken(1, XCODE, (a) => a.includes('worktree') && a.includes('add')))
+    expect(add).toEqual({ error: 'git no funciona en este Mac.', detail: XCODE, fix: 'git' })
+    expect(existsSync(join(home, 'wt', 'demo', 'feat', 'add'))).toBe(false)
+    expect(git(repo, 'branch', '--list', 'feat/add').trim()).toBe('')
+
+    // Closing: the record stays.
+    const r = await opening('feat/close', run)
+    if (!('workspace' in r)) throw new Error(r.error)
+    expect(await removeWorkspace(r.workspace.id, broken(127, 'sh: git: command not found'))).toEqual({ error: 'git no funciona en este Mac.', detail: 'sh: git: command not found', fix: 'git' })
+    expect(await removeWorkspace(r.workspace.id, broken(1, XCODE, (a) => a.includes('worktree') && a.includes('remove')))).toEqual({ error: 'git no funciona en este Mac.', detail: XCODE, fix: 'git' })
+    expect(existsSync(r.workspace.path)).toBe(true)
+    expect((await readRecords()).map((w) => w.id)).toEqual([r.workspace.id])
+
+    // In place: the copy is never switched.
+    writeFileSync(join(home, 'repos.json'), JSON.stringify({ repos: [{ id: 'demo', path: repo, override: 'in-place' }] }))
+    const before = git(repo, 'branch', '--show-current').trim()
+    expect(await opening('feat/ip', broken(1, XCODE, (a) => a.includes('switch')))).toEqual({ error: 'git no funciona en este Mac.', detail: XCODE, fix: 'git' })
+    expect(await opening('feat/ip', broken(1, XCODE, (a) => a.includes('status')))).toEqual({ error: 'git no funciona en este Mac.', detail: XCODE, fix: 'git' })
+    expect(git(repo, 'branch', '--show-current').trim()).toBe(before)
+  }, 40_000)
 
   it('refuses to remove a dirty worktree', async () => {
     const r = await openWorktree({ repoId: 'demo', branch: 'feat/dirty', agent: 'claude', argv: SLEEP })

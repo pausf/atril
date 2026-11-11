@@ -10,7 +10,7 @@ import { issue, mockApi, mockSystemTheme, workspace } from '../mockApi'
 const GH = 'https://github.com/acme/web/pull/7'
 const mr = (url: string, title: string): MrItem => ({ forge: 'github', url, title, project: 'acme/web', author: 'ana', updatedAt: new Date().toISOString() })
 const lists = (o: Partial<MrLists> = {}): MrLists => ({ connected: ['github'], mine: [], review: [], following: [], more: { mine: [], review: [], following: [] }, errors: [], ...o })
-const repos: RepoView[] = [{ id: 'web', path: '/w', mode: 'worktree', reason: 'worktree: no signal found' }]
+const repos: RepoView[] = [{ id: 'web', path: '/w', mode: 'worktree', reason: 'worktree: no signal found', health: 'ok' }]
 const rail = (name: RegExp) => within(screen.getByRole('navigation', { name: 'Pantallas' })).getByRole('button', { name })
 
 beforeEach(() => mockSystemTheme(false))

@@ -66,7 +66,7 @@ describe('libretto panel', () => {
 
   it('other changes lead to Libretto', async () => {
     const stored: UiState = { tutorialSeen: true, theme: 'auto', folded: {} }
-    const repo = (id: string) => ({ id, path: `/r/${id}`, mode: 'worktree' as const, reason: '' })
+    const repo = (id: string) => ({ id, path: `/r/${id}`, mode: 'worktree' as const, reason: '', health: 'ok' as const })
     const open = async (others: string[]) => {
       mockApi(
         {

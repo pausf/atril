@@ -1,12 +1,13 @@
 import { useT } from '../ui'
 import { StateLabel } from './StateLabel'
-import { useState } from 'react'
+import { useContext, useState } from 'react'
 import type { RemoveResult, StateProblem, WorkspaceView } from '../../preload/api'
 import { stateOf, useAgentStates, useLatestActivity } from '../agents'
 import { runningCount, useSubagents } from '../subagents'
 import { localiseActivity } from '../../preload/activity-i18n'
 import { QuickReplies, useAsking } from './QuickReplies'
-import { fixLabel, Problem } from './Problem'
+import { fixLabel, Problem, sharedFix } from './Problem'
+import { NavigationContext } from '../settings/navigation'
 
 interface Props {
   workspaces: WorkspaceView[]
@@ -20,6 +21,7 @@ interface Props {
 
 export function WorkspaceList({ workspaces, problem, selected, onSelect, onRemove, onForget }: Props) {
   const t = useT()
+  const { openSettings } = useContext(NavigationContext)
   const [refusal, setRefusal] = useState<{ id: string; result: Exclude<RemoveResult, { ok: true }> } | null>(null)
   // W136: a live agent is only stopped after a second, explicit «Cerrar».
   const [confirming, setConfirming] = useState<string | null>(null)
@@ -109,11 +111,12 @@ export function WorkspaceList({ workspaces, problem, selected, onSelect, onRemov
               cant={t('{branch} sigue en la lista.', { branch: w.branch })}
               fix={fixLabel(t, refusal.result.fix)}
               onFix={() =>
-                refusal.result.fix === 'forget'
+                sharedFix(refusal.result.fix, openSettings) ||
+                (refusal.result.fix === 'forget'
                   ? close(w.id, onForget)
                   : refusal.result.fix === 'reveal'
                     ? void window.atril.revealState(refusal.result.file ?? 'workspaces')
-                    : void window.atril.workspaces.terminal({ id: w.id })
+                    : void window.atril.workspaces.terminal({ id: w.id }))
               }
               detail={refusal.result.detail ?? ''}
               busy={closing === w.id}

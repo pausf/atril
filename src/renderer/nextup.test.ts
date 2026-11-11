@@ -7,7 +7,7 @@ import type { RepoView } from '../preload/api'
 import { App } from './App'
 import { issue, mockApi, mockSystemTheme, workspace } from './mockApi'
 
-const repos: RepoView[] = [{ id: 'web', path: '/w', mode: 'worktree', reason: 'worktree: no signal found' }]
+const repos: RepoView[] = [{ id: 'web', path: '/w', mode: 'worktree', reason: 'worktree: no signal found', health: 'ok' }]
 const rail = (name: RegExp) => within(screen.getByRole('navigation', { name: 'Pantallas' })).getByRole('button', { name })
 
 beforeEach(() => mockSystemTheme(false))

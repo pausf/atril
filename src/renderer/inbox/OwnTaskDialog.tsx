@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import type { Effort, Model, RepoView, WorkRefusal, WorkspaceView } from '../../preload/api'
 import { effortOptions, modelOptions } from '../components/models'
-import { fixLabel, Problem } from '../components/Problem'
+import { fixLabel, Problem, sharedFix } from '../components/Problem'
 import { useT } from '../ui'
 import { slugBranch } from './branch'
 import { ModePicker } from './ModePicker'
@@ -173,7 +173,7 @@ export function OwnTaskDialog({ textOptional = false, onClose, onOpenSettings, o
             cant={t('No he creado el trabajo.')}
             fix={fixLabel(t, problem.fix)}
             busy={busy}
-            onFix={() => void (problem.fix === 'worktree' ? submit(true) : problem.fix === 'reveal' ? window.atril.revealState(problem.file ?? 'repos') : openTerminal())}
+            onFix={() => sharedFix(problem.fix, onOpenSettings) || void (problem.fix === 'worktree' ? submit(true) : problem.fix === 'reveal' ? window.atril.revealState(problem.file ?? 'repos') : openTerminal())}
             detail={problem.detail ?? ''}
           />
         )}

@@ -7,7 +7,7 @@ import type { RepoView, UiState } from '../preload/api'
 import { App } from './App'
 import { issue, mockApi, mockSystemTheme, workspace } from './mockApi'
 
-const repos: RepoView[] = [{ id: 'web', path: '/w', mode: 'worktree', reason: 'worktree: no signal found' }]
+const repos: RepoView[] = [{ id: 'web', path: '/w', mode: 'worktree', reason: 'worktree: no signal found', health: 'ok' }]
 const data = {
   workspaces: [workspace('aaaaaaa1', 'PF-1'), workspace('aaaaaaa2', 'PF-2')],
   repos,

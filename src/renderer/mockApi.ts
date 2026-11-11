@@ -1,5 +1,5 @@
 import { vi } from 'vitest'
-import type { ActivityLine, SubagentEntry, SubagentLine, AddRepoResult, Aviso, FileChange, FlowBoxes, FlowDocs, ForgeId, ForgeStatus, Mode, MrDraft, MrDrafts, MrDraftsResult, MrFixCiResult, MrLists, MrReply, MrScoreState, MrThreads, MrWork, AgentState, StateProblem, QaBugResult, QaLaunchResult, QaManualRequest, QaReport, QaResult, QaStatus, QaTargets, AtrilApi, RemoveResult, QuickAnswer, QuickReplies, FlowStage, HistoryEntry, IdeaJiraResult, IdeaResult, LibrettoCounts, LibrettoState, JiraIssue, JiraSettingsStatus, MenuAction, NextItem, StartProposalResult, StartRequest, StartResult, RepoView, ToolReport, UiState, WorkCost, WorkspaceResult, WorkspaceView } from '../preload/api'
+import type { ActivityLine, SubagentEntry, SubagentLine, AddRepoResult, Aviso, FileChange, FlowBoxes, FlowDocs, ForgeId, ForgeStatus, Mode, MrDraft, MrDrafts, MrDraftsResult, MrFixCiResult, MrLists, MrReply, MrScoreState, MrThreads, MrWork, AgentState, StateProblem, QaBugResult, QaLaunchResult, QaManualRequest, QaReport, QaResult, QaStatus, QaTargets, AtrilApi, RemoveResult, QuickAnswer, QuickReplies, FlowStage, HistoryEntry, IdeaJiraResult, IdeaResult, LibrettoCounts, LibrettoState, JiraIssue, JiraSettingsStatus, MenuAction, NextItem, StartProposalResult, StartRequest, StartResult, RepoResult, RepoView, ToolReport, UiState, WorkCost, WorkspaceResult, WorkspaceView } from '../preload/api'
 
 export const workspace = (id: string, branch: string, alive = true): WorkspaceView => ({
   id,
@@ -110,6 +110,10 @@ interface Options {
   wsProblem?: StateProblem
   /** What repos.list and setOverride answer when repos.json is damaged (S33). */
   reposProblem?: StateProblem
+  /** What repos.remove answers per id; missing means removed. */
+  removeRepo?: Record<string, RepoResult>
+  /** What repos.relocate answers per id; missing means found again (health turns ok). */
+  relocateRepo?: Record<string, RepoResult | null>
 }
 
 /** ui.json lives in `stored`; pass the same object to a second mock to simulate a restart. */
@@ -128,6 +132,8 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
   const opened: WorkspaceView[] = []
   const gone = new Set<string>()
   const revived = new Set<string>()
+  const reposGone = new Set<string>()
+  const relocated = new Set<string>()
   const changeDrafts = (url: string, f: (d: MrDraft[]) => MrDraft[]): MrDraftsResult => {
     const next: MrDrafts = { ...(drafts.get(url) ?? { stale: false, canSend: false, drafts: [] }), drafts: [] }
     next.drafts = f(drafts.get(url)?.drafts ?? [])
@@ -191,9 +197,20 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
       terminal: vi.fn(async () => ({ ok: true as const }))
     },
     repos: {
-      list: async () => (o.reposProblem ? { problem: o.reposProblem } : o.repos ?? []),
+      list: async () =>
+        o.reposProblem ? { problem: o.reposProblem } : (o.repos ?? []).filter((r) => !reposGone.has(r.id)).map((r) => (relocated.has(r.id) ? { ...r, health: 'ok' as const } : r)),
+      remove: vi.fn(async (id: string): Promise<RepoResult> => {
+        const r = o.removeRepo?.[id] ?? { ok: true as const }
+        if ('ok' in r) reposGone.add(id)
+        return r
+      }),
+      relocate: vi.fn(async (id: string): Promise<RepoResult | null> => {
+        const r = o.relocateRepo?.[id] === undefined ? { ok: true as const } : o.relocateRepo[id]
+        if (r && 'ok' in r) relocated.add(id)
+        return r
+      }),
       add: vi.fn(async () => o.addRepo ?? null),
-      addWithId: vi.fn(async (path: string, id: string): Promise<AddRepoResult> => ({ repo: { id, path, mode: 'worktree', reason: '' } })),
+      addWithId: vi.fn(async (path: string, id: string): Promise<AddRepoResult> => ({ repo: { id, path, mode: 'worktree', reason: '', health: 'ok' } })),
       setOverride: vi.fn(async (id: string, mode: Mode | null): Promise<RepoView[]> =>
         (o.repos ?? []).map((r) => (r.id === id ? { ...r, ...(mode ? { override: mode } : { override: undefined }) } : r))
       )

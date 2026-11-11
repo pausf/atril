@@ -625,6 +625,7 @@ kbd {
   display: flex;
   align-items: center;
   gap: 12px;
+  flex-wrap: wrap;
   padding: 10px 0;
   border-top: 1px solid var(--line);
   font-size: 13.5px;
@@ -640,6 +641,10 @@ kbd {
 }
 .repo-rows .why {
   margin: 2px 0 0;
+}
+.repo-rows .problem {
+  flex-basis: 100%;
+  margin: 0;
 }
 .repo-rows select {
   font: inherit;

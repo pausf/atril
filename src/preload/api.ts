@@ -11,12 +11,16 @@ export type DoctorReport = ToolReport[]
 
 export type Mode = 'worktree' | 'in-place'
 
+/** W154: `missing` the folder is gone, `not-git` git says it is not a repo. */
+export type RepoHealth = 'ok' | 'missing' | 'not-git'
+
 export interface RepoView {
   id: string
   path: string
   mode: Mode
   reason: string
   override?: Mode
+  health: RepoHealth
 }
 
 /** W144/W148: Atril's two state files; the window names one to reveal, never a path. */
@@ -43,7 +47,13 @@ export interface ReposApi {
   add(): Promise<(AddRepoResult & { path: string }) | null>
   addWithId(path: string, id: string): Promise<AddRepoResult>
   setOverride(id: string, mode: Mode | null): Promise<Listed<RepoView>>
+  /** W157: forgets the repo; its folder is never touched. */
+  remove(id: string): Promise<RepoResult>
+  /** W158: main opens the folder picker; null when the person cancels. */
+  relocate(id: string): Promise<RepoResult | null>
 }
+
+export type RepoResult = { ok: true } | { error: string } | StateProblem
 
 
 export type Agent = 'claude'
@@ -79,10 +89,11 @@ export interface WorkspaceView extends WorkspaceRecord {
 
 /**
  * W7/W8: `fix: 'worktree'` means opening again with `worktree: true` gets past it; `'terminal'` opens Terminal in the
- * folder (W131/W132); `'forget'` drops a work whose folder is gone (W133); `'reveal'` shows `file` in Finder (W147).
+ * folder (W131/W132); `'forget'` drops a work whose folder is gone (W133); `'reveal'` shows `file` in Finder (W147);
+ * `'settings'` opens Ajustes (W155); `'git'` installs Xcode's tools (W156).
  * `detail` is git's or tmux's own output.
  */
-export type WorkFix = 'worktree' | 'terminal' | 'forget' | 'reveal'
+export type WorkFix = 'worktree' | 'terminal' | 'forget' | 'reveal' | 'settings' | 'git'
 /** W150: what fixes a failed request to Jira, GitHub or GitLab. */
 export type NetFix = 'settings' | 'retry'
 export type WorkRefusal = { error: string; detail?: string; fix?: WorkFix; file?: StateFile }
