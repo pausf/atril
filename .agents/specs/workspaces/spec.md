@@ -292,6 +292,10 @@ textos, en «Pasos» abajo. Los que tienen elemento en pantalla lo iluminan; los
 
 - Una sola tabla en main traduce cada estado HTTP y cada causa de red de Jira, GitHub y GitLab a una frase con su arreglo.
 
+### Modelos de Libretto (libretto-models, 11 nov 2026)
+
+- Las revisiones de Libretto que lanzan los agentes de Atril corren en Sonnet: la mitad de precio que Opus, como recomienda el artículo para tareas repetidas.
+
 ## Scope boundaries
 
 **In:** the three columns and footer of `bocetos/fase1-nucleo.html` (boceto 8), the
@@ -591,6 +595,10 @@ Nunca fuera: validar `.atril/qa.json` (lo escribe el repo, no Atril); la ventana
 
 **In:** `src/main/net-problem.ts`. **Out:** quién la pinta (inbox, mr, settings).
 
+### Modelos de Libretto (libretto-models, 11 nov 2026)
+
+**In:** `scripts/bundle-libretto.mjs`, una función `pinModels` en `scripts/libretto-models.mjs` con su test, y la copia `resources/libretto/agents/*.md` reescrita con esa función. **Out:** cambiar Libretto en su propio repo; elegir modelo por tarea en tiempo de ejecución; medir modelos con tareas reales.
+
 ## Constraints
 
 - Electron (current stable) + TypeScript in strict mode, pnpm, Node 24 (installed:
@@ -747,6 +755,11 @@ Textos por `t()`.
 ### Jira, GitHub y GitLab (net-errors, 11 nov 2026)
 
 - Ni números de estado ni nombres de excepción en la frase.
+
+### Modelos de Libretto (libretto-models, 11 nov 2026)
+
+- No se toca el contenido de los agentes salvo la línea `model:` del frontmatter.
+- La versión de Libretto copiada no cambia (no se re-empaqueta desde otra referencia).
 
 ## Prior decisions
 
@@ -1952,6 +1965,25 @@ Textos por `t()`.
 - Q: ¿Qué cuenta como «forma equivocada»? → A: `workspaces` o `repos` que no sea una lista, o una entrada sin `id`, `path` (y `branch`, `session` para trabajos) de texto (assumed).
 - Q: ¿Y `ui.json` dañado (hallazgo 14)? → A: fuera: solo repite el tutorial, nada se pierde (assumed).
 
+### Modelos de Libretto (libretto-models, 11 nov 2026)
+
+- Atril fija el modelo de los subagentes de Libretto que solo leen y opinan; un modelo que trae Libretto manda. La copia en `resources/libretto/` es Libretto `171db90` más esas líneas `model:`; nada más difiere.
+
+#### Alternatives that lost
+
+| Considered | Why it lost |
+|---|---|
+| Editar `resources/libretto` a mano | el siguiente empaquetado lo borra |
+| `CLAUDE_CODE_SUBAGENT_MODEL=sonnet` al lanzar el agente | también movería subagentes que editan código |
+| Haiku para todos los revisores | el artículo reserva Haiku para lo que se comprueba barato (buscar, leer logs); revisar es juicio |
+
+#### Decision log, answers as given (2026-11-11)
+- Q: (revisión en frío) ¿Qué es «ya tiene modelo»? → A: una línea del frontmatter que empieza por `model:`; un agente de la lista sin frontmatter (`---` al principio) se deja igual (assumed).
+- Q: (revisión en frío) ¿Cómo se reescribe la copia actual? → A: aplicando `pinModels` a `resources/libretto/agents/*.md` tal como están, sin re-empaquetar desde el repo de Libretto: la versión copiada sigue siendo `171db90`.
+- Q: (revisión en frío) ¿Y la spec que dice que la copia es `171db90`? → A: pasa a decir «`171db90` más las líneas `model:` de Atril».
+- Q: ¿Dónde se fija el modelo de los subagentes de Libretto? → A: al empaquetar Libretto dentro de Atril (`scripts/bundle-libretto.mjs`), no en la copia a mano: la copia se regenera y perdería el cambio (assumed).
+- Q: ¿Cuáles? → A: los que leen y opinan sin editar código — `converge-reader`, `review-lens-reliability`, `review-lens-security`, `spec-reviewer`, `work-reviewer` — pasan a `sonnet`; los que ya traen modelo de Libretto lo conservan (`review-lens-design: sonnet`, `review-lens-intent` y `review-lens-tests: haiku`); `spec-writer` escribe el contrato y se queda en el modelo de la sesión (assumed).
+
 ## Task breakdown
 
 - App shell: Electron main, preload bridge, renderer with sidebar / centre / right panel /
@@ -2738,3 +2770,12 @@ Textos por `t()`.
 
 - **W150** When a request to Jira, GitHub or GitLab gets an HTTP error or throws, `net-problem` shall answer one sentence naming the service — 401: «{service} ha rechazado tu token.»; 403: «{service} no te deja ver esto con ese token.»; 404: «{service} no encuentra esa dirección.»; 429: «{service} pide esperar: demasiadas consultas.»; 500–599: «{service} está fallando ahora mismo.»; any other status: «{service} ha contestado algo que no esperaba.»; a thrown `ENOTFOUND` or `EAI_AGAIN`: «No encuentro {service}.»; a certificate code (as S32): «El certificado de {service} no es válido.»; a timeout: «{service} no ha respondido a tiempo.»; a `SyntaxError` (a body that is not JSON): «{service} ha contestado algo que no entiendo.»; anything else: «No llego a {service}: ¿hay conexión?» — with `detail` `HTTP <n>` or the code (from `err.cause.code` when it matches `^[A-Z0-9_]+$`, else the exception's name), and `fix: 'settings'` for 401, 403, 404, a host not found and a certificate code (the person fixes the token or the address), `fix: 'retry'` otherwise. No sentence contains a status number or an exception name.
   Proof: src/main/net-problem.test.ts each status and network cause has its sentence and fix
+
+### Modelos de Libretto (libretto-models, 11 nov 2026)
+
+- **W151** When Libretto is bundled, every agent whose file name (without `.md`) is in Atril's list (`converge-reader`, `review-lens-reliability`, `review-lens-security`, `spec-reviewer`, `work-reviewer`) and whose leading `---` frontmatter has no line starting with `model:` shall get `model: sonnet` as the frontmatter's last line; an agent that has one keeps it.
+  Proof: scripts/libretto-models.test.ts reviewers get sonnet unless libretto chose
+- **W153** Any agent outside the list, or without a leading frontmatter, shall be left byte-for-byte as it was, and running the function a second time shall change nothing.
+  Proof: scripts/libretto-models.test.ts other agents and a second run change nothing
+- **W152** The committed copy in `resources/libretto/agents/` shall be that function's output over the `171db90` copy: the five listed agents carry `model: sonnet`, `review-lens-design` keeps `sonnet`, `review-lens-intent` and `review-lens-tests` keep `haiku`, and `spec-writer` has no `model:` line — read from the files themselves.
+  Proof: src/main/packaging.test.ts bundled reviewers run on sonnet
