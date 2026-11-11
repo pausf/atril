@@ -255,6 +255,10 @@ textos, en «Pasos» abajo. Los que tienen elemento en pantalla lo iluminan; los
 - Una herramienta que no contesta a su `--version` sale como «no responde» a los 5 s, con su botón de instalar, en vez de «Comprobando…» para siempre.
 - Conectar Jira con una dirección que no responde dice qué falló (no encuentro la dirección, certificado, no responde) sin «TypeError», y el código va en «Ver detalle».
 
+### PATH del shell (login-path, 11 nov 2026)
+
+- Abierta desde el Dock, Atril encuentra `claude`, `tmux`, `git` y `jira` donde los encuentra tu terminal; el doctor deja de decir que faltan.
+
 ## Scope boundaries
 
 **In:** the three columns and footer of `bocetos/fase1-nucleo.html` (boceto 8), the
@@ -524,6 +528,10 @@ Nunca fuera: validar `.atril/qa.json` (lo escribe el repo, no Atril); la ventana
 
 **Out:** los errores de «Quitar», la terminal que no engancha y los trabajos parados (hallazgos 7, 8, 10, 11, 31): van en el siguiente cambio, con la fila del trabajo. Reintentos automáticos nuevos (W37 ya espacia los de la cuota). Los errores de Forges (GitHub/GitLab): ya dicen la causa.
 
+### PATH del shell (login-path, 11 nov 2026)
+
+**In:** `src/main/login-path.ts` (nuevo), su llamada al arrancar en `src/main/index.ts`. **Out:** leer otras variables del shell (W51 limita el entorno de los comandos a PATH, HOME, USER, LANG, SSH_AUTH_SOCK y TMPDIR; aquí solo cambia PATH).
+
 ## Constraints
 
 - Electron (current stable) + TypeScript in strict mode, pnpm, Node 24 (installed:
@@ -645,6 +653,11 @@ Textos por `t()`.
 - El token OAuth sigue sin salir de main (W18): la frase y el detalle son textos fijos o un número de estado.
 - `err.message` de la red nunca llega a la ventana (puede llevar la petición); solo códigos de una lista (`ENOTFOUND`…) y el nombre de la excepción, en el detalle.
 - Textos por `t()` con su entrada inglesa; colores por tokens.
+
+### PATH del shell (login-path, 11 nov 2026)
+
+- Ningún texto del shell sale de main ni se registra; solo se queda el valor de PATH.
+- El arranque no espera más de 3 s por el shell.
 
 ## Prior decisions
 
@@ -1737,6 +1750,21 @@ Textos por `t()`.
 - Q: ¿Qué arregla un fallo del llavero o del token? → A: «Abrir Claude Code», que abre Terminal con `claude` (la persona inicia sesión ahí); el resto, «Volver a comprobar» (assumed).
 - Q: ¿Cuánto espera el doctor? → A: 5 s por herramienta, como proponía el hallazgo 2 (assumed).
 
+### PATH del shell (login-path, 11 nov 2026)
+
+- Una app de Mac abierta desde el Finder no tiene el PATH del shell (ya decidido para el hook, que usa el Electron de Atril como Node): Atril lo pide al shell de login al arrancar, una vez, antes de comprobar herramientas.
+
+#### Alternatives that lost
+
+| Considered | Why it lost |
+|---|---|
+| Solo carpetas fijas | quien instala con asdf, nvm o en otra carpeta se queda fuera |
+| El paquete `fix-path`/`shell-env` | una dependencia para diez líneas |
+
+#### Decision log, answers as given (2026-11-11)
+- Q: ¿Por qué falta `claude` si está instalado? → A: (comprobado) está en `~/.local/bin`; una app abierta desde el Dock o el Finder hereda `/usr/bin:/bin:/usr/sbin:/sbin` y Atril nunca lo amplía.
+- Q: ¿De dónde sale el PATH bueno? → A: del shell de login e interactivo de la persona (`$SHELL -ilc`), que lee `.zprofile` y `.zshrc`, con 3 s de tope; detrás, `~/.local/bin`, `/opt/homebrew/bin` y `/usr/local/bin` por si el shell no contesta (assumed).
+
 ## Task breakdown
 
 - App shell: Electron main, preload bridge, renderer with sidebar / centre / right panel /
@@ -2462,3 +2490,9 @@ Textos por `t()`.
 
 - **W127** If a tool's version command has not finished after 5 s, then the doctor shall kill it and report that tool with the problem «no responde en 5 s» and its install command, and the other tools as they answered; the kill is the runner's `timeoutMs` (SIGKILL, code 124).
   Proof: src/main/doctor.test.ts a hung tool is reported after 5 s
+
+### PATH del shell (login-path, 11 nov 2026)
+
+- **W128** When Atril starts, main shall set its PATH, before the doctor or any agent runs, to the PATH printed by the person's `$SHELL -ilc` between two markers, then `~/.local/bin`, `/opt/homebrew/bin`, `/usr/local/bin` and the PATH it was launched with, each folder once, in that order; if the shell fails, prints no markers or has not answered in 3 s, then the same list without the shell's part.
+  Proof: src/main/login-path.test.ts the shell's path comes first and nothing repeats
+  Proof: src/main/login-path.test.ts a silent or slow shell still adds the usual folders

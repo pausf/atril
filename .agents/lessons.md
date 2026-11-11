@@ -266,3 +266,6 @@ Un test arreglado de paso (una carrera en `boxes.test.ts`) quedó fuera del cont
 
 ## 2026-11-11 · plain-errors · 6→7
 El estado inicial de la cuota («aún sin leer») cae en la frase genérica; encaja con W20, pero un estado «cargando» que se pinta como error es fácil de olvidar al escribir frases por causa.
+
+## 2026-11-11 · login-path · 6→7
+Nada contra el contrato. Duda del revisor: un `$SHELL` fish, ¿une `"$PATH"` con espacios? No: desde fish 3, PATH es una variable de rutas y entre comillas se une con «:». Si un shell raro no lo hace, las carpetas fijas siguen entrando. Lección general: un PATH vacío lo heredan todas las apps del Dock; cualquier herramienta nueva que se lance desde main pasa por aquí.
