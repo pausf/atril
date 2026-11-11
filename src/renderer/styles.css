@@ -156,8 +156,9 @@
   --text: #1c1e21;
   --sub: #65686b;
   --on-text: #fdfeff;
-  --run: #446b9c;
-  --run-text: #3e6596;
+  /* W165: working is grey; the one accent is for what needs the person. */
+  --run: #65686b;
+  --run-text: #65686b;
   --you: #446b9c;
   --you-text: #3e6596;
   --ask-bg: #f2f5f8;
@@ -194,8 +195,8 @@
   --text: #e7eaed;
   --sub: #b5b8bb;
   --on-text: #181a1c;
-  --run: #4c73a5;
-  --run-text: #97c1f7;
+  --run: #b5b8bb;
+  --run-text: #b5b8bb;
   --you: #4c73a5;
   --you-text: #97c1f7;
   --ask-bg: #1c2026;

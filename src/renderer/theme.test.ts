@@ -137,6 +137,12 @@ describe('theme', () => {
       }
     }
   })
+  it('grafito tells needs-you from working', () => {
+    for (const [name, pal] of [['light', grafitoLight], ['dark', grafitoDark]] as const) {
+      for (const k of ['run', 'run-text']) expect(oklch(pal[k]!).c, `${name} --${k}`).toBeLessThan(0.03)
+      for (const k of ['you', 'you-text']) expect(near(oklch(pal[k]!).h, 255, 15) && oklch(pal[k]!).c >= 0.03, `${name} --${k}`).toBe(true)
+    }
+  })
   it('the grafito palette has one accent and keeps contrast', () => {
     expect(css).toContain(`${GRAFITO} {`)
     expect(css).toContain(`${GRAFITO_DARK} {`)
