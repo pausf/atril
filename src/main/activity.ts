@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import type { ActivityLine } from '../preload/api'
 import { atrilHome } from './paths'
 import { run as defaultRun, type Runner } from './run'
-import { listWorkspaces } from './workspaces'
+import { listWorkspacesOrNone } from './workspaces'
 
 export const activityDir = (): string => join(atrilHome(), 'activity')
 
@@ -40,7 +40,7 @@ export function createActivity({ run = defaultRun, emit }: ActivityOptions) {
   let watcher: FSWatcher | undefined
 
   async function refresh(): Promise<void> {
-    for (const ws of await listWorkspaces(run)) {
+    for (const ws of await listWorkspacesOrNone(run)) {
       const lines = await readActivity(ws.session)
       const prev = known.get(ws.id)
       if (prev?.[0]?.at === lines[0]?.at && prev?.[0]?.text === lines[0]?.text && prev?.length === lines.length) continue
@@ -52,12 +52,12 @@ export function createActivity({ run = defaultRun, emit }: ActivityOptions) {
   return {
     refresh,
     get: async (id: string): Promise<ActivityLine[]> => {
-      const ws = (await listWorkspaces(run)).find((w) => w.id === id)
+      const ws = (await listWorkspacesOrNone(run)).find((w) => w.id === id)
       return ws ? readActivity(ws.session) : []
     },
     latest: async (): Promise<Record<string, ActivityLine>> => {
       const out: Record<string, ActivityLine> = {}
-      for (const ws of await listWorkspaces(run)) {
+      for (const ws of await listWorkspacesOrNone(run)) {
         const first = (await readActivity(ws.session))[0]
         if (first) out[ws.id] = first
       }

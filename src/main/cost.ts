@@ -3,7 +3,7 @@ import { join } from 'node:path'
 import type { WorkCost } from '../preload/api'
 import { atrilHome } from './paths'
 import { LONG_PROMPT, priceOf } from './prices'
-import { readRecords } from './workspaces'
+import { readRecordsOrNone } from './workspaces'
 
 export interface Usage {
   input: number
@@ -132,7 +132,7 @@ export function createCost({ emit }: CostOptions) {
   const view = (t: Totals | null): WorkCost | null => t && { tokens: t.tokens, usd: t.usd, unpriced: t.unpriced }
 
   async function refresh(): Promise<void> {
-    for (const ws of await readRecords()) {
+    for (const ws of await readRecordsOrNone()) {
       const cost = view(await forSession(ws.session))
       const body = JSON.stringify(cost)
       if (body === (known.get(ws.id) ?? 'null')) continue
@@ -145,7 +145,7 @@ export function createCost({ emit }: CostOptions) {
     forSession,
     refresh,
     get: async (id: string): Promise<WorkCost | null> => {
-      const ws = (await readRecords()).find((w) => w.id === id)
+      const ws = (await readRecordsOrNone()).find((w) => w.id === id)
       return ws ? view(await forSession(ws.session)) : null
     },
     start(): void {

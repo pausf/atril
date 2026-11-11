@@ -51,6 +51,13 @@ export async function flowWorkspace(id: string, run: Runner = defaultRun): Promi
 /** W144: a damaged file throws StateError, never reads as empty. */
 export const readRecords = async (): Promise<WorkspaceRecord[]> => (await readState('workspaces')).workspaces
 
+/** W145: readers that only show things see no works while the file is damaged; the sidebar says why. Writers use readRecords. */
+const noneIfDamaged = <T>(e: unknown): T[] => {
+  if (e instanceof StateError) return []
+  throw e
+}
+export const readRecordsOrNone = (): Promise<WorkspaceRecord[]> => readRecords().catch(noneIfDamaged<WorkspaceRecord>)
+
 export async function writeRecords(workspaces: WorkspaceRecord[]): Promise<void> {
   // Never over a file that could not be read: its works would be lost.
   await readState('workspaces')
@@ -249,6 +256,8 @@ export async function openWorktree(
 }
 
 // Reads state only: starting nothing here is what makes a relaunch safe (W12).
+export const listWorkspacesOrNone = (run: Runner = defaultRun): Promise<WorkspaceView[]> => listWorkspaces(run).catch(noneIfDamaged<WorkspaceView>)
+
 export async function listWorkspaces(run: Runner = defaultRun): Promise<WorkspaceView[]> {
   return Promise.all((await readRecords()).map(async (r) => ({ ...r, alive: await hasSession(r.id, run) })))
 }

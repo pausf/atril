@@ -2,7 +2,7 @@ import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'n
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanTmp, git, killTmux, makeRegisteredRepo, tmp, tmuxOut, tmuxSock } from './test-helpers'
-import { forgetWorkspace, listWorkspaces, openWorktree, removeWorkspace, reopenWorkspace, writeRecords } from './workspaces'
+import { forgetWorkspace, listWorkspaces, listWorkspacesOrNone, openWorktree, removeWorkspace, reopenWorkspace, writeRecords } from './workspaces'
 import { listRepos, registerRepo, rememberRepo, setOverride } from './repos'
 import { pauseAgent } from './status'
 import { revealState } from './state'
@@ -54,6 +54,9 @@ describe('state files', () => {
     const record = JSON.parse(readFileSync(file, 'utf8')).workspaces[0]
     const damaged = JSON.stringify({ workspaces: [record, { id: 'x', path: '/p', session: 's' }] })
     writeFileSync(file, damaged)
+    // Readers that only show things see no works instead of rejecting in the window; the strict one still refuses.
+    expect(await listWorkspacesOrNone()).toEqual([])
+    await expect(listWorkspaces()).rejects.toThrow()
     const problem = { error: WS_SENTENCE, detail: expect.stringContaining('branch'), fix: 'reveal', file: 'workspaces' }
 
     expect(await removeWorkspace(ws.id)).toEqual(problem)

@@ -43,7 +43,7 @@ import * as pty from './pty'
 import { loginPath } from './login-path'
 import { run } from './run'
 import { createUsage } from './usage'
-import { listWorkspaces, openWorktree, removeWorkspace, flowWorkspace, forgetWorkspace, reopenWorkspace, terminalAt } from './workspaces'
+import { listWorkspaces, listWorkspacesOrNone, openWorktree, removeWorkspace, flowWorkspace, forgetWorkspace, reopenWorkspace, terminalAt } from './workspaces'
 import { createFlowHub } from './flow/watch'
 import { installMenu } from './menu'
 import { createNotifyGate } from './focus'
@@ -441,7 +441,7 @@ app.whenReady().then(async () => {
         : { issues, ...(await inboxGroups({ site: '', email: '', token: '' }, null, issues)) }
     }
     const creds = await savedJira()
-    return readInbox(creds, fetch, await listWorkspaces(run), (await secretStore.hasSecret('jira')).board)
+    return readInbox(creds, fetch, await listWorkspacesOrNone(run), (await secretStore.hasSecret('jira')).board)
   }
   ipcMain.handle('atril:jira:proposeStart', (_e, issue: StartIssue, repoId?: string, model?: Model, auto?: unknown, effort?: Effort) =>
     proposeStart(issue, { repoId, model, auto: auto === true, effort }, run)
@@ -686,7 +686,7 @@ app.whenReady().then(async () => {
     }
   })
   pushNext = async (): Promise<void> => {
-    lastNext = nextUp(status.snapshot(), lastInbox, await listWorkspaces(run))
+    lastNext = nextUp(status.snapshot(), lastInbox, await listWorkspacesOrNone(run))
     BrowserWindow.getAllWindows().forEach((w) => w.webContents.send('atril:nextup:changed', lastNext))
   }
   ipcMain.handle('atril:nextup:get', async () => {

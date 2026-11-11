@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import type { SubagentEntry, SubagentLine } from '../preload/api'
 import { parseSubagentLog } from './subagent-log'
 import { atrilHome } from './paths'
-import { readRecords } from './workspaces'
+import { readRecordsOrNone } from './workspaces'
 
 export const subagentsDir = (): string => join(atrilHome(), 'subagents')
 export const subagentsFile = (session: string): string => join(subagentsDir(), `${session}.json`)
@@ -79,7 +79,7 @@ export function createSubagents({ emit }: SubagentsOptions) {
 
   // ponytail: rereads every record per watch event; filter by the event's filename if bursts get heavy.
   async function refresh(): Promise<void> {
-    for (const ws of await readRecords()) {
+    for (const ws of await readRecordsOrNone()) {
       const stored = await readSubagents(ws.session)
       if (!stored) continue
       const entries = await toWindow(stored)
@@ -93,14 +93,14 @@ export function createSubagents({ emit }: SubagentsOptions) {
   return {
     refresh,
     get: async (id: string): Promise<SubagentEntry[]> => {
-      const ws = (await readRecords()).find((w) => w.id === id)
+      const ws = (await readRecordsOrNone()).find((w) => w.id === id)
       const stored = ws && (await readSubagents(ws.session))
       return stored ? toWindow(stored) : []
     },
     /** W68: only the path the hook stored for this agent in this workspace is ever read. */
     // ponytail: rereads the whole transcript on every poll; read only its tail once one weighs several MB.
     log: async (id: string, agentId: string): Promise<SubagentLine[]> => {
-      const ws = (await readRecords()).find((w) => w.id === id)
+      const ws = (await readRecordsOrNone()).find((w) => w.id === id)
       const transcript = ws && (await readSubagents(ws.session))?.find((e) => e.id === agentId)?.transcript
       if (!transcript) return []
       try {
