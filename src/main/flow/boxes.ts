@@ -4,6 +4,7 @@ import type { FileChange, FlowBox, FlowBoxes } from '../../preload/api'
 import type { Runner } from '../run'
 import { fileDiff, listChanges } from './changes'
 import { checklistSource, CHECKLIST_FILES, listBoxes, type BoxItem } from './checklist'
+import { quietly } from './quiet'
 
 interface Range {
   from: string
@@ -101,8 +102,11 @@ async function plan(path: string, base: string, change: string, source: { file: 
 
 const code = (files: FileChange[]): FileChange[] => files.filter((f) => !f.path.startsWith('.agents/'))
 
-/** F36: the checklist's boxes with the code of each one's range. */
-export async function boxRanges(path: string, base: string, change: string | undefined, run: Runner): Promise<FlowBoxes> {
+/** F36: the checklist's boxes with the code of each one's range; F46: no process while nothing in the work changed. */
+export const boxRanges = (path: string, base: string, change: string | undefined, run: Runner): Promise<FlowBoxes> =>
+  quietly(path, JSON.stringify([base, change ?? null]), run, () => computeRanges(path, base, change, run))
+
+async function computeRanges(path: string, base: string, change: string | undefined, run: Runner): Promise<FlowBoxes> {
   const [all, c] = await Promise.all([listChanges(path, base, run), change ? cachedPlan(path, base, change, run) : null])
   const total = all.reduce((n, f) => n + f.added + f.removed, 0)
   const p = c?.plan

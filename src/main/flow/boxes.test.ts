@@ -1,11 +1,13 @@
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { run, type Runner } from '../run'
 import { cleanTmp, git, tmp } from '../test-helpers'
 import { boxDiff, boxRanges, forgetPlans } from './boxes'
 
 afterEach(cleanTmp)
+// These proofs are about the plan cache under the watcher: every read computes (the watcher layer is proved in quiet.test.ts).
+vi.mock('./quiet', () => ({ quietly: (_p: string, _k: string, _r: unknown, compute: () => Promise<unknown>) => compute() }))
 
 /** Records every git command as its args after `-C <path>`. */
 function spy(): { run: Runner; calls: string[][]; reset(): void } {

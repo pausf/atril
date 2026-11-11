@@ -22,6 +22,7 @@ import { createOpenMr, type MrEntry } from './forge/openmr'
 import { createQueue, createScorer } from './forge/scores'
 import { createThreads } from './forge/threads'
 import { boxDiff, boxRanges, forgetPlans } from './flow/boxes'
+import { closeQuiet } from './flow/quiet'
 import { changeFolders } from './flow/stage'
 import { nextUp } from './nextup'
 import { writeFile } from 'node:fs/promises'
@@ -556,10 +557,12 @@ app.whenReady().then(async () => {
       run
     ).finally(() => void pushNext())
   })
-  // F44: a closed or forgotten work keeps no cached box plans.
+  // F44, F48: a closed or forgotten work keeps no cached box plans, no watcher and no saved answer.
   const dropPlans = async (id: string): Promise<void> => {
     const ws = (await listWorkspacesOrNone(run)).find((w) => w.id === id)
-    if (ws) forgetPlans(ws.path)
+    if (!ws) return
+    forgetPlans(ws.path)
+    closeQuiet(ws.path)
   }
   ipcMain.handle('atril:ws:remove', async (e, id: string) => {
     pty.detach(id)
