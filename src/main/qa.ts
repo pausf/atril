@@ -15,6 +15,8 @@ export type { QaKind }
 export interface QaInfo {
   kind: QaKind
   command: string
+  /** W120: one line naming the file that decided it. */
+  why: string
 }
 
 const PLAYWRIGHT = '@playwright/mcp@0.0.84'
@@ -40,18 +42,20 @@ export async function detectQa(path: string): Promise<QaInfo | null> {
   const pkg = await packageJson(path)
   const has = (n: string): boolean => names.includes(n)
 
-  if (pkg && 'expo' in pkg.deps && names.some((n) => n === 'app.json' || n.startsWith('app.config.'))) return { kind: 'expo', command: 'npx expo start' }
+  const expo = names.find((n) => n === 'app.json' || n.startsWith('app.config.'))
+  if (pkg && 'expo' in pkg.deps && expo) return { kind: 'expo', command: 'npx expo start', why: t('Hay un {file} de Expo', { file: expo }) }
   if (pkg && 'react-native' in pkg.deps && (has('ios') || has('android')))
-    return { kind: 'react-native', command: 'npx react-native run-ios / npx react-native run-android' }
-  if (has('pubspec.yaml') && /^flutter:/m.test((await text(join(path, 'pubspec.yaml'))) ?? '')) return { kind: 'flutter', command: 'flutter run' }
-  if (names.some((n) => n.startsWith('settings.gradle')) && (await exists(join(path, 'app', 'src', 'main', 'AndroidManifest.xml'))))
-    return { kind: 'android', command: './gradlew installDebug' }
-  if (names.some((n) => n.endsWith('.xcodeproj') || n.endsWith('.xcworkspace')) || ((await text(join(path, 'Package.swift'))) ?? '').includes('.iOS('))
-    return { kind: 'ios', command: 'xcodebuild -scheme <scheme> -destination "platform=iOS Simulator,name=<simulator>"' }
+    return { kind: 'react-native', command: 'npx react-native run-ios / npx react-native run-android', why: t('Hay un package.json con react-native') }
+  if (has('pubspec.yaml') && /^flutter:/m.test((await text(join(path, 'pubspec.yaml'))) ?? '')) return { kind: 'flutter', command: 'flutter run', why: t('Hay un pubspec.yaml de Flutter') }
+  const gradle = names.find((n) => n.startsWith('settings.gradle'))
+  if (gradle && (await exists(join(path, 'app', 'src', 'main', 'AndroidManifest.xml'))))
+    return { kind: 'android', command: './gradlew installDebug', why: t('Hay un {file} con una app Android', { file: gradle }) }
+  const xcode = names.find((n) => n.endsWith('.xcodeproj') || n.endsWith('.xcworkspace')) ?? (((await text(join(path, 'Package.swift'))) ?? '').includes('.iOS(') ? 'Package.swift' : null)
+  if (xcode) return { kind: 'ios', command: 'xcodebuild -scheme <scheme> -destination "platform=iOS Simulator,name=<simulator>"', why: t('Hay un {file} de iOS', { file: xcode }) }
   const script = ['dev', 'start', 'preview'].find((s) => pkg && s in pkg.scripts)
   if (script) {
     const pm = has('pnpm-lock.yaml') ? 'pnpm' : has('yarn.lock') ? 'yarn' : 'npm'
-    return { kind: 'web', command: `${pm} run ${script}` }
+    return { kind: 'web', command: `${pm} run ${script}`, why: t('Hay un package.json con el script {script}', { script }) }
   }
   return null
 }

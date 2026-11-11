@@ -510,6 +510,33 @@ export interface HistoryApi {
 
 export type QaKind = 'expo' | 'react-native' | 'flutter' | 'android' | 'ios' | 'web'
 
+/** W120: what QA can open a project in. */
+export type QaPlatform = 'chrome' | 'safari' | 'android' | 'ios'
+
+/** W120–W122: one way to test a workspace; `key` is `platform:dir`, `dir` relative to the workspace ('' for its root). */
+export interface QaTarget {
+  key: string
+  platform: QaPlatform
+  dir: string
+  command: string
+  why: string
+  source: 'detected' | 'file' | 'manual'
+}
+
+export interface QaTargets {
+  targets: QaTarget[]
+  /** The repo's chosen key, else the first target's; null with no targets. */
+  chosen: string | null
+  /** W121's line when .atril/qa.json could not be used. */
+  note: string | null
+}
+
+export interface QaManualRequest {
+  platform: QaPlatform
+  dir: string
+  command: string
+}
+
 /** One screenshot of a QA run: `src` is a data URL, so the window never opens a local file. */
 export interface QaShot {
   name: string
@@ -578,6 +605,11 @@ export interface QaApi {
   status(workspaceId: string): Promise<QaStatus | null>
   launch(workspaceId: string): Promise<QaResult>
   stop(workspaceId: string): Promise<QaResult>
+  /** W123: the tab pressed, remembered for the repo. */
+  choose(workspaceId: string, key: string): Promise<QaTargets | { error: string }>
+  /** W122: «Elegir a mano»; refused with a sentence. */
+  manual(workspaceId: string, req: QaManualRequest): Promise<QaTargets | { error: string }>
+  unmanual(workspaceId: string, key: string): Promise<QaTargets | { error: string }>
 }
 
 export type StageName = 'sin-libretto' | 'entrada' | 'spec' | 'plan' | 'construir' | 'terminado' | 'aterrizado'

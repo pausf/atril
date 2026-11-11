@@ -123,7 +123,10 @@ const api: AtrilApi = {
     stop: (id) => ipcRenderer.invoke('atril:qa:stop', id),
     report: (id) => ipcRenderer.invoke('atril:qa:report', id),
     retest: (id, criterion) => ipcRenderer.invoke('atril:qa:retest', id, criterion),
-    bug: (id, req) => ipcRenderer.invoke('atril:qa:bug', id, req)
+    bug: (id, req) => ipcRenderer.invoke('atril:qa:bug', id, req),
+    choose: (id, key) => ipcRenderer.invoke('atril:qa:choose', id, key),
+    manual: (id, req) => ipcRenderer.invoke('atril:qa:manual', id, req),
+    unmanual: (id, key) => ipcRenderer.invoke('atril:qa:unmanual', id, key)
   },
   doctor: () => ipcRenderer.invoke('atril:doctor'),
   installTool: (tool) => ipcRenderer.invoke('atril:doctor:install', tool),
