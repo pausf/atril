@@ -24,7 +24,7 @@ const NAME_RE = /^[A-Za-z0-9._-]{1,100}$/
 export const validRepoName = (name: string): boolean => NAME_RE.test(name) && name !== '.' && name !== '..'
 
 /** The forge's own words for a refusal: GitHub nests them under errors[], GitLab under message. */
-function reason(body: unknown, status: number): string {
+function reason(body: unknown, status: number, forge: string): string {
   const b = (body ?? {}) as { message?: unknown; errors?: { message?: unknown }[] }
   const nested = b.errors?.map((e) => e.message).find((m) => typeof m === 'string')
   const text =
@@ -34,7 +34,7 @@ function reason(body: unknown, status: number): string {
         ? b.message
         : b.message && typeof b.message === 'object'
           ? Object.entries(b.message).map(([k, v]) => `${k} ${Array.isArray(v) ? v.join(', ') : String(v)}`).join('; ')
-          : `HTTP ${status}`
+          : netProblem(forge, { status }).error
   return text.slice(0, 200)
 }
 
@@ -61,7 +61,7 @@ export async function createRepo(store: SecretStore, req: CreateRequest, fetchIm
       signal: AbortSignal.timeout(20_000)
     })
     const data = (await res.json().catch(() => ({}))) as Record<string, unknown>
-    if (!res.ok) return { error: t('{forge} no ha creado el repo: {detail}', { forge: forgeName, detail: reason(data, res.status) }) }
+    if (!res.ok) return { error: t('{forge} no ha creado el repo: {detail}', { forge: forgeName, detail: reason(data, res.status, forgeName) }) }
     const url = String(data['html_url'] ?? data['web_url'] ?? '')
     const sshUrl = String(data['ssh_url'] ?? data['ssh_url_to_repo'] ?? '')
     const path = String(data['name'] && req.forge === 'github' ? data['name'] : (data['path'] ?? name))

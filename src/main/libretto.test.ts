@@ -296,7 +296,7 @@ describe('libretto', () => {
         const head = git(repo, 'rev-parse', 'HEAD').trim()
         const bad = fake({ postStatus: 400 })
         const failed = await ideaToJira(repo, 'my-idea', { creds, board, fetchImpl: bad.fetchImpl, run })
-        expect(failed).toEqual({ error: expect.stringContaining('400') })
+        expect(failed).toEqual({ error: 'Jira ha contestado algo que no esperaba.' })
         expect(JSON.stringify(failed)).not.toContain('secret detail')
         expect(existsSync(join(changes(), 'my-idea', 'proposal.md'))).toBe(true)
         expect(git(repo, 'rev-parse', 'HEAD').trim()).toBe(head)

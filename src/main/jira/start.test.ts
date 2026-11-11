@@ -131,7 +131,8 @@ describe('start', () => {
     expect(r).toHaveProperty('workspace')
     if (!('workspace' in r)) return
 
-    expect(r.transitionError).toMatch(/500/)
+    // W150: the cause in words, never the status number.
+    expect(r.transitionError).toBe('No se pudo pasar a In Progress: Jira está fallando ahora mismo.')
     expect(JSON.stringify(r)).not.toContain(CREDS.token)
     expect(await hasSession(r.workspace.id)).toBe(true)
     expect((await listWorkspaces()).map((w) => w.id)).toEqual([r.workspace.id])

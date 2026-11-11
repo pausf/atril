@@ -1,5 +1,6 @@
 import type { JiraCreds } from './check'
 import { t } from '../lang'
+import { netProblem } from '../net-problem'
 
 export interface BoardMatch {
   id: number
@@ -21,7 +22,7 @@ export async function searchBoards(creds: JiraCreds, query: string, fetchImpl: t
       },
       signal: AbortSignal.timeout(10_000)
     })
-    if (!res.ok) return { error: t('Jira respondió {status}', { status: res.status }) }
+    if (!res.ok) return { error: netProblem('Jira', { status: res.status }).error }
     const body = (await res.json()) as { values?: Array<{ id?: unknown; name?: unknown; type?: unknown }> }
     return (body.values ?? []).flatMap((b) =>
       typeof b.id === 'number' && typeof b.name === 'string' ? [{ id: b.id, name: b.name, type: typeof b.type === 'string' ? b.type : '' }] : []

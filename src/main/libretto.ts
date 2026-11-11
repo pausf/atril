@@ -8,6 +8,7 @@ import { changeFolders } from './flow/stage'
 import { readRepos } from './repos'
 import { run as defaultRun, type Runner } from './run'
 import { openWorktree } from './workspaces'
+import { netProblem } from './net-problem'
 
 const QUEUED = /^Queued:[ \t]*(\d{4}-\d{2}-\d{2})[ \t]*$/m
 const MAX_NAME = 40
@@ -196,7 +197,7 @@ export async function createIssue(creds: JiraCreds, board: JiraBoard, summary: s
   const headers = { Authorization: `Basic ${Buffer.from(`${creds.email}:${creds.token}`).toString('base64')}`, Accept: 'application/json' }
   const call = async (path: string, init: RequestInit = {}): Promise<unknown> => {
     const res = await fetchImpl(new URL(path, origin), { ...init, headers: { ...headers, ...init.headers }, signal: AbortSignal.timeout(10_000) })
-    if (!res.ok) throw new JiraStatus(t('Jira respondió {status}.', { status: res.status }))
+    if (!res.ok) throw new JiraStatus(netProblem('Jira', { status: res.status }).error)
     return res.json()
   }
   try {

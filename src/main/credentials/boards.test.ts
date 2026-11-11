@@ -23,6 +23,6 @@ describe('board search', () => {
     }) as typeof fetch)
     expect(r).toHaveProperty('error')
     expect(JSON.stringify(r)).not.toContain(CREDS.token)
-    expect(await searchBoards(CREDS, 'dx', (async () => json({}, 403)) as typeof fetch)).toEqual({ error: 'Jira respondió 403' })
+    expect(await searchBoards(CREDS, 'dx', (async () => json({}, 403)) as typeof fetch)).toEqual({ error: 'Jira no te deja ver esto con ese token.' })
   })
 })

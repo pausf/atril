@@ -6,6 +6,7 @@ import { listRepos, rememberedRepo, rememberRepo } from '../repos'
 import { run as defaultRun, type Runner } from '../run'
 import { flowPrompt, openWorktree, worktreePath } from '../workspaces'
 import { t } from '../lang'
+import { netProblem } from '../net-problem'
 
 export const KEY_RE = /^[A-Z][A-Z0-9]+-[0-9]+$/
 const BAD_KEY = (key: string): string => t('«{key}» no es una clave de Jira válida (por ejemplo PF-123)', { key })
@@ -91,7 +92,7 @@ async function moveToInProgress(key: string, creds: JiraCreds | null, fetchImpl:
   }
   try {
     const list = await fetchImpl(url, { method: 'GET', headers, signal: AbortSignal.timeout(10_000) })
-    if (!list.ok) return t('No se pudo pasar a In Progress: Jira respondió {status}.', { status: list.status })
+    if (!list.ok) return t('No se pudo pasar a In Progress: {detail}', { detail: netProblem('Jira', { status: list.status }).error })
     const options = ((await list.json()) as { transitions?: Transition[] }).transitions ?? []
     const open = options.filter((tr) => tr.to?.statusCategory?.key === 'indeterminate')
     const pick = open.find((tr) => typeof tr.name === 'string' && /progress|curso/i.test(tr.name)) ?? open[0]
@@ -103,7 +104,7 @@ async function moveToInProgress(key: string, creds: JiraCreds | null, fetchImpl:
       body: JSON.stringify({ transition: { id: pick.id } }),
       signal: AbortSignal.timeout(10_000)
     })
-    return res.ok ? null : t('No se pudo pasar a In Progress: Jira respondió {status}.', { status: res.status })
+    return res.ok ? null : t('No se pudo pasar a In Progress: {detail}', { detail: netProblem('Jira', { status: res.status }).error })
   } catch (err) {
     return err instanceof Error && err.name === 'TimeoutError'
       ? t('No se pudo pasar a In Progress: Jira no ha respondido en 10 s.')

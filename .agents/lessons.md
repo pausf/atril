@@ -293,3 +293,9 @@ Matar tmux con un trabajo abierto bloqueaba Atril entero: `term:resize` llegaba 
 
 ## 2026-11-11 · state-files · 6→7
 Aceptado sin arreglar: si `workspaces.json` se daña entre la comprobación inicial de «Quitar» y su escritura final, el worktree ya se ha quitado y la escritura falla sin sobrescribir nada. Abrir sí deshace (W146). Ventana de milisegundos; si aparece en la práctica, quitar debe escribir el registro antes de borrar.
+
+## 2026-11-11 · net-errors · 6→7
+W150 decía «cualquier error HTTP» y el cambio solo tocó las llamadas de su lista: crear repo (`HTTP <n>` de reserva), buscar tableros, mover a In Progress y pasar a Jira seguían con el número en la frase. Cuando un criterio dice «cualquier», buscar todas las llamadas (`rg "respondió|HTTP \$\{"`) antes de cerrar. Arreglados; sus tests ahora exigen la frase exacta.
+
+## 2026-11-11 · net-errors · pendiente
+`forge/scores.ts:225` y `forge/lenses.ts:175` pueden pasar `err.message` a la frase si lo que se lanza no es un `Failure`. Va con el rediseño de la MR.
