@@ -302,6 +302,10 @@ textos, en «Pasos» abajo. Los que tienen elemento en pantalla lo iluminan; los
 - Ajustes → Repos marca los repos rotos y deja buscar su carpeta o quitarlos; cualquier repo se puede quitar.
 - Con git roto, abrir o cerrar un trabajo dice «git no funciona en este Mac» con «Instalar herramientas de Xcode».
 
+### Terminal que no engancha (term-attach, 11 nov 2026)
+
+- Si la terminal no engancha, el centro lo dice, dice que el agente sigue trabajando y trae «Volver a intentar»; nada queda sin capturar.
+
 ## Scope boundaries
 
 **In:** the three columns and footer of `bocetos/fase1-nucleo.html` (boceto 8), the
@@ -609,6 +613,10 @@ Nunca fuera: validar `.atril/qa.json` (lo escribe el repo, no Atril); la ventana
 
 **In:** `src/main/repos.ts` (salud del repo, quitar, cambiar carpeta), `src/main/workspaces.ts` (comprobaciones al abrir y cerrar), IPC nuevas, `src/renderer/settings/Repos.tsx`, `Problem.tsx` (`fixLabel`), i18n. **Out:** clonar de nuevo un repo perdido; detectar que una carpeta movida es la misma por su remoto.
 
+### Terminal que no engancha (term-attach, 11 nov 2026)
+
+**In:** `src/main/pty.ts` (`attach` devuelve el resultado), `src/main/index.ts` (`atril:term:attach`), `src/preload/{api,index}.ts`, `src/renderer/components/Terminal.tsx`, i18n. **Out:** abrir la sesión en Terminal.app; reparar node-pty.
+
 ## Constraints
 
 - Electron (current stable) + TypeScript in strict mode, pnpm, Node 24 (installed:
@@ -776,6 +784,10 @@ Textos por `t()`.
 - La ventana manda ids y, para «Buscar la carpeta…», nada: main abre el diálogo nativo.
 - Nada borra ni mueve carpetas de la persona.
 - Toda escritura de `repos.json` pasa por el lector estricto (W148).
+
+### Terminal que no engancha (term-attach, 11 nov 2026)
+
+- Un fallo deja el mapa de clientes como estaba: nada enganchado a medias.
 
 ## Prior decisions
 
@@ -2021,6 +2033,23 @@ Textos por `t()`.
 - Q: (al construir) ¿Y si `check-ref-format` falla sin «is not a valid branch name» ni git roto? → A: «git no ha podido comprobar el nombre {branch}.» con su salida plegada y «Abrir en Terminal»; nunca culpa al nombre (assumed).
 - Q: (al construir) ¿`lstat` o `existsSync` para `missing`? → A: `existsSync`, que sigue enlaces: un enlace a una carpeta que ya no está cuenta como perdida (assumed).
 
+### Terminal que no engancha (term-attach, 11 nov 2026)
+
+- Ninguna nueva.
+
+#### Alternatives that lost
+
+| Considered | Why it lost |
+|---|---|
+| Abrir `tmux attach` en Terminal.app | otra ventana para algo que suele arreglarse reintentando; queda como idea |
+
+#### Decision log, answers as given (2026-11-11)
+- Q: (revisión en frío) ¿Qué contesta `attach` cuando no hay error? → A: `{ ok: true }` al enganchar y `{ ok: false }` para un trabajo desconocido o sin sesión (la vista de parado ya lo explica); nunca `undefined` (assumed).
+- Q: (revisión en frío) ¿Y si llega un error tras cambiar de trabajo? → A: se descarta: el efecto guarda el id con el que llamó y solo pinta si sigue montado con ese id (assumed).
+- Q: (revisión en frío) ¿Hay doble de xterm? → A: no: el test simula `@xterm/xterm` y `@xterm/addon-fit` con `vi.mock` (assumed).
+- Q: ¿Qué arreglo ofrece? → A: «Volver a intentar», que engancha otra vez; el agente sigue en tmux y la frase lo dice (assumed).
+- Q: ¿El mensaje de node-pty va al detalle? → A: sí: es un texto de node-pty sobre el proceso (`posix_spawnp failed`), sin datos de la persona (assumed).
+
 ## Task breakdown
 
 - App shell: Electron main, preload bridge, renderer with sidebar / centre / right panel /
@@ -2830,3 +2859,12 @@ Textos por `t()`.
   Proof: src/main/repos.test.ts removing a repo forgets it and never touches the folder
 - **W158** When the person picks a new folder for a repo by id, Atril shall store the folder's git top level as that repo's path keeping its id and mode; it shall refuse with S13's sentence if the folder is not a git repository, and with «Esa carpeta ya es el repo {id}.» if another repo already has that path; either refusal, or a cancelled picker, changes nothing.
   Proof: src/main/repos.test.ts a repo can be pointed at its new folder
+
+### Terminal que no engancha (term-attach, 11 nov 2026)
+
+- **W160** When `atril:term:attach` is asked, main shall answer `{ ok: true }` once the tmux client started, `{ ok: false }` for an unknown or not-alive workspace, and, if starting the client throws, `{ error: «No he podido abrir la terminal de {branch}.», detail }` with the thrown message as `detail`, keeping no client for that workspace; it never rejects.
+  Proof: src/main/pty.test.ts a client that cannot start answers an error and keeps nothing
+- **W161** When the terminal gets that error for the workspace it is showing, it shall show over the empty terminal a problem titled with the `error` field, «Tu agente sigue en tmux: solo falla esta vista.» under it and the detail folded; an answer for a workspace no longer shown is dropped.
+  Proof: src/renderer/terminal.test.ts a terminal that cannot attach says so
+- **W162** «Volver a intentar» shall ask to attach again with the terminal's current size; on `{ ok: true }` the problem goes, and on another error it is replaced by the new one.
+  Proof: src/renderer/terminal.test.ts retrying hides the problem or shows the new one
