@@ -241,6 +241,13 @@ describe('launchQa', () => {
     expect('error' in lost && lost.error).toBe('Todos los emuladores están ocupados por otro QA')
     const winner = race[0] && 'ok' in race[0] ? 'dev00002' : 'dev00004'
     expect(devices()).toEqual({ Pixel_8: winner, 'UDID-17': 'ios00001', 'UDID-17P': 'ios00002' })
+
+    // A browser QA frees whatever device its workspace still held from an earlier mobile run.
+    const web = rec('web00001', project({ 'package.json': pkg({ scripts: ['dev'] }) }))
+    seed(rec('dev00002', android()), rec('dev00004', android()), rec('ios00001', ios()), rec('ios00002', ios()), web)
+    writeFileSync(join(home, 'qa', 'devices.json'), JSON.stringify({ ...(devices() as Record<string, string>), Pixel_8: 'web00001' }))
+    expect(await launchQa('web00001', f.run)).toEqual({ ok: true })
+    expect(devices()).not.toHaveProperty('Pixel_8')
   })
   it('every launch problem comes with its fix', async () => {
     // No SDK anywhere: this machine's own ~/Library/Android/sdk must not count.
@@ -288,6 +295,11 @@ describe('launchQa', () => {
       f.avds = 'Pixel_8\n'
       expect(await launchQa('prb00004', f.run)).toEqual({ ok: true })
       expect(await problem('prb00002')).toEqual({ what: 'Todos los emuladores están ocupados por otro QA', cant: 'No puedes probar este trabajo hasta que otro QA termine', fix: 'open-workspace', detail: 'Pixel_8 lo usa feat/prb00004' })
+
+      // A chosen target whose folder is not in this worktree: «Elegir a mano», never tmux's own error.
+      writeFileSync(join(home, 'qa-targets.json'), JSON.stringify({ gone: { chosen: 'chrome:apps/gone', manual: [{ key: 'chrome:apps/gone', platform: 'chrome', dir: 'apps/gone', command: 'pnpm dev', why: 'Lo elegiste a mano', source: 'manual' }] } }))
+      seed(rec('prb00001', project({ 'README.md': 'x' })), rec('prb00002', android()), rec('prb00003', ios()), rec('prb00004', android()), rec('prb00005', project({ 'package.json': pkg({ scripts: ['dev'] }) })), rec('prb00006', project({ 'README.md': 'x' }), 'gone'))
+      expect(await problem('prb00006')).toMatchObject({ fix: 'pick-manual' })
 
       // Nothing started for any problem: the one split is prb00004's.
       expect(f.splits).toHaveLength(1)

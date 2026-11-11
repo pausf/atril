@@ -251,3 +251,12 @@ Reviewer found nothing (W97 proof and ui.ts validation re-run). The builder corr
 
 ## 2026-11-11 · qa-screen · 6→7
 - report.json was opened with stat (follows symlinks) while shots used lstat. Fixed: lstat for both; untrusted files are never followed.
+
+## 2026-11-11 · qa-targets · 6→7
+- A device hold survived a dead mobile pane when the same workspace then ran a browser QA, so another workspace was told every emulator was busy. Fixed: a browser launch frees its workspace's holds; test watched red.
+
+## 2026-11-11 · qa-targets · 6→7
+- lstat on qa.json alone follows a linked `.atril` folder out of the repo. Fixed: the folder is lstat'ed too; lstat every segment an untrusted path crosses, not only the last.
+
+## 2026-11-11 · qa-targets · 6→7
+- Targets are kept per repo but a worktree may lack the folder; tmux's raw error would reach the card. Fixed: a missing folder answers «Elegir a mano» before any split; test watched red.

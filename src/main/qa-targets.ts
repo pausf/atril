@@ -88,6 +88,8 @@ async function checkTarget(root: string, raw: unknown): Promise<QaManualRequest 
 /** W121: null with no file; [] when it exists and nothing in it is valid. */
 async function fileTargets(root: string): Promise<QaTarget[] | null> {
   const file = join(root, '.atril', 'qa.json')
+  // lstat on both: a linked .atril folder would read a qa.json from outside the repo.
+  if ((await lstat(join(root, '.atril')).catch(() => null))?.isSymbolicLink()) return null
   const st = await lstat(file).catch(() => null)
   if (!st) return null
   if (!st.isFile() || st.size > MAX_FILE) return []

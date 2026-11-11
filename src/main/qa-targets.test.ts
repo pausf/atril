@@ -124,6 +124,11 @@ describe('qa targets', () => {
       })
     })
     symlinkSync(join(outside, 'secret'), join(root, 'escape'))
+    // A linked .atril folder is never followed: detection stands.
+    const elsewhere = project({ 'qa.json': JSON.stringify({ targets: [{ platform: 'ios', dir: '', command: 'x' }] }) })
+    const linked = project({ 'package.json': web })
+    symlinkSync(elsewhere, join(linked, '.atril'))
+    expect((await findTargets(linked)).targets.map((x) => x.source)).toEqual(['detected', 'detected'])
     const got = await findTargets(root)
     expect(got.note).toBeNull()
     expect(got.targets.map((x) => [x.key, x.command, x.why, x.source])).toEqual([

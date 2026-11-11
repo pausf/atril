@@ -267,8 +267,12 @@ export async function launchQa(id: string, run: Runner, request?: string, key?: 
     if (await qaLive(id, run)) return { error: t('Ya hay un QA en marcha en este trabajo') }
     const checked = await problemOf(target, run)
     if ('problem' in checked) return checked.problem
+    if (!(await lstat(join(ws.path, target.dir)).then((st) => st.isDirectory(), () => false)))
+      return fail(t('La carpeta {dir} no existe en este trabajo', { dir: target.dir }), t('No puedes probarlo en vivo hasta que elijas cómo abrirlo'), 'pick-manual', join(ws.path, target.dir))
     let device: QaDevice | null = null
-    if (target.platform === 'android' || target.platform === 'ios') {
+    // A browser QA holds no device: one left from an earlier mobile run is freed here.
+    if (target.platform !== 'android' && target.platform !== 'ios') await release(id)
+    else {
       const android = target.platform === 'android'
       const list = await listDevices(target.platform, checked.emulator, run)
       if (list.length === 0)
