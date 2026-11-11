@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useState } from 'react'
 import type { HistoryEntry } from '../../preload/api'
-import { stagesOf } from '../flow/FlowPanel'
+import { stagesOf } from '../flow/stages'
 import { useT, type T } from '../ui'
 import { FoldSection } from './Fold'
 

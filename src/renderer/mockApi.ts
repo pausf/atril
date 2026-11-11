@@ -34,6 +34,7 @@ interface Options {
   noJira?: boolean
   /** What flow.docs answers; tests mutate it and call pushFlow to simulate the agent writing. */
   docs?: FlowDocs | null
+  /** The branch's changed files: only their lines feed the default total of flow.boxes. */
   changes?: FileChange[]
   /** What flow.boxes answers; without it, no boxes and the total of `changes`. */
   boxes?: FlowBoxes
@@ -41,7 +42,6 @@ interface Options {
   boxDiff?: string
   /** Connected forges, by id; missing means not connected. */
   forges?: Partial<Record<ForgeId, ForgeStatus>>
-  diff?: string
   /** What the folder picker answers when the person adds a repo. */
   addRepo?: (AddRepoResult & { path: string }) | null
   repos?: RepoView[]
@@ -292,8 +292,6 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
       },
       docs: vi.fn(async () => o.docs ?? null),
       save: vi.fn(async (): Promise<{ mtimeMs: number } | { error: string }> => ({ mtimeMs: 2 })),
-      changes: vi.fn(async () => o.changes ?? []),
-      diff: vi.fn(async () => o.diff ?? ''),
       boxes: vi.fn(async (): Promise<FlowBoxes> => o.boxes ?? { boxes: [], total: (o.changes ?? []).reduce((n, f) => n + f.added + f.removed, 0) }),
       boxDiff: vi.fn(async () => o.boxDiff ?? '')
     },

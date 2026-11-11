@@ -428,53 +428,6 @@ h2[tabindex]:focus {
   gap: 16px;
 }
 
-/* F29: the six stages in one row; only the current one shows its name. */
-.stages {
-  display: flex;
-  margin: 6px 0 10px;
-}
-.stg {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 3px;
-  position: relative;
-  padding: 0;
-  color: var(--sub);
-  font-size: 10.5px;
-  text-align: center;
-}
-.stg + .stg::before {
-  content: '';
-  position: absolute;
-  top: 13px;
-  right: calc(50% + 15px);
-  width: calc(100% - 30px);
-  height: 2px;
-  background: var(--line);
-}
-.stg .icon {
-  box-sizing: content-box;
-  width: 16px;
-  height: 16px;
-  padding: 4px;
-  border: 2px solid var(--faint);
-  border-radius: 50%;
-  background: var(--card);
-}
-.stg.d .icon {
-  border-color: var(--sub);
-}
-.stg.c {
-  color: var(--run-text);
-  font-weight: 700;
-}
-.stg.c .icon {
-  border-color: var(--run);
-  background: var(--mode-bg);
-}
 .sr-only {
   position: absolute;
   width: 1px;
@@ -485,19 +438,6 @@ h2[tabindex]:focus {
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
   border: 0;
-}
-.prog {
-  height: 8px;
-  background: var(--chip);
-  border-radius: 999px;
-  overflow: hidden;
-  margin: 6px 0 10px;
-}
-.prog i {
-  display: block;
-  height: 100%;
-  background: var(--run);
-  border-radius: 999px;
 }
 .fmeta {
   color: var(--sub);
@@ -2191,29 +2131,7 @@ kbd {
   background: var(--hover);
 }
 
-/* Flow documents: Spec / Plan / Checklist open in a large editor modal (F13–F17). */
-button.stg.stgbtn {
-  font: inherit;
-  font-size: 10.5px;
-  color: inherit;
-  background: none;
-  border: 0;
-  cursor: pointer;
-  border-radius: 10px;
-}
-button.stg.stgbtn.c {
-  color: var(--run-text);
-  font-weight: 700;
-}
-button.stg.stgbtn:hover,
-button.stg.stgbtn:focus-visible {
-  background: var(--chip);
-  outline: none;
-}
-/* What opens a document wears the action colour, so it reads as pressable. */
-button.stg.stgbtn .icon {
-  border-color: var(--ring);
-}
+/* Flow documents: Spec and Plan open in a large editor modal (F13–F17). */
 .dlg.edmodal:focus {
   outline: none;
 }
@@ -2472,7 +2390,7 @@ button.stg.stgbtn .icon {
   cursor: default;
 }
 
-/* File changes: the Cambios list and its diff modal (F18–F23). */
+/* A box's files and diff in the Libretto panel (F36–F38). */
 .flow-fold {
   border-top: 1px solid var(--line);
   padding-top: 2px;
@@ -3197,4 +3115,151 @@ button.stg.stgbtn .icon {
   padding-top: 12px;
   font-size: 12.5px;
   color: var(--sub);
+}
+
+/* F29: the six steps above the work; the current one fills closed/total. */
+.seg6 {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 4px;
+}
+.seg {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--sub);
+  min-width: 0;
+}
+.seg-n,
+.seg .dk {
+  height: 15px;
+  line-height: 15px;
+  white-space: nowrap;
+}
+.seg .bar {
+  display: block;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--faint);
+  overflow: hidden;
+}
+.seg .bar b {
+  display: block;
+  height: 100%;
+  background: var(--sub);
+}
+.seg.d {
+  color: var(--text);
+}
+.seg.c {
+  color: var(--run-text);
+  font-weight: 600;
+}
+.seg.c .bar b {
+  background: var(--run);
+}
+.seg .dk {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--run-text);
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.seg .dk:hover {
+  color: var(--text);
+}
+
+/* F38: the checklist as a timeline of boxes. */
+.fx-tl {
+  list-style: none;
+  margin: 10px 0 4px;
+  padding: 0;
+}
+.fx-bx {
+  border-left: 2px solid var(--line);
+  padding: 2px 0 10px 12px;
+  margin-left: 6px;
+  position: relative;
+}
+.fx-bx::before {
+  content: '';
+  position: absolute;
+  left: -6px;
+  top: 6px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--card);
+  border: 2px solid var(--faint);
+}
+.fx-bx.d {
+  padding-bottom: 6px;
+}
+.fx-bx.d::before {
+  background: var(--sub);
+  border-color: var(--sub);
+}
+.fx-bx.c::before {
+  background: var(--run);
+  border-color: var(--run);
+}
+.fx-bx.p {
+  color: var(--sub);
+}
+.fx-bt {
+  display: block;
+  width: 100%;
+  font: inherit;
+  font-size: 12.5px;
+  color: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  text-align: left;
+}
+button.fx-bt {
+  color: var(--text);
+  cursor: pointer;
+}
+.fx-bx.c .fx-bt {
+  font-weight: 600;
+  color: var(--text);
+}
+.fx-m {
+  font-size: 11.5px;
+  color: var(--sub);
+}
+.fx-fold {
+  font-size: 12px;
+  color: var(--sub);
+  padding: 2px 0 2px 20px;
+}
+.fx-mini {
+  margin-top: 4px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--ed-1);
+}
+.fx-diff {
+  margin: 0;
+  padding: 6px 10px;
+  font: 11.5px/1.6 ui-monospace, Menlo, monospace;
+  color: var(--ed-13);
+  max-height: 220px;
+  overflow: auto;
+  white-space: pre;
+}
+.fchanges button.on {
+  background: var(--chip);
 }

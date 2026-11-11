@@ -27,7 +27,7 @@ describe('tutorial', () => {
         states: { aaaaaaa1: 'needs-you' },
         nextup: [{ kind: 'agent', id: 'aaaaaaa1' }],
         flow: { stage: 'construir', change: 'add-x', others: [], checklist: { file: 'proposal.md', closed: 2, total: 5, firstOpen: 'T3' } },
-        changes: [{ path: 'src/a.ts', status: 'M', added: 10, removed: 2 }],
+        boxes: { total: 12, boxes: [{ index: 0, text: 'T1', state: 'closed', commit: 'a1b2c3d', files: [{ path: 'src/a.ts', status: 'M', added: 10, removed: 2 }] }, { index: 2, text: 'T3', state: 'current', files: [] }] },
         subagents: { aaaaaaa1: [{ id: 's1', type: 'Explore', description: 'Buscar los usos', startedAt: 10 }] },
         mrs: { connected: ['github'], mine: [{ forge: 'github', url: 'https://github.com/acme/web/pull/1', title: 'Envío', project: 'acme/web', author: 'pau', updatedAt: new Date().toISOString() }], review: [], following: [], more: { mine: [], review: [], following: [] }, errors: [] },
         doctor: [{ tool: 'tmux', ok: false, problem: 'no está', install: 'brew install tmux' }]
@@ -42,9 +42,9 @@ describe('tutorial', () => {
     await user.click(await screen.findByText('PF-1', { selector: '.ws-branch' }))
     await user.click(screen.getByRole('button', { name: 'Enséñamelo · 3 min' }))
 
-    // The 25 steps of «Pasos», in order.
+    // The 24 steps of «Pasos», in order.
     expect(STEPS.map((s) => s.target)).toEqual([
-      'rail', 'next-up', 'new-work', 'workspaces', 'terminal', 'flow', 'stages', 'flow-checklist', 'flow-changes', 'flow-subagents', 'activity', 'tasks',
+      'rail', 'next-up', 'new-work', 'workspaces', 'terminal', 'flow', 'stages', 'flow-checklist', 'flow-subagents', 'activity', 'tasks',
       'start-mode', 'new-task', 'mr', 'mr-tools', 'avisos', 'libretto', 'doctor', 'palette', 'usage', 'session', 'connections', 'repos', 'appearance'
     ])
     const NEVER = ['start-mode', 'palette']

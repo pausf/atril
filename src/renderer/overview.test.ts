@@ -184,7 +184,8 @@ describe('agents overview', () => {
     // The card is joined under the button and says the whole question; the button no longer repeats the cut line.
     expect(card('PF-4').querySelector('.ask-q')?.textContent).toContain('¿Aplico el plan completo?')
     expect(card('PF-4').querySelector('.ov-main')?.contains(card('PF-4').querySelector('.ask'))).toBe(false)
-    expect(card('PF-4').querySelector('.ov-main .ov-act-text')).toBeNull()
+    // The card reports it is asking one render after it shows, so this waits for it.
+    await waitFor(() => expect(card('PF-4').querySelector('.ov-main .ov-act-text')).toBeNull())
     expect(card('PF-3').querySelector('.ov-main .ov-act-text')?.textContent).toContain('¿Aplico el plan completo?')
     expect(replies('PF-3')).toBeNull()
     expect(replies('PF-2')).toBeNull()

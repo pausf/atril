@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { DoctorReport, JiraIssue, NextItem, WorkspaceView } from '../preload/api'
 import { FlowPanel } from './flow/FlowPanel'
+import { useBoxes, useFlow } from './flow/useFlow'
 import { Footer } from './components/Footer'
 import { Rail, type Screen } from './components/Rail'
 import { Sidebar } from './components/Sidebar'
@@ -101,6 +102,8 @@ function Shell() {
     setAll(on)
     if (on) exitFocus()
   }
+  const flow = useFlow(selected)
+  const boxes = useBoxes(selected, flow)
   const inbox = useInbox()
   const next = useNextUp()
   const mrs = useMrs()
@@ -386,6 +389,7 @@ function Shell() {
                 ) : (
                   <Workspace
                     ws={workspaces.find((w) => w.id === selected)}
+                    flow={flow}
                     switcher={
                       <>
                         <ViewSwitch all={all} onChange={showAll} />
@@ -396,7 +400,8 @@ function Shell() {
                 )}
                 <FlowPanel
                   workspaceId={selected}
-                  auto={workspaces.find((w) => w.id === selected)?.auto === true}
+                  flow={flow}
+                  boxes={boxes}
                   onOpenLibretto={() => {
                     const repoId = workspaces.find((w) => w.id === selected)?.repoId
                     if (repoId) setLibrettoRepo(repoId)

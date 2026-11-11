@@ -20,7 +20,6 @@ import { createQueue, createScorer } from './forge/scores'
 import { createThreads } from './forge/threads'
 import { boxDiff, boxRanges } from './flow/boxes'
 import { changeFolders } from './flow/stage'
-import { fileDiff, listChanges } from './flow/changes'
 import { nextUp } from './nextup'
 import { writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
@@ -484,14 +483,6 @@ app.whenReady().then(async () => {
   ipcMain.handle('atril:flow:docs', async (_e, id: string) => {
     const ws = await flowWorkspace(id, run)
     return ws ? readDocs(ws.path) : null
-  })
-  ipcMain.handle('atril:flow:changes', async (_e, id: string) => {
-    const ws = await flowWorkspace(id, run)
-    return ws ? listChanges(ws.path, ws.baseCommit, run) : []
-  })
-  ipcMain.handle('atril:flow:diff', async (_e, id: string, path: unknown) => {
-    const ws = await flowWorkspace(id, run)
-    return ws && typeof path === 'string' ? fileDiff(ws.path, ws.baseCommit, path, run) : ''
   })
   // The newest change folder is the one the panel shows (stageOf).
   const currentChange = async (ws: { path: string }): Promise<string | undefined> => (await changeFolders(join(ws.path, '.agents', 'changes')))[0]

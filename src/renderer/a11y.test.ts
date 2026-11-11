@@ -39,7 +39,10 @@ describe('keyboard and labels', () => {
     const labels = Array.from(document.querySelectorAll('.state')).map((e) => e.textContent?.trim())
     expect(labels).toEqual(['trabajando', 'te necesita', 'parado'])
     for (const m of document.querySelectorAll('.mode')) expect(m.textContent).toMatch(/worktree|in-place/)
-    const stages = Array.from(document.querySelectorAll('.stg')).map((e) => e.textContent ?? '')
+    // The steps show above the work that is open.
+    await user.click(screen.getByRole('button', { name: /^PF-3/ }))
+    await screen.findByRole('group', { name: 'Pasos de Libretto' })
+    const stages = Array.from(document.querySelectorAll('.seg6 .seg')).map((e) => e.textContent ?? '')
     expect(stages).toHaveLength(6)
     for (const s of stages) expect(s).toMatch(/hecho|ahora|pendiente/)
     expect(stages.filter((s) => /ahora/.test(s))).toHaveLength(1)

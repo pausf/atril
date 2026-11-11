@@ -635,10 +635,6 @@ export interface FlowApi {
   docs(workspaceId: string): Promise<FlowDocs | null>
   /** F16: main re-reads the agent state and the file's mtime before writing. */
   save(workspaceId: string, change: string, name: string, text: string, mtimeMs: number): Promise<{ mtimeMs: number } | { error: string }>
-  /** F18: files changed against the workspace's base. */
-  changes(workspaceId: string): Promise<FileChange[]>
-  /** F19: the diff of one file from that list; empty for anything else. */
-  diff(workspaceId: string, path: string): Promise<string>
   /** F36: the checklist boxes of the current change, each with the code of its range. */
   boxes(workspaceId: string): Promise<FlowBoxes>
   /** F37: one file's diff over one box's range; empty for anything outside it. */

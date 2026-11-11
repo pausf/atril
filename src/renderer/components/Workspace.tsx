@@ -1,15 +1,17 @@
 import type { ReactNode } from 'react'
-import type { WorkspaceView } from '../../preload/api'
+import type { FlowStage, WorkspaceView } from '../../preload/api'
 import { stateOf, useAgentStates } from '../agents'
+import { Steps } from '../flow/Steps'
 import { useT } from '../ui'
 import { StateLabel } from './StateLabel'
 import { Terminal } from './Terminal'
 
-export function Workspace({ ws, switcher }: { ws: WorkspaceView | undefined; switcher?: ReactNode }) {
+export function Workspace({ ws, flow, switcher }: { ws: WorkspaceView | undefined; flow: FlowStage | null; switcher?: ReactNode }) {
   const t = useT()
   const states = useAgentStates()
   return (
     <main className="col center">
+      {ws && <Steps ws={ws} flow={flow} />}
       <div className="whead">
         <div>
           <div className="m">{ws ? `${ws.repoId} · ${ws.agent}` : t('Ningún trabajo abierto')}</div>
