@@ -242,6 +242,13 @@ textos, en «Pasos» abajo. Los que tienen elemento en pantalla lo iluminan; los
 - QA tiene su pantalla: eliges el trabajo y ves qué criterios de su cambio se han visto funcionar en la app, cómo los
   probó el agente, y conviertes un fallo en tarea de Jira o en un encargo al agente con un clic.
 
+### QA: dónde se prueba (qa-targets, 11 nov 2026)
+
+- La tarjeta de QA de un trabajo enseña una pestaña por plataforma que se puede probar (Chrome, Safari, Android, iOS), con el porqué en una línea («Hay un `package.json` con el script `dev`»). La pestaña elegida se recuerda por repo.
+- «Probar en vivo» lanza el QA de la pestaña elegida con su motor y, en móvil, con un emulador o simulador reservado para ese trabajo; un segundo trabajo coge otro.
+- Cuando algo falta, la tarjeta dice qué pasó, qué no puedes hacer y trae el botón que lo arregla.
+- Sin nada detectado: «No sé cómo abrir este proyecto» con «Elegir a mano».
+
 ## Scope boundaries
 
 **In:** the three columns and footer of `bocetos/fase1-nucleo.html` (boceto 8), the
@@ -497,6 +504,14 @@ todo», «Marcar como bug», quitar QA del panel.
 **Never scoped out:** el informe es texto no fiable (validado, nunca HTML); nada se manda a Jira ni al agente sin
 pulsar; el token de Jira no sale de main; teclado; textos por `t()`; estados con palabra, no solo color.
 
+### QA: dónde se prueba (qa-targets, 11 nov 2026)
+
+Dentro: detección por carpeta raíz y subcarpetas a 2 niveles; `.atril/qa.json`; «Elegir a mano»; pestañas; motor por plataforma; reserva de dispositivo; errores con arreglo en el lanzamiento de QA.
+
+Fuera: crear emuladores por nuestra cuenta (solo se abre la Terminal con el comando, la persona lo lanza); dispositivos físicos; descargar Xcode; el resto de errores de Atril (otro cambio); varios QA del mismo trabajo a la vez (sigue siendo uno, W84).
+
+Nunca fuera: validar `.atril/qa.json` (lo escribe el repo, no Atril); la ventana nunca manda un comando, solo el nombre de un arreglo; escritura atómica del archivo de elecciones.
+
 ## Constraints
 
 - Electron (current stable) + TypeScript in strict mode, pnpm, Node 24 (installed:
@@ -605,6 +620,13 @@ pulsar; el token de Jira no sale de main; teclado; textos por `t()`; estados con
 
 Cada afirmación de un texto debe ser cierta en el código: atajo, nombre de botón, comportamiento.
 Textos por `t()`.
+
+### QA: dónde se prueba (qa-targets, 11 nov 2026)
+
+- Las plataformas son exactamente `chrome | safari | android | ios`. W83 sigue clasificando una carpeta; esto la llama por cada carpeta.
+- Los textos por `t()` con su entrada en `i18n-en.ts`; colores solo tokens.
+- `QaResult` de `retest`/`stop` no cambia; el de `launch` añade `problem`.
+- Tests con `ATRIL_HOME` temporal y dobles del `Runner`; nunca un emulador real en los tests.
 
 ## Prior decisions
 
@@ -1661,6 +1683,23 @@ Textos por `t()`.
 - Q: ¿El prompt? → A: `qaPrompt` añade la ruta de `report.json`, su forma, la lista de criterios (id y texto) y que lo
   reescriba entero tras cada criterio (assumed).
 
+### QA: dónde se prueba (qa-targets, 11 nov 2026)
+
+- (11 nov, Pau) Motores: iOS `xcrun mcpbridge` + mobile-mcp para tocar; Android mobile-mcp con el emulador de la persona; Chrome con Playwright; Safari con Playwright WebKit (assumed).
+- (11 nov, Pau) Un dispositivo por trabajo, reservado mientras su QA vive; la reserva caduca sola cuando su pane ya no está.
+- (11 nov, Pau) Errores: qué pasó, qué no puedes hacer, un botón con el arreglo; detalle plegado.
+- (11 nov) Los arreglos son nombres fijos que main traduce en una acción; la ventana nunca manda un comando ni una URL (como W21).
+- (11 nov) `.atril/qa.json` manda sobre lo detectado; «Elegir a mano» se suma como una pestaña más.
+
+#### Decision log, answers as given (2026-11-11)
+- Q: ¿Motor por plataforma? → A: iOS con el MCP oficial de Apple `xcrun mcpbridge` (Xcode 26.3+), simctl o mobile-mcp si hace falta tocar; Android con el emulador del SDK de la persona por `emulator`/`adb`, vía mobile-mcp; web Chrome con Playwright y Safari con WebKit.
+- Q: ¿Detección? → A: dice por qué; varias plataformas como pestañas recordadas por repo; monorepos a 2 niveles; «Elegir a mano» guardado por repo y opcional `.atril/qa.json`; «No sé cómo abrir este proyecto» si no hay nada.
+- Q: ¿Errores? → A: ninguno suelto: qué pasó, qué no puedes hacer y un botón que lo arregla; lo técnico en «Ver detalle» (`bocetos/errores.html`).
+- Q: ¿Varias QA a la vez? → A: un simulador o emulador por trabajo, reservado hasta que se libera, como Simlock.
+- Q: ¿Safari con qué MCP? → A: Playwright MCP con `--browser webkit`, el motor de Safari; no hay un MCP oficial de Safari que se pueda instalar sin firmar nada (assumed: si aparece uno oficial, cambia solo `mcpConfig`).
+- Q: ¿Un proyecto RN/Expo/Flutter cuántas pestañas da? → A: Android e iOS, una por plataforma que tenga carpeta (`android/`, `ios/`) o, en Expo, ambas (assumed).
+- Q: ¿Qué emulador reserva? → A: el primero de la lista de la persona que no tenga otro trabajo con su QA vivo; nunca crea uno sin que lo pida (assumed).
+
 ## Task breakdown
 
 - App shell: Electron main, preload bridge, renderer with sidebar / centre / right panel /
@@ -2162,17 +2201,8 @@ Textos por `t()`.
   `preview` script), first match in that order, or none, each with its run command (the Decision log's
   table).
   Proof: src/main/qa.test.ts projects are classified by their files
-- **W84** When the person presses «Probar en vivo» on a classified workspace, main shall write
-  `$ATRIL_HOME/qa/<id>.mcp.json` with Playwright MCP (web, `--output-dir $ATRIL_HOME/qa/<id>/`) or mobile-mcp
-  (the rest), split the workspace's pane and start `claude` there with `--mcp-config` that file,
-  `--strict-mcp-config` and a prompt naming the kind, its run command, the change's proposal path and the
-  screenshot folder; if a tool the kind needs (`node`; plus `adb` for android, `xcrun` for ios, both for expo,
-  react-native and flutter: at least one of adb or xcrun) is missing it shall start nothing and answer every
-  missing one; the QA pane is started by splitting the workspace's pane with that command and its tmux id
-  kept in `$ATRIL_HOME/qa/<id>.pane`; a second press while that pane lives shall be refused; «Detener QA»
-  shall kill only that pane and keep the MCP file and the screenshots. One test holds a case per clause.
+- **W84** When the person presses «Probar en vivo» on a workspace's target, main shall write `$ATRIL_HOME/qa/<id>.mcp.json` with, for chrome, Playwright MCP `--browser chrome`; for safari, Playwright MCP `--browser webkit` (both `--isolated --output-dir $ATRIL_HOME/qa/<id>/`); for android, mobile-mcp; for ios, `xcrun mcpbridge` and mobile-mcp; split the workspace's pane and start `claude` there in the target's folder with `--mcp-config` that file, `--strict-mcp-config` and a prompt naming the platform, the command, the reserved device (W124) on mobile, the change's proposal path and the screenshot folder; the QA pane's tmux id is kept in `$ATRIL_HOME/qa/<id>.pane`; a second press while that pane lives shall be refused; «Detener QA» shall kill only that pane, free its device and keep the MCP file and the screenshots. One test holds a case per clause.
   Proof: src/main/qa.test.ts live qa starts one scoped agent with its tools
-
 ### Pausar un agente (pause-agent, 10 nov 2026)
 
 - **W86** When the person pauses a working workspace (Trabajo → Pausar, ⌘⇧P, or its card), main shall send
@@ -2342,14 +2372,7 @@ Textos por `t()`.
 
 ### Pantalla de QA (qa-screen, 11 nov 2026)
 
-- **W113** Atril shall show a «QA» screen in the rail between Libretto and Avisos and in ⌘K, with a card per live
-  workspace naming its W83 kind («App web», «Android», «iOS», «Expo», «React Native», «Flutter») or «sin detectar»,
-  the picked one pressed; for the picked workspace, its current change's criteria (each `- **ID**` line under
-  `## Verification criteria`, id and text), each with «Pasa», «Falla» or «Sin probar» from the report (last entry per
-  id; absent → «Sin probar») and a summary «{p} pasan · {f} fallan · {u} sin probar»; «Este trabajo no tiene
-  criterios que probar» when there are none; «Todas las capturas», the 12 newest of its QA folder, each at most 2 MB,
-  as data URLs; for «sin detectar», a line saying QA cannot open it; and «Probar en vivo» or «Detener QA» as W84.
-  One test holds a case per clause.
+- **W113** Atril shall show a «QA» screen in the rail between Libretto and Avisos and in ⌘K, with a card per live workspace naming its chosen target («Chrome», «Safari», «Android», «iOS») or «sin detectar», the picked one pressed; for the picked workspace, its current change's criteria (each `- **ID**` line under `## Verification criteria`, id and text), each with «Pasa», «Falla» or «Sin probar» from the report (last entry per id; absent → «Sin probar») and a summary «{p} pasan · {f} fallan · {u} sin probar»; «Este trabajo no tiene criterios que probar» when there are none; «Todas las capturas», the 12 newest of its QA folder, each at most 2 MB, as data URLs; W123's tabs and W126's lines; and «Probar en vivo» or «Detener QA» as W84. One test holds a case per clause.
   Proof: src/renderer/qa-screen.test.ts the QA screen reports each criterion
 - **W114** Main shall read `$ATRIL_HOME/qa/<id>/report.json` and answer only entries whose id is a criterion of the
   workspace's change, whose status is pass, fail or untested, with `note` and step texts cut to 400 characters, at
@@ -2372,10 +2395,27 @@ Textos por `t()`.
   minutes pass (then its previous status). One test holds a case per clause.
   Proof: src/main/qa-report.test.ts testing one criterion asks the qa agent for just that
 - **W117** When the person presses «Marcar como bug» on a failed criterion, Atril shall open a form prefilled with a
-  title «QA {branch}: {note}», the steps, the environment (kind, branch, head commit) and the criterion, all editable.
+  title «QA {branch}: {note}», the steps, the environment (target platform and folder, branch, head commit) and the criterion, all editable.
   Proof: src/renderer/qa-screen.test.ts a failed criterion becomes a bug
 - **W118** In that form, «Crear en Jira» (only while Jira is saved with a board) shall create one issue with the
   title and the rest as description through the same creation W108 uses, and show «Creada {KEY}»; «Pasar al agente
   del trabajo» shall paste the form into the workspace's agent pane as one bracketed paste, then Enter; either error
   shall show in the form and keep it open. One test holds a case per clause.
   Proof: src/main/qa-report.test.ts a bug goes to jira or to the agent once
+
+### QA: dónde se prueba (qa-targets, 11 nov 2026)
+
+- **W120** Main shall list a workspace's QA targets by running W83 on its folder and on every subfolder up to two levels deep (skipping `node_modules`, `Pods`, `build`, `dist`, `vendor` and names starting with `.`, at most 200 folders read), never descending into a folder that classified (its `android/` and `ios/` belong to it), turning each classified folder into targets: web → `chrome` and `safari`; android → `android`; ios → `ios`; expo → `android` and `ios`; react-native and flutter → `android` if it has `android/`, `ios` if it has `ios/`; each with its folder relative to the repo (`''` for the root), W83's command, and a one-line reason naming the file that decided it (e.g. «Hay un package.json con el script dev»); root first, then by folder path; two targets with the same platform and folder count once.
+  Proof: src/main/qa-targets.test.ts targets come from the root and two levels down with their reason
+- **W121** Where the repo holds `.atril/qa.json` with `{"targets":[{"platform","dir","command"}]}`, main shall use its valid entries instead of the detected ones (platform one of the four, `dir` relative with no `..` segment and an existing folder, `command` a string of at most 200 characters), each with the reason «Lo dice .atril/qa.json»; if the file exists and no entry is valid, then main shall use the detected targets and add the line «.atril/qa.json no se entiende: uso lo que detecto».
+  Proof: src/main/qa-targets.test.ts qa.json replaces detection only with valid entries
+- **W122** When the person saves «Elegir a mano» (platform, folder, command), main shall add that target to the repo's entry in `$ATRIL_HOME/qa-targets.json` (temporary file and rename) with the reason «Lo elegiste a mano», listed after the detected ones or the `.atril/qa.json` ones, and «Quitar» on it shall remove it; a target with an unknown platform, a `dir` with `..` or a missing folder, or an empty command shall be refused with a sentence saying which.
+  Proof: src/main/qa-targets.test.ts manual targets are kept per repo and validated
+- **W123** While a workspace has a target, its QA card shall show the chosen target's reason under the target, W121's line when there is one, and «Quitar» beside the reason of a manual target; while it has more than one, it shall show one tab per target («Chrome», «Safari», «Android», «iOS», with the folder after a «·» when it is not the root); pressing a tab shall save it as the repo's chosen target in `qa-targets.json`, a later card of that repo shall open on it, and «Probar en vivo» shall launch that target.
+  Proof: src/renderer/qa-screen.test.ts targets show as tabs remembered per repo
+- **W124** When QA launches on android or ios, main shall reserve the first of the person's devices (android: `emulator -list-avds`; ios: available iPhone simulators from `xcrun simctl list devices available -j`) not held in `$ATRIL_HOME/qa/devices.json` by another workspace whose QA pane lives, write `{device: workspaceId}` there, and name that device in the prompt (`emulator -avd <name>` or `xcrun simctl boot <udid>`); a hold whose pane no longer lives counts as free; when two workspaces launch at once with one free device, one shall get it and the other shall answer W125's «every device held».
+  Proof: src/main/qa.test.ts each live qa gets its own device
+- **W125** If QA cannot launch, then main shall answer the first problem in this order, with what happened, what the person cannot do, one fix and the technical detail (every missing tool named there), and start nothing: no target → «Elegir a mano» (handled by the window alone); no `node` → «Instalar Node» (Terminal with `brew install node`); android with no `adb` or `emulator` → «Instalar Android Studio» (`https://developer.android.com/studio`); android with no AVD → «Crear un Pixel 8» (Terminal with `sdkmanager "system-images;android-35;google_apis;arm64-v8a" && avdmanager create avd -n Pixel_8 -k "system-images;android-35;google_apis;arm64-v8a" -d pixel_8`); ios with no `xcrun` or no `mcpbridge` (`xcrun --find mcpbridge` fails) → «Actualizar Xcode» (`macappstore://apps.apple.com/app/id497799835`); ios with no available iPhone simulator → «Abrir Xcode» (`open -a Xcode`); every device held → «Ver el otro QA» (opens the workspace holding the first device of the list). A missing Chrome or Playwright WebKit is not a launch problem: the agent meets it. The window shall send only the fix's name and the workspace id, and main shall refuse a name it does not know (`pick-manual` included). One test holds a case per problem.
+  Proof: src/main/qa.test.ts every launch problem comes with its fix
+- **W126** When launch answers a problem, the QA card shall show its what and cannot in words, a button with the fix and «Ver detalle» folded with the technical detail, with no raw error elsewhere; a workspace with no target shall read «No sé cómo abrir este proyecto», the line «Busqué package.json con dev, start o preview, app.json de Expo, pubspec.yaml, settings.gradle, .xcodeproj o Package.swift, en la raíz y dos niveles», and «Elegir a mano».
+  Proof: src/renderer/qa-screen.test.ts a launch problem shows its fix and detail folded
