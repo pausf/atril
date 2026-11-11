@@ -341,3 +341,6 @@ El criterio nombraba tres sitios (abrir, reabrir y el comando de «Empezar») y 
 
 ## 2026-11-11 · lessons-first · después de aterrizar
 `LESSONS_NOTE` es castellano sin `t()` y rompió «no spanish text skips t» (src/preload/i18n.test.ts), que no corrí. Un texto para el modelo lleva `// i18n-ignore` con su porqué; y al cambiar main, correr las dos pruebas de idioma, no solo una.
+
+## 2026-11-11 · qa-to-mr · 6→7
+El constructor ensanchó la respuesta de `threads.reply` (de otra capacidad, mr) y no había `spec-mr.md`: la forma nueva nunca habría llegado a la spec de MR. Si un cambio toca un archivo gobernado por otra capacidad, su delta va en el mismo cambio. Pendiente aceptado: lo que el agente de QA escribe en notas y pasos se publica tal cual; no hay vista previa antes de «Publicar en la MR».
