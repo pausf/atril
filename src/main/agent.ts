@@ -40,7 +40,7 @@ export const effortError = (effort: unknown): string | null =>
  * speak for the work's own agent. `mcpConfig` loads only that file's MCP servers, never the person's.
  */
 /** W169: a fixed sentence from main, never the person's text. */
-export const LESSONS_NOTE = 'Este repo guarda en .agents/lessons.md los errores que ya se pagaron aquí. Léelo antes de empezar y no los repitas.'
+export const LESSONS_NOTE = 'Este repo guarda en .agents/lessons.md los errores que ya se pagaron aquí. Léelo antes de empezar y no los repitas.' // i18n-ignore: a prompt to the model, never shown
 
 /** W175: `.agents` a real folder and `lessons.md` a regular file in it; a link never counts. */
 export async function hasLessons(folder: string): Promise<boolean> {

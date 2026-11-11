@@ -338,3 +338,6 @@ Con 4 trabajos: casillas repetidas 1,6 s → 0–1 ms; volver a un trabajo 2,4 s
 
 ## 2026-11-11 · lessons-first · 6→7
 El criterio nombraba tres sitios (abrir, reabrir y el comando de «Empezar») y dos tipos de enlace, pero las pruebas cubrían solo el archivo enlazado y no el comando enseñado. Cada cláusula de un criterio con «y» necesita su caso.
+
+## 2026-11-11 · lessons-first · después de aterrizar
+`LESSONS_NOTE` es castellano sin `t()` y rompió «no spanish text skips t» (src/preload/i18n.test.ts), que no corrí. Un texto para el modelo lleva `// i18n-ignore` con su porqué; y al cambiar main, correr las dos pruebas de idioma, no solo una.
