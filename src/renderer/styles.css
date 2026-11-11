@@ -40,6 +40,7 @@
   --on-text: #ffffff;
   --run: #0a84ff;
   --run-text: #005ecb;
+  --working: #005ecb;
   --you: #ff9f0a;
   --you-text: #8a5a00;
   --ask-bg: #fff8ec;
@@ -109,6 +110,7 @@
   --on-text: #1c1c1e;
   --run: #0a84ff;
   --run-text: #6cb2ff;
+  --working: #6cb2ff;
   --you: #ff9f0a;
   --you-text: #ffb340;
   --ask-bg: #3b342b;
@@ -156,9 +158,10 @@
   --text: #1c1e21;
   --sub: #65686b;
   --on-text: #fdfeff;
-  /* W165: working is grey; the one accent is for what needs the person. */
-  --run: #65686b;
-  --run-text: #65686b;
+  --run: #446b9c;
+  --run-text: #3e6596;
+  /* W165: the «trabajando» label is grey; the one accent is for what needs the person. */
+  --working: #65686b;
   --you: #446b9c;
   --you-text: #3e6596;
   --ask-bg: #f2f5f8;
@@ -195,8 +198,9 @@
   --text: #e7eaed;
   --sub: #b5b8bb;
   --on-text: #181a1c;
-  --run: #b5b8bb;
-  --run-text: #b5b8bb;
+  --run: #4c73a5;
+  --run-text: #97c1f7;
+  --working: #b5b8bb;
   --you: #4c73a5;
   --you-text: #97c1f7;
   --ask-bg: #1c2026;
@@ -1033,7 +1037,7 @@ kbd {
   gap: 5px;
 }
 .state.working {
-  color: var(--run-text);
+  color: var(--working);
 }
 .state.needs-you {
   color: var(--you-text);

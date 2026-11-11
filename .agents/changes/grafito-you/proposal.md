@@ -13,6 +13,7 @@ Hallazgo 28 de `bocetos/hallazgos.md`: en Grafito «te necesita» se pinta del m
 ## Decision log
 
 ### Session 2026-11-11
+- Q: (revisión del trabajo) `--run` también pinta el punto de aviso sin leer, la selección del buscador, el paso actual y «conectado» → A: `--run` sigue azul; un token nuevo `--working` solo para la etiqueta «trabajando» (gris en Grafito, igual que antes en Original).
 - Q: ¿Qué color cambia? → A: «trabajando» pasa al gris de los textos secundarios (`--sub`) y el único acento azul queda para «te necesita»: gris más un acento, como pidió Pau (assumed).
 
 ## Outcomes
@@ -21,7 +22,7 @@ Hallazgo 28 de `bocetos/hallazgos.md`: en Grafito «te necesita» se pinta del m
 
 ## Scope boundaries
 
-**In:** `--run` y `--run-text` de Grafito en `src/renderer/styles.css`. **Out:** la paleta Original.
+**In:** un token nuevo `--working` en las cuatro paletas de `src/renderer/styles.css`, usado solo por la etiqueta «trabajando». **Out:** la paleta Original.
 
 ## Constraints
 
@@ -33,7 +34,7 @@ Hallazgo 28 de `bocetos/hallazgos.md`: en Grafito «te necesita» se pinta del m
 
 ## Verification criteria
 
-- **W165** Where the palette is Grafito, in both themes, `--run` and `--run-text` shall be neutrals (OKLCH chroma below 0.03) and `--you` and `--you-text` the accent, so working and needs-you never share a colour.
+- **W165** Where the palette is Grafito, in both themes, the «trabajando» label's `--working` shall be a neutral (OKLCH chroma below 0.03) while `--run` (unread dots, selection, current step) and `--you`/`--you-text` keep the accent, so a working row and a needs-you row never share a colour.
   Proof: src/renderer/theme.test.ts grafito tells needs-you from working
 
 ## Approach

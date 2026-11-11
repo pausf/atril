@@ -320,3 +320,6 @@ La caché del plan leía el checklist antes de su `stat`: una edición entre med
 
 ## 2026-11-11 · fast-panel · medición
 En el Mac de Pau cada proceso cuesta ~125 ms en reposo y 300–800 ms con carga (no es git: `/usr/bin/true` 3 ms, git hace 6,5 ms de trabajo; probable antivirus). Antes/después con 4 trabajos: boxDiff 3,9–5,3 s → 1,5–1,8 s; boxes repetido 4,7–6,3 s → 1,6 s; reposo 11 → 5 procesos/s. Queda: no lanzar nada si el vigilante de archivos dice que nada cambió.
+
+## 2026-11-11 · grafito-you · 6→7
+Cambié `--run` a gris para la etiqueta «trabajando» sin buscar quién más lo usaba: el punto de aviso sin leer, la selección del buscador, el paso actual y «conectado» perdían el acento. Antes de cambiar un token, `rg "var(--token)"`; si el cambio es para un solo sitio, token nuevo.

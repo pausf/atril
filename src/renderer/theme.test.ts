@@ -139,7 +139,9 @@ describe('theme', () => {
   })
   it('grafito tells needs-you from working', () => {
     for (const [name, pal] of [['light', grafitoLight], ['dark', grafitoDark]] as const) {
-      for (const k of ['run', 'run-text']) expect(oklch(pal[k]!).c, `${name} --${k}`).toBeLessThan(0.03)
+      expect(oklch(pal['working']!).c, `${name} --working`).toBeLessThan(0.03)
+      // The accent stays wherever --run marks something live (unread dots, selection, the current step).
+      expect(oklch(pal['run']!).c, `${name} --run`).toBeGreaterThanOrEqual(0.03)
       for (const k of ['you', 'you-text']) expect(near(oklch(pal[k]!).h, 255, 15) && oklch(pal[k]!).c >= 0.03, `${name} --${k}`).toBe(true)
     }
   })
