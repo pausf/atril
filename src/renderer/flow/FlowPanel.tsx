@@ -17,7 +17,7 @@ type TabId = ReturnType<typeof tabsOf>[number]['id']
 
 interface PanelProps {
   workspaceId: string | null
-  flow: FlowStage | null
+  flow: FlowStage | null | undefined
   boxes: BoxesState
   /** «⤢ Ampliar» on a box's code (F39). */
   onBig: (index: number, file?: string) => void
@@ -87,6 +87,10 @@ function LibrettoFlow({ flow, workspaceId, boxes, subs, onBig, onOpenLibretto }:
   const timeline = workspaceId && flow && BUILDING.includes(flow.stage) && boxes.boxes.length > 0
   const hung = timeline && boxes.boxes.some((b) => b.state === 'current')
   const lone = subs && !flow?.change
+  // F49: never blank while the first answer is on its way.
+  if (workspaceId && flow === undefined) return <div className="empty">{t('Leyendo el flujo de este trabajo…')}</div>
+  // F50: before the checklist exists, say why there are no boxes.
+  const early = flow && (['entrada', 'spec', 'plan'].includes(flow.stage) || (flow.stage === 'construir' && boxes.boxes.length === 0))
   if (flow?.stage === 'sin-libretto')
     return (
       <>
@@ -102,6 +106,11 @@ function LibrettoFlow({ flow, workspaceId, boxes, subs, onBig, onOpenLibretto }:
           <span className="cname" title={flow.change}>
             {t('Cambio:')} <b>{flow.change}</b>
           </span>
+        </p>
+      )}
+      {early && (
+        <p className="fmeta">
+          {flow.change ? t('Aún no hay casillas: salen cuando el plan tenga su checklist.') : t('Este trabajo aún no tiene cambio de Libretto: lo crea el primer paso.')}
         </p>
       )}
       {lone && <p className="fmeta crow">{t('Subagentes')}</p>}

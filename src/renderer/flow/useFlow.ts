@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react'
 import type { FlowBoxes, FlowStage, StageName } from '../../preload/api'
 
-/** The selected workspace's stage; also tells main which workspace to watch. */
-export function useFlow(workspaceId: string | null): FlowStage | null {
-  const [flow, setFlow] = useState<FlowStage | null>(null)
+/** The selected workspace's stage; also tells main which workspace to watch. `undefined` until main answers (F49). */
+export function useFlow(workspaceId: string | null): FlowStage | null | undefined {
+  const [flow, setFlow] = useState<FlowStage | null | undefined>(undefined)
   useEffect(() => {
     let live = true
-    setFlow(null)
+    setFlow(undefined)
     void window.atril.flow.get(workspaceId).then((f) => live && setFlow(f))
     const off = window.atril.flow.onChange((id, f) => id === workspaceId && setFlow(f))
     return () => {

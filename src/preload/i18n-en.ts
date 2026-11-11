@@ -751,4 +751,7 @@ export const EN: Record<string, string> = {
   "No he podido abrir la terminal de {branch}.": "I couldn't open {branch}'s terminal.",
   "Tu agente sigue en tmux: solo falla esta vista.": "Your agent is still running in tmux: only this view failed.",
   "Volver a intentar": "Try again",
+  "Leyendo el flujo de este trabajo…": "Reading this work's flow…",
+  "Aún no hay casillas: salen cuando el plan tenga su checklist.": "No boxes yet: they appear once the plan has its checklist.",
+  "Este trabajo aún no tiene cambio de Libretto: lo crea el primer paso.": "This work has no Libretto change yet: the first step creates it.",
 }

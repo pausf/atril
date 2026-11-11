@@ -118,7 +118,7 @@ function Shell() {
     if (on) exitFocus()
   }
   const flow = useFlow(selected)
-  const boxes = useBoxes(selected, flow)
+  const boxes = useBoxes(selected, flow ?? null)
   // F39: the enlarged code of one box, never stored. It lives where the terminal is, so only on «Uno».
   const [big, setBig] = useState<{ index: number; file?: string } | null>(null)
   const bigAvailable = screen === 'work' && !all && selected !== null
@@ -417,7 +417,7 @@ function Shell() {
                 ) : (
                   <Workspace
                     ws={workspaces.find((w) => w.id === selected)}
-                    flow={flow}
+                    flow={flow ?? null}
                     onReopened={async () => void (await listWorkspaces())}
                     onForget={(id) => remove(id, true)}
                     big={bigBox && selected ? <BigCode key={bigBox.index} workspaceId={selected} box={bigBox} tick={boxes.tick} start={big?.file} onClose={() => setBig(null)} /> : null}
