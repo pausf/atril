@@ -75,6 +75,9 @@ Governs: `src/main/flow/** src/renderer/flow/**`
 - {**F43** When `boxRanges` is asked again with the plan key unchanged, the flow shall run no `git log`, no `git show` and no listing of a range closed by a commit; the whole branch and every range without a commit are listed again, so an uncommitted edit shows on the next read. src/main/flow/boxes.test.ts a}
 - {**F44** When `HEAD`, the base commit, or the checklist file's path, mtime or size changes, the next `boxRanges` or `boxDiff` shall plan again; closing or forgetting a workspace drops its cached plans. src/main/flow/boxes.test.ts a}
 - {**F45** The diff shown for a box's file, small or large, shall leave out git's header lines — `diff --git`, `index`, `new file mode`, `deleted file mode`, `similarity`, `rename from`/`rename to`, `---` and `+++` before the first `@@` — and keep every `@@`, added, removed and context line in order, coloured as added or removed even when it starts with `---` or `+++`; a diff with no hunk (a pure rename, a mode change, a binary file) keeps its informative lines. src/renderer/flow/difftext.test.ts a}
+- {**F46** While no counted path (see the Decision log's rule) of the workspace has changed since the version read at the start of the last `boxRanges` answer for the same folder, base and change, and that answer is under 30 s old by the module's clock, `boxRanges` shall return that answer running no process. src/main/flow/quiet.test.ts nothing}
+- {**F47** When a file of the workspace is written or a commit is made, a `boxRanges` asked one second later or more shall compute again and show it. src/main/flow/quiet.test.ts an}
+- {**F48** At most four workspaces shall have a watcher open; opening a fifth closes the least recently asked; closing or forgetting a workspace shall close its watcher and drop its saved answer. src/main/flow/quiet.test.ts watchers}
 
 [full spec](flow-status/spec.md)
 

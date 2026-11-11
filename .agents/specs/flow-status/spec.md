@@ -69,6 +69,10 @@ mientras trabaja.
 
 - El código de una casilla empieza en su primer `@@`: todas las líneas visibles son código.
 
+### Panel en silencio (quiet-panel, 11 nov 2026)
+
+- Con un trabajo elegido y nada cambiando, el panel no lanza ningún proceso; al tocar un archivo o hacer un commit, la siguiente vuelta lo enseña.
+
 ## Scope boundaries
 
 **In:** reading `.agents/changes/*/` in a workspace and deriving the stage.
@@ -143,6 +147,10 @@ nombres accesibles; tokens de color.
 
 **In:** `src/renderer/flow/DiffText.tsx`. **Out:** resaltado de sintaxis; ajustar líneas largas.
 
+### Panel en silencio (quiet-panel, 11 nov 2026)
+
+**In:** `src/main/flow/boxes.ts` (la respuesta guardada), un vigilante por trabajo en `src/main/flow/` (al lado de `watch.ts`), su cierre con `flow.forget`. **Out:** el estado de los agentes (W163 ya lo dejó en una llamada); MR, Jira, actividad.
+
 ## Constraints
 
 - Libretto's layout and checklist rule exactly as `find-work` defines them: the checklist is
@@ -190,6 +198,11 @@ Reutiliza `useModalKeys` y las clases `modal`/`dlg edmodal`; monoespaciado con l
 ### Diff sin cabecera (diff-header, 11 nov 2026)
 
 - El diff sigue siendo texto, nunca marcado (F37).
+
+### Panel en silencio (quiet-panel, 11 nov 2026)
+
+- Nada se enseña más de 30 s viejo aunque el vigilante falle; con el vigilante bien, nada se enseña viejo.
+- `.git/objects`, `node_modules` y similares no despiertan nada que no hiciera falta: los avisos se filtran por ruta.
 
 ## Prior decisions
 
@@ -437,6 +450,25 @@ Reutiliza `useModalKeys` y las clases `modal`/`dlg edmodal`; monoespaciado con l
 - Q: ¿También en «Ampliar»? → A: sí: allí el archivo también se nombra encima (assumed).
 - Q: ¿Y el corte por la derecha? → A: ya hay desplazamiento horizontal (`overflow: auto`); macOS oculta la barra hasta usarla. No se toca (assumed).
 
+### Panel en silencio (quiet-panel, 11 nov 2026)
+
+- En el Mac de la persona cada proceso cuesta caro: el panel solo pregunta a git cuando un archivo o una ref cambiaron, o han pasado 30 s.
+
+#### Alternatives that lost
+
+| Considered | Why it lost |
+|---|---|
+| Comparar `git status --porcelain` cada vuelta | es un proceso por vuelta: justo lo que se quiere quitar |
+| Sondear menos (cada 10 s) | lo nuevo tardaría más en verse; el vigilante lo ve al momento |
+
+#### Decision log, answers as given (2026-11-11)
+- Q: (revisión en frío) ¿Qué avisos cuentan? → A: una sola regla para todo trabajo: cuenta cualquier ruta del trabajo salvo las que contienen `/node_modules/` o están dentro de una carpeta git; dentro de una carpeta git solo cuentan `HEAD`, `index`, `packed-refs`, `refs/**` y `logs/**`. Para un worktree se vigilan su carpeta, su carpeta git (`worktrees/<nombre>`) y la común; en tu copia, la carpeta y su `.git` ya dentro (assumed).
+- Q: (revisión en frío) ¿Y si el propio `git diff` reescribe `index`? → A: la versión se lee antes de calcular y se guarda con la respuesta: una reescritura propia cuesta como mucho un cálculo más, después git deja `index` quieto (assumed).
+- Q: (revisión en frío) ¿Cuántos vigilantes? → A: se abren al pedir casillas de un trabajo, como mucho 4 a la vez; el quinto cierra el que lleva más sin usarse. Se cierran al cerrar u olvidar el trabajo (assumed).
+- Q: (revisión en frío) ¿La salida de un build (`dist/`, `.next/`)? → A: cuenta como cambio; riesgo aceptado: en ese rato el panel calcula como hoy (assumed).
+- Q: ¿Cómo se sabe que nada cambió sin lanzar git? → A: un vigilante de archivos (FSEvents, `fs.watch` recursivo) sobre la carpeta del trabajo y sobre la carpeta git de su rama (`HEAD`, `refs`, `logs`); cualquier aviso marca el trabajo como cambiado (assumed).
+- Q: ¿Y si el vigilante se pierde un aviso? → A: como mucho 30 s después se vuelve a calcular igualmente (assumed).
+
 ## Task breakdown
 
 - Checklist reader with Libretto's rule.
@@ -652,3 +684,13 @@ Aterrizado**.
 
 - **F45** The diff shown for a box's file, small or large, shall leave out git's header lines — `diff --git`, `index`, `new file mode`, `deleted file mode`, `similarity`, `rename from`/`rename to`, `---` and `+++` before the first `@@` — and keep every `@@`, added, removed and context line in order, coloured as added or removed even when it starts with `---` or `+++`; a diff with no hunk (a pure rename, a mode change, a binary file) keeps its informative lines.
   Proof: src/renderer/flow/difftext.test.ts a box diff starts at its first hunk
+
+### Panel en silencio (quiet-panel, 11 nov 2026)
+
+- **F46** While no counted path (see the Decision log's rule) of the workspace has changed since the version read at the start of the last `boxRanges` answer for the same folder, base and change, and that answer is under 30 s old by the module's clock, `boxRanges` shall return that answer running no process.
+  Proof: src/main/flow/quiet.test.ts nothing changed costs no process
+  Proof: src/main/flow/quiet.test.ts an answer older than thirty seconds is computed again
+- **F47** When a file of the workspace is written or a commit is made, a `boxRanges` asked one second later or more shall compute again and show it.
+  Proof: src/main/flow/quiet.test.ts an edit or a commit is seen on the next read
+- **F48** At most four workspaces shall have a watcher open; opening a fifth closes the least recently asked; closing or forgetting a workspace shall close its watcher and drop its saved answer.
+  Proof: src/main/flow/quiet.test.ts watchers are bounded and close with their work
