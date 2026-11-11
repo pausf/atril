@@ -74,6 +74,7 @@ Governs: `src/main/flow/** src/renderer/flow/**`
 - {**F42** When `boxDiff` is asked for a file of a box closed by a commit and the plan key is unchanged since the last `boxRanges`, the flow shall run exactly two git commands: one reading `HEAD` and the file's diff over that range — no `log`, `show` or listing. src/main/flow/boxes.test.ts a}
 - {**F43** When `boxRanges` is asked again with the plan key unchanged, the flow shall run no `git log`, no `git show` and no listing of a range closed by a commit; the whole branch and every range without a commit are listed again, so an uncommitted edit shows on the next read. src/main/flow/boxes.test.ts a}
 - {**F44** When `HEAD`, the base commit, or the checklist file's path, mtime or size changes, the next `boxRanges` or `boxDiff` shall plan again; closing or forgetting a workspace drops its cached plans. src/main/flow/boxes.test.ts a}
+- {**F45** The diff shown for a box's file, small or large, shall leave out git's header lines — `diff --git`, `index`, `new file mode`, `deleted file mode`, `similarity`, `rename from`/`rename to`, `---` and `+++` before the first `@@` — and keep every `@@`, added, removed and context line in order, coloured as added or removed even when it starts with `---` or `+++`; a diff with no hunk (a pure rename, a mode change, a binary file) keeps its informative lines. src/renderer/flow/difftext.test.ts a}
 
 [full spec](flow-status/spec.md)
 

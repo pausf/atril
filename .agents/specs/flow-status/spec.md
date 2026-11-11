@@ -65,6 +65,10 @@ mientras trabaja.
 - El estado de los agentes cuesta un proceso por vuelta, no dos por trabajo.
 - En reposo, Atril lanza muchos menos procesos.
 
+### Diff sin cabecera (diff-header, 11 nov 2026)
+
+- El código de una casilla empieza en su primer `@@`: todas las líneas visibles son código.
+
 ## Scope boundaries
 
 **In:** reading `.agents/changes/*/` in a workspace and deriving the stage.
@@ -135,6 +139,10 @@ nombres accesibles; tokens de color.
 
 **In:** `src/main/flow/boxes.ts`, `src/main/flow/changes.ts`, `src/main/flow/watch.ts` (si hace falta la clave), `src/main/status.ts`, `src/main/tmux.ts`, `src/main/activity.ts`, `src/main/workspaces.ts` (`listWorkspaces` con la foto de tmux). **Out:** cambiar el antivirus o el git del Mac; reescribir el panel; los sondeos de MR y Jira.
 
+### Diff sin cabecera (diff-header, 11 nov 2026)
+
+**In:** `src/renderer/flow/DiffText.tsx`. **Out:** resaltado de sintaxis; ajustar líneas largas.
+
 ## Constraints
 
 - Libretto's layout and checklist rule exactly as `find-work` defines them: the checklist is
@@ -178,6 +186,10 @@ Reutiliza `useModalKeys` y las clases `modal`/`dlg edmodal`; monoespaciado con l
 
 - Nada se enseña viejo: un commit nuevo, un cambio del checklist o un archivo tocado en el tramo abierto se ven en la siguiente vuelta.
 - Las cachés viven en memoria de main y se vacían al cerrar un trabajo.
+
+### Diff sin cabecera (diff-header, 11 nov 2026)
+
+- El diff sigue siendo texto, nunca marcado (F37).
 
 ## Prior decisions
 
@@ -411,6 +423,20 @@ Reutiliza `useModalKeys` y las clases `modal`/`dlg edmodal`; monoespaciado con l
 - Q: ¿Con qué clave la caché del plan? → A: carpeta, `HEAD`, nombre del cambio y fecha de modificación del documento del checklist; los tramos ya cerrados por un commit no cambian nunca (assumed).
 - Q: ¿Cuánto se espera para juntar avisos de archivos? → A: 200 ms (assumed).
 
+### Diff sin cabecera (diff-header, 11 nov 2026)
+
+- Ninguna nueva.
+
+#### Alternatives that lost
+
+| Considered | Why it lost |
+|---|---|
+| Quitarlas en main | el mismo texto lo usan otros (borradores, copia); es una decisión de cómo se ve |
+
+#### Decision log, answers as given (2026-11-11)
+- Q: ¿También en «Ampliar»? → A: sí: allí el archivo también se nombra encima (assumed).
+- Q: ¿Y el corte por la derecha? → A: ya hay desplazamiento horizontal (`overflow: auto`); macOS oculta la barra hasta usarla. No se toca (assumed).
+
 ## Task breakdown
 
 - Checklist reader with Libretto's rule.
@@ -621,3 +647,8 @@ Aterrizado**.
   Proof: src/main/flow/boxes.test.ts an uncommitted edit shows on the next read
 - **F44** When `HEAD`, the base commit, or the checklist file's path, mtime or size changes, the next `boxRanges` or `boxDiff` shall plan again; closing or forgetting a workspace drops its cached plans.
   Proof: src/main/flow/boxes.test.ts a new commit or checklist edit plans again
+
+### Diff sin cabecera (diff-header, 11 nov 2026)
+
+- **F45** The diff shown for a box's file, small or large, shall leave out git's header lines — `diff --git`, `index`, `new file mode`, `deleted file mode`, `similarity`, `rename from`/`rename to`, `---` and `+++` before the first `@@` — and keep every `@@`, added, removed and context line in order, coloured as added or removed even when it starts with `---` or `+++`; a diff with no hunk (a pure rename, a mode change, a binary file) keeps its informative lines.
+  Proof: src/renderer/flow/difftext.test.ts a box diff starts at its first hunk
