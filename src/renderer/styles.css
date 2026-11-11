@@ -631,13 +631,18 @@ kbd {
   font-size: 13.5px;
 }
 .repo-rows .grow {
-  flex: 1;
+  /* Wide enough that the controls wrap below instead of squeezing a long path to one letter per line. */
+  flex: 1 1 260px;
   min-width: 0;
 }
 .repo-rows .path {
   font-size: 12px;
   color: var(--sub);
-  overflow-wrap: anywhere;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  direction: rtl;
+  text-align: left;
 }
 .repo-rows .why {
   margin: 2px 0 0;

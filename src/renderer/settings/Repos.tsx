@@ -103,7 +103,9 @@ export function Repos() {
           <li key={repo.id}>
             <div className="grow">
               <b>{repo.id}</b>
-              <div className="path">{repo.path}</div>
+              <div className="path" title={repo.path}>
+                <bdi>{repo.path}</bdi>
+              </div>
               {repo.mode === 'in-place' && <div className="why">{repo.reason}</div>}
             </div>
             {repo.health === 'missing' || repo.health === 'not-git' ? (

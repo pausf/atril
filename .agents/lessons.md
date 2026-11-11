@@ -302,3 +302,6 @@ W150 decía «cualquier error HTTP» y el cambio solo tocó las llamadas de su l
 
 ## 2026-11-11 · libretto-models · 6→7
 El Decision log decía que la frase «la copia es `171db90`» de la spec cambiaba, y el commit no la tocaba: una decisión que nombra un cambio en la spec viva se hace en el mismo commit, no se deja a `land.py`.
+
+## 2026-11-11 · net-errors · después de aterrizar
+`qa-report.test.ts` seguía esperando «400» en la frase: `net-errors` cambió `libretto.ts` y no corrí los tests de quien lo usa. Al cambiar una frase compartida, `rg` del texto viejo en `*.test.ts` antes de aterrizar.

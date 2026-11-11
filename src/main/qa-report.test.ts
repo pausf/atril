@@ -261,7 +261,7 @@ describe('a bug', () => {
     expect(idle.calls).toEqual([])
     const bad = jira(400)
     const failed = await qaBug('qbug0001', { to: 'jira', ...req }, { run: spy.run, creds, board, fetchImpl: bad.fetchImpl })
-    expect(failed).toEqual({ error: expect.stringContaining('400') })
+    expect(failed).toEqual({ error: 'Jira ha contestado algo que no esperaba.' })
     expect(JSON.stringify(failed)).not.toContain('secret detail')
 
     // Any other shape is refused.
