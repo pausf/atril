@@ -310,6 +310,10 @@ textos, en «Pasos» abajo. Los que tienen elemento en pantalla lo iluminan; los
 
 - El estado de los agentes cuesta un proceso de tmux por vuelta y los observadores juntan ráfagas.
 
+### Grafito: te necesita (grafito-you, 11 nov 2026)
+
+- En Grafito, la fila que te necesita es la única en azul.
+
 ## Scope boundaries
 
 **In:** the three columns and footer of `bocetos/fase1-nucleo.html` (boceto 8), the
@@ -625,6 +629,10 @@ Nunca fuera: validar `.atril/qa.json` (lo escribe el repo, no Atril); la ventana
 
 **In:** src/main/status.ts, src/main/tmux.ts, src/main/activity.ts, src/main/workspaces.ts. **Out:** sondeos de MR y Jira.
 
+### Grafito: te necesita (grafito-you, 11 nov 2026)
+
+**In:** un token nuevo `--working` en las cuatro paletas de `src/renderer/styles.css`, usado solo por la etiqueta «trabajando». **Out:** la paleta Original.
+
 ## Constraints
 
 - Electron (current stable) + TypeScript in strict mode, pnpm, Node 24 (installed:
@@ -800,6 +808,10 @@ Textos por `t()`.
 ### Panel más rápido (fast-panel, 11 nov 2026)
 
 - Nada se enseña más de 1 s viejo respecto a hoy.
+
+### Grafito: te necesita (grafito-you, 11 nov 2026)
+
+- W72 sigue: el gris es neutro; contraste de texto ≥ 4,5:1.
 
 ## Prior decisions
 
@@ -2062,6 +2074,20 @@ Textos por `t()`.
 - Q: ¿Qué arreglo ofrece? → A: «Volver a intentar», que engancha otra vez; el agente sigue en tmux y la frase lo dice (assumed).
 - Q: ¿El mensaje de node-pty va al detalle? → A: sí: es un texto de node-pty sobre el proceso (`posix_spawnp failed`), sin datos de la persona (assumed).
 
+### Grafito: te necesita (grafito-you, 11 nov 2026)
+
+- En Grafito el acento es para lo que pide a la persona; lo que solo trabaja va en gris.
+
+#### Alternatives that lost
+
+| Considered | Why it lost |
+|---|---|
+| Un ámbar para «te necesita» en Grafito | segundo acento; W72 lo prohíbe y Pau quiere uno |
+
+#### Decision log, answers as given (2026-11-11)
+- Q: (revisión del trabajo) `--run` también pinta el punto de aviso sin leer, la selección del buscador, el paso actual y «conectado» → A: `--run` sigue azul; un token nuevo `--working` solo para la etiqueta «trabajando» (gris en Grafito, igual que antes en Original).
+- Q: ¿Qué color cambia? → A: «trabajando» pasa al gris de los textos secundarios (`--sub`) y el único acento azul queda para «te necesita»: gris más un acento, como pidió Pau (assumed).
+
 ## Task breakdown
 
 - App shell: Electron main, preload bridge, renderer with sidebar / centre / right panel /
@@ -2889,3 +2915,8 @@ Textos por `t()`.
 - **W164** State-folder events (status) and activity-file events (activity) shall refresh 200 ms after the last event of a burst, and at least once per second while events keep coming.
   Proof: src/main/status.test.ts a burst of hook writes refreshes once
   Proof: src/main/activity.test.ts a burst of activity writes refreshes once
+
+### Grafito: te necesita (grafito-you, 11 nov 2026)
+
+- **W165** Where the palette is Grafito, in both themes, the «trabajando» label's `--working` shall be a neutral (OKLCH chroma below 0.03) while `--run` (unread dots, selection, current step) and `--you`/`--you-text` keep the accent, so a working row and a needs-you row never share a colour.
+  Proof: src/renderer/theme.test.ts grafito tells needs-you from working

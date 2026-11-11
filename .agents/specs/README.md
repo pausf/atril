@@ -373,5 +373,6 @@ Governs: `src/main/** src/preload/** src/renderer/** resources/** electron-build
 - {**W162** «Volver a intentar» shall ask to attach again with the terminal's current size; on `{ ok: true }` the problem goes, and on another error it is replaced by the new one. src/renderer/terminal.test.ts retrying}
 - {**W163** The status poll and `listWorkspaces` shall read tmux through one shared snapshot (`tmux list-panes -a` with session name, pane id and dead flag), taken at most once per second, so a status tick costs one tmux command whatever the number of works; creating, killing or respawning a session drops the snapshot, and decisions that act — sending a reply or keys, pausing, reopening — ask tmux directly instead. src/main/status.test.ts one}
 - {**W164** State-folder events (status) and activity-file events (activity) shall refresh 200 ms after the last event of a burst, and at least once per second while events keep coming. src/main/status.test.ts a}
+- {**W165** Where the palette is Grafito, in both themes, the «trabajando» label's `--working` shall be a neutral (OKLCH chroma below 0.03) while `--run` (unread dots, selection, current step) and `--you`/`--you-text` keep the accent, so a working row and a needs-you row never share a colour. src/renderer/theme.test.ts grafito}
 
 [full spec](workspaces/spec.md)
