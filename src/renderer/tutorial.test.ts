@@ -42,10 +42,10 @@ describe('tutorial', () => {
     await user.click(await screen.findByText('PF-1', { selector: '.ws-branch' }))
     await user.click(screen.getByRole('button', { name: 'Enséñamelo · 3 min' }))
 
-    // The 24 steps of «Pasos», in order.
+    // The 25 steps of «Pasos», in order.
     expect(STEPS.map((s) => s.target)).toEqual([
       'rail', 'next-up', 'new-work', 'workspaces', 'terminal', 'flow', 'stages', 'flow-checklist', 'flow-subagents', 'activity', 'tasks',
-      'start-mode', 'new-task', 'mr', 'mr-tools', 'avisos', 'libretto', 'doctor', 'palette', 'usage', 'session', 'connections', 'repos', 'appearance'
+      'start-mode', 'new-task', 'mr', 'mr-tools', 'avisos', 'libretto', 'qa', 'doctor', 'palette', 'usage', 'session', 'connections', 'repos', 'appearance'
     ])
     const NEVER = ['start-mode', 'palette']
     for (const [n, step] of STEPS.entries()) {

@@ -36,6 +36,7 @@ export function paletteItems(s: PaletteSources): PaletteItem[] {
     ['tasks', t('Tareas')],
     ['mr', t('MR')],
     ['libretto', t('Libretto')],
+    ['qa', t('QA')],
     ['avisos', t('Avisos')],
     ['settings', t('Ajustes')]
   ]

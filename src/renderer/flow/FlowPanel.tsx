@@ -4,7 +4,6 @@ import { useT, type T } from '../ui'
 import { ActivityFeed } from './ActivityFeed'
 import { Boxes } from './Boxes'
 import { Branches, type SubView } from './Branches'
-import { Qa } from './Qa'
 import { useSubagentView } from './Subagents'
 import { BUILDING, type BoxesState } from './useFlow'
 import { WARN_AT } from './warn'
@@ -74,7 +73,6 @@ export function FlowPanel({ workspaceId, flow, boxes, onBig, onOpenLibretto }: P
         ) : (
           <>
             <LibrettoFlow flow={flow} workspaceId={workspaceId} boxes={boxes} subs={subs} onBig={onBig} onOpenLibretto={onOpenLibretto} />
-            <Qa workspaceId={workspaceId} />
             {modal}
           </>
         )}

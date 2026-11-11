@@ -3,7 +3,7 @@ import { createElement } from 'react'
 import { act, cleanup, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { FlowBoxes, FlowStage, QaStatus, SubagentEntry, SubagentLine, UiState } from '../../preload/api'
+import type { FlowBoxes, FlowStage, QaStatus, SubagentEntry, SubagentLine } from '../../preload/api'
 import { App } from '../App'
 import { mockApi, mockSystemTheme, workspace } from '../mockApi'
 
@@ -147,37 +147,18 @@ describe('subagents', () => {
     expect(branch('Migrar').textContent).not.toContain('tarde')
   })
 
-  it('the panel sections fold and remember', async () => {
-    const stored: UiState = { tutorialSeen: true, theme: 'auto', folded: {} }
-    const data = { workspaces: [workspace('aaaaaaa1', 'PF-1', false)], states: { aaaaaaa1: 'working' as const }, flow: { stage: 'construir', change: 'add-x', others: [] } as FlowStage, qa: { aaaaaaa1: { kind: 'web', live: false, shots: [] } as QaStatus } }
-    const open = async () => {
-      const user = userEvent.setup()
-      const view = render(createElement(App))
-      await user.click(await screen.findByRole('button', { name: /^PF-1/ }))
-      await screen.findByRole('button', { name: /^QA\s*0$/ })
-      return { user, view }
-    }
-    const api = mockApi(data, stored)
-    const { user, view } = await open()
-    const title = () => screen.getByRole('button', { name: /^QA/ })
+  it('the panel has no foldable sections', async () => {
+    mockApi({ workspaces: [workspace('aaaaaaa1', 'PF-1', false)], states: { aaaaaaa1: 'working' }, flow: { stage: 'construir', change: 'add-x', others: [] } as FlowStage, qa: { aaaaaaa1: { kind: 'web', live: false, shots: [] } as QaStatus } })
+    const user = userEvent.setup()
+    render(createElement(App))
+    await user.click(await screen.findByRole('button', { name: /^PF-1/ }))
+    await screen.findByText('add-x')
+    const panel = document.querySelector<HTMLElement>('aside.right')!
 
-    // QA is the only foldable section, and starts open.
-    expect(within(document.querySelector<HTMLElement>('aside.right')!).getAllByRole('button', { expanded: true })).toEqual([title()])
-    expect(screen.queryByRole('button', { name: /^Subagentes/ })).toBeNull()
-    expect(title().getAttribute('aria-expanded')).toBe('true')
-
-    // Folding hides the body and keeps the count in the title.
-    await user.click(title())
-    expect(title().getAttribute('aria-expanded')).toBe('false')
-    expect(screen.queryByRole('button', { name: 'Probar en vivo' })).toBeNull()
-    expect(api.ui.set).toHaveBeenLastCalledWith({ folded: { 'flow-qa': true } })
-    expect(stored.folded).toEqual({ 'flow-qa': true })
-
-    // Mounted again, it comes back as it was left.
-    view.unmount()
-    mockApi(data, stored)
-    await open()
-    expect(title().getAttribute('aria-expanded')).toBe('false')
+    // No title in the panel is a button that folds: nothing carries aria-expanded, and QA is not there.
+    expect(panel.querySelector('[aria-expanded]')).toBeNull()
+    expect(within(panel).queryByRole('button', { name: /^QA/ })).toBeNull()
+    expect(within(panel).queryByRole('button', { name: /^Subagentes/ })).toBeNull()
   })
 
   it('a subagent opens as a terminal', async () => {

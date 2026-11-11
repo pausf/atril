@@ -2431,14 +2431,6 @@ kbd {
 }
 
 /* A box's files and diff in the Libretto panel (F36–F38). */
-.flow-fold {
-  border-top: 1px solid var(--line);
-  padding-top: 2px;
-  margin: 2px 0 0;
-}
-.flow-fold .fold-h {
-  margin-bottom: 0;
-}
 .fmore {
   border: 0;
   background: none;
@@ -3036,7 +3028,7 @@ kbd {
   padding: 0 14px 12px;
 }
 
-/* F33: the QA section's screenshots, two per row, and one large in its modal. */
+/* W113: «Todas las capturas», and one large in its modal. */
 .qa-err {
   margin: 4px 0 6px;
   padding: 7px 10px;
@@ -3050,7 +3042,7 @@ kbd {
   margin: 6px 0 0;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 6px;
 }
 .qa-shots button {
@@ -3336,4 +3328,289 @@ button.fx-bt {
 }
 .fx-mh .lnk {
   white-space: nowrap;
+}
+
+/* W113: the QA screen. Own qa-* classes: the global .seg, .bar, .back and .n leak into whatever reuses them. */
+.qa-cards {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 16px 0 18px;
+}
+.qa-card {
+  font: inherit;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  background: var(--card);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  padding: 8px 14px;
+  cursor: pointer;
+  min-width: 170px;
+}
+.qa-card b {
+  font-size: 13px;
+}
+.qa-card span {
+  font-size: 12px;
+  color: var(--sub);
+}
+.qa-card[aria-pressed='true'] {
+  border-color: var(--text);
+}
+.qa-card.off {
+  opacity: 0.6;
+}
+.qa-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.qa-grow {
+  flex: 1;
+  min-width: 0;
+}
+.qa-grow b {
+  display: block;
+  font-size: 14px;
+}
+.qa-grow span {
+  font-size: 12.5px;
+  color: var(--sub);
+}
+.qa-live {
+  font-size: 12px;
+  color: var(--run-text);
+}
+.qa-sum {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 12px;
+}
+.qa-sum i {
+  font-style: normal;
+  color: var(--faint);
+}
+.qa-tag {
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 999px;
+  padding: 1px 9px;
+  background: var(--chip);
+  color: var(--sub);
+}
+.qa-tag.pass {
+  background: var(--ok-bg);
+  color: var(--text);
+  box-shadow: inset 0 0 0 1px var(--ok-line);
+}
+.qa-tag.fail {
+  background: var(--bad-bg);
+  color: var(--bad-text);
+}
+.qa-tag.run {
+  background: var(--mode-bg);
+  color: var(--mode-text);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.qa-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--run);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .qa-dot {
+    animation: qa-pulse 1s ease-in-out infinite;
+  }
+}
+@keyframes qa-pulse {
+  50% {
+    opacity: 0.25;
+  }
+}
+.qa-crits {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.qa-crit {
+  border: 1px solid var(--line);
+  background: var(--card);
+  border-radius: 10px;
+  padding: 10px 12px;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 4px 10px;
+  align-items: start;
+  font-size: 13px;
+}
+.qa-id {
+  font: 600 12px ui-monospace, Menlo, monospace;
+  color: var(--sub);
+}
+.qa-ev {
+  grid-column: 2 / 4;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 12px;
+  color: var(--sub);
+}
+.qa-sp {
+  flex: 1;
+}
+.qa-ev .btn {
+  flex: none;
+  white-space: nowrap;
+}
+.qa-note {
+  min-width: 0;
+}
+.qa-thumb {
+  flex: none;
+  width: 84px;
+  height: 52px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--chip);
+  overflow: hidden;
+  cursor: zoom-in;
+}
+.qa-thumb.bad {
+  border-color: var(--bad);
+}
+.qa-thumb img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top;
+}
+.qa-all h2 {
+  margin: 22px 0 8px;
+  font-size: 14px;
+}
+.dlg.qa-dlg {
+  width: 640px;
+  max-width: 92%;
+  max-height: 90%;
+  overflow: auto;
+  padding: 22px 24px;
+  outline: 0;
+}
+.qa-dhead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: space-between;
+}
+.qa-dhead h3 {
+  margin: 0;
+}
+.qa-sub {
+  margin: 2px 0 14px;
+  font-size: 13px;
+  color: var(--sub);
+}
+.qa-film {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.qa-fr {
+  flex: 0 0 120px;
+  aspect-ratio: 16 / 10;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--chip);
+  padding: 0;
+  overflow: hidden;
+  cursor: pointer;
+}
+.qa-fr img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top;
+}
+.qa-fr.on {
+  border-color: var(--text);
+  box-shadow: inset 0 0 0 1px var(--text);
+}
+.qa-fr.bad {
+  border-color: var(--bad);
+  box-shadow: inset 0 0 0 1px var(--bad);
+}
+.qa-stage {
+  aspect-ratio: 16 / 8;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--chip);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  font-size: 12.5px;
+  color: var(--sub);
+}
+.qa-stage.bad {
+  border-color: var(--bad);
+}
+.qa-stage img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+.qa-acts {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+}
+.qa-acts button {
+  display: grid;
+  grid-template-columns: 22px 1fr auto;
+  gap: 8px;
+  width: 100%;
+  text-align: left;
+  border: 0;
+  background: none;
+  border-radius: 8px;
+  padding: 5px 8px;
+  font: inherit;
+  font-size: 12.5px;
+  color: var(--text);
+  cursor: pointer;
+}
+.qa-acts button:hover {
+  background: var(--hover);
+}
+.qa-acts button.on {
+  background: var(--chip);
+}
+.qa-acts button.bad,
+.qa-acts button.bad .qa-n,
+.qa-acts button.bad .qa-d {
+  color: var(--bad-text);
+}
+.qa-n,
+.qa-d {
+  color: var(--sub);
+  font-variant-numeric: tabular-nums;
+}
+.qa-flag {
+  font-weight: 600;
 }

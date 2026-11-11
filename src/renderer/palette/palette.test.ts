@@ -77,6 +77,7 @@ describe('command palette', () => {
       'Tareas',
       'MR',
       'Libretto',
+      'QA',
       'Avisos',
       'Ajustes',
       'Nuevo trabajo',
@@ -110,9 +111,9 @@ describe('command palette', () => {
     render(createElement(App))
     await vi.waitFor(() => expect(many.mrApi.list).toHaveBeenCalled())
     act(() => many.menu({ kind: 'palette' }))
-    await vi.waitFor(() => expect(labels()).toContain('PF-138 Tarea 38'))
+    await vi.waitFor(() => expect(labels()).toContain('PF-137 Tarea 37'))
     expect(labels()).toHaveLength(50)
-    expect(labels()).not.toContain('PF-139 Tarea 39')
+    expect(labels()).not.toContain('PF-138 Tarea 38')
     await user.type(box(), 'tarea')
     expect(labels()).toHaveLength(50)
     expect(labels().slice(0, 3)).toEqual(['Tareas', 'Nueva tarea', 'PF-100 Tarea 0'])

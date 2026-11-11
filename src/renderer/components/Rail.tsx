@@ -1,7 +1,7 @@
 import { useT } from '../ui'
 import { Icon, type IconName } from './Icon'
 
-export type Screen = 'work' | 'tasks' | 'mr' | 'libretto' | 'avisos' | 'settings'
+export type Screen = 'work' | 'tasks' | 'mr' | 'libretto' | 'qa' | 'avisos' | 'settings'
 
 /** `reviews`: MRs waiting for your review in the latest load (M9); `unread`: unread notices. Each shown when not zero. */
 export function Rail({ screen, onChange, reviews = 0, unread = 0 }: { screen: Screen; onChange: (s: Screen) => void; reviews?: number; unread?: number }) {
@@ -11,6 +11,7 @@ export function Rail({ screen, onChange, reviews = 0, unread = 0 }: { screen: Sc
     { id: 'tasks', icon: 'tasks', label: t('Tareas') },
     { id: 'mr', icon: 'mr', label: t('MR') },
     { id: 'libretto', icon: 'libretto', label: t('Libretto') },
+    { id: 'qa', icon: 'qa', label: t('QA') },
     { id: 'avisos', icon: 'avisos', label: t('Avisos') },
     { id: 'settings', icon: 'settings', label: t('Ajustes') }
   ]
