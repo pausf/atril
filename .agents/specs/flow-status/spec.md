@@ -444,10 +444,8 @@ Aterrizado**.
 
 ### Coste por trabajo (cost-per-work, 10 nov 2026)
 
-- **F34** While the selected workspace has a non-zero total (W93), the Libretto panel shall show, under «Cambio»,
-  the same «≈ {coste} $ · {tokens} tokens» line as W94 with «estimado a precio de API».
-  Proof: src/renderer/flow/cost.test.ts the panel shows the work's estimated cost
-
+- **F34** The Libretto panel shall show no text with «$», «≈» or «tokens» for the selected workspace.
+  Proof: src/renderer/flow/cost.test.ts the panel shows no cost
 ### Tarjeta de pregunta (ask-card, 10 nov 2026)
 
 - **F35** While the flow state's `others` is not empty, the panel shall show «{n} cambios más en este repo» (n its

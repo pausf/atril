@@ -233,6 +233,10 @@ textos, en «Pasos» abajo. Los que tienen elemento en pantalla lo iluminan; los
 
 - Una idea en cola se puede corregir, quitar o mandar a Jira sin abrir archivos, y cada idea enseña de qué va.
 
+### Cabecera tranquila (quiet-header, 11 nov 2026)
+
+- La cabecera de un trabajo se lee de un vistazo y Atril no enseña dinero ni tokens.
+
 ## Scope boundaries
 
 **In:** the three columns and footer of `bocetos/fase1-nucleo.html` (boceto 8), the
@@ -472,6 +476,12 @@ pulsar; textos por `t()`; teclado; una petición vacía no se encola.
 **Out:** que la IA proponga ideas (`agent-suggestions`); editar cambios en curso; elegir proyecto o tipo en Jira.
 **Never scoped out:** cada commit toca solo la ruta de esa idea; borrar pide confirmación; el token de Jira no sale de
 main; si Jira falla no se borra nada; teclado; textos por `t()`.
+
+### Cabecera tranquila (quiet-header, 11 nov 2026)
+
+**In:** la cabecera en Uno y en Todos, quitar el coste de las cuatro vistas.
+**Out:** borrar el cálculo de coste; cambiar el menú o el atajo del foco.
+**Never scoped out:** teclado y nombre accesible del botón de icono; textos por `t()`; tokens de color.
 
 ## Constraints
 
@@ -1549,6 +1559,37 @@ Textos por `t()`.
   fecha dentro de la línea de la idea y las acciones en gris siempre visibles; columna de 760 px como máximo
   (assumed).
 
+### Cabecera tranquila (quiet-header, 11 nov 2026)
+
+- Coste oculto, cálculo conservado (assumed, 11 nov).
+- Foco también como botón de icono en la cabecera (assumed, 11 nov).
+
+#### Alternatives that lost
+
+| Considered | Why it lost |
+|---|---|
+| un ajuste «enseñar coste» | Pau dijo que no le interesa; un ajuste para nadie es código para nadie |
+| borrar también el cálculo | más diff y W95 lo guarda; se borra si nadie lo echa de menos |
+
+#### Decision log, answers as given (2026-11-11)
+- Q: ¿Cómo queda la cabecera? → A: la del boceto 10: arriba pequeño «{repo} · {agente}»; debajo la rama y, a su lado,
+  el estado como texto con su icono (el mismo de la fila, sin pastilla); a la derecha, juntos y centrados, «Uno |
+  Todos» y un botón redondo solo con icono «Modo foco» (título «Modo foco (⌘⇧F)») que hace lo mismo que el menú (assumed).
+- Q: ¿Coste? → A: fuera de la vista en todas partes: fila (título), tarjeta de «Todos», panel de Libretto y
+  «Terminados». El cálculo de main (W93) y el total en el historial (W95) se quedan: no se ven y no cuestan una
+  llamada (assumed). Ceiling: si nadie lo pide en un mes, borrar W93 y `cost.ts`.
+
+- Q: ¿Qué estado y de dónde? → A: el mismo texto e icono que la fila de la lista (`LABEL[state]` de
+  `WorkspaceList`), solo en «Uno». En «Todos» la cabecera dice «Todos los agentes» y no hay estado único (assumed).
+- Q: ¿El botón en «Todos»? → A: no sale; en «Uno» sale siempre, y sin trabajo elegido está desactivado como el menú
+  (assumed).
+- Q: ¿Nombre al estar en foco? → A: siempre «Modo foco», con `aria-pressed` verdadero mientras está activo (assumed).
+- Q: ¿Tests de coste? → A: los casos se renombran a lo que prueban ahora y el `Proof:` los nombra; cada vista se
+  prueba aparte, buscando que no haya «$», «≈» ni «tokens» (assumed). `cost.ts` del renderer se borra si nada fuera de
+  sus tests lo usa (assumed).
+- Q: ¿El historial dice «Coste: la forma corta de W94»? → A: queda superado por W96 enmendado; el total sigue en el
+  archivo (W95) sin enseñarse (assumed).
+
 ## Task breakdown
 
 - App shell: Electron main, preload bridge, renderer with sidebar / centre / right panel /
@@ -2110,12 +2151,8 @@ Textos por `t()`.
   JSON or lack usage are skipped, and a line without `message.id` counts once; a later read covers only the bytes
   appended since the previous one. One test holds a case per clause.
   Proof: src/main/cost.test.ts usage is totalled once per message and priced by model
-- **W94** A workspace's card and its row's title shall show «≈ {coste} $ · {tokens} tokens» with «estimado a
-  precio de API» — cost as «≈ 0,42 $», or «< 0,01 $» without «≈» under a cent, tokens as «850», «12,3 k» or «1,2 M», plus «(sin precio para
-  {modelo})» when a model is unpriced — updated when main pushes a change, and nothing when the total is 0
-  tokens or there is no transcript. One test holds a case per clause.
-  Proof: src/renderer/cost.test.ts each workspace shows its estimated cost
-
+- **W94** A workspace's row title and its «Todos» card shall show no text with «$», «≈» or «tokens».
+  Proof: src/renderer/cost.test.ts no workspace shows a cost
 ### Historial (work-history, 10 nov 2026)
 
 - **W95** Atril shall record `createdAt` (epoch seconds) on every new workspace record, and when a workspace is
@@ -2125,13 +2162,11 @@ Textos por `t()`.
   removal, the line appended only after it succeeds, a failed removal appending nothing and a failed append not
   failing the removal; review sessions shall append nothing. One test holds a case per clause.
   Proof: src/main/history.test.ts a removed workspace leaves one history line
-- **W96** While history has lines, Trabajo shall show a «Terminados» section, folded by default (W28), its count
-  the number of lines, with the 20 newest, each with its branch, repo, stage, «duró» as «< 1 min» / «{m} min» /
-  «{h} h {m} min» / «{d} d {h} h» when `createdAt` is known, W94's short cost «≈ {coste} $ · {tokens} tokens»
-  when non-zero, and «hoy» or «hace {n} d» by calendar day; it shall update when main pushes a new line. One test
-  holds a case per clause.
+- **W96** While history has lines, Trabajo shall show a «Terminados» section, folded by default (W28),
+  its count the number of lines, with the 20 newest, each with its branch, repo, stage, «duró» as «< 1 min» /
+  «{m} min» / «{h} h {m} min» / «{d} d {h} h» when `createdAt` is known, no text with «$», «≈» or «tokens», and «hoy»
+  or «hace {n} d» by calendar day; it shall update when main pushes a new line. One test holds a case per clause.
   Proof: src/renderer/history.test.ts finished works show in their own section
-
 ### Primeros pasos (first-run-setup, 10 nov 2026)
 
 - **W97** While Trabajo has no workspace record (stopped ones included), the history (W96) is empty, `setupDismissed` is not set and the
@@ -2224,3 +2259,12 @@ Textos por `t()`.
   curso», «sin Libretto»), the picked one pressed, instead of a select; a one-line «Apunta una idea…» box with
   «Encolar» above the queue; and «En cola» and «En curso» with their counts.
   Proof: src/renderer/libretto.test.ts the Libretto screen shows each repo with its counts
+
+### Cabecera tranquila (quiet-header, 11 nov 2026)
+
+- **W112** While «Uno» shows a workspace, the work header shall show «{repo} · {agent}» above the branch, beside the
+  branch the same state label and icon as its row in the list (no pill), and to the right one group with the
+  Uno/Todos switch and an icon button named «Modo foco», titled «Modo foco (⌘⇧F)», `aria-pressed` while focus is on,
+  that turns focus on and off as the menu item does (W77), disabled while no workspace is selected; «Todos» shall not
+  show that button. One test holds a case per clause.
+  Proof: src/renderer/focus.test.ts the work header shows the state and a focus button
