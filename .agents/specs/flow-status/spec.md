@@ -515,9 +515,8 @@ Aterrizado**.
   empty — where Spec and Plan are buttons as F13 makes them; and while F25's total applies, its warning line at the
   top of the panel. The Libretto panel shall not show the stages.
   Proof: src/renderer/flow/panel.test.ts the steps show as six named segments above the work
-- **F30** The Libretto panel's only foldable section shall be QA (F33), whose title is a button with
-  `aria-expanded` that folds and unfolds it and keeps its folded state when the panel is mounted again, starting open.
-  Proof: src/renderer/flow/subagents.test.ts the panel sections fold and remember
+- **F30** The Libretto panel shall have no foldable sections.
+  Proof: src/renderer/flow/subagents.test.ts the panel has no foldable sections
 - **F31** The Libretto panel shall show no list of the branch's files and no «+{n} más» files button.
   Proof: src/renderer/flow/changes.test.ts the panel shows no list of changes
 ### Documentos a la vista (show-doc-buttons, 10 nov 2026)
@@ -528,13 +527,8 @@ Aterrizado**.
   Proof: src/renderer/flow/panel.test.ts the documents read as buttons next to the change
 ### QA en vivo (add-qa-lab, 10 nov 2026)
 
-- **F33** While the selected workspace is classified (W83), the Libretto panel shall show a «QA» section
-  with «Probar en vivo», or «Detener QA» while its QA pane lives, and its screenshots newest first —
-  asked from main as `qa.status(id)` every 3 seconds while the section shows, received as data URLs (the
-  12 newest, each at most 2 MB) — each opening large on press; for an unclassified workspace no section
-  shall show. One test holds a case per clause.
-  Proof: src/renderer/flow/qa.test.ts the qa section shows the button and the screenshots
-
+- **F33** The Libretto panel shall show no QA section; QA lives in its own screen (W113).
+  Proof: src/renderer/flow/qa.test.ts the panel shows no qa section
 ### Coste por trabajo (cost-per-work, 10 nov 2026)
 
 - **F34** The Libretto panel shall show no text with «$», «≈» or «tokens» for the selected workspace.
