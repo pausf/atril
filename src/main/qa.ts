@@ -7,7 +7,7 @@ import { agentArgv } from './agent'
 import { readCriteria } from './qa-criteria'
 import { t } from './lang'
 import { atrilHome } from './paths'
-import type { QaKind, QaPlatform, QaResult, QaShot, QaStatus, QaTarget } from '../preload/api'
+import type { QaFix, QaKind, QaLaunchResult, QaPlatform, QaResult, QaShot, QaStatus, QaTarget } from '../preload/api'
 import type { Runner } from './run'
 import { hasPane, killPane, splitCommand } from './tmux'
 import { qaTargets } from './qa-targets'
@@ -235,23 +235,57 @@ export async function qaLive(id: string, run: Runner): Promise<boolean> {
 // Two presses at once both find no pane yet: the first one holds the workspace until its pane is kept.
 const starting = new Set<string>()
 
+const fail = (what: string, cant: string, fix: QaFix, detail: string): QaLaunchResult => ({ error: what, problem: { what, cant, fix, detail } })
+
+/** W125: the first problem in this order stops the launch, before anything starts. */
+async function problemOf(target: QaTarget, run: Runner): Promise<{ problem: QaLaunchResult } | { emulator: string | null }> {
+  const { missing, emulator } = await tools(target.platform, run)
+  const detail = t('Falta: {tools}', { tools: missing.join(', ') })
+  if (missing.includes('node')) return { problem: fail(t('Falta Node'), t('No puedes probar en vivo: las herramientas de QA corren con Node'), 'install-node', detail) }
+  if (missing.length > 0 && target.platform === 'android') return { problem: fail(t('Falta el SDK de Android'), t('No puedes probar en Android'), 'install-android-studio', detail) }
+  if (missing.length > 0) return { problem: fail(t('Tu Xcode no trae su MCP'), t('No puedes probar en iOS: hace falta Xcode 26.3 o posterior'), 'update-xcode', detail) }
+  return { emulator }
+}
+
 /** `request`: W116's ask, appended to the prompt when a retest has to start QA. `key`: the target; the repo's chosen one when absent. */
-export async function launchQa(id: string, run: Runner, request?: string, key?: string): Promise<QaResult> {
+export async function launchQa(id: string, run: Runner, request?: string, key?: string): Promise<QaLaunchResult> {
   const ws = (await readRecords()).find((r) => r.id === id && r.mode !== 'review')
   if (!ws) return { error: t('Ese trabajo ya no existe') }
   const listed = await qaTargets(id)
   const target = listed?.targets.find((x) => x.key === (key ?? listed.chosen))
-  if (!target) return { error: key === undefined ? t('Atril no sabe probar en vivo este proyecto') : t('Ese objetivo no existe') }
+  if (!target && key !== undefined) return { error: t('Ese objetivo no existe') }
+  if (!target)
+    return fail(
+      t('No sé cómo abrir este proyecto'),
+      t('No puedes probarlo en vivo hasta que elijas cómo abrirlo'),
+      'pick-manual',
+      t('Busqué package.json con dev, start o preview, app.json de Expo, pubspec.yaml, settings.gradle, .xcodeproj o Package.swift, en la raíz y dos niveles')
+    )
   if (starting.has(id)) return { error: t('Ya hay un QA en marcha en este trabajo') }
   starting.add(id)
   try {
     if (await qaLive(id, run)) return { error: t('Ya hay un QA en marcha en este trabajo') }
-    const { missing, emulator } = await tools(target.platform, run)
-    if (missing.length > 0) return { error: t('Para probar en vivo falta: {tools}', { tools: missing.join(', ') }) }
+    const checked = await problemOf(target, run)
+    if ('problem' in checked) return checked.problem
     let device: QaDevice | null = null
     if (target.platform === 'android' || target.platform === 'ios') {
-      device = await reserve(id, await listDevices(target.platform, emulator, run), run)
-      if (!device) return { error: target.platform === 'android' ? t('Todos los emuladores están ocupados por otro QA') : t('Todos los simuladores están ocupados por otro QA') }
+      const android = target.platform === 'android'
+      const list = await listDevices(target.platform, checked.emulator, run)
+      if (list.length === 0)
+        return android
+          ? fail(t('No tienes ningún emulador de Android'), t('No puedes probar en Android hasta que crees uno'), 'create-avd', t('emulator -list-avds no devolvió ninguno'))
+          : fail(t('No hay ningún simulador de iPhone'), t('No puedes probar en iOS hasta que tengas uno'), 'open-xcode', t('xcrun simctl list devices available no trajo ningún iPhone'))
+      device = await reserve(id, list, run)
+      if (!device) {
+        const by = (await readHolds())[list[0]!.id]
+        const branch = (await readRecords()).find((r) => r.id === by)?.branch ?? by ?? ''
+        return fail(
+          android ? t('Todos los emuladores están ocupados por otro QA') : t('Todos los simuladores están ocupados por otro QA'),
+          t('No puedes probar este trabajo hasta que otro QA termine'),
+          'open-workspace',
+          t('{device} lo usa {branch}', { device: list[0]!.name, branch })
+        )
+      }
     }
     const shots = shotsDir(id)
     await mkdir(shots, { recursive: true })
@@ -266,6 +300,20 @@ export async function launchQa(id: string, run: Runner, request?: string, key?: 
   } finally {
     starting.delete(id)
   }
+}
+
+/** W125: «Ver el otro QA» opens the workspace whose live QA holds the first of the person's devices. */
+export async function deviceHolder(id: string, run: Runner): Promise<string | null> {
+  const listed = await qaTargets(id)
+  const target = listed?.targets.find((x) => x.key === listed.chosen)
+  if (!target || (target.platform !== 'android' && target.platform !== 'ios')) return null
+  const list = await listDevices(target.platform, target.platform === 'android' ? await which('emulator', run) : null, run)
+  const held = await readHolds()
+  for (const d of list) {
+    const by = held[d.id]
+    if (by && by !== id && /^[\w-]+$/.test(by) && (await qaLive(by, run))) return by
+  }
+  return null
 }
 
 /** Kills only the QA pane and frees its device; its MCP file and screenshots stay. */

@@ -6,6 +6,7 @@ import { createCost } from './cost'
 import { readHistory } from './history'
 import { launchQa, qaStatus, stopQa } from './qa'
 import { qaBug, qaReport, qaRetest } from './qa-report'
+import { runFix } from './qa-fix'
 import { addManual, chooseTarget, removeManual } from './qa-targets'
 import { createAvisos } from './avisos'
 import { agentState, answerAgent, createStatus, pauseAgent, replyGone, replyPlaceholder, replyToAgent, resumeAgent, quickReplies } from './status'
@@ -511,6 +512,7 @@ app.whenReady().then(async () => {
   ipcMain.handle('atril:qa:choose', (_e, id: unknown, key: unknown) => chooseTarget(String(id), key))
   ipcMain.handle('atril:qa:manual', (_e, id: unknown, req: unknown) => addManual(String(id), req))
   ipcMain.handle('atril:qa:unmanual', (_e, id: unknown, key: unknown) => removeManual(String(id), key))
+  ipcMain.handle('atril:qa:fix', (_e, id: unknown, fix: unknown) => runFix(String(id), fix, { run, open: (url) => shell.openExternal(url) }))
   ipcMain.handle('atril:qa:retest', (_e, id: unknown, criterion: unknown) => qaRetest(String(id), typeof criterion === 'string' ? criterion : null, run))
   ipcMain.handle('atril:qa:bug', async (_e, id: unknown, req: QaBugRequest) =>
     qaBug(String(id), req, { run, creds: await savedJira(), board: (await secretStore.hasSecret('jira')).board ?? null })

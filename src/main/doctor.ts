@@ -33,11 +33,16 @@ export function doctor(run: Runner): Promise<DoctorReport> {
 
 export const quoteAppleScript = (c: string): string => c.replace(/\\/g, '\\\\').replace(/"/g, '\\"')
 
+/** Opens Terminal running `command`; callers pass only fixed commands. */
+export async function inTerminal(command: string, run: Runner): Promise<{ ok: true } | { error: string }> {
+  const r = await run('osascript', ['-e', 'tell application "Terminal" to activate', '-e', `tell application "Terminal" to do script "${quoteAppleScript(command)}"`])
+  if (r.code === 0) return { ok: true }
+  return { error: r.stderr.trim().split('\n')[0] || t('{args} falló con código {code}', { args: 'osascript', code: r.code }) }
+}
+
 /** Only names in TOOLS reach osascript: the window never sends a command (W21). */
 export async function installTool(tool: unknown, run: Runner): Promise<{ ok: true } | { error: string }> {
   const found = TOOLS.find((x) => x.tool === tool)
   if (!found) return { error: t('herramienta desconocida: {tool}', { tool: String(tool) }) }
-  const r = await run('osascript', ['-e', 'tell application "Terminal" to activate', '-e', `tell application "Terminal" to do script "${quoteAppleScript(found.install)}"`])
-  if (r.code === 0) return { ok: true }
-  return { error: r.stderr.trim().split('\n')[0] || t('{args} falló con código {code}', { args: 'osascript', code: r.code }) }
+  return inTerminal(found.install, run)
 }

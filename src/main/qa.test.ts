@@ -1,8 +1,10 @@
-import { existsSync, mkdirSync, readFileSync, symlinkSync, utimesSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, symlinkSync, utimesSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { resourcesDir } from './paths'
 import { detectQa, launchQa, qaLive, qaStatus, stopQa } from './qa'
+import { runFix } from './qa-fix'
 import type { Runner } from './run'
 import { cleanTmp, tmp } from './test-helpers'
 
@@ -239,6 +241,86 @@ describe('launchQa', () => {
     expect('error' in lost && lost.error).toBe('Todos los emuladores están ocupados por otro QA')
     const winner = race[0] && 'ok' in race[0] ? 'dev00002' : 'dev00004'
     expect(devices()).toEqual({ Pixel_8: winner, 'UDID-17': 'ios00001', 'UDID-17P': 'ios00002' })
+  })
+  it('every launch problem comes with its fix', async () => {
+    // No SDK anywhere: this machine's own ~/Library/Android/sdk must not count.
+    const realHome = process.env['HOME']
+    process.env['HOME'] = mkdtempSync(join(tmpdir(), 'atril-nohome-'))
+    const sdkEnv = [process.env['ANDROID_HOME'], process.env['ANDROID_SDK_ROOT']]
+    delete process.env['ANDROID_HOME']
+    delete process.env['ANDROID_SDK_ROOT']
+    try {
+      seed(rec('prb00001', project({ 'README.md': 'x' })), rec('prb00002', android()), rec('prb00003', ios()), rec('prb00004', android()), rec('prb00005', project({ 'package.json': pkg({ scripts: ['dev'] }) })))
+      const f = fake()
+      const problem = async (id: string): Promise<unknown> => {
+        const r = await launchQa(id, f.run)
+        expect(r).toHaveProperty('error')
+        return 'problem' in r ? r.problem : null
+      }
+      const PICK = 'Busqué package.json con dev, start o preview, app.json de Expo, pubspec.yaml, settings.gradle, .xcodeproj o Package.swift, en la raíz y dos niveles'
+
+      // No target: «Elegir a mano», which the window handles alone.
+      expect(await problem('prb00001')).toEqual({ what: 'No sé cómo abrir este proyecto', cant: 'No puedes probarlo en vivo hasta que elijas cómo abrirlo', fix: 'pick-manual', detail: PICK })
+
+      // No node comes first, and every missing tool is named in the detail.
+      f.missing = new Set(['node', 'adb', 'emulator'])
+      expect(await problem('prb00002')).toEqual({ what: 'Falta Node', cant: 'No puedes probar en vivo: las herramientas de QA corren con Node', fix: 'install-node', detail: 'Falta: node, adb, emulator' })
+      f.missing = new Set(['node'])
+      expect(await problem('prb00005')).toMatchObject({ fix: 'install-node', detail: 'Falta: node' })
+
+      // Android: no adb or emulator, then no AVD.
+      f.missing = new Set(['emulator'])
+      expect(await problem('prb00002')).toEqual({ what: 'Falta el SDK de Android', cant: 'No puedes probar en Android', fix: 'install-android-studio', detail: 'Falta: emulator' })
+      f.missing = new Set()
+      f.avds = ''
+      expect(await problem('prb00002')).toEqual({ what: 'No tienes ningún emulador de Android', cant: 'No puedes probar en Android hasta que crees uno', fix: 'create-avd', detail: 'emulator -list-avds no devolvió ninguno' })
+
+      // iOS: no xcrun or no mcpbridge, then no iPhone simulator.
+      f.missing = new Set(['xcrun'])
+      expect(await problem('prb00003')).toEqual({ what: 'Tu Xcode no trae su MCP', cant: 'No puedes probar en iOS: hace falta Xcode 26.3 o posterior', fix: 'update-xcode', detail: 'Falta: xcrun' })
+      f.missing = new Set(['mcpbridge'])
+      expect(await problem('prb00003')).toMatchObject({ fix: 'update-xcode', detail: 'Falta: mcpbridge' })
+      f.missing = new Set()
+      f.sims = JSON.stringify({ devices: { 'com.apple.CoreSimulator.SimRuntime.iOS-26-0': [{ name: 'iPad Air', udid: 'IPAD-2' }] } })
+      expect(await problem('prb00003')).toEqual({ what: 'No hay ningún simulador de iPhone', cant: 'No puedes probar en iOS hasta que tengas uno', fix: 'open-xcode', detail: 'xcrun simctl list devices available no trajo ningún iPhone' })
+
+      // Every device held: «Ver el otro QA».
+      f.avds = 'Pixel_8\n'
+      expect(await launchQa('prb00004', f.run)).toEqual({ ok: true })
+      expect(await problem('prb00002')).toEqual({ what: 'Todos los emuladores están ocupados por otro QA', cant: 'No puedes probar este trabajo hasta que otro QA termine', fix: 'open-workspace', detail: 'Pixel_8 lo usa feat/prb00004' })
+
+      // Nothing started for any problem: the one split is prb00004's.
+      expect(f.splits).toHaveLength(1)
+      expect(existsSync(join(home, 'qa', 'prb00002.mcp.json'))).toBe(false)
+
+      // The fixes: main knows each name and does the fixed thing; the window only sends the name.
+      const opened: string[] = []
+      const deps = { run: f.run, open: async (url: string) => void opened.push(url) }
+      const terminal = (): string[] => f.calls.filter((c) => c[0] === 'osascript').map((c) => c.at(-1)!)
+      expect(await runFix('prb00002', 'install-node', deps)).toEqual({ ok: true })
+      expect(terminal().at(-1)).toBe('tell application "Terminal" to do script "brew install node"')
+      expect(await runFix('prb00002', 'create-avd', deps)).toEqual({ ok: true })
+      expect(terminal().at(-1)).toBe(
+        'tell application "Terminal" to do script "sdkmanager \\"system-images;android-35;google_apis;arm64-v8a\\" && avdmanager create avd -n Pixel_8 -k \\"system-images;android-35;google_apis;arm64-v8a\\" -d pixel_8"'
+      )
+      expect(await runFix('prb00002', 'install-android-studio', deps)).toEqual({ ok: true })
+      expect(await runFix('prb00003', 'update-xcode', deps)).toEqual({ ok: true })
+      expect(opened).toEqual(['https://developer.android.com/studio', 'macappstore://apps.apple.com/app/id497799835'])
+      expect(await runFix('prb00003', 'open-xcode', deps)).toEqual({ ok: true })
+      expect(f.calls.at(-1)).toEqual(['open', '-a', 'Xcode'])
+      expect(await runFix('prb00002', 'open-workspace', deps)).toEqual({ ok: true, open: 'prb00004' })
+
+      // A name main does not know is refused, «Elegir a mano» included, and so is a workspace that is not there.
+      const calls = f.calls.length
+      for (const name of ['pick-manual', 'rm -rf /', 'https://evil.example', '', 42, null]) expect(await runFix('prb00002', name, deps)).toHaveProperty('error')
+      expect(await runFix('nobody00', 'install-node', deps)).toHaveProperty('error')
+      expect(f.calls).toHaveLength(calls)
+      expect(opened).toHaveLength(2)
+    } finally {
+      process.env['HOME'] = realHome
+      if (sdkEnv[0]) process.env['ANDROID_HOME'] = sdkEnv[0]
+      if (sdkEnv[1]) process.env['ANDROID_SDK_ROOT'] = sdkEnv[1]
+    }
   })
   it('qa status sends the newest screenshots as data urls', async () => {
     const web = project({ 'package.json': pkg({ scripts: ['dev'] }) })

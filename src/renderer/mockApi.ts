@@ -296,7 +296,8 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
       bug: vi.fn(async (): Promise<QaBugResult> => o.qaBug ?? { key: 'QA-1' }),
       choose: vi.fn(async () => ({ targets: [], chosen: null, note: null })),
       manual: vi.fn(async () => ({ targets: [], chosen: null, note: null })),
-      unmanual: vi.fn(async () => ({ targets: [], chosen: null, note: null }))
+      unmanual: vi.fn(async () => ({ targets: [], chosen: null, note: null })),
+      fix: vi.fn(async () => ({ ok: true as const }))
     },
     flow: {
       get: async (id: string | null) => (id && o.flows?.[id]) || o.flow || null,

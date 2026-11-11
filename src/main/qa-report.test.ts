@@ -214,7 +214,7 @@ describe('the prompt and the requests', () => {
     f.panes = ['%1']
     f.missing.add('node')
     const refused = await qaRetest('qret0001', 'W1', f.run)
-    expect('error' in refused && refused.error).toContain('node')
+    expect('error' in refused && refused.error).toMatch(/node/i)
     expect(f.splits).toHaveLength(1)
   })
 })

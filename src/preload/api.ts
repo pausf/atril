@@ -555,6 +555,22 @@ export interface QaStatus {
 
 export type QaResult = { ok: true } | { error: string }
 
+/** W125: the fixes main knows; the window sends only one of these names. */
+export type QaFix = 'pick-manual' | 'install-node' | 'install-android-studio' | 'create-avd' | 'update-xcode' | 'open-xcode' | 'open-workspace'
+
+/** W125: why QA cannot launch, what that stops, its one fix and the technical detail. */
+export interface QaProblem {
+  what: string
+  cant: string
+  fix: QaFix
+  detail: string
+}
+
+export type QaLaunchResult = { ok: true } | { error: string; problem?: QaProblem }
+
+/** `open`: the workspace the window should open («Ver el otro QA»). */
+export type QaFixResult = { ok: true; open?: string } | { error: string }
+
 export interface QaCriterion {
   id: string
   text: string
@@ -604,7 +620,9 @@ export interface QaApi {
   /** null: Atril does not know how to test this workspace's project (W83). */
   status(workspaceId: string): Promise<QaStatus | null>
   /** `key`: the target to launch; the repo's chosen one when absent. */
-  launch(workspaceId: string, key?: string): Promise<QaResult>
+  launch(workspaceId: string, key?: string): Promise<QaLaunchResult>
+  /** W125: runs the named fix; `pick-manual` is the window's own. */
+  fix(workspaceId: string, fix: QaFix): Promise<QaFixResult>
   stop(workspaceId: string): Promise<QaResult>
   /** W123: the tab pressed, remembered for the repo. */
   choose(workspaceId: string, key: string): Promise<QaTargets | { error: string }>

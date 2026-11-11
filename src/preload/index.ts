@@ -126,7 +126,8 @@ const api: AtrilApi = {
     bug: (id, req) => ipcRenderer.invoke('atril:qa:bug', id, req),
     choose: (id, key) => ipcRenderer.invoke('atril:qa:choose', id, key),
     manual: (id, req) => ipcRenderer.invoke('atril:qa:manual', id, req),
-    unmanual: (id, key) => ipcRenderer.invoke('atril:qa:unmanual', id, key)
+    unmanual: (id, key) => ipcRenderer.invoke('atril:qa:unmanual', id, key),
+    fix: (id, fix) => ipcRenderer.invoke('atril:qa:fix', id, fix)
   },
   doctor: () => ipcRenderer.invoke('atril:doctor'),
   installTool: (tool) => ipcRenderer.invoke('atril:doctor:install', tool),
