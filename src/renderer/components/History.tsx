@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useState } from 'react'
-import type { HistoryEntry } from '../../preload/api'
+import type { HistoryEntry, HistorySteps } from '../../preload/api'
 import { stagesOf } from '../flow/stages'
 import { useT, type T } from '../ui'
 import { FoldSection } from './Fold'
@@ -13,6 +13,40 @@ export function lasted(t: T, seconds: number): string {
   if (h < 1) return t('{m} min', { m })
   if (h < 24) return t('{h} h {m} min', { h, m: m % 60 })
   return t('{d} d {h} h', { d: Math.floor(h / 24), h: h % 24 })
+}
+
+/** W173: one unit, rounded down. */
+function short(t: T, seconds: number): string {
+  const m = Math.floor(seconds / 60)
+  const h = Math.floor(m / 60)
+  if (m < 1) return t('<1 min')
+  if (h < 1) return t('{m} min', { m })
+  if (h < 24) return t('{n} h', { n: h })
+  return t('{n} d', { n: Math.floor(h / 24) })
+}
+
+const STEPS: (keyof HistorySteps)[] = ['spec', 'plan', 'construir', 'cierre']
+const stepLabel = (t: T, k: keyof HistorySteps): string =>
+  ({ spec: t('Spec'), plan: t('Plan'), construir: t('Construir'), cierre: t('Cierre') })[k]
+
+function median(values: number[]): number {
+  const v = [...values].sort((a, b) => a - b)
+  const mid = Math.floor(v.length / 2)
+  return v.length % 2 ? v[mid]! : (v[mid - 1]! + v[mid]!) / 2
+}
+
+/** W173: the step with the highest median over the newest entries; null under three with steps. Ties keep the earlier step. */
+function slowest(entries: HistoryEntry[]): { step: keyof HistorySteps; median: number } | null {
+  const withSteps = entries.flatMap((e) => (e.steps ? [e.steps] : []))
+  if (withSteps.length < 3) return null
+  let best: { step: keyof HistorySteps; median: number } | null = null
+  for (const step of STEPS) {
+    const values = withSteps.flatMap((s) => (s[step] === undefined ? [] : [s[step]]))
+    if (values.length === 0) continue
+    const m = median(values)
+    if (!best || m > best.median) best = { step, median: m }
+  }
+  return best
 }
 
 const day = (ms: number): number => new Date(ms).setHours(0, 0, 0, 0)
@@ -47,10 +81,17 @@ export function History() {
   const stages = stagesOf(t)
   const stageLabel = (e: HistoryEntry): string | undefined =>
     e.stage === 'sin-libretto' ? t('sin Libretto') : stages.find((s) => s.name === e.stage)?.label
+  const shown = entries.slice(0, SHOWN)
+  const top = slowest(shown)
   return (
     <FoldSection id="history" title={t('Terminados')} count={entries.length} defaultFolded>
+      {top && (
+        <p className="hist-slowest">
+          {t('Donde más tiempo se va: {step} (mediana {d})', { step: stepLabel(t, top.step), d: short(t, top.median) })}
+        </p>
+      )}
       <ul className="hist-list">
-        {entries.slice(0, SHOWN).map((e, i) => (
+        {shown.map((e, i) => (
           <li key={`${e.closedAt}-${e.branch}-${i}`} className="hist-row">
             <span className="hist-branch">{e.branch}</span>
             <span className="hist-meta">
@@ -68,6 +109,11 @@ export function History() {
                   </Fragment>
                 ))}
             </span>
+            {e.steps && STEPS.some((k) => e.steps?.[k] !== undefined) && (
+              <span className="hist-steps">
+                {STEPS.flatMap((k) => (e.steps?.[k] === undefined ? [] : [`${stepLabel(t, k)} ${short(t, e.steps[k])}`])).join(' · ')}
+              </span>
+            )}
           </li>
         ))}
       </ul>

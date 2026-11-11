@@ -1,8 +1,9 @@
 import { randomUUID } from 'node:crypto'
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
-import type { HistoryEntry, WorkspaceRecord } from '../preload/api'
+import type { HistoryEntry, HistorySteps, WorkspaceRecord } from '../preload/api'
 import { createCost } from './cost'
+import { parseBoxes } from './flow/checklist'
 import { stageOf } from './flow/stage'
 import { atrilHome } from './paths'
 import type { Runner } from './run'
@@ -13,6 +14,7 @@ const file = (): string => join(atrilHome(), 'history.jsonl')
 /** W95: read before the removal starts, while the folder and the transcript list still exist. */
 export async function historyEntry(rec: WorkspaceRecord, run: Runner): Promise<HistoryEntry> {
   const flow = await stageOf(rec.path, rec.baseCommit, run).catch(() => null)
+  const steps = flow?.change ? await stepTimes(rec, flow.change, Math.floor(Date.now() / 1000), run).catch(() => ({})) : {}
   return {
     branch: rec.branch,
     repoId: rec.repoId,
@@ -25,8 +27,38 @@ export async function historyEntry(rec: WorkspaceRecord, run: Runner): Promise<H
     cost: await createCost({ emit: () => {} })
       .forSession(rec.session)
       .then((t) => t && { tokens: t.tokens, usd: t.usd, unpriced: t.unpriced })
-      .catch(() => null)
+      .catch(() => null),
+    ...(Object.keys(steps).length > 0 && { steps })
   }
+}
+
+/** W172: the step lengths from the branch's commits to the change's proposal.md, oldest first. */
+export async function stepTimes(rec: WorkspaceRecord, change: string, now: number, run: Runner): Promise<HistorySteps> {
+  const file = `.agents/changes/${change}/proposal.md`
+  const log = await run('git', ['-C', rec.path, 'log', '--reverse', '--format=%H %ct', `${rec.baseCommit}..HEAD`, '--', file])
+  let criteria: number | undefined
+  let checklist: number | undefined
+  let built: number | undefined
+  let closed = 0
+  for (const line of log.code === 0 ? log.stdout.split('\n').filter(Boolean) : []) {
+    const [sha, at] = line.split(' ')
+    const shown = await run('git', ['-C', rec.path, 'show', `${sha}:${file}`])
+    if (shown.code !== 0) continue
+    const boxes = parseBoxes(shown.stdout, true)
+    if (criteria === undefined && /^##\s+Verification criteria\b/m.test(shown.stdout)) criteria = Number(at)
+    if (checklist === undefined && boxes.total > 0) checklist = Number(at)
+    if (boxes.closed > closed) built = Number(at)
+    closed = boxes.closed
+  }
+  const steps: HistorySteps = {}
+  const span = (key: keyof HistorySteps, from: number | undefined, to: number | undefined): void => {
+    if (from !== undefined && to !== undefined && to >= from) steps[key] = to - from
+  }
+  span('spec', rec.createdAt, criteria)
+  span('plan', criteria, checklist)
+  span('construir', checklist, built)
+  span('cierre', built ?? checklist ?? criteria, now)
+  return steps
 }
 
 const readLines = async (): Promise<string[]> => (await readFile(file(), 'utf8').catch(() => '')).split('\n').filter(Boolean)

@@ -81,4 +81,58 @@ describe('history', () => {
     expect(section().textContent).not.toMatch(/[$≈]|tokens/)
     expect(meta('feat/new')).toBe('shop-web · Aterrizado · duró 1 h 0 min · hoy')
   })
+
+  it('each finished work shows its steps and the slowest one leads', async () => {
+    const t0 = noon(0)
+    const steps = (branch: string): string | undefined =>
+      rows()
+        .find((r) => r.querySelector('.hist-branch')?.textContent === branch)
+        ?.querySelector('.hist-steps')?.textContent ?? undefined
+    const headline = (): string | undefined => document.querySelector('.hist-slowest')?.textContent ?? undefined
+
+    const history: HistoryEntry[] = [
+      entry('feat/all', t0, { steps: { spec: 30, plan: 600, construir: 7200, cierre: 2 * 86400 } }),
+      entry('feat/some', t0, { steps: { construir: 5400, spec: 3600 } }),
+      entry('feat/plain', t0, { stage: 'sin-libretto' }),
+      entry('feat/close', t0, { steps: { cierre: 59 } })
+    ]
+    const api = mockApi({ workspaces: [workspace('aaaaaaa1', 'PF-1')], history })
+    const user = userEvent.setup()
+    render(createElement(App))
+    await screen.findByText('PF-1')
+
+    // The headline lives inside the folded list: hidden until it is unfolded.
+    const hidden = (): boolean => document.querySelector('.hist-slowest')?.closest('[hidden]') != null
+    expect(hidden()).toBe(true)
+    await user.click(await screen.findByRole('button', { name: /^Terminados/ }))
+    expect(hidden()).toBe(false)
+
+    // Each step in order, only those it has; a work without steps has no line.
+    expect(steps('feat/all')).toBe('Spec <1 min · Plan 10 min · Construir 2 h · Cierre 2 d')
+    expect(steps('feat/some')).toBe('Spec 1 h · Construir 1 h')
+    expect(steps('feat/close')).toBe('Cierre <1 min')
+    expect(steps('feat/plain')).toBeUndefined()
+
+    // Medians over the works that have the step; an even count takes the mean of the two middle ones:
+    // spec (30 + 3600) / 2, plan 600, construir (5400 + 7200) / 2, cierre (59 + 172800) / 2.
+    expect(headline()).toBe('Donde más tiempo se va: Cierre (mediana 1 d)')
+    expect(rows()[0]?.closest('.hist-list')?.previousElementSibling?.className).toBe('hist-slowest')
+
+    // A tie goes to the earlier step.
+    const tied = (b: string): HistoryEntry => entry(b, t0, { steps: { spec: 600, plan: 60, construir: 600 } })
+    act(() => api.pushHistory([tied('t/1'), tied('t/2'), tied('t/3')]))
+    expect(headline()).toBe('Donde más tiempo se va: Spec (mediana 10 min)')
+
+    // Fewer than three of the 20 newest with steps: no headline, even if older ones have them.
+    act(() =>
+      api.pushHistory([
+        tied('t/1'),
+        tied('t/2'),
+        ...Array.from({ length: 18 }, (_, i) => entry(`old/${i}`, noon(1 + i))),
+        tied('t/old')
+      ])
+    )
+    expect(headline()).toBeUndefined()
+    expect(steps('t/1')).toBe('Spec 10 min · Plan 1 min · Construir 10 min')
+  })
 })

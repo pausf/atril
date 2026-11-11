@@ -550,6 +550,15 @@ export interface HistoryEntry {
   createdAt?: number
   closedAt: number
   cost: WorkCost | null
+  /** W172: seconds in each Libretto step; a step whose ends are unknown is absent. */
+  steps?: HistorySteps
+}
+
+export interface HistorySteps {
+  spec?: number
+  plan?: number
+  construir?: number
+  cierre?: number
 }
 
 export interface HistoryApi {
