@@ -42,6 +42,7 @@ Durable decisions: the one in Prior decisions below
   Proof: src/main/agent.test.ts lessons are pointed out only when the repo keeps them
 - **W175** When a workspace's agent starts or is reopened, it shall get `lessons: true` exactly when, in the workspace's folder, `.agents` is a real directory and `.agents/lessons.md` a regular file (`lstat`, no links); the command «Empezar» shows applies the same rule to the chosen repo's folder; the QA agent never gets it.
   Proof: src/main/workspaces.test.ts a new or reopened work is told about lessons only with a real file
+  Proof: src/main/jira/start.test.ts the shown command points at lessons only when the chosen repo keeps them
 
 ## Approach
 

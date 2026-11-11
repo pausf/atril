@@ -1,3 +1,4 @@
+import { mkdirSync as mkdirSync2, writeFileSync as writeFileSync2 } from 'node:fs'
 import { mkdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
@@ -147,5 +148,13 @@ describe('start', () => {
     // A leftover worktree folder counts as taken even when no branch has that name.
     mkdirSync(join(home, 'wt', 'demo', 'PF-1B'), { recursive: true })
     expect(await proposeStart(issue, { repoId: 'demo' })).toMatchObject({ branch: 'PF-1C' })
+  })
+  it('the shown command points at lessons only when the chosen repo keeps them', async () => {
+    const plain = await proposeStart(issue, { repoId: 'demo' })
+    expect('command' in plain && plain.command).not.toContain('--append-system-prompt')
+    mkdirSync2(join(repo, '.agents'), { recursive: true })
+    writeFileSync2(join(repo, '.agents', 'lessons.md'), 'x\n')
+    const told = await proposeStart(issue, { repoId: 'demo' })
+    expect('command' in told && told.command).toContain('--append-system-prompt')
   })
 })
