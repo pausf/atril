@@ -42,7 +42,7 @@ describe('keyboard and labels', () => {
     // The steps show above the work that is open.
     await user.click(screen.getByRole('button', { name: /^PF-3/ }))
     await screen.findByRole('group', { name: 'Pasos de Libretto' })
-    const stages = Array.from(document.querySelectorAll('.seg6 .seg')).map((e) => e.textContent ?? '')
+    const stages = Array.from(document.querySelectorAll('.seg6 .stp')).map((e) => e.textContent ?? '')
     expect(stages).toHaveLength(6)
     for (const s of stages) expect(s).toMatch(/hecho|ahora|pendiente/)
     expect(stages.filter((s) => /ahora/.test(s))).toHaveLength(1)

@@ -101,6 +101,7 @@ export async function boxRanges(path: string, base: string, change: string | und
 export async function boxDiff(path: string, base: string, change: string | undefined, index: number, file: string, run: Runner): Promise<string> {
   const range = change ? (await plan(path, base, change, run))?.ranges[index] : null
   if (!range) return ''
-  if (!code(await listChanges(path, range.from, run, range.to)).some((f) => f.path === file)) return ''
+  // fileDiff answers '' for a file that is not in the range's list, so listing it here again would only cost three more git spawns.
+  if (file.startsWith('.agents/')) return ''
   return fileDiff(path, range.from, file, run, range.to)
 }

@@ -38,17 +38,17 @@ export function Steps({ ws, flow }: { ws: WorkspaceView; flow: FlowStage | null 
           const fill = i < current ? 100 : counting ? (c.closed / c.total) * 100 : now ? 100 : 0
           const part = DOC_OF[s.name]
           return (
-            <div className={`seg ${i < current ? 'd' : now ? 'c' : 'p'}`} key={s.name} aria-current={now ? 'step' : undefined}>
+            <div className={`stp ${i < current ? 'd' : now ? 'c' : 'p'}`} key={s.name} aria-current={now ? 'step' : undefined}>
               {part && i <= current ? (
                 <button type="button" className="dk" title={t('Ver y editar lo que ha escrito Claude')} onClick={() => setDoc(part)}>
                   <Icon name="s-spec" size={11} />
                   {s.label}
                 </button>
               ) : (
-                <span className="seg-n">{counting ? `${s.label} ${t('{closed}/{total}', { closed: c.closed, total: c.total })}` : s.label}</span>
+                <span className="stp-n">{counting ? `${s.label} ${t('{closed}/{total}', { closed: c.closed, total: c.total })}` : s.label}</span>
               )}
               <span className="sr-only"> {i < current ? t('hecho') : now ? t('ahora') : t('pendiente')}</span>
-              <i className="bar">
+              <i className="stp-bar">
                 <b style={{ width: `${fill}%` }} />
               </i>
             </div>

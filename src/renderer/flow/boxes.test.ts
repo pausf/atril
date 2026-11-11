@@ -102,6 +102,19 @@ describe('boxes timeline', () => {
     expect(early.api.flowApi.boxes).not.toHaveBeenCalled()
   })
 
+  it('the live diff shows even when it answers slower than the 3 s poll', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    const { api, user } = await boot(building)
+    const slow = vi.mocked(api.flowApi.boxDiff)
+    slow.mockImplementation(() => new Promise((ok) => setTimeout(() => ok(DIFF), 8000)))
+    await screen.findByRole('list', { name: 'Casillas del checklist' })
+    const now = Array.from(timeline().children)[2] as HTMLElement
+    await user.click(within(now).getByRole('button', { name: /e\.ts/ }))
+    // One second at a time: each poll lands before the diff answers.
+    for (let i = 0; i < 20; i++) await act(() => vi.advanceTimersByTimeAsync(1000))
+    expect(now.querySelector('.dadd')?.textContent).toBe('+DOS <script>alert(1)</script>')
+  })
+
   it('the code can be seen large in the centre', async () => {
     const { api, user } = await boot(building, boxes, true)
     const rows = Array.from(timeline().children) as HTMLElement[]

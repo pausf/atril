@@ -3123,7 +3123,7 @@ kbd {
   grid-template-columns: repeat(6, 1fr);
   gap: 4px;
 }
-.seg {
+.stp {
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -3131,35 +3131,35 @@ kbd {
   color: var(--sub);
   min-width: 0;
 }
-.seg-n,
-.seg .dk {
+.stp-n,
+.stp .dk {
   height: 15px;
   line-height: 15px;
   white-space: nowrap;
 }
-.seg .bar {
+.stp .stp-bar {
   display: block;
   height: 4px;
   border-radius: 2px;
   background: var(--faint);
   overflow: hidden;
 }
-.seg .bar b {
+.stp .stp-bar b {
   display: block;
   height: 100%;
   background: var(--sub);
 }
-.seg.d {
+.stp.d {
   color: var(--text);
 }
-.seg.c {
+.stp.c {
   color: var(--run-text);
   font-weight: 600;
 }
-.seg.c .bar b {
+.stp.c .stp-bar b {
   background: var(--run);
 }
-.seg .dk {
+.stp .dk {
   align-self: flex-start;
   display: inline-flex;
   align-items: center;
@@ -3175,7 +3175,7 @@ kbd {
   text-decoration: underline;
   text-underline-offset: 3px;
 }
-.seg .dk:hover {
+.stp .dk:hover {
   color: var(--text);
 }
 

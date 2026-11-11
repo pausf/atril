@@ -34,9 +34,9 @@ describe('libretto panel', () => {
     expect(group.compareDocumentPosition(title.closest('.whead')!.querySelector('.m')!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
 
     // Six named segments: done full, the current one filled closed/total with the count after its name, pending empty.
-    const segs = Array.from(group.querySelectorAll('.seg'))
+    const segs = Array.from(group.querySelectorAll('.stp'))
     expect(segs.map(text)).toEqual(['Entrada hecho', 'Spec hecho', 'Plan hecho', 'Construir 3/7 ahora', 'Revisar pendiente', 'Aterrizar pendiente'])
-    const fill = segs.map((s) => parseFloat((s.querySelector('.bar b') as HTMLElement).style.width))
+    const fill = segs.map((s) => parseFloat((s.querySelector('.stp-bar b') as HTMLElement).style.width))
     expect(fill.map((n) => Math.round(n))).toEqual([100, 100, 100, 43, 0, 0])
     expect(segs.map((s) => s.getAttribute('aria-current'))).toEqual([null, null, null, 'step', null, null])
 

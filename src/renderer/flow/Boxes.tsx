@@ -1,4 +1,4 @@
-import { useEffect, useId, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import type { FlowBox } from '../../preload/api'
 import { useT } from '../ui'
 import { diffLines } from './DiffText'
@@ -16,13 +16,13 @@ function BoxCode({ workspaceId, box, version, onBig }: { workspaceId: string; bo
   const file = files.find((f) => f.path === pick)?.path ?? files[0]?.path
   const [shown, setShown] = useState<{ file: string; text: string } | null>(null)
 
+  // An answer is kept while it is for the same box and file, even if a newer tick has asked again: the poll must never starve a slow diff.
+  const asked = useRef('')
   useEffect(() => {
     if (!file) return
-    let live = true
-    void window.atril.flow.boxDiff(workspaceId, box.index, file).then((text) => live && setShown({ file, text }))
-    return () => {
-      live = false
-    }
+    const key = `${workspaceId}\0${box.index}\0${file}`
+    asked.current = key
+    void window.atril.flow.boxDiff(workspaceId, box.index, file).then((text) => asked.current === key && setShown({ file, text }))
   }, [workspaceId, box.index, file, version])
 
   if (files.length === 0) return <p className="fx-m">{t('Sin cambios de código.')}</p>

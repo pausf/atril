@@ -37,13 +37,12 @@ export function BigCode({ workspaceId, box, tick, start, onClose }: Props) {
   }, [onClose])
 
   const version = live ? tick : 0
+  const asked = useRef('')
   useEffect(() => {
     if (!file) return
-    let current = true
-    void window.atril.flow.boxDiff(workspaceId, box.index, file).then((text) => current && setShown({ file, text }))
-    return () => {
-      current = false
-    }
+    const key = `${workspaceId}\0${box.index}\0${file}`
+    asked.current = key
+    void window.atril.flow.boxDiff(workspaceId, box.index, file).then((text) => asked.current === key && setShown({ file, text }))
   }, [workspaceId, box.index, file, version])
 
   const diff = shown && shown.file === file ? shown.text : null
