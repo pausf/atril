@@ -16,7 +16,7 @@ Durable decisions: the three in Prior decisions below
 
 El panel de Libretto pasa a ser la propuesta C de `bocetos/panel-derecho.html`: pasos con anillo (la 2 de
 `bocetos/pasos.html`), el checklist como línea de tiempo donde cada casilla abre el código que la cerró y la casilla
-en curso enseña el código en vivo, y «Ampliar» (⌘⇧D) lleva ese código al centro en grande. Subagentes y QA van en
+en curso enseña el código en vivo, y «Ampliar» (⌘⇧E) lleva ese código al centro en grande. Subagentes y QA van en
 `panel-c-subagents`.
 
 ## Decision log
@@ -40,6 +40,27 @@ en curso enseña el código en vivo, y «Ampliar» (⌘⇧D) lleva ese código a
   centro, en lugar del terminal, con sus archivos arriba (como el modal de F21: lista, diff, solo texto) y «Volver al
   terminal ⌘⇧D»; el panel sigue con los pasos. Escape también vuelve (assumed).
 
+### Session 2026-11-11 (revisión en frío y elecciones de Pau)
+- Q: ¿Dónde van los pasos? → A: Pau: «me quedo con lo 6 tramos con nombre», encima de «WEB-3535 ◌ trabajando», en el
+  centro (la C de `bocetos/pasos-arriba.html`); el panel empieza por las casillas. Sustituye a los círculos con anillo.
+- Q: ¿⌘⇧D? → A: ya es «Dividir abajo»; ampliar es ⌘⇧E (Trabajo → Ampliar código), libre (assumed).
+- Q: ¿Ampliar en Todos, en foco o fuera de Trabajo? → A: solo en Trabajo con «Uno» y un trabajo elegido; en foco
+  también (assumed).
+- Q: ¿Qué identifica una casilla entre commits? → A: su texto; el índice es el orden en el checklist actual. Una
+  casilla que cambia de texto cuenta como nueva desde ese commit (assumed).
+- Q: ¿Casilla marcada sin commit? → A: se ve cerrada y comparte el tramo en curso (lo no commiteado) (assumed).
+- Q: ¿Sin commits, sin checklist, `tasks.md` o Aterrizado? → A: sin checklist no hay línea de tiempo (los tramos sí,
+  con su etapa); `tasks.md` se lee igual que el proposal (`readChecklist`); en Aterrizado no hay carpeta: no hay línea
+  de tiempo (assumed).
+- Q: ¿Archivo fuera del tramo? → A: cadena vacía, como `fileDiff` (assumed).
+- Q: ¿F21, F22, F26, F31? → A: F21: su modal pasa a ser la vista ampliada (enmendado en F39); F22: el latido de 3 s
+  pide la línea de tiempo (enmendado en F38); F26: «Checklist» deja de ser algo que se abre (se queda Spec y Plan); F31:
+  sin sección «Cambios», se retira con F20 (assumed).
+- Q: ¿El total de F25? → A: la línea de tiempo devuelve también el total de líneas de la rama (como hoy `listChanges`)
+  (assumed).
+- Q: ¿Terminal al ampliar? → A: se oculta, no se desmonta; al volver, el foco vuelve al terminal; Escape en la vista
+  ampliada no llega a xterm (assumed).
+
 ## Outcomes
 
 - Mientras el agente construye, el panel enseña en qué paso va, qué casillas cerró con qué código y el código que está
@@ -47,8 +68,8 @@ en curso enseña el código en vivo, y «Ampliar» (⌘⇧D) lleva ese código a
 
 ## Scope boundaries
 
-**In:** pasos con anillo, línea de tiempo de casillas con su código, el tramo en vivo, «Ampliar» al centro y ⌘⇧D.
-**Out:** subagentes como ramas y QA plegado (`panel-c-subagents`); editar código; comentar líneas.
+**In:** pasos como seis tramos con nombre encima del título, línea de tiempo de casillas con su código, el tramo en vivo, «Ampliar» al centro y ⌘⇧E.
+**Out:** subagentes como ramas (`panel-c-subagents`); QA como pantalla propia (`qa-screen`); el globo de preguntas (`ask-balloon`); editar código; comentar líneas.
 **Never scoped out:** el diff como texto (nunca HTML); rutas literales a git (F24); el corte de 1 MB (F23); teclado y
 nombres accesibles; tokens de color.
 
@@ -61,33 +82,39 @@ nombres accesibles; tokens de color.
 ## Verification criteria
 
 - **F36** Main shall split a workspace's commits since its base by the commits that turn checklist boxes of its
-  current change from `[ ]` to `[x]`, returning per box its index, text, state (closed, current = the first open
-  box, pending), and for closed and current boxes the files changed in its range (closed: from the previous closing
-  commit or the base to its closing commit; current: from the last closing commit or the base to the working tree,
-  uncommitted changes included) with their +/− counts and the closing commit's short id; paths under `.agents/` are
-  left out; boxes closed in the same commit share its range. One test holds a case per clause.
+  current change (proposal or `tasks.md`, as `readChecklist` finds it) from `[ ]` to `[x]`, returning per box its
+  index in the current checklist, text, state (closed, current = the first open box, pending) and, for closed and
+  current boxes, the files changed in its range with +/− counts and the closing commit's short id — closed: from the
+  previous closing commit (or the base) to its own; current: from the last closing commit (or the base) to the working
+  tree, uncommitted changes included — and the branch's total added plus removed lines; a box is matched across
+  commits by its text; a box marked but not committed shows closed with the current range; boxes closed in one
+  commit share its range; paths under `.agents/` are left out; with no change folder or no checklist it shall return
+  no boxes. One test holds a case per clause.
   Proof: src/main/flow/boxes.test.ts each box gets the code that closed it
 - **F37** When the window asks the diff of a box's file, main shall answer the diff of that file over that box's
-  range as text, with F23's cut and F24's literal paths, and refuse a file outside the range.
+  range as text, with F23's cut and F24's literal paths, and an empty string for a file outside the range.
   Proof: src/main/flow/boxes.test.ts a box's file diff covers only its range
-- **F29** (amended) The Libretto panel shall show its six stages as six joined circles — done ones with «✓», the
-  current one as a ring filled closed/total of the checklist, pending ones with their number — each named by
-  `aria-label` and title, Spec and Plan buttons as F13 makes them; and below them «{stage} · {closed} de {total}
-  casillas» (only the stage without a checklist) with F32's «Spec» and «Plan» buttons; and while F25's total
-  applies, its warning line under them.
-  Proof: src/renderer/flow/panel.test.ts the steps show as joined circles with a ring
-- **F38** While the stage is Construir or later, the panel shall show the checklist as a timeline: closed boxes
-  folded, each a button that opens its files and diff; the current box open with its files and the diff of its first
-  file, asked again every 3 seconds skipping a tick while one is pending; the first 3 pending boxes greyed and
-  «+{n} más» for the rest; no «Checklist» or «Cambios» section.
+- **F29** (amended) While the selected workspace has a Libretto change, the centre of Trabajo shall show, above the
+  workspace's repo and title, six segments named Entrada, Spec, Plan, Construir, Revisar and Aterrizar — done ones
+  full, the current one filled closed/total of its checklist with «{closed}/{total}» after its name, pending ones
+  empty — where Spec and Plan are buttons as F13 makes them; and while F25's total applies, its warning line at the
+  top of the panel. The Libretto panel shall not show the stages.
+  Proof: src/renderer/flow/panel.test.ts the steps show as six named segments above the work
+- **F38** While the stage is Construir or later and there is a checklist, the panel shall show it as a timeline:
+  closed boxes folded, each a button that opens its files and diff; the current box open with its files and the
+  diff of its first file; the first 3 pending boxes greyed and «+{n} más» for the rest; the timeline asked again every
+  3 seconds while it shows, skipping a tick while one is pending.
   Proof: src/renderer/flow/boxes.test.ts the checklist shows each box with its code
-- **F39** When the person presses «⤢ Ampliar» on a box's code or chooses Trabajo → Ampliar código (⌘⇧D) with a
-  workspace selected, the centre shall show that box's files and diff (the current box's for ⌘⇧D) in place of the
-  terminal, as text, with «Volver al terminal ⌘⇧D»; pressing it, ⌘⇧D again or Escape shall bring the terminal back;
-  the menu item shall be disabled with no workspace selected.
+- **F39** When the person presses «⤢ Ampliar» on a box's code, the centre shall show that box's files and the chosen
+  file's diff as text in place of the terminal, which stays mounted but hidden, with «Volver al terminal ⌘⇧E»;
+  pressing it shall bring the terminal back with its focus.
   Proof: src/renderer/flow/boxes.test.ts the code can be seen large in the centre
-- **F20** (amended) The Libretto panel shall show no «Cambios» section and no «ver N archivos» button; F25's
-  warning shall show as F29 says.
+- **F40** Trabajo → Ampliar código (⌘⇧E) shall open the current box's code as F39 and, pressed again, close it;
+  Escape in the large view shall close it and not reach the terminal; the menu item shall be disabled unless Trabajo
+  shows «Uno» with a workspace selected.
+  Proof: src/renderer/flow/boxes.test.ts the large code opens and closes from the menu and the keyboard
+- **F20** (amended) The Libretto panel shall show no «Cambios» section, no list of the branch's files and no «ver N
+  archivos» button.
   Proof: src/renderer/flow/changes.test.ts changes show from construir on
 - **F30** (amended) The panel's foldable sections (Subagentes) shall keep their folded state per section when the
   panel is mounted again and start open.
@@ -97,15 +124,14 @@ nombres accesibles; tokens de color.
 
 ### Summary
 Un módulo `src/main/flow/boxes.ts` (tramos por casilla y su diff) con IPC `atril:flow:boxes` y
-`atril:flow:boxdiff`; en el renderer, `Steps.tsx` (pasos) y `Boxes.tsx` (línea de tiempo) sustituyen la fila de
-etapas, Checklist y Cambios en `FlowPanel.tsx`; App muestra `BigCode` en el centro cuando está ampliado.
+`atril:flow:boxdiff`; en el renderer, `Steps.tsx` (pasos) (seis tramos, en el centro encima del título, en `Workspace.tsx`) y `Boxes.tsx` (línea de tiempo) sustituyen la fila de etapas, Checklist y Cambios de `FlowPanel.tsx`; App muestra `BigCode` en el centro cuando está ampliado, con el terminal oculto, no desmontado.
 
 ### Technical context
 Electron 45, React 19, vitest; git por `Runner`. `src/main/flow/changes.ts` (`listChanges`, `fileDiff`, F23/F24)
 y `checklist.ts` (`parseBoxes`) se reutilizan. Para hallar commits que cierran casillas:
 `git log --format=%H --reverse <base>..HEAD -- <proposal>` y, por commit, comparar `parseBoxes` del proposal antes y
 después (`git show <sha>:<path>`). Diff por tramo: `git diff --numstat <from> <to> -- . ':(exclude).agents'` (para
-el árbol de trabajo, sin `<to>`). Menú en `src/main/menu.ts` (o donde estén Modo foco y sus atajos). Boceto en
+el árbol de trabajo, sin `<to>`). Menú en `src/main/menu.ts` (junto a Modo foco, ⌘⇧E libre; ⌘⇧D sigue siendo «Dividir abajo»). Boceto en
 `bocetos/fase1-nucleo.html` (hecho aparte); foto `ATRIL_SNAPSHOT_VIEW` con trabajo de prueba.
 
 ### The approach
@@ -137,5 +163,5 @@ El corte por commits que marcan casillas: es lo que une código y Libretto.
 ## Checklist
 
 - [ ] box ranges and box diffs in main with their IPC · Closes: F36, F37
-- [ ] steps with the ring, the boxes timeline and the removals in the panel · waits on box 1 · Closes: F29, F38, F20, F30
-- [ ] Ampliar to the centre, ⌘⇧D and its menu item; real-app drive; photo; novedades · waits on box 2 · Closes: F39
+- [ ] the six named steps above the work, the boxes timeline and the removals in the panel · waits on box 1 · Closes: F29, F38, F20, F30
+- [ ] Ampliar to the centre, ⌘⇧E and its menu item; real-app drive; photo; novedades · waits on box 2 · Closes: F39, F40
