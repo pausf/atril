@@ -65,6 +65,10 @@ Governs: src/main/credentials/** src/renderer/settings/**
 
 - Con `repos.json` dañado, Ajustes → Repos dice cuál y qué no puedes hacer, con «Mostrar en Finder», en vez de «Aún no hay ninguno».
 
+### Jira, GitHub y GitLab (net-errors, 11 nov 2026)
+
+- Conectar GitHub o GitLab dice la causa sin el nombre de la excepción, con el código plegado, como Jira (S32).
+
 ## Scope boundaries
 
 **In:** storing, checking, replacing and deleting the Jira token, through a store and a card
@@ -137,6 +141,10 @@ errores visibles junto al campo.
 
 **In:** `src/renderer/settings/Repos.tsx`. **Out:** reparar el archivo.
 
+### Jira, GitHub y GitLab (net-errors, 11 nov 2026)
+
+**In:** `src/main/credentials/forge.ts`, `src/renderer/settings/Forges.tsx`, `src/renderer/settings/Connection.tsx`. **Out:** Jira (ya hecho en S32).
+
 ## Constraints
 
 - Electron `safeStorage` (macOS Keychain-backed key) encrypts each token; the ciphertext lives
@@ -181,6 +189,10 @@ errores visibles junto al campo.
 ### Archivos de estado dañados (state-files, 11 nov 2026)
 
 - La ventana pide mostrar el archivo por nombre, nunca por ruta.
+
+### Jira, GitHub y GitLab (net-errors, 11 nov 2026)
+
+- `err.message` nunca llega a la ventana.
 
 ## Prior decisions
 
@@ -501,3 +513,8 @@ errores visibles junto al campo.
 
 - **S33** While `repos.json` is damaged (W148), the Repos card shall show «No puedo leer repos.json: está dañado. No puedo usar ni cambiar tus repos hasta que se arregle.» with its detail folded and «Mostrar en Finder», and shall not show «Aún no hay ninguno» nor «Añadir repo…».
   Proof: src/renderer/statefiles.test.ts the repos card shows a damaged list instead of empty
+
+### Jira, GitHub y GitLab (net-errors, 11 nov 2026)
+
+- **S34** If checking a GitHub or GitLab token gets an HTTP error or throws, then Ajustes shall show the W150 sentence for that forge — with «No se ha guardado.» after it — and the code under a folded «Ver detalle», never an exception name in the sentence; no fix button shows in Ajustes, where «Guardar y comprobar» already checks again. Jira keeps S32.
+  Proof: src/main/credentials/forge.test.ts a forge check failure names the cause and folds the code

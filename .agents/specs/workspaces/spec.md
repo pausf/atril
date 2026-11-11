@@ -288,6 +288,10 @@ textos, en «Pasos» abajo. Los que tienen elemento en pantalla lo iluminan; los
 - Sin permiso de escritura en la carpeta de Atril, abrir un trabajo lo dice con su botón y no deja nada a medias.
 - El sondeo y la lista de trabajos no sueltan rechazos sin capturar por estos archivos.
 
+### Jira, GitHub y GitLab (net-errors, 11 nov 2026)
+
+- Una sola tabla en main traduce cada estado HTTP y cada causa de red de Jira, GitHub y GitLab a una frase con su arreglo.
+
 ## Scope boundaries
 
 **In:** the three columns and footer of `bocetos/fase1-nucleo.html` (boceto 8), the
@@ -583,6 +587,10 @@ Nunca fuera: validar `.atril/qa.json` (lo escribe el repo, no Atril); la ventana
 
 **In:** `src/main/state.ts` (nuevo), `readRecords` y la lectura de `repos.json` (`src/main/workspaces.ts`, `src/main/repos.ts`), el sondeo de `src/main/status.ts`, IPC `atril:state:reveal`, la barra lateral (`WorkspaceList`/`Sidebar`), Ajustes → Repos, el diálogo de nuevo trabajo. **Out:** `ui.json`, `qa-targets.json` (ya toleran basura), reparar el archivo automáticamente.
 
+### Jira, GitHub y GitLab (net-errors, 11 nov 2026)
+
+**In:** `src/main/net-problem.ts`. **Out:** quién la pinta (inbox, mr, settings).
+
 ## Constraints
 
 - Electron (current stable) + TypeScript in strict mode, pnpm, Node 24 (installed:
@@ -735,6 +743,10 @@ Textos por `t()`.
 
 - Nunca se escribe encima de un archivo de estado que no se ha podido leer.
 - La ventana pide «mostrar» por nombre (`workspaces` o `repos`), nunca una ruta.
+
+### Jira, GitHub y GitLab (net-errors, 11 nov 2026)
+
+- Ni números de estado ni nombres de excepción en la frase.
 
 ## Prior decisions
 
@@ -2721,3 +2733,8 @@ Textos por `t()`.
 - **W147** When the window asks to reveal `workspaces` or `repos`, main shall show that file (or Atril's folder if it is missing) in Finder; any other name reveals nothing. A problem with `fix: 'reveal'` shows «Mostrar en Finder» in the workspace row (as W135), the new-work and start dialogs (as W130) and the sidebar.
   Proof: src/main/state.test.ts reveal shows only the state files
   Proof: src/renderer/statefiles.test.ts a damaged list shows its problem instead of the empty state
+
+### Jira, GitHub y GitLab (net-errors, 11 nov 2026)
+
+- **W150** When a request to Jira, GitHub or GitLab gets an HTTP error or throws, `net-problem` shall answer one sentence naming the service — 401: «{service} ha rechazado tu token.»; 403: «{service} no te deja ver esto con ese token.»; 404: «{service} no encuentra esa dirección.»; 429: «{service} pide esperar: demasiadas consultas.»; 500–599: «{service} está fallando ahora mismo.»; any other status: «{service} ha contestado algo que no esperaba.»; a thrown `ENOTFOUND` or `EAI_AGAIN`: «No encuentro {service}.»; a certificate code (as S32): «El certificado de {service} no es válido.»; a timeout: «{service} no ha respondido a tiempo.»; a `SyntaxError` (a body that is not JSON): «{service} ha contestado algo que no entiendo.»; anything else: «No llego a {service}: ¿hay conexión?» — with `detail` `HTTP <n>` or the code (from `err.cause.code` when it matches `^[A-Z0-9_]+$`, else the exception's name), and `fix: 'settings'` for 401, 403, 404, a host not found and a certificate code (the person fixes the token or the address), `fix: 'retry'` otherwise. No sentence contains a status number or an exception name.
+  Proof: src/main/net-problem.test.ts each status and network cause has its sentence and fix (one case per row)

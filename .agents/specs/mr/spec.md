@@ -58,6 +58,10 @@ the projects you follow. Phase 2 of Atril; scores, threads and notifications bui
 - Un borrador de Libretto con archivo y línea aparece en la MR justo en esa línea del diff; si no se puede, como
   comentario general como hasta ahora, y Atril dice cuál fue.
 
+### Jira, GitHub y GitLab (net-errors, 11 nov 2026)
+
+- Con la forja caída o el token rechazado, la lista de MRs dice la causa con su botón y no enseña «Ninguna MR.».
+
 ## Scope boundaries
 
 ### MR lists (add-mr-lists, 9 nov 2026)
@@ -123,6 +127,10 @@ en rama existente, «Ir al trabajo», los errores en la vista.
 **Out:** comentar a mano en el diff; sugerencias aplicables («suggestion»); hilos multilínea; editar lo publicado.
 **Never scoped out:** se publica una vez (M27); el texto va tal cual, sin HTML; el token nunca sale de main.
 
+### Jira, GitHub y GitLab (net-errors, 11 nov 2026)
+
+**In:** `src/main/forge/mrs.ts`, `src/renderer/mr/MrScreen.tsx`. **Out:** hilos, puntuaciones, lentes y comentarios en línea (solo toman la frase nueva).
+
 ## Constraints
 
 ### MR lists (add-mr-lists, 9 nov 2026)
@@ -145,6 +153,10 @@ en rama existente, «Ir al trabajo», los errores en la vista.
 - Reuses scores' diff fetch, cut, queue, runner timeout and failure texts (M11, M14, M16, W53), the
   listed-only rule (M17), the thread posting endpoints (M21) and `replyToAgent` (N3).
 - `MrItem` gains `branch?` (GitHub `head.ref` from the detail call, GitLab `source_branch`).
+
+### Jira, GitHub y GitLab (net-errors, 11 nov 2026)
+
+- Ningún número de estado ni nombre de excepción en la frase.
 
 ## Prior decisions
 
@@ -399,11 +411,9 @@ en rama existente, «Ir al trabajo», los errores en la vista.
 - **M5** When the person activates a row, Atril shall open the MR view (M23); the view's
   «Abrir en {forge}» shall open that MR in the browser.
   Proof: src/renderer/mr/threads.test.ts a row opens the mr view with its threads
-- **M6** If one of a forge's requests fails, then the screen shall show for that forge «{forge} ha
-  rechazado el token: reemplázalo en Ajustes» on 401, «{forge} ha respondido {status}» on another
-  status, or «No se ha podido conectar con {forge} ({detail}).» on a network failure, keep every MR
-  that forge did return, and keep the other forge's MRs.
+- **M6** If one of a forge's requests fails, then the screen shall keep every MR that forge did return and the other forge's MRs, and show above the sections, per failed forge, its W150 problem with «No puedo enseñarte tus MRs de {forge}.» under it, its button («Volver a comprobar» loads again; «Abrir Ajustes» opens Ajustes) and the detail folded; while any forge failed, an empty section shows no «Ninguna MR.».
   Proof: src/main/forge/mrs.test.ts one forge failing keeps the other
+  Proof: src/renderer/mr/mrscreen.test.ts a failed list shows its problem and no empty sections
 - **M7** While no forge is connected the screen shall say «Conecta GitHub o GitLab en Ajustes» with
   a button that opens Ajustes.
   Proof: src/renderer/mr/mrs.test.ts no forge connected points to ajustes
@@ -581,3 +591,8 @@ en rama existente, «Ir al trabajo», los errores en la vista.
   línea»; any other failure of the line post shall keep the draft open with M6's message and post nothing
   else. One test holds a case per clause.
   Proof: src/main/forge/linecomments.test.ts a draft that cannot land falls back to a general comment
+
+### Jira, GitHub y GitLab (net-errors, 11 nov 2026)
+
+- **M38** `statusText` and `networkText` shall return the W150 sentence, so a failure in threads, scores or line comments shows no status number nor exception name.
+  Proof: src/main/forge/mrs.test.ts status and network texts carry no codes

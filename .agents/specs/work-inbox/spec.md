@@ -49,6 +49,12 @@ Governs: src/main/jira/** src/renderer/inbox/**
   «Nuevo trabajo» in Trabajo (text optional; without text the agent is plain Claude).
 - With no repo registered, the dialog points to Ajustes → Repos with a button that goes there.
 
+### Jira, GitHub y GitLab (net-errors, 11 nov 2026)
+
+- Tareas y MR dicen qué falló de verdad (token, permiso, dirección, saturado, caído, sin red) con su botón y el código plegado.
+- Con la lista de MRs fallida no sale «Ninguna MR.».
+- Conectar GitHub o GitLab dice la causa sin nombres de excepción, como ya hace Jira (S32).
+
 ## Scope boundaries
 
 **In:** reading tasks, the Jira→repo memory, Start, the In Progress transition.
@@ -95,6 +101,10 @@ keyboard-reachable (Tab cycles inside it, Escape closes, ⌘↩ submits from the
 **In:** the optional text, the plain-Claude path, the no-repo pointer. **Out:** anything else in
 the dialog.
 
+### Jira, GitHub y GitLab (net-errors, 11 nov 2026)
+
+**In:** `src/main/net-problem.ts` (nuevo), `src/main/jira/inbox.ts`, `src/main/forge/mrs.ts` (`statusText`, `networkText`, la lista), `src/main/credentials/forge.ts`, `src/renderer/inbox/Inbox.tsx`, `src/renderer/mr/MrScreen.tsx`, `src/renderer/settings/Forges.tsx` y `Connection.tsx`, i18n. **Out:** botones en hilos, puntuaciones, lentes y comentarios en línea (rediseño de la MR); el tablero de Jira en Libretto; GitHub contra un servidor propio.
+
 ## Constraints
 
 - The Jira REST API with the site, email and token saved in Ajustes (`.agents/specs/settings/spec.md`):
@@ -128,6 +138,11 @@ the dialog.
 ### Repos in Ajustes (move-repos-to-settings, 9 nov 2026)
 
 - Plain work calls `workspaces.open` without a task, as the old «+ trabajo» did.
+
+### Jira, GitHub y GitLab (net-errors, 11 nov 2026)
+
+- `err.message` nunca llega a la ventana; solo códigos de lista (`ENOTFOUND`…), el nombre de la excepción o `HTTP <n>`, y solo en el detalle.
+- Los tokens no salen de main.
 
 ## Prior decisions
 
@@ -211,6 +226,29 @@ the dialog.
 - Q: (spec-reviewer) ¿Se extrae el atrapado de foco del diálogo de Empezar? → A: no: el diálogo nuevo lleva el suyo y el de Empezar no se toca, así no puede romperse sin prueba (assumed).
 - Q: ¿Se listan las tareas propias aparte? → A: no: cada una es un trabajo más en Trabajo, con su rama; una lista aparte sería una segunda fuente de verdad (assumed).
 
+### Jira, GitHub y GitLab (net-errors, 11 nov 2026)
+
+- Un fallo de red o de un servicio dice la causa por estado o por código, con «Volver a comprobar» si es pasajero y «Abrir Ajustes» si lo arregla la persona; el código, plegado.
+
+#### Alternatives that lost
+
+| Considered | Why it lost |
+|---|---|
+| Una frase por pantalla | tres copias que divergen; ya pasaba con «ha rechazado el token» |
+| Reintentos automáticos | gastan cuota de la API de la persona sin que lo pida; «Volver a comprobar» es un clic |
+
+#### Decision log, answers as given (2026-11-11)
+- Q: (revisión en frío) ¿Quién gobierna `net-problem.ts`? → A: workspaces (`src/main/**`): su criterio es W150 en `spec-workspaces.md`; inbox, mr y settings lo citan.
+- Q: (revisión en frío) ¿Una dirección que no existe o un certificado malo? → A: «Abrir Ajustes», porque la arregla la persona.
+- Q: (revisión en frío) ¿Y la lista de MRs con una forja caída? → A: el problema de cada forja caída va encima de las secciones; cada sección enseña sus filas, y «Ninguna MR.» solo sale si ninguna forja falló (assumed).
+- Q: (revisión en frío) ¿Y el Jira de Ajustes (S32)? → A: se queda como está; S34 es solo para GitHub y GitLab. En Ajustes no hay botón de arreglo: el formulario ya trae «Guardar y comprobar» (assumed).
+- Q: ¿Una frase por servicio o una ayuda común? → A: una ayuda común en main (`src/main/net-problem.ts`) para Jira, GitHub y GitLab, con frase por estado y por causa de red (assumed).
+- Q: ¿Qué botones? → A: «Volver a comprobar» para lo pasajero (429, 5xx, red) y «Abrir Ajustes» para lo que arregla la persona (401, 403, 404) (assumed).
+- Q: ¿Y los hilos, puntuaciones y comentarios en línea, que también usan estas frases? → A: toman las frases nuevas (sin códigos), sin botón nuevo: van en el rediseño de la MR (assumed).
+- Q: (constructor) ¿Qué código lleva un timeout? → A: el nombre de la excepción, `TimeoutError` (W150); `networkCode` deja de traducirlo a `timeout`, y `UND_ERR_CONNECT_TIMEOUT` también cuenta como timeout (assumed).
+- Q: (constructor) ¿Y si falla el puente con main al leer Tareas? → A: «No llego a Jira: ¿hay conexión?» con «Volver a comprobar» y el nombre de la excepción en el detalle, nunca su mensaje (assumed).
+- Q: (constructor) ¿Y un id de tablero no válido o una configuración sin columnas? → A: se quedan con su texto de antes tras «No puedo leer el tablero:», sin detalle; no son fallos de red (assumed).
+
 ## Task breakdown
 
 - Jira reader: run the query, parse the raw JSON, map errors to messages.
@@ -227,8 +265,7 @@ the dialog.
 - **I2** When the API returns issues, Atril shall list each issue's key, summary, type and
   status.
   Proof: src/main/jira/inbox.test.ts parses issues from raw json
-- **I3** If no Jira token is saved, or the API rejects it, then the inbox shall show "Conecta
-  Jira en Ajustes" with a link, and shall never ask for the token anywhere but Ajustes.
+- **I3** If no Jira token is saved, then the inbox shall show "Conecta Jira en Ajustes" with a link, and shall never ask for the token anywhere but Ajustes; a saved token the API rejects follows I29.
   Proof: src/renderer/inbox/inbox.test.ts inbox without a jira token links to ajustes
 - **I4** When the person starts a task whose project and component have no remembered repo,
   Atril shall ask for one and remember it for the next task of that project and component.
@@ -283,10 +320,8 @@ the dialog.
   "por empezar" and the tasks of every other column as "en curso" («Fuera del tablero» counts
   in neither).
   Proof: src/renderer/inbox/inbox.test.ts summary follows the board columns
-- **I18** If reading the picked board fails (timeout, 403, 404), then the inbox shall fall back
-  to the status-category groups and show «No se pudo leer el tablero (<status>)».
+- **I18** If reading the picked board fails, then the inbox shall fall back to the status-category groups and show «No puedo leer el tablero: {W150 sentence}» with the W150 detail folded.
   Proof: src/main/jira/board.test.ts board failure falls back to the status groups
-
 - **I19** Whether or not a board is picked, the inbox shall list only issues from the search
   with `assignee = currentUser()`, and shall never request the board's own issues.
   Proof: src/main/jira/inbox.test.ts only my tasks even with a board
@@ -330,3 +365,9 @@ the dialog.
   is blank; Empezar needs only a repo and a branch there.
   (One proof holds both: the test starts one with text and one without and checks each call.)
   Proof: src/renderer/inbox/owntask.test.ts new work without text opens plain claude
+
+### Jira, GitHub y GitLab (net-errors, 11 nov 2026)
+
+- **I29** While Jira is connected and reading the tasks fails (including a 401 or 403), Tareas shall show the W150 problem with «No puedo enseñarte tus tareas.» under it, its button («Volver a comprobar» reads again; «Abrir Ajustes» opens Ajustes) and the detail folded — never «Conecta Jira en Ajustes», which stays for Jira not connected.
+  Proof: src/main/jira/inbox.test.ts a jira failure says its cause and fix
+  Proof: src/renderer/inbox/inbox.test.ts a connected jira failure shows its problem and button
