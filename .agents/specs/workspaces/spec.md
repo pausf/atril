@@ -249,6 +249,12 @@ textos, en «Pasos» abajo. Los que tienen elemento en pantalla lo iluminan; los
 - Cuando algo falta, la tarjeta dice qué pasó, qué no puedes hacer y trae el botón que lo arregla.
 - Sin nada detectado: «No sé cómo abrir este proyecto» con «Elegir a mano».
 
+### Errores claros (plain-errors, 11 nov 2026)
+
+- El pie nunca enseña un código HTTP ni un host como frase: dice qué pasa en castellano, trae su botón y el código va en «Ver detalle».
+- Una herramienta que no contesta a su `--version` sale como «no responde» a los 5 s, con su botón de instalar, en vez de «Comprobando…» para siempre.
+- Conectar Jira con una dirección que no responde dice qué falló (no encuentro la dirección, certificado, no responde) sin «TypeError», y el código va en «Ver detalle».
+
 ## Scope boundaries
 
 **In:** the three columns and footer of `bocetos/fase1-nucleo.html` (boceto 8), the
@@ -512,6 +518,12 @@ Fuera: crear emuladores por nuestra cuenta (solo se abre la Terminal con el coma
 
 Nunca fuera: validar `.atril/qa.json` (lo escribe el repo, no Atril); la ventana nunca manda un comando, solo el nombre de un arreglo; escritura atómica del archivo de elecciones.
 
+### Errores claros (plain-errors, 11 nov 2026)
+
+**In:** `src/main/usage.ts`, `src/renderer/components/Footer.tsx`, `src/main/doctor.ts`, `src/main/credentials/check.ts` y donde Ajustes pinta su error (`Connection.tsx`, `Ajustes.tsx`), los tipos de `src/preload/api.ts`, la IPC `atril:usage:fix`.
+
+**Out:** los errores de «Quitar», la terminal que no engancha y los trabajos parados (hallazgos 7, 8, 10, 11, 31): van en el siguiente cambio, con la fila del trabajo. Reintentos automáticos nuevos (W37 ya espacia los de la cuota). Los errores de Forges (GitHub/GitLab): ya dicen la causa.
+
 ## Constraints
 
 - Electron (current stable) + TypeScript in strict mode, pnpm, Node 24 (installed:
@@ -627,6 +639,12 @@ Textos por `t()`.
 - Los textos por `t()` con su entrada en `i18n-en.ts`; colores solo tokens.
 - `QaResult` de `retest`/`stop` no cambia; el de `launch` añade `problem`.
 - Tests con `ATRIL_HOME` temporal y dobles del `Runner`; nunca un emulador real en los tests.
+
+### Errores claros (plain-errors, 11 nov 2026)
+
+- El token OAuth sigue sin salir de main (W18): la frase y el detalle son textos fijos o un número de estado.
+- `err.message` de la red nunca llega a la ventana (puede llevar la petición); solo códigos de una lista (`ENOTFOUND`…) y el nombre de la excepción, en el detalle.
+- Textos por `t()` con su entrada inglesa; colores por tokens.
 
 ## Prior decisions
 
@@ -1700,6 +1718,25 @@ Textos por `t()`.
 - Q: ¿Un proyecto RN/Expo/Flutter cuántas pestañas da? → A: Android e iOS, una por plataforma que tenga carpeta (`android/`, `ios/`) o, en Expo, ambas (assumed).
 - Q: ¿Qué emulador reserva? → A: el primero de la lista de la persona que no tenga otro trabajo con su QA vivo; nunca crea uno sin que lo pida (assumed).
 
+### Errores claros (plain-errors, 11 nov 2026)
+
+- Un error de lectura que el usuario no puede leer como frase es un error suelto (regla de Pau, 11 nov, `bocetos/errores.html`): qué pasó, qué no puedes hacer, un botón, y el código plegado en «Ver detalle». Aquí se aplica al pie, al doctor y a Ajustes.
+
+#### Alternatives that lost
+
+| Considered | Why it lost |
+|---|---|
+| La caja `Problem` en el pie | ocupa cuatro líneas en una barra de una; tapa la terminal |
+| Mapear el error en la ventana a partir de la frase | la frase ya viene traducida; main sabe la causa |
+
+#### Decision log, answers as given (2026-11-11)
+- Q: (revisión del trabajo) `boxes.test.ts` cambió fuera del contrato → A: sí, a propósito: buscaba la lista de casillas sin esperarla y falló 1 de cada 2 veces en la suite; ahora la espera con `findByRole`, misma comprobación (assumed).
+- Q: (revisión en frío) ¿Y un 401 después de una lectura buena? → A: W37 manda: se quedan los últimos valores con su antigüedad (assumed).
+- Q: (revisión en frío) ¿Qué errores de Jira son «no responde»? → A: solo los que lanza `fetch`; los estados HTTP y la dirección mal escrita conservan su frase; el tiempo agotado dice «Jira no ha respondido en 10 s.» (assumed).
+- Q: ¿Cómo se ve un error en el pie, que es una sola línea? → A: la frase y un botón en la misma línea, y «Ver detalle» plegado al lado; sin la caja grande de `Problem` (assumed: si Pau quiere la caja, cabe encima del pie).
+- Q: ¿Qué arregla un fallo del llavero o del token? → A: «Abrir Claude Code», que abre Terminal con `claude` (la persona inicia sesión ahí); el resto, «Volver a comprobar» (assumed).
+- Q: ¿Cuánto espera el doctor? → A: 5 s por herramienta, como proponía el hallazgo 2 (assumed).
+
 ## Task breakdown
 
 - App shell: Electron main, preload bridge, renderer with sidebar / centre / right panel /
@@ -1777,8 +1814,9 @@ Textos por `t()`.
   renderer, or in any file under `~/.atril/`; the runner shall not log the stdout of a command
   marked secret.
   Proof: src/main/usage.test.ts token never leaves the main process
-- **W20** If a usage source cannot be read, then Atril shall show "—" with the reason.
-  Proof: src/main/usage.test.ts missing source shows a reason
+- **W20** If the usage cannot be read and there is no earlier good read, then the footer shall show one sentence per cause — no Claude Code session in the keychain or credentials unreadable, token rejected (401), too many requests (429), no network or no answer, any other status or an unreadable body — that names neither `api.anthropic.com` nor a status code; a button «Abrir Claude Code» for the keychain and token causes, which opens Terminal running `claude`, and «Volver a comprobar» for the rest, which reads the usage again; and the technical reason (the status code, or the failing step) only inside a folded «Ver detalle»; if opening Terminal fails, the footer shall show that reason in place of the sentence. After a good read, W37 holds for every cause: the last values stay with their age. The footer test asserts the text outside the `<details>` element, one case per cause in the main test.
+  Proof: src/main/usage.test.ts each failure says what happened with its fix and detail apart
+  Proof: src/renderer/footer.test.ts usage error shows its fix and folds the detail
 - **W21** If git, tmux, claude or jira is missing or fails its version command — `-V`
   for tmux, `version` for jira, `--version` for the rest — then Atril shall
   name it with its install command — git `xcode-select --install`, tmux `brew install tmux`,
@@ -2419,3 +2457,8 @@ Textos por `t()`.
   Proof: src/main/qa.test.ts every launch problem comes with its fix
 - **W126** When launch answers a problem, the QA card shall show its what and cannot in words, a button with the fix and «Ver detalle» folded with the technical detail, with no raw error elsewhere; a workspace with no target shall read «No sé cómo abrir este proyecto», the line «Busqué package.json con dev, start o preview, app.json de Expo, pubspec.yaml, settings.gradle, .xcodeproj o Package.swift, en la raíz y dos niveles», and «Elegir a mano».
   Proof: src/renderer/qa-screen.test.ts a launch problem shows its fix and detail folded
+
+### Errores claros (plain-errors, 11 nov 2026)
+
+- **W127** If a tool's version command has not finished after 5 s, then the doctor shall kill it and report that tool with the problem «no responde en 5 s» and its install command, and the other tools as they answered; the kill is the runner's `timeoutMs` (SIGKILL, code 124).
+  Proof: src/main/doctor.test.ts a hung tool is reported after 5 s

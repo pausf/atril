@@ -260,3 +260,9 @@ Reviewer found nothing (W97 proof and ui.ts validation re-run). The builder corr
 
 ## 2026-11-11 · qa-targets · 6→7
 - Targets are kept per repo but a worktree may lack the folder; tmux's raw error would reach the card. Fixed: a missing folder answers «Elegir a mano» before any split; test watched red.
+
+## 2026-11-11 · plain-errors · 6→7
+Un test arreglado de paso (una carrera en `boxes.test.ts`) quedó fuera del contrato y el revisor lo marcó. Si una carrera sale al construir, se apunta en el Decision log en el momento, no después.
+
+## 2026-11-11 · plain-errors · 6→7
+El estado inicial de la cuota («aún sin leer») cae en la frase genérica; encaja con W20, pero un estado «cargando» que se pinta como error es fácil de olvidar al escribir frases por causa.

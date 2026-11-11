@@ -57,6 +57,10 @@ Governs: src/main/credentials/** src/renderer/settings/**
 - Gestionar enseña Reemplazar y Borrar (y el tablero en Jira) sin mostrar nunca el token (S5).
 - En una ventana ancha, Ajustes usa dos columnas.
 
+### Errores claros (plain-errors, 11 nov 2026)
+
+- Conectar Jira con una dirección que no responde dice qué falló, sin el nombre de la excepción, con el código plegado en «Ver detalle».
+
 ## Scope boundaries
 
 **In:** storing, checking, replacing and deleting the Jira token, through a store and a card
@@ -121,6 +125,10 @@ disk; translating Claude's words.
 **Never scoped out:** el token nunca se muestra (S3, S5); teclado y foco en las filas y formularios;
 errores visibles junto al campo.
 
+### Errores claros (plain-errors, 11 nov 2026)
+
+**In:** `src/main/credentials/check.ts`, `src/renderer/settings/Connection.tsx`, `src/renderer/settings/Ajustes.tsx`. **Out:** los errores de Forges.
+
 ## Constraints
 
 - Electron `safeStorage` (macOS Keychain-backed key) encrypts each token; the ciphertext lives
@@ -157,6 +165,10 @@ errores visibles junto al campo.
 ### Hook prefixes (translate-hook-prefixes, 9 nov 2026)
 
 - Every key passes through a literal `t()` call (S16).
+
+### Errores claros (plain-errors, 11 nov 2026)
+
+- `err.message` nunca llega a la ventana; solo códigos de lista y el nombre de la excepción, en el detalle.
 
 ## Prior decisions
 
@@ -466,3 +478,9 @@ errores visibles junto al campo.
   one, and `.ajustes` shall show them side by side while the window is at least 1100 px wide and as one
   column, left first, below that.
   Proof: src/renderer/settings/connections.test.ts settings use two columns when wide
+
+### Errores claros (plain-errors, 11 nov 2026)
+
+- **S32** If the Jira check's request throws (an HTTP status or a malformed address keep their own sentences), then Ajustes shall say what failed by cause — host not found (`ENOTFOUND`, `EAI_AGAIN`): «No encuentro {host}.»; a certificate code (starting `CERT_`, `ERR_TLS_`, `SELF_SIGNED`, `UNABLE_TO_`, `DEPTH_ZERO`): «El certificado de {host} no es válido.»; a timeout: «Jira no ha respondido en 10 s.»; anything else: «No responde nada en {origin}.» — each followed by «Revisa la dirección: la de tu Jira suele ser https://tuempresa.atlassian.net.», never with the exception name in the sentence, and under a folded «Ver detalle» the code read from `err.cause.code` when it matches `^[A-Z0-9_]+$`, else the exception's name.
+  Proof: src/main/credentials/check.test.ts network failure names the cause and folds the code
+  Proof: src/renderer/settings/settings.test.ts jira error folds its detail
