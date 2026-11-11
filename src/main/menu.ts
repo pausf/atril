@@ -13,6 +13,8 @@ export interface MenuDeps {
   focusAvailable: boolean
   /** Trabajo shown with at least one workspace: «Todos» can be toggled (W81). */
   overviewAvailable: boolean
+  /** Trabajo shown as «Uno» with a workspace selected: the code can be enlarged (F40). */
+  bigAvailable?: boolean
   /** Main's state of the selected workspace: Pausar / Reanudar follow it (W88). */
   selectedState?: AgentState
   /** Pauses a working selected workspace or resumes a paused one (W86, W87). */
@@ -40,6 +42,7 @@ export function menuTemplate(d: MenuDeps): MenuItemConstructorOptions[] {
         },
         { label: t('Siguiente'), accelerator: 'CmdOrCtrl+Return', enabled: d.nextEnabled, click: () => d.send({ kind: 'next' }) },
         { label: t('Modo foco'), accelerator: 'CmdOrCtrl+Shift+F', type: 'checkbox', checked: d.focusOn, enabled: d.focusOn || d.focusAvailable, click: () => d.send({ kind: 'focusMode' }) },
+        { label: t('Ampliar código'), accelerator: 'CmdOrCtrl+Shift+E', enabled: d.bigAvailable === true, click: () => d.send({ kind: 'bigCode' }) },
         { label: t('Todos los agentes'), accelerator: 'CmdOrCtrl+Shift+A', enabled: d.overviewAvailable, click: () => d.send({ kind: 'overview' }) },
         { label: t('Volver'), accelerator: 'CmdOrCtrl+Alt+Left', enabled: d.focusOn, click: () => d.send({ kind: 'back' }) },
         { label: t('Buscar…'), accelerator: 'CmdOrCtrl+K', click: () => d.send({ kind: 'palette' }) },

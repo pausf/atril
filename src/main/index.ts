@@ -559,7 +559,7 @@ app.whenReady().then(async () => {
     return ui
   })
   ipcMain.handle('atril:snapshot-ws', () => Boolean(SNAPSHOT))
-  const menu = { selected: null as string | null, count: 0, nextEnabled: false, focusOn: false, focusAvailable: false, overviewAvailable: false }
+  const menu = { selected: null as string | null, count: 0, nextEnabled: false, focusOn: false, focusAvailable: false, overviewAvailable: false, bigAvailable: false }
   const notifyGate = createNotifyGate(() => menu.focusOn, () => BrowserWindow.getAllWindows()[0]?.isFocused() === true)
   // Filled once status exists; the menu is first built before it.
   let states = (): Record<string, AgentState> => ({})
@@ -592,6 +592,10 @@ app.whenReady().then(async () => {
   })
   ipcMain.on('atril:menu:overview', (_e, available: boolean) => {
     menu.overviewAvailable = available === true
+    refreshMenu()
+  })
+  ipcMain.on('atril:menu:big', (_e, available: boolean) => {
+    menu.bigAvailable = available === true
     refreshMenu()
   })
   ipcMain.on('atril:menu:state', (_e, selected: string | null, count: number) => {

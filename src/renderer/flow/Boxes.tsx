@@ -6,8 +6,10 @@ import { diffLines } from './DiffText'
 /** F38: pending boxes shown before «+{n} más». */
 const PENDING_SHOWN = 3
 
+type Big = (index: number, file?: string) => void
+
 /** The files of a box's range and the diff of the chosen one, as text. `version` asks the diff again (the live box). */
-function BoxCode({ workspaceId, box, version }: { workspaceId: string; box: FlowBox; version: number }) {
+function BoxCode({ workspaceId, box, version, onBig }: { workspaceId: string; box: FlowBox; version: number; onBig: Big }) {
   const t = useT()
   const files = box.files ?? []
   const [pick, setPick] = useState<string | null>(null)
@@ -51,6 +53,13 @@ function BoxCode({ workspaceId, box, version }: { workspaceId: string; box: Flow
           )
         })}
       </ul>
+      <div className="fx-mh">
+        <span className="fx-m">{file?.split('/').pop()}</span>
+        <button type="button" className="lnk" title={t('Ampliar (⌘⇧E)')} onClick={() => onBig(box.index, file)}>
+          <span aria-hidden="true">⤢ </span>
+          {t('Ampliar')}
+        </button>
+      </div>
       <div className="fx-mini">
         <pre className="hl diffview fx-diff" tabIndex={0} aria-label={t('Diff de {file}', { file: file ?? '' })}>
           {diff === null ? t('Cargando…') : diff === '' ? t('Este archivo ya no tiene cambios.') : diffLines(diff)}
@@ -60,7 +69,7 @@ function BoxCode({ workspaceId, box, version }: { workspaceId: string; box: Flow
   )
 }
 
-function ClosedBox({ workspaceId, box }: { workspaceId: string; box: FlowBox }) {
+function ClosedBox({ workspaceId, box, onBig }: { workspaceId: string; box: FlowBox; onBig: Big }) {
   const t = useT()
   const [open, setOpen] = useState(false)
   const body = useId()
@@ -73,14 +82,14 @@ function ClosedBox({ workspaceId, box }: { workspaceId: string; box: FlowBox }) 
         {box.commit && <small className="fx-m"> {box.commit}</small>}
       </button>
       <div id={body} hidden={!open}>
-        {open && <BoxCode workspaceId={workspaceId} box={box} version={0} />}
+        {open && <BoxCode workspaceId={workspaceId} box={box} version={0} onBig={onBig} />}
       </div>
     </li>
   )
 }
 
 /** F38: the checklist as a timeline; each box brings the code that closed it, the current one the code being written. */
-export function Boxes({ workspaceId, boxes, tick }: { workspaceId: string; boxes: FlowBox[]; tick: number }) {
+export function Boxes({ workspaceId, boxes, tick, onBig }: { workspaceId: string; boxes: FlowBox[]; tick: number; onBig: Big }) {
   const t = useT()
   const pending = boxes.filter((b) => b.state === 'pending')
   const hidden = pending.length - PENDING_SHOWN
@@ -88,7 +97,7 @@ export function Boxes({ workspaceId, boxes, tick }: { workspaceId: string; boxes
   return (
     <ol className="fx-tl" aria-label={t('Casillas del checklist')} data-tour="flow-checklist">
       {boxes.map((b) => {
-        if (b.state === 'closed') return <ClosedBox key={b.index} workspaceId={workspaceId} box={b} />
+        if (b.state === 'closed') return <ClosedBox key={b.index} workspaceId={workspaceId} box={b} onBig={onBig} />
         if (b.state === 'current')
           return (
             <li className="fx-bx c" key={b.index}>
@@ -96,7 +105,7 @@ export function Boxes({ workspaceId, boxes, tick }: { workspaceId: string; boxes
                 {b.text}
                 <span className="sr-only"> {t('ahora')}</span>
               </span>
-              <BoxCode workspaceId={workspaceId} box={b} version={tick} />
+              <BoxCode workspaceId={workspaceId} box={b} version={tick} onBig={onBig} />
             </li>
           )
         return shownPending.has(b.index) ? (

@@ -3263,3 +3263,37 @@ button.fx-bt {
 .fchanges button.on {
   background: var(--chip);
 }
+
+/* F39: a box's code in the centre, in place of the terminal. */
+.panes[hidden] {
+  display: none;
+}
+.bigcode {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--ed-1);
+  color: var(--ed-2);
+  border-radius: var(--r);
+  overflow: hidden;
+  box-shadow: 0 10px 30px var(--shadow);
+}
+.bigcode:focus {
+  outline: none;
+}
+.bigcode .doc-editor {
+  grid-template-columns: 200px 1fr;
+}
+.bigcode .edhead h3 {
+  font-size: 16px;
+}
+.fx-mh {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 6px;
+}
+.fx-mh .lnk {
+  white-space: nowrap;
+}

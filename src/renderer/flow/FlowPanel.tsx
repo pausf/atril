@@ -15,7 +15,16 @@ const tabsOf = (t: T) =>
   ] as const
 type TabId = ReturnType<typeof tabsOf>[number]['id']
 
-export function FlowPanel({ workspaceId, flow, boxes, onOpenLibretto }: { workspaceId: string | null; flow: FlowStage | null; boxes: BoxesState; onOpenLibretto: () => void }) {
+interface PanelProps {
+  workspaceId: string | null
+  flow: FlowStage | null
+  boxes: BoxesState
+  /** «⤢ Ampliar» on a box's code (F39). */
+  onBig: (index: number, file?: string) => void
+  onOpenLibretto: () => void
+}
+
+export function FlowPanel({ workspaceId, flow, boxes, onBig, onOpenLibretto }: PanelProps) {
   const t = useT()
   const TABS = tabsOf(t)
   const [tab, setTab] = useState<TabId>('libretto')
@@ -62,7 +71,7 @@ export function FlowPanel({ workspaceId, flow, boxes, onOpenLibretto }: { worksp
           <ActivityFeed workspaceId={workspaceId} />
         ) : (
           <>
-            <LibrettoFlow flow={flow} workspaceId={workspaceId} boxes={boxes} onOpenLibretto={onOpenLibretto} />
+            <LibrettoFlow flow={flow} workspaceId={workspaceId} boxes={boxes} onBig={onBig} onOpenLibretto={onOpenLibretto} />
             <Subagents workspaceId={workspaceId} />
             <Qa workspaceId={workspaceId} />
           </>
@@ -72,7 +81,7 @@ export function FlowPanel({ workspaceId, flow, boxes, onOpenLibretto }: { worksp
   )
 }
 
-function LibrettoFlow({ flow, workspaceId, boxes, onOpenLibretto }: { flow: FlowStage | null; workspaceId: string | null; boxes: BoxesState; onOpenLibretto: () => void }) {
+function LibrettoFlow({ flow, workspaceId, boxes, onBig, onOpenLibretto }: Omit<PanelProps, 'workspaceId'> & { workspaceId: string | null }) {
   const t = useT()
   if (flow?.stage === 'sin-libretto') return <div className="empty">{t('sin Libretto: este trabajo no tiene carpeta .agents')}</div>
   return (
@@ -85,7 +94,7 @@ function LibrettoFlow({ flow, workspaceId, boxes, onOpenLibretto }: { flow: Flow
           </span>
         </p>
       )}
-      {workspaceId && flow && BUILDING.includes(flow.stage) && boxes.boxes.length > 0 && <Boxes workspaceId={workspaceId} boxes={boxes.boxes} tick={boxes.tick} />}
+      {workspaceId && flow && BUILDING.includes(flow.stage) && boxes.boxes.length > 0 && <Boxes workspaceId={workspaceId} boxes={boxes.boxes} tick={boxes.tick} onBig={onBig} />}
       {flow && flow.others.length > 0 && (
         <p className="fmeta crow">
           <span>{flow.others.length === 1 ? t('1 cambio más en este repo') : t('{n} cambios más en este repo', { n: flow.others.length })}</span>

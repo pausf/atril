@@ -675,6 +675,7 @@ export type MenuAction =
   | { kind: 'focusMode' }
   | { kind: 'back' }
   | { kind: 'overview' }
+  | { kind: 'bigCode' }
 
 export type Theme = 'light' | 'dark' | 'auto'
 export type Palette = 'original' | 'grafito'
@@ -715,6 +716,8 @@ export interface MenuApi {
   setFocus(on: boolean, available: boolean): void
   /** Trabajo shown with at least one workspace: «Todos» can be toggled (W81). */
   setOverview(available: boolean): void
+  /** F40: Trabajo shows «Uno» with a workspace selected, so the code can be enlarged. */
+  setBig(available: boolean): void
   /** Returns the unsubscribe function. */
   onAction(cb: (a: MenuAction) => void): () => void
 }

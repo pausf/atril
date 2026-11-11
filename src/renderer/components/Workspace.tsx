@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { useEffect, useRef, type ReactNode } from 'react'
 import type { FlowStage, WorkspaceView } from '../../preload/api'
 import { stateOf, useAgentStates } from '../agents'
 import { Steps } from '../flow/Steps'
@@ -6,8 +6,15 @@ import { useT } from '../ui'
 import { StateLabel } from './StateLabel'
 import { Terminal } from './Terminal'
 
-export function Workspace({ ws, flow, switcher }: { ws: WorkspaceView | undefined; flow: FlowStage | null; switcher?: ReactNode }) {
+export function Workspace({ ws, flow, big, switcher }: { ws: WorkspaceView | undefined; flow: FlowStage | null; /** F39: the enlarged code, shown in place of the terminal. */ big?: ReactNode; switcher?: ReactNode }) {
   const t = useT()
+  const panes = useRef<HTMLDivElement>(null)
+  const wasBig = useRef(false)
+  // F39: the terminal stays mounted while the code is large; closing it gives the terminal its focus back.
+  useEffect(() => {
+    if (wasBig.current && !big) panes.current?.querySelector<HTMLElement>('.xterm-helper-textarea')?.focus()
+    wasBig.current = Boolean(big)
+  }, [big])
   const states = useAgentStates()
   return (
     <main className="col center">
@@ -23,7 +30,8 @@ export function Workspace({ ws, flow, switcher }: { ws: WorkspaceView | undefine
         <span className="sp" />
         {switcher && <span className="wtools">{switcher}</span>}
       </div>
-      <div className="panes">
+      {big}
+      <div className="panes" hidden={Boolean(big)} ref={panes}>
         <div className="pane" data-tour="terminal">
           <div className="ph">
             <b>terminal</b>

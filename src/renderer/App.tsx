@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { DoctorReport, JiraIssue, NextItem, WorkspaceView } from '../preload/api'
 import { FlowPanel } from './flow/FlowPanel'
+import { BigCode } from './flow/BigCode'
 import { useBoxes, useFlow } from './flow/useFlow'
 import { Footer } from './components/Footer'
 import { Rail, type Screen } from './components/Rail'
@@ -104,6 +105,15 @@ function Shell() {
   }
   const flow = useFlow(selected)
   const boxes = useBoxes(selected, flow)
+  // F39: the enlarged code of one box, never stored. It lives where the terminal is, so only on «Uno».
+  const [big, setBig] = useState<{ index: number; file?: string } | null>(null)
+  const bigAvailable = screen === 'work' && !all && selected !== null
+  const bigBox = big ? boxes.boxes.find((b) => b.index === big.index) : undefined
+  useEffect(() => window.atril.menu.setBig(bigAvailable), [bigAvailable])
+  useEffect(() => {
+    if (!bigAvailable || (big && !bigBox)) setBig(null)
+  }, [bigAvailable, big, bigBox])
+  useEffect(() => setBig(null), [selected])
   const inbox = useInbox()
   const next = useNextUp()
   const mrs = useMrs()
@@ -267,6 +277,12 @@ function Shell() {
           toggleFocus()
           return
         }
+        if (a.kind === 'bigCode') {
+          if (big) return setBig(null)
+          const target = boxes.boxes.find((b) => b.state === 'current') ?? boxes.boxes.filter((b) => b.state === 'closed').at(-1)
+          if (bigAvailable && target) setBig({ index: target.index })
+          return
+        }
         if (a.kind === 'overview') {
           if (overviewAvailable) showAll(!all)
           return
@@ -274,7 +290,7 @@ function Shell() {
         if (a.kind === 'tutorial') setTourOpen(true)
         else focusRegion(a.target)
       }),
-    [workspaces, next, inbox.issues, selected, focused, screen, returnTo, all, overviewAvailable]
+    [workspaces, next, inbox.issues, selected, focused, screen, returnTo, all, overviewAvailable, big, boxes.boxes, bigAvailable]
   )
 
   // Start already created the workspace in main: only the list and the inbox links are stale.
@@ -390,6 +406,7 @@ function Shell() {
                   <Workspace
                     ws={workspaces.find((w) => w.id === selected)}
                     flow={flow}
+                    big={bigBox && selected ? <BigCode key={bigBox.index} workspaceId={selected} box={bigBox} tick={boxes.tick} start={big?.file} onClose={() => setBig(null)} /> : null}
                     switcher={
                       <>
                         <ViewSwitch all={all} onChange={showAll} />
@@ -402,6 +419,7 @@ function Shell() {
                   workspaceId={selected}
                   flow={flow}
                   boxes={boxes}
+                  onBig={(index, file) => setBig({ index, file })}
                   onOpenLibretto={() => {
                     const repoId = workspaces.find((w) => w.id === selected)?.repoId
                     if (repoId) setLibrettoRepo(repoId)
