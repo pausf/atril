@@ -115,10 +115,38 @@ nombres accesibles; tokens de color.
   Proof: src/renderer/flow/boxes.test.ts the large code opens and closes from the menu and the keyboard
 - **F20** (amended) The Libretto panel shall show no «Cambios» section, no list of the branch's files and no «ver N
   archivos» button.
-  Proof: src/renderer/flow/changes.test.ts changes show from construir on
+  Proof: src/renderer/flow/changes.test.ts the panel shows no list of changes
 - **F30** (amended) The panel's foldable sections (Subagentes) shall keep their folded state per section when the
   panel is mounted again and start open.
   Proof: src/renderer/flow/panel.test.ts the panel sections fold and remember
+
+- **F13** (amended) When the person clicks the Spec or Plan step (F29), Atril shall open a modal over the app with
+  the current change's `proposal.md` (and, for Spec, one more file tab per `spec-*.md`), with the cursor at that
+  part's heading — Spec: the first level-2 heading; Plan: `## Approach`, found outside code fences as in F1–F7 — and
+  each shall be a button only from its stage on: Spec from Spec, Plan from Plan; Escape or Cerrar shall close it,
+  asking first when there are unsaved changes.
+  Proof: src/renderer/flow/documents.test.ts stage opens what the agent wrote
+- **F21** (amended) A box's code shall be seen only in the panel (F38) and large in the centre (F39); no diff modal
+  shall open from the panel.
+  Proof: src/renderer/flow/boxes.test.ts the code can be seen large in the centre
+- **F22** (amended) While the stage is Construir or later, Atril shall ask for the boxes (F36) every 3 seconds,
+  skipping a tick while the previous request has not answered, and keep a slower answer for the same workspace, box
+  and file instead of dropping it.
+  Proof: src/renderer/flow/boxes.test.ts the live diff shows even when it answers slower than the 3 s poll
+- **F25** (amended) While the branch totals more than the hook's threshold (400), the top of the Libretto panel shall
+  show a warning element (class `fbig`) reading «⚠ N líneas: rama grande (más de 400). Atril le ha pedido a Claude
+  que te proponga separarla en MRs más pequeñas.»
+  Proof: src/renderer/flow/changes.test.ts a large branch warns at the top of the panel
+- **F26** (amended) In an automatic workspace, Spec and Plan shall open read-only whatever the agent's state (an
+  exception to F15; the large code view already is), with the status bar «solo lectura · modo automático» in place
+  of F15's.
+  Proof: src/renderer/flow/documents.test.ts automatic documents are read-only
+- **F31** (amended) The Libretto panel shall show no list of the branch's files and no «+{n} más» files button.
+  Proof: src/renderer/flow/changes.test.ts the panel shows no list of changes
+- **F32** (amended) The Spec and Plan steps (F29) shall be buttons named «Spec» and «Plan» with a document icon, each
+  only from the stage F13 makes it a button on, opening the same document; the panel's «Cambio» line shall carry no
+  document buttons.
+  Proof: src/renderer/flow/panel.test.ts the documents read as buttons next to the change
 
 ## Approach
 
@@ -162,6 +190,6 @@ El corte por commits que marcan casillas: es lo que une código y Libretto.
 
 ## Checklist
 
-- [ ] box ranges and box diffs in main with their IPC · Closes: F36, F37
-- [ ] the six named steps above the work, the boxes timeline and the removals in the panel · waits on box 1 · Closes: F29, F38, F20, F30
-- [ ] Ampliar to the centre, ⌘⇧E and its menu item; real-app drive; photo; novedades · waits on box 2 · Closes: F39, F40
+- [x] box ranges and box diffs in main with their IPC · Closes: F36, F37
+- [x] the six named steps above the work, the boxes timeline and the removals in the panel · waits on box 1 · Closes: F29, F38, F20, F30
+- [x] Ampliar to the centre, ⌘⇧E and its menu item; real-app drive; photo; novedades · waits on box 2 · Closes: F39, F40

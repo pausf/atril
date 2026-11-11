@@ -24,7 +24,7 @@ beforeEach(() => mockSystemTheme(false))
 afterEach(cleanup)
 
 describe('file changes', () => {
-  it('changes show from construir on', async () => {
+  it('the panel shows no list of changes', async () => {
     // From Construir on the panel holds no «Cambios»: no section, no list of the branch's files, no «ver N archivos».
     for (const flow of [{ stage: 'plan', change: 'add-x', others: [] } as FlowStage, building, { ...building, stage: 'terminado' } as FlowStage]) {
       await boot(flow)
@@ -39,7 +39,7 @@ describe('file changes', () => {
     }
   })
 
-  it('a large branch warns in cambios', async () => {
+  it('a large branch warns at the top of the panel', async () => {
     // F25 (amended by panel-c): the warning is a line at the top of the panel, from the branch total that main sends.
     const big: FileChange[] = [{ path: 'src/Big.php', status: 'A', added: 380, removed: 0 }, { path: 'src/Old.php', status: 'M', added: 70, removed: 50 }]
     await boot(building, big)

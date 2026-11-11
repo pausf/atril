@@ -233,3 +233,9 @@ Reviewer found nothing (W97 proof and ui.ts validation re-run). The builder corr
 
 ## 2026-11-11 · ask-card · 6→7
 - `.quick-replies` CSS suspected dead after the card. Checked: the Pause button in Todos still uses it. No change.
+
+## 2026-11-11 · panel-c · 6→7
+- The change retired the Cambios section, the diff modal and the Checklist button, but only amended F20/F29/F30; F13, F21, F22, F25, F26, F31 and F32 stayed live and contradicted the code. Fixed: each amended in the change. When a change removes a UI part, list every criterion that names it.
+
+## 2026-11-11 · panel-c · real app
+- jsdom passed while the real window was broken: new step classes reused global `.seg` and `.bar`, and a 3 s poll cancelled a 2.7 s git diff forever. Caught only by driving the real app with Playwright. Every UI change is driven in the real app before landing.
