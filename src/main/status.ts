@@ -4,9 +4,9 @@ import { join } from 'node:path'
 import type { AgentState, QuickAnswer, QuickChoice, QuickReplies, WorkspaceView } from '../preload/api'
 import { atrilHome } from './paths'
 import { run as defaultRun, type Runner } from './run'
-import { paneDead, paneListedDead, pressKey, sendKey, sendText } from './tmux'
+import { hasSession, paneDead, paneListedDead, pressKey, sendKey, sendText } from './tmux'
 import type { AgentSnapshot } from './nextup'
-import { listWorkspaces } from './workspaces'
+import { listWorkspaces, readRecords } from './workspaces'
 import { orProblem, readState, StateError } from './state'
 import { t } from './lang'
 import { localiseActivity } from '../preload/activity-i18n'
@@ -62,10 +62,16 @@ export function planReply(text: string, ws: Pick<WorkspaceView, 'paneId' | 'aliv
   return { kind: 'send', paneId: ws.paneId, text: line }
 }
 
+/** W163: an action asks tmux directly whether the session exists; the 1-second snapshot is only for showing state. */
+async function actingWorkspace(id: string, run: Runner): Promise<WorkspaceView | undefined> {
+  const rec = (await readRecords()).find((r) => r.id === id)
+  return rec && { ...rec, alive: await hasSession(id, run) }
+}
+
 /** Resolves the workspace's own pane from its record and types the reply there; nothing else is touched. */
 export async function replyToAgent(id: string, text: string, run: Runner = defaultRun): Promise<'sent' | 'ignored' | 'gone'> {
   if (text.trim() === '') return 'ignored'
-  const ws = (await listWorkspaces(run)).find((w) => w.id === id)
+  const ws = await actingWorkspace(id, run)
   const plan = planReply(text, ws, ws ? await paneDead(ws.paneId, run) : true)
   if (plan.kind !== 'send') return plan.kind === 'gone' ? 'gone' : 'ignored'
   return (await sendText(plan.paneId, plan.text, run)) ? 'sent' : 'gone'
@@ -89,7 +95,7 @@ const isChoice = (c: unknown): c is QuickChoice => {
 /** W75: re-reads the state, then types an option's number key or main's own fixed words into that workspace's pane. */
 export async function answerAgent(id: string, choice: QuickChoice, run: Runner = defaultRun): Promise<QuickAnswer> {
   if (!isChoice(choice)) return { error: t('Esa opción ya no existe.') }
-  const ws = (await listWorkspaces(run)).find((w) => w.id === id)
+  const ws = await actingWorkspace(id, run)
   if (!ws?.alive || !/^%\d+$/.test(ws.paneId) || (await paneDead(ws.paneId, run))) return { error: replyGone() }
   const { state, options } = await hookFile(ws.session)
   if (state !== 'needs-you') return { error: t('Ese agente ya no está esperando una respuesta.') }
@@ -103,7 +109,7 @@ export async function answerAgent(id: string, choice: QuickChoice, run: Runner =
 }
 
 export async function liveWorkspace(id: string, run: Runner): Promise<WorkspaceView | undefined> {
-  const ws = (await listWorkspaces(run)).find((w) => w.id === id)
+  const ws = await actingWorkspace(id, run)
   return ws?.alive && /^%\d+$/.test(ws.paneId) && !(await paneDead(ws.paneId, run)) ? ws : undefined
 }
 

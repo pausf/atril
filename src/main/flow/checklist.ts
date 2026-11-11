@@ -40,8 +40,10 @@ export function parseBoxes(text: string, isProposal: boolean): Omit<Checklist, '
 }
 
 /** The file whose boxes count, with its text: proposal.md, else tasks.md, else plan.md. */
+export const CHECKLIST_FILES = ['proposal.md', 'tasks.md', 'plan.md'] as const
+
 export async function checklistSource(changeDir: string): Promise<{ file: string; text: string } | null> {
-  for (const file of ['proposal.md', 'tasks.md', 'plan.md']) {
+  for (const file of CHECKLIST_FILES) {
     let text: string
     try {
       text = await readFile(join(changeDir, file), 'utf8')

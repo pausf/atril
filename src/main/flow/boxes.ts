@@ -3,7 +3,7 @@ import { join } from 'node:path'
 import type { FileChange, FlowBox, FlowBoxes } from '../../preload/api'
 import type { Runner } from '../run'
 import { fileDiff, listChanges } from './changes'
-import { checklistSource, listBoxes, type BoxItem } from './checklist'
+import { checklistSource, CHECKLIST_FILES, listBoxes, type BoxItem } from './checklist'
 
 interface Range {
   from: string
@@ -45,8 +45,11 @@ export function forgetPlans(path: string): void {
 
 async function cachedPlan(path: string, base: string, change: string, run: Runner): Promise<Cached> {
   const dir = join(path, '.agents', 'changes', change)
-  const [head, source] = await Promise.all([run('git', ['-C', path, 'rev-parse', 'HEAD']), checklistSource(dir)])
-  const st = source ? await stat(join(dir, source.file)).catch(() => null) : null
+  const head = await run('git', ['-C', path, 'rev-parse', 'HEAD'])
+  // The stat goes before the read: an edit in between then shows as a new key next time, never as an old plan under a new key.
+  const before = await Promise.all(CHECKLIST_FILES.map((f) => stat(join(dir, f)).catch(() => null)))
+  const source = await checklistSource(dir)
+  const st = source ? before[(CHECKLIST_FILES as readonly string[]).indexOf(source.file)] : null
   const key = JSON.stringify([base, head.stdout.trim(), source?.file, st?.mtimeMs, st?.size])
   const id = `${path}\0${change}`
   const old = plans.get(id)

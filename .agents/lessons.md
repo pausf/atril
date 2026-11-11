@@ -311,3 +311,12 @@ Nada contra el contrato. Aceptado: quitar un repo lee `workspaces.json` y luego 
 
 ## 2026-11-11 · term-attach · 6→7
 «Never rejects» se probó solo en `pty.attach`; el manejador IPC leía la lista con el lector estricto y rechazaría con `workspaces.json` dañado. Un IPC que solo enseña usa `listWorkspacesOrNone` (W145).
+
+## 2026-11-11 · fast-panel · 6→7
+Responder, contestar rápido y pausar decidían «vivo» con la foto de tmux de 1 s porque `listWorkspaces` pasó a usarla: un lector compartido que se abarata cambia también a quien actúa. Las acciones leen el registro y preguntan `has-session` directamente.
+
+## 2026-11-11 · fast-panel · 6→7
+La caché del plan leía el checklist antes de su `stat`: una edición entre medias guardaba el plan viejo con la clave nueva. Primero la clave, luego la lectura.
+
+## 2026-11-11 · fast-panel · medición
+En el Mac de Pau cada proceso cuesta ~125 ms en reposo y 300–800 ms con carga (no es git: `/usr/bin/true` 3 ms, git hace 6,5 ms de trabajo; probable antivirus). Antes/después con 4 trabajos: boxDiff 3,9–5,3 s → 1,5–1,8 s; boxes repetido 4,7–6,3 s → 1,6 s; reposo 11 → 5 procesos/s. Queda: no lanzar nada si el vigilante de archivos dice que nada cambió.
