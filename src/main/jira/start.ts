@@ -35,6 +35,8 @@ export async function proposeStart(
   if (!KEY_RE.test(issue.key)) return { error: BAD_KEY(issue.key) }
   const badEffort = effortError(opts.effort)
   if (badEffort) return { error: badEffort }
+  // W41: the shown command is built from the same lists as the one that runs.
+  if (opts.model !== undefined && !MODELS.includes(opts.model)) return { error: t('«{model}» no es un modelo disponible', { model: String(opts.model) }) }
   const command = display(agentArgv({ model: opts.model, effort: opts.effort, prompt: flowPrompt(issue.key, opts.auto) }))
   const repos = await listRepos(run)
   const wanted = opts.repoId ?? (await rememberedRepo(memoryKey(issue)))

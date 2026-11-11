@@ -278,3 +278,9 @@ El reintento con texto vacío (Claude a secas en un worktree) no tenía test: un
 
 ## 2026-11-11 · ws-errors · 6→7
 `atril:ws:forget` acepta cualquier id, también uno vivo con su carpeta; solo la ventana lo limita al caso roto. Aceptado: no toca la carpeta y el registro se puede volver a crear abriendo la rama.
+
+## 2026-11-11 · model-pick · 6→7
+`proposeStart` construía el comando que se enseña con un modelo sin validar (el que se ejecuta sí se validaba). Si dos caminos montan el mismo comando, los dos pasan por la misma lista; ahora lo prueba «an unknown effort is refused before anything runs».
+
+## 2026-11-11 · model-pick · arnés
+Desde `login-path`, el PATH del shell de login va delante: un `claude` falso solo en `PATH` pierde y las pruebas arrancan el real (gastó cuota en repos de prueba). El arnés usa un `SHELL` falso que antepone los dobles; anotado en CLAUDE.md.

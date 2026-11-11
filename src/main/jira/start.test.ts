@@ -5,7 +5,7 @@ import { hasSession } from '../tmux'
 import { run } from '../run'
 import { listWorkspaces } from '../workspaces'
 import { agentSpy, cleanTmp, git, killTmux, makeRegisteredRepo, tmp, tmuxSock } from '../test-helpers'
-import type { Effort } from '../../preload/api'
+import type { Effort, Model } from '../../preload/api'
 import { proposeStart, start } from './start'
 
 const CREDS = { site: 'https://acme.atlassian.net', email: 'ada@example.com', token: 'tok-SECRET-123' }
@@ -118,6 +118,8 @@ describe('start', () => {
       expect(await start(bad, { run: spy.run, creds: CREDS, fetchImpl: jira.fetch })).toEqual({ error: `«${effort}» no es un esfuerzo disponible` })
       expect(await proposeStart(issue, { repoId: 'demo', effort: effort as Effort })).toEqual({ error: `«${effort}» no es un esfuerzo disponible` })
     }
+    // The command «Empezar» shows comes from the same lists: a model off the list is refused too.
+    expect(await proposeStart(issue, { repoId: 'demo', model: '--dangerously-skip-permissions' as Model })).toEqual({ error: '«--dangerously-skip-permissions» no es un modelo disponible' })
     expect(spy.argvs).toHaveLength(0)
     expect(jira.calls).toHaveLength(0)
     expect(await listWorkspaces()).toEqual([])
