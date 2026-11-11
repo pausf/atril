@@ -26,6 +26,19 @@ Los subagentes dejan de ser una sección aparte del panel y cuelgan, como ramas,
 - Q: ¿Pulsar? → A: abre el modal de F28, igual que hoy (assumed).
 - Q: ¿Sin casilla en curso (sin checklist o todo cerrado)? → A: las ramas cuelgan de la línea «Cambio: …» (assumed).
 
+### Session 2026-11-11 (revisión en frío)
+- Q: ¿Y QA, que también se pliega? → A: QA sigue plegable hasta que tenga su pantalla (`qa-screen`); F30 habla solo
+  de QA (assumed).
+- Q: ¿Sin cambio de Libretto? → A: las ramas cuelgan de una línea «Subagentes» arriba del panel (assumed).
+- Q: ¿Accesible? → A: cada rama lleva en su nombre accesible «trabajando · {d}» o «terminado · {d}» (assumed).
+- Q: ¿«Una vez»? → A: una petición por cada vez que entra el ratón o el foco; si llega después de salir, se ignora
+  (assumed).
+- Q: ¿Qué línea? → A: la última línea no vacía del registro de F28 sin su prefijo (`⏺ `, `⎿ `, `> `); si es de
+  pensar, «Pensando…»; si el registro está vacío, la descripción (assumed).
+- Q: ¿Quién lleva qué? → A: `FlowPanel` sigue dueño de las entradas, del reloj de 1 s y del modal; se los pasa a
+  `Boxes`, que pinta `Branches` dentro de la casilla en curso; `Subagents.tsx` se queda con el modal y `duration()`
+  y deja de pintar la sección; el test «subagents show in the panel» se reescribe como el de F27 (assumed).
+
 ## Outcomes
 
 - Se ve qué subagentes trabajan para la casilla que se está construyendo, qué hace cada uno y cuánto llevan, sin una
@@ -45,17 +58,19 @@ Los subagentes dejan de ser una sección aparte del panel y cuelgan, como ramas,
 ## Verification criteria
 
 - **F27** (amended) While the selected workspace has subagent entries, the panel shall show them as branches under
-  the current box of the timeline (F38) — or under the «Cambio» line when there is no current box — newest
+  the current box of the timeline (F38) — or under the «Cambio» line when there is no current box, or under a «Subagentes» line at the top of the panel when there is no change — newest
   `startedAt` first, each a button labelled with its description (or its type), its type when a description is
   shown, a live dot while it runs or «✓» when it ended, and «{d}» (F27's durations, refreshed every second while
-  any runs); no «Subagentes» section shall show. One test holds a case per clause.
+  any runs), its accessible name ending in «trabajando · {d}» or «terminado · {d}»; no «Subagentes» section shall show. One test holds a case per clause.
   Proof: src/renderer/flow/subagents.test.ts subagents hang from the current box
-- **F41** When the pointer rests on a branch or the branch takes focus, the panel shall ask that subagent's log once
-  and show its last line in place of the description until the pointer leaves or focus moves; an empty log keeps
-  the description.
+- **F41** Each time the pointer enters a branch or the branch takes focus, the panel shall ask that subagent's log
+  once and show its last non-empty line without its F28 prefix (`⏺ `, `⎿ `, `> `), or «Pensando…» for a thinking
+  line, in place of the description until the pointer leaves or focus moves; an answer arriving after that is
+  ignored; an empty log keeps the description.
   Proof: src/renderer/flow/subagents.test.ts a branch shows what its subagent did last
-- **F30** (amended) The Libretto panel shall have no foldable sections.
-  Proof: src/renderer/flow/panel.test.ts the panel sections fold and remember
+- **F30** (amended) The Libretto panel's only foldable section shall be QA (F33), whose title is a button with
+  `aria-expanded` that folds and unfolds it and keeps its folded state when the panel is mounted again, starting open.
+  Proof: src/renderer/flow/subagents.test.ts the panel sections fold and remember
 
 ## Approach
 
