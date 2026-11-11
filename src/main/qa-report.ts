@@ -1,4 +1,4 @@
-import { lstat, readFile, stat } from 'node:fs/promises'
+import { lstat, readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import type { QaBugRequest, QaBugResult, QaEntry, QaReport, QaResult, QaStep } from '../preload/api'
 import type { JiraBoard } from '../preload/api'
@@ -40,7 +40,7 @@ async function validStep(dir: string, raw: unknown): Promise<QaStep | null> {
 /** W114: report.json is a model's text: only what validates is answered. */
 async function readEntries(id: string, ids: Set<string>): Promise<{ entries: QaEntry[]; at: number }> {
   const file = reportFile(id)
-  const st = await stat(file).catch(() => null)
+  const st = await lstat(file).catch(() => null)
   if (!st?.isFile() || st.size > MAX_FILE) return { entries: [], at: 0 }
   let parsed: unknown
   try {

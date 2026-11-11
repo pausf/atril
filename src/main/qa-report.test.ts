@@ -303,14 +303,15 @@ describe('a bug', () => {
       await until(capture, (s) => s.includes('ready'))
 
       // A hostile body that tries to close the paste early: its escape is dropped, the paste is still one.
-      const hostile = { title: 'QA feat/bug: falla', body: 'uno\ndos \x1b[201~ tres' }
+      const hostile = { title: 'QA feat/bug: falla', body: 'uno\ndos \x1b[201~ tres\x03 cuatro\x04\r' }
       expect(await bug(ws.id, { to: 'agent', ...hostile }, { run, creds: null, board: null })).toEqual({ ok: true })
       const out = await until(capture, (s) => s.includes('^[[201~'))
       expect(out).toContain('^[[200~QA feat/bug: falla')
       expect(out).toContain('uno')
       expect(out.match(/\^\[\[200~/g)).toHaveLength(1)
       expect(out.match(/\^\[\[201~/g)).toHaveLength(1)
-      expect(out).toContain('dos [201~ tres')
+      expect(out).toContain('dos [201~ tres cuatro')
+      expect(out).not.toMatch(/\^C|\^D/)
 
       // A stopped workspace: nothing to paste into.
       tmuxOut(sock, 'kill-session', '-t', `=${ws.session}`)

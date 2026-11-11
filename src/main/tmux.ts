@@ -82,8 +82,9 @@ export async function pressKey(paneId: string, key: string, run: Runner = defaul
 /** Pastes `text` into one pane as a bracketed paste (line breaks do not send), then Enter. Escapes are dropped so the text cannot close the paste early. */
 export async function pasteText(paneId: string, text: string, run: Runner = defaultRun): Promise<boolean> {
   const buffer = `atril-${randomUUID().slice(0, 8)}`
+  // Only \n and \t survive: no ESC to close the paste early, no ^C/^D/\r to act before Enter.
   // eslint-disable-next-line no-control-regex
-  const loaded = await run('tmux', [...tmuxArgs(), 'load-buffer', '-b', buffer, '-'], { input: text.replace(/\x1b/g, '') })
+  const loaded = await run('tmux', [...tmuxArgs(), 'load-buffer', '-b', buffer, '-'], { input: text.replace(/[\x00-\x08\x0b-\x1f\x7f]/g, '') })
   if (loaded.code !== 0) return false
   // -d drops the buffer after the paste, -p brackets it when the pane asked for bracketed paste.
   return (await tmux(run, ['paste-buffer', '-d', '-p', '-b', buffer, '-t', paneId])).code === 0 && (await tmux(run, ['send-keys', '-t', paneId, 'Enter'])).code === 0

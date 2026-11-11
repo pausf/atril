@@ -245,3 +245,9 @@ Reviewer found nothing (W97 proof and ui.ts validation re-run). The builder corr
 
 ## 2026-11-11 · subagent-branches · 6→7
 - F28 still said «row» after rows became branches. Amended in the change; the stale panel prose (Subagentes folds) is superseded by F27/F30 amended.
+
+## 2026-11-11 · qa-screen · 6→7
+- The paste into an agent pane only stripped ESC; ^C, ^D and \r inside a bug body could act before Enter. Fixed: every C0 control but \n and \t is dropped; the hostile-paste test carries them (watched red).
+
+## 2026-11-11 · qa-screen · 6→7
+- report.json was opened with stat (follows symlinks) while shots used lstat. Fixed: lstat for both; untrusted files are never followed.
