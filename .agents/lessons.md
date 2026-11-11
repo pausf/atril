@@ -284,3 +284,9 @@ El reintento con texto vacío (Claude a secas en un worktree) no tenía test: un
 
 ## 2026-11-11 · model-pick · arnés
 Desde `login-path`, el PATH del shell de login va delante: un `claude` falso solo en `PATH` pierde y las pruebas arrancan el real (gastó cuota en repos de prueba). El arnés usa un `SHELL` falso que antepone los dobles; anotado en CLAUDE.md.
+
+## 2026-11-11 · reopen-work · 6→7
+Dos reopen del mismo trabajo a la vez (ventana recargada) veían los dos «sin sesión»; el `catch` del segundo mataba la sesión sana del primero y ninguno salía bien. Una limpieza tras un fallo solo puede deshacer lo que creó esa misma llamada: candado por id. Proof: «a stopped work reopens where it was».
+
+## 2026-11-11 · reopen-work · prueba en la app real
+Matar tmux con un trabajo abierto bloqueaba Atril entero: `term:resize` llegaba a un cliente pty muerto, node-pty lanzaba EBADF dentro de un `ipcMain.on` y Electron mostraba un NSAlert modal. Los tests no lo veían porque no usan node-pty real; solo salió al probar en la app. W149.

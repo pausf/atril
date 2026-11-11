@@ -308,7 +308,20 @@ const oneUp = (effort: Effort | undefined): Effort | undefined =>
   effort === 'low' ? 'medium' : effort === 'high' ? 'xhigh' : effort === 'xhigh' ? undefined : 'high'
 
 /** W141/W142: a stopped work starts again in its folder, in a session of the same name; never a second session. */
+// Two reopens of one work at once (a reloaded window) would both see no session; the second's cleanup would kill the first's.
+const reopening = new Set<string>()
+
 export async function reopenWorkspace(id: string, opts: { more?: boolean }, run: Runner = defaultRun): Promise<WorkspaceResult> {
+  if (reopening.has(id)) return { error: t('Este trabajo ya está abierto.') }
+  reopening.add(id)
+  try {
+    return await reopenOnce(id, opts, run)
+  } finally {
+    reopening.delete(id)
+  }
+}
+
+async function reopenOnce(id: string, opts: { more?: boolean }, run: Runner): Promise<WorkspaceResult> {
   const records = await readRecords()
   const rec = records.find((r) => r.id === id)
   if (!rec) return { error: t('Ese trabajo ya no existe') }

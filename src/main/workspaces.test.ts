@@ -530,6 +530,14 @@ describe('workspaces', () => {
       expect(tmuxOut(sock, 'list-sessions', '-F', '#{session_name}').trim().split('\n')).toEqual([session])
       expect(tmuxOut(sock, 'list-panes', '-s', '-t', `=${session}`, '-F', '#{pane_id} #{pane_dead}').trim()).toBe(`${again.workspace.paneId} 0`)
       expect(existsSync(marker)).toBe(true)
+
+      // Two reopens at once (a reloaded window): one starts the agent, the other is told it is open, never two sessions.
+      tmuxOut(sock, 'kill-session', '-t', `=${session}`)
+      const both = await Promise.all([reopenWorkspace(id, {}, spy.run), reopenWorkspace(id, {}, spy.run)])
+      expect(both.filter((r) => 'workspace' in r)).toHaveLength(1)
+      expect(both.find((r) => 'error' in r)).toEqual({ error: 'Este trabajo ya está abierto.' })
+      expect(tmuxOut(sock, 'list-sessions', '-F', '#{session_name}').trim().split('\n')).toEqual([session])
+      expect(tmuxOut(sock, 'list-panes', '-s', '-t', `=${session}`, '-F', '#{pane_dead}').trim()).toBe('0')
     }, 40_000)
 
     it('reopening refuses what it cannot do', async () => {
