@@ -305,3 +305,6 @@ El Decision log decía que la frase «la copia es `171db90`» de la spec cambiab
 
 ## 2026-11-11 · net-errors · después de aterrizar
 `qa-report.test.ts` seguía esperando «400» en la frase: `net-errors` cambió `libretto.ts` y no corrí los tests de quien lo usa. Al cambiar una frase compartida, `rg` del texto viejo en `*.test.ts` antes de aterrizar.
+
+## 2026-11-11 · repo-gone · 6→7
+Nada contra el contrato. Aceptado: quitar un repo lee `workspaces.json` y luego escribe `repos.json` sin candado; un trabajo abierto justo entre medias apuntaría a un repo quitado (W155 lo diría al usarlo).
