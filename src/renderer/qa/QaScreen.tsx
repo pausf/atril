@@ -220,9 +220,9 @@ function Summary({ report }: { report: QaReport }) {
   const f = n('fail')
   return (
     <p className="qa-sum">
-      <span className="qa-tag pass">{t('{n} pasan', { n: p })}</span>
+      <span className="qa-tag pass">{p === 1 ? t('1 pasa') : t('{n} pasan', { n: p })}</span>
       <i> · </i>
-      <span className="qa-tag fail">{t('{n} fallan', { n: f })}</span>
+      <span className="qa-tag fail">{f === 1 ? t('1 falla') : t('{n} fallan', { n: f })}</span>
       <i> · </i>
       <span className="qa-tag">{t('{n} sin probar', { n: report.criteria.length - p - f })}</span>
     </p>

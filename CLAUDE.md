@@ -41,6 +41,7 @@ Sin probar con datos reales (necesita a Pau):
 - Publicar un borrador en su línea contra un GitHub/GitLab real.
 - «Empezar» en la pantalla Libretto: que Claude Code tome `/libretto:write-spec <nombre>` como primer mensaje y siga el flujo.
 - «Pasar a Jira» desde Libretto contra un Jira real (tipo Task, proyecto del tablero).
+- QA en vivo: que el agente de QA real escriba `report.json` por criterio (solo probado con un informe sembrado).
 - `pnpm dist` y abrir el `.dmg` instalado: la lista de `bocetos/instalar.html` §4 (la sesión no construye).
 - `openmr.test.ts` falla a veces en la suite completa por tiempo de git bajo carga (pasa solo): mirarlo en la ronda de QA.
 - Que Esc pause a Claude sin eventos sueltos y que «Sigue donde lo dejaste.» se tome como mensaje nuevo.

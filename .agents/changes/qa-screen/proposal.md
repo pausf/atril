@@ -165,5 +165,5 @@ La validación del informe: es texto de un modelo que se pinta en pantalla.
 
 ## Checklist
 
-- [ ] the report read and validated, the prompt, retest requests, createIssue and the bug actions in main with IPC · Closes: W114, W116, W118, W119
-- [ ] the QA screen, rail, ⌘K, Ver cómo, Marcar como bug, QA out of the panel; real-app drive; photo; novedades · waits on box 1 · Closes: W113, W115, W117, F33, F30
+- [x] the report read and validated, the prompt, retest requests, createIssue and the bug actions in main with IPC · Closes: W114, W116, W118, W119
+- [x] the QA screen, rail, ⌘K, Ver cómo, Marcar como bug, QA out of the panel; real-app drive; photo; novedades · waits on box 1 · Closes: W113, W115, W117, F33, F30

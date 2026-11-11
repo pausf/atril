@@ -91,7 +91,7 @@ describe('qa screen', () => {
     expect(within(rowOf('W2')).getByText('Falla')).toBeTruthy()
     expect(within(rowOf('W3')).getByText('Sin probar')).toBeTruthy()
     expect(within(document.querySelector<HTMLElement>('.qa-screen')!).getByText('Cambio: add-delivery-holidays')).toBeTruthy()
-    expect(document.querySelector('.qa-sum')!.textContent).toBe('1 pasan · 1 fallan · 1 sin probar')
+    expect(document.querySelector('.qa-sum')!.textContent).toBe('1 pasa · 1 falla · 1 sin probar')
 
     // The newest screenshots of the QA folder, as the data URLs main sent.
     const all = within(screen.getByRole('region', { name: 'Todas las capturas' }))
