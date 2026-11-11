@@ -3,8 +3,9 @@ import type { FlowStage } from '../../preload/api'
 import { useT, type T } from '../ui'
 import { ActivityFeed } from './ActivityFeed'
 import { Boxes } from './Boxes'
+import { Branches, type SubView } from './Branches'
 import { Qa } from './Qa'
-import { Subagents } from './Subagents'
+import { useSubagentView } from './Subagents'
 import { BUILDING, type BoxesState } from './useFlow'
 import { WARN_AT } from './warn'
 
@@ -29,6 +30,7 @@ export function FlowPanel({ workspaceId, flow, boxes, onBig, onOpenLibretto }: P
   const TABS = tabsOf(t)
   const [tab, setTab] = useState<TabId>('libretto')
   const tabs = useRef<Record<string, HTMLButtonElement | null>>({})
+  const { view: subs, modal } = useSubagentView(workspaceId)
 
   // ponytail: dev-only, ATRIL_SNAPSHOT_VIEW=activity photographs the Actividad tab.
   useEffect(() => {
@@ -71,9 +73,9 @@ export function FlowPanel({ workspaceId, flow, boxes, onBig, onOpenLibretto }: P
           <ActivityFeed workspaceId={workspaceId} />
         ) : (
           <>
-            <LibrettoFlow flow={flow} workspaceId={workspaceId} boxes={boxes} onBig={onBig} onOpenLibretto={onOpenLibretto} />
-            <Subagents workspaceId={workspaceId} />
+            <LibrettoFlow flow={flow} workspaceId={workspaceId} boxes={boxes} subs={subs} onBig={onBig} onOpenLibretto={onOpenLibretto} />
             <Qa workspaceId={workspaceId} />
+            {modal}
           </>
         )}
       </div>
@@ -81,9 +83,19 @@ export function FlowPanel({ workspaceId, flow, boxes, onBig, onOpenLibretto }: P
   )
 }
 
-function LibrettoFlow({ flow, workspaceId, boxes, onBig, onOpenLibretto }: Omit<PanelProps, 'workspaceId'> & { workspaceId: string | null }) {
+function LibrettoFlow({ flow, workspaceId, boxes, subs, onBig, onOpenLibretto }: Omit<PanelProps, 'workspaceId'> & { workspaceId: string | null; subs: SubView | null }) {
   const t = useT()
-  if (flow?.stage === 'sin-libretto') return <div className="empty">{t('sin Libretto: este trabajo no tiene carpeta .agents')}</div>
+  // F27: the branches hang from the current box, else from the «Cambio» line, else from a «Subagentes» line.
+  const timeline = workspaceId && flow && BUILDING.includes(flow.stage) && boxes.boxes.length > 0
+  const hung = timeline && boxes.boxes.some((b) => b.state === 'current')
+  const lone = subs && !flow?.change
+  if (flow?.stage === 'sin-libretto')
+    return (
+      <>
+        <div className="empty">{t('sin Libretto: este trabajo no tiene carpeta .agents')}</div>
+        {subs && <Branches view={subs} />}
+      </>
+    )
   return (
     <>
       <BigWarning lines={boxes.total} />
@@ -94,7 +106,9 @@ function LibrettoFlow({ flow, workspaceId, boxes, onBig, onOpenLibretto }: Omit<
           </span>
         </p>
       )}
-      {workspaceId && flow && BUILDING.includes(flow.stage) && boxes.boxes.length > 0 && <Boxes workspaceId={workspaceId} boxes={boxes.boxes} tick={boxes.tick} onBig={onBig} />}
+      {lone && <p className="fmeta crow">{t('Subagentes')}</p>}
+      {subs && !hung && <Branches view={subs} />}
+      {timeline && <Boxes workspaceId={workspaceId} boxes={boxes.boxes} tick={boxes.tick} onBig={onBig} subs={subs} />}
       {flow && flow.others.length > 0 && (
         <p className="fmeta crow">
           <span>{flow.others.length === 1 ? t('1 cambio más en este repo') : t('{n} cambios más en este repo', { n: flow.others.length })}</span>

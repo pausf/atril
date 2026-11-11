@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import type { SubagentEntry } from '../../preload/api'
-import { FoldSection } from '../components/Fold'
 import { runningCount, useSubagents } from '../subagents'
 import { useT, type T } from '../ui'
+import type { SubView } from './Branches'
 import { SubagentModal } from './SubagentModal'
 
 /** F27: «45 s» under a minute, «1 min 20 s» from there. */
@@ -11,9 +11,8 @@ export function duration(t: T, seconds: number): string {
   return s < 60 ? t('{n} s', { n: s }) : t('{m} min {s} s', { m: Math.floor(s / 60), s: s % 60 })
 }
 
-const newest = (a: SubagentEntry, b: SubagentEntry): number => b.startedAt - a.startedAt
-
-export function Subagents({ workspaceId }: { workspaceId: string | null }) {
+/** The selected workspace's subagents, the 1 s clock that ticks while any runs (F27) and F28's modal. */
+export function useSubagentView(workspaceId: string | null): { view: SubView | null; modal: ReactNode } {
   const t = useT()
   const entries = useSubagents(workspaceId ? [workspaceId] : [])[workspaceId ?? ''] ?? []
   const running = runningCount(entries) > 0
@@ -33,27 +32,12 @@ export function Subagents({ workspaceId }: { workspaceId: string | null }) {
     if (firstRunning) void window.atril.snapshotView().then((v) => v === 'subagent-log' && setOpen((o) => o ?? firstRunning))
   }, [firstRunning])
 
-  if (entries.length === 0) return null
   const state = (e: SubagentEntry): string =>
     e.endedAt === undefined ? t('trabajando · {d}', { d: duration(t, now / 1000 - e.startedAt) }) : t('terminado · {d}', { d: duration(t, e.endedAt - e.startedAt) })
   // An entry that left the list (W64) takes its modal with it.
   const shown = entries.find((e) => e.id === open)
-  return (
-    <>
-      <FoldSection id="flow-subagents" title={t('Subagentes')} count={entries.length} className="flow-fold" tour="flow-subagents">
-        <ul className="subs" aria-label={t('Subagentes')}>
-          {[...entries].sort(newest).map((e) => (
-            <li key={e.id}>
-              <button type="button" className={`sub ${e.endedAt === undefined ? 'run' : 'end'}`} onClick={() => setOpen(e.id)}>
-                <span className="sub-text" title={e.description || e.type}>{e.description || e.type}</span>
-                {e.description && <span className="sub-type">{e.type}</span>}
-                <span className="sub-state">{state(e)}</span>
-              </button>
-            </li>
-          ))}
-        </ul>
-      </FoldSection>
-      {workspaceId && shown && <SubagentModal workspaceId={workspaceId} entry={shown} state={state(shown)} onClose={() => setOpen(null)} />}
-    </>
-  )
+  return {
+    view: workspaceId && entries.length > 0 ? { workspaceId, entries, now, state, open: setOpen } : null,
+    modal: workspaceId && shown ? <SubagentModal workspaceId={workspaceId} entry={shown} state={state(shown)} onClose={() => setOpen(null)} /> : null
+  }
 }

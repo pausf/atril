@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import type { FlowBox } from '../../preload/api'
 import { useT } from '../ui'
+import { Branches, type SubView } from './Branches'
 import { diffLines } from './DiffText'
 
 /** F38: pending boxes shown before «+{n} más». */
@@ -89,7 +90,7 @@ function ClosedBox({ workspaceId, box, onBig }: { workspaceId: string; box: Flow
 }
 
 /** F38: the checklist as a timeline; each box brings the code that closed it, the current one the code being written. */
-export function Boxes({ workspaceId, boxes, tick, onBig }: { workspaceId: string; boxes: FlowBox[]; tick: number; onBig: Big }) {
+export function Boxes({ workspaceId, boxes, tick, onBig, subs }: { workspaceId: string; boxes: FlowBox[]; tick: number; onBig: Big; subs: SubView | null }) {
   const t = useT()
   const pending = boxes.filter((b) => b.state === 'pending')
   const hidden = pending.length - PENDING_SHOWN
@@ -105,6 +106,7 @@ export function Boxes({ workspaceId, boxes, tick, onBig }: { workspaceId: string
                 {b.text}
                 <span className="sr-only"> {t('ahora')}</span>
               </span>
+              {subs && <Branches view={subs} />}
               <BoxCode workspaceId={workspaceId} box={b} version={tick} onBig={onBig} />
             </li>
           )

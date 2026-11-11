@@ -3,7 +3,7 @@ import { createElement } from 'react'
 import { cleanup, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import type { FileChange, FlowStage, SubagentEntry, UiState } from '../../preload/api'
+import type { FileChange, FlowStage, UiState } from '../../preload/api'
 import { App } from '../App'
 import { mockApi, mockSystemTheme, workspace } from '../mockApi'
 
@@ -62,44 +62,6 @@ describe('libretto panel', () => {
     await boot({ stage: 'sin-libretto', others: [] })
     await screen.findByText(/sin Libretto/)
     expect(screen.queryByRole('group', { name: 'Pasos de Libretto' })).toBeNull()
-  })
-
-  it('the panel sections fold and remember', async () => {
-    const flow: FlowStage = { stage: 'construir', change: 'add-x', others: ['fix-cart-rounding', 'tidy-css'], checklist: { file: 'proposal.md', closed: 3, total: 7, firstOpen: 'T4' } }
-    const subs: SubagentEntry[] = [
-      { id: 's1', type: 'explorer', description: 'Leer pagos', startedAt: 1, endedAt: 9 },
-      { id: 's2', type: 'Plan', startedAt: 2, endedAt: 5 }
-    ]
-    const stored: UiState = { tutorialSeen: true, theme: 'auto', folded: {} }
-    const data = { workspaces: [workspace('aaaaaaa1', 'PF-1', false)], states: { aaaaaaa1: 'working' as const }, flow, changes, subagents: { aaaaaaa1: subs } }
-    const open = async () => {
-      const user = userEvent.setup()
-      const view = render(createElement(App))
-      await user.click(await screen.findByRole('button', { name: /^PF-1/ }))
-      await screen.findByRole('button', { name: /^Subagentes\s*2$/ })
-      return { user, view }
-    }
-    const api = mockApi(data, stored)
-    const { user, view } = await open()
-    const title = () => screen.getByRole('button', { name: /^Subagentes/ })
-
-    // Checklist and Cambios are no sections any more; Subagentes keeps its count and starts open.
-    expect(screen.queryByRole('button', { name: /^Checklist/ })).toBeNull()
-    expect(screen.queryByRole('button', { name: /^Cambios/ })).toBeNull()
-    expect(title().getAttribute('aria-expanded')).toBe('true')
-
-    // Folding hides the body and keeps the count in the title.
-    await user.click(title())
-    expect(title().getAttribute('aria-expanded')).toBe('false')
-    expect(screen.queryByRole('list', { name: 'Subagentes' })).toBeNull()
-    expect(api.ui.set).toHaveBeenLastCalledWith({ folded: { 'flow-subagents': true } })
-    expect(stored.folded).toEqual({ 'flow-subagents': true })
-
-    // Mounted again, it comes back as it was left.
-    view.unmount()
-    mockApi(data, stored)
-    await open()
-    expect(title().getAttribute('aria-expanded')).toBe('false')
   })
 
   it('other changes lead to Libretto', async () => {
