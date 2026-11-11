@@ -1134,6 +1134,10 @@ kbd {
   padding: 2px 4px;
   cursor: pointer;
 }
+/* W161: the terminal could not attach; it stays mounted under this. */
+.term-problem {
+  margin: 12px 14px 0;
+}
 .xterm-host {
   flex: 1;
   min-height: 0;

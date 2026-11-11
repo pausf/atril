@@ -575,10 +575,11 @@ app.whenReady().then(async () => {
   ipcMain.handle('atril:history:list', () => readHistory())
   ipcMain.handle('atril:term:attach', async (e, id: string, cols: number, rows: number) => {
     const ws = (await listWorkspaces(run)).find((w) => w.id === id)
-    if (!ws?.alive) return
-    pty.attach(id, ws.path, cols, rows, (d) => {
+    if (!ws?.alive) return { ok: false }
+    const r = pty.attach(id, ws.path, cols, rows, (d) => {
       if (!e.sender.isDestroyed()) e.sender.send('atril:term:data', id, d)
     })
+    return 'ok' in r ? r : { error: t('No he podido abrir la terminal de {branch}.', { branch: ws.branch }), detail: r.error }
   })
   ipcMain.on('atril:term:input', (_e, id: string, data: string) => pty.input(id, data))
   ipcMain.on('atril:term:resize', (_e, id: string, c: number, r: number) => pty.resize(id, c, r))

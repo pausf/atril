@@ -748,4 +748,7 @@ export const EN: Record<string, string> = {
   "Buscar la carpeta…": "Find the folder…",
   "Quitar el repo": "Remove the repo",
   "{id} sigue como estaba.": "{id} stays as it was.",
+  "No he podido abrir la terminal de {branch}.": "I couldn't open {branch}'s terminal.",
+  "Tu agente sigue en tmux: solo falla esta vista.": "Your agent is still running in tmux: only this view failed.",
+  "Volver a intentar": "Try again",
 }

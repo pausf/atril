@@ -4,21 +4,28 @@ import { sessionName, tmuxArgs } from './tmux'
 // The only process spawned outside the runner: a pty needs a tty, which the runner does not give.
 const attached = new Map<string, pty.IPty>()
 
-export function attach(id: string, cwd: string, cols: number, rows: number, onData: (d: string) => void): void {
+/** W160: a client that cannot start (posix_spawnp failed) answers its message and keeps nothing. */
+export function attach(id: string, cwd: string, cols: number, rows: number, onData: (d: string) => void): { ok: true } | { error: string } {
   detach(id)
-  const p = pty.spawn('tmux', [...tmuxArgs(), 'attach', '-t', `=${sessionName(id)}`], {
-    name: 'xterm-256color',
-    cwd,
-    cols,
-    rows,
-    env: process.env as Record<string, string>
-  })
+  let p: pty.IPty
+  try {
+    p = pty.spawn('tmux', [...tmuxArgs(), 'attach', '-t', `=${sessionName(id)}`], {
+      name: 'xterm-256color',
+      cwd,
+      cols,
+      rows,
+      env: process.env as Record<string, string>
+    })
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : String(e) }
+  }
   p.onData(onData)
   // W149: a client whose tmux died is forgotten, so nothing is sent to its closed descriptor.
   p.onExit(() => {
     if (attached.get(id) === p) attached.delete(id)
   })
   attached.set(id, p)
+  return { ok: true }
 }
 
 /** node-pty throws EBADF on a client that died between its exit and our hearing of it: an IPC handler must never throw (W149). */
