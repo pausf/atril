@@ -82,7 +82,7 @@ async function store() {
 }
 
 describe('qa to the mr', () => {
-  it('the work\'s own mr is found by repo and branch', async () => {
+  it("the work's own mr is found by repo and branch", async () => {
     seed('git@github.com:acme/shop-web.git')
     const fresh = lists(
       [
