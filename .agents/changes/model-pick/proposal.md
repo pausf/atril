@@ -14,6 +14,8 @@ Del artículo: empezar en Opus 5.5 `medium`; Sonnet 5.5 para trabajo acotado (bu
 ## Decision log
 
 ### Session 2026-11-11
+- Q: (constructor) `suggest.ts`, `SuggestLine.tsx` y los diálogos viven bajo el `Governs:` de work-inbox → A: los criterios se quedan en workspaces, que ya gobierna el modelo y el comando (W34); la línea compartida es una pieza de la ventana (assumed).
+- Q: (constructor) ¿Cómo se ve la sugerencia? → A: «Sugerido: Sonnet · Medio. {porqué} [Usar]», en una línea gris (assumed).
 - Q: (revisión en frío) ¿Qué texto mira la sugerencia en «Empezar»? → A: el resumen y el tipo de Jira (assumed).
 - Q: (revisión en frío) ¿Un esfuerzo raro por IPC? → A: se rechaza en main como un modelo raro (assumed).
 - Q: ¿La sugerencia se aplica sola? → A: no: sale debajo del modelo con su porqué y un botón «Usar»; la persona decide (assumed, como la nota de MR de 540: la persona decide).
