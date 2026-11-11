@@ -281,6 +281,13 @@ textos, en «Pasos» abajo. Los que tienen elemento en pantalla lo iluminan; los
 - «Seguir con más esfuerzo» hace lo mismo un nivel por encima y lo recuerda.
 - Un trabajo parado no enseña «Escribe en la terminal como siempre».
 
+### Archivos de estado dañados (state-files, 11 nov 2026)
+
+- Con un archivo de estado dañado, la barra lateral y Ajustes → Repos dicen cuál y qué no puedes hacer, con «Mostrar en Finder»; no salen los vacíos de «Aquí verás…» ni «Aún no hay ninguno».
+- Abrir, cerrar, olvidar y reabrir un trabajo no crean ni borran nada mientras uno de los dos archivos está dañado.
+- Sin permiso de escritura en la carpeta de Atril, abrir un trabajo lo dice con su botón y no deja nada a medias.
+- El sondeo y la lista de trabajos no sueltan rechazos sin capturar por estos archivos.
+
 ## Scope boundaries
 
 **In:** the three columns and footer of `bocetos/fase1-nucleo.html` (boceto 8), the
@@ -572,6 +579,10 @@ Nunca fuera: validar `.atril/qa.json` (lo escribe el repo, no Atril); la ventana
 
 **In:** `src/main/pty.ts` (W149), `reopenWorkspace` en `src/main/workspaces.ts`, `agentArgv({ resume: true })` en `agent.ts`, IPC `atril:ws:reopen`, la vista parada de `Workspace.tsx`. **Out:** relanzar todos los parados de golpe; subagentes cortados (hallazgo 12); reiniciar un agente vivo.
 
+### Archivos de estado dañados (state-files, 11 nov 2026)
+
+**In:** `src/main/state.ts` (nuevo), `readRecords` y la lectura de `repos.json` (`src/main/workspaces.ts`, `src/main/repos.ts`), el sondeo de `src/main/status.ts`, IPC `atril:state:reveal`, la barra lateral (`WorkspaceList`/`Sidebar`), Ajustes → Repos, el diálogo de nuevo trabajo. **Out:** `ui.json`, `qa-targets.json` (ya toleran basura), reparar el archivo automáticamente.
+
 ## Constraints
 
 - Electron (current stable) + TypeScript in strict mode, pnpm, Node 24 (installed:
@@ -719,6 +730,11 @@ Textos por `t()`.
 
 - La ventana manda el id y, como mucho, `more: true`; main decide el comando.
 - Nunca dos sesiones para un trabajo: si la sesión existe, no se relanza.
+
+### Archivos de estado dañados (state-files, 11 nov 2026)
+
+- Nunca se escribe encima de un archivo de estado que no se ha podido leer.
+- La ventana pide «mostrar» por nombre (`workspaces` o `repos`), nunca una ruta.
 
 ## Prior decisions
 
@@ -1905,6 +1921,25 @@ Textos por `t()`.
 - Q: ¿Qué es «más esfuerzo»? → A: un nivel más que el guardado: por defecto o medio → alto, bajo → medio, alto → muy alto; con muy alto no se ofrece (assumed, del artículo).
 - Q: ¿Se ofrece con el agente vivo? → A: no: reiniciar a un agente que trabaja corta lo que hace; solo con la sesión muerta (assumed).
 
+### Archivos de estado dañados (state-files, 11 nov 2026)
+
+- Un archivo de estado dañado bloquea los cambios de estado, no la app: se ve qué pasa y cómo llegar al archivo, y nada se sobrescribe.
+
+#### Alternatives that lost
+
+| Considered | Why it lost |
+|---|---|
+| Copia `.bak` automática y «Restaurar copia» | Atril no tiene hoy copias; inventarlas es otra función con sus propios fallos |
+| Tratar el archivo dañado como vacío | es justo lo que pasa hoy: la siguiente escritura borra todos los trabajos |
+
+#### Decision log, answers as given (2026-11-11)
+- Q: (revisión en frío) ¿Quién lee los archivos? → A: un módulo nuevo `src/main/state.ts` con un lector estricto para los dos; `workspaces.ts` y `repos.ts` dejan sus lectores propios. Toda escritura de cualquiera de los dos archivos lee antes con él, así que ninguna escribe encima de uno dañado (assumed).
+- Q: (revisión en frío) ¿Un archivo que existe pero no se puede leer (permisos, carpeta)? → A: cuenta como dañado, con su código en el detalle (assumed).
+- Q: (revisión en frío) orden con `reopen-work` → A: esta rama sale de `reopen-work` aterrizado; `reopenWorkspace` pasa por el mismo lector.
+- Q: ¿Qué arreglo se ofrece para un archivo dañado? → A: «Mostrar en Finder» (el archivo seleccionado); Atril no lo reescribe ni lo borra por su cuenta, y no inventa una copia que no tiene (assumed).
+- Q: ¿Qué cuenta como «forma equivocada»? → A: `workspaces` o `repos` que no sea una lista, o una entrada sin `id`, `path` (y `branch`, `session` para trabajos) de texto (assumed).
+- Q: ¿Y `ui.json` dañado (hallazgo 14)? → A: fuera: solo repite el tutorial, nada se pierde (assumed).
+
 ## Task breakdown
 
 - App shell: Electron main, preload bridge, renderer with sidebar / centre / right panel /
@@ -2671,3 +2706,18 @@ Textos por `t()`.
   Proof: src/renderer/reopen.test.ts a stopped work offers to reopen
 - **W149** If the terminal's tmux client has exited or its descriptor is closed, then typing, resizing or detaching that terminal shall do nothing and never throw, and an exited client shall be forgotten so nothing more is sent to it.
   Proof: src/main/pty.test.ts a dead terminal client never throws
+
+### Archivos de estado dañados (state-files, 11 nov 2026)
+
+- **W144** If `workspaces.json` exists but cannot be read, is not JSON, its `workspaces` is not an array, or an entry lacks a string `id`, `path`, `branch` or `session`, then every path that writes it — opening, closing, forgetting, reopening, pausing and any other — shall create, delete or write nothing and answer «No puedo leer workspaces.json: está dañado. No abro ni cierro trabajos hasta que se arregle.» with the error (code or parse message) as `detail` and `fix: 'reveal'`; a missing file still reads as empty.
+  Proof: src/main/state.test.ts a damaged workspaces list blocks every change and writes nothing
+- **W148** If `repos.json` exists but cannot be read, is not JSON, its `repos` is not an array, or an entry lacks a string `id` or `path`, then opening a workspace, adding a repo, changing a repo's mode and every other path that writes it shall create, delete or write nothing and answer «No puedo leer repos.json: está dañado. No puedo usar ni cambiar tus repos hasta que se arregle.» with the error as `detail` and `fix: 'reveal'`; a missing file still reads as empty.
+  Proof: src/main/state.test.ts a damaged repos list blocks every change and writes nothing
+- **W145** While `workspaces.json` is damaged, the status poll and the workspace list shall not raise unhandled rejections, and the window's workspace list shall show W144's sentence, «Tus agentes siguen en tmux, pero no puedo enseñártelos.» and «Mostrar en Finder» instead of the empty state (W97's empty text stays for an undamaged empty list). A damaged `repos.json` alone leaves the workspace list as it is.
+  Proof: src/main/status.test.ts a damaged list does not break the poll
+  Proof: src/renderer/statefiles.test.ts a damaged list shows its problem instead of the empty state
+- **W146** If the `mkdir` of the worktree's parent folder (before `git worktree add`) fails with `EACCES`, `EPERM` or `EROFS`, then opening shall answer «No puedo escribir en la carpeta de Atril ({home}).» with the code as `detail` and `fix: 'reveal'`, with nothing to undo; if writing the record fails after the session started, it shall end the session, remove the worktree it made and delete the branch it made, and answer the same sentence for those codes, or «No he podido guardar el trabajo.» for any other, with the code as `detail`.
+  Proof: src/main/workspaces.test.ts a read-only atril home undoes the open and says so
+- **W147** When the window asks to reveal `workspaces` or `repos`, main shall show that file (or Atril's folder if it is missing) in Finder; any other name reveals nothing. A problem with `fix: 'reveal'` shows «Mostrar en Finder» in the workspace row (as W135), the new-work and start dialogs (as W130) and the sidebar.
+  Proof: src/main/state.test.ts reveal shows only the state files
+  Proof: src/renderer/statefiles.test.ts a damaged list shows its problem instead of the empty state

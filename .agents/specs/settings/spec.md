@@ -61,6 +61,10 @@ Governs: src/main/credentials/** src/renderer/settings/**
 
 - Conectar Jira con una dirección que no responde dice qué falló, sin el nombre de la excepción, con el código plegado en «Ver detalle».
 
+### Archivos de estado dañados (state-files, 11 nov 2026)
+
+- Con `repos.json` dañado, Ajustes → Repos dice cuál y qué no puedes hacer, con «Mostrar en Finder», en vez de «Aún no hay ninguno».
+
 ## Scope boundaries
 
 **In:** storing, checking, replacing and deleting the Jira token, through a store and a card
@@ -129,6 +133,10 @@ errores visibles junto al campo.
 
 **In:** `src/main/credentials/check.ts`, `src/renderer/settings/Connection.tsx`, `src/renderer/settings/Ajustes.tsx`. **Out:** los errores de Forges.
 
+### Archivos de estado dañados (state-files, 11 nov 2026)
+
+**In:** `src/renderer/settings/Repos.tsx`. **Out:** reparar el archivo.
+
 ## Constraints
 
 - Electron `safeStorage` (macOS Keychain-backed key) encrypts each token; the ciphertext lives
@@ -169,6 +177,10 @@ errores visibles junto al campo.
 ### Errores claros (plain-errors, 11 nov 2026)
 
 - `err.message` nunca llega a la ventana; solo códigos de lista y el nombre de la excepción, en el detalle.
+
+### Archivos de estado dañados (state-files, 11 nov 2026)
+
+- La ventana pide mostrar el archivo por nombre, nunca por ruta.
 
 ## Prior decisions
 
@@ -484,3 +496,8 @@ errores visibles junto al campo.
 - **S32** If the Jira check's request throws (an HTTP status or a malformed address keep their own sentences), then Ajustes shall say what failed by cause — host not found (`ENOTFOUND`, `EAI_AGAIN`): «No encuentro {host}.»; a certificate code (starting `CERT_`, `ERR_TLS_`, `SELF_SIGNED`, `UNABLE_TO_`, `DEPTH_ZERO`): «El certificado de {host} no es válido.»; a timeout: «Jira no ha respondido en 10 s.»; anything else: «No responde nada en {origin}.» — each followed by «Revisa la dirección: la de tu Jira suele ser https://tuempresa.atlassian.net.», never with the exception name in the sentence, and under a folded «Ver detalle» the code read from `err.cause.code` when it matches `^[A-Z0-9_]+$`, else the exception's name.
   Proof: src/main/credentials/check.test.ts network failure names the cause and folds the code
   Proof: src/renderer/settings/settings.test.ts jira error folds its detail
+
+### Archivos de estado dañados (state-files, 11 nov 2026)
+
+- **S33** While `repos.json` is damaged (W148), the Repos card shall show «No puedo leer repos.json: está dañado. No puedo usar ni cambiar tus repos hasta que se arregle.» with its detail folded and «Mostrar en Finder», and shall not show «Aún no hay ninguno» nor «Añadir repo…».
+  Proof: src/renderer/statefiles.test.ts the repos card shows a damaged list instead of empty
