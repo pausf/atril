@@ -73,6 +73,7 @@ Sin probar con datos reales (necesita a Pau):
   ATRIL_HOME=$(mktemp -d) ATRIL_SNAPSHOT=$PWD/bocetos/novedades/x.png ATRIL_SNAPSHOT_VIEW=<vista> ATRIL_SNAPSHOT_DELAY_MS=6000 pnpm -s dev
   ```
   Lánzalo en segundo plano, espera a que exista el PNG y luego `pkill -f "electron-vite dev"`.
+- **Errores (Pau, 11 nov):** ningún error suelto («error 500», «algo fue mal»). Cada fallo dice qué pasó, qué no puedes hacer por eso y trae un botón que lo arregla (Terminal con el comando, página del token, Ajustes, «Volver a comprobar»); el código técnico solo en «Ver detalle», plegado. Catálogo en `bocetos/errores.html`.
 - **Textos:** todos pasan por `t()`/`useT()` y llevan su entrada en inglés en `src/preload/i18n-en.ts`. Los escaneos S16/S19 lo comprueban.
 - **Colores** solo como tokens en `:root` y `[data-theme='dark']`.
 - **Aterrizar:** `python3 scripts/land.py <cambio> "<Etiqueta>"`. Aplica `proposal.md` sobre su
