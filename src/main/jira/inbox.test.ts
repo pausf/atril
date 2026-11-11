@@ -74,7 +74,7 @@ describe('inbox', () => {
     })
   })
 
-  it('no jira token or a rejected one is unconfigured', async () => {
+  it('no jira token is unconfigured', async () => {
     let called = false
     const never = (async () => {
       called = true
@@ -82,23 +82,29 @@ describe('inbox', () => {
     }) as typeof fetch
     expect(await readInbox(null, never)).toEqual({ error: 'unconfigured' })
     expect(called).toBe(false)
-
-    const r = await readInbox(CREDS, (async () => json({ errorMessages: ['nope'] }, 401)) as typeof fetch)
-    expect(r).toEqual({ error: 'unconfigured', message: 'Jira ha rechazado el token. Revísalo en Ajustes.' })
-    expect(JSON.stringify(r)).not.toContain(CREDS.token)
   })
 
-  it('reports other failures without echoing the network error', async () => {
-    expect(await readInbox(CREDS, (async () => json({}, 500)) as typeof fetch)).toEqual({
-      error: 'failed',
-      message: 'Jira respondió 500'
-    })
+  it('a jira failure says its cause and fix', async () => {
+    // A saved token Jira rejects is a failure with its cause, never «unconfigured».
+    for (const [status, message, fix] of [
+      [401, 'Jira ha rechazado tu token.', 'settings'],
+      [403, 'Jira no te deja ver esto con ese token.', 'settings'],
+      [404, 'Jira no encuentra esa dirección.', 'settings'],
+      [429, 'Jira pide esperar: demasiadas consultas.', 'retry'],
+      [500, 'Jira está fallando ahora mismo.', 'retry']
+    ] as const) {
+      const r = await readInbox(CREDS, (async () => json({ errorMessages: ['nope'] }, status)) as typeof fetch)
+      expect(r).toEqual({ error: 'failed', message, detail: `HTTP ${status}`, fix })
+    }
     const boom = (async () => {
-      throw new Error(`connect ECONNREFUSED Basic ${CREDS.token}`)
+      throw Object.assign(new TypeError(`connect ECONNREFUSED Basic ${CREDS.token}`), { cause: { code: 'ECONNREFUSED' } })
     }) as typeof fetch
     const r = await readInbox(CREDS, boom)
-    expect(r).toMatchObject({ error: 'failed' })
+    expect(r).toEqual({ error: 'failed', message: 'No llego a Jira: ¿hay conexión?', detail: 'ECONNREFUSED', fix: 'retry' })
     expect(JSON.stringify(r)).not.toContain(CREDS.token)
+    // A body that is not JSON names that, not a network failure.
+    const html = (async () => new Response('<html>', { status: 200 })) as typeof fetch
+    expect(await readInbox(CREDS, html)).toEqual({ error: 'failed', message: 'Jira ha contestado algo que no entiendo.', detail: 'SyntaxError', fix: 'retry' })
   })
 
   it('groups tasks by status', () => {

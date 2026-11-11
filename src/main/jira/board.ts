@@ -1,13 +1,14 @@
 import type { JiraCreds } from '../credentials/check'
 import type { InboxGroup, InboxNotice, JiraBoard, JiraIssue } from '../../preload/api'
 import { t } from '../lang'
+import { netProblem } from '../net-problem'
 
 export interface BoardColumn {
   name: string
   statusIds: string[]
 }
 
-export type BoardRead = { columns: BoardColumn[] } | { error: string }
+export type BoardRead = { columns: BoardColumn[] } | { error: string; detail?: string }
 
 export const isBoardId = (id: unknown): id is number => typeof id === 'number' && Number.isInteger(id) && id > 0
 
@@ -49,7 +50,7 @@ export async function readBoardColumns(creds: JiraCreds, id: unknown, fetchImpl:
       },
       signal: AbortSignal.timeout(10_000)
     })
-    if (!res.ok) return { error: String(res.status) }
+    if (!res.ok) return netProblem('Jira', { status: res.status })
     const body = (await res.json()) as { columnConfig?: { columns?: Array<{ name?: unknown; statuses?: Array<{ id?: unknown }> }> } }
     const raw = body.columnConfig?.columns
     if (!Array.isArray(raw) || raw.length === 0) return { error: t('respuesta inesperada') }
@@ -60,8 +61,7 @@ export async function readBoardColumns(creds: JiraCreds, id: unknown, fetchImpl:
       }))
     }
   } catch (err) {
-    // Network errors can echo the request; never pass err.message through.
-    return { error: err instanceof Error && err.name === 'TimeoutError' ? t('sin respuesta') : t('sin conexión') }
+    return netProblem('Jira', { error: err })
   }
 }
 
@@ -74,6 +74,7 @@ export async function inboxGroups(
 ): Promise<{ groups: InboxGroup[]; notice?: InboxNotice }> {
   if (!board) return { groups: groupsByCategory(issues), notice: { text: t('Elige tu tablero en Ajustes para ver sus columnas'), settings: true } }
   const read = await readBoardColumns(creds, board.id, fetchImpl)
-  if ('error' in read) return { groups: groupsByCategory(issues), notice: { text: t('No se pudo leer el tablero ({detail})', { detail: read.error }) } }
+  if ('error' in read)
+    return { groups: groupsByCategory(issues), notice: { text: t('No puedo leer el tablero: {problem}', { problem: read.error }), ...(read.detail && { detail: read.detail }) } }
   return { groups: groupByBoard(issues, read.columns) }
 }

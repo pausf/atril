@@ -85,6 +85,23 @@ describe('connections', () => {
     expect(await within(again.row('GitHub')).findByText('Conectado · pau')).toBeTruthy()
   })
 
+  it('a forge error folds its code', async () => {
+    const { user, row, forge } = await openSettings()
+    vi.mocked(forge.save).mockResolvedValueOnce({ error: 'No encuentro GitLab. No se ha guardado.', detail: 'ENOTFOUND' })
+    const gl = row('GitLab')
+    await user.click(await within(gl).findByRole('button', { name: 'Conectar' }))
+    await user.type(within(gl).getByLabelText('Token'), 'glpat_x')
+    await user.click(within(gl).getByRole('button', { name: 'Guardar y comprobar' }))
+    const alert = await within(gl).findByRole('alert')
+    expect(alert.textContent).toContain('No encuentro GitLab. No se ha guardado.')
+    const folded = alert.querySelector('details')!
+    expect(folded.open).toBe(false)
+    expect(folded.querySelector('summary')!.textContent).toBe('Ver detalle')
+    expect(folded.querySelector('code')!.textContent).toBe('ENOTFOUND')
+    // Ajustes already checks again with «Guardar y comprobar»: no fix button.
+    expect(within(alert).queryByRole('button')).toBeNull()
+  })
+
   it('connect guides in three steps', async () => {
     const { user, row, jira, forge } = await openSettings({ gitlab: { saved: true, account: 'pau', site: 'https://gitlab.com' } })
     const steps = (r: HTMLElement) => Array.from(r.querySelectorAll('ol > li'))

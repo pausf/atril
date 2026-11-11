@@ -47,7 +47,7 @@ describe('mr screen', () => {
           mr('https://github.com/acme/api/pull/4', { title: 'Sin detalles' })
         ],
         more: { mine: ['github'], review: [], following: [] },
-        errors: [{ forge: 'gitlab', text: 'GitLab ha respondido 500' }]
+        errors: [{ forge: 'gitlab', error: 'GitLab está fallando ahora mismo.', detail: 'HTTP 500', fix: 'retry' }]
       })
     })
     const user = userEvent.setup()
@@ -72,7 +72,7 @@ describe('mr screen', () => {
       expect.stringMatching(/Sin pipeline.*Sin CI/),
       expect.stringMatching(/Sin detalles.*—.*—/)
     ])
-    expect(screen.getByRole('alert').textContent).toBe('GitLab ha respondido 500')
+    expect(screen.getByRole('alert').querySelector('b')?.textContent).toBe('GitLab está fallando ahora mismo.')
 
     // M5 (amended): the row opens its MR view; «Abrir en GitLab» opens the browser.
     await user.click(within(review).getAllByRole('button')[1]!)

@@ -16,6 +16,7 @@ export function ForgeCard({ forge }: { forge: ForgeId }) {
   const [token, setToken] = useState('')
   const [missing, setMissing] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [detail, setDetail] = useState<string | undefined>()
   const [checking, setChecking] = useState(false)
   const state = useConnectionState(status, forge === 'gitlab')
 
@@ -31,7 +32,11 @@ export function ForgeCard({ forge }: { forge: ForgeId }) {
     const r = await window.atril.settings.forge.save(forge, { token, ...(forge === 'gitlab' && { site: site || 'https://gitlab.com' }) })
     setChecking(false)
     setToken('')
-    if ('error' in r) return setError(r.error)
+    if ('error' in r) {
+      setError(r.error)
+      setDetail(r.detail)
+      return
+    }
     setReplacing(false)
     await refresh()
   }
@@ -77,6 +82,7 @@ export function ForgeCard({ forge }: { forge: ForgeId }) {
             </>
           }
           error={error}
+          detail={detail}
           checking={checking}
           onCancel={replacing ? () => setReplacing(false) : undefined}
           onSubmit={(e) => void save(e)}

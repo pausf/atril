@@ -35,20 +35,6 @@ describe('forge connections', () => {
     expect(init.redirect).toBe('error')
     expect(await gh.status('github')).toEqual({ saved: true, account: 'pau', site: 'https://github.com' })
 
-    for (const [status, msg] of [
-      [401, 'GitHub ha rechazado el token (401). No se ha guardado.'],
-      [503, 'GitHub ha rechazado el token (503). No se ha guardado.']
-    ] as const) {
-      const store = createSecretStore(enc)
-      const r = await forgeSettings(store, answer(status) as unknown as typeof fetch).save('github', { token: TOKEN })
-      expect(r).toEqual({ error: msg })
-    }
-    const offline = vi.fn(async () => {
-      throw Object.assign(new TypeError('fetch failed'), { cause: { code: 'ENOTFOUND' } })
-    })
-    expect(await forgeSettings(createSecretStore(enc), offline as unknown as typeof fetch).save('gitlab', { site: 'https://git.example.com', token: TOKEN })).toEqual({
-      error: 'No se ha podido conectar con GitLab (ENOTFOUND).'
-    })
 
     // GitLab: https only, checked before any request.
     const never = answer(200, { username: 'pau' })
@@ -60,6 +46,37 @@ describe('forge connections', () => {
     expect(String(glUrl)).toBe('https://git.example.com/api/v4/user')
     expect((glInit.headers as Record<string, string>)['PRIVATE-TOKEN']).toBe(TOKEN)
     expect(await gl.status('gitlab')).toEqual({ saved: true, account: 'pau', site: 'https://git.example.com' })
+  })
+
+  it('a forge check failure names the cause and folds the code', async () => {
+    for (const [status, msg] of [
+      [401, 'GitHub ha rechazado tu token. No se ha guardado.'],
+      [403, 'GitHub no te deja ver esto con ese token. No se ha guardado.'],
+      [503, 'GitHub está fallando ahora mismo. No se ha guardado.']
+    ] as const) {
+      const store = createSecretStore(enc)
+      const r = await forgeSettings(store, answer(status) as unknown as typeof fetch).save('github', { token: TOKEN })
+      expect(r).toEqual({ error: msg, detail: `HTTP ${status}` })
+      expect((await store.hasSecret('github')).saved).toBe(false)
+    }
+    const thrown = (err: Error) => vi.fn(async () => {
+      throw err
+    })
+    for (const [err, msg, detail] of [
+      [Object.assign(new TypeError(`fetch failed ${TOKEN}`), { cause: { code: 'ENOTFOUND' } }), 'No encuentro GitLab. No se ha guardado.', 'ENOTFOUND'],
+      [Object.assign(new TypeError(`fetch failed ${TOKEN}`), { cause: { code: 'UND_ERR_SOCKET' } }), 'No llego a GitLab: ¿hay conexión? No se ha guardado.', 'UND_ERR_SOCKET'],
+      [new TypeError(`fetch failed ${TOKEN}`), 'No llego a GitLab: ¿hay conexión? No se ha guardado.', 'TypeError']
+    ] as const) {
+      const r = await forgeSettings(createSecretStore(enc), thrown(err) as unknown as typeof fetch).save('gitlab', { site: 'https://git.example.com', token: TOKEN })
+      expect(r).toEqual({ error: msg, detail })
+      expect(JSON.stringify(r)).not.toContain(TOKEN)
+    }
+    // A body that is not JSON: its cause, never «(SyntaxError)» in the sentence.
+    const html = vi.fn(async () => new Response('<html>', { status: 200 }))
+    expect(await forgeSettings(createSecretStore(enc), html as unknown as typeof fetch).save('gitlab', { site: 'https://git.example.com', token: TOKEN })).toEqual({
+      error: 'GitLab ha contestado algo que no entiendo. No se ha guardado.',
+      detail: 'SyntaxError'
+    })
   })
 
   it('forge status carries no token', async () => {

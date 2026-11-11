@@ -223,12 +223,12 @@ describe('mr lens drafts', () => {
 
     // The diff does not arrive: M6's texts, nothing run.
     let x = await say({ forge: fakeForge({ ghDiff: new Response('', { status: 502 }) }) })
-    expect(x.r).toEqual(detail('GitHub ha respondido 502'))
+    expect(x.r).toEqual(detail('GitHub está fallando ahora mismo.'))
     expect(x.claude.calls).toHaveLength(0)
     x = await say({ forge: fakeForge({ ghDiff: new Response('', { status: 406 }) }) })
     expect(x.r).toEqual(detail('es demasiado grande para GitHub'))
     x = await say({ forge: fakeForge({ down: true }) })
-    expect(x.r).toEqual(detail('No se ha podido conectar con GitHub (ECONNRESET).'))
+    expect(x.r).toEqual(detail('No llego a GitHub: ¿hay conexión?'))
 
     x = await say({ claude: fakeRun({ answer: () => ({ code: 2, stdout: leak, stderr: leak }) }) })
     expect(x.r).toEqual(detail('2'))
@@ -384,7 +384,7 @@ describe('mr lens drafts', () => {
     let fail = true
     const flaky = await lenser({ forge: fakeForge({ post: () => (fail ? new Response('', { status: 500 }) : new Response(JSON.stringify({ id: 1, created_at: '2026-11-09T10:00:00Z', body: 'x' }), { status: 201 })) }) })
     const f = await open(flaky.l)
-    expect(await flaky.l.publish(GH_URL, f.drafts[0]!.id)).toEqual({ error: 'GitHub ha respondido 500' })
+    expect(await flaky.l.publish(GH_URL, f.drafts[0]!.id)).toEqual({ error: 'GitHub está fallando ahora mismo.' })
     expect(await flaky.l.draftsOf(GH_URL)).toMatchObject({ drafts: [{ state: 'open' }, { state: 'open' }] })
     fail = false
     expect(await flaky.l.publish(GH_URL, f.drafts[0]!.id)).toMatchObject({ drafts: [{ state: 'published' }, { state: 'open' }] })

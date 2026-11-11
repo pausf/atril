@@ -62,7 +62,7 @@ describe('board', () => {
       { id: 'todo', title: 'Por empezar', folded: false, keys: ['PF-1'] },
       { id: 'doing', title: 'En curso', folded: false, keys: ['PF-2'] }
     ])
-    expect(r.notice).toEqual({ text: 'No se pudo leer el tablero (404)' })
+    expect(r.notice).toEqual({ text: 'No puedo leer el tablero: Jira no encuentra esa dirección.', detail: 'HTTP 404' })
     expect(JSON.stringify(r)).not.toContain(CREDS.token)
   })
 })

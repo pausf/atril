@@ -133,7 +133,7 @@ describe('mr line comments', () => {
     expect(gl.forge.posts()[1]!.body).toMatchObject({ position: { old_path: 'src/old.ts', new_path: 'src/new.ts', new_line: 3 } })
 
     // A failed read of the MR keeps the draft open with M6's message and posts nothing.
-    for (const [url, text] of [[GH_URL, 'GitHub ha respondido 503'], [GL_URL, 'GitLab ha respondido 503']] as const) {
+    for (const [url, text] of [[GH_URL, 'GitHub está fallando ahora mismo.'], [GL_URL, 'GitLab está fallando ahora mismo.']] as const) {
       const r = await lenser()
       const [x] = drafts(await r.l.review(url))
       r.forge.state.read = 503
@@ -188,9 +188,9 @@ describe('mr line comments', () => {
 
     // Any other failure of the line post (5xx, network): the draft stays open with M6's message and nothing else is posted.
     for (const [status, url, text] of [
-      [500, GH_URL, 'GitHub ha respondido 500'],
-      [502, GL_URL, 'GitLab ha respondido 502'],
-      [0, GH_URL, 'No se ha podido conectar con GitHub (ECONNRESET).']
+      [500, GH_URL, 'GitHub está fallando ahora mismo.'],
+      [502, GL_URL, 'GitLab está fallando ahora mismo.'],
+      [0, GH_URL, 'No llego a GitHub: ¿hay conexión?']
     ] as const) {
       const down = await lenser({ answer: () => status })
       const [x] = drafts(await down.l.review(url))

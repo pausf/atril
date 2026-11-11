@@ -4,6 +4,7 @@ import { ConnectInSettings } from '../settings/ConnectInSettings'
 import { NavigationContext } from '../settings/navigation'
 import { FoldSection } from '../components/Fold'
 import { Icon } from '../components/Icon'
+import { Problem, fixLabel } from '../components/Problem'
 import { useT } from '../ui'
 
 const REFRESH_MS = 5 * 60_000
@@ -20,6 +21,10 @@ export function useInbox(): InboxState {
   const [result, setResult] = useState<InboxResult | null>(null)
   const [loading, setLoading] = useState(false)
   const inFlight = useRef(false)
+  const translate = useT()
+  // Read through a ref so a language change does not restart the five-minute timer.
+  const tr = useRef(translate)
+  tr.current = translate
 
   const refresh = useCallback(async () => {
     if (inFlight.current) return
@@ -28,7 +33,9 @@ export function useInbox(): InboxState {
     try {
       setResult(await window.atril.jira.inbox())
     } catch (err) {
-      setResult({ error: 'failed', message: String(err) })
+      // The bridge itself failed, not Jira: its message stays out, its name goes to the detail.
+      const t = tr.current
+      setResult({ error: 'failed', message: t('No llego a {service}: ¿hay conexión?', { service: 'Jira' }), detail: err instanceof Error ? err.name : 'Error', fix: 'retry' })
     } finally {
       inFlight.current = false
       setLoading(false)
@@ -37,8 +44,8 @@ export function useInbox(): InboxState {
 
   useEffect(() => {
     void refresh()
-    const t = setInterval(() => void refresh(), REFRESH_MS)
-    return () => clearInterval(t)
+    const timer = setInterval(() => void refresh(), REFRESH_MS)
+    return () => clearInterval(timer)
   }, [refresh])
 
   return { result, issues: result && 'issues' in result ? result.issues : [], loading, refresh }
@@ -77,7 +84,7 @@ export function Inbox({ inbox, onStart, startError, onOpenWorkspace, onNewTask }
           {startError}
         </p>
       )}
-      <Body result={result} issues={issues} onStart={onStart} onOpenWorkspace={onOpenWorkspace} />
+      <Body result={result} issues={issues} onStart={onStart} onOpenWorkspace={onOpenWorkspace} onRetry={() => void refresh()} />
     </section>
   )
 }
@@ -110,21 +117,24 @@ interface TaskActions {
   onOpenWorkspace: (id: string) => void
 }
 
-function Body({ result, issues, onStart, onOpenWorkspace }: { result: InboxResult | null; issues: JiraIssue[] } & TaskActions) {
+function Body({ result, issues, onStart, onOpenWorkspace, onRetry }: { result: InboxResult | null; issues: JiraIssue[]; onRetry: () => void } & TaskActions) {
   const { openSettings } = useContext(NavigationContext)
   const t = useT()
   if (!result) return <div className="empty">{t('Cargando tus Jira…')}</div>
   if ('error' in result) {
+    if (result.error === 'failed')
+      return (
+        <Problem
+          what={result.message}
+          cant={t('No puedo enseñarte tus tareas.')}
+          fix={fixLabel(t, result.fix)}
+          onFix={result.fix === 'settings' ? openSettings : onRetry}
+          detail={result.detail}
+        />
+      )
     return (
       <div className="empty" role="alert">
-        {result.error === 'unconfigured' ? (
-          <>
-            {result.message && <p>{result.message}</p>}
-            <ConnectInSettings service="Jira" />
-          </>
-        ) : (
-          <>{t('No se pudo leer Jira: {detail}', { detail: result.message })}</>
-        )}
+        <ConnectInSettings service="Jira" />
       </div>
     )
   }
@@ -135,6 +145,12 @@ function Body({ result, issues, onStart, onOpenWorkspace }: { result: InboxResul
       {result.notice && (
         <p className="notice" role="status">
           {result.notice.text}
+          {result.notice.detail && (
+            <details>
+              <summary>{t('Ver detalle')}</summary>
+              <code>{result.notice.detail}</code>
+            </details>
+          )}
           {result.notice.settings && (
             <>
               {' '}

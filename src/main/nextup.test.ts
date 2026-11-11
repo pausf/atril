@@ -34,7 +34,7 @@ describe('next up', () => {
     ])
 
     // Jira unreachable: the agents still wait for the person.
-    expect(nextUp(states, { error: 'failed', message: 'x' }, [])).toEqual([
+    expect(nextUp(states, { error: 'failed', message: 'x', detail: 'HTTP 500', fix: 'retry' }, [])).toEqual([
       { kind: 'agent', id: 'early' },
       { kind: 'agent', id: 'late' }
     ])

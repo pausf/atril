@@ -83,6 +83,8 @@ export interface WorkspaceView extends WorkspaceRecord {
  * `detail` is git's or tmux's own output.
  */
 export type WorkFix = 'worktree' | 'terminal' | 'forget' | 'reveal'
+/** W150: what fixes a failed request to Jira, GitHub or GitLab. */
+export type NetFix = 'settings' | 'retry'
 export type WorkRefusal = { error: string; detail?: string; fix?: WorkFix; file?: StateFile }
 export type WorkspaceResult = { workspace: WorkspaceView } | WorkRefusal
 export type RemoveResult = { ok: true } | WorkRefusal
@@ -165,12 +167,15 @@ export interface InboxNotice {
   text: string
   /** Shows a link that opens Ajustes. */
   settings?: boolean
+  /** I18: the code, folded under «Ver detalle». */
+  detail?: string
 }
 
 export type InboxResult =
   | { issues: JiraIssue[]; groups: InboxGroup[]; notice?: InboxNotice }
-  | { error: 'unconfigured'; message?: string }
-  | { error: 'failed'; message: string }
+  /** I3: Jira not connected; a token Jira rejects is 'failed' (I29). */
+  | { error: 'unconfigured' }
+  | { error: 'failed'; message: string; detail: string; fix: NetFix }
 
 export interface JiraApi {
   inbox(): Promise<InboxResult>
@@ -211,7 +216,7 @@ export interface SettingsApi {
   /** S20, S25: GitHub and GitLab tokens; the window sees saved, account and site only. */
   forge: {
     status(forge: ForgeId): Promise<ForgeStatus>
-    save(forge: ForgeId, creds: { site?: string; token: string }): Promise<{ account: string } | { error: string }>
+    save(forge: ForgeId, creds: { site?: string; token: string }): Promise<{ account: string } | { error: string; detail?: string }>
     delete(forge: ForgeId): Promise<void>
     /** Opens the forge's new-token page with the scopes Atril needs. */
     openTokenPage(forge: ForgeId, site?: string): Promise<void>
@@ -277,8 +282,8 @@ export interface MrLists {
   following: MrItem[]
   /** Per list, the forges that had more than the 50 rows shown (M8). */
   more: Record<MrListName, ForgeId[]>
-  /** One per failing forge, already in the person's language (M6). */
-  errors: Array<{ forge: ForgeId; text: string }>
+  /** One per failing forge (M6): the W150 sentence in the person's language, its code and its fix. */
+  errors: Array<{ forge: ForgeId; error: string; detail: string; fix: NetFix }>
 }
 
 export type MrSize = 'S' | 'M' | 'L' | 'XL'

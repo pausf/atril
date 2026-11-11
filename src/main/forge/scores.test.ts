@@ -200,11 +200,11 @@ describe('mr scores', () => {
     expect(x.r).toEqual({ state: 'error', text: 'No se ha podido traer el diff: es demasiado grande para GitHub' })
     expect(x.claude.calls).toHaveLength(0)
     x = await say({ forge: fakeForge({ ghDiff: new Response('', { status: 401 }) }) })
-    expect(x.r).toEqual({ state: 'error', text: 'No se ha podido traer el diff: GitHub ha rechazado el token: reemplázalo en Ajustes' })
+    expect(x.r).toEqual({ state: 'error', text: 'No se ha podido traer el diff: GitHub ha rechazado tu token.' })
     x = await say({ forge: fakeForge({ ghDiff: new Response('', { status: 502 }) }) })
-    expect(x.r).toEqual({ state: 'error', text: 'No se ha podido traer el diff: GitHub ha respondido 502' })
+    expect(x.r).toEqual({ state: 'error', text: 'No se ha podido traer el diff: GitHub está fallando ahora mismo.' })
     x = await say({ forge: fakeForge({ down: true }) })
-    expect(x.r).toEqual({ state: 'error', text: 'No se ha podido traer el diff: No se ha podido conectar con GitHub (ECONNRESET).' })
+    expect(x.r).toEqual({ state: 'error', text: 'No se ha podido traer el diff: No llego a GitHub: ¿hay conexión?' })
 
     // Claude fails: the exit code, the timeout or the schema — never its output.
     const leak = 'SECRET-STDERR-from-claude'

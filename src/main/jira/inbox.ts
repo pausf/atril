@@ -1,6 +1,6 @@
 import type { JiraCreds } from '../credentials/check'
 import type { InboxResult, JiraBoard, JiraIssue } from '../../preload/api'
-import { t } from '../lang'
+import { netProblem, type NetProblem } from '../net-problem'
 import { inboxGroups } from './board'
 
 export const JQL = 'assignee = currentUser() AND statusCategory != Done ORDER BY updated DESC'
@@ -49,6 +49,8 @@ function linkWorkspaces(issues: JiraIssue[], records: Array<{ id: string; jiraKe
   })
 }
 
+const failed = (p: NetProblem): InboxResult => ({ error: 'failed', message: p.error, detail: p.detail, fix: p.fix })
+
 export async function readInbox(
   creds: JiraCreds | null,
   fetchImpl: typeof fetch = fetch,
@@ -73,14 +75,11 @@ export async function readInbox(
       },
       signal: AbortSignal.timeout(10_000)
     })
-    if (res.status === 401 || res.status === 403)
-      return { error: 'unconfigured', message: t('Jira ha rechazado el token. Revísalo en Ajustes.') }
-    if (!res.ok) return { error: 'failed', message: t('Jira respondió {status}', { status: res.status }) }
+    if (!res.ok) return failed(netProblem('Jira', { status: res.status }))
     const issues = linkWorkspaces(parseIssues((await res.json()) as { issues?: RawIssue[] }), records)
     return { issues, ...(await inboxGroups(creds, board, issues, fetchImpl)) }
   } catch (err) {
-    // Network errors can echo the request; never pass err.message through.
-    const timeout = err instanceof Error && err.name === 'TimeoutError'
-    return { error: 'failed', message: timeout ? t('Jira no ha respondido en 10 s.') : t('No se ha podido conectar con Jira.') }
+    // I29: netProblem keeps err.message out; only a code reaches the window.
+    return failed(netProblem('Jira', { error: err }))
   }
 }

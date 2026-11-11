@@ -1,7 +1,7 @@
 import type { CiState, MrItem, MrListName, MrLists } from '../../preload/api'
-import { FORGE_NAME, FORGES, forgeApi, networkCode, type ForgeId } from '../credentials/forge'
+import { FORGE_NAME, FORGES, forgeApi, type ForgeId } from '../credentials/forge'
 import type { SecretStore } from '../credentials/store'
-import { t } from '../lang'
+import { netProblem, type NetProblem } from '../net-problem'
 import type { ScoreTarget } from './scores'
 import type { ThreadTarget } from './threads'
 
@@ -140,24 +140,23 @@ async function pool<T>(items: T[], n: number, fn: (x: T) => Promise<void>): Prom
   }))
 }
 
-/** M6: what a forge's failed answer or unreachable network is called. */
-export const statusText = (name: string, status: number): string =>
-  status === 401 ? t('{forge} ha rechazado el token: reemplázalo en Ajustes', { forge: name }) : t('{forge} ha respondido {status}', { forge: name, status })
-export const networkText = (name: string, err: unknown): string => t('No se ha podido conectar con {forge} ({detail}).', { forge: name, detail: networkCode(err) })
+/** M38: the W150 sentence alone, for callers that only carry text (threads, scores, line comments). */
+export const statusText = (name: string, status: number): string => netProblem(name, { status }).error
+export const networkText = (name: string, err: unknown): string => netProblem(name, { error: err }).error
 
 async function one(forge: ForgeId, token: string, site: string, account: string, fetchImpl: typeof fetch) {
   const name = FORGE_NAME[forge]
   const { base, headers } = forgeApi(forge, site, token)
-  let error: string | undefined
+  let error: NetProblem | undefined
   // M6: the first failure names the forge's problem; whatever did answer is kept.
   const get: Get = async (path) => {
     try {
       // A redirect would carry the token to another host.
       const res = await fetchImpl(new URL(`${base}${path}`), { headers, redirect: 'error', signal: AbortSignal.timeout(10_000) })
       if (res.ok) return { body: await res.json(), res }
-      error ??= statusText(name, res.status)
+      error ??= netProblem(name, { status: res.status })
     } catch (err) {
-      error ??= networkText(name, err)
+      error ??= netProblem(name, { error: err })
     }
     return null
   }
@@ -210,7 +209,7 @@ export async function listMrs(
       )
       if (r.more[l]) out.more[l].push(r.forge)
     }
-    if (r.error) out.errors.push({ forge: r.forge, text: r.error })
+    if (r.error) out.errors.push({ forge: r.forge, ...r.error })
   }
   scorable?.(targets)
   threadable?.(threads)

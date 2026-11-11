@@ -40,8 +40,57 @@ describe('jira summary', () => {
       )
     )
     expect(screen.getByRole('alert').textContent).toContain('Conecta Jira en Ajustes')
+    // Not connected is not a failure: no problem, no retry.
+    expect(screen.queryByText('No puedo enseñarte tus tareas.')).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Volver a comprobar' })).toBeNull()
     await userEvent.setup().click(screen.getByRole('button', { name: /Ajustes/ }))
     expect(openSettings).toHaveBeenCalledTimes(1)
+  })
+
+  it('a connected jira failure shows its problem and button', async () => {
+    mockApi()
+    const user = userEvent.setup()
+    const openSettings = vi.fn()
+    const show = (result: InboxState['result'], refresh: () => Promise<void>) =>
+      render(
+        createElement(
+          NavigationContext.Provider,
+          { value: { openSettings } },
+          createElement(Inbox, { inbox: { result, issues: [], loading: false, refresh }, onStart: () => {}, onOpenWorkspace: () => {}, onNewTask: () => {} })
+        )
+      )
+
+    // Passing: «Volver a comprobar» reads Jira again.
+    const refresh = vi.fn(async () => {})
+    show({ error: 'failed', message: 'Jira está fallando ahora mismo.', detail: 'HTTP 503', fix: 'retry' }, refresh)
+    const alert = screen.getByRole('alert')
+    expect(alert.querySelector('b')?.textContent).toBe('Jira está fallando ahora mismo.')
+    expect(alert.textContent).toContain('No puedo enseñarte tus tareas.')
+    expect(alert.textContent).not.toContain('Conecta Jira en Ajustes')
+    expect(alert.querySelector('details:not([open]) code')?.textContent).toBe('HTTP 503')
+    const before = refresh.mock.calls.length
+    await user.click(screen.getByRole('button', { name: 'Volver a comprobar' }))
+    expect(refresh.mock.calls.length).toBe(before + 1)
+    expect(screen.queryByRole('button', { name: 'Abrir Ajustes' })).toBeNull()
+    cleanup()
+
+    // A rejected token, though saved: the person fixes it in Ajustes.
+    show({ error: 'failed', message: 'Jira ha rechazado tu token.', detail: 'HTTP 401', fix: 'settings' }, async () => {})
+    expect(screen.getByRole('alert').textContent).not.toContain('Conecta Jira en Ajustes')
+    expect(screen.queryByRole('button', { name: 'Volver a comprobar' })).toBeNull()
+    await user.click(screen.getByRole('button', { name: 'Abrir Ajustes' }))
+    expect(openSettings).toHaveBeenCalledTimes(1)
+  })
+
+  it('a board that cannot be read folds its code', () => {
+    mockApi()
+    const issues = [issue('PF-1', 'todo')]
+    const groups = [{ id: 'todo', title: 'Por empezar', folded: false, keys: ['PF-1'] }]
+    const notice = { text: 'No puedo leer el tablero: Jira no encuentra esa dirección.', detail: 'HTTP 404' }
+    render(createElement(Inbox, { inbox: { result: { issues, groups, notice }, issues, loading: false, refresh: async () => {} }, onStart: () => {}, onOpenWorkspace: () => {}, onNewTask: () => {} }))
+    const status = screen.getByRole('status')
+    expect(status.textContent).toContain('No puedo leer el tablero: Jira no encuentra esa dirección.')
+    expect(status.querySelector('details:not([open]) code')?.textContent).toBe('HTTP 404')
   })
 
   it('no board keeps the status groups and asks to pick one', async () => {

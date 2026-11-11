@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { MrItem } from '../../preload/api'
 import { createSecretStore, type Encryptor } from '../credentials/store'
 import { cleanTmp, tmp } from '../test-helpers'
-import { ciGithub, ciGitlab, listMrs } from './mrs'
+import { ciGithub, ciGitlab, listMrs, networkText, statusText } from './mrs'
 
 const TOKEN = 'ghp_super-secret-forge-token'
 const GL = 'https://git.example.com'
@@ -223,28 +223,50 @@ describe('mr lists', () => {
     // 401 on one request: the rest of GitHub stays, GitLab untouched.
     const unauthorized: Route = (u) => (u.searchParams.get('q')?.includes('review-requested') ? new Response('{}', { status: 401 }) : githubOk(u))
     let r = await listMrs(store, fake(unauthorized, gitlab).f)
-    expect(r.errors).toEqual([{ forge: 'github', text: 'GitHub ha rechazado el token: reemplázalo en Ajustes' }])
+    expect(r.errors).toEqual([{ forge: 'github', error: 'GitHub ha rechazado tu token.', detail: 'HTTP 401', fix: 'settings' }])
     expect(r.mine.map((m) => m.url)).toEqual(['https://github.com/pau/web/pull/1', `${GL}/grp/shop/-/merge_requests/5`])
     expect(r.review.map((m) => m.url)).toEqual([`${GL}/grp/cms/-/merge_requests/6`])
 
-    // Another status names it.
+    // Another status names its own cause.
     const limited: Route = (u) => (u.pathname === '/user/subscriptions' ? new Response('{}', { status: 403 }) : githubOk(u))
     r = await listMrs(store, fake(limited, gitlab).f)
-    expect(r.errors).toEqual([{ forge: 'github', text: 'GitHub ha respondido 403' }])
+    expect(r.errors).toEqual([{ forge: 'github', error: 'GitHub no te deja ver esto con ese token.', detail: 'HTTP 403', fix: 'settings' }])
     expect(r.mine).toHaveLength(2)
 
-    // A network failure shows its code, never its message.
+    // A network failure folds its code, never its message.
     const down: Route = () => Object.assign(new TypeError('fetch failed https://git.example.com?private_token=x'), { cause: { code: 'ENOTFOUND' } })
     r = await listMrs(store, fake(githubOk, down).f)
-    expect(r.errors).toEqual([{ forge: 'gitlab', text: 'No se ha podido conectar con GitLab (ENOTFOUND).' }])
+    expect(r.errors).toEqual([{ forge: 'gitlab', error: 'No encuentro GitLab.', detail: 'ENOTFOUND', fix: 'settings' }])
+    expect(JSON.stringify(r)).not.toContain('private_token')
     expect(r.mine.map((m) => m.url)).toEqual(['https://github.com/pau/web/pull/1'])
 
     // A failed detail keeps the row, with size and CI unknown.
     const noDetail: Route = (u) => (/\/pulls\/\d+$/.test(u.pathname) ? new Response('{}', { status: 502 }) : githubOk(u))
     r = await listMrs(store, fake(noDetail, gitlab).f)
-    expect(r.errors).toEqual([{ forge: 'github', text: 'GitHub ha respondido 502' }])
+    expect(r.errors).toEqual([{ forge: 'github', error: 'GitHub está fallando ahora mismo.', detail: 'HTTP 502', fix: 'retry' }])
     expect(r.mine[0]).toMatchObject({ url: 'https://github.com/pau/web/pull/1', title: 'PR pau/web#1' })
     expect(r.mine[0]!.ci).toBeUndefined()
+  })
+
+  it('status and network texts carry no codes', () => {
+    for (const status of [400, 401, 403, 404, 406, 409, 422, 429, 500, 502, 503]) {
+      const text = statusText('GitHub', status)
+      expect(text, String(status)).not.toMatch(/\d/)
+      expect(text).toContain('GitHub')
+    }
+    expect(statusText('GitLab', 401)).toBe('GitLab ha rechazado tu token.')
+    expect(statusText('GitLab', 503)).toBe('GitLab está fallando ahora mismo.')
+    for (const err of [
+      Object.assign(new TypeError('fetch failed https://x?private_token=SECRET'), { cause: { code: 'ECONNRESET' } }),
+      Object.assign(new TypeError('fetch failed'), { cause: { code: 'ENOTFOUND' } }),
+      new SyntaxError('Unexpected token < SECRET'),
+      Object.assign(new Error('aborted SECRET'), { name: 'TimeoutError' })
+    ]) {
+      const text = networkText('GitHub', err)
+      expect(text).not.toMatch(/Error|ECONN|ENOTFOUND|SECRET|\(/)
+      expect(text).toContain('GitHub')
+    }
+    expect(networkText('GitHub', Object.assign(new TypeError('x'), { cause: { code: 'ECONNRESET' } }))).toBe('No llego a GitHub: ¿hay conexión?')
   })
 
   it('caps keep a refresh bounded', async () => {

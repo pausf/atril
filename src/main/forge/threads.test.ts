@@ -192,11 +192,11 @@ describe('mr threads', () => {
 
     // A failure says which forge and why.
     const down = fakeForge({}, { post: new Response('{}', { status: 403 }) })
-    expect(await (await threads(down)).reply(GL_URL, 'general', 'hola')).toEqual({ error: 'GitLab ha respondido 403' })
+    expect(await (await threads(down)).reply(GL_URL, 'general', 'hola')).toEqual({ error: 'GitLab no te deja ver esto con ese token.' })
     expect(down.calls).toHaveLength(1)
     const off = fakeForge({}, { down: true })
-    expect(await (await threads(off)).reply(GH_URL, 'general', 'hola')).toEqual({ error: 'No se ha podido conectar con GitHub (ECONNRESET).' })
-    expect(await (await threads(off)).read(GH_URL)).toEqual({ error: 'No se ha podido conectar con GitHub (ECONNRESET).' })
+    expect(await (await threads(off)).reply(GH_URL, 'general', 'hola')).toEqual({ error: 'No llego a GitHub: ¿hay conexión?' })
+    expect(await (await threads(off)).read(GH_URL)).toEqual({ error: 'No llego a GitHub: ¿hay conexión?' })
   })
 
   it('only listed mrs are read or answered', async () => {

@@ -105,7 +105,7 @@ async function failedAndCapped(): Promise<void> {
   await a.onListing(base)
 
   // GitHub failed: its rows look gone and new, but nothing is said for GitHub; GitLab still speaks.
-  await a.onListing(lists({ mine: [mr(GH(9)), mr(GL(4))], errors: [{ forge: 'github', text: 'GitHub ha respondido 502' }] }))
+  await a.onListing(lists({ mine: [mr(GH(9)), mr(GL(4))], errors: [{ forge: 'github', error: 'GitHub está fallando ahora mismo.', detail: 'HTTP 502', fix: 'retry' }] }))
   expect(await kinds(a)).toEqual(expect.arrayContaining([['opened', 'Título 4'], ['gone', 'Título 2']]))
   expect(await kinds(a)).toHaveLength(2)
   // …and its rows stay as they were in the baseline.

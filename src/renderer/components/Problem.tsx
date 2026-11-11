@@ -1,8 +1,8 @@
-import type { WorkFix } from '../../preload/api'
+import type { NetFix, WorkFix } from '../../preload/api'
 import { useT, type T } from '../ui'
 
-/** The one button each fix gets (W130, W133, W135, W147); no fix, no button. */
-export const fixLabel = (t: T, fix: WorkFix | undefined): string | undefined =>
+/** The one button each fix gets (W130, W133, W135, W147, W150); no fix, no button. */
+export const fixLabel = (t: T, fix: WorkFix | NetFix | undefined): string | undefined =>
   fix === 'worktree'
     ? t('Usar un worktree esta vez')
     : fix === 'terminal'
@@ -11,7 +11,11 @@ export const fixLabel = (t: T, fix: WorkFix | undefined): string | undefined =>
         ? t('Quitar de la lista igualmente')
         : fix === 'reveal'
           ? t('Mostrar en Finder')
-          : undefined
+          : fix === 'settings'
+            ? t('Abrir Ajustes')
+            : fix === 'retry'
+              ? t('Volver a comprobar')
+              : undefined
 
 /**
  * What happened, what that stops, one button that fixes it and the technical detail folded («Ver detalle»).

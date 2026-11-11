@@ -1,6 +1,7 @@
 import { useContext, useEffect, useRef, useState } from 'react'
 import type { CiState, ForgeId, MrItem, MrListName, MrScore, MrScoreState } from '../../preload/api'
 import { FoldSection } from '../components/Fold'
+import { Problem, fixLabel } from '../components/Problem'
 import { ago } from '../flow/ActivityFeed'
 import { NavigationContext } from '../settings/navigation'
 import { useT } from '../ui'
@@ -48,9 +49,14 @@ export function MrScreen({ mrs, openUrl }: { mrs: MrsState; openUrl?: string | n
       </h1>
       <p className="lead">{t('Tus MR abiertas, las que te toca revisar y las de los proyectos que sigues en GitHub y GitLab.')}</p>
       {result?.errors.map((e) => (
-        <p key={e.forge} className="notice" role="alert">
-          {e.text}
-        </p>
+        <Problem
+          key={e.forge}
+          what={e.error}
+          cant={t('No puedo enseñarte tus MRs de {forge}.', { forge: NAME[e.forge] })}
+          fix={fixLabel(t, e.fix)}
+          onFix={e.fix === 'settings' ? openSettings : () => void refresh()}
+          detail={e.detail}
+        />
       ))}
       {!result ? (
         <div className="empty">{t('Cargando tus MR…')}</div>
@@ -64,7 +70,8 @@ export function MrScreen({ mrs, openUrl }: { mrs: MrsState; openUrl?: string | n
       ) : (
         (['mine', 'review', 'following'] as const).map((l) => (
           <FoldSection key={l} id={`mr-${l}`} title={titles[l]} count={result[l].length} className="tgroup">
-            {result[l].length === 0 && <p className="f-note">{t('Ninguna MR.')}</p>}
+            {/* M6: while a forge failed, an empty section may just be the missing part. */}
+            {result[l].length === 0 && result.errors.length === 0 && <p className="f-note">{t('Ninguna MR.')}</p>}
             {result[l].map((m) => (
               <div key={m.url} className="mr-line">
                 <Row m={m} onOpen={() => setOpened(m)} />
