@@ -131,4 +131,4 @@ El lock de reserva en cadena: sin él dos «Probar en vivo» seguidos en dos tra
 - [x] qa-targets.ts: objetivos de raíz y 2 niveles con su porqué, `.atril/qa.json`, elegidos a mano y pestaña elegida por repo, con IPC · Closes: W120, W121, W122
 - [x] lanzar un objetivo: motor por plataforma, carpeta del objetivo, reserva de dispositivo y liberación al detener · waits on box 1 · Closes: W84, W124
 - [x] problemas con su arreglo al lanzar y `runFix` con nombres cerrados · waits on box 2 · Closes: W125
-- [ ] tarjeta: pestañas recordadas, aviso con arreglo y detalle, «No sé cómo abrir este proyecto», «Elegir a mano» · waits on boxes 1–3 · Closes: W123, W126, W113, W117
+- [x] tarjeta: pestañas recordadas, aviso con arreglo y detalle, «No sé cómo abrir este proyecto», «Elegir a mano» · waits on boxes 1–3 · Closes: W123, W126, W113, W117

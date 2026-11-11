@@ -20,7 +20,7 @@ describe('qa section', () => {
     const api = mockApi({
       workspaces: [workspace('aaaaaaa1', 'PF-1', false)],
       flow: { stage: 'construir', change: 'add-x', others: [] },
-      qa: { aaaaaaa1: { kind: 'web', live: false, shots: [] } }
+      qa: { aaaaaaa1: { target: null, live: false, shots: [] } }
     })
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime.bind(vi) })
     render(createElement(App))

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { QaCriterion, QaEntry, QaReport } from '../../preload/api'
 import { useT } from '../ui'
 import { useModalKeys } from '../flow/modalKeys'
-import { kindLabel } from './kinds'
+import { platformLabel } from './kinds'
 
 /** W117, W118: a bug prefilled from the failed criterion; nothing leaves until a button is pressed. */
 export function QaBug({ workspaceId, report, criterion, entry, onClose }: { workspaceId: string; report: QaReport; criterion: QaCriterion; entry: QaEntry; onClose: () => void }) {
@@ -11,7 +11,7 @@ export function QaBug({ workspaceId, report, criterion, entry, onClose }: { work
   const keys = useModalKeys(dialog, onClose)
   const [title, setTitle] = useState(`QA ${report.branch}: ${entry.note || criterion.text}`)
   const [steps, setSteps] = useState(entry.steps.map((s, i) => `${i + 1}. ${s.text}`).join('\n'))
-  const [env, setEnv] = useState([kindLabel(t, report.kind), report.branch, report.head].filter(Boolean).join(' · '))
+  const [env, setEnv] = useState([report.target && platformLabel(t, report.target.platform), report.target?.dir, report.branch, report.head].filter(Boolean).join(' · '))
   const [crit, setCrit] = useState(`${criterion.id}: ${criterion.text}`)
   const [board, setBoard] = useState(false)
   const [busy, setBusy] = useState(false)

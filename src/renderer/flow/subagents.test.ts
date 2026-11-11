@@ -148,7 +148,7 @@ describe('subagents', () => {
   })
 
   it('the panel has no foldable sections', async () => {
-    mockApi({ workspaces: [workspace('aaaaaaa1', 'PF-1', false)], states: { aaaaaaa1: 'working' }, flow: { stage: 'construir', change: 'add-x', others: [] } as FlowStage, qa: { aaaaaaa1: { kind: 'web', live: false, shots: [] } as QaStatus } })
+    mockApi({ workspaces: [workspace('aaaaaaa1', 'PF-1', false)], states: { aaaaaaa1: 'working' }, flow: { stage: 'construir', change: 'add-x', others: [] } as FlowStage, qa: { aaaaaaa1: { target: null, live: false, shots: [] } as QaStatus } })
     const user = userEvent.setup()
     render(createElement(App))
     await user.click(await screen.findByRole('button', { name: /^PF-1/ }))

@@ -5,7 +5,8 @@ import type { JiraBoard } from '../preload/api'
 import type { JiraCreds } from './credentials/check'
 import { t } from './lang'
 import { createIssue } from './libretto'
-import { detectQa, launchQa, qaPane, reportFile, shotsDir } from './qa'
+import { launchQa, qaPane, reportFile, shotsDir } from './qa'
+import { qaTargets } from './qa-targets'
 import { readCriteria } from './qa-criteria'
 import type { Runner } from './run'
 import { liveWorkspace, replyGone } from './status'
@@ -71,12 +72,13 @@ export async function qaReport(id: string, run: Runner): Promise<QaReport | null
   const ws = await recordOf(id)
   if (!ws) return null
   const { change, criteria } = await readCriteria(ws.path)
-  const [{ entries, at }, info, head] = await Promise.all([
+  const [{ entries, at }, listed, head] = await Promise.all([
     readEntries(id, new Set(criteria.map((c) => c.id))),
-    detectQa(ws.path),
+    qaTargets(id),
     run('git', ['-C', ws.path, 'rev-parse', '--short', 'HEAD'])
   ])
-  return { change, criteria, entries, at, kind: info?.kind ?? null, branch: ws.branch, head: head.code === 0 ? head.stdout.trim() : '' }
+  const targets = listed?.targets ?? []
+  return { change, criteria, entries, at, target: targets.find((x) => x.key === listed?.chosen) ?? null, targets, note: listed?.note ?? null, branch: ws.branch, head: head.code === 0 ? head.stdout.trim() : '' }
 }
 
 /** W116: types the request into the live QA pane, or launches QA with it at the end of its prompt. */

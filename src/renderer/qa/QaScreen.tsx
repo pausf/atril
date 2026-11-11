@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react'
-import type { QaCriterion, QaEntry, QaReport, QaShot, QaStatus, WorkspaceView } from '../../preload/api'
+import type { QaCriterion, QaEntry, QaLaunchResult, QaProblem, QaReport, QaShot, QaStatus, QaTargets, WorkspaceView } from '../../preload/api'
+import { Problem } from '../components/Problem'
 import { useLocale, useT } from '../ui'
 import { useModalKeys } from '../flow/modalKeys'
 import { QaBug } from './QaBug'
 import { QaHow } from './QaHow'
-import { kindLabel } from './kinds'
+import { fixLabel, platformLabel, targetLabel } from './kinds'
+import { QaPick } from './QaPick'
 import { settled, TESTING_MS, type QaPending } from './pending'
 
 const POLL_MS = 3000
@@ -19,6 +21,8 @@ export function QaScreen({ workspaces, selected, pending, setPending }: { worksp
   const [statuses, setStatuses] = useState<Record<string, QaStatus | null>>({})
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [problem, setProblem] = useState<QaProblem | null>(null)
+  const [picking, setPicking] = useState(false)
   const [big, setBig] = useState<QaShot | null>(null)
   const [how, setHow] = useState<string | null>(null)
   const [bug, setBug] = useState<{ id: string; fromHow: boolean } | null>(null)
@@ -69,6 +73,8 @@ export function QaScreen({ workspaces, selected, pending, setPending }: { worksp
 
   useEffect(() => {
     setError(null)
+    setProblem(null)
+    setPicking(false)
     setBig(null)
     setHow(null)
     setBug(null)
@@ -88,11 +94,47 @@ export function QaScreen({ workspaces, selected, pending, setPending }: { worksp
     if (id === null || !status) return
     setBusy(true)
     setError(null)
-    const r = await (status.live ? window.atril.qa.stop(id) : window.atril.qa.launch(id))
+    setProblem(null)
+    const r: QaLaunchResult | null = status.live ? await window.atril.qa.stop(id) : report?.target ? await window.atril.qa.launch(id, report.target.key) : null
     setBusy(false)
-    if ('error' in r) setError(r.error)
+    // W126: a problem shows as its own box, never as a raw error.
+    if (r && 'problem' in r && r.problem) setProblem(r.problem)
+    else if (r && 'error' in r) setError(r.error)
     // Ask at once instead of waiting for the next tick, so the button follows the press.
     void load(id)
+  }
+
+  const fix = async (p: QaProblem): Promise<void> => {
+    if (id === null) return
+    // «Elegir a mano» is the window's own: main is never asked for it.
+    if (p.fix === 'pick-manual') return setPicking(true)
+    setBusy(true)
+    setError(null)
+    const r = await window.atril.qa.fix(id, p.fix)
+    setBusy(false)
+    if ('error' in r) setError(r.error)
+    else if (r.open) setPicked(r.open)
+  }
+
+  const applyTargets = (ws: string, r: QaTargets | { error: string }): void => {
+    if ('error' in r) return setError(r.error)
+    setReports((m) => (m[ws] ? { ...m, [ws]: { ...m[ws]!, targets: r.targets, note: r.note, target: r.targets.find((x) => x.key === r.chosen) ?? null } } : m))
+  }
+
+  // W123: the choice is the repo's, so the other cards of that repo are asked again.
+  const choose = async (key: string): Promise<void> => {
+    if (id === null || !ws) return
+    setProblem(null)
+    applyTargets(id, await window.atril.qa.choose(id, key))
+    for (const w of list) {
+      if (w.id === id || w.repoId !== ws.repoId) continue
+      void window.atril.qa.report(w.id).then((r) => mounted.current && setReports((m) => ({ ...m, [w.id]: r })), () => undefined)
+    }
+  }
+
+  const unmanual = async (key: string): Promise<void> => {
+    if (id === null) return
+    applyTargets(id, await window.atril.qa.unmanual(id, key))
   }
 
   const retest = async (cid: string | null): Promise<void> => {
@@ -125,30 +167,77 @@ export function QaScreen({ workspaces, selected, pending, setPending }: { worksp
         {list.length > 0 && (
           <div className="qa-cards" role="group" aria-label={t('Trabajos')}>
             {list.map((w) => (
-              <button key={w.id} type="button" className={`qa-card${reports[w.id] && !reports[w.id]!.kind ? ' off' : ''}`} aria-pressed={w.id === id} onClick={() => setPicked(w.id)}>
-                <b>{w.jiraKey ?? w.branch}</b> <span>{w.id in reports ? kindLabel(t, reports[w.id]?.kind ?? null) : ''}</span>
+              <button key={w.id} type="button" className={`qa-card${reports[w.id] && !reports[w.id]!.target ? ' off' : ''}`} aria-pressed={w.id === id} onClick={() => setPicked(w.id)}>
+                <b>{w.jiraKey ?? w.branch}</b> <span>{w.id in reports ? platformLabel(t, reports[w.id]?.target?.platform) : ''}</span>
               </button>
             ))}
           </div>
         )}
-        {ws && report && !report.kind && <div className="empty">{t('Atril no sabe abrir este proyecto: QA no puede probarlo.')}</div>}
-        {ws && report && report.kind && (
+        {ws && report && (
           <>
+            {report.targets.length > 1 && (
+              <div className="qat-tabs" role="group" aria-label={t('Objetivos')}>
+                {report.targets.map((x) => (
+                  <button key={x.key} type="button" className="qat-tab" aria-pressed={x.key === report.target?.key} disabled={busy} onClick={() => void choose(x.key)}>
+                    {targetLabel(t, x)}
+                  </button>
+                ))}
+              </div>
+            )}
+            {report.target ? (
+              <p className="qat-why">
+                <span>{report.target.why}</span>
+                {report.target.source === 'manual' && (
+                  <button type="button" className="btn" onClick={() => void unmanual(report.target!.key)}>
+                    {t('Quitar')}
+                  </button>
+                )}
+                <span className="qa-sp" />
+                {!picking && (
+                  <button type="button" className="btn" onClick={() => setPicking(true)}>
+                    {t('Elegir a mano')}
+                  </button>
+                )}
+              </p>
+            ) : (
+              <div className="qat-none">
+                <b>{t('No sé cómo abrir este proyecto')}</b>
+                <p>{t('Busqué package.json con dev, start o preview, app.json de Expo, pubspec.yaml, settings.gradle, .xcodeproj o Package.swift, en la raíz y dos niveles')}</p>
+                {!picking && (
+                  <button type="button" className="btn p" onClick={() => setPicking(true)}>
+                    {t('Elegir a mano')}
+                  </button>
+                )}
+              </div>
+            )}
+            {report.note && <p className="qat-note">{report.note}</p>}
+            {picking && id && (
+              <QaPick
+                workspaceId={id}
+                onCancel={() => setPicking(false)}
+                onSaved={(r) => {
+                  applyTargets(id, r)
+                  setPicking(false)
+                  setProblem(null)
+                }}
+              />
+            )}
             <div className="qa-bar">
               <div className="qa-grow">
-                <b>{kindLabel(t, report.kind)}</b>
+                <b>{report.target ? targetLabel(t, report.target) : platformLabel(t, null)}</b>
                 <span>{report.change ? t('Cambio: {change}', { change: report.change }) : t('Sin cambio abierto')}</span>
               </div>
               {status?.live && <span className="qa-live">● {t('en vivo')}</span>}
               <button type="button" className="btn" disabled={busy || report.criteria.length === 0} onClick={() => void retest(null)}>
                 {t('Reprobar todo')}
               </button>
-              {status && (
+              {status && (status.live || report.target) && (
                 <button type="button" className={status.live ? 'btn' : 'btn p'} disabled={busy} onClick={() => void press()}>
                   {status.live ? t('Detener QA') : t('Probar en vivo')}
                 </button>
               )}
             </div>
+            {problem && <Problem what={problem.what} cant={problem.cant} fix={fixLabel(t, problem.fix)} detail={problem.detail} busy={busy} onFix={() => void fix(problem)} />}
             {error && (
               <p className="qa-err" role="alert">
                 {error}

@@ -3,7 +3,7 @@ import { createElement } from 'react'
 import { act, cleanup, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { QaEntry, QaReport, QaShot } from '../preload/api'
+import type { QaEntry, QaPlatform, QaReport, QaShot, QaTarget } from '../preload/api'
 import { App } from './App'
 import { mockApi, mockSystemTheme, workspace } from './mockApi'
 
@@ -33,17 +33,22 @@ const fail: QaEntry = {
     { text: 'Comprobar: sábado 14, sale viernes 13', ms: 400, shot: 'c.png', shotAt: 3 }
   ]
 }
+const WHY = 'Hay un package.json con el script dev'
+const tg = (platform: QaPlatform, dir = '', source: QaTarget['source'] = 'detected', why = WHY): QaTarget => ({ key: `${platform}:${dir}`, platform, dir, command: 'pnpm run dev', why, source })
+const WEB = [tg('chrome'), tg('safari')]
 const report = (over: Partial<QaReport> = {}): QaReport => ({
   change: 'add-delivery-holidays',
   criteria: [{ id: 'W1', text: W1 }, { id: 'W2', text: W2 }, { id: 'W3', text: W3 }],
   entries: [pass, fail],
   at: 1000,
-  kind: 'web',
+  target: WEB[0]!,
+  targets: WEB,
+  note: null,
   branch: 'feat/pf-1',
   head: 'a41f9c2',
   ...over
 })
-const status = (live = false) => ({ kind: 'web' as const, live, shots: [shot('c.png', 3), shot('b.png', 2), shot('a.png', 1)] })
+const status = (live = false) => ({ target: WEB[0]!, live, shots: [shot('c.png', 3), shot('b.png', 2), shot('a.png', 1)] })
 const A = 'aaaaaaa1'
 
 beforeEach(() => {
@@ -58,8 +63,12 @@ afterEach(() => {
 async function open(o: Parameters<typeof mockApi>[0] = {}) {
   const api = mockApi({
     workspaces: [workspace(A, 'feat/pf-1', false), workspace('aaaaaaa2', 'feat/pf-2', false), workspace('aaaaaaa3', 'feat/pf-3', false)],
-    qa: { [A]: status(), aaaaaaa2: { kind: 'android', live: false, shots: [] }, aaaaaaa3: null },
-    qaReports: { [A]: report(), aaaaaaa2: report({ kind: 'android', criteria: [], entries: [], change: null }), aaaaaaa3: report({ kind: null, criteria: [], entries: [], change: null }) },
+    qa: { [A]: status(), aaaaaaa2: { target: tg('android'), live: false, shots: [] }, aaaaaaa3: { target: null, live: false, shots: [] } },
+    qaReports: {
+      [A]: report(),
+      aaaaaaa2: report({ target: tg('android'), targets: [tg('android')], criteria: [], entries: [], change: null }),
+      aaaaaaa3: report({ target: null, targets: [], criteria: [], entries: [], change: null })
+    },
     ...o
   })
   const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime.bind(vi) })
@@ -78,9 +87,9 @@ describe('qa screen', () => {
     const names = screen.getAllByRole('navigation', { name: 'Pantallas' })[0]!.textContent
     expect(names).toMatch(/Libretto\s*QA\s*Avisos/)
 
-    // A card per workspace names its kind or «sin detectar»; the picked one is pressed.
+    // A card per workspace names its chosen target or «sin detectar»; the picked one is pressed.
     const cards = within(await screen.findByRole('group', { name: 'Trabajos' }))
-    expect(cards.getAllByRole('button').map((b) => b.textContent)).toEqual(['feat/pf-1 App web', 'feat/pf-2 Android', 'feat/pf-3 sin detectar'])
+    expect(cards.getAllByRole('button').map((b) => b.textContent)).toEqual(['feat/pf-1 Chrome', 'feat/pf-2 Android', 'feat/pf-3 sin detectar'])
     expect(cards.getByRole('button', { name: /pf-1/ }).getAttribute('aria-pressed')).toBe('true')
     expect(cards.getByRole('button', { name: /pf-2/ }).getAttribute('aria-pressed')).toBe('false')
 
@@ -102,9 +111,13 @@ describe('qa screen', () => {
     await user.keyboard('{Escape}')
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
 
-    // «Probar en vivo» launches (W84); it turns into «Detener QA» and back.
+    // W123's tabs and the reason under them.
+    expect(within(screen.getByRole('group', { name: 'Objetivos' })).getAllByRole('button').map((b) => b.textContent)).toEqual(['Chrome', 'Safari'])
+    expect(screen.getByText(WHY)).toBeTruthy()
+
+    // «Probar en vivo» launches the chosen target (W84); it turns into «Detener QA» and back.
     await user.click(screen.getByRole('button', { name: 'Probar en vivo' }))
-    expect(api.qaApi.launch).toHaveBeenCalledWith(A)
+    expect(api.qaApi.launch).toHaveBeenCalledWith(A, 'chrome:')
     await user.click(await screen.findByRole('button', { name: 'Detener QA' }))
     expect(api.qaApi.stop).toHaveBeenCalledWith(A)
     await screen.findByRole('button', { name: 'Probar en vivo' })
@@ -115,9 +128,9 @@ describe('qa screen', () => {
     expect(document.querySelector('.qa-sum')).toBeNull()
     expect(screen.queryByText(W1)).toBeNull()
 
-    // Not detected: a line saying QA cannot open it, and no buttons to start QA.
+    // Not detected: W126's lines instead of «Probar en vivo».
     await user.click(cards.getByRole('button', { name: /pf-3/ }))
-    await screen.findByText('Atril no sabe abrir este proyecto: QA no puede probarlo.')
+    await screen.findByText('No sé cómo abrir este proyecto')
     expect(screen.queryByRole('button', { name: 'Probar en vivo' })).toBeNull()
   })
 
@@ -202,7 +215,7 @@ describe('qa screen', () => {
     expect(title.value).toBe('QA feat/pf-1: esperaba sábado 14, sale viernes 13')
     const steps = within(form).getByLabelText('Pasos') as HTMLTextAreaElement
     expect(steps.value).toBe('1. Abrir /checkout\n2. Elegir la provincia Madrid\n3. Comprobar: sábado 14, sale viernes 13')
-    expect((within(form).getByLabelText('Entorno') as HTMLInputElement).value).toBe('App web · feat/pf-1 · a41f9c2')
+    expect((within(form).getByLabelText('Entorno') as HTMLInputElement).value).toBe('Chrome · feat/pf-1 · a41f9c2')
     expect((within(form).getByLabelText('Criterio') as HTMLTextAreaElement).value).toBe(`W2: ${W2}`)
     await user.clear(title)
     await user.type(title, 'QA: la fecha sale mal')
@@ -213,7 +226,7 @@ describe('qa screen', () => {
     expect(api.qaApi.bug).toHaveBeenCalledWith(A, {
       to: 'jira',
       title: 'QA: la fecha sale mal',
-      body: `Criterio: W2: ${W2}\n\nPasos:\n${steps.value}\n\nEntorno: App web · feat/pf-1 · a41f9c2`
+      body: `Criterio: W2: ${W2}\n\nPasos:\n${steps.value}\n\nEntorno: Chrome · feat/pf-1 · a41f9c2`
     })
     expect((await within(form).findByRole('status')).textContent).toBe('Creada QA-1')
     expect((within(form).getByRole('button', { name: 'Crear en Jira' }) as HTMLButtonElement).disabled).toBe(true)
@@ -307,5 +320,106 @@ describe('qa screen', () => {
     await settle(3000)
     await waitFor(() => expect(within(rowOf('W3')).queryByText('Probando…')).toBeNull())
     expect(within(rowOf('W3')).getByText('Sin probar')).toBeTruthy()
+  })
+  it('targets show as tabs remembered per repo', async () => {
+    const MONO = [tg('chrome', 'apps/web'), tg('safari', 'apps/web'), tg('android', 'apps/mobile', 'detected', 'Hay un app.json de Expo')]
+    const NOTE = '.atril/qa.json no se entiende: uso lo que detecto'
+    const { api, user } = await open({
+      qaReports: { [A]: report({ target: MONO[0]!, targets: MONO, note: NOTE }), aaaaaaa2: report({ target: MONO[0]!, targets: MONO }), aaaaaaa3: report({ target: null, targets: [] }) }
+    })
+    await screen.findByText(W1)
+    const tabs = (): HTMLElement[] => within(screen.getByRole('group', { name: 'Objetivos' })).getAllByRole('button')
+
+    // One tab per target, the folder after «·»; the chosen one pressed; its reason and W121's line under them.
+    expect(tabs().map((b) => b.textContent)).toEqual(['Chrome · apps/web', 'Safari · apps/web', 'Android · apps/mobile'])
+    expect(tabs().map((b) => b.getAttribute('aria-pressed'))).toEqual(['true', 'false', 'false'])
+    expect(screen.getByText(WHY)).toBeTruthy()
+    expect(screen.getByText(NOTE)).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'Quitar' })).toBeNull()
+
+    // Pressing a tab saves it for the repo; «Probar en vivo» launches that one.
+    await user.click(screen.getByRole('button', { name: 'Android · apps/mobile' }))
+    expect(api.qaApi.choose).toHaveBeenCalledWith(A, 'android:apps/mobile')
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Android · apps/mobile' }).getAttribute('aria-pressed')).toBe('true'))
+    expect(screen.getByText('Hay un app.json de Expo')).toBeTruthy()
+    await user.click(screen.getByRole('button', { name: 'Probar en vivo' }))
+    expect(api.qaApi.launch).toHaveBeenLastCalledWith(A, 'android:apps/mobile')
+
+    // A later card of the same repo opens on it.
+    await user.click(within(screen.getByRole('group', { name: 'Trabajos' })).getByRole('button', { name: /pf-2/ }))
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Android · apps/mobile' }).getAttribute('aria-pressed')).toBe('true'))
+
+    // «Elegir a mano»: refused with main's sentence, then saved as one more tab with «Quitar».
+    await user.click(screen.getByRole('button', { name: 'Elegir a mano' }))
+    const form = screen.getByRole('form', { name: 'Elegir a mano' })
+    await user.selectOptions(within(form).getByLabelText('Plataforma'), 'safari')
+    await user.type(within(form).getByLabelText('Carpeta'), 'apps/nope')
+    await user.type(within(form).getByLabelText('Comando'), 'pnpm dev')
+    vi.mocked(api.qaApi.manual).mockResolvedValueOnce({ error: 'La carpeta apps/nope no existe en este trabajo' })
+    await user.click(within(form).getByRole('button', { name: 'Guardar' }))
+    expect(api.qaApi.manual).toHaveBeenCalledWith('aaaaaaa2', { platform: 'safari', dir: 'apps/nope', command: 'pnpm dev' })
+    expect((await within(form).findByRole('alert')).textContent).toBe('La carpeta apps/nope no existe en este trabajo')
+    await user.clear(within(form).getByLabelText('Carpeta'))
+    await user.type(within(form).getByLabelText('Carpeta'), 'apps/admin')
+    await user.click(within(form).getByRole('button', { name: 'Guardar' }))
+    await user.click(await screen.findByRole('button', { name: 'Safari · apps/admin' }))
+    expect(screen.queryByRole('form', { name: 'Elegir a mano' })).toBeNull()
+    expect(await screen.findByText('Lo elegiste a mano')).toBeTruthy()
+    await user.click(screen.getByRole('button', { name: 'Quitar' }))
+    expect(api.qaApi.unmanual).toHaveBeenCalledWith('aaaaaaa2', 'safari:apps/admin')
+    await waitFor(() => expect(screen.queryByRole('button', { name: 'Safari · apps/admin' })).toBeNull())
+  })
+
+  it('a launch problem shows its fix and detail folded', async () => {
+    const problem = { what: 'No tienes ningún emulador de Android', cant: 'No puedes probar en Android hasta que crees uno', fix: 'create-avd' as const, detail: 'emulator -list-avds no devolvió ninguno' }
+    const { api, user } = await open({ qaLaunch: { error: problem.what, problem } })
+    await screen.findByText(W1)
+
+    // What happened and what cannot be done, in words; a button with the fix; the detail folded.
+    await user.click(screen.getByRole('button', { name: 'Probar en vivo' }))
+    const box = (await screen.findByText(problem.what)).closest('.problem') as HTMLElement
+    expect(box.textContent).toContain(problem.cant)
+    const details = box.querySelector('details')!
+    expect(details.open).toBe(false)
+    expect(within(details).getByText('Ver detalle')).toBeTruthy()
+    expect(details.textContent).toContain(problem.detail)
+    expect(document.querySelectorAll('.qa-err')).toHaveLength(0)
+    expect(screen.getAllByText(problem.what)).toHaveLength(1)
+
+    // The fix goes to main by name only.
+    await user.click(within(box).getByRole('button', { name: 'Crear un Pixel 8' }))
+    expect(api.qaApi.fix).toHaveBeenCalledWith(A, 'create-avd')
+
+    // «Ver el otro QA» opens the workspace main answers.
+    vi.mocked(api.qaApi.launch).mockResolvedValueOnce({ error: 'x', problem: { ...problem, fix: 'open-workspace' } })
+    vi.mocked(api.qaApi.fix).mockResolvedValueOnce({ ok: true, open: 'aaaaaaa2' })
+    await user.click(screen.getByRole('button', { name: 'Probar en vivo' }))
+    await user.click(await screen.findByRole('button', { name: 'Ver el otro QA' }))
+    const cards = within(screen.getByRole('group', { name: 'Trabajos' }))
+    await waitFor(() => expect(cards.getByRole('button', { name: /pf-2/ }).getAttribute('aria-pressed')).toBe('true'))
+
+    // «Elegir a mano» is the window's own: it opens the form and main is not asked.
+    await user.click(cards.getByRole('button', { name: /pf-1/ }))
+    await screen.findByText(W1)
+    vi.mocked(api.qaApi.launch).mockResolvedValueOnce({ error: 'x', problem: { ...problem, fix: 'pick-manual' } })
+    await user.click(screen.getByRole('button', { name: 'Probar en vivo' }))
+    const fixes = vi.mocked(api.qaApi.fix).mock.calls.length
+    await user.click(within((await screen.findByText(problem.what)).closest('.problem') as HTMLElement).getByRole('button', { name: 'Elegir a mano' }))
+    expect(screen.getByRole('form', { name: 'Elegir a mano' })).toBeTruthy()
+    expect(api.qaApi.fix).toHaveBeenCalledTimes(fixes)
+
+    // No target: the sentence, where it looked, and «Elegir a mano», yet its report and screenshots still show.
+    await user.click(cards.getByRole('button', { name: /pf-3/ }))
+    api.setReport('aaaaaaa3', report({ target: null, targets: [] }))
+    api.setQa('aaaaaaa3', { target: null, live: false, shots: [shot('c.png', 3)] })
+    await settle(3000)
+    await screen.findByText('No sé cómo abrir este proyecto')
+    expect(screen.getByText('Busqué package.json con dev, start o preview, app.json de Expo, pubspec.yaml, settings.gradle, .xcodeproj o Package.swift, en la raíz y dos niveles')).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Elegir a mano' })).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'Probar en vivo' })).toBeNull()
+    await waitFor(() => expect(within(rowOf('W2')).getByText('Falla')).toBeTruthy())
+    expect(within(rowOf('W2')).getByRole('button', { name: 'Ver cómo' })).toBeTruthy()
+    expect(within(rowOf('W2')).getByRole('button', { name: 'Marcar como bug' })).toBeTruthy()
+    expect(within(screen.getByRole('region', { name: 'Todas las capturas' })).getAllByRole('img')).toHaveLength(1)
   })
 })

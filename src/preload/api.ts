@@ -546,7 +546,8 @@ export interface QaShot {
 }
 
 export interface QaStatus {
-  kind: QaKind
+  /** The repo's chosen target; null when none is known (screenshots still come). */
+  target: QaTarget | null
   /** The QA pane is still in tmux. */
   live: boolean
   /** Newest first, the 12 newest of at most 2 MB each. */
@@ -598,7 +599,10 @@ export interface QaReport {
   entries: QaEntry[]
   /** report.json's mtime in ms; 0 when there is none. */
   at: number
-  kind: QaKind | null
+  /** W123: the chosen target, every target and W121's line. */
+  target: QaTarget | null
+  targets: QaTarget[]
+  note: string | null
   branch: string
   head: string
 }
@@ -617,7 +621,7 @@ export interface QaApi {
   /** `criterion` null: test them all again (W116). */
   retest(workspaceId: string, criterion: string | null): Promise<QaResult>
   bug(workspaceId: string, req: QaBugRequest): Promise<QaBugResult>
-  /** null: Atril does not know how to test this workspace's project (W83). */
+  /** null: no such workspace. */
   status(workspaceId: string): Promise<QaStatus | null>
   /** `key`: the target to launch; the repo's chosen one when absent. */
   launch(workspaceId: string, key?: string): Promise<QaLaunchResult>

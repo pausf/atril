@@ -327,7 +327,7 @@ describe('launchQa', () => {
     const plain = project({})
     writeFileSync(join(home, 'workspaces.json'), JSON.stringify({ workspaces: [{ id: 'stqa0001', path: web }, { id: 'stqa0002', path: plain }] }))
     const none: Runner = async () => ({ code: 1, stdout: '', stderr: '' })
-    expect(await qaStatus('stqa0002', none)).toBeNull()
+    expect(await qaStatus('stqa0002', none)).toEqual({ target: null, live: false, shots: [] })
     expect(await qaStatus('nobody00', none)).toBeNull()
 
     const dir = join(home, 'qa', 'stqa0001')
@@ -342,7 +342,7 @@ describe('launchQa', () => {
     symlinkSync(join(web, 'package.json'), join(dir, 'link.png'))
 
     const s = await qaStatus('stqa0001', none)
-    expect(s?.kind).toBe('web')
+    expect(s?.target?.key).toBe('chrome:')
     expect(s?.live).toBe(false)
     expect(s?.shots.map((x) => x.name)).toEqual(['s13.png', 's12.png', 's11.png', 's10.png', 's9.png', 's8.png', 's7.png', 's6.png', 's5.png', 's4.png', 's3.png', 's2.png'])
     expect(s?.shots[0]?.src).toBe(`data:image/png;base64,${Buffer.from('png13').toString('base64')}`)

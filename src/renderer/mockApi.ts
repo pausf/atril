@@ -1,5 +1,5 @@
 import { vi } from 'vitest'
-import type { ActivityLine, SubagentEntry, SubagentLine, AddRepoResult, Aviso, FileChange, FlowBoxes, FlowDocs, ForgeId, ForgeStatus, Mode, MrDraft, MrDrafts, MrDraftsResult, MrFixCiResult, MrLists, MrReply, MrScoreState, MrThreads, MrWork, AgentState, QaBugResult, QaReport, QaResult, QaStatus, AtrilApi, QuickAnswer, QuickReplies, FlowStage, HistoryEntry, IdeaJiraResult, IdeaResult, LibrettoCounts, LibrettoState, JiraIssue, JiraSettingsStatus, MenuAction, NextItem, StartProposalResult, StartRequest, StartResult, RepoView, ToolReport, UiState, WorkCost, WorkspaceResult, WorkspaceView } from '../preload/api'
+import type { ActivityLine, SubagentEntry, SubagentLine, AddRepoResult, Aviso, FileChange, FlowBoxes, FlowDocs, ForgeId, ForgeStatus, Mode, MrDraft, MrDrafts, MrDraftsResult, MrFixCiResult, MrLists, MrReply, MrScoreState, MrThreads, MrWork, AgentState, QaBugResult, QaLaunchResult, QaManualRequest, QaReport, QaResult, QaStatus, QaTargets, AtrilApi, QuickAnswer, QuickReplies, FlowStage, HistoryEntry, IdeaJiraResult, IdeaResult, LibrettoCounts, LibrettoState, JiraIssue, JiraSettingsStatus, MenuAction, NextItem, StartProposalResult, StartRequest, StartResult, RepoView, ToolReport, UiState, WorkCost, WorkspaceResult, WorkspaceView } from '../preload/api'
 
 export const workspace = (id: string, branch: string, alive = true): WorkspaceView => ({
   id,
@@ -66,7 +66,7 @@ interface Options {
   /** What qa.status answers per workspace id; missing means an unclassified project. */
   qa?: Record<string, QaStatus | null>
   /** What qa.launch answers; by default it succeeds and the QA pane lives. */
-  qaLaunch?: QaResult
+  qaLaunch?: QaLaunchResult
   /** What qa.report answers per workspace id; missing means the workspace is gone. */
   qaReports?: Record<string, QaReport | null>
   /** What qa.retest answers; by default it succeeds. */
@@ -138,6 +138,10 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
   const off = (): void => {}
   const qa = new Map(Object.entries(o.qa ?? {}))
   const reports = new Map(Object.entries(o.qaReports ?? {}))
+  const targetsOf = (id: string): QaTargets => {
+    const r = reports.get(id)
+    return { targets: r?.targets ?? [], chosen: r?.target?.key ?? null, note: r?.note ?? null }
+  }
   const setLive = (id: string, live: boolean): void => {
     const q = qa.get(id)
     if (q) qa.set(id, { ...q, live })
@@ -282,7 +286,7 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
     },
     qa: {
       status: vi.fn(async (id: string) => qa.get(id) ?? null),
-      launch: vi.fn(async (id: string): Promise<QaResult> => {
+      launch: vi.fn(async (id: string): Promise<QaLaunchResult> => {
         if (o.qaLaunch) return o.qaLaunch
         setLive(id, true)
         return { ok: true }
@@ -294,9 +298,28 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
       report: vi.fn(async (id: string) => reports.get(id) ?? null),
       retest: vi.fn(async (): Promise<QaResult> => o.qaRetest ?? { ok: true }),
       bug: vi.fn(async (): Promise<QaBugResult> => o.qaBug ?? { key: 'QA-1' }),
-      choose: vi.fn(async () => ({ targets: [], chosen: null, note: null })),
-      manual: vi.fn(async () => ({ targets: [], chosen: null, note: null })),
-      unmanual: vi.fn(async () => ({ targets: [], chosen: null, note: null })),
+      // The choice is the repo's: every report listing that key opens on it.
+      choose: vi.fn(async (id: string, key: string) => {
+        for (const [w, r] of reports) {
+          const found = r?.targets.find((x) => x.key === key)
+          if (r && found) reports.set(w, { ...r, target: found })
+        }
+        return targetsOf(id)
+      }),
+      manual: vi.fn(async (id: string, req: QaManualRequest) => {
+        const r = reports.get(id)
+        const key = `${req.platform}:${req.dir}`
+        if (r) reports.set(id, { ...r, targets: [...r.targets.filter((x) => x.key !== key), { key, ...req, why: 'Lo elegiste a mano', source: 'manual' }] })
+        return targetsOf(id)
+      }),
+      unmanual: vi.fn(async (id: string, key: string) => {
+        const r = reports.get(id)
+        if (r) {
+          const targets = r.targets.filter((x) => x.key !== key)
+          reports.set(id, { ...r, targets, target: r.target?.key === key ? (targets[0] ?? null) : r.target })
+        }
+        return targetsOf(id)
+      }),
       fix: vi.fn(async () => ({ ok: true as const }))
     },
     flow: {

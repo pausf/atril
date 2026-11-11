@@ -330,11 +330,10 @@ export async function stopQa(id: string, run: Runner): Promise<QaResult> {
 const MAX_SHOTS = 12
 const MAX_BYTES = 2 * 1024 * 1024
 
-/** F33: what the window shows; null for a project Atril cannot test. */
+/** F33: what the window shows; null for a workspace that is not in the list. */
 export async function qaStatus(id: string, run: Runner): Promise<QaStatus | null> {
-  const ws = (await readRecords()).find((r) => r.id === id && r.mode !== 'review')
-  const info = ws && (await detectQa(ws.path))
-  if (!info) return null
+  const listed = await qaTargets(id)
+  if (!listed) return null
   const dir = shotsDir(id)
   const pngs = (await readdir(dir).catch(() => [] as string[])).filter((n) => n.toLowerCase().endsWith('.png'))
   const sized = await Promise.all(pngs.map(async (name) => ({ name, st: await lstat(join(dir, name)).catch(() => null) })))
@@ -346,5 +345,5 @@ export async function qaStatus(id: string, run: Runner): Promise<QaStatus | null
   const shots: QaShot[] = await Promise.all(
     newest.map(async (f) => ({ name: f.name, at: f.st!.mtimeMs, src: `data:image/png;base64,${(await readFile(join(dir, f.name))).toString('base64')}` }))
   )
-  return { kind: info.kind, live: await qaLive(id, run), shots }
+  return { target: listed.targets.find((x) => x.key === listed.chosen) ?? null, live: await qaLive(id, run), shots }
 }
