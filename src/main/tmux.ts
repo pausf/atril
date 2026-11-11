@@ -58,6 +58,12 @@ export async function hasPane(id: string, paneId: string, run: Runner = defaultR
   return r.code === 0 && r.stdout.split('\n').includes(paneId)
 }
 
+// Only the agent's own pane counts (W16); a failing display means the pane or the server is gone.
+export async function paneDead(paneId: string, run: Runner = defaultRun): Promise<boolean> {
+  const r = await tmux(run, ['display', '-p', '-t', paneId, '#{pane_dead}'])
+  return r.code !== 0 || r.stdout.trim() === '1'
+}
+
 export async function killPane(paneId: string, run: Runner = defaultRun): Promise<void> {
   await tmux(run, ['kill-pane', '-t', paneId])
 }

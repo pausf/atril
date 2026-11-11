@@ -1,10 +1,11 @@
 import { execFileSync } from 'node:child_process'
 import { existsSync, mkdirSync, readFileSync } from 'node:fs'
 import { rmSync, writeFileSync } from 'node:fs'
+import type { Effort } from '../preload/api'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { cleanTmp, git, killTmux, makeRegisteredRepo, tmp, tmuxOut, tmuxSock } from './test-helpers'
-import { flowWorkspace, forgetWorkspace, listWorkspaces, openWorktree, readRecords, removeWorkspace, terminalAt, writeRecords } from './workspaces'
+import { agentSpy, cleanTmp, git, killTmux, makeRegisteredRepo, tmp, tmuxOut, tmuxSock } from './test-helpers'
+import { flowWorkspace, forgetWorkspace, listWorkspaces, openWorktree, readRecords, removeWorkspace, reopenWorkspace, terminalAt, writeRecords } from './workspaces'
 import { qaStatus } from './qa'
 import { run, type Runner } from './run'
 
@@ -461,5 +462,108 @@ describe('workspaces', () => {
     const races = Array.from({ length: 60 }, (_, n) => (n % 2 ? writeRecords(many) : readRecords().then((r) => r.length)))
     const lengths = (await Promise.all(races)).filter((x): x is number => typeof x === 'number')
     expect(lengths.every((l) => l === 3000)).toBe(true)
+  })
+
+  describe('reopen', () => {
+    const flag = (argv: string[], name: string): string | undefined => (argv.includes(name) ? argv[argv.indexOf(name) + 1] : undefined)
+    const sessionUp = (session: string): boolean => {
+      try {
+        tmuxOut(sock, 'has-session', '-t', `=${session}`)
+        return true
+      } catch {
+        return false
+      }
+    }
+
+    it('a stopped work reopens where it was', async () => {
+      const spy = agentSpy(run)
+      const r = await openWorktree({ repoId: 'demo', branch: 'feat/back', agent: 'claude', model: 'sonnet', effort: 'low', auto: true }, spy.run)
+      if (!('workspace' in r)) throw new Error(r.error)
+      const { id, session, path } = r.workspace
+      const marker = join(home, 'auto', session)
+      expect(existsSync(marker)).toBe(true)
+
+      // No session and no transcript: the same model and effort, from scratch, in the same folder.
+      tmuxOut(sock, 'kill-session', '-t', `=${session}`)
+      const plain = await reopenWorkspace(id, {}, spy.run)
+      if (!('workspace' in plain)) throw new Error(plain.error)
+      const fresh = spy.argvs.at(-1)!
+      expect(fresh).not.toContain('--continue')
+      expect(flag(fresh, '--model')).toBe('sonnet')
+      expect(flag(fresh, '--effort')).toBe('low')
+      expect(plain.workspace).toMatchObject({ id, session, path, alive: true, effort: 'low' })
+      expect(tmuxOut(sock, 'display-message', '-p', '-t', `=${session}:`, '#{pane_id} #{pane_current_path}').trim()).toBe(`${plain.workspace.paneId} ${path}`)
+      expect((await readRecords())[0]!.paneId).toBe(plain.workspace.paneId)
+      expect(existsSync(marker)).toBe(true)
+
+      // A transcript recorded: --continue right after the plugin dir, before model and effort; more lifts low to medium.
+      tmuxOut(sock, 'kill-session', '-t', `=${session}`)
+      mkdirSync(join(home, 'transcripts'), { recursive: true })
+      writeFileSync(join(home, 'transcripts', session), '/x/conversation.jsonl\n')
+      const more = await reopenWorkspace(id, { more: true }, spy.run)
+      if (!('workspace' in more)) throw new Error(more.error)
+      const cont = spy.argvs.at(-1)!
+      expect(cont.indexOf('--continue')).toBe(cont.indexOf('--plugin-dir') + 2)
+      expect(cont.indexOf('--continue')).toBeLessThan(cont.indexOf('--model'))
+      expect(flag(cont, '--effort')).toBe('medium')
+      expect(more.workspace.effort).toBe('medium')
+      expect((await readRecords())[0]!.effort).toBe('medium')
+
+      // The ladder: none and medium go to high, high to xhigh.
+      for (const [from, to] of [[undefined, 'high'], ['default', 'high'], ['medium', 'high'], ['high', 'xhigh']] as Array<[Effort | undefined, Effort]>) {
+        tmuxOut(sock, 'kill-session', '-t', `=${session}`)
+        const rec = { ...(await readRecords())[0]! }
+        delete rec.effort
+        await writeRecords([from === undefined ? rec : { ...rec, effort: from }])
+        const up = await reopenWorkspace(id, { more: true }, spy.run)
+        if (!('workspace' in up)) throw new Error(up.error)
+        expect(flag(spy.argvs.at(-1)!, '--effort')).toBe(to)
+        expect((await readRecords())[0]!.effort).toBe(to)
+      }
+
+      // W16: the session alive but the agent's pane dead is stopped too; that session is ended first, never two.
+      const deadPane = (await readRecords())[0]!.paneId
+      tmuxOut(sock, 'respawn-pane', '-k', '-t', deadPane, 'true')
+      for (let n = 0; n < 50 && tmuxOut(sock, 'display', '-p', '-t', deadPane, '#{pane_dead}').trim() !== '1'; n++) await new Promise((ok) => setTimeout(ok, 50))
+      const again = await reopenWorkspace(id, {}, spy.run)
+      if (!('workspace' in again)) throw new Error(again.error)
+      expect(tmuxOut(sock, 'list-sessions', '-F', '#{session_name}').trim().split('\n')).toEqual([session])
+      expect(tmuxOut(sock, 'list-panes', '-s', '-t', `=${session}`, '-F', '#{pane_id} #{pane_dead}').trim()).toBe(`${again.workspace.paneId} 0`)
+      expect(existsSync(marker)).toBe(true)
+    }, 40_000)
+
+    it('reopening refuses what it cannot do', async () => {
+      const spy = agentSpy(run)
+      const calls: string[][] = []
+      const counting: Runner = (cmd, args, opts) => {
+        calls.push([cmd, ...args])
+        return spy.run(cmd, args, opts)
+      }
+      const starts = (): number => calls.filter((c) => c.includes('new-session')).length
+      const r = await openWorktree({ repoId: 'demo', branch: 'feat/no', agent: 'claude', effort: 'xhigh' }, spy.run)
+      if (!('workspace' in r)) throw new Error(r.error)
+      const { id, session } = r.workspace
+
+      expect(await reopenWorkspace('nope0000', {}, counting)).toEqual({ error: 'Ese trabajo ya no existe' })
+      // A live agent is never restarted.
+      expect(await reopenWorkspace(id, {}, counting)).toEqual({ error: 'Este trabajo ya está abierto.' })
+      expect(sessionUp(session)).toBe(true)
+      tmuxOut(sock, 'kill-session', '-t', `=${session}`)
+      expect(await reopenWorkspace(id, { more: true }, counting)).toEqual({ error: 'Ya está en el esfuerzo más alto.' })
+      expect(starts()).toBe(0)
+
+      // tmux failing after the session exists: the half-made session goes, the record keeps its pane.
+      const before = (await readRecords())[0]!
+      const broken = await reopenWorkspace(id, {}, failing((c, a) => c === 'tmux' && a.includes('set-option'), 'bad option'))
+      expect(broken).toEqual({ error: 'tmux no ha podido arrancar el agente.', detail: expect.stringContaining('bad option'), fix: 'terminal' })
+      expect(sessionUp(session)).toBe(false)
+      expect((await readRecords())[0]).toEqual(before)
+
+      // The folder is gone: the way past is forgetting it.
+      rmSync(r.workspace.path, { recursive: true, force: true })
+      expect(await reopenWorkspace(id, {}, counting)).toEqual({ error: 'La carpeta de feat/no ya no existe.', fix: 'forget' })
+      expect(starts()).toBe(0)
+      expect(sessionUp(session)).toBe(false)
+    }, 40_000)
   })
 })

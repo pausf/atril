@@ -80,6 +80,8 @@ export interface WorkspacesApi {
   remove(id: string): Promise<RemoveResult>
   /** W133: drops a broken work's record, session and files; no git but `worktree prune`. */
   forget(id: string): Promise<RemoveResult>
+  /** W141: starts a stopped work's agent again in its folder; `more` goes one effort level up. */
+  reopen(id: string, more: boolean): Promise<WorkspaceResult>
   /** W134: Terminal in the repo's or the work's folder, looked up by id in main. */
   terminal(target: { repoId: string } | { id: string }): Promise<{ ok: true } | { error: string }>
 }

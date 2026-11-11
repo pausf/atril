@@ -410,6 +410,8 @@ function Shell() {
                   <Workspace
                     ws={workspaces.find((w) => w.id === selected)}
                     flow={flow}
+                    onReopened={async () => setWorkspaces(await window.atril.workspaces.list())}
+                    onForget={(id) => remove(id, true)}
                     big={bigBox && selected ? <BigCode key={bigBox.index} workspaceId={selected} box={bigBox} tick={boxes.tick} start={big?.file} onClose={() => setBig(null)} /> : null}
                     switcher={
                       <>

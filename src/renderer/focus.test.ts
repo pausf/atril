@@ -179,7 +179,7 @@ describe('focus mode', () => {
     expect(pill.parentElement?.textContent).toContain('+1')
     expect(screen.queryByRole('button', { name: 'WEB-1 te necesita' })).toBeNull()
     expect(screen.getByRole('heading', { name: 'WEB-1' })).toBeTruthy()
-    expect(screen.queryByRole('button', { name: /^Volver a/ })).toBeNull()
+    expect(screen.queryByRole('button', { name: /^Volver a (?!abrir$)/ })).toBeNull()
     await vi.waitFor(() => expect(setNext).toHaveBeenLastCalledWith(true))
 
     // ⌘↩ jumps to it and keeps focus on.
@@ -197,7 +197,7 @@ describe('focus mode', () => {
     // «Volver a» returns to the workspace of the first jump, then is forgotten.
     await user.click(await screen.findByRole('button', { name: 'Volver a WEB-1' }))
     expect(await screen.findByRole('heading', { name: 'WEB-1' })).toBeTruthy()
-    expect(screen.queryByRole('button', { name: /^Volver a/ })).toBeNull()
+    expect(screen.queryByRole('button', { name: /^Volver a (?!abrir$)/ })).toBeNull()
     expect(screen.getByRole('button', { name: 'Salir del foco' })).toBeTruthy()
 
     // ⌘⌥← does the same.
@@ -205,7 +205,7 @@ describe('focus mode', () => {
     await screen.findByRole('heading', { name: 'WEB-3' })
     act(() => api.menu({ kind: 'back' }))
     expect(await screen.findByRole('heading', { name: 'WEB-1' })).toBeTruthy()
-    expect(screen.queryByRole('button', { name: /^Volver a/ })).toBeNull()
+    expect(screen.queryByRole('button', { name: /^Volver a (?!abrir$)/ })).toBeNull()
 
     // Leaving focus forgets it.
     act(() => api.menu({ kind: 'next' }))
@@ -213,7 +213,7 @@ describe('focus mode', () => {
     await user.click(screen.getByRole('button', { name: 'Salir del foco' }))
     act(() => api.menu({ kind: 'focusMode' }))
     await screen.findByRole('button', { name: 'Salir del foco' })
-    expect(screen.queryByRole('button', { name: /^Volver a/ })).toBeNull()
+    expect(screen.queryByRole('button', { name: /^Volver a (?!abrir$)/ })).toBeNull()
 
     // So does removing that workspace: ⌘⌥← then stays where it is.
     act(() => api.menu({ kind: 'select', index: 1 }))
@@ -223,7 +223,7 @@ describe('focus mode', () => {
     await screen.findByRole('button', { name: 'Volver a WEB-2' })
     workspaces.splice(1, 1)
     act(() => api.menu({ kind: 'back' }))
-    await vi.waitFor(() => expect(screen.queryByRole('button', { name: /^Volver a/ })).toBeNull())
+    await vi.waitFor(() => expect(screen.queryByRole('button', { name: /^Volver a (?!abrir$)/ })).toBeNull())
     expect(screen.getByRole('heading', { name: 'WEB-1' })).toBeTruthy()
 
     // Nobody waiting but the open one: no pill, ⌘↩ disabled and never opens the task.

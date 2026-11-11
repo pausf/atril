@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import type { AgentState, QuickAnswer, QuickChoice, QuickReplies, WorkspaceView } from '../preload/api'
 import { atrilHome } from './paths'
 import { run as defaultRun, type Runner } from './run'
-import { pressKey, sendKey, sendText, tmuxArgs } from './tmux'
+import { paneDead, pressKey, sendKey, sendText } from './tmux'
 import type { AgentSnapshot } from './nextup'
 import { listWorkspaces } from './workspaces'
 import { t } from './lang'
@@ -38,12 +38,6 @@ async function hookState(session: string): Promise<AgentState> {
 export async function notificationBody(ws: WorkspaceView): Promise<string> {
   const { text } = await hookFile(ws.session)
   return typeof text === 'string' && text ? localiseActivity(text, t) : t('{branch} te necesita', { branch: ws.branch })
-}
-
-// Only the agent's own pane counts (W16); a failing display means the pane or the server is gone.
-async function paneDead(paneId: string, run: Runner): Promise<boolean> {
-  const r = await run('tmux', [...tmuxArgs(), 'display', '-p', '-t', paneId, '#{pane_dead}'])
-  return r.code !== 0 || r.stdout.trim() === '1'
 }
 
 export async function agentState(ws: WorkspaceView, run: Runner = defaultRun): Promise<AgentState> {

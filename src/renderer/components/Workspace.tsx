@@ -1,12 +1,69 @@
-import { useEffect, useRef, type ReactNode } from 'react'
-import type { FlowStage, WorkspaceView } from '../../preload/api'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
+import type { FlowStage, RemoveResult, WorkspaceResult, WorkspaceView } from '../../preload/api'
 import { stateOf, useAgentStates } from '../agents'
 import { Steps } from '../flow/Steps'
 import { useT } from '../ui'
+import { Problem } from './Problem'
 import { StateLabel } from './StateLabel'
 import { Terminal } from './Terminal'
 
-export function Workspace({ ws, flow, big, switcher }: { ws: WorkspaceView | undefined; flow: FlowStage | null; /** F39: the enlarged code, shown in place of the terminal. */ big?: ReactNode; switcher?: ReactNode }) {
+/** W143: why the work stopped and the way back; the refusal reuses W135's fixes. */
+function Stopped({ ws, onReopened, onForget }: { ws: WorkspaceView; onReopened: () => Promise<void>; onForget: (id: string) => Promise<RemoveResult> }) {
+  const t = useT()
+  const [busy, setBusy] = useState(false)
+  const [refusal, setRefusal] = useState<Exclude<WorkspaceResult, { workspace: WorkspaceView }> | null>(null)
+  const reopen = (more: boolean): void => {
+    setBusy(true)
+    setRefusal(null)
+    void window.atril.workspaces
+      .reopen(ws.id, more)
+      .then(async (r) => ('error' in r ? setRefusal(r) : onReopened()))
+      .finally(() => setBusy(false))
+  }
+  return (
+    <div className="ws-stopped">
+      <b>{t('{branch} está parado: su sesión de tmux ya no existe (un reinicio o tmux cerrado).', { branch: ws.branch })}</b>
+      <p>{t('Su agente no sigue hasta que lo vuelvas a abrir.')}</p>
+      <button type="button" className="btn p" disabled={busy} onClick={() => reopen(false)}>
+        {t('Volver a abrir')}
+      </button>
+      {ws.effort !== 'xhigh' && (
+        <button type="button" className="btn" disabled={busy} onClick={() => reopen(true)}>
+          {t('Seguir con más esfuerzo')}
+        </button>
+      )}
+      {refusal && (
+        <Problem
+          what={refusal.error}
+          cant={t('Su agente no sigue hasta que lo vuelvas a abrir.')}
+          fix={refusal.fix === 'terminal' ? t('Abrir en Terminal') : refusal.fix === 'forget' ? t('Quitar de la lista igualmente') : undefined}
+          onFix={() => void (refusal.fix === 'forget' ? onForget(ws.id) : window.atril.workspaces.terminal({ id: ws.id }))}
+          detail={refusal.detail ?? ''}
+          busy={busy}
+          onClose={() => setRefusal(null)}
+        />
+      )}
+    </div>
+  )
+}
+
+export function Workspace({
+  ws,
+  flow,
+  big,
+  switcher,
+  onReopened = async () => undefined,
+  onForget = (id) => window.atril.workspaces.forget(id)
+}: {
+  ws: WorkspaceView | undefined
+  flow: FlowStage | null
+  /** F39: the enlarged code, shown in place of the terminal. */
+  big?: ReactNode
+  switcher?: ReactNode
+  /** W143: re-lists the works after a reopen, so `alive` flips and the terminal attaches. */
+  onReopened?: () => Promise<void>
+  onForget?: (id: string) => Promise<RemoveResult>
+}) {
   const t = useT()
   const panes = useRef<HTMLDivElement>(null)
   const wasBig = useRef(false)
@@ -16,6 +73,7 @@ export function Workspace({ ws, flow, big, switcher }: { ws: WorkspaceView | und
     wasBig.current = Boolean(big)
   }, [big])
   const states = useAgentStates()
+  const stopped = ws !== undefined && (!ws.alive || stateOf(states, ws) === 'stopped')
   return (
     <main className="col center">
       {ws && <Steps ws={ws} flow={flow} />}
@@ -37,22 +95,24 @@ export function Workspace({ ws, flow, big, switcher }: { ws: WorkspaceView | und
             <b>terminal</b>
             {ws && <span>tmux · {ws.session}</span>}
           </div>
+          {stopped && <Stopped key={ws.id} ws={ws} onReopened={onReopened} onForget={onForget} />}
           {ws?.alive ? (
-            <Terminal key={ws.id} id={ws.id} />
+            // The pane id changes on a reopen: a new key attaches the terminal to the new session.
+            <Terminal key={`${ws.id}:${ws.paneId}`} id={ws.id} />
           ) : (
-            <div className="term">
-              <div className="s">
-                {ws
-                  ? t('Este trabajo está parado: su sesión de tmux ya no existe.')
-                  : t('Aquí saldrá la terminal de tu agente, dentro de tmux.')}
+            !ws && (
+              <div className="term">
+                <div className="s">{t('Aquí saldrá la terminal de tu agente, dentro de tmux.')}</div>
               </div>
-            </div>
+            )
           )}
         </div>
       </div>
-      <div className="hint">
-        <span>{t('Escribe en la terminal como siempre: será tu Claude Code.')}</span>
-      </div>
+      {!stopped && (
+        <div className="hint">
+          <span>{t('Escribe en la terminal como siempre: será tu Claude Code.')}</span>
+        </div>
+      )}
     </main>
   )
 }

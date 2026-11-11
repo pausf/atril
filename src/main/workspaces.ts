@@ -7,7 +7,7 @@ import { agentArgv, EFFORTS } from './agent'
 import { detectMode, effectiveMode, type Repo } from './repos'
 import { run as defaultRun, type Runner } from './run'
 import { trustFolder } from './trust'
-import { hasSession, killSession, newSession, sessionName } from './tmux'
+import { hasPane, hasSession, killSession, newSession, paneDead, sessionName } from './tmux'
 import { atrilHome } from './paths'
 import { appendHistory, historyEntry } from './history'
 import { t } from './lang'
@@ -301,6 +301,36 @@ export async function forgetWorkspace(id: string, run: Runner = defaultRun): Pro
   // prune only drops entries whose folder is gone, so the branch is free to open again.
   if (repo) await run('git', ['-C', repo.path, 'worktree', 'prune'])
   return { ok: true }
+}
+
+/** W141: none or medium → high, low → medium, high → xhigh; undefined at the top. */
+const oneUp = (effort: Effort | undefined): Effort | undefined =>
+  effort === 'low' ? 'medium' : effort === 'high' ? 'xhigh' : effort === 'xhigh' ? undefined : 'high'
+
+/** W141/W142: a stopped work starts again in its folder, in a session of the same name; never a second session. */
+export async function reopenWorkspace(id: string, opts: { more?: boolean }, run: Runner = defaultRun): Promise<WorkspaceResult> {
+  const records = await readRecords()
+  const rec = records.find((r) => r.id === id)
+  if (!rec) return { error: t('Ese trabajo ya no existe') }
+  const live = await hasSession(id, run)
+  // Pane ids are reused after a server restart: only the record's pane in this session counts (W16).
+  if (live && (await hasPane(id, rec.paneId, run)) && !(await paneDead(rec.paneId, run))) return { error: t('Este trabajo ya está abierto.') }
+  if (!existsSync(rec.path)) return { error: t('La carpeta de {branch} ya no existe.', { branch: rec.branch }), fix: 'forget' }
+  const effort = opts.more === true ? oneUp(rec.effort) : rec.effort
+  if (effort === undefined && opts.more === true) return { error: t('Ya está en el esfuerzo más alto.') }
+  if (live) await killSession(id, run)
+  const resume = existsSync(join(home(), 'transcripts', sessionName(id))) ? (true as const) : undefined
+  let paneId: string
+  try {
+    paneId = await newSession(id, rec.path, agentArgv({ model: rec.model, effort, resume }), run)
+  } catch (err) {
+    await killSession(id, run)
+    return failed(t('tmux no ha podido arrancar el agente.'), err instanceof Error ? err.message : String(err))
+  }
+  const updated: WorkspaceRecord = { ...rec, paneId, ...(effort !== undefined && { effort }) }
+  // Re-read: the list may have changed while tmux started.
+  await writeRecords((await readRecords()).map((r) => (r.id === id ? updated : r)))
+  return { workspace: { ...updated, alive: true } }
 }
 
 /** W134: the window sends an id; the folder comes from main's own records. */

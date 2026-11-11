@@ -39,11 +39,13 @@ export const effortError = (effort: unknown): string | null =>
  * `hooks: false` (the QA agent): the hook reports by session, so a second claude in the same session would
  * speak for the work's own agent. `mcpConfig` loads only that file's MCP servers, never the person's.
  */
-export const agentArgv = (opts: { model?: Model; effort?: Effort; prompt?: string; mcpConfig?: string; hooks?: false } = {}): string[] => [
+export const agentArgv = (opts: { model?: Model; effort?: Effort; prompt?: string; mcpConfig?: string; hooks?: false; resume?: true } = {}): string[] => [
   'claude',
   ...(opts.hooks === false ? [] : ['--settings', hooksFile()]),
   '--plugin-dir',
   librettoDir(),
+  // W141: the last conversation of the work's folder.
+  ...(opts.resume === true ? ['--continue'] : []),
   ...(opts.model && opts.model !== 'default' ? ['--model', opts.model] : []),
   ...(opts.effort && EFFORTS.includes(opts.effort) ? ['--effort', opts.effort] : []),
   ...(opts.mcpConfig ? ['--mcp-config', opts.mcpConfig, '--strict-mcp-config'] : []),

@@ -143,6 +143,7 @@ const api: AtrilApi = {
     open: (repoId, branch, agent, model, task, auto, worktree, effort) => ipcRenderer.invoke('atril:ws:open', repoId, branch, agent, model, task, auto, worktree, effort),
     remove: (id) => ipcRenderer.invoke('atril:ws:remove', id),
     forget: (id) => ipcRenderer.invoke('atril:ws:forget', id),
+    reopen: (id, more) => ipcRenderer.invoke('atril:ws:reopen', id, more),
     terminal: (target) => ipcRenderer.invoke('atril:ws:terminal', target)
   },
   jira: {

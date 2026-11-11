@@ -104,6 +104,8 @@ interface Options {
   doctor?: ToolReport[]
   /** What workspaces.remove answers per workspace id; missing means removed. */
   remove?: Record<string, RemoveResult>
+  /** What workspaces.reopen answers per id; missing means reopened (the work turns alive). */
+  reopen?: Record<string, WorkspaceResult>
 }
 
 /** ui.json lives in `stored`; pass the same object to a second mock to simulate a restart. */
@@ -121,6 +123,7 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
   const drafts = new Map(Object.entries(o.drafts ?? {}))
   const opened: WorkspaceView[] = []
   const gone = new Set<string>()
+  const revived = new Set<string>()
   const changeDrafts = (url: string, f: (d: MrDraft[]) => MrDraft[]): MrDraftsResult => {
     const next: MrDrafts = { ...(drafts.get(url) ?? { stale: false, canSend: false, drafts: [] }), drafts: [] }
     next.drafts = f(drafts.get(url)?.drafts ?? [])
@@ -165,7 +168,7 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
     doctor: async () => o.doctor ?? [],
     installTool: async () => ({ ok: true }),
     workspaces: {
-      list: async () => [...(o.workspaces ?? []), ...opened].filter((w) => !gone.has(w.id)),
+      list: async () => [...(o.workspaces ?? []), ...opened].filter((w) => !gone.has(w.id)).map((w) => (revived.has(w.id) ? { ...w, alive: true } : w)),
       open: vi.fn(async (_repo: string, branch: string): Promise<WorkspaceResult> => ({ workspace: workspace('own00001', branch) })),
       remove: vi.fn(async (id: string): Promise<RemoveResult> => {
         const r = o.remove?.[id] ?? { ok: true }
@@ -175,6 +178,11 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
       forget: vi.fn(async (id: string): Promise<RemoveResult> => {
         gone.add(id)
         return { ok: true }
+      }),
+      reopen: vi.fn(async (id: string): Promise<WorkspaceResult> => {
+        const r = o.reopen?.[id] ?? { workspace: { ...(o.workspaces ?? []).find((w) => w.id === id)!, alive: true } }
+        if ('workspace' in r) revived.add(id)
+        return r
       }),
       terminal: vi.fn(async () => ({ ok: true as const }))
     },
