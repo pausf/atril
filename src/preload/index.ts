@@ -20,6 +20,7 @@ const api: AtrilApi = {
   },
   usage: {
     get: () => ipcRenderer.invoke('atril:usage:get'),
+    fix: () => ipcRenderer.invoke('atril:usage:fix'),
     onChange: (cb) => {
       const h = (_e: Electron.IpcRendererEvent, u: UsageResult): void => cb(u)
       ipcRenderer.on('atril:usage:changed', h)

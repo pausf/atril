@@ -462,6 +462,28 @@ h2[tabindex]:focus {
   color: var(--sub);
   background: var(--card);
 }
+.foot-err details {
+  display: inline;
+  position: relative;
+  margin-left: 10px;
+}
+.foot-err summary {
+  display: inline;
+  cursor: pointer;
+  color: var(--faint);
+}
+/* The detail opens above the one-line footer instead of pushing it taller. */
+.foot-err details code {
+  position: absolute;
+  bottom: 22px;
+  left: 0;
+  white-space: nowrap;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--card);
+  color: var(--text);
+}
 .bars {
   letter-spacing: 1px;
   color: var(--text);

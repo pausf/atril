@@ -102,6 +102,7 @@ function JiraCard() {
   const [replacing, setReplacing] = useState(false)
   const [phase, setPhase] = useState<Phase>('idle')
   const [error, setError] = useState<string | null>(null)
+  const [detail, setDetail] = useState<string | undefined>()
   const [tried, setTried] = useState(false)
   const [site, setSite] = useState('')
   const [email, setEmail] = useState('')
@@ -131,6 +132,7 @@ function JiraCard() {
       const r = await window.atril.settings.jira.save({ site, email, token })
       if ('error' in r) {
         setError(r.error)
+        setDetail(r.detail)
         return
       }
       setToken('')
@@ -190,6 +192,7 @@ function JiraCard() {
             </>
           }
           error={error}
+          detail={detail}
           checking={phase === 'checking'}
           onCancel={replacing ? () => setReplacing(false) : undefined}
           onSubmit={(e) => void save(e)}

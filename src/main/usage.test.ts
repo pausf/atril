@@ -2,6 +2,7 @@ import { mkdtempSync, readdirSync, readFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
+import type { UsageResult } from '../preload/api'
 import type { Runner } from './run'
 import { createUsage, readUsage } from './usage'
 
@@ -56,15 +57,32 @@ describe('usage', () => {
     delete process.env['ATRIL_HOME']
   })
 
-  it('missing source shows a reason', async () => {
+  it('each failure says what happened with its fix and detail apart', async () => {
     const none: Runner = async () => ({ code: 44, stdout: '', stderr: 'could not be found' })
-    const noItem = await readUsage(none, answer(200))
-    expect(noItem).toHaveProperty('error')
-    expect((noItem as { error: string }).error).toMatch(/llavero/)
-
-    const rejected = await readUsage(keychain(), answer(401, { error: 'unauthorized' }))
-    expect(rejected).toHaveProperty('error')
-    expect((rejected as { error: string }).error).toMatch(/401/)
+    const offline = vi.fn(async () => {
+      throw new TypeError('fetch failed')
+    })
+    const cases: Array<[string, UsageResult, 'retry' | 'claude', RegExp]> = [
+      ['keychain', await readUsage(none, answer(200)), 'claude', /44/],
+      ['not json', await readUsage(async () => ({ code: 0, stdout: 'nope', stderr: '' }), answer(200)), 'claude', /JSON/],
+      ['401', await readUsage(keychain(), answer(401, { error: 'unauthorized' })), 'claude', /401/],
+      ['429', await readUsage(keychain(), answer(429)), 'retry', /429/],
+      ['500', await readUsage(keychain(), answer(500)), 'retry', /500/],
+      ['offline', await readUsage(keychain(), offline), 'retry', /TypeError/],
+      ['shape', await readUsage(keychain(), answer(200, { nope: 1 })), 'retry', /.+/]
+    ]
+    const sentences = new Set<string>()
+    for (const [name, r, fix, detail] of cases) {
+      expect(r, name).toHaveProperty('error')
+      const e = r as { error: string; detail: string; fix: string }
+      expect(e.error, name).not.toMatch(/api\.anthropic\.com|\b(401|429|500)\b/)
+      expect(e.fix, name).toBe(fix)
+      expect(e.detail, name).toMatch(detail)
+      expect(e.detail, name).not.toContain(TOKEN)
+      sentences.add(e.error)
+    }
+    // One sentence per cause: keychain, token, rate limit, network, anything else.
+    expect(sentences.size).toBeGreaterThanOrEqual(5)
   })
 
   it('rate limit keeps the last value and backs off', async () => {

@@ -12,10 +12,12 @@ const TOOLS: ReadonlyArray<{ tool: string; versionArgs: string[]; install: strin
 ]
 
 async function check({ tool, versionArgs, install }: (typeof TOOLS)[number], run: Runner): Promise<ToolReport> {
-  const r = await run(tool, versionArgs)
+  const r = await run(tool, versionArgs, { timeoutMs: 5000 })
   if (r.code === 0) {
     return { tool, ok: true, version: r.stdout.trim().split('\n')[0], install }
   }
+  // W127: the runner kills a hung tool and answers 124.
+  if (r.code === 124) return { tool, ok: false, problem: t('no responde en 5 s'), install }
   const detail = r.stderr.trim().split('\n')[0]
   return {
     tool,

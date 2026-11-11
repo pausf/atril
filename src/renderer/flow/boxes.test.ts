@@ -117,7 +117,8 @@ describe('boxes timeline', () => {
 
   it('the code can be seen large in the centre', async () => {
     const { api, user } = await boot(building, boxes, true)
-    const rows = Array.from(timeline().children) as HTMLElement[]
+    // The checklist arrives after the first flow read: wait for it instead of racing it.
+    const rows = Array.from((await screen.findByRole('list', { name: 'Casillas del checklist' })).children) as HTMLElement[]
     const host = document.querySelector('.xterm-host')!
     expect(host.closest('[hidden]')).toBeNull()
 

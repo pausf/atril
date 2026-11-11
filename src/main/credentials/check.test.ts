@@ -18,6 +18,29 @@ describe('checkJira', () => {
     expect(await checkJira({ ...creds, site: 'http://x.atlassian.net' }, reply(200))).toHaveProperty('error')
   })
 
+  it('network failure names the cause and folds the code', async () => {
+    const failing = (code?: string) =>
+      (async () => {
+        throw Object.assign(new TypeError('fetch failed'), code ? { cause: { code } } : {})
+      }) as typeof fetch
+    const site = { ...creds, site: 'https://127.0.0.1:9' }
+    const tip = 'Revisa la dirección: la de tu Jira suele ser https://tuempresa.atlassian.net.'
+    const cases: Array<[string | undefined, string]> = [
+      ['ENOTFOUND', 'No encuentro 127.0.0.1:9.'],
+      ['EAI_AGAIN', 'No encuentro 127.0.0.1:9.'],
+      ['CERT_HAS_EXPIRED', 'El certificado de 127.0.0.1:9 no es válido.'],
+      ['SELF_SIGNED_CERT_IN_CHAIN', 'El certificado de 127.0.0.1:9 no es válido.'],
+      ['ECONNREFUSED', 'No responde nada en https://127.0.0.1:9.'],
+      [undefined, 'No responde nada en https://127.0.0.1:9.']
+    ]
+    for (const [code, sentence] of cases) {
+      const r = (await checkJira(site, failing(code))) as { error: string; detail?: string }
+      expect(r.error, code).toBe(`${sentence} ${tip}`)
+      expect(r.error, code).not.toContain('TypeError')
+      expect(r.detail, code).toBe(code ?? 'TypeError')
+    }
+  })
+
   it('avatar comes back as image data and the token only goes to the jira site', async () => {
     const seen: { url: string; auth: string | null }[] = []
     const png = Buffer.from([137, 80, 78, 71])

@@ -6,7 +6,7 @@ export interface JiraCreds {
   token: string
 }
 
-export type CheckResult = { account: string; avatar?: string } | { error: string }
+export type CheckResult = { account: string; avatar?: string } | { error: string; detail?: string }
 
 const MAX_AVATAR = 200 * 1024
 
@@ -27,6 +27,14 @@ async function fetchAvatar(url: string, site: URL, auth: string, fetchImpl: type
   } catch {
     return undefined
   }
+}
+
+/** S32: what failed, by cause; the code itself goes to the folded detail. */
+function unreachable(code: string, base: URL): string {
+  if (code === 'TimeoutError') return t('Jira no ha respondido en 10 s.')
+  if (code === 'ENOTFOUND' || code === 'EAI_AGAIN') return t('No encuentro {host}.', { host: base.host })
+  if (/^(CERT_|ERR_TLS_|SELF_SIGNED|UNABLE_TO_|DEPTH_ZERO)/.test(code)) return t('El certificado de {host} no es válido.', { host: base.host })
+  return t('No responde nada en {origin}.', { origin: base.origin })
 }
 
 export async function checkJira(
@@ -55,10 +63,9 @@ export async function checkJira(
   } catch (err) {
     // Network errors can echo the request; never pass err.message through. Codes are an
     // enumeration (ENOTFOUND, CERT_HAS_EXPIRED…), safe to show and the only way to debug.
-    const timeout = err instanceof Error && err.name === 'TimeoutError'
     const cause = (err as { cause?: { code?: unknown } }).cause?.code
     const code = typeof cause === 'string' && /^[A-Z0-9_]+$/.test(cause) ? cause : err instanceof Error ? err.name : 'Error'
     console.error(`[atril] Jira check failed: ${code}`)
-    return { error: timeout ? t('Jira no ha respondido en 10 s.') : t('No se ha podido conectar con Jira ({code}).', { code }) }
+    return { error: `${unreachable(code, base)} ${t('Revisa la dirección: la de tu Jira suele ser https://tuempresa.atlassian.net.')}`, detail: code }
   }
 }

@@ -2,7 +2,7 @@ import { checkJira, type JiraCreds } from './check'
 import type { SecretStatus, SecretStore } from './store'
 import { t } from '../lang'
 
-export type JiraSaveResult = { account: string } | { error: string }
+export type JiraSaveResult = { account: string } | { error: string; detail?: string }
 
 export const jiraSettings = (store: SecretStore, fetchImpl?: typeof fetch) => ({
   status: (): Promise<SecretStatus> => store.hasSecret('jira'),

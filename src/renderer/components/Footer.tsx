@@ -32,6 +32,7 @@ export function Footer() {
   const t = useT()
   const locale = useLocale()
   const [usage, setUsage] = useState<UsageResult | null>(null)
+  const [fixFailed, setFixFailed] = useState<string | null>(null)
   useEffect(() => {
     void window.atril.usage.get().then(setUsage)
     return window.atril.usage.onChange(setUsage)
@@ -46,7 +47,24 @@ export function Footer() {
         {!usage ? (
           '…'
         ) : 'error' in usage ? (
-          <span title={usage.error}>— {usage.error}</span>
+          <span className="foot-err">
+            {fixFailed ?? usage.error}{' '}
+            <button
+              type="button"
+              className="linklike"
+              onClick={() =>
+                void (usage.fix === 'claude'
+                  ? window.atril.usage.fix().then((r) => setFixFailed('error' in r ? r.error : null))
+                  : window.atril.usage.get().then(setUsage))
+              }
+            >
+              {usage.fix === 'claude' ? t('Abrir Claude Code') : t('Volver a comprobar')}
+            </button>
+            <details>
+              <summary>{t('Ver detalle')}</summary>
+              <code>{usage.detail}</code>
+            </details>
+          </span>
         ) : (
           <>
             {t('5 h')} <Bar pct={usage.fiveHour.pct} /> {usage.fiveHour.pct} % · {t('7 días')} <Bar pct={usage.sevenDay.pct} />{' '}

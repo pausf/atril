@@ -162,7 +162,7 @@ export interface JiraBoard {
 
 export type BoardSearchResult = Array<JiraBoard & { type: string }> | { error: string }
 
-export type JiraSaveResult = { account: string } | { error: string }
+export type JiraSaveResult = { account: string } | { error: string; detail?: string }
 
 /** Nothing here ever returns a token: it goes in once and never comes back. */
 export interface SettingsApi {
@@ -749,10 +749,12 @@ export interface UsageWindow {
 
 export type UsageResult =
   | { fiveHour: UsageWindow; sevenDay: UsageWindow; /** Set when the latest read failed: these values are from `since`. */ stale?: { since: number } }
-  | { error: string }
+  | { error: string; detail: string; fix: 'retry' | 'claude' }
 
 export interface UsageApi {
   get(): Promise<UsageResult>
+  /** W20: opens Terminal running `claude`, where the person signs in again. */
+  fix(): Promise<{ ok: true } | { error: string }>
   /** Returns the unsubscribe function. */
   onChange(cb: (u: UsageResult) => void): () => void
 }

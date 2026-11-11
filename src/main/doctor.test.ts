@@ -42,6 +42,24 @@ describe('doctor', () => {
 
     expect(calls).toEqual(['git --version', 'tmux -V', 'claude --version', 'jira version'])
   })
+
+  it('a hung tool is reported after 5 s', async () => {
+    const limits: Array<number | undefined> = []
+    // The runner's own timeout answers 124 once timeoutMs passes: a hung claude looks like that.
+    const fake: Runner = async (cmd, _args, opts) => {
+      limits.push(opts?.timeoutMs)
+      return cmd === 'claude' ? { code: 124, stdout: '', stderr: '' } : { code: 0, stdout: `${cmd} 1\n`, stderr: '' }
+    }
+
+    const report = await doctor(fake)
+
+    expect(limits).toEqual([5000, 5000, 5000, 5000])
+    const claude = report.find((r) => r.tool === 'claude')!
+    expect(claude.ok).toBe(false)
+    expect(claude.problem).toBe('no responde en 5 s')
+    expect(claude.install).toBe(INSTALL.claude)
+    expect(report.filter((r) => r.ok).map((r) => r.tool)).toEqual(['git', 'tmux', 'jira'])
+  })
 })
 
 describe('install', () => {

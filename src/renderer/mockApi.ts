@@ -351,7 +351,8 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
     },
     usage: {
       get: async () => ({ fiveHour: { pct: 20, resetsAt: null }, sevenDay: { pct: 40, resetsAt: null } }),
-      onChange: () => off
+      onChange: () => off,
+      fix: vi.fn(async () => ({ ok: true as const }))
     },
     term: { onData: () => off, input: vi.fn(), attach: vi.fn(async () => undefined), resize: vi.fn(), detach: vi.fn() },
     snapshotView: async () => null,

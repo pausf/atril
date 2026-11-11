@@ -30,7 +30,7 @@ import { createSecretStore } from './credentials/store'
 import { jiraSettings } from './credentials/jira'
 import { searchBoards } from './credentials/boards'
 import type { JiraCreds } from './credentials/check'
-import { doctor, installTool } from './doctor'
+import { doctor, inTerminal, installTool } from './doctor'
 import type { Aviso, CreateRepoRequest, Mode, MrDrafts, MrDraftsResult, MrItem, MrLists, MrScoreState, MrThreads, SubagentEntry, SubagentLine, UiState } from '../preload/api'
 import { readInbox } from './jira/inbox'
 import { inboxGroups } from './jira/board'
@@ -672,6 +672,7 @@ app.whenReady().then(async () => {
   // ponytail: dev-only, a snapshot never reads the person's real quota (each launch was a call to api.anthropic.com).
   const fakeUsage = { fiveHour: { pct: 34, resetsAt: null }, sevenDay: { pct: 41, resetsAt: '2026-11-12T11:00:00Z' } }
   ipcMain.handle('atril:usage:get', () => (SNAPSHOT ? fakeUsage : usage.get()))
+  ipcMain.handle('atril:usage:fix', () => inTerminal('claude', run))
   if (!SNAPSHOT) usage.start()
   const activity = createActivity({
     run,

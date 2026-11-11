@@ -72,6 +72,8 @@ export function ConnectSteps(p: {
   onCreate: () => void
   fields: ReactNode
   error: string | null
+  /** S32: the technical code, folded under «Ver detalle». */
+  detail?: string
   checking: boolean
   onCancel?: () => void
   onSubmit: (e: FormEvent) => void
@@ -98,6 +100,12 @@ export function ConnectSteps(p: {
           {p.error && (
             <div className="serr" role="alert">
               ✕ {p.error}
+              {p.detail && (
+                <details>
+                  <summary>{t('Ver detalle')}</summary>
+                  <code>{p.detail}</code>
+                </details>
+              )}
             </div>
           )}
           <div className="sactions">

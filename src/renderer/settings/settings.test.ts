@@ -63,6 +63,26 @@ describe('settings screen', () => {
     expect(screen.getByLabelText('Token')).toHaveProperty('type', 'password')
   })
 
+  it('jira error folds its detail', async () => {
+    const api = mockApi({ saved: false })
+    api.jira.save.mockResolvedValue({ error: 'No responde nada en https://127.0.0.1:9. Revisa la dirección.', detail: 'ECONNREFUSED' })
+    const user = userEvent.setup()
+    render(createElement(Ajustes))
+
+    await user.click(await screen.findByRole('button', { name: 'Conectar' }))
+    await user.type(screen.getByLabelText('Dirección'), 'https://127.0.0.1:9')
+    await user.type(screen.getByLabelText('Correo'), 'pau@x.com')
+    await user.type(screen.getByLabelText('Token'), TOKEN)
+    await user.click(screen.getByRole('button', { name: 'Guardar y comprobar' }))
+
+    const alert = await screen.findByRole('alert')
+    expect(alert.textContent).toContain('No responde nada en https://127.0.0.1:9.')
+    const folded = alert.querySelector('details')!
+    expect(folded.open).toBe(false)
+    expect(folded.querySelector('summary')!.textContent).toBe('Ver detalle')
+    expect(folded.querySelector('code')!.textContent).toBe('ECONNREFUSED')
+  })
+
   it('missing token links to ajustes', async () => {
     const openSettings = vi.fn()
     const user = userEvent.setup()
