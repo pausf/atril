@@ -296,6 +296,12 @@ textos, en «Pasos» abajo. Los que tienen elemento en pantalla lo iluminan; los
 
 - Las revisiones de Libretto que lanzan los agentes de Atril corren en Sonnet: la mitad de precio que Opus, como recomienda el artículo para tareas repetidas.
 
+### Repos rotos (repo-gone, 11 nov 2026)
+
+- Abrir un trabajo en un repo cuya carpeta no está o no es git lo dice con «Abrir Ajustes», sin texto de git.
+- Ajustes → Repos marca los repos rotos y deja buscar su carpeta o quitarlos; cualquier repo se puede quitar.
+- Con git roto, abrir o cerrar un trabajo dice «git no funciona en este Mac» con «Instalar herramientas de Xcode».
+
 ## Scope boundaries
 
 **In:** the three columns and footer of `bocetos/fase1-nucleo.html` (boceto 8), the
@@ -599,6 +605,10 @@ Nunca fuera: validar `.atril/qa.json` (lo escribe el repo, no Atril); la ventana
 
 **In:** `scripts/bundle-libretto.mjs`, una función `pinModels` en `scripts/libretto-models.mjs` con su test, y la copia `resources/libretto/agents/*.md` reescrita con esa función. **Out:** cambiar Libretto en su propio repo; elegir modelo por tarea en tiempo de ejecución; medir modelos con tareas reales.
 
+### Repos rotos (repo-gone, 11 nov 2026)
+
+**In:** `src/main/repos.ts` (salud del repo, quitar, cambiar carpeta), `src/main/workspaces.ts` (comprobaciones al abrir y cerrar), IPC nuevas, `src/renderer/settings/Repos.tsx`, `Problem.tsx` (`fixLabel`), i18n. **Out:** clonar de nuevo un repo perdido; detectar que una carpeta movida es la misma por su remoto.
+
 ## Constraints
 
 - Electron (current stable) + TypeScript in strict mode, pnpm, Node 24 (installed:
@@ -760,6 +770,12 @@ Textos por `t()`.
 
 - No se toca el contenido de los agentes salvo la línea `model:` del frontmatter.
 - La versión de Libretto copiada no cambia (no se re-empaqueta desde otra referencia).
+
+### Repos rotos (repo-gone, 11 nov 2026)
+
+- La ventana manda ids y, para «Buscar la carpeta…», nada: main abre el diálogo nativo.
+- Nada borra ni mueve carpetas de la persona.
+- Toda escritura de `repos.json` pasa por el lector estricto (W148).
 
 ## Prior decisions
 
@@ -1984,6 +2000,27 @@ Textos por `t()`.
 - Q: ¿Dónde se fija el modelo de los subagentes de Libretto? → A: al empaquetar Libretto dentro de Atril (`scripts/bundle-libretto.mjs`), no en la copia a mano: la copia se regenera y perdería el cambio (assumed).
 - Q: ¿Cuáles? → A: los que leen y opinan sin editar código — `converge-reader`, `review-lens-reliability`, `review-lens-security`, `spec-reviewer`, `work-reviewer` — pasan a `sonnet`; los que ya traen modelo de Libretto lo conservan (`review-lens-design: sonnet`, `review-lens-intent` y `review-lens-tests: haiku`); `spec-writer` escribe el contrato y se queda en el modelo de la sesión (assumed).
 
+### Repos rotos (repo-gone, 11 nov 2026)
+
+- Un repo roto se ve como roto y se arregla desde Ajustes; git roto se dice como tal, nunca como un nombre de rama malo.
+
+#### Alternatives that lost
+
+| Considered | Why it lost |
+|---|---|
+| Borrar el repo roto automáticamente | decide por la persona; puede ser un disco desconectado |
+| Culpar al nombre salvo que git falte (127) | la nota de Xcode sale con código 1 y seguiría culpando al nombre |
+
+#### Decision log, answers as given (2026-11-11)
+- Q: (revisión en frío) ¿Qué va primero, el nombre de la rama o la salud del repo? → A: el nombre (W6), salvo que git esté roto (W156); después la salud, antes de cualquier git que escriba (assumed).
+- Q: (revisión en frío) ¿Qué salud tiene un repo con git roto? → A: `ok`: solo «not a git repository» en el stderr da `not-git`; git roto se dice al usarlo (W156) (assumed).
+- Q: (revisión en frío) ¿Dónde funcionan «Abrir Ajustes» e «Instalar herramientas de Xcode»? → A: en la fila del trabajo, los diálogos de nuevo trabajo y Empezar, la barra de reabrir y la barra lateral; `WorkFix` gana `'settings'` y `'git'` (assumed).
+- Q: ¿Cómo se sabe que git está roto y no que el nombre es malo? → A: (comprobado) un nombre inválido sale con código 128 y «is not a valid branch name» en stderr; git ausente da 127 y la nota de Xcode, código 1 con «xcode-select». Solo el primero culpa al nombre (assumed).
+- Q: ¿Qué botones tiene un repo roto en Ajustes? → A: «Buscar la carpeta…» (elige otra carpeta y la guarda con el mismo id si es un repo git) y «Quitar el repo» (lo borra de `repos.json`, nunca toca la carpeta; se niega si hay un trabajo abierto de ese repo) (assumed).
+- Q: ¿«Quitar el repo» también para repos sanos? → A: sí, en todas las filas: hoy no hay forma de quitar un repo desde la app (assumed).
+- Q: (al construir) ¿Y si `check-ref-format` falla sin «is not a valid branch name» ni git roto? → A: «git no ha podido comprobar el nombre {branch}.» con su salida plegada y «Abrir en Terminal»; nunca culpa al nombre (assumed).
+- Q: (al construir) ¿`lstat` o `existsSync` para `missing`? → A: `existsSync`, que sigue enlaces: un enlace a una carpeta que ya no está cuenta como perdida (assumed).
+
 ## Task breakdown
 
 - App shell: Electron main, preload bridge, renderer with sidebar / centre / right panel /
@@ -2020,8 +2057,7 @@ Textos por `t()`.
 - **W5** When a workspace opens in `worktree` mode, Atril shall run `git worktree add` at
   `~/.atril/wt/<repo>/<branch>` on a new branch.
   Proof: src/main/workspaces.test.ts creates the worktree on a new branch
-- **W6** If a branch name fails `git check-ref-format --branch`, then Atril shall refuse
-  before running any other command.
+- **W6** If a branch name fails `git check-ref-format --branch` with «is not a valid branch name» in its stderr, then Atril shall refuse with ««{branch}» no es un nombre de rama válido» before running any other command.
   Proof: src/main/workspaces.test.ts refuses an invalid branch name
 - **W7** While an `in-place` repo has an open workspace, Atril shall refuse to open a second one in that repo with «{repo} trabaja en tu copia y ya tiene un trabajo abierto ({branch}).» and `fix: 'worktree'`.
   Proof: src/main/workspaces.test.ts refuses a second in-place workspace
@@ -2779,3 +2815,18 @@ Textos por `t()`.
   Proof: scripts/libretto-models.test.ts other agents and a second run change nothing
 - **W152** The committed copy in `resources/libretto/agents/` shall be that function's output over the `171db90` copy: the five listed agents carry `model: sonnet`, `review-lens-design` keeps `sonnet`, `review-lens-intent` and `review-lens-tests` keep `haiku`, and `spec-writer` has no `model:` line — read from the files themselves.
   Proof: src/main/packaging.test.ts bundled reviewers run on sonnet
+
+### Repos rotos (repo-gone, 11 nov 2026)
+
+- **W154** The repo list shall give each repo `health`: `missing` when its folder does not exist, `not-git` when `git -C <path> rev-parse --git-dir` fails with «not a git repository» in its stderr, `ok` otherwise (git itself failing leaves `ok`: W156 says it when git is used).
+  Proof: src/main/repos.test.ts each repo says whether its folder is there and is git
+- **W155** If opening a workspace is asked on a repo whose health is `missing` or `not-git`, then Atril shall answer «La carpeta de {repo} ya no existe ({path}).» or «La carpeta de {repo} no es un repo de git ({path}).» with `fix: 'settings'` before any git command that writes or any tmux command.
+  Proof: src/main/workspaces.test.ts a missing or non-git repo is refused with its fix
+- **W156** If any git command run while opening or closing a workspace exits 127 or has «xcode-select» in its stderr, then Atril shall answer «git no funciona en este Mac.» with that stderr as `detail` and `fix: 'git'` instead of that step's W6, W131 or W132 sentence, having changed nothing that step had not already changed.
+  Proof: src/main/workspaces.test.ts a broken git is never blamed on the branch name
+- **W159** Wherever a workspace problem shows its fix — the workspace row, the new-work and start dialogs, the reopen bar and the sidebar — `fix: 'settings'` shall show «Abrir Ajustes» and open Ajustes, and `fix: 'git'` shall show «Instalar herramientas de Xcode» and run W70's install for git.
+  Proof: src/renderer/newwork.test.ts settings and git fixes do what they say
+- **W157** When the person asks to remove a repo by id, Atril shall drop it from `repos.json` and leave its folder, its branches and its remembered Jira mapping untouched (a mapping to a removed id reads as no repo remembered); while a workspace of that repo is in the list it shall refuse with «{repo} tiene trabajos abiertos: ciérralos antes.», and while `workspaces.json` is damaged with W144's sentence; either refusal changes nothing.
+  Proof: src/main/repos.test.ts removing a repo forgets it and never touches the folder
+- **W158** When the person picks a new folder for a repo by id, Atril shall store the folder's git top level as that repo's path keeping its id and mode; it shall refuse with S13's sentence if the folder is not a git repository, and with «Esa carpeta ya es el repo {id}.» if another repo already has that path; either refusal, or a cancelled picker, changes nothing.
+  Proof: src/main/repos.test.ts a repo can be pointed at its new folder

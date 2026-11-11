@@ -69,6 +69,10 @@ Governs: src/main/credentials/** src/renderer/settings/**
 
 - Conectar GitHub o GitLab dice la causa sin el nombre de la excepción, con el código plegado, como Jira (S32).
 
+### Repos rotos (repo-gone, 11 nov 2026)
+
+- Ajustes → Repos marca un repo roto y deja buscar su carpeta o quitarlo; cualquier repo se puede quitar.
+
 ## Scope boundaries
 
 **In:** storing, checking, replacing and deleting the Jira token, through a store and a card
@@ -145,6 +149,10 @@ errores visibles junto al campo.
 
 **In:** `src/main/credentials/forge.ts`, `src/renderer/settings/Forges.tsx`, `src/renderer/settings/Connection.tsx`. **Out:** Jira (ya hecho en S32).
 
+### Repos rotos (repo-gone, 11 nov 2026)
+
+**In:** `src/renderer/settings/Repos.tsx`. **Out:** clonar de nuevo.
+
 ## Constraints
 
 - Electron `safeStorage` (macOS Keychain-backed key) encrypts each token; the ciphertext lives
@@ -193,6 +201,10 @@ errores visibles junto al campo.
 ### Jira, GitHub y GitLab (net-errors, 11 nov 2026)
 
 - `err.message` nunca llega a la ventana.
+
+### Repos rotos (repo-gone, 11 nov 2026)
+
+- La ventana manda solo ids; el diálogo de carpeta lo abre main.
 
 ## Prior decisions
 
@@ -416,11 +428,7 @@ errores visibles junto al campo.
 
 ### Repos in Ajustes (move-repos-to-settings, 9 nov 2026)
 
-- **S11** While Ajustes is shown, the Repos card shall list every registered repo with its id,
-  its path and a mode select offering «Auto · <detected mode>», «Worktree» and «In-place»;
-  choosing «Worktree» or «In-place» shall store it as the repo's mode (W4), choosing «Auto» shall
-  clear it, and the select shall show the choice; a repo detected as in-place shall show the
-  reason under its path.
+- **S11** While Ajustes is shown, the Repos card shall list every registered repo with its id, its path and, when its health is `ok`, a mode select offering «Auto · <detected mode>», «Worktree» and «In-place»; choosing «Worktree» or «In-place» shall store it as the repo's mode (W4), choosing «Auto» shall clear it.
   Proof: src/renderer/settings/repos.test.ts repos card lists and sets the mode
 - **S12** When the person adds a repo from the card and its id is taken, the card shall ask for
   another id and register it with the one given.
@@ -518,3 +526,10 @@ errores visibles junto al campo.
 
 - **S34** If checking a GitHub or GitLab token gets an HTTP error or throws, then Ajustes shall show the W150 sentence for that forge — with «No se ha guardado.» after it — and the code under a folded «Ver detalle», never an exception name in the sentence; no fix button shows in Ajustes, where «Guardar y comprobar» already checks again. Jira keeps S32.
   Proof: src/main/credentials/forge.test.ts a forge check failure names the cause and folds the code
+
+### Repos rotos (repo-gone, 11 nov 2026)
+
+- **S35** Each repo row shall offer «Quitar el repo»; a refusal shows under the row as a problem with «Cerrar aviso».
+  Proof: src/renderer/settings/repos.test.ts any repo can be removed and a refusal can be dismissed
+- **S36** A repo with health `missing` or `not-git` shall show «Carpeta no encontrada» or «No es un repo de git» instead of its mode select, and «Buscar la carpeta…».
+  Proof: src/renderer/settings/repos.test.ts a broken repo can be found again
