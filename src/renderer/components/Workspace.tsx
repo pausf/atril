@@ -8,7 +8,7 @@ import { StateLabel } from './StateLabel'
 import { Terminal } from './Terminal'
 
 /** W143: why the work stopped and the way back; the refusal reuses W135's fixes. */
-function Stopped({ ws, onReopened, onForget }: { ws: WorkspaceView; onReopened: () => Promise<void>; onForget: (id: string) => Promise<RemoveResult> }) {
+function Stopped({ ws, onReopened, onForget }: { ws: WorkspaceView; onReopened: (paneId: string) => Promise<void>; onForget: (id: string) => Promise<RemoveResult> }) {
   const t = useT()
   const [busy, setBusy] = useState(false)
   const [refusal, setRefusal] = useState<Exclude<WorkspaceResult, { workspace: WorkspaceView }> | null>(null)
@@ -17,7 +17,7 @@ function Stopped({ ws, onReopened, onForget }: { ws: WorkspaceView; onReopened: 
     setRefusal(null)
     void window.atril.workspaces
       .reopen(ws.id, more)
-      .then(async (r) => ('error' in r ? setRefusal(r) : onReopened()))
+      .then(async (r) => ('error' in r ? setRefusal(r) : onReopened(r.workspace.paneId)))
       .finally(() => setBusy(false))
   }
   return (
@@ -73,7 +73,9 @@ export function Workspace({
     wasBig.current = Boolean(big)
   }, [big])
   const states = useAgentStates()
-  const stopped = ws !== undefined && (!ws.alive || stateOf(states, ws) === 'stopped')
+  // The status poll says «stopped» for up to 2 s after a reopen: the pane just started is not stopped.
+  const [fresh, setFresh] = useState<string | null>(null)
+  const stopped = ws !== undefined && (!ws.alive || (stateOf(states, ws) === 'stopped' && `${ws.id}:${ws.paneId}` !== fresh))
   return (
     <main className="col center">
       {ws && <Steps ws={ws} flow={flow} />}
@@ -95,7 +97,17 @@ export function Workspace({
             <b>terminal</b>
             {ws && <span>tmux · {ws.session}</span>}
           </div>
-          {stopped && <Stopped key={ws.id} ws={ws} onReopened={onReopened} onForget={onForget} />}
+          {stopped && (
+            <Stopped
+              key={ws.id}
+              ws={ws}
+              onReopened={async (paneId) => {
+                setFresh(`${ws.id}:${paneId}`)
+                await onReopened()
+              }}
+              onForget={onForget}
+            />
+          )}
           {ws?.alive ? (
             // The pane id changes on a reopen: a new key attaches the terminal to the new session.
             <Terminal key={`${ws.id}:${ws.paneId}`} id={ws.id} />

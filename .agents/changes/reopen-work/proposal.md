@@ -14,6 +14,7 @@ Hallazgo 8 de la vuelta por la app y 3/28 de `bocetos/romper.md`: cuando muere l
 ## Decision log
 
 ### Session 2026-11-11
+- Q: (prueba en la app real) al matar tmux, `term:resize` llega a un cliente muerto, node-pty lanza EBADF y Electron bloquea la app con «A JavaScript error occurred in the main process» → A: se arregla aquí (W149): el cliente muerto se olvida y nada de la terminal lanza.
 - Q: (revisión en frío) ¿Y el modo auto? → A: su marca `auto/<sesión>` sobrevive a la sesión muerta (solo `dropFiles` la borra): reabrir no la toca.
 - Q: (revisión en frío) ¿Y los trabajos abiertos con un `argv` a medida? → A: `input.argv` solo lo usan los tests; todo trabajo real sale de `agentArgv`, y reabrir usa `agentArgv`.
 - Q: (revisión en frío) ¿`--continue` sin conversación? → A: solo se pone si Atril tiene apuntado un transcript del trabajo (`transcripts/<sesión>`); si no, arranca de cero (assumed).
@@ -31,7 +32,7 @@ Hallazgo 8 de la vuelta por la app y 3/28 de `bocetos/romper.md`: cuando muere l
 
 ## Scope boundaries
 
-**In:** `reopenWorkspace` en `src/main/workspaces.ts`, `agentArgv({ resume: true })` en `agent.ts`, IPC `atril:ws:reopen`, la vista parada de `Workspace.tsx`. **Out:** relanzar todos los parados de golpe; subagentes cortados (hallazgo 12); reiniciar un agente vivo.
+**In:** `src/main/pty.ts` (W149), `reopenWorkspace` en `src/main/workspaces.ts`, `agentArgv({ resume: true })` en `agent.ts`, IPC `atril:ws:reopen`, la vista parada de `Workspace.tsx`. **Out:** relanzar todos los parados de golpe; subagentes cortados (hallazgo 12); reiniciar un agente vivo.
 
 ## Constraints
 
@@ -50,6 +51,9 @@ Hallazgo 8 de la vuelta por la app y 3/28 de `bocetos/romper.md`: cuando muere l
   Proof: src/main/workspaces.test.ts reopening refuses what it cannot do
 - **W143** While the selected workspace's agent is stopped (dead session, or dead pane: the bar then sits above the terminal), the centre shall show «{branch} está parado: su sesión de tmux ya no existe (un reinicio o tmux cerrado).», «Su agente no sigue hasta que lo vuelvas a abrir.», a «Volver a abrir» button and, below `xhigh`, «Seguir con más esfuerzo»; the terminal tip shall not show; both buttons are disabled while a reopen runs, so a second click sends nothing; a refusal shows with `Problem`, its button as in W135.
   Proof: src/renderer/reopen.test.ts a stopped work offers to reopen
+
+- **W149** If the terminal's tmux client has exited or its descriptor is closed, then typing, resizing or detaching that terminal shall do nothing and never throw, and an exited client shall be forgotten so nothing more is sent to it.
+  Proof: src/main/pty.test.ts a dead terminal client never throws
 
 ## Approach
 
@@ -87,6 +91,8 @@ Tests rojos primero; la app real matando el servidor de tmux y pulsando «Volver
 Ninguna.
 
 ## Checklist
+
+- [x] la terminal no lanza con tmux muerto · Closes: W149
 
 - [x] reabrir en main (sale de `model-pick` aterrizado), con más esfuerzo y sus rechazos · Closes: W141, W142
 - [x] la vista parada con sus dos botones · waits on box 1 · Closes: W143
