@@ -269,3 +269,6 @@ El estado inicial de la cuota («aún sin leer») cae en la frase genérica; enc
 
 ## 2026-11-11 · login-path · 6→7
 Nada contra el contrato. Duda del revisor: un `$SHELL` fish, ¿une `"$PATH"` con espacios? No: desde fish 3, PATH es una variable de rutas y entre comillas se une con «:». Si un shell raro no lo hace, las carpetas fijas siguen entrando. Lección general: un PATH vacío lo heredan todas las apps del Dock; cualquier herramienta nueva que se lance desde main pasa por aquí.
+
+## 2026-11-11 · dirty-copy · 6→7
+El reintento con texto vacío (Claude a secas en un worktree) no tenía test: un criterio que dice «el mismo texto y modo» cubre dos ramas del código, y el test solo probaba una. Añadido «a blank dirty retry opens plain claude in a worktree».

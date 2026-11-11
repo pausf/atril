@@ -48,6 +48,7 @@ Durable decisions: the one in Prior decisions below
   Proof: src/main/workspaces.test.ts worktree this time leaves the dirty copy alone
 - **W130** When the open dialog gets an error with `fix: 'worktree'`, it shall show it as a problem with «No he creado el trabajo.», the button «Usar un worktree esta vez» and the detail folded; the button shall ask to open the same repo, branch, model, text and mode with `worktree: true`.
   Proof: src/renderer/newwork.test.ts a dirty copy offers a worktree this time
+  Proof: src/renderer/newwork.test.ts a blank dirty retry opens plain claude in a worktree
 
 ## Approach
 

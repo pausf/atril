@@ -36,4 +36,17 @@ describe('new work dialog', () => {
     expect(open).toHaveBeenLastCalledWith('shop-web', 'qa-auto', 'claude', 'default', 'haz un QA', false, true)
     expect(onStarted).toHaveBeenCalledWith(started)
   })
+  it('a blank dirty retry opens plain claude in a worktree', async () => {
+    const open = vi
+      .fn()
+      .mockResolvedValueOnce({ error: 'Tu copia…', detail: '', fix: 'worktree' })
+      .mockResolvedValueOnce({ workspace: { id: 'w2', branch: 'solo' } as WorkspaceView })
+    window.atril = { repos: { list: async () => [{ id: 'shop-web', path: '/r', mode: 'in-place', reason: '' }] }, workspaces: { open } } as unknown as AtrilApi
+    const user = userEvent.setup()
+    render(createElement(OwnTaskDialog, { textOptional: true, onClose: () => undefined, onOpenSettings: () => undefined, onStarted: async () => undefined }))
+    await user.type(await screen.findByLabelText('Rama'), 'solo')
+    await user.click(screen.getByRole('button', { name: 'Empezar' }))
+    await user.click(await screen.findByRole('button', { name: 'Usar un worktree esta vez' }))
+    expect(open).toHaveBeenLastCalledWith('shop-web', 'solo', 'claude', 'default', undefined, false, true)
+  })
 })
