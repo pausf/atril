@@ -308,3 +308,6 @@ El Decision log decía que la frase «la copia es `171db90`» de la spec cambiab
 
 ## 2026-11-11 · repo-gone · 6→7
 Nada contra el contrato. Aceptado: quitar un repo lee `workspaces.json` y luego escribe `repos.json` sin candado; un trabajo abierto justo entre medias apuntaría a un repo quitado (W155 lo diría al usarlo).
+
+## 2026-11-11 · term-attach · 6→7
+«Never rejects» se probó solo en `pty.attach`; el manejador IPC leía la lista con el lector estricto y rechazaría con `workspaces.json` dañado. Un IPC que solo enseña usa `listWorkspacesOrNone` (W145).

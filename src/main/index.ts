@@ -574,7 +574,8 @@ app.whenReady().then(async () => {
   ipcMain.handle('atril:ws:terminal', (_e, target: unknown) => terminalAt(target as { id: string }, run))
   ipcMain.handle('atril:history:list', () => readHistory())
   ipcMain.handle('atril:term:attach', async (e, id: string, cols: number, rows: number) => {
-    const ws = (await listWorkspaces(run)).find((w) => w.id === id)
+    // W160: a damaged list (W144) reads as no works, so this never rejects.
+    const ws = (await listWorkspacesOrNone(run)).find((w) => w.id === id)
     if (!ws?.alive) return { ok: false }
     const r = pty.attach(id, ws.path, cols, rows, (d) => {
       if (!e.sender.isDestroyed()) e.sender.send('atril:term:data', id, d)
