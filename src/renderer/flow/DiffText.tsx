@@ -18,5 +18,13 @@ function diffLine(l: string, i: number): ReactNode {
   )
 }
 
-/** A unified diff as text: lines are React text nodes, never markup. */
-export const diffLines = (diff: string): ReactNode[] => diff.replace(/\n$/, '').split('\n').map(diffLine)
+const HEADER = /^(diff --git|index |new file mode|deleted file mode|similarity |rename (from|to) |--- |\+\+\+ )/
+
+/** A unified diff as text: lines are React text nodes, never markup. F45: git's header is left out (the file is named above);
+ * only before the first hunk, since `--- x` after it is a removed line. */
+export function diffLines(diff: string): ReactNode[] {
+  const lines = diff.replace(/\n$/, '').split('\n')
+  const first = lines.findIndex((l) => l.startsWith('@@'))
+  const body = first === -1 ? lines.filter((l) => !HEADER.test(l)) : lines.slice(first)
+  return body.map(diffLine)
+}
