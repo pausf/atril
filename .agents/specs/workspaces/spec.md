@@ -259,6 +259,10 @@ textos, en «Pasos» abajo. Los que tienen elemento en pantalla lo iluminan; los
 
 - Abierta desde el Dock, Atril encuentra `claude`, `tmux`, `git` y `jira` donde los encuentra tu terminal; el doctor deja de decir que faltan.
 
+### Copia con cambios (dirty-copy, 11 nov 2026)
+
+- Al abrir un trabajo en un repo que trabaja en tu copia, si tiene cambios o ya tiene un trabajo, el diálogo dice qué pasa con cifras y ramas, que no se ha creado nada, y trae «Usar un worktree esta vez»; los ficheros van plegados.
+
 ## Scope boundaries
 
 **In:** the three columns and footer of `bocetos/fase1-nucleo.html` (boceto 8), the
@@ -532,6 +536,10 @@ Nunca fuera: validar `.atril/qa.json` (lo escribe el repo, no Atril); la ventana
 
 **In:** `src/main/login-path.ts` (nuevo), su llamada al arrancar en `src/main/index.ts`. **Out:** leer otras variables del shell (W51 limita el entorno de los comandos a PATH, HOME, USER, LANG, SSH_AUTH_SOCK y TMPDIR; aquí solo cambia PATH).
 
+### Copia con cambios (dirty-copy, 11 nov 2026)
+
+**In:** `openWorktree` (errores de W7 y W8, opción `worktree`), IPC `atril:ws:open`, `OwnTaskDialog.tsx`, tipos. **Out:** el resto de errores de abrir y cerrar trabajos: van en el barrido de errores que sale de la auditoría y la prueba de romper la app.
+
 ## Constraints
 
 - Electron (current stable) + TypeScript in strict mode, pnpm, Node 24 (installed:
@@ -658,6 +666,11 @@ Textos por `t()`.
 
 - Ningún texto del shell sale de main ni se registra; solo se queda el valor de PATH.
 - El arranque no espera más de 3 s por el shell.
+
+### Copia con cambios (dirty-copy, 11 nov 2026)
+
+- Nada cambia en la copia de la persona cuando se rechaza (W8 sigue).
+- Textos por `t()` con inglés; el aviso usa `Problem`.
 
 ## Prior decisions
 
@@ -1765,6 +1778,22 @@ Textos por `t()`.
 - Q: ¿Por qué falta `claude` si está instalado? → A: (comprobado) está en `~/.local/bin`; una app abierta desde el Dock o el Finder hereda `/usr/bin:/bin:/usr/sbin:/sbin` y Atril nunca lo amplía.
 - Q: ¿De dónde sale el PATH bueno? → A: del shell de login e interactivo de la persona (`$SHELL -ilc`), que lee `.zprofile` y `.zshrc`, con 3 s de tope; detrás, `~/.local/bin`, `/opt/homebrew/bin` y `/usr/local/bin` por si el shell no contesta (assumed).
 
+### Copia con cambios (dirty-copy, 11 nov 2026)
+
+- Un rechazo al abrir un trabajo trae su arreglo cuando existe uno que no toca lo de la persona: aquí, un worktree para esta vez.
+
+#### Alternatives that lost
+
+| Considered | Why it lost |
+|---|---|
+| Hacer stash por la persona | toca sus cambios sin preguntar |
+| Cambiar el modo del repo a worktree | decide por ella para siempre; el repo trabaja en su copia por algo (p. ej. un .env sin versionar) |
+
+#### Decision log, answers as given (2026-11-11)
+- Q: ¿Qué arreglo ofrece una copia sucia en un repo in-place? → A: «Usar un worktree esta vez»: abre el trabajo en una carpeta aparte y tu copia, con sus cambios, no se toca; el modo del repo no cambia (assumed).
+- Q: ¿Y el segundo trabajo en un repo in-place (W7)? → A: el mismo botón (assumed).
+- Q: ¿Qué va en «Ver detalle»? → A: las líneas de `git status --porcelain` (hasta 20) y por qué el repo trabaja en tu copia (assumed).
+
 ## Task breakdown
 
 - App shell: Electron main, preload bridge, renderer with sidebar / centre / right panel /
@@ -1804,11 +1833,9 @@ Textos por `t()`.
 - **W6** If a branch name fails `git check-ref-format --branch`, then Atril shall refuse
   before running any other command.
   Proof: src/main/workspaces.test.ts refuses an invalid branch name
-- **W7** While an `in-place` repo has an open workspace, Atril shall refuse to open a second
-  one in that repo.
+- **W7** While an `in-place` repo has an open workspace, Atril shall refuse to open a second one in that repo with «{repo} trabaja en tu copia y ya tiene un trabajo abierto ({branch}).» and `fix: 'worktree'`.
   Proof: src/main/workspaces.test.ts refuses a second in-place workspace
-- **W8** If the main checkout has uncommitted changes, then opening an `in-place` workspace
-  shall refuse and change nothing.
+- **W8** If the main checkout has uncommitted changes, then opening an `in-place` workspace shall refuse and change nothing, answering «Tu copia de {repo} tiene {n} cambios sin commitear en {branch}: no puedo pasarla a {new} sin mezclarlos.», with the first 20 lines of `git status --porcelain` and «Trabaja en tu copia: {reason}» as `detail`, and `fix: 'worktree'`.
   Proof: src/main/workspaces.test.ts in-place refuses a dirty checkout
 - **W9** When an `in-place` workspace is closed, Atril shall check out the previous branch
   from its workspace record; if the branch has uncommitted changes, it shall refuse instead.
@@ -2496,3 +2523,11 @@ Textos por `t()`.
 - **W128** When Atril starts, main shall set its PATH, before the doctor or any agent runs, to the PATH printed by the person's `$SHELL -ilc` between two markers, then `~/.local/bin`, `/opt/homebrew/bin`, `/usr/local/bin` and the PATH it was launched with, each folder once, in that order; if the shell fails, prints no markers or has not answered in 3 s, then the same list without the shell's part.
   Proof: src/main/login-path.test.ts the shell's path comes first and nothing repeats
   Proof: src/main/login-path.test.ts a silent or slow shell still adds the usual folders
+
+### Copia con cambios (dirty-copy, 11 nov 2026)
+
+- **W129** When opening is asked with `worktree: true`, Atril shall open that workspace as a worktree even for an `in-place` repo, leave the main checkout's branch and files as they were, and keep the repo's mode.
+  Proof: src/main/workspaces.test.ts worktree this time leaves the dirty copy alone
+- **W130** When the open dialog gets an error with `fix: 'worktree'`, it shall show it as a problem with «No he creado el trabajo.», the button «Usar un worktree esta vez» and the detail folded; the button shall ask to open the same repo, branch, model, text and mode with `worktree: true`.
+  Proof: src/renderer/newwork.test.ts a dirty copy offers a worktree this time
+  Proof: src/renderer/newwork.test.ts a blank dirty retry opens plain claude in a worktree
