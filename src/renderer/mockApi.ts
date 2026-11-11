@@ -1,5 +1,5 @@
 import { vi } from 'vitest'
-import type { ActivityLine, SubagentEntry, SubagentLine, AddRepoResult, Aviso, FileChange, FlowDocs, ForgeId, ForgeStatus, Mode, MrDraft, MrDrafts, MrDraftsResult, MrFixCiResult, MrLists, MrReply, MrScoreState, MrThreads, MrWork, AgentState, QaResult, QaStatus, AtrilApi, QuickAnswer, QuickReplies, FlowStage, HistoryEntry, IdeaJiraResult, IdeaResult, LibrettoCounts, LibrettoState, JiraIssue, JiraSettingsStatus, MenuAction, NextItem, StartProposalResult, StartRequest, StartResult, RepoView, ToolReport, UiState, WorkCost, WorkspaceResult, WorkspaceView } from '../preload/api'
+import type { ActivityLine, SubagentEntry, SubagentLine, AddRepoResult, Aviso, FileChange, FlowBoxes, FlowDocs, ForgeId, ForgeStatus, Mode, MrDraft, MrDrafts, MrDraftsResult, MrFixCiResult, MrLists, MrReply, MrScoreState, MrThreads, MrWork, AgentState, QaResult, QaStatus, AtrilApi, QuickAnswer, QuickReplies, FlowStage, HistoryEntry, IdeaJiraResult, IdeaResult, LibrettoCounts, LibrettoState, JiraIssue, JiraSettingsStatus, MenuAction, NextItem, StartProposalResult, StartRequest, StartResult, RepoView, ToolReport, UiState, WorkCost, WorkspaceResult, WorkspaceView } from '../preload/api'
 
 export const workspace = (id: string, branch: string, alive = true): WorkspaceView => ({
   id,
@@ -35,6 +35,10 @@ interface Options {
   /** What flow.docs answers; tests mutate it and call pushFlow to simulate the agent writing. */
   docs?: FlowDocs | null
   changes?: FileChange[]
+  /** What flow.boxes answers; without it, no boxes and the total of `changes`. */
+  boxes?: FlowBoxes
+  /** What flow.boxDiff answers. */
+  boxDiff?: string
   /** Connected forges, by id; missing means not connected. */
   forges?: Partial<Record<ForgeId, ForgeStatus>>
   diff?: string
@@ -289,7 +293,9 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
       docs: vi.fn(async () => o.docs ?? null),
       save: vi.fn(async (): Promise<{ mtimeMs: number } | { error: string }> => ({ mtimeMs: 2 })),
       changes: vi.fn(async () => o.changes ?? []),
-      diff: vi.fn(async () => o.diff ?? '')
+      diff: vi.fn(async () => o.diff ?? ''),
+      boxes: vi.fn(async (): Promise<FlowBoxes> => o.boxes ?? { boxes: [], total: (o.changes ?? []).reduce((n, f) => n + f.added + f.removed, 0) }),
+      boxDiff: vi.fn(async () => o.boxDiff ?? '')
     },
     libretto: {
       state: vi.fn(async (id: string): Promise<LibrettoState> => o.libretto?.[id] ?? { none: true }),

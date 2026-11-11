@@ -564,6 +564,23 @@ export interface FileChange {
   removed: number
 }
 
+/** F36: one checklist box with the code of its range; pending boxes carry none. */
+export interface FlowBox {
+  /** Position in the current checklist, from 0. */
+  index: number
+  text: string
+  state: 'closed' | 'current' | 'pending'
+  /** Short id of the commit that closed it; absent when it was ticked without one. */
+  commit?: string
+  files?: FileChange[]
+}
+
+export interface FlowBoxes {
+  boxes: FlowBox[]
+  /** Added plus removed lines of the whole branch (F25). */
+  total: number
+}
+
 export interface FlowDocs {
   change: string
   files: FlowDoc[]
@@ -622,6 +639,10 @@ export interface FlowApi {
   changes(workspaceId: string): Promise<FileChange[]>
   /** F19: the diff of one file from that list; empty for anything else. */
   diff(workspaceId: string, path: string): Promise<string>
+  /** F36: the checklist boxes of the current change, each with the code of its range. */
+  boxes(workspaceId: string): Promise<FlowBoxes>
+  /** F37: one file's diff over one box's range; empty for anything outside it. */
+  boxDiff(workspaceId: string, index: number, path: string): Promise<string>
 }
 
 export interface UsageWindow {

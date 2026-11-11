@@ -22,12 +22,13 @@ async function untrackedCounts(file: string): Promise<{ added: number; removed: 
   return { added: lines, removed: 0 }
 }
 
-async function entries(path: string, base: string, run: Runner): Promise<Entry[]> {
+// With `to`, a committed range: the working tree and untracked files stay out of it.
+async function entries(path: string, base: string, run: Runner, to?: string): Promise<Entry[]> {
   const g = (args: string[]) => run('git', ['--literal-pathspecs', '-C', path, ...args])
   const [numstat, status, others] = await Promise.all([
-    g(['diff', '--no-renames', '-z', '--numstat', base]),
-    g(['diff', '--no-renames', '-z', '--name-status', base]),
-    g(['ls-files', '-z', '--others', '--exclude-standard'])
+    g(['diff', '--no-renames', '-z', '--numstat', base, ...(to ? [to] : [])]),
+    g(['diff', '--no-renames', '-z', '--name-status', base, ...(to ? [to] : [])]),
+    to ? Promise.resolve({ code: 1, stdout: '', stderr: '' }) : g(['ls-files', '-z', '--others', '--exclude-standard'])
   ])
   if (numstat.code !== 0 || status.code !== 0) return []
 
@@ -52,17 +53,17 @@ async function entries(path: string, base: string, run: Runner): Promise<Entry[]
 }
 
 /** F18: every file that differs from the workspace's base — committed, uncommitted and untracked. */
-export async function listChanges(path: string, base: string, run: Runner): Promise<FileChange[]> {
-  return (await entries(path, base, run)).map((e) => ({ path: e.path, status: e.status, added: e.added, removed: e.removed }))
+export async function listChanges(path: string, base: string, run: Runner, to?: string): Promise<FileChange[]> {
+  return (await entries(path, base, run, to)).map((e) => ({ path: e.path, status: e.status, added: e.added, removed: e.removed }))
 }
 
 /** F19, F23: the diff of one listed file only, cut at 1 MB. */
-export async function fileDiff(path: string, base: string, file: string, run: Runner): Promise<string> {
-  const entry = (await entries(path, base, run)).find((e) => e.path === file)
+export async function fileDiff(path: string, base: string, file: string, run: Runner, to?: string): Promise<string> {
+  const entry = (await entries(path, base, run, to)).find((e) => e.path === file)
   if (!entry) return ''
   const r = entry.untracked
     ? await run('git', ['--literal-pathspecs', '-C', path, 'diff', '--no-index', '--', '/dev/null', file])
-    : await run('git', ['--literal-pathspecs', '-C', path, 'diff', '--no-renames', base, '--', file])
+    : await run('git', ['--literal-pathspecs', '-C', path, 'diff', '--no-renames', base, ...(to ? [to] : []), '--', file])
   // --no-index exits 1 when the files differ, which is the point here.
   if (r.code !== 0 && !(entry.untracked && r.code === 1)) return ''
   const bytes = Buffer.from(r.stdout, 'utf8')

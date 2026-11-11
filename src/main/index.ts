@@ -18,6 +18,8 @@ import { createLenses } from './forge/lenses'
 import { createOpenMr, type MrEntry } from './forge/openmr'
 import { createQueue, createScorer } from './forge/scores'
 import { createThreads } from './forge/threads'
+import { boxDiff, boxRanges } from './flow/boxes'
+import { changeFolders } from './flow/stage'
 import { fileDiff, listChanges } from './flow/changes'
 import { nextUp } from './nextup'
 import { writeFile } from 'node:fs/promises'
@@ -490,6 +492,16 @@ app.whenReady().then(async () => {
   ipcMain.handle('atril:flow:diff', async (_e, id: string, path: unknown) => {
     const ws = await flowWorkspace(id, run)
     return ws && typeof path === 'string' ? fileDiff(ws.path, ws.baseCommit, path, run) : ''
+  })
+  // The newest change folder is the one the panel shows (stageOf).
+  const currentChange = async (ws: { path: string }): Promise<string | undefined> => (await changeFolders(join(ws.path, '.agents', 'changes')))[0]
+  ipcMain.handle('atril:flow:boxes', async (_e, id: string) => {
+    const ws = await flowWorkspace(id, run)
+    return ws ? boxRanges(ws.path, ws.baseCommit, await currentChange(ws), run) : { boxes: [], total: 0 }
+  })
+  ipcMain.handle('atril:flow:boxdiff', async (_e, id: string, index: unknown, path: unknown) => {
+    const ws = await flowWorkspace(id, run)
+    return ws && Number.isInteger(index) && typeof path === 'string' ? boxDiff(ws.path, ws.baseCommit, await currentChange(ws), index as number, path, run) : ''
   })
   ipcMain.handle('atril:flow:save', async (_e, id: string, change: unknown, name: unknown, text: unknown, mtimeMs: unknown) => {
     const ws = await flowWorkspace(id, run)
