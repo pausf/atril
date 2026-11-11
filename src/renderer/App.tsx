@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import type { DoctorReport, JiraIssue, NextItem, WorkspaceView } from '../preload/api'
+import type { DoctorReport, JiraIssue, NextItem, RemoveResult, WorkspaceView } from '../preload/api'
 import { FlowPanel } from './flow/FlowPanel'
 import { BigCode } from './flow/BigCode'
 import { useBoxes, useFlow } from './flow/useFlow'
@@ -321,12 +321,12 @@ function Shell() {
     }
   }
 
-  const remove = async (id: string): Promise<string | null> => {
-    const r = await window.atril.workspaces.remove(id)
-    if ('error' in r) return r.error
+  const remove = async (id: string, forget = false): Promise<RemoveResult> => {
+    const r = await (forget ? window.atril.workspaces.forget(id) : window.atril.workspaces.remove(id))
+    if ('error' in r) return r
     if (selected === id) setSelected(null)
     setWorkspaces(await window.atril.workspaces.list())
-    return null
+    return r
   }
 
 
@@ -389,6 +389,7 @@ function Shell() {
                   selected={selected}
                   onSelect={pick}
                   onRemove={remove}
+                  onForget={(id) => remove(id, true)}
                   onNewWork={() => setDialog('work')}
                   inbox={inbox}
                   onOpenTasks={() => setScreen('tasks')}

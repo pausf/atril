@@ -49,4 +49,24 @@ describe('new work dialog', () => {
     await user.click(await screen.findByRole('button', { name: 'Usar un worktree esta vez' }))
     expect(open).toHaveBeenLastCalledWith('shop-web', 'solo', 'claude', 'default', undefined, false, true)
   })
+  it('a git failure offers terminal for the repo', async () => {
+    const open = vi.fn().mockResolvedValue({ error: 'git no ha podido crear la carpeta del trabajo.', detail: "fatal: '/wt/x' already exists", fix: 'terminal' })
+    const terminal = vi.fn().mockResolvedValue({ ok: true })
+    window.atril = { repos: { list: async () => [{ id: 'shop-web', path: '/r', mode: 'worktree', reason: '' }] }, workspaces: { open, terminal } } as unknown as AtrilApi
+    const user = userEvent.setup()
+    render(createElement(OwnTaskDialog, { textOptional: true, onClose: () => undefined, onOpenSettings: () => undefined, onStarted: async () => undefined }))
+    await user.type(await screen.findByLabelText('Rama'), 'x')
+    await user.click(screen.getByRole('button', { name: 'Empezar' }))
+
+    const alert = await screen.findByRole('alert')
+    expect(alert.querySelector('b')!.textContent).toBe('git no ha podido crear la carpeta del trabajo.')
+    expect(alert.textContent).toContain('No he creado el trabajo.')
+    const folded = alert.querySelector('details')!
+    expect(folded.open).toBe(false)
+    expect(alert.textContent!.replace(folded.textContent!, '')).not.toContain('fatal')
+    expect(screen.queryByRole('button', { name: 'Usar un worktree esta vez' })).toBeNull()
+    await user.click(screen.getByRole('button', { name: 'Abrir en Terminal' }))
+    expect(terminal).toHaveBeenCalledWith({ repoId: 'shop-web' })
+    expect(open).toHaveBeenCalledTimes(1)
+  })
 })

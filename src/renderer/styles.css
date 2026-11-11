@@ -3731,6 +3731,18 @@ button.fx-bt {
 .problem summary {
   cursor: pointer;
 }
+.problem .btn + .btn,
+.ws-confirm .btn + .btn {
+  margin-left: 6px;
+}
+/* W136: the question before a live agent is stopped, inside its own row. */
+.ws-confirm {
+  padding: 8px 10px;
+  font-size: 12.5px;
+}
+.ws-confirm p {
+  margin: 0 0 8px;
+}
 .problem code {
   display: block;
   margin-top: 6px;

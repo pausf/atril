@@ -61,15 +61,23 @@ export interface WorkspaceView extends WorkspaceRecord {
   alive: boolean
 }
 
-/** W7/W8: `fix: 'worktree'` means opening again with `worktree: true` gets past it. */
-export type WorkspaceResult = { workspace: WorkspaceView } | { error: string; detail?: string; fix?: 'worktree' }
-export type RemoveResult = { ok: true } | { error: string }
+/**
+ * W7/W8: `fix: 'worktree'` means opening again with `worktree: true` gets past it; `'terminal'` opens Terminal in the
+ * folder (W131/W132); `'forget'` drops a work whose folder is gone (W133). `detail` is git's or tmux's own output.
+ */
+export type WorkFix = 'worktree' | 'terminal' | 'forget'
+export type WorkspaceResult = { workspace: WorkspaceView } | { error: string; detail?: string; fix?: WorkFix }
+export type RemoveResult = { ok: true } | { error: string; detail?: string; fix?: WorkFix }
 
 export interface WorkspacesApi {
   list(): Promise<WorkspaceView[]>
   /** `task`: an own task's text; main turns it into the Libretto flow's request (W40). */
   open(repoId: string, branch: string, agent: Agent, model?: Model, task?: string, auto?: boolean, worktree?: boolean): Promise<WorkspaceResult>
   remove(id: string): Promise<RemoveResult>
+  /** W133: drops a broken work's record, session and files; no git but `worktree prune`. */
+  forget(id: string): Promise<RemoveResult>
+  /** W134: Terminal in the repo's or the work's folder, looked up by id in main. */
+  terminal(target: { repoId: string } | { id: string }): Promise<{ ok: true } | { error: string }>
 }
 
 export interface TermApi {
@@ -118,9 +126,11 @@ export interface StartRequest extends StartIssue {
   branch: string
   model: Model
   auto?: boolean
+  /** W130: a worktree this once, even for an in-place repo. */
+  worktree?: boolean
 }
 /** The workspace stays open when only the Jira transition failed. */
-export type StartResult = { workspace: WorkspaceView; transitionError?: string } | { error: string }
+export type StartResult = { workspace: WorkspaceView; transitionError?: string } | { error: string; detail?: string; fix?: WorkFix }
 
 /** One section of Tareas: a board column or a status category, already ordered and filtered in main. */
 export interface InboxGroup {

@@ -56,7 +56,7 @@ export async function start(req: StartRequest, deps: Deps): Promise<StartResult>
   if (!MODELS.includes(req.model)) return { error: t('«{model}» no es un modelo disponible', { model: String(req.model) }) }
 
   const opened = await openWorktree(
-    { repoId: req.repoId, branch: req.branch, agent: 'claude', model: req.model, jiraKey: req.key, auto: req.auto, prompt: flowPrompt(req.key, req.auto) },
+    { repoId: req.repoId, branch: req.branch, agent: 'claude', model: req.model, jiraKey: req.key, auto: req.auto, prompt: flowPrompt(req.key, req.auto), ...(req.worktree === true && { worktree: true }) },
     run
   )
   if ('error' in opened) return opened

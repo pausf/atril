@@ -114,7 +114,7 @@ describe('open an mr in atril', () => {
 
     // A branch the remote does not have.
     const missing = await mr.open('https://github.com/acme/shop-web/pull/2')
-    expect('error' in missing && missing.error.startsWith('No se pudo traer la rama: ')).toBe(true)
+    expect('error' in missing && missing.error).toMatch(/^No he podido traer .+ de .+\.$/)
 
     // In place, continuing is refused: the person's copy is never switched.
     register([{ id: 'shop', path: shop, override: 'in-place' }])

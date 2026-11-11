@@ -42,7 +42,7 @@ import * as pty from './pty'
 import { loginPath } from './login-path'
 import { run } from './run'
 import { createUsage } from './usage'
-import { listWorkspaces, openWorktree, removeWorkspace, flowWorkspace } from './workspaces'
+import { listWorkspaces, openWorktree, removeWorkspace, flowWorkspace, forgetWorkspace, terminalAt } from './workspaces'
 import { createFlowHub } from './flow/watch'
 import { installMenu } from './menu'
 import { createNotifyGate } from './focus'
@@ -543,6 +543,12 @@ app.whenReady().then(async () => {
     if ('ok' in r) void readHistory().then((h) => BrowserWindow.getAllWindows().forEach((w) => w.webContents.send('atril:history:changed', h)))
     return r
   })
+  ipcMain.handle('atril:ws:forget', async (_e, id: unknown) => {
+    pty.detach(String(id))
+    flow.forget(String(id))
+    return forgetWorkspace(String(id), run).finally(() => void pushNext())
+  })
+  ipcMain.handle('atril:ws:terminal', (_e, target: unknown) => terminalAt(target as { id: string }, run))
   ipcMain.handle('atril:history:list', () => readHistory())
   ipcMain.handle('atril:term:attach', async (e, id: string, cols: number, rows: number) => {
     const ws = (await listWorkspaces(run)).find((w) => w.id === id)

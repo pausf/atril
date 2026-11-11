@@ -1,13 +1,17 @@
-import { existsSync, readFileSync } from 'node:fs'
+import { execFileSync } from 'node:child_process'
+import { existsSync, mkdirSync, readFileSync } from 'node:fs'
 import { rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanTmp, git, killTmux, makeRegisteredRepo, tmp, tmuxOut, tmuxSock } from './test-helpers'
-import { flowWorkspace, listWorkspaces, openWorktree, readRecords, removeWorkspace, writeRecords } from './workspaces'
+import { flowWorkspace, forgetWorkspace, listWorkspaces, openWorktree, readRecords, removeWorkspace, terminalAt, writeRecords } from './workspaces'
 import { qaStatus } from './qa'
 import { run, type Runner } from './run'
 
 const SLEEP = ['sh', '-c', 'sleep 300']
+/** Real runner, except the first call `when` matches answers `stderr` with code 128. */
+const failing = (when: (cmd: string, args: string[]) => boolean, stderr: string): Runner => (cmd, args, opts) =>
+  when(cmd, args) ? Promise.resolve({ code: 128, stdout: '', stderr }) : run(cmd, args, opts)
 let sock: string
 let home: string
 let repo: string
@@ -74,9 +78,163 @@ describe('workspaces', () => {
 
     const out = await removeWorkspace(r.workspace.id)
 
-    expect(out).toEqual({ error: 'Tiene cambios sin commitear: haz commit o descártalos antes' })
+    expect(out).toEqual({ error: 'feat/dirty tiene 1 cambio sin commitear: no lo cierro para no perderlos.', detail: '?? wip.txt', fix: 'terminal' })
     expect(existsSync(join(r.workspace.path, 'wip.txt'))).toBe(true)
     expect(vi.isMockFunction(removeWorkspace)).toBe(false)
+
+    // Many changes: the count is whole, the detail stops at 20 lines.
+    for (let n = 0; n < 24; n++) writeFileSync(join(r.workspace.path, `more${n}.txt`), 'x')
+    const many = await removeWorkspace(r.workspace.id)
+    if (!('error' in many)) throw new Error('removed a dirty worktree')
+    expect(many.error).toBe('feat/dirty tiene 25 cambios sin commitear: no lo cierro para no perderlos.')
+    expect(many.detail!.split('\n')).toHaveLength(20)
+    expect((await readRecords()).map((w) => w.id)).toEqual([r.workspace.id])
+  })
+
+  it('a failing step when opening says which and folds its output', async () => {
+    const opening = (branch: string, runner: Runner, extra: object = {}) => openWorktree({ repoId: 'demo', branch, agent: 'claude', argv: SLEEP, ...extra }, runner)
+
+    // Fetching a branch the remote does not have (real git).
+    const bare = tmp()
+    git(bare, 'init', '--bare', '-q')
+    git(repo, 'remote', 'add', 'origin', bare)
+    const fetch = await opening('feat/nowhere', run, { existing: true, remote: 'origin' })
+    if (!('error' in fetch)) throw new Error('opened a missing branch')
+    expect(fetch.error).toBe('No he podido traer feat/nowhere de origin.')
+    expect(fetch.detail).toMatch(/feat\/nowhere/)
+    expect(fetch.fix).toBe('terminal')
+
+    // The branch held by another folder, in git's own words.
+    const held = await opening('feat/held', failing((c, a) => a.includes('worktree') && a.includes('add'), "fatal: 'feat/held' is already used by worktree at '/elsewhere'"))
+    expect(held).toEqual({ error: 'La rama feat/held ya está abierta en otra carpeta.', detail: "fatal: 'feat/held' is already used by worktree at '/elsewhere'", fix: 'terminal' })
+
+    // Any other worktree failure (real git: the folder is already there).
+    mkdirSync(join(home, 'wt', 'demo', 'feat', 'full'), { recursive: true })
+    writeFileSync(join(home, 'wt', 'demo', 'feat', 'full', 'x'), 'x')
+    const add = await opening('feat/full', run)
+    if (!('error' in add)) throw new Error('opened over a full folder')
+    expect(add.error).toBe('git no ha podido crear la carpeta del trabajo.')
+    expect(add.detail).toMatch(/already exists/)
+    expect(add.fix).toBe('terminal')
+
+    // tmux failing undoes the folder and the branch this attempt made.
+    const tmux = await opening('feat/tmux', failing((c, a) => c === 'tmux' && a.includes('new-session'), 'no server running'))
+    if (!('error' in tmux)) throw new Error('opened without tmux')
+    expect(tmux).toEqual({ error: 'tmux no ha podido arrancar el agente.', detail: expect.stringContaining('no server running'), fix: 'terminal' })
+    expect(existsSync(join(home, 'wt', 'demo', 'feat', 'tmux'))).toBe(false)
+    expect(git(repo, 'branch', '--list', 'feat/tmux').trim()).toBe('')
+
+    // In place: reading the copy's state and switching it.
+    writeFileSync(join(home, 'repos.json'), JSON.stringify({ repos: [{ id: 'demo', path: repo, override: 'in-place' }] }))
+    const before = git(repo, 'branch', '--show-current').trim()
+    const status = await opening('feat/st', failing((c, a) => a.includes('status'), 'fatal: index file corrupt'))
+    expect(status).toEqual({ error: 'No puedo leer el estado de git de demo.', detail: 'fatal: index file corrupt', fix: 'terminal' })
+    const sw = await opening('feat/sw', failing((c, a) => a.includes('switch'), 'fatal: cannot lock ref'))
+    expect(sw).toEqual({ error: 'git no me deja pasar tu copia a feat/sw.', detail: 'fatal: cannot lock ref', fix: 'terminal' })
+    const ipTmux = await opening('feat/iptmux', failing((c, a) => c === 'tmux' && a.includes('new-session'), 'no server running'))
+    expect('error' in ipTmux && ipTmux.error).toBe('tmux no ha podido arrancar el agente.')
+    expect(git(repo, 'branch', '--show-current').trim()).toBe(before)
+    expect(git(repo, 'branch', '--list', 'feat/iptmux').trim()).toBe('')
+
+    expect(existsSync(join(home, 'workspaces.json'))).toBe(false)
+  }, 40_000)
+
+  it('close refusals say what and how to get past', async () => {
+    const open = async (branch: string) => {
+      const r = await openWorktree({ repoId: 'demo', branch, agent: 'claude', argv: SLEEP })
+      if (!('workspace' in r)) throw new Error(r.error)
+      return r.workspace
+    }
+    const alive = (session: string): boolean => {
+      try {
+        tmuxOut(sock, 'has-session', '-t', session)
+        return true
+      } catch {
+        return false
+      }
+    }
+
+    // The folder is gone: the way past is forgetting it.
+    const gone = await open('feat/gone')
+    rmSync(gone.path, { recursive: true, force: true })
+    expect(await removeWorkspace(gone.id)).toEqual({ error: 'La carpeta de feat/gone ya no existe.', fix: 'forget' })
+    expect(alive(gone.session)).toBe(true)
+
+    // The folder is there but git cannot read it.
+    const broken = await open('feat/broken')
+    rmSync(join(broken.path, '.git'))
+    const unreadable = await removeWorkspace(broken.id)
+    if (!('error' in unreadable)) throw new Error('removed an unreadable folder')
+    expect(unreadable.error).toBe('No puedo leer el estado de git de feat/broken.')
+    expect(unreadable.detail).toMatch(/not a git repository/)
+    expect(unreadable.fix).toBe('terminal')
+    expect(alive(broken.session)).toBe(true)
+
+    // git failing after the agent was stopped keeps the record and says so.
+    const late = await open('feat/late')
+    const lateOut = await removeWorkspace(late.id, failing((c, a) => a.includes('worktree') && a.includes('remove'), 'fatal: locked'))
+    expect(lateOut).toEqual({ error: 'git no ha podido cerrar feat/late; su agente ya está parado.', detail: 'fatal: locked', fix: 'terminal' })
+    expect(alive(late.session)).toBe(false)
+    expect(existsSync(late.path)).toBe(true)
+
+    expect((await readRecords()).map((w) => w.id)).toEqual([gone.id, broken.id, late.id])
+    expect(existsSync(join(home, 'history.jsonl'))).toBe(false)
+  }, 40_000)
+
+  it('forgetting a broken work runs no git', async () => {
+    const r = await openWorktree({ repoId: 'demo', branch: 'feat/lost', agent: 'claude', auto: true, prompt: 'x', argv: SLEEP })
+    if (!('workspace' in r)) throw new Error(r.error)
+    const ws = r.workspace
+    expect(existsSync(join(home, 'auto', ws.session))).toBe(true)
+    rmSync(ws.path, { recursive: true, force: true })
+    const calls: string[][] = []
+    const spy: Runner = (cmd, args, opts) => {
+      calls.push([cmd, ...args])
+      return run(cmd, args, opts)
+    }
+
+    expect(await forgetWorkspace(ws.id, spy)).toEqual({ ok: true })
+    expect(calls.filter((c) => c[0] === 'git')).toEqual([['git', '-C', repo, 'worktree', 'prune']])
+    expect(await readRecords()).toEqual([])
+    expect(() => tmuxOut(sock, 'has-session', '-t', ws.session)).toThrow()
+    expect(existsSync(join(home, 'auto', ws.session))).toBe(false)
+    expect(existsSync(join(home, 'history.jsonl'))).toBe(false)
+    // The branch is free again: no worktree entry holds it.
+    expect(git(repo, 'worktree', 'list')).not.toContain(ws.path)
+    git(repo, 'branch', '-D', 'feat/lost')
+
+    expect(await forgetWorkspace(ws.id, spy)).toEqual({ error: 'Ese trabajo ya no existe' })
+  })
+
+  it('terminal opens only a known folder, quoted', async () => {
+    const odd = join(tmp(), `we'ird "q" \\b`)
+    mkdirSync(odd)
+    writeFileSync(join(home, 'repos.json'), JSON.stringify({ repos: [{ id: 'demo', path: repo }, { id: 'odd', path: odd }] }))
+    const scripts: string[] = []
+    const spy: Runner = (cmd, args, opts) => {
+      if (cmd !== 'osascript') return run(cmd, args, opts)
+      scripts.push(args.at(-1)!)
+      return Promise.resolve({ code: 0, stdout: '', stderr: '' })
+    }
+    // What Terminal runs, read back out of the AppleScript string and with `pwd` for `git status`.
+    const landsIn = (script: string): string => {
+      const cmd = /do script "(.*)"$/s.exec(script)![1]!.replace(/\\(["\\])/g, '$1')
+      expect(cmd.endsWith(' && git status')).toBe(true)
+      return execFileSync('sh', ['-c', cmd.replace(/ && git status$/, ' && pwd')], { encoding: 'utf8' }).trim()
+    }
+
+    expect(await terminalAt({ repoId: 'odd' }, spy)).toEqual({ ok: true })
+    expect(landsIn(scripts[0]!)).toBe(odd)
+
+    const ws = await openWorktree({ repoId: 'demo', branch: 'feat/term', agent: 'claude', argv: SLEEP })
+    if (!('workspace' in ws)) throw new Error(ws.error)
+    expect(await terminalAt({ id: ws.workspace.id }, spy)).toEqual({ ok: true })
+    expect(landsIn(scripts[1]!)).toBe(ws.workspace.path)
+
+    for (const target of [{ repoId: 'nope' }, { id: 'nope' }, { repoId: 5 }, { id: odd }, null] as unknown as Parameters<typeof terminalAt>[0][]) {
+      expect('error' in (await terminalAt(target, spy))).toBe(true)
+    }
+    expect(scripts).toHaveLength(2)
   })
 
   it('trusts its own worktree without copying the claude config', async () => {
@@ -156,7 +314,7 @@ describe('workspaces', () => {
       git(repo, 'switch', '-c', 'other-work')
 
       const refused = await removeWorkspace(r.workspace.id)
-      expect(refused).toEqual({ error: 'El repo está en la rama «other-work», no en «feat/hand»: vuelve a «feat/hand» antes de cerrar' })
+      expect(refused).toEqual({ error: 'Tu copia está en other-work, no en feat/hand: vuelve a feat/hand antes de cerrar.', fix: 'terminal' })
       // Nothing moved: the person stays where they switched to, and the workspace remains.
       expect(git(repo, 'branch', '--show-current').trim()).toBe('other-work')
       expect((await listWorkspaces()).map((w) => w.id)).toEqual([r.workspace.id])
@@ -173,7 +331,7 @@ describe('workspaces', () => {
 
       writeFileSync(join(repo, 'wip.txt'), 'uncommitted')
       const refused = await removeWorkspace(r.workspace.id)
-      expect(refused).toEqual({ error: 'Tiene cambios sin commitear: haz commit o descártalos antes' })
+      expect(refused).toEqual({ error: 'feat/ip tiene 1 cambio sin commitear: no lo cierro para no perderlos.', detail: '?? wip.txt', fix: 'terminal' })
       expect(git(repo, 'branch', '--show-current').trim()).toBe('feat/ip')
       expect(existsSync(join(repo, 'wip.txt'))).toBe(true)
       expect((await listWorkspaces()).map((w) => w.id)).toEqual([r.workspace.id])
@@ -230,7 +388,7 @@ describe('workspaces', () => {
 
     // A branch the remote does not have opens nothing.
     const missing = await openWorktree({ repoId: 'demo', branch: 'feat/nowhere', agent: 'claude', existing: true, remote: 'origin', argv: SLEEP })
-    expect('error' in missing && missing.error.startsWith('No se pudo traer la rama: ')).toBe(true)
+    expect('error' in missing && missing.error).toBe('No he podido traer feat/nowhere de origin.')
     expect(existsSync(join(home, 'wt', 'demo', 'feat/nowhere'))).toBe(false)
     expect(git(repo, 'branch', '--list', 'feat/nowhere').trim()).toBe('')
 

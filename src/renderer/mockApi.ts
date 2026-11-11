@@ -1,5 +1,5 @@
 import { vi } from 'vitest'
-import type { ActivityLine, SubagentEntry, SubagentLine, AddRepoResult, Aviso, FileChange, FlowBoxes, FlowDocs, ForgeId, ForgeStatus, Mode, MrDraft, MrDrafts, MrDraftsResult, MrFixCiResult, MrLists, MrReply, MrScoreState, MrThreads, MrWork, AgentState, QaBugResult, QaLaunchResult, QaManualRequest, QaReport, QaResult, QaStatus, QaTargets, AtrilApi, QuickAnswer, QuickReplies, FlowStage, HistoryEntry, IdeaJiraResult, IdeaResult, LibrettoCounts, LibrettoState, JiraIssue, JiraSettingsStatus, MenuAction, NextItem, StartProposalResult, StartRequest, StartResult, RepoView, ToolReport, UiState, WorkCost, WorkspaceResult, WorkspaceView } from '../preload/api'
+import type { ActivityLine, SubagentEntry, SubagentLine, AddRepoResult, Aviso, FileChange, FlowBoxes, FlowDocs, ForgeId, ForgeStatus, Mode, MrDraft, MrDrafts, MrDraftsResult, MrFixCiResult, MrLists, MrReply, MrScoreState, MrThreads, MrWork, AgentState, QaBugResult, QaLaunchResult, QaManualRequest, QaReport, QaResult, QaStatus, QaTargets, AtrilApi, RemoveResult, QuickAnswer, QuickReplies, FlowStage, HistoryEntry, IdeaJiraResult, IdeaResult, LibrettoCounts, LibrettoState, JiraIssue, JiraSettingsStatus, MenuAction, NextItem, StartProposalResult, StartRequest, StartResult, RepoView, ToolReport, UiState, WorkCost, WorkspaceResult, WorkspaceView } from '../preload/api'
 
 export const workspace = (id: string, branch: string, alive = true): WorkspaceView => ({
   id,
@@ -102,6 +102,8 @@ interface Options {
   jira?: JiraSettingsStatus
   /** What the doctor answers; missing means every tool is installed. */
   doctor?: ToolReport[]
+  /** What workspaces.remove answers per workspace id; missing means removed. */
+  remove?: Record<string, RemoveResult>
 }
 
 /** ui.json lives in `stored`; pass the same object to a second mock to simulate a restart. */
@@ -118,6 +120,7 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
   const scoreListeners = new Set<(url: string, state: MrScoreState) => void>()
   const drafts = new Map(Object.entries(o.drafts ?? {}))
   const opened: WorkspaceView[] = []
+  const gone = new Set<string>()
   const changeDrafts = (url: string, f: (d: MrDraft[]) => MrDraft[]): MrDraftsResult => {
     const next: MrDrafts = { ...(drafts.get(url) ?? { stale: false, canSend: false, drafts: [] }), drafts: [] }
     next.drafts = f(drafts.get(url)?.drafts ?? [])
@@ -162,8 +165,18 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
     doctor: async () => o.doctor ?? [],
     installTool: async () => ({ ok: true }),
     workspaces: {
-      list: async () => [...(o.workspaces ?? []), ...opened],
-      open: vi.fn(async (_repo: string, branch: string): Promise<WorkspaceResult> => ({ workspace: workspace('own00001', branch) }))
+      list: async () => [...(o.workspaces ?? []), ...opened].filter((w) => !gone.has(w.id)),
+      open: vi.fn(async (_repo: string, branch: string): Promise<WorkspaceResult> => ({ workspace: workspace('own00001', branch) })),
+      remove: vi.fn(async (id: string): Promise<RemoveResult> => {
+        const r = o.remove?.[id] ?? { ok: true }
+        if ('ok' in r) gone.add(id)
+        return r
+      }),
+      forget: vi.fn(async (id: string): Promise<RemoveResult> => {
+        gone.add(id)
+        return { ok: true }
+      }),
+      terminal: vi.fn(async () => ({ ok: true as const }))
     },
     repos: {
       list: async () => o.repos ?? [],

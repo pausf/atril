@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
-import type { JiraIssue, Model, RepoView, StartProposal, WorkspaceView } from '../../preload/api'
+import type { JiraIssue, Model, RepoView, StartProposal, WorkFix, WorkspaceView } from '../../preload/api'
 import { Icon } from '../components/Icon'
 import { modelOptions } from '../components/models'
+import { Problem } from '../components/Problem'
 import { ModePicker } from './ModePicker'
 import { useT } from '../ui'
 
@@ -26,6 +27,8 @@ export function StartDialog({ issue, onClose, onStarted, onOpenWorkspace }: Prop
   const [auto, setAuto] = useState(false)
   const [proposal, setProposal] = useState<StartProposal | null>(null)
   const [error, setError] = useState<string | null>(null)
+  // W130: a refusal with its way past (a worktree this once, or Terminal in the repo).
+  const [problem, setProblem] = useState<{ error: string; detail?: string; fix?: WorkFix } | null>(null)
   const [busy, setBusy] = useState(false)
   const [warning, setWarning] = useState<{ ws: WorkspaceView; text: string } | null>(null)
 
@@ -50,13 +53,14 @@ export function StartDialog({ issue, onClose, onStarted, onOpenWorkspace }: Prop
 
   const ready = repoId !== '' && branch.trim() !== '' && !busy && !warning
 
-  const submit = async (): Promise<void> => {
+  const submit = async (worktree = false): Promise<void> => {
     if (!ready) return
     setBusy(true)
     setError(null)
+    setProblem(null)
     try {
-      const r = await window.atril.jira.start({ key: issue.key, components: issue.components, group: issue.group, repoId, branch: branch.trim(), model, ...(auto && { auto: true }) })
-      if ('error' in r) return setError(r.error)
+      const r = await window.atril.jira.start({ key: issue.key, components: issue.components, group: issue.group, repoId, branch: branch.trim(), model, ...(auto && { auto: true }), ...(worktree && { worktree: true }) })
+      if ('error' in r) return r.fix ? setProblem(r) : setError(r.error)
       await onStarted(r.workspace)
       if (r.transitionError) setWarning({ ws: r.workspace, text: r.transitionError })
       else onOpenWorkspace(r.workspace.id)
@@ -65,6 +69,11 @@ export function StartDialog({ issue, onClose, onStarted, onOpenWorkspace }: Prop
     } finally {
       setBusy(false)
     }
+  }
+
+  const openTerminal = async (): Promise<void> => {
+    const r = await window.atril.workspaces.terminal({ repoId })
+    if ('error' in r) setError(r.error)
   }
 
   const onKeyDown = (e: KeyboardEvent): void => {
@@ -152,6 +161,16 @@ export function StartDialog({ issue, onClose, onStarted, onOpenWorkspace }: Prop
           <span className="why-inline">{issue.group === 'doing' ? t('ya está en curso') : t('pasará a In Progress')}</span>
         </div>
 
+        {problem && (
+          <Problem
+            what={problem.error}
+            cant={t('No he creado el trabajo.')}
+            fix={problem.fix === 'worktree' ? t('Usar un worktree esta vez') : t('Abrir en Terminal')}
+            busy={busy}
+            onFix={() => void (problem.fix === 'worktree' ? submit(true) : openTerminal())}
+            detail={problem.detail ?? ''}
+          />
+        )}
         {error && (
           <div className="bad" role="alert">
             {error}

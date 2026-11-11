@@ -1,4 +1,5 @@
 import { randomInt } from 'node:crypto'
+import { existsSync } from 'node:fs'
 import { mkdir, readFile, rename, rm as unlink, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import type { Agent, Model, RemoveResult, WorkspaceRecord, WorkspaceResult, WorkspaceView } from '../preload/api'
@@ -10,6 +11,7 @@ import { hasSession, killSession, newSession, sessionName } from './tmux'
 import { atrilHome } from './paths'
 import { appendHistory, historyEntry } from './history'
 import { t } from './lang'
+import { inTerminal } from './doctor'
 
 export interface OpenInput {
   repoId: string
@@ -80,6 +82,11 @@ export function taskPrompt(task: unknown, auto?: boolean): string | null {
 /** W59/W60: the hook reads this marker by session name, never the record. */
 const autoMarker = (id: string): string => join(home(), 'auto', sessionName(id))
 
+const readRepos = async (): Promise<Repo[]> => (await readJson<{ repos: Repo[] }>(join(home(), 'repos.json'), { repos: [] })).repos
+
+/** W131/W132: git's or tmux's own words go folded in `detail`, never in the sentence. */
+const failed = (error: string, detail: string): { error: string; detail: string; fix: 'terminal' } => ({ error, detail: detail.trim(), fix: 'terminal' })
+
 /** W60, W65 and W92: what the hook keeps by session name dies with the workspace. */
 const dropFiles = (id: string): Promise<unknown> =>
   Promise.all([autoMarker(id), join(home(), 'subagents', `${sessionName(id)}.json`), join(home(), 'paused', sessionName(id)), join(home(), 'transcripts', sessionName(id))].map((f) => unlink(f, { force: true })))
@@ -101,8 +108,7 @@ export async function openWorktree(
     return { error: t('«{branch}» no es un nombre de rama válido', { branch }) }
   }
 
-  const repos = (await readJson<{ repos: Repo[] }>(join(home(), 'repos.json'), { repos: [] })).repos
-  const repo = repos.find((r) => r.id === repoId)
+  const repo = (await readRepos()).find((r) => r.id === repoId)
   if (!repo) return { error: t('No hay ningún repo «{id}»', { id: repoId }) }
 
   const review = input.review === true
@@ -121,7 +127,7 @@ export async function openWorktree(
     // W7: a worktree this once is the way out that leaves the open work alone.
     if (open) return { error: t('{repo} trabaja en tu copia y ya tiene un trabajo abierto ({branch}).', { repo: repoId, branch: open.branch }), fix: 'worktree' }
     const status = await run('git', ['-C', repo.path, 'status', '--porcelain'])
-    if (status.code !== 0) return { error: status.stderr.trim() || t('git status falló') }
+    if (status.code !== 0) return failed(t('No puedo leer el estado de git de {repo}.', { repo: repoId }), status.stderr)
     const dirty = status.stdout.split('\n').filter((l) => l.trim() !== '')
     if (dirty.length > 0) {
       // W8: what is dirty and why the repo works in place go folded; the fix never touches those changes.
@@ -139,7 +145,7 @@ export async function openWorktree(
     const exists = (await run('git', ['-C', repo.path, 'rev-parse', '--verify', '--quiet', `refs/heads/${branch}`])).code === 0
     madeBranch = !exists
     const sw = await run('git', ['-C', repo.path, 'switch', ...(exists ? [] : ['-c']), branch])
-    if (sw.code !== 0) return { error: sw.stderr.trim() || t('git switch falló') }
+    if (sw.code !== 0) return failed(t('git no me deja pasar tu copia a {branch}.', { branch }), sw.stderr)
     path = repo.path
   } else {
     path = worktreePath(repoId, branch)
@@ -147,7 +153,7 @@ export async function openWorktree(
     if (input.existing === true) {
       const remote = input.remote ?? 'origin'
       const fetch = await run('git', ['-C', repo.path, 'fetch', remote, branch])
-      if (fetch.code !== 0) return { error: t('No se pudo traer la rama: {detail}', { detail: fetch.stderr.trim() || fetch.code }) }
+      if (fetch.code !== 0) return failed(t('No he podido traer {branch} de {remote}.', { branch, remote }), fetch.stderr)
       fetched = (await run('git', ['-C', repo.path, 'rev-parse', `refs/remotes/${remote}/${branch}`])).stdout.trim()
       // W89: the base is where the MR's branch left the main line, so Cambios shows the whole MR at once.
       for (const line of [`refs/remotes/${remote}/HEAD`, `refs/remotes/${remote}/main`, `refs/remotes/${remote}/master`, 'refs/heads/main', 'refs/heads/master']) {
@@ -162,15 +168,23 @@ export async function openWorktree(
     }
     await mkdir(join(path, '..'), { recursive: true })
     const add = await run('git', ['-C', repo.path, 'worktree', 'add', ...where])
-    if (add.code !== 0) return { error: add.stderr.trim() || t('git worktree add falló') }
+    if (add.code !== 0) {
+      // Atril runs git with its default English messages: this is git's own wording for a branch held elsewhere.
+      const held = /already (checked out|used by worktree)/.test(add.stderr)
+      return failed(held ? t('La rama {branch} ya está abierta en otra carpeta.', { branch }) : t('git no ha podido crear la carpeta del trabajo.'), add.stderr)
+    }
   }
 
-  const prepared = prepare ? await prepare(path) : undefined
-  if (prepared !== undefined) {
+  // Undoes only what this attempt made: the folder and the branch it created.
+  const undo = async (): Promise<void> => {
     if (inPlace) {
       await run('git', ['-C', path, 'switch', '--discard-changes', previousBranch ?? branch])
     } else if (!review) await run('git', ['-C', repo.path, 'worktree', 'remove', '--force', path])
     if (madeBranch) await run('git', ['-C', repo.path, 'branch', '-D', branch])
+  }
+  const prepared = prepare ? await prepare(path) : undefined
+  if (prepared !== undefined) {
+    await undo()
     return { error: prepared }
   }
 
@@ -184,11 +198,16 @@ export async function openWorktree(
     await writeFile(autoMarker(id), '')
   }
   const argv = input.argv ? [...input.argv, ...(prompt ? [prompt] : [])] : agentArgv({ model: input.model, prompt })
-  const paneId = await newSession(id, path, argv, run).catch(async (err: unknown) => {
-    // W60: no session, no record: the marker would never be removed.
+  let paneId: string
+  try {
+    paneId = await newSession(id, path, argv, run)
+  } catch (err) {
+    // W60: no session, no record: the marker would never be removed. A half-made session goes too.
     if (auto) await unlink(autoMarker(id), { force: true })
-    throw err
-  })
+    await killSession(id, run)
+    await undo()
+    return failed(t('tmux no ha podido arrancar el agente.'), err instanceof Error ? err.message : String(err))
+  }
 
   const record: WorkspaceRecord = {
     id,
@@ -227,18 +246,23 @@ export async function removeWorkspace(id: string, run: Runner = defaultRun): Pro
     return { ok: true }
   }
 
-  const repo = (await readJson<{ repos: Repo[] }>(join(home(), 'repos.json'), { repos: [] })).repos.find((r) => r.id === rec.repoId)
+  const repo = (await readRepos()).find((r) => r.id === rec.repoId)
   if (!repo) return { error: t('No hay ningún repo «{id}»', { id: rec.repoId }) }
 
+  const branch = rec.branch
+  if (!existsSync(rec.path)) return { error: t('La carpeta de {branch} ya no existe.', { branch }), fix: 'forget' }
   const status = await run('git', ['-C', rec.path, 'status', '--porcelain'])
-  if (status.code !== 0) return { error: status.stderr.trim() || t('git status falló') }
-  if (status.stdout.trim() !== '') return { error: t('Tiene cambios sin commitear: haz commit o descártalos antes') }
+  if (status.code !== 0) return failed(t('No puedo leer el estado de git de {branch}.', { branch }), status.stderr)
+  const dirty = status.stdout.split('\n').filter((l) => l.trim() !== '')
+  if (dirty.length > 0) {
+    const changes = dirty.length === 1 ? t('1 cambio') : t('{n} cambios', { n: dirty.length })
+    return { error: t('{branch} tiene {changes} sin commitear: no lo cierro para no perderlos.', { branch, changes }), detail: dirty.slice(0, 20).join('\n'), fix: 'terminal' }
+  }
 
   if (rec.mode === 'in-place') {
     // The main checkout is shared with the person: never switch them off a branch they chose by hand.
     const current = (await run('git', ['-C', rec.path, 'branch', '--show-current'])).stdout.trim()
-    if (current !== rec.branch)
-      return { error: t('El repo está en la rama «{current}», no en «{branch}»: vuelve a «{branch}» antes de cerrar', { current: current || t('HEAD suelto'), branch: rec.branch }) }
+    if (current !== branch) return { error: t('Tu copia está en {current}, no en {branch}: vuelve a {branch} antes de cerrar.', { current: current || t('HEAD suelto'), branch }), fix: 'terminal' }
   }
 
   // W95: read before the folder and the transcript list go; written only once the removal got through.
@@ -254,11 +278,39 @@ export async function removeWorkspace(id: string, run: Runner = defaultRun): Pro
     // Never delete the branch: the person's commits live there.
     const prev = rec.previousBranch ?? ''
     const back = await run('git', ['-C', rec.path, 'switch', ...(/^[0-9a-f]{40}$/.test(prev) ? ['--detach'] : []), prev])
-    if (back.code !== 0) return { error: back.stderr.trim() || t('git switch falló') }
+    if (back.code !== 0) return failed(t('git no ha podido cerrar {branch}; su agente ya está parado.', { branch }), back.stderr)
     return done()
   }
   // No --force: git itself refuses anything the status check missed.
   const rm = await run('git', ['-C', repo.path, 'worktree', 'remove', rec.path])
-  if (rm.code !== 0) return { error: rm.stderr.trim() || t('git worktree remove falló') }
+  if (rm.code !== 0) return failed(t('git no ha podido cerrar {branch}; su agente ya está parado.', { branch }), rm.stderr)
   return done()
+}
+
+/** W133: for a work whose folder or git is broken; the folder itself is never touched. */
+export async function forgetWorkspace(id: string, run: Runner = defaultRun): Promise<RemoveResult> {
+  const records = await readRecords()
+  const rec = records.find((r) => r.id === id)
+  if (!rec) return { error: t('Ese trabajo ya no existe') }
+  await killSession(id, run)
+  await writeRecords(records.filter((r) => r.id !== id))
+  await dropFiles(id)
+  const repo = rec.mode === 'worktree' ? (await readRepos()).find((r) => r.id === rec.repoId) : undefined
+  // prune only drops entries whose folder is gone, so the branch is free to open again.
+  if (repo) await run('git', ['-C', repo.path, 'worktree', 'prune'])
+  return { ok: true }
+}
+
+/** W134: the window sends an id; the folder comes from main's own records. */
+export async function terminalAt(target: { repoId: string } | { id: string }, run: Runner = defaultRun): Promise<{ ok: true } | { error: string }> {
+  const t0 = target as { repoId?: unknown; id?: unknown } | null
+  let path: string | undefined
+  if (typeof t0?.repoId === 'string') {
+    path = (await readRepos()).find((r) => r.id === t0.repoId)?.path
+    if (path === undefined) return { error: t('No hay ningún repo «{id}»', { id: t0.repoId }) }
+  } else if (typeof t0?.id === 'string') {
+    path = (await readRecords()).find((r) => r.id === t0.id)?.path
+  }
+  if (path === undefined) return { error: t('Ese trabajo ya no existe') }
+  return inTerminal(`cd '${path.replace(/'/g, "'\\''")}' && git status`, run)
 }

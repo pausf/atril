@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
-import type { Model, RepoView, WorkspaceView } from '../../preload/api'
+import type { Model, RepoView, WorkFix, WorkspaceView } from '../../preload/api'
 import { modelOptions } from '../components/models'
 import { Problem } from '../components/Problem'
 import { useT } from '../ui'
@@ -26,8 +26,8 @@ export function OwnTaskDialog({ textOptional = false, onClose, onOpenSettings, o
   const [model, setModel] = useState<Model>('default')
   const [auto, setAuto] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  // W130: a refusal main can get past with a worktree this once.
-  const [problem, setProblem] = useState<{ error: string; detail?: string } | null>(null)
+  // W130: a refusal main can get past with a worktree this once, or from Terminal in the repo.
+  const [problem, setProblem] = useState<{ error: string; detail?: string; fix?: WorkFix } | null>(null)
   const [busy, setBusy] = useState(false)
   const branch = edited ?? slugBranch(text)
 
@@ -58,13 +58,18 @@ export function OwnTaskDialog({ textOptional = false, onClose, onOpenSettings, o
           : auto
             ? window.atril.workspaces.open(repoId, branch.trim(), 'claude', model, text, true)
             : window.atril.workspaces.open(repoId, branch.trim(), 'claude', model, text))
-      if ('error' in r) return r.fix === 'worktree' ? setProblem(r) : setError(r.error)
+      if ('error' in r) return r.fix ? setProblem(r) : setError(r.error)
       await onStarted(r.workspace)
     } catch (e) {
       setError(String(e))
     } finally {
       setBusy(false)
     }
+  }
+
+  const openTerminal = async (): Promise<void> => {
+    const r = await window.atril.workspaces.terminal({ repoId })
+    if ('error' in r) setError(r.error)
   }
 
   const onKeyDown = (e: KeyboardEvent): void => {
@@ -148,9 +153,9 @@ export function OwnTaskDialog({ textOptional = false, onClose, onOpenSettings, o
           <Problem
             what={problem.error}
             cant={t('No he creado el trabajo.')}
-            fix={t('Usar un worktree esta vez')}
+            fix={problem.fix === 'worktree' ? t('Usar un worktree esta vez') : t('Abrir en Terminal')}
             busy={busy}
-            onFix={() => void submit(true)}
+            onFix={() => void (problem.fix === 'worktree' ? submit(true) : openTerminal())}
             detail={problem.detail ?? ''}
           />
         )}

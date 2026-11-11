@@ -1,26 +1,35 @@
 import { useT } from '../ui'
 import { StateLabel } from './StateLabel'
 import { useState } from 'react'
-import type { WorkspaceView } from '../../preload/api'
+import type { RemoveResult, WorkspaceView } from '../../preload/api'
 import { stateOf, useAgentStates, useLatestActivity } from '../agents'
 import { runningCount, useSubagents } from '../subagents'
 import { localiseActivity } from '../../preload/activity-i18n'
 import { QuickReplies, useAsking } from './QuickReplies'
+import { Problem } from './Problem'
 
 interface Props {
   workspaces: WorkspaceView[]
   selected: string | null
   onSelect: (id: string) => void
-  onRemove: (id: string) => Promise<string | null>
+  onRemove: (id: string) => Promise<RemoveResult>
+  onForget: (id: string) => Promise<RemoveResult>
 }
 
-export function WorkspaceList({ workspaces, selected, onSelect, onRemove }: Props) {
+export function WorkspaceList({ workspaces, selected, onSelect, onRemove, onForget }: Props) {
   const t = useT()
-  const [refusal, setRefusal] = useState<{ id: string; text: string } | null>(null)
+  const [refusal, setRefusal] = useState<{ id: string; result: Exclude<RemoveResult, { ok: true }> } | null>(null)
+  // W136: a live agent is only stopped after a second, explicit «Cerrar».
+  const [confirming, setConfirming] = useState<string | null>(null)
   const states = useAgentStates()
   const subs = useSubagents(workspaces.map((w) => w.id))
   const latest = useLatestActivity()
   const [asking, markAsking] = useAsking()
+
+  const close = (id: string, act: (id: string) => Promise<RemoveResult>): void => {
+    setConfirming(null)
+    void act(id).then((r) => setRefusal('error' in r ? { id, result: r } : null))
+  }
 
   if (workspaces.length === 0) {
     return <div className="empty">{t('Aquí verás cada trabajo con su estado. Crea uno con «＋ Nuevo trabajo», arriba.')}</div>
@@ -61,11 +70,31 @@ export function WorkspaceList({ workspaces, selected, onSelect, onRemove }: Prop
             type="button"
             className="ws-remove"
             aria-label={t('Quitar {branch}', { branch: w.branch })}
-            onClick={() => void onRemove(w.id).then((text) => setRefusal(text ? { id: w.id, text } : null))}
+            onClick={() => (w.alive ? setConfirming(w.id) : close(w.id, onRemove))}
           >
             {t('Quitar')}
           </button>
-          {refusal?.id === w.id && <div className="bad">{refusal.text}</div>}
+          {confirming === w.id && (
+            <div className="ws-confirm">
+              <p>{t('¿Cerrar {branch}? Su agente se para y el trabajo pasa a Terminados.', { branch: w.branch })}</p>
+              <button type="button" className="btn p" onClick={() => close(w.id, onRemove)}>
+                {t('Cerrar')}
+              </button>
+              <button type="button" className="btn" onClick={() => setConfirming(null)}>
+                {t('Cancelar')}
+              </button>
+            </div>
+          )}
+          {refusal?.id === w.id && (
+            <Problem
+              what={refusal.result.error}
+              cant={t('{branch} sigue en la lista.', { branch: w.branch })}
+              fix={refusal.result.fix === 'terminal' ? t('Abrir en Terminal') : refusal.result.fix === 'forget' ? t('Quitar de la lista igualmente') : undefined}
+              onFix={() => (refusal.result.fix === 'forget' ? close(w.id, onForget) : void window.atril.workspaces.terminal({ id: w.id }))}
+              detail={refusal.result.detail ?? ''}
+              onClose={() => setRefusal(null)}
+            />
+          )}
         </div>
       ))}
     </div>
