@@ -190,8 +190,8 @@ const adf = (lines: string[]): unknown => ({
   content: lines.map((l) => ({ type: 'paragraph', content: l === '' ? [] : [{ type: 'text', text: l }] }))
 })
 
-/** Creates the issue and returns its key, or an error that never carries what Jira or the network said (it can echo the token). */
-async function createIssue(request: string, creds: JiraCreds, board: JiraBoard, fetchImpl: typeof fetch): Promise<{ key: string } | { error: string }> {
+/** Creates the issue (W108, W118) and returns its key, or an error that never carries what Jira or the network said (it can echo the token). */
+export async function createIssue(creds: JiraCreds, board: JiraBoard, summary: string, description: string, fetchImpl: typeof fetch = fetch): Promise<{ key: string } | { error: string }> {
   const origin = new URL(creds.site.trim()).origin
   const headers = { Authorization: `Basic ${Buffer.from(`${creds.email}:${creds.token}`).toString('base64')}`, Accept: 'application/json' }
   const call = async (path: string, init: RequestInit = {}): Promise<unknown> => {
@@ -213,8 +213,8 @@ async function createIssue(request: string, creds: JiraCreds, board: JiraBoard, 
         fields: {
           project: { key: projectKey },
           issuetype: { id: pick.id },
-          summary: (request.split('\n')[0] ?? '').slice(0, SUMMARY_MAX),
-          description: adf(request.split('\n'))
+          summary: summary.slice(0, SUMMARY_MAX),
+          description: adf(description.split('\n'))
         }
       })
     })) as { key?: unknown }
@@ -230,7 +230,8 @@ export async function ideaToJira(repoPath: string, name: string, deps: JiraDeps)
   const found = await queuedProposal(repoPath, name, run)
   if ('error' in found) return found
   if (!creds || !board) return { error: t('Conecta Jira y elige un tablero en Ajustes.') }
-  const issue = await createIssue(askText(found.text), creds, board, fetchImpl)
+  const request = askText(found.text)
+  const issue = await createIssue(creds, board, request.split('\n')[0] ?? '', request, fetchImpl)
   if ('error' in issue) return issue
   const dropped = await dropIdea(repoPath, name, run, `docs(queue): ${issue.key} en Jira, ${name}`)
   return 'error' in dropped ? { key: issue.key, error: dropped.error } : { key: issue.key }

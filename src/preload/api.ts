@@ -528,7 +528,52 @@ export interface QaStatus {
 
 export type QaResult = { ok: true } | { error: string }
 
+export interface QaCriterion {
+  id: string
+  text: string
+}
+
+export interface QaStep {
+  text: string
+  ms?: number
+  /** A bare file name in the workspace's QA folder, with its mtime in `shotAt`. */
+  shot?: string
+  shotAt?: number
+}
+
+export interface QaEntry {
+  id: string
+  status: 'pass' | 'fail' | 'untested'
+  note: string
+  steps: QaStep[]
+}
+
+/** W113/W114: the current change's criteria and what the QA agent's report.json said about them, validated by main. */
+export interface QaReport {
+  change: string | null
+  criteria: QaCriterion[]
+  entries: QaEntry[]
+  /** report.json's mtime in ms; 0 when there is none. */
+  at: number
+  kind: QaKind | null
+  branch: string
+  head: string
+}
+
+export interface QaBugRequest {
+  to: 'jira' | 'agent'
+  title: string
+  body: string
+}
+
+export type QaBugResult = { key: string } | { ok: true } | { error: string }
+
 export interface QaApi {
+  /** null: no such workspace. */
+  report(workspaceId: string): Promise<QaReport | null>
+  /** `criterion` null: test them all again (W116). */
+  retest(workspaceId: string, criterion: string | null): Promise<QaResult>
+  bug(workspaceId: string, req: QaBugRequest): Promise<QaBugResult>
   /** null: Atril does not know how to test this workspace's project (W83). */
   status(workspaceId: string): Promise<QaStatus | null>
   launch(workspaceId: string): Promise<QaResult>

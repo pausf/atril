@@ -1,5 +1,5 @@
 import { vi } from 'vitest'
-import type { ActivityLine, SubagentEntry, SubagentLine, AddRepoResult, Aviso, FileChange, FlowBoxes, FlowDocs, ForgeId, ForgeStatus, Mode, MrDraft, MrDrafts, MrDraftsResult, MrFixCiResult, MrLists, MrReply, MrScoreState, MrThreads, MrWork, AgentState, QaResult, QaStatus, AtrilApi, QuickAnswer, QuickReplies, FlowStage, HistoryEntry, IdeaJiraResult, IdeaResult, LibrettoCounts, LibrettoState, JiraIssue, JiraSettingsStatus, MenuAction, NextItem, StartProposalResult, StartRequest, StartResult, RepoView, ToolReport, UiState, WorkCost, WorkspaceResult, WorkspaceView } from '../preload/api'
+import type { ActivityLine, SubagentEntry, SubagentLine, AddRepoResult, Aviso, FileChange, FlowBoxes, FlowDocs, ForgeId, ForgeStatus, Mode, MrDraft, MrDrafts, MrDraftsResult, MrFixCiResult, MrLists, MrReply, MrScoreState, MrThreads, MrWork, AgentState, QaBugResult, QaReport, QaResult, QaStatus, AtrilApi, QuickAnswer, QuickReplies, FlowStage, HistoryEntry, IdeaJiraResult, IdeaResult, LibrettoCounts, LibrettoState, JiraIssue, JiraSettingsStatus, MenuAction, NextItem, StartProposalResult, StartRequest, StartResult, RepoView, ToolReport, UiState, WorkCost, WorkspaceResult, WorkspaceView } from '../preload/api'
 
 export const workspace = (id: string, branch: string, alive = true): WorkspaceView => ({
   id,
@@ -67,6 +67,12 @@ interface Options {
   qa?: Record<string, QaStatus | null>
   /** What qa.launch answers; by default it succeeds and the QA pane lives. */
   qaLaunch?: QaResult
+  /** What qa.report answers per workspace id; missing means the workspace is gone. */
+  qaReports?: Record<string, QaReport | null>
+  /** What qa.retest answers; by default it succeeds. */
+  qaRetest?: QaResult
+  /** What qa.bug answers; by default Jira makes QA-1. */
+  qaBug?: QaBugResult
   /** What subagents.log answers per subagent id. */
   subagentLogs?: Record<string, SubagentLine[]>
   /** What mr.list answers; missing means no forge connected. */
@@ -131,6 +137,7 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
   }
   const off = (): void => {}
   const qa = new Map(Object.entries(o.qa ?? {}))
+  const reports = new Map(Object.entries(o.qaReports ?? {}))
   const setLive = (id: string, live: boolean): void => {
     const q = qa.get(id)
     if (q) qa.set(id, { ...q, live })
@@ -283,7 +290,10 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
       stop: vi.fn(async (id: string): Promise<QaResult> => {
         setLive(id, false)
         return { ok: true }
-      })
+      }),
+      report: vi.fn(async (id: string) => reports.get(id) ?? null),
+      retest: vi.fn(async (): Promise<QaResult> => o.qaRetest ?? { ok: true }),
+      bug: vi.fn(async (): Promise<QaBugResult> => o.qaBug ?? { key: 'QA-1' })
     },
     flow: {
       get: async (id: string | null) => (id && o.flows?.[id]) || o.flow || null,
@@ -321,7 +331,7 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
     snapshotWorkspace: async () => false
   } as unknown as AtrilApi
   const { menu: menuApi, jira, workspaces: ws, repos: reposApi, flow: flowApi, forge: forgeApi, mr: mrApi, avisos: avisosApi, status: statusApi, qa: qaApi, libretto: librettoApi } = window.atril
-  return { ui, qaApi, setQa: (id: string, q: QaStatus | null) => qa.set(id, q), stored, menuApi, jira, ws, reposApi, flowApi, forgeApi, mrApi, avisosApi, statusApi, librettoApi,
+  return { ui, qaApi, setQa: (id: string, q: QaStatus | null) => qa.set(id, q), setReport: (id: string, r: QaReport | null) => reports.set(id, r), stored, menuApi, jira, ws, reposApi, flowApi, forgeApi, mrApi, avisosApi, statusApi, librettoApi,
     pushAvisos: (items: Aviso[]) => {
       avisos = items
       avisoListeners.forEach((cb) => cb(items))

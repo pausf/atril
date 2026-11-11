@@ -594,4 +594,11 @@ export const EN: Record<string, string> = {
   'Creada {key}': 'Created {key}',
   'Encolar': 'Queue',
   'La cola de ideas de cada repo y lo que está en curso, leído de su carpeta .agents: no gasta cuota. Escribe una idea y «Encolar» la guarda y la commitea sola en la rama actual; «Empezar» abre su trabajo en la rama feat/ con Libretto ya en la spec. Elige el repo arriba y «Actualizar» vuelve a leerlo.': 'Each repo\'s idea queue and what is in flight, read from its .agents folder: it costs no quota. Type an idea and “Queue” saves it and commits it on the current branch by itself; “Start” opens its work on a feat/ branch with Libretto already at the spec. Pick the repo at the top and “Refresh” reads it again.',
+  'Al terminar cada criterio, escribe el informe en {report} y reescríbelo entero cada vez, con esta forma: {shape}. «status» es pass, fail o untested; «shot» es el nombre de una captura de {shots}, sin ruta. Los criterios:':
+    'After each criterion, write the report to {report} and rewrite it whole every time, in this shape: {shape}. "status" is pass, fail or untested; "shot" is the name of a screenshot in {shots}, with no path. The criteria:',
+  'Prueba solo el criterio {id}: {text}. Actualiza report.json.': 'Test only criterion {id}: {text}. Update report.json.',
+  'Prueba otra vez todos los criterios y actualiza report.json.': 'Test all the criteria again and update report.json.',
+  'Ese criterio ya no está en el cambio': 'That criterion is no longer in the change',
+  'No se pudo escribir en el QA': 'Could not write to the QA pane',
+  'El bug no tiene título': 'The bug has no title',
 }

@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import { t } from './lang'
 import { run as defaultRun, type Runner } from './run'
 
@@ -76,4 +77,14 @@ export async function sendKey(paneId: string, key: string, run: Runner = default
 /** Presses one key in one pane and nothing else: Escape interrupts Claude Code's turn without closing it (W86). */
 export async function pressKey(paneId: string, key: string, run: Runner = defaultRun): Promise<boolean> {
   return (await tmux(run, ['send-keys', '-t', paneId, key])).code === 0
+}
+
+/** Pastes `text` into one pane as a bracketed paste (line breaks do not send), then Enter. Escapes are dropped so the text cannot close the paste early. */
+export async function pasteText(paneId: string, text: string, run: Runner = defaultRun): Promise<boolean> {
+  const buffer = `atril-${randomUUID().slice(0, 8)}`
+  // eslint-disable-next-line no-control-regex
+  const loaded = await run('tmux', [...tmuxArgs(), 'load-buffer', '-b', buffer, '-'], { input: text.replace(/\x1b/g, '') })
+  if (loaded.code !== 0) return false
+  // -d drops the buffer after the paste, -p brackets it when the pane asked for bracketed paste.
+  return (await tmux(run, ['paste-buffer', '-d', '-p', '-b', buffer, '-t', paneId])).code === 0 && (await tmux(run, ['send-keys', '-t', paneId, 'Enter'])).code === 0
 }

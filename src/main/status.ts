@@ -106,7 +106,7 @@ export async function answerAgent(id: string, choice: QuickChoice, run: Runner =
   return (await sendText(ws.paneId, words, run)) ? { ok: true } : { error: replyGone() }
 }
 
-async function liveWorkspace(id: string, run: Runner): Promise<WorkspaceView | undefined> {
+export async function liveWorkspace(id: string, run: Runner): Promise<WorkspaceView | undefined> {
   const ws = (await listWorkspaces(run)).find((w) => w.id === id)
   return ws?.alive && /^%\d+$/.test(ws.paneId) && !(await paneDead(ws.paneId, run)) ? ws : undefined
 }

@@ -5,6 +5,7 @@ import { createSubagents } from './subagents'
 import { createCost } from './cost'
 import { readHistory } from './history'
 import { launchQa, qaStatus, stopQa } from './qa'
+import { qaBug, qaReport, qaRetest } from './qa-report'
 import { createAvisos } from './avisos'
 import { agentState, answerAgent, createStatus, pauseAgent, replyGone, replyPlaceholder, replyToAgent, resumeAgent, quickReplies } from './status'
 import { getLang, setLang, t } from './lang'
@@ -32,7 +33,7 @@ import type { Aviso, CreateRepoRequest, Mode, MrDrafts, MrDraftsResult, MrItem, 
 import { readInbox } from './jira/inbox'
 import { inboxGroups } from './jira/board'
 import { proposeStart, start } from './jira/start'
-import type { InboxGroup, InboxResult, JiraIssue, Model, NextItem, StartIssue, StartRequest } from '../preload/api'
+import type { InboxGroup, InboxResult, JiraIssue, Model, NextItem, QaBugRequest, StartIssue, StartRequest } from '../preload/api'
 import { listRepos, readRepos, registerRepo, setOverride } from './repos'
 import { dropIdea, editIdea, ideaToJira, librettoCounts, librettoState, queueIdea, startQueued } from './libretto'
 import * as pty from './pty'
@@ -505,6 +506,11 @@ app.whenReady().then(async () => {
   ipcMain.handle('atril:qa:status', (_e, id: unknown) => qaStatus(String(id), run))
   ipcMain.handle('atril:qa:launch', (_e, id: unknown) => launchQa(String(id), run))
   ipcMain.handle('atril:qa:stop', (_e, id: unknown) => stopQa(String(id), run))
+  ipcMain.handle('atril:qa:report', (_e, id: unknown) => qaReport(String(id), run))
+  ipcMain.handle('atril:qa:retest', (_e, id: unknown, criterion: unknown) => qaRetest(String(id), typeof criterion === 'string' ? criterion : null, run))
+  ipcMain.handle('atril:qa:bug', async (_e, id: unknown, req: QaBugRequest) =>
+    qaBug(String(id), req, { run, creds: await savedJira(), board: (await secretStore.hasSecret('jira')).board ?? null })
+  )
   ipcMain.handle('atril:ws:list', () => listWorkspaces(run))
   ipcMain.handle('atril:ws:open', (_e, repoId: string, branch: string, agent: Agent, model?: Model, task?: unknown, auto?: unknown) =>
     openWorktree(

@@ -3,7 +3,7 @@ import { existsSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { agentArgv } from './agent'
-import { changeFolders } from './flow/stage'
+import { readCriteria } from './qa-criteria'
 import { t } from './lang'
 import { atrilHome } from './paths'
 import type { QaKind, QaResult, QaShot, QaStatus } from '../preload/api'
@@ -84,6 +84,7 @@ async function missingTools(kind: QaKind, run: Runner): Promise<string[]> {
 const qaDir = (): string => join(atrilHome(), 'qa')
 export const shotsDir = (id: string): string => join(qaDir(), id)
 const paneFile = (id: string): string => join(qaDir(), `${id}.pane`)
+export const reportFile = (id: string): string => join(shotsDir(id), 'report.json')
 
 function mcpConfig(kind: QaKind, shots: string): object {
   return kind === 'web'
@@ -91,27 +92,49 @@ function mcpConfig(kind: QaKind, shots: string): object {
     : { mcpServers: { 'mobile-mcp': { command: 'npx', args: ['-y', MOBILE] } } }
 }
 
-async function qaPrompt(info: QaInfo, path: string, branch: string, base: string, shots: string): Promise<string> {
-  const [change] = await changeFolders(join(path, '.agents', 'changes'))
+const REPORT_SHAPE = '{"criteria":[{"id":"W1","status":"pass","note":"one sentence","steps":[{"text":"what you did","ms":1200,"shot":"captura.png"}]}]}'
+
+/** W84, W119: the prompt names the change, and asks for a report.json per criterion; `request` goes last (W116). */
+export async function qaPrompt(info: QaInfo, path: string, branch: string, base: string, shots: string, id: string, request?: string): Promise<string> {
+  const { change, criteria } = await readCriteria(path)
   const target = change
     ? t('lo que promete la spec del cambio en {proposal}', { proposal: join(path, '.agents', 'changes', change, 'proposal.md') })
     : t('lo que cambia la rama {branch} respecto a su base ({base})', { branch, base })
   const vars = { kind: info.kind, command: info.command, target, shots }
-  return info.kind === 'web'
-    ? t('Eres el QA de este trabajo, una app {kind}. Arranca la app con «{command}» en un puerto libre, ábrela con el navegador de Playwright y recorre {target}. Guarda una captura de cada paso en {shots} (sin nombre de archivo, Playwright las deja ahí). No cambies código ni hagas commits; al terminar, resume qué funciona y qué no.', vars)
-    : t('Eres el QA de este trabajo, una app {kind}. Si no hay ningún emulador o simulador en marcha, arranca uno. Arranca la app con «{command}» y recorre {target} con mobile-mcp. Guarda una captura PNG de cada paso en {shots} (con la herramienta de captura de mobile-mcp, `adb exec-out screencap -p > archivo.png` o `xcrun simctl io booted screenshot archivo.png`). No cambies código ni hagas commits; al terminar, resume qué funciona y qué no.', vars)
+  const intro =
+    info.kind === 'web'
+      ? t('Eres el QA de este trabajo, una app {kind}. Arranca la app con «{command}» en un puerto libre, ábrela con el navegador de Playwright y recorre {target}. Guarda una captura de cada paso en {shots} (sin nombre de archivo, Playwright las deja ahí). No cambies código ni hagas commits; al terminar, resume qué funciona y qué no.', vars)
+      : t('Eres el QA de este trabajo, una app {kind}. Si no hay ningún emulador o simulador en marcha, arranca uno. Arranca la app con «{command}» y recorre {target} con mobile-mcp. Guarda una captura PNG de cada paso en {shots} (con la herramienta de captura de mobile-mcp, `adb exec-out screencap -p > archivo.png` o `xcrun simctl io booted screenshot archivo.png`). No cambies código ni hagas commits; al terminar, resume qué funciona y qué no.', vars)
+  const parts = [intro]
+  if (criteria.length > 0) {
+    parts.push(
+      t('Al terminar cada criterio, escribe el informe en {report} y reescríbelo entero cada vez, con esta forma: {shape}. «status» es pass, fail o untested; «shot» es el nombre de una captura de {shots}, sin ruta. Los criterios:', {
+        report: reportFile(id),
+        shape: REPORT_SHAPE,
+        shots
+      }),
+      ...criteria.map((c) => `- ${c.id}: ${c.text}`)
+    )
+  }
+  if (request) parts.push(request)
+  return parts.join('\n\n')
 }
 
 /** W84: the QA pane lives while tmux still lists it in the workspace's session. */
-export async function qaLive(id: string, run: Runner): Promise<boolean> {
+export async function qaPane(id: string, run: Runner): Promise<string | null> {
   const pane = (await text(paneFile(id)))?.trim()
-  return Boolean(pane) && (await hasPane(id, pane!, run))
+  return pane && (await hasPane(id, pane, run)) ? pane : null
+}
+
+export async function qaLive(id: string, run: Runner): Promise<boolean> {
+  return (await qaPane(id, run)) !== null
 }
 
 // Two presses at once both find no pane yet: the first one holds the workspace until its pane is kept.
 const starting = new Set<string>()
 
-export async function launchQa(id: string, run: Runner): Promise<QaResult> {
+/** `request`: W116's ask, appended to the prompt when a retest has to start QA. */
+export async function launchQa(id: string, run: Runner, request?: string): Promise<QaResult> {
   const ws = (await readRecords()).find((r) => r.id === id && r.mode !== 'review')
   if (!ws) return { error: t('Ese trabajo ya no existe') }
   const info = await detectQa(ws.path)
@@ -126,7 +149,7 @@ export async function launchQa(id: string, run: Runner): Promise<QaResult> {
     await mkdir(shots, { recursive: true })
     const config = join(qaDir(), `${id}.mcp.json`)
     await writeFile(config, JSON.stringify(mcpConfig(info.kind, shots), null, 2) + '\n')
-    const prompt = await qaPrompt(info, ws.path, ws.branch, ws.baseCommit, shots)
+    const prompt = await qaPrompt(info, ws.path, ws.branch, ws.baseCommit, shots, id, request)
     const pane = await splitCommand(id, ws.path, agentArgv({ hooks: false, mcpConfig: config, prompt }), run)
     await writeFile(paneFile(id), pane + '\n')
     return { ok: true }
