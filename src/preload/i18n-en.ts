@@ -708,4 +708,5 @@ export const EN: Record<string, string> = {
   "{n} cambios": "{n} changes",
   "Tu copia de {repo} tiene {changes} sin commitear en {branch}: no puedo pasarla a {new} sin mezclarlos.": "Your copy of {repo} has {changes} uncommitted on {branch}: I can't move it to {new} without mixing them.",
   "Trabaja en tu copia: {reason}": "It works in your copy: {reason}",
+  "Cerrando…": "Closing…",
 }

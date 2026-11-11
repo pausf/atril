@@ -13,6 +13,8 @@ Auditoría de errores (`bocetos/hallazgos.md`, puntos 1–3) y hallazgos 10, 11 
 ## Decision log
 
 ### Session 2026-11-11
+- Q: (constructor) ¿Cómo llega «Usar un worktree esta vez» desde «Empezar» de Jira? → A: `StartRequest.worktree`, que `jira/start.ts` pasa solo si es `true`; sin test propio del diálogo de Jira (assumed).
+- Q: (constructor) `Problem` sin arreglo → A: `fix`/`onFix` opcionales y «Ver detalle» solo con detalle; «No hay ningún repo» no trae botón (assumed).
 - Q: (revisión en frío) ¿Y si git falla después de parar al agente? → A: el registro se queda y la frase dice que el agente ya está parado; no se reordena (assumed: `git worktree remove` sobre una carpeta con el agente vivo sería peor).
 - Q: (revisión en frío) ¿Un `git status` que falla ofrece olvidar? → A: solo si la carpeta no existe; si existe, «Abrir en Terminal» (assumed).
 - Q: (romper la app, hallazgo 1) ¿Olvidar deja la rama bloqueada por el worktree? → A: `git worktree prune` en el repo, que solo borra entradas cuya carpeta ya no está (assumed).
@@ -78,7 +80,7 @@ Main devuelve `{ error, detail?, fix?: 'worktree' | 'terminal' | 'forget' }` en 
 
 ### Technical context
 
-`src/main/workspaces.ts`, `src/main/tmux.ts` (sin cambios: su `throw` se captura en `openWorktree`), `src/main/doctor.ts` (`inTerminal`), `src/main/index.ts`, `src/preload/{api,index}.ts`, `src/renderer/components/{Problem,WorkspaceList}.tsx`, `src/renderer/inbox/{OwnTaskDialog,StartDialog}.tsx`, `src/renderer/App.tsx` (`remove` devuelve el resultado entero), i18n. Tests: `workspaces.test.ts` (tmux real, lento) y `closework.test.ts` nuevo (jsdom).
+`src/main/workspaces.ts`, `src/main/tmux.ts` (sin cambios: su `throw` se captura en `openWorktree`), `src/main/doctor.ts` (`inTerminal`), `src/main/index.ts`, `src/preload/{api,index}.ts`, `src/renderer/components/{Problem,WorkspaceList}.tsx`, `src/renderer/inbox/{OwnTaskDialog,StartDialog}.tsx`, `src/main/jira/start.ts` (`StartRequest.worktree`), `Sidebar.tsx` (`onForget`), `src/renderer/App.tsx` (`remove` devuelve el resultado entero), i18n. Tests: `workspaces.test.ts` (tmux real, lento) y `closework.test.ts` nuevo (jsdom).
 
 ### The approach
 

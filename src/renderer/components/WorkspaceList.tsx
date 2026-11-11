@@ -26,9 +26,14 @@ export function WorkspaceList({ workspaces, selected, onSelect, onRemove, onForg
   const latest = useLatestActivity()
   const [asking, markAsking] = useAsking()
 
+  const [closing, setClosing] = useState<string | null>(null)
   const close = (id: string, act: (id: string) => Promise<RemoveResult>): void => {
     setConfirming(null)
-    void act(id).then((r) => setRefusal('error' in r ? { id, result: r } : null))
+    // Closing ends tmux and runs git: seconds with no feedback invite a second click.
+    setClosing(id)
+    void act(id)
+      .then((r) => setRefusal('error' in r ? { id, result: r } : null))
+      .finally(() => setClosing(null))
   }
 
   if (workspaces.length === 0) {
@@ -77,8 +82,8 @@ export function WorkspaceList({ workspaces, selected, onSelect, onRemove, onForg
           {confirming === w.id && (
             <div className="ws-confirm">
               <p>{t('¿Cerrar {branch}? Su agente se para y el trabajo pasa a Terminados.', { branch: w.branch })}</p>
-              <button type="button" className="btn p" onClick={() => close(w.id, onRemove)}>
-                {t('Cerrar')}
+              <button type="button" className="btn p" disabled={closing === w.id} onClick={() => close(w.id, onRemove)}>
+                {closing === w.id ? t('Cerrando…') : t('Cerrar')}
               </button>
               <button type="button" className="btn" onClick={() => setConfirming(null)}>
                 {t('Cancelar')}
@@ -92,6 +97,7 @@ export function WorkspaceList({ workspaces, selected, onSelect, onRemove, onForg
               fix={refusal.result.fix === 'terminal' ? t('Abrir en Terminal') : refusal.result.fix === 'forget' ? t('Quitar de la lista igualmente') : undefined}
               onFix={() => (refusal.result.fix === 'forget' ? close(w.id, onForget) : void window.atril.workspaces.terminal({ id: w.id }))}
               detail={refusal.result.detail ?? ''}
+              busy={closing === w.id}
               onClose={() => setRefusal(null)}
             />
           )}
