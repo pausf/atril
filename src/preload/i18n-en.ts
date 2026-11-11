@@ -354,7 +354,6 @@ export const EN: Record<string, string> = {
   'Claude está escribiendo: no se ha guardado': 'Claude is writing: it was not saved',
   'Claude ha cambiado el archivo mientras editabas: copia tu texto y vuelve a abrirlo': 'Claude changed the file while you were editing: copy your text and open it again',
   'Diff recortado a 1 MB': 'Diff cut at 1 MB',
-  "No se ha podido conectar con {forge} ({detail}).": "Could not connect to {forge} ({detail}).",
   "La dirección de GitLab no es válida.": "The GitLab address is not valid.",
   "La dirección de GitLab debe empezar por https://": "The GitLab address must start with https://",
   "El token no se muestra nunca. Si lo pierdes, crea uno nuevo y pulsa Reemplazar.": "The token is never shown. If you lose it, create a new one and press Replace.",

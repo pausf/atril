@@ -45,6 +45,15 @@ describe('create repo', () => {
     })
   })
 
+  it('a network failure names the cause without codes', async () => {
+    const store = await connected()
+    const timeout = (async () => {
+      throw Object.assign(new Error('The operation was aborted due to timeout'), { name: 'TimeoutError' })
+    }) as unknown as typeof fetch
+    const r = await createRepo(store, { forge: 'github', name: 'atril-x', description: '', public: false }, timeout)
+    expect(r).toEqual({ error: 'GitHub no ha respondido a tiempo.' })
+  })
+
   it('creates a private repo with a readme', async () => {
     const store = await connected()
     const gh = json(201, { html_url: 'https://github.com/pau/atril-x', ssh_url: 'git@github.com:pau/atril-x.git', name: 'atril-x' })

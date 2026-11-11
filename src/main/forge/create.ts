@@ -1,7 +1,8 @@
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import process from 'node:process'
-import { FORGE_NAME, forgeApi, networkCode, type ForgeId } from '../credentials/forge'
+import { FORGE_NAME, forgeApi, type ForgeId } from '../credentials/forge'
+import { netProblem } from '../net-problem'
 import type { SecretStore } from '../credentials/store'
 import { t } from '../lang'
 import { registerRepo } from '../repos'
@@ -66,7 +67,8 @@ export async function createRepo(store: SecretStore, req: CreateRequest, fetchIm
     const path = String(data['name'] && req.forge === 'github' ? data['name'] : (data['path'] ?? name))
     return { url, sshUrl, path }
   } catch (err) {
-    return { error: t('No se ha podido conectar con {forge} ({detail}).', { forge: forgeName, detail: networkCode(err) }) }
+    // W150: the cause in words; the code never reaches the sentence.
+    return { error: netProblem(forgeName, { error: err }).error }
   }
 }
 
