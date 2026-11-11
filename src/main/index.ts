@@ -39,6 +39,7 @@ import type { InboxGroup, InboxResult, JiraIssue, Model, NextItem, QaBugRequest,
 import { listRepos, readRepos, registerRepo, setOverride } from './repos'
 import { dropIdea, editIdea, ideaToJira, librettoCounts, librettoState, queueIdea, startQueued } from './libretto'
 import * as pty from './pty'
+import { loginPath } from './login-path'
 import { run } from './run'
 import { createUsage } from './usage'
 import { listWorkspaces, openWorktree, removeWorkspace, flowWorkspace } from './workspaces'
@@ -250,6 +251,8 @@ function createWindow(): void {
 }
 
 app.whenReady().then(async () => {
+  // W128: before the doctor or any agent spawns anything.
+  process.env['PATH'] = await loginPath(run)
   // Packaged builds take build/icon.icns from the bundle; in dev the Dock needs telling.
   if (!app.isPackaged) app.dock?.setIcon(join(__dirname, '../../build/icon.png'))
   // ponytail: dev-only, ATRIL_SNAPSHOT_VIEW=doctor photographs two missing tools with the list open.
