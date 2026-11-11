@@ -33,6 +33,13 @@ describe('libretto panel when there is nothing to list', () => {
       await vi.waitFor(() => expect(panel.textContent).toContain('Aún no hay casillas: salen cuando el plan tenga su checklist.'))
       expect(panel.textContent).toContain('add-cart')
     }
+    // Main answers no flow at all (a review session): the tab says so.
+    cleanup()
+    mockApi({ workspaces: [workspace('aaaaaaa1', 'PF-1', false)], states: { aaaaaaa1: 'working' } })
+    const user = userEvent.setup()
+    render(createElement(App))
+    await user.click(await screen.findByRole('button', { name: /^PF-1/ }))
+    await vi.waitFor(() => expect(screen.getByRole('tabpanel').textContent).toContain('Este trabajo no sigue el flujo de Libretto.'))
     cleanup()
     const fresh = await boot({ stage: 'entrada', others: [] })
     await vi.waitFor(() => expect(fresh.textContent).toContain('Este trabajo aún no tiene cambio de Libretto: lo crea el primer paso.'))

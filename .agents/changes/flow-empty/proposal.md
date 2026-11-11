@@ -36,7 +36,7 @@ Hallazgo 13 de `bocetos/hallazgos.md`: al elegir un trabajo que te necesita, en 
 
 - **F49** While a workspace is selected and its flow has not answered yet, the Libretto tab shall show «Leyendo el flujo de este trabajo…».
   Proof: src/renderer/flow/flowempty.test.ts the panel says it is reading
-- **F50** While the stage is `entrada`, `spec` or `plan`, or it is `construir` with no boxes, the Libretto tab shall show, under the change line, «Aún no hay casillas: salen cuando el plan tenga su checklist.»; at `entrada` with no change it shall say «Este trabajo aún no tiene cambio de Libretto: lo crea el primer paso.».
+- **F50** While the stage is `entrada`, `spec` or `plan`, or it is `construir` with no boxes, the Libretto tab shall show, under the change line, «Aún no hay casillas: salen cuando el plan tenga su checklist.»; at `entrada` with no change it shall say «Este trabajo aún no tiene cambio de Libretto: lo crea el primer paso.»; and when main answers no flow at all (a review session) and there are no subagents, «Este trabajo no sigue el flujo de Libretto.».
   Proof: src/renderer/flow/flowempty.test.ts before the checklist the panel says why there are no boxes
 
 ## Approach

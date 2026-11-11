@@ -332,3 +332,6 @@ Un vigilante que fallaba (error de `fs.watch` o `rev-parse` caído una vez) qued
 
 ## 2026-11-11 · quiet-panel · medición
 Con 4 trabajos: casillas repetidas 1,6 s → 0–1 ms; volver a un trabajo 2,4 s → 62 ms; reposo 5 → 2,2 procesos/s. Quedan: la primera visita (~6 s, plan en frío) y el diff de la casilla abierta, que se repite cada 3 s.
+
+## 2026-11-11 · flow-empty · 6→7
+«Nunca en blanco» se probó con «leyendo» y con las fases tempranas, pero `null` (main dice «no hay flujo», p. ej. una revisión) seguía dejando la pestaña vacía. Para una promesa «nunca X», enumerar cada valor que puede llegar, no solo los del ejemplo.

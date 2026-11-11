@@ -89,6 +89,8 @@ function LibrettoFlow({ flow, workspaceId, boxes, subs, onBig, onOpenLibretto }:
   const lone = subs && !flow?.change
   // F49: never blank while the first answer is on its way.
   if (workspaceId && flow === undefined) return <div className="empty">{t('Leyendo el flujo de este trabajo…')}</div>
+  // A review session (or a work main no longer knows) has no flow: say so instead of a blank tab.
+  if (workspaceId && flow === null && !subs) return <div className="empty">{t('Este trabajo no sigue el flujo de Libretto.')}</div>
   // F50: before the checklist exists, say why there are no boxes.
   const early = flow && (['entrada', 'spec', 'plan'].includes(flow.stage) || (flow.stage === 'construir' && boxes.boxes.length === 0))
   if (flow?.stage === 'sin-libretto')

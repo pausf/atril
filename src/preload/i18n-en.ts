@@ -754,4 +754,5 @@ export const EN: Record<string, string> = {
   "Leyendo el flujo de este trabajo…": "Reading this work's flow…",
   "Aún no hay casillas: salen cuando el plan tenga su checklist.": "No boxes yet: they appear once the plan has its checklist.",
   "Este trabajo aún no tiene cambio de Libretto: lo crea el primer paso.": "This work has no Libretto change yet: the first step creates it.",
+  "Este trabajo no sigue el flujo de Libretto.": "This work does not follow the Libretto flow.",
 }
