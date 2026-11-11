@@ -78,6 +78,8 @@ Governs: `src/main/flow/** src/renderer/flow/**`
 - {**F46** While no counted path (see the Decision log's rule) of the workspace has changed since the version read at the start of the last `boxRanges` answer for the same folder, base and change, and that answer is under 30 s old by the module's clock, `boxRanges` shall return that answer running no process. src/main/flow/quiet.test.ts nothing}
 - {**F47** When a file of the workspace is written or a commit is made, a `boxRanges` asked one second later or more shall compute again and show it. src/main/flow/quiet.test.ts an}
 - {**F48** At most four workspaces shall have a watcher open; opening a fifth closes the least recently asked; closing or forgetting a workspace shall close its watcher and drop its saved answer. src/main/flow/quiet.test.ts watchers}
+- {**F49** While a workspace is selected and its flow has not answered yet, the Libretto tab shall show «Leyendo el flujo de este trabajo…». src/renderer/flow/flowempty.test.ts the}
+- {**F50** While the stage is `entrada`, `spec` or `plan`, or it is `construir` with no boxes, the Libretto tab shall show, under the change line, «Aún no hay casillas: salen cuando el plan tenga su checklist.»; at `entrada` with no change it shall say «Este trabajo aún no tiene cambio de Libretto: lo crea el primer paso.»; and when main answers no flow at all (a review session) and there are no subagents, «Este trabajo no sigue el flujo de Libretto.». src/renderer/flow/flowempty.test.ts before}
 
 [full spec](flow-status/spec.md)
 

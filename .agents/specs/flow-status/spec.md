@@ -73,6 +73,10 @@ mientras trabaja.
 
 - Con un trabajo elegido y nada cambiando, el panel no lanza ningún proceso; al tocar un archivo o hacer un commit, la siguiente vuelta lo enseña.
 
+### Panel nunca en blanco (flow-empty, 11 nov 2026)
+
+- El panel nunca está en blanco: o dice que está leyendo, o enseña las casillas, o dice por qué aún no hay.
+
 ## Scope boundaries
 
 **In:** reading `.agents/changes/*/` in a workspace and deriving the stage.
@@ -151,6 +155,10 @@ nombres accesibles; tokens de color.
 
 **In:** `src/main/flow/boxes.ts` (la respuesta guardada), un vigilante por trabajo en `src/main/flow/` (al lado de `watch.ts`), su cierre con `flow.forget`. **Out:** el estado de los agentes (W163 ya lo dejó en una llamada); MR, Jira, actividad.
 
+### Panel nunca en blanco (flow-empty, 11 nov 2026)
+
+**In:** `src/renderer/flow/FlowPanel.tsx`, i18n. **Out:** abrir la spec desde aquí (ya lo hacen los botones de documento).
+
 ## Constraints
 
 - Libretto's layout and checklist rule exactly as `find-work` defines them: the checklist is
@@ -203,6 +211,10 @@ Reutiliza `useModalKeys` y las clases `modal`/`dlg edmodal`; monoespaciado con l
 
 - Nada se enseña más de 30 s viejo aunque el vigilante falle; con el vigilante bien, nada se enseña viejo.
 - `.git/objects`, `node_modules` y similares no despiertan nada que no hiciera falta: los avisos se filtran por ruta.
+
+### Panel nunca en blanco (flow-empty, 11 nov 2026)
+
+- Textos por `t()`.
 
 ## Prior decisions
 
@@ -469,6 +481,20 @@ Reutiliza `useModalKeys` y las clases `modal`/`dlg edmodal`; monoespaciado con l
 - Q: ¿Cómo se sabe que nada cambió sin lanzar git? → A: un vigilante de archivos (FSEvents, `fs.watch` recursivo) sobre la carpeta del trabajo y sobre la carpeta git de su rama (`HEAD`, `refs`, `logs`); cualquier aviso marca el trabajo como cambiado (assumed).
 - Q: ¿Y si el vigilante se pierde un aviso? → A: como mucho 30 s después se vuelve a calcular igualmente (assumed).
 
+### Panel nunca en blanco (flow-empty, 11 nov 2026)
+
+- Ninguna nueva.
+
+#### Alternatives that lost
+
+| Considered | Why it lost |
+|---|---|
+| Un esqueleto animado | más código para lo mismo: una frase basta |
+
+#### Decision log, answers as given (2026-11-11)
+- Q: (al construir) `null` del flujo es también una respuesta (trabajo de revisión) → A: `useFlow` da `undefined` mientras espera; solo eso enseña «Leyendo…» (assumed).
+- Q: ¿Qué dice el panel sin casillas? → A: en qué paso está y cuándo salen las casillas; sin botón, porque no hay nada que arreglar (assumed).
+
 ## Task breakdown
 
 - Checklist reader with Libretto's rule.
@@ -694,3 +720,10 @@ Aterrizado**.
   Proof: src/main/flow/quiet.test.ts an edit or a commit is seen on the next read
 - **F48** At most four workspaces shall have a watcher open; opening a fifth closes the least recently asked; closing or forgetting a workspace shall close its watcher and drop its saved answer.
   Proof: src/main/flow/quiet.test.ts watchers are bounded and close with their work
+
+### Panel nunca en blanco (flow-empty, 11 nov 2026)
+
+- **F49** While a workspace is selected and its flow has not answered yet, the Libretto tab shall show «Leyendo el flujo de este trabajo…».
+  Proof: src/renderer/flow/flowempty.test.ts the panel says it is reading
+- **F50** While the stage is `entrada`, `spec` or `plan`, or it is `construir` with no boxes, the Libretto tab shall show, under the change line, «Aún no hay casillas: salen cuando el plan tenga su checklist.»; at `entrada` with no change it shall say «Este trabajo aún no tiene cambio de Libretto: lo crea el primer paso.»; and when main answers no flow at all (a review session) and there are no subagents, «Este trabajo no sigue el flujo de Libretto.».
+  Proof: src/renderer/flow/flowempty.test.ts before the checklist the panel says why there are no boxes
