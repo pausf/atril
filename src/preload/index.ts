@@ -110,6 +110,9 @@ const api: AtrilApi = {
       return () => ipcRenderer.removeListener('atril:history:changed', h)
     }
   },
+  radar: {
+    get: () => ipcRenderer.invoke('atril:radar:get')
+  },
   cost: {
     get: (id) => ipcRenderer.invoke('atril:cost:get', id),
     onChange: (cb) => {

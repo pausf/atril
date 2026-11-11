@@ -875,6 +875,18 @@ export interface MenuApi {
   onAction(cb: (a: MenuAction) => void): () => void
 }
 
+/** W166: another work of the same repo changing the same files; `files` relative to the repo, sorted. */
+export interface RadarHit {
+  id: string
+  branch: string
+  files: string[]
+}
+
+export interface RadarApi {
+  /** Per work id (reviews left out), its collisions; empty when it shares no file. */
+  get(): Promise<Record<string, RadarHit[]>>
+}
+
 export interface AtrilApi {
   menu: MenuApi
   ui: UiApi
@@ -889,6 +901,7 @@ export interface AtrilApi {
   activity: ActivityApi
   subagents: SubagentsApi
   cost: CostApi
+  radar: RadarApi
   history: HistoryApi
   qa: QaApi
   doctor(): Promise<DoctorReport>

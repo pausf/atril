@@ -181,6 +181,8 @@ export const EN: Record<string, string> = {
   'Actividad': 'Activity',
   'Subagentes': 'Subagents',
   '1 subagente': '1 subagent',
+  'Choca con {branch} en {file}': 'Clashes with {branch} in {file}',
+  'Choca con {branch} en {file} y {n} más': 'Clashes with {branch} in {file} and {n} more',
   '{n} subagentes': '{n} subagents',
   'trabajando · {d}': 'working · {d}',
   'Sin registro de este subagente': 'No log for this subagent',

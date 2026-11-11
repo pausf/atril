@@ -1,13 +1,27 @@
 import { useT } from '../ui'
 import { StateLabel } from './StateLabel'
 import { useContext, useState } from 'react'
-import type { RemoveResult, StateProblem, WorkspaceView } from '../../preload/api'
+import type { RadarHit, RemoveResult, StateProblem, WorkspaceView } from '../../preload/api'
 import { stateOf, useAgentStates, useLatestActivity } from '../agents'
 import { runningCount, useSubagents } from '../subagents'
 import { localiseActivity } from '../../preload/activity-i18n'
 import { QuickReplies, useAsking } from './QuickReplies'
 import { fixLabel, Problem, sharedFix } from './Problem'
 import { NavigationContext } from '../settings/navigation'
+import { useRadar } from '../radar'
+
+/** W168: the first collision, how many files more, and every one of them on hover. */
+function RadarLine({ hits = [] }: { hits?: RadarHit[] }) {
+  const t = useT()
+  const first = hits[0]
+  if (!first?.files[0]) return null
+  const vars = { branch: first.branch, file: first.files[0], n: hits.reduce((n, h) => n + h.files.length, 0) - 1 }
+  return (
+    <span className="ws-radar" title={hits.flatMap((h) => h.files.map((f) => `${h.branch}: ${f}`)).join('\n')}>
+      {vars.n > 0 ? t('Choca con {branch} en {file} y {n} más', vars) : t('Choca con {branch} en {file}', vars)}
+    </span>
+  )
+}
 
 interface Props {
   workspaces: WorkspaceView[]
@@ -29,6 +43,7 @@ export function WorkspaceList({ workspaces, problem, selected, onSelect, onRemov
   const subs = useSubagents(workspaces.map((w) => w.id))
   const latest = useLatestActivity()
   const [asking, markAsking] = useAsking()
+  const radar = useRadar()
 
   const [closing, setClosing] = useState<string | null>(null)
   const close = (id: string, act: (id: string) => Promise<RemoveResult>): void => {
@@ -71,6 +86,7 @@ export function WorkspaceList({ workspaces, problem, selected, onSelect, onRemov
               )}
             </span>
             <StateLabel state={stateOf(states, w)} />
+            <RadarLine hits={radar[w.id]} />
             {runningCount(subs[w.id]) > 0 && <span className="ws-subs">{runningCount(subs[w.id]) === 1 ? t('1 subagente') : t('{n} subagentes', { n: runningCount(subs[w.id]) })}</span>}
             {latest[w.id] && !asking.has(w.id) && (
               <span className="ws-act" title={latest[w.id] && localiseActivity(latest[w.id]!.text, t)}>

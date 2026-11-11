@@ -6,7 +6,7 @@ import type { Runner } from '../run'
 export const clock = { now: (): number => Date.now() }
 
 const MAX_AGE = 30_000
-const MAX_WATCHERS = 4
+const MAX_WATCHERS = 12
 const GIT_FILES = new Set(['HEAD', 'index', 'packed-refs'])
 
 /** `file` relative to `dir` ('' for `dir` itself), or null when it lies outside. */

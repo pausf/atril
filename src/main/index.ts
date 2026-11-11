@@ -23,6 +23,7 @@ import { createQueue, createScorer } from './forge/scores'
 import { createThreads } from './forge/threads'
 import { boxDiff, boxRanges, forgetPlans } from './flow/boxes'
 import { closeQuiet } from './flow/quiet'
+import { radar } from './radar'
 import { changeFolders } from './flow/stage'
 import { nextUp } from './nextup'
 import { writeFile } from 'node:fs/promises'
@@ -745,6 +746,7 @@ app.whenReady().then(async () => {
   })
   ipcMain.handle('atril:cost:get', (_e, id: unknown) => cost.get(String(id)))
   cost.start()
+  ipcMain.handle('atril:radar:get', () => radar(run))
   ipcMain.handle('atril:status:list', () => status.states())
   ipcMain.handle('atril:status:quickReplies', async (_e, id: unknown) => {
     const ws = (await listWorkspaces(run)).find((w) => w.id === id)

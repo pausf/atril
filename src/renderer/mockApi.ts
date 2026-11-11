@@ -1,5 +1,5 @@
 import { vi } from 'vitest'
-import type { ActivityLine, SubagentEntry, SubagentLine, AddRepoResult, Aviso, FileChange, FlowBoxes, FlowDocs, ForgeId, ForgeStatus, Mode, MrDraft, MrDrafts, MrDraftsResult, MrFixCiResult, MrLists, MrReply, MrScoreState, MrThreads, MrWork, AgentState, StateProblem, QaBugResult, QaLaunchResult, QaManualRequest, QaReport, QaResult, QaStatus, QaTargets, AtrilApi, RemoveResult, QuickAnswer, QuickReplies, FlowStage, HistoryEntry, IdeaJiraResult, IdeaResult, LibrettoCounts, LibrettoState, JiraIssue, JiraSettingsStatus, MenuAction, NextItem, StartProposalResult, StartRequest, StartResult, RepoResult, RepoView, ToolReport, UiState, WorkCost, WorkspaceResult, WorkspaceView } from '../preload/api'
+import type { ActivityLine, SubagentEntry, SubagentLine, AddRepoResult, Aviso, FileChange, FlowBoxes, FlowDocs, ForgeId, ForgeStatus, Mode, MrDraft, MrDrafts, MrDraftsResult, MrFixCiResult, MrLists, MrReply, MrScoreState, MrThreads, MrWork, AgentState, StateProblem, QaBugResult, QaLaunchResult, QaManualRequest, QaReport, QaResult, QaStatus, QaTargets, AtrilApi, RemoveResult, QuickAnswer, QuickReplies, RadarHit, FlowStage, HistoryEntry, IdeaJiraResult, IdeaResult, LibrettoCounts, LibrettoState, JiraIssue, JiraSettingsStatus, MenuAction, NextItem, StartProposalResult, StartRequest, StartResult, RepoResult, RepoView, ToolReport, UiState, WorkCost, WorkspaceResult, WorkspaceView } from '../preload/api'
 
 export const workspace = (id: string, branch: string, alive = true): WorkspaceView => ({
   id,
@@ -59,6 +59,8 @@ interface Options {
   answer?: QuickAnswer
   /** Subagent entries per workspace id. */
   subagents?: Record<string, SubagentEntry[]>
+  /** What radar.get answers; tests may mutate it between polls. Missing means no collisions. */
+  radar?: Record<string, RadarHit[]>
   /** What cost.get answers per workspace id; missing means no transcript. */
   costs?: Record<string, WorkCost | null>
   /** What history.list answers, newest first. */
@@ -319,6 +321,9 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
         return () => historyListeners.delete(cb)
       }
     },
+    radar: {
+      get: vi.fn(async () => structuredClone(o.radar ?? {}))
+    },
     cost: {
       get: async (id: string) => o.costs?.[id] ?? null,
       onChange: (cb: (id: string, cost: WorkCost | null) => void) => {
@@ -401,8 +406,8 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
     snapshotView: async () => null,
     snapshotWorkspace: async () => false
   } as unknown as AtrilApi
-  const { menu: menuApi, jira, workspaces: ws, repos: reposApi, flow: flowApi, forge: forgeApi, mr: mrApi, avisos: avisosApi, status: statusApi, qa: qaApi, libretto: librettoApi } = window.atril
-  return { ui, qaApi, setQa: (id: string, q: QaStatus | null) => qa.set(id, q), setReport: (id: string, r: QaReport | null) => reports.set(id, r), stored, menuApi, jira, ws, reposApi, flowApi, forgeApi, mrApi, avisosApi, statusApi, librettoApi,
+  const { menu: menuApi, jira, workspaces: ws, repos: reposApi, flow: flowApi, forge: forgeApi, mr: mrApi, avisos: avisosApi, status: statusApi, qa: qaApi, libretto: librettoApi, radar: radarApi } = window.atril
+  return { ui, qaApi, radarApi, setQa: (id: string, q: QaStatus | null) => qa.set(id, q), setReport: (id: string, r: QaReport | null) => reports.set(id, r), stored, menuApi, jira, ws, reposApi, flowApi, forgeApi, mrApi, avisosApi, statusApi, librettoApi,
     pushAvisos: (items: Aviso[]) => {
       avisos = items
       avisoListeners.forEach((cb) => cb(items))

@@ -167,13 +167,13 @@ describe('quiet panel', () => {
   }
 
   it('watchers are bounded and close with their work', async () => {
-    const ws = [inPlace(), inPlace(), inPlace(), inPlace(), inPlace()]
-    for (const w of ws.slice(0, 4)) await boxRanges(w.path, w.base, CHANGE, run)
-    expect(openWatchers().sort()).toEqual(ws.slice(0, 4).map((w) => w.path).sort())
+    const ws = Array.from({ length: 13 }, inPlace)
+    for (const w of ws.slice(0, 12)) await boxRanges(w.path, w.base, CHANGE, run)
+    expect(openWatchers().sort()).toEqual(ws.slice(0, 12).map((w) => w.path).sort())
     // Asking the first again makes the second the least recently asked.
     await boxRanges(ws[0]!.path, ws[0]!.base, CHANGE, run)
-    await boxRanges(ws[4]!.path, ws[4]!.base, CHANGE, run)
-    expect(openWatchers().sort()).toEqual([ws[0], ws[2], ws[3], ws[4]].map((w) => w!.path).sort())
+    await boxRanges(ws[12]!.path, ws[12]!.base, CHANGE, run)
+    expect(openWatchers().sort()).toEqual([ws[0], ...ws.slice(2)].map((w) => w!.path).sort())
 
     // Closing drops the watcher and its saved answer: the next read computes again.
     const w = ws[3]!
@@ -185,5 +185,5 @@ describe('quiet panel', () => {
     const s = spy()
     await boxRanges(w.path, w.base, CHANGE, s.run)
     expect(s.spawns()).toBeGreaterThan(0)
-  }, 60_000)
+  }, 120_000)
 })
