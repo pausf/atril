@@ -244,3 +244,44 @@ describe('notification settings', () => {
     expect(await patchNotifySettings(null as never)).toEqual(c)
   })
 })
+
+describe('notice routing', () => {
+  // Local time: 10 Nov 2026 is a Tuesday, 14 Nov a Saturday.
+  const at = (day: number, h: number, m = 0): number => new Date(2026, 10, day, h, m).getTime()
+  const quiet = { on: true, from: '19:00', to: '09:00', days: ['sat' as const] }
+
+  it('quiet hours wrap midnight and cover whole days', async () => {
+    const { inQuiet } = await import('./avisos')
+    expect(inQuiet(at(10, 20), quiet)).toBe(true)
+    expect(inQuiet(at(11, 8, 59), quiet)).toBe(true)
+    expect(inQuiet(at(11, 9), quiet)).toBe(false)
+    expect(inQuiet(at(11, 18, 59), quiet)).toBe(false)
+    expect(inQuiet(at(11, 19), quiet)).toBe(true)
+    expect(inQuiet(at(14, 12), quiet)).toBe(true)
+    // A window inside one day; an empty one when from = to; nothing while off.
+    expect(inQuiet(at(11, 13), { ...quiet, from: '12:00', to: '14:00' })).toBe(true)
+    expect(inQuiet(at(11, 14), { ...quiet, from: '12:00', to: '14:00' })).toBe(false)
+    expect(inQuiet(at(11, 11, 59), { ...quiet, from: '12:00', to: '14:00' })).toBe(false)
+    expect(inQuiet(at(11, 12), { ...quiet, from: '12:00', to: '12:00' })).toBe(false)
+    expect(inQuiet(at(14, 12), { ...quiet, on: false })).toBe(false)
+    expect(inQuiet(at(10, 20), { ...quiet, on: false })).toBe(false)
+  })
+
+  it('route honours the type, focus and quiet hours', async () => {
+    const { route, readNotifySettings } = await import('./avisos')
+    const base = await readNotifySettings()
+    const awake = { now: at(11, 12), focusOn: false, windowFocused: false }
+    const s = { ...base, types: { ...base.types, ask: 'mac' as const, review: 'list' as const, ci: 'mute' as const } }
+    expect(route('ask', s, awake)).toBe('mac')
+    expect(route('review', s, awake)).toBe('list')
+    expect(route('ci', s, awake)).toBe('mute')
+    // Quiet hours turn «Mac» into «Solo Avisos»; «Nada» stays nothing and «Solo Avisos» stays itself.
+    const night = { ...awake, now: at(10, 23) }
+    const q = { ...s, quiet }
+    expect(route('ask', q, night)).toBe('list')
+    expect(route('ci', q, night)).toBe('mute')
+    expect(route('review', q, night)).toBe('list')
+    expect(route('ask', q, awake)).toBe('mac')
+    expect(route('ask', { ...q, quiet: { ...quiet, on: false } }, night)).toBe('mac')
+  })
+})

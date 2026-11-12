@@ -3,6 +3,7 @@ import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import type { Aviso, AvisoKind, CiState, ForgeId, MrItem, MrListName, MrLists, NotifyPatch, NotifyRoute, NotifySettings, NotifyType, Weekday } from '../preload/api'
 import { atrilHome } from './paths'
+import { quietedByFocus } from './focus'
 
 const KEEP = 200
 const LISTS: readonly MrListName[] = ['mine', 'review', 'following']
@@ -188,4 +189,24 @@ export function patchNotifySettings(patch: NotifyPatch): Promise<NotifySettings>
   })
   notifyQueue = next.catch(() => undefined)
   return next
+}
+
+const minutes = (hhmm: string): number => Number(hhmm.slice(0, 2)) * 60 + Number(hhmm.slice(3))
+
+/** W190: a quiet day, or a time in [from, to), wrapping past midnight; never while off. */
+export function inQuiet(now: number, quiet: NotifySettings['quiet']): boolean {
+  if (!quiet.on) return false
+  const d = new Date(now)
+  if (quiet.days.includes(WEEKDAYS[d.getDay()]!)) return true
+  const m = d.getHours() * 60 + d.getMinutes()
+  const from = minutes(quiet.from)
+  const to = minutes(quiet.to)
+  return from < to ? m >= from && m < to : from > to && (m >= from || m < to)
+}
+
+/** V10: where a new notice goes at this moment. */
+export function route(type: NotifyType, s: NotifySettings, at: { now: number; focusOn: boolean; windowFocused: boolean }): NotifyRoute {
+  const r = s.types[type]
+  if (r !== 'mac') return r
+  return quietedByFocus(s.focus, at.focusOn, at.windowFocused) || inQuiet(at.now, s.quiet) ? 'list' : 'mac'
 }
