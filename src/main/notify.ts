@@ -127,6 +127,7 @@ export interface NotifierDeps {
   reopen: (id: string) => Promise<{ error?: string }>
   /** W187: the non-review workspace of the MR's branch in its repo. */
   closable: (n: Aviso) => Promise<string | undefined>
+  windowMs?: number
   max?: number
 }
 
@@ -137,6 +138,7 @@ type Slot = Aviso[]
 export function createNotifier(d: NotifierDeps) {
   const now = d.now ?? Date.now
   const max = d.max ?? 50
+  const windowMs = d.windowMs ?? 120_000
   // W191: a Notification nobody references can be collected before it is clicked.
   const shown: NoticeLike[] = []
   const hold = (n: NoticeLike): void => {
@@ -206,8 +208,39 @@ export function createNotifier(d: NotifierDeps) {
     display({ title: t('{n} trabajos se han parado', { n: slot.length }), body: joinNames(slot.map((a) => a.title)) }, slot.map((a) => a.id), { kind: 'avisos' })
   }
 
+  // W189: at most one notification per window while «Agrupar» is on.
+  let last = -Infinity
+  let held: Aviso[] = []
+  let timer: NodeJS.Timeout | undefined
   const isMac = async (a: Aviso): Promise<boolean> => route(typeOf(a.kind), await d.settings(), { now: now(), ...d.context() }) === 'mac'
-  const push = (slot: Slot): Promise<void> => showSlot(slot)
+
+  async function release(): Promise<void> {
+    timer = undefined
+    const due = held
+    held = []
+    // Routed again: what focus or quiet hours silenced meanwhile stays in Avisos.
+    const still: Aviso[] = []
+    for (const a of due) if (await isMac(a)) still.push(a)
+    if (still.length === 0) return
+    last = now()
+    if (still.length === 1) return showOne(still[0]!)
+    const agents = still.every((a) => a.workspaceId)
+    display(
+      { title: agents ? t('{n} agentes te necesitan', { n: still.length }) : t('{n} avisos nuevos', { n: still.length }), body: joinNames(still.map((a) => a.title || present(a).title)) },
+      still.map((a) => a.id),
+      { kind: 'avisos' }
+    )
+  }
+
+  async function push(slot: Slot): Promise<void> {
+    if (!(await d.settings()).group) return showSlot(slot)
+    if (held.length === 0 && now() - last >= windowMs) {
+      last = now()
+      return showSlot(slot)
+    }
+    held.push(...slot)
+    timer ??= setTimeout(() => void release(), Math.max(0, last + windowMs - now()))
+  }
 
   return {
     /** New stored notices: those `route` sends to the Mac show, one by one or grouped. */
@@ -220,6 +253,7 @@ export function createNotifier(d: NotifierDeps) {
       for (const a of added) if (await isMac(a)) mac.push(a)
       if (mac.length) await push(mac)
     },
-    held: (): number => shown.length
+    held: (): number => shown.length,
+    stop: (): void => clearTimeout(timer)
   }
 }

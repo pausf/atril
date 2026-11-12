@@ -494,6 +494,8 @@ export const EN: Record<string, string> = {
   "{work}: no se pudo enviar, ese trabajo ya no está": "{work}: could not send, that work is gone",
   "{work} no se ha podido reabrir": "{work} could not be reopened",
   "{n} trabajos se han parado": "{n} works have stopped",
+  "{n} agentes te necesitan": "{n} agents need you",
+  "{n} avisos nuevos": "{n} new notices",
   "Marcar todo leído": "Mark all read",
   "Lo que ha cambiado en tus MR y en tus agentes desde la última vez.": "What changed in your MRs and your agents since last time.",
   "Filtrar por tipo": "Filter by kind",

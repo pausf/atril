@@ -187,3 +187,53 @@ describe('notify', () => {
     expect(calls.replies.at(-1)?.[1]).toBe('sí')
   })
 })
+
+describe('notify grouping', () => {
+  it('grouping lets one notice through every two minutes', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'Date'] })
+    vi.setSystemTime(new Date(2026, 10, 11, 12, 0))
+    let ctx = { focusOn: false, windowFocused: false }
+    let s = settings({ group: true })
+    const { notifier: ntf, calls } = notifier({ s: undefined, settings: async () => s, context: () => ctx })
+    const titles = (): string[] => Fake.made.map((f) => f.opts.title)
+
+    // The first shows at once; the next ones inside 120 s are held.
+    await ntf.notify([aviso('ask', { title: 'WEB-3535', workspaceId: 'a' })])
+    await ntf.notify([aviso('ask', { title: 'SHOP-2630', workspaceId: 'b' })])
+    await ntf.stopped([aviso('stopped', { title: 'OPS-4131', workspaceId: 'c' }), aviso('stopped', { title: 'PF-1', workspaceId: 'd' })])
+    await ntf.notify([aviso('ask', { title: 'APP-9', workspaceId: 'e' })])
+    expect(titles()).toEqual(['WEB-3535 te pregunta'])
+    await vi.advanceTimersByTimeAsync(119_000)
+    expect(titles()).toHaveLength(1)
+    // At 120 s they come as one, W179's stops one by one inside it; the list ends with « y {k} más».
+    await vi.advanceTimersByTimeAsync(1_000)
+    expect(Fake.made.slice(1).map((f) => [f.opts.title, f.opts.body])).toEqual([['4 agentes te necesitan', 'SHOP-2630, OPS-4131, PF-1 y 1 más']])
+    // Its click opens Avisos and marks every notice it carries read.
+    Fake.made[1]!.fire('click')
+    expect(calls.front).toEqual([{ kind: 'avisos' }])
+    expect(calls.read[0]).toHaveLength(4)
+
+    // A single held notice shows as itself; a mix with an MR is «avisos nuevos».
+    await ntf.notify([mr('review')])
+    await vi.advanceTimersByTimeAsync(120_000)
+    expect(titles().at(-1)).toBe('Te piden revisión')
+    await ntf.notify([mr('ci')])
+    await ntf.notify([aviso('ask', { title: 'WEB-1', workspaceId: 'f' })])
+    await vi.advanceTimersByTimeAsync(120_000)
+    expect(Fake.made.at(-1)!.opts).toMatchObject({ title: '2 avisos nuevos', body: 'Festivos por provincia y WEB-1' })
+
+    // At release each is routed again: one quieted meanwhile (focus in front) never reaches the Mac.
+    const before = Fake.made.length
+    await ntf.notify([aviso('ask', { title: 'X', workspaceId: 'g' })])
+    ctx = { focusOn: true, windowFocused: true }
+    await vi.advanceTimersByTimeAsync(240_000)
+    expect(Fake.made).toHaveLength(before)
+    ctx = { focusOn: false, windowFocused: false }
+
+    // «Agrupar» off: each at once.
+    s = settings({ group: false })
+    await ntf.notify([aviso('ask', { title: 'Y' }), aviso('ask', { title: 'Z' })])
+    expect(titles().slice(-2)).toEqual(['Y te pregunta', 'Z te pregunta'])
+    ntf.stop()
+  })
+})
