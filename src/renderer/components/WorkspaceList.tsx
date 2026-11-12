@@ -1,6 +1,6 @@
 import { useT } from '../ui'
 import { StateLabel } from './StateLabel'
-import { useContext, useState } from 'react'
+import { useContext, useEffect, useState } from 'react'
 import type { RadarHit, RemoveResult, StateProblem, WorkspaceView } from '../../preload/api'
 import { stateOf, useAgentStates, useLatestActivity } from '../agents'
 import { runningCount, useSubagents } from '../subagents'
@@ -33,12 +33,29 @@ interface Props {
   onForget: (id: string) => Promise<RemoveResult>
 }
 
+// W187: «Cerrar su trabajo» from the Mac opens this list's own confirmation (W136).
+let pendingClose: string | null = null
+const closeAsks = new Set<(id: string) => void>()
+export const askClose = (id: string): void => {
+  pendingClose = id
+  closeAsks.forEach((f) => f(id))
+}
+
 export function WorkspaceList({ workspaces, problem, selected, onSelect, onRemove, onForget }: Props) {
   const t = useT()
   const { openSettings } = useContext(NavigationContext)
   const [refusal, setRefusal] = useState<{ id: string; result: Exclude<RemoveResult, { ok: true }> } | null>(null)
   // W136: a live agent is only stopped after a second, explicit «Cerrar».
   const [confirming, setConfirming] = useState<string | null>(null)
+  useEffect(() => {
+    const take = (id: string): void => {
+      pendingClose = null
+      setConfirming(id)
+    }
+    if (pendingClose) take(pendingClose)
+    closeAsks.add(take)
+    return () => void closeAsks.delete(take)
+  }, [])
   const states = useAgentStates()
   const subs = useSubagents(workspaces.map((w) => w.id))
   const latest = useLatestActivity()

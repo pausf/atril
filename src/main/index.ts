@@ -9,17 +9,16 @@ import { createQaDone, qaBug, qaReport, qaRetest } from './qa-report'
 import { runFix } from './qa-fix'
 import { addManual, chooseTarget, removeManual } from './qa-targets'
 import { createAvisos, readNotifySettings, workName } from './avisos'
-import { agentState, answerAgent, createStatus, pauseAgent, replyGone, replyPlaceholder, replyToAgent, resumeAgent, quickReplies } from './status'
+import { agentState, answerAgent, createStatus, optionCount, pauseAgent, replyFromNotice, replyToAgent, resumeAgent, quickReplies } from './status'
 import { getLang, setLang, t } from './lang'
 import { resolveLang } from '../preload/i18n'
-import { localiseActivity } from '../preload/activity-i18n'
 import { readDocs, saveDoc } from './flow/document'
 import { FORGES, forgeSettings, type ForgeId } from './credentials/forge'
 import { cloneAndRegister, createRepo } from './forge/create'
 import { createForgeGuards } from './forge/guards'
 import { listMrs } from './forge/mrs'
 import { createLenses } from './forge/lenses'
-import { createOpenMr, type MrEntry } from './forge/openmr'
+import { createOpenMr, remoteNaming, type MrEntry } from './forge/openmr'
 import { createOutcome } from './forge/outcome'
 import { createQueue, createScorer } from './forge/scores'
 import { createThreads } from './forge/threads'
@@ -52,7 +51,7 @@ import { createQuotaWatch, createUsage } from './usage'
 import { listWorkspaces, listWorkspacesOrNone, readRecordsOrNone, openWorktree, removeWorkspace, flowWorkspace, forgetWorkspace, reopenWorkspace, terminalAt } from './workspaces'
 import { createFlowHub } from './flow/watch'
 import { installMenu } from './menu'
-import { createNotifyGate } from './focus'
+import { createNotifier } from './notify'
 import { patchUi, readUi } from './ui'
 import { splitPane } from './tmux'
 import type { Agent, AgentState, QuickAnswer, QuickChoice } from '../preload/api'
@@ -365,7 +364,7 @@ app.whenReady().then(async () => {
       for (const m of r[list]) if (!latestMrs.has(m.url)) latestMrs.set(m.url, { list, forge: m.forge, project: m.project, ...(m.branch && { branch: m.branch }) })
     // Avisos come from comparing listings; a failure there must never break the listing itself.
     // Fake photo listings never reach the real feed.
-    if (!fake) void avisos.onListing(r).catch(() => undefined)
+    if (!fake) tell(avisos.onListing(r))
     lastMrs = { at: Date.now(), lists: r }
     return r
   }
@@ -375,6 +374,49 @@ app.whenReady().then(async () => {
   if (!SNAPSHOT) mrPoll.start()
   const fakeFeed = SNAPSHOT && process.env['ATRIL_SNAPSHOT_VIEW'] === 'avisos'
   const avisos = createAvisos((items) => BrowserWindow.getAllWindows().forEach((w) => w.webContents.send('atril:avisos:changed', items)), { outcome: createOutcome(secretStore) })
+  // W177, W186–W194: what reaches the Mac, and what a click or an action on it does.
+  const notifier = createNotifier({
+    make: (o) => {
+      // ponytail: dev-only, the Mac banner cannot be seen through CDP; the dev log says what it carried.
+      if (!app.isPackaged) console.log('[notify]', JSON.stringify(o))
+      return new Notification(o)
+    },
+    settings: readNotifySettings,
+    context: () => ({ focusOn: menu.focusOn, windowFocused: BrowserWindow.getAllWindows()[0]?.isFocused() === true }),
+    markRead: (ids) => void avisos.markRead(ids).catch(() => undefined),
+    front: (target) => {
+      const win = BrowserWindow.getAllWindows()[0]
+      if (!win) return
+      if (win.isMinimized()) win.restore()
+      win.show()
+      win.focus()
+      if (target?.kind === 'workspace') win.webContents.send('atril:status:open', target.id)
+      else if (target) win.webContents.send('atril:notify:open', target)
+    },
+    openExternal: (url) => {
+      if (/^https:\/\//.test(url)) void shell.openExternal(url)
+    },
+    reply: (a, text) => (a.workspaceId ? replyFromNotice(a.workspaceId, text, run) : Promise.resolve('gone')),
+    options: async (a) => {
+      const rec = (await readRecordsOrNone()).find((r) => r.id === a.workspaceId)
+      return rec ? optionCount(rec.session) : 0
+    },
+    reopen: async (id) => {
+      const r = await reopenWorkspace(id, {}, run).finally(() => void pushNext())
+      return 'error' in r ? { error: r.error } : {}
+    },
+    closable: async (a) => {
+      if (!a.branch || !a.project || !a.url) return undefined
+      const host = new URL(a.url).hostname
+      const repos = await readRepos()
+      for (const rec of await readRecordsOrNone()) {
+        const repo = rec.mode !== 'review' && rec.branch === a.branch ? repos.find((r) => r.id === rec.repoId) : undefined
+        if (repo && (await remoteNaming(run, repo.path, a.project, host))) return rec.id
+      }
+      return undefined
+    }
+  })
+  const tell = (p: Promise<Aviso[]>): void => void p.then((added) => notifier.notify(added)).catch(() => undefined)
   ipcMain.handle('atril:avisos:list', () => (fakeFeed ? fakeAvisos() : avisos.list()))
   ipcMain.handle('atril:avisos:markRead', (_e, ids: unknown) =>
     avisos.markRead(ids === 'all' ? 'all' : Array.isArray(ids) ? ids.filter((i): i is string => typeof i === 'string') : [])
@@ -544,7 +586,7 @@ app.whenReady().then(async () => {
   const qaDone = createQaDone((id, p, f) => {
     void readRecordsOrNone().then((recs) => {
       const rec = recs.find((r) => r.id === id)
-      if (rec) void avisos.onAgent(rec, 'qa', undefined, { p, f }).catch(() => undefined)
+      if (rec) tell(avisos.onAgent(rec, 'qa', undefined, { p, f }))
     })
   })
   setInterval(() => {
@@ -661,7 +703,6 @@ app.whenReady().then(async () => {
   })
   ipcMain.handle('atril:snapshot-ws', () => Boolean(SNAPSHOT))
   const menu = { selected: null as string | null, count: 0, nextEnabled: false, focusOn: false, focusAvailable: false, overviewAvailable: false, bigAvailable: false }
-  const notifyGate = createNotifyGate(() => menu.focusOn, () => BrowserWindow.getAllWindows()[0]?.isFocused() === true)
   // Filled once status exists; the menu is first built before it.
   let states = (): Record<string, AgentState> => ({})
   let togglePause: (id: string) => void = () => undefined
@@ -707,7 +748,6 @@ app.whenReady().then(async () => {
   refreshMenu()
   createWindow()
 
-  const shown = new Set<Notification>()
   const status = createStatus({
     run,
     onChange: (id, state) => {
@@ -717,39 +757,12 @@ app.whenReady().then(async () => {
       if (id === menu.selected) refreshMenu()
       void pushNext()
     },
-    notify: (ws, kind, text) => {
-      void avisos.onAgent(ws, kind, text).catch(() => undefined)
-      const body = text ? localiseActivity(text, t) : t('{branch} te necesita', { branch: ws.branch })
-      // W78: minimised, hidden or on another Space is not focused; a quieted entry is never notified later.
-      let allowed = false
-      notifyGate(() => (allowed = true))
-      if (!allowed) return
-      const n = new Notification({ title: 'Atril', subtitle: ws.branch, body, hasReply: true, replyPlaceholder: replyPlaceholder() })
-      // W38: only a click brings Atril forward; a reply types into the pane and leaves the window alone.
-      // ponytail: macOS may follow a reply with a click; one within 1 s of a reply is ignored (N3).
-      let repliedAt = 0
-      n.on('reply', (_e, text) => {
-        repliedAt = Date.now()
-        void replyToAgent(ws.id, text, run).then((r) => {
-          if (r === 'gone') new Notification({ title: 'Atril', body: replyGone() }).show()
-        })
-      })
-      n.on('click', () => {
-        if (Date.now() - repliedAt < 1000) return
-        const win = BrowserWindow.getAllWindows()[0]
-        if (!win) return
-        if (win.isMinimized()) win.restore()
-        win.show()
-        win.focus()
-        win.webContents.send('atril:status:open', ws.id)
-      })
-      // A Notification nobody references can be collected before it is clicked.
-      shown.add(n)
-      n.on('close', () => shown.delete(n))
-      n.show()
-    },
-    stopped: (list) => void Promise.all(list.map((w) => avisos.onAgent(w, 'stopped'))).catch(() => undefined),
-    idle: (ws, m) => void avisos.onAgent(ws, 'idle', undefined, { m }).catch(() => undefined),
+    notify: (ws, kind, text) => tell(avisos.onAgent(ws, kind, text)),
+    stopped: (list) =>
+      void Promise.all(list.map((w) => avisos.onAgent(w, 'stopped')))
+        .then((added) => notifier.stopped(added.flat()))
+        .catch(() => undefined),
+    idle: (ws, m) => tell(avisos.onAgent(ws, 'idle', undefined, { m })),
     idleMinutes: async () => (await readNotifySettings()).idleMinutes,
     closing: (id) => closingIds.has(id),
     left: (id) => void avisos.expire(id).catch(() => undefined)
@@ -767,7 +780,7 @@ app.whenReady().then(async () => {
     run,
     emit: (u) => {
       BrowserWindow.getAllWindows().forEach((w) => w.webContents.send('atril:usage:changed', u))
-      for (const c of quota(u)) void avisos.onQuota({ window: c.window, pct: c.pct, resetsAt: c.resetsAt }).catch(() => undefined)
+      for (const c of quota(u)) tell(avisos.onQuota({ window: c.window, pct: c.pct, resetsAt: c.resetsAt }))
     }
   })
   // ponytail: dev-only, a snapshot never reads the person's real quota (each launch was a call to api.anthropic.com).
@@ -804,7 +817,7 @@ app.whenReady().then(async () => {
       for (const c of news) {
         const a = recs.find((r) => r.id === c.a)
         const b = recs.find((r) => r.id === c.b)
-        if (a && b) void avisos.onAgent(a, 'radar', undefined, { b: workName(b), file: c.file, more: c.more }).catch(() => undefined)
+        if (a && b) tell(avisos.onAgent(a, 'radar', undefined, { b: workName(b), file: c.file, more: c.more }))
       }
     }
     return answer

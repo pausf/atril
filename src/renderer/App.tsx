@@ -32,6 +32,8 @@ import { Tour } from './tour/Tour'
 import { Palette } from './palette/Palette'
 import { paletteItems } from './palette/items'
 import { UiProvider, useT, useUi } from './ui'
+import { requestFix } from './mr/FixCi'
+import { askClose } from './components/WorkspaceList'
 
 export function App() {
   return (
@@ -199,6 +201,23 @@ function Shell() {
     []
   )
 
+  // W186, W187, W194: a Mac notification brings the window to what it was about.
+  useEffect(
+    () =>
+      window.atril.notify.onOpen((to) => {
+        if (to.kind === 'avisos') return setScreen('avisos')
+        if (to.kind === 'close') {
+          setSelected(to.id)
+          setAll(false)
+          setScreen('work')
+          return askClose(to.id)
+        }
+        if (to.kind === 'fixCi') requestFix(to.url)
+        setOpenUrl(to.url)
+        setScreen('mr')
+      }),
+    []
+  )
   useEffect(() => window.atril.menu.setState(selected, workspaces.length), [selected, workspaces.length])
   // V21: a workspace on screen has had its questions seen.
   useEffect(() => {

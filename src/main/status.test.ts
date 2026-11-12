@@ -291,9 +291,27 @@ describe('status notices', () => {
     await settle(status, () => stopped.mock.calls.length, 1)
     // One call for the pass, with both: main turns it into one Mac notification.
     expect(stopped.mock.calls.map((c) => c[0].map((w: WorkspaceView) => w.branch).sort())).toEqual([['feat/a', 'feat/b']])
-    // Avisos keeps one per workspace.
-    for (const w of stopped.mock.calls[0]![0] as WorkspaceView[]) await avisos.onAgent(w, 'stopped')
+    // Avisos keeps one per workspace; the Mac gets a single notification for both, as main wires it.
+    const added = []
+    for (const w of stopped.mock.calls[0]![0] as WorkspaceView[]) added.push(...(await avisos.onAgent(w, 'stopped')))
     expect((await avisos.list()).map((n) => [n.kind, n.title]).sort()).toEqual([['stopped', 'feat/a'], ['stopped', 'feat/b']])
+    const { createNotifier } = await import('./notify')
+    const { readNotifySettings } = await import('./avisos')
+    const made: Array<{ title: string; body: string }> = []
+    const notifier = createNotifier({
+      make: (o) => (made.push({ title: o.title, body: o.body }), { on: () => {}, show: () => {} }),
+      settings: readNotifySettings,
+      context: () => ({ focusOn: false, windowFocused: false }),
+      markRead: () => {},
+      front: () => {},
+      openExternal: () => {},
+      reply: async () => 'sent',
+      options: async () => 0,
+      reopen: async () => ({}),
+      closable: async () => undefined
+    })
+    await notifier.stopped(added)
+    expect(made).toEqual([{ title: '2 trabajos se han parado', body: expect.stringMatching(/^feat\/[ab] y feat\/[ab]$/) }])
   }, 30_000)
 
   it('a long wait reminds you once', async () => {

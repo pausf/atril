@@ -63,6 +63,23 @@ export function planReply(text: string, ws: Pick<WorkspaceView, 'paneId' | 'aliv
   return { kind: 'send', paneId: ws.paneId, text: line }
 }
 
+/** W74: how many options the waiting question offers; 0 for none. */
+export async function optionCount(session: string): Promise<number> {
+  return (await quickReplies(session)).options.length
+}
+
+/** N3: a reply from the Mac notification; with options, a number from 1 to their count answers that option (W75). */
+export async function replyFromNotice(id: string, text: string, run: Runner = defaultRun): Promise<'sent' | 'ignored' | 'gone'> {
+  const line = text.trim()
+  if (line === '') return 'ignored'
+  if (/^\d+$/.test(line)) {
+    const rec = (await readRecords()).find((r) => r.id === id)
+    const n = Number(line)
+    if (rec && n >= 1 && n <= (await optionCount(rec.session))) return 'ok' in (await answerAgent(id, { option: n - 1 }, run)) ? 'sent' : 'gone'
+  }
+  return replyToAgent(id, text, run)
+}
+
 /** W163: an action asks tmux directly whether the session exists; the 1-second snapshot is only for showing state. */
 async function actingWorkspace(id: string, run: Runner): Promise<WorkspaceView | undefined> {
   const rec = (await readRecords()).find((r) => r.id === id)

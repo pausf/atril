@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron'
-import type { ActivityLine, SubagentEntry, AgentState, Aviso, AtrilApi, FlowStage, HistoryEntry, MenuAction, MrScoreState, NextItem, UsageResult, WorkCost } from './api'
+import type { ActivityLine, SubagentEntry, AgentState, Aviso, AtrilApi, NotifyTarget, FlowStage, HistoryEntry, MenuAction, MrScoreState, NextItem, UsageResult, WorkCost } from './api'
 
 const api: AtrilApi = {
   menu: {
@@ -52,6 +52,13 @@ const api: AtrilApi = {
       const h = (_e: Electron.IpcRendererEvent, url: string, state: MrScoreState): void => cb(url, state)
       ipcRenderer.on('atril:mr:score-changed', h)
       return () => ipcRenderer.removeListener('atril:mr:score-changed', h)
+    }
+  },
+  notify: {
+    onOpen: (cb) => {
+      const h = (_e: Electron.IpcRendererEvent, target: NotifyTarget): void => cb(target)
+      ipcRenderer.on('atril:notify:open', h)
+      return () => ipcRenderer.removeListener('atril:notify:open', h)
     }
   },
   avisos: {

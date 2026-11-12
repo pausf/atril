@@ -141,4 +141,43 @@ describe('reply', () => {
     expect(await answerAgent('nosuchid', { option: 0 }, run)).toEqual({ error: replyGone() })
     expect(sent).toEqual([])
   })
+
+  it('a number answers the option with its key', async () => {
+    makeRegisteredRepo(home)
+    const { replyFromNotice, optionCount } = await import('./status')
+    const { removeWorkspace } = await import('./workspaces')
+    const a = await open('feat/na')
+    const b = await open('feat/nb')
+    const asked = (ws: WorkspaceView, options?: string[]): void => {
+      mkdirSync(join(home, 'state'), { recursive: true })
+      writeFileSync(join(home, 'state', `${ws.session}.json`), JSON.stringify({ state: 'needs-you', at: 1, text: 'Te pregunta: ¿?', ...(options && { options }) }))
+    }
+    asked(a, ['Sí', 'No', 'Quizá'])
+    asked(b)
+    expect(await optionCount(a.session)).toBe(3)
+    expect(await optionCount(b.session)).toBe(0)
+    const { run, sent } = await spied()
+
+    // «2» with three options: the option's key, not literal text, into that pane only.
+    expect(await replyFromNotice(a.id, ' 2 ', run)).toBe('sent')
+    expect(sent).toEqual([
+      ['-L', sock, 'send-keys', '-t', a.paneId, '2'],
+      ['-L', sock, 'send-keys', '-t', a.paneId, 'Enter']
+    ])
+    // Out of range, not an integer, or no options: literal text, as N3.
+    for (const text of ['4', '0', '1.5', 'dos']) {
+      sent.length = 0
+      expect(await replyFromNotice(a.id, text, run)).toBe('sent')
+      expect(sent[0]).toEqual(['-L', sock, 'send-keys', '-t', a.paneId, '-l', '--', text])
+    }
+    sent.length = 0
+    expect(await replyFromNotice(b.id, '1', run)).toBe('sent')
+    expect(sent[0]).toEqual(['-L', sock, 'send-keys', '-t', b.paneId, '-l', '--', '1'])
+    // Empty: nothing; gone: nothing, and the caller says so.
+    sent.length = 0
+    expect(await replyFromNotice(a.id, '  ', run)).toBe('ignored')
+    expect(await removeWorkspace(b.id)).toEqual({ ok: true })
+    expect(await replyFromNotice(b.id, '1', run)).toBe('gone')
+    expect(sent).toEqual([])
+  })
 })

@@ -2,6 +2,12 @@ import { useEffect, useState } from 'react'
 import type { CiState, MrItem } from '../../preload/api'
 import { useT } from '../ui'
 
+// W186: «Arreglar con Claude» from the Mac starts the fix once this MR's view shows.
+let pendingFix: string | null = null
+export const requestFix = (url: string): void => {
+  pendingFix = url
+}
+
 /** M31, M32: the MR's CI state and, while it fails and one agent works on it, «Arreglar CI con Claude». */
 export function FixCi({ m }: { m: MrItem }) {
   const t = useT()
@@ -22,6 +28,11 @@ export function FixCi({ m }: { m: MrItem }) {
     setResult(await window.atril.mr.fixCi(m.url))
     setBusy(false)
   }
+  useEffect(() => {
+    if (pendingFix !== m.url) return
+    pendingFix = null
+    void fix()
+  }, [m.url])
 
   if (!m.ci) return null
   const ci: Record<CiState, string> = { pass: t('Pasa'), fail: t('Falla'), running: t('En curso'), none: t('Sin CI') }

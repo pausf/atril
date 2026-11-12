@@ -267,6 +267,9 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
         return r
       })
     },
+    notify: {
+      onOpen: () => () => undefined
+    },
     avisos: {
       list: vi.fn(async () => avisos),
       markRead: vi.fn(async (ids: string[] | 'all') => {

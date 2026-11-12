@@ -476,6 +476,13 @@ export interface NotifyPatch {
   quiet?: Partial<NotifySettings['quiet']>
 }
 
+/** W194: what a Mac notification asks the window to open. */
+export type NotifyTarget = { kind: 'mr'; url: string } | { kind: 'avisos' } | { kind: 'fixCi'; url: string } | { kind: 'close'; id: string }
+export interface NotifyApi {
+  /** Returns the unsubscribe function. */
+  onOpen(cb: (target: NotifyTarget) => void): () => void
+}
+
 export interface AvisosApi {
   /** Newest first. */
   list(): Promise<Aviso[]>
@@ -951,6 +958,7 @@ export interface AtrilApi {
   forge: ForgeApi
   mr: MrApi
   avisos: AvisosApi
+  notify: NotifyApi
   status: StatusApi
   nextup: NextUpApi
   activity: ActivityApi
