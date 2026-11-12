@@ -492,6 +492,7 @@ export const EN: Record<string, string> = {
   "Arreglar con Claude": "Fix with Claude",
   "Cerrar su trabajo": "Close its work",
   "{work}: no se pudo enviar, ese trabajo ya no está": "{work}: could not send, that work is gone",
+  "{work}: {why}": "{work}: {why}",
   "{work} no se ha podido reabrir": "{work} could not be reopened",
   "{n} trabajos se han parado": "{n} works have stopped",
   "{n} agentes te necesitan": "{n} agents need you",

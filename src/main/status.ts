@@ -69,13 +69,18 @@ export async function optionCount(session: string): Promise<number> {
 }
 
 /** N3: a reply from the Mac notification; with options, a number from 1 to their count answers that option (W75). */
-export async function replyFromNotice(id: string, text: string, run: Runner = defaultRun): Promise<'sent' | 'ignored' | 'gone'> {
+export type NoticeReply = 'sent' | 'ignored' | 'gone' | { error: string }
+
+/** N3: only a vanished work reads as gone; any other refusal keeps its own sentence. */
+export const fromAnswer = (r: { ok: true } | { error: string }): NoticeReply => ('ok' in r ? 'sent' : r.error === replyGone() ? 'gone' : { error: r.error })
+
+export async function replyFromNotice(id: string, text: string, run: Runner = defaultRun): Promise<NoticeReply> {
   const line = text.trim()
   if (line === '') return 'ignored'
   if (/^\d+$/.test(line)) {
     const rec = (await readRecords()).find((r) => r.id === id)
     const n = Number(line)
-    if (rec && n >= 1 && n <= (await optionCount(rec.session))) return 'ok' in (await answerAgent(id, { option: n - 1 }, run)) ? 'sent' : 'gone'
+    if (rec && n >= 1 && n <= (await optionCount(rec.session))) return fromAnswer(await answerAgent(id, { option: n - 1 }, run))
   }
   return replyToAgent(id, text, run)
 }

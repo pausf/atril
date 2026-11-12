@@ -142,6 +142,13 @@ describe('reply', () => {
     expect(sent).toEqual([])
   })
 
+  it('only a vanished work reads as gone', async () => {
+    const { fromAnswer, replyGone } = await import('./status')
+    expect(fromAnswer({ ok: true })).toBe('sent')
+    expect(fromAnswer({ error: replyGone() })).toBe('gone')
+    expect(fromAnswer({ error: 'Esa opción ya no existe.' })).toEqual({ error: 'Esa opción ya no existe.' })
+  })
+
   it('a number answers the option with its key', async () => {
     makeRegisteredRepo(home)
     const { replyFromNotice, optionCount } = await import('./status')

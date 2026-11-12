@@ -2,6 +2,7 @@ import type { Aviso, NotifyPermission, NotifySettings, NotifyType } from '../pre
 import { localiseActivity } from '../preload/activity-i18n'
 import { route, typeOf } from './avisos'
 import { getLang, t } from './lang'
+import type { NoticeReply } from './status'
 
 /** What main hands to Electron's `Notification`. */
 export interface Shown {
@@ -133,7 +134,7 @@ export interface NotifierDeps {
   front: (target: NotifyTarget | null) => void
   openExternal: (url: string) => void
   /** N3: 'gone' when the workspace or its pane is no longer there. */
-  reply: (n: Aviso, text: string) => Promise<'sent' | 'ignored' | 'gone'>
+  reply: (n: Aviso, text: string) => Promise<NoticeReply>
   /** W74: the number of options the session's question offers, 0 for none. */
   options: (n: Aviso) => Promise<number>
   /** W141; a refusal's sentence comes back as `error`. */
@@ -200,6 +201,7 @@ export function createNotifier(d: NotifierDeps) {
       on.reply = (text) =>
         void d.reply(a, text).then((r) => {
           if (r === 'gone') say(t('{work}: no se pudo enviar, ese trabajo ya no está', { work: a.title }), '')
+          else if (typeof r === 'object') say(t('{work}: {why}', { work: a.title, why: r.error }), '')
         })
     if (type === 'ci' && a.url) {
       const url = a.url

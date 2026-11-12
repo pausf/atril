@@ -143,6 +143,14 @@ describe('notify', () => {
     expect(calls.front).toEqual([{ kind: 'workspace', id: 'ws1' }])
   })
 
+  it('a refused numbered reply says why, not that the work is gone', async () => {
+    const { notifier: ntf } = notifier({ reply: async () => ({ error: 'Ese agente ya no está esperando una respuesta.' }) })
+    await ntf.notify([aviso('ask', { workspaceId: 'w' })])
+    Fake.made[0]!.fire('reply', {}, '2')
+    await flush()
+    expect(Fake.made[1]!.opts.title).toBe('WEB-3535: Ese agente ya no está esperando una respuesta.')
+  })
+
   it('shown notifications stay referenced and bounded', async () => {
     const { notifier: ntf } = notifier({ max: 3, reply: async () => 'gone' })
     const a = aviso('ask', { workspaceId: 'w' })

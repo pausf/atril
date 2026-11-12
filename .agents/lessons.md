@@ -344,3 +344,9 @@ El criterio nombraba tres sitios (abrir, reabrir y el comando de «Empezar») y 
 
 ## 2026-11-11 · qa-to-mr · 6→7
 El constructor ensanchó la respuesta de `threads.reply` (de otra capacidad, mr) y no había `spec-mr.md`: la forma nueva nunca habría llegado a la spec de MR. Si un cambio toca un archivo gobernado por otra capacidad, su delta va en el mismo cambio. Pendiente aceptado: lo que el agente de QA escribe en notas y pasos se publica tal cual; no hay vista previa antes de «Publicar en la MR».
+
+## 2026-11-12 · notify-core · 6→7
+A numbered reply from the Mac turned every refusal of `answerAgent` into «ese trabajo ya no está», although the work still existed (N3 allows that sentence only for a vanished work or pane). A result type with three outcomes was squeezed into two. Fixed with `fromAnswer`, which keeps the refusal's own sentence; proved by «only a vanished work reads as gone» and «a refused numbered reply says why, not that the work is gone».
+
+## 2026-11-12 · notify-core · 6→7
+Two docs files from other work (`bocetos/qa-real.md`, `bocetos/dogfood-juegos.md`) rode in the change's range because they were committed on its branch before the build. Harmless, but a reviewer cannot tell them from scope creep. Commit unrelated docs on their own branch or say in the change which ones ride along.
