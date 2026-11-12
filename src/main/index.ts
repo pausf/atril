@@ -8,10 +8,11 @@ import { launchQa, qaStatus, stopQa } from './qa'
 import { qaBug, qaReport, qaRetest } from './qa-report'
 import { runFix } from './qa-fix'
 import { addManual, chooseTarget, removeManual } from './qa-targets'
-import { createAvisos } from './avisos'
+import { createAvisos, readNotifySettings } from './avisos'
 import { agentState, answerAgent, createStatus, pauseAgent, replyGone, replyPlaceholder, replyToAgent, resumeAgent, quickReplies } from './status'
 import { getLang, setLang, t } from './lang'
 import { resolveLang } from '../preload/i18n'
+import { localiseActivity } from '../preload/activity-i18n'
 import { readDocs, saveDoc } from './flow/document'
 import { FORGES, forgeSettings, type ForgeId } from './credentials/forge'
 import { cloneAndRegister, createRepo } from './forge/create'
@@ -575,11 +576,17 @@ app.whenReady().then(async () => {
     forgetPlans(ws.path)
     closeQuiet(ws.path)
   }
+  // W178: between «Cerrar» and its record's removal, a stopped agent is not news.
+  const closingIds = new Set<string>()
   ipcMain.handle('atril:ws:remove', async (e, id: string) => {
+    closingIds.add(id)
     pty.detach(id)
     flow.forget(id)
     await dropPlans(id)
-    const r = await removeWorkspace(id, run).finally(() => void pushNext())
+    const r = await removeWorkspace(id, run).finally(() => {
+      closingIds.delete(id)
+      void pushNext()
+    })
     // W96: a removal that got through has appended its line.
     if ('ok' in r) void readHistory().then((h) => BrowserWindow.getAllWindows().forEach((w) => w.webContents.send('atril:history:changed', h)))
     return r
@@ -691,8 +698,9 @@ app.whenReady().then(async () => {
       if (id === menu.selected) refreshMenu()
       void pushNext()
     },
-    notify: (ws, body) => {
-      void avisos.onAgent(ws, 'ask').catch(() => undefined)
+    notify: (ws, kind, text) => {
+      void avisos.onAgent(ws, kind, text).catch(() => undefined)
+      const body = text ? localiseActivity(text, t) : t('{branch} te necesita', { branch: ws.branch })
       // W78: minimised, hidden or on another Space is not focused; a quieted entry is never notified later.
       let allowed = false
       notifyGate(() => (allowed = true))
@@ -720,7 +728,12 @@ app.whenReady().then(async () => {
       shown.add(n)
       n.on('close', () => shown.delete(n))
       n.show()
-    }
+    },
+    stopped: (list) => void Promise.all(list.map((w) => avisos.onAgent(w, 'stopped'))).catch(() => undefined),
+    idle: (ws, m) => void avisos.onAgent(ws, 'idle', undefined, { m }).catch(() => undefined),
+    idleMinutes: async () => (await readNotifySettings()).idleMinutes,
+    closing: (id) => closingIds.has(id),
+    left: (id) => void avisos.expire(id).catch(() => undefined)
   })
   pushNext = async (): Promise<void> => {
     lastNext = nextUp(status.snapshot(), lastInbox, await listWorkspacesOrNone(run))

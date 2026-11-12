@@ -11,6 +11,7 @@ import { orProblem, readState, StateError } from './state'
 import { t } from './lang'
 import { localiseActivity } from '../preload/activity-i18n'
 import { burst } from './burst'
+import { kindOf } from './avisos'
 
 export const stateDir = (): string => join(atrilHome(), 'state')
 /** W86: one file per paused session, written by main; main (Reanudar) or the hook (W87) removes it. */
@@ -141,12 +142,25 @@ export async function resumeAgent(id: string, run: Runner = defaultRun): Promise
 export interface StatusOptions {
   run?: Runner
   onChange: (id: string, state: AgentState) => void
-  notify: (ws: WorkspaceView, body: string) => void
+  /** W15, W176: an entry into needs-you, or a question after an end of turn in the same wait; `text` is the hook's. */
+  notify: (ws: WorkspaceView, kind: 'ask' | 'done', text: string | undefined) => void
+  /** W178, W179: the workspaces that stopped in one pass. */
+  stopped?: (list: WorkspaceView[]) => void
+  /** W180: once per entry, after `idleMinutes` of main's clock. */
+  idle?: (ws: WorkspaceView, minutes: number) => void
+  idleMinutes?: () => Promise<number>
+  /** V11: a workspace that left the list. */
+  left?: (id: string) => void
+  /** W178: a workspace Atril is closing does not count as a stop. */
+  closing?: (id: string) => boolean
+  now?: () => number
 }
 
-export function createStatus({ run = defaultRun, onChange, notify }: StatusOptions) {
+export function createStatus({ run = defaultRun, onChange, notify, stopped = () => {}, idle = () => {}, idleMinutes = async () => 15, closing = () => false, left = () => {}, now = Date.now }: StatusOptions) {
   const known = new Map<string, AgentState>()
   const since = new Map<string, number>()
+  /** Per session in needs-you: main's clock at the entry, the hook text last seen, whether W180 fired. */
+  const waits = new Map<string, { at: number; text: string | undefined; reminded: boolean }>()
   let busy = false
   let seeded = false
   let timer: NodeJS.Timeout | undefined
@@ -164,21 +178,45 @@ export function createStatus({ run = defaultRun, onChange, notify }: StatusOptio
         if (err instanceof StateError) return
         throw err
       }
+      const stops: WorkspaceView[] = []
+      const minutes = await idleMinutes()
       for (const ws of list) {
         const next = await agentState(ws, run)
         const prev = known.get(ws.id)
-        if (prev === next) continue
-        known.set(ws.id, next)
-        since.set(ws.id, (await hookFile(ws.session)).at ?? 0)
-        onChange(ws.id, next)
-        // The first pass only records: reopening Atril must not announce what was already waiting.
-        if (seeded && shouldNotify(prev, next)) notify(ws, await notificationBody(ws))
+        if (prev !== next) {
+          known.set(ws.id, next)
+          const file = await hookFile(ws.session)
+          since.set(ws.id, file.at ?? 0)
+          onChange(ws.id, next)
+          if (next === 'needs-you') {
+            const text = typeof file.text === 'string' ? file.text : undefined
+            waits.set(ws.id, { at: now(), text, reminded: false })
+            // The first pass only records: reopening Atril must not announce what was already waiting.
+            if (seeded && shouldNotify(prev, next)) notify(ws, kindOf(text), text)
+          } else waits.delete(ws.id)
+          if (seeded && next === 'stopped' && prev !== undefined && !closing(ws.id)) stops.push(ws)
+          continue
+        }
+        const wait = next === 'needs-you' ? waits.get(ws.id) : undefined
+        if (!wait) continue
+        const { text } = await hookFile(ws.session)
+        const now_ = typeof text === 'string' ? text : undefined
+        // W176: a question after an end of turn, in the same wait, is news.
+        if (seeded && wait.text?.startsWith('Claude dice: ') && now_?.startsWith('Te pregunta: ')) notify(ws, 'ask', now_)
+        wait.text = now_
+        if (seeded && !wait.reminded && now() - wait.at >= minutes * 60_000) {
+          wait.reminded = true
+          idle(ws, minutes)
+        }
       }
       for (const id of known.keys())
         if (!list.some((w) => w.id === id)) {
           known.delete(id)
           since.delete(id)
+          waits.delete(id)
+          left(id)
         }
+      if (stops.length) stopped(stops)
       seeded = true
     } finally {
       busy = false

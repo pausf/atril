@@ -152,7 +152,7 @@ describe('activity', () => {
     expect(file?.state).toBe('needs-you')
     expect(file?.text).toBe(`Te pregunta: ${message}`)
     expect(notify).toHaveBeenCalledTimes(1)
-    expect(notify.mock.calls[0]?.[1]).toBe(`Te pregunta: ${message}`)
+    expect(notify.mock.calls[0]?.slice(1)).toEqual(['ask', `Te pregunta: ${message}`])
     expect(lines(ws.session)[0]).toMatchObject({ kind: 'asks', text: `Te pregunta: ${message}` })
   })
 

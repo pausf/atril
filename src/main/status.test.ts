@@ -119,6 +119,8 @@ describe('status', () => {
 
     expect(notify).toHaveBeenCalledTimes(1)
     expect(notify.mock.calls[0]?.[0].branch).toBe('feat/x')
+    // No text from the hook: a question (V3).
+    expect(notify.mock.calls[0]?.[1]).toBe('ask')
     setHook(ws.session, 'working')
     await status.refresh()
     expect(notify).toHaveBeenCalledTimes(1)
@@ -201,5 +203,136 @@ describe('status', () => {
     } finally {
       status.stop()
     }
+  }, 30_000)
+})
+
+const say = (session: string, state: string, text?: string): void => {
+  mkdirSync(join(home, 'state'), { recursive: true })
+  writeFileSync(join(home, 'state', `${session}.json`), JSON.stringify({ state, at: 1, ...(text !== undefined && { text }) }))
+}
+const kill = (ws: WorkspaceView): void => void execFileSync('tmux', ['-L', sock, 'kill-session', '-t', ws.session])
+// tmux is read through a one-second snapshot: refresh until the pass has seen what changed.
+const settle = (status: { refresh(): Promise<void> }, calls: () => number, n: number): Promise<number> =>
+  until(async () => (await status.refresh(), calls()), (c) => c >= n)
+
+describe('status notices', () => {
+  it('a question after an end of turn notifies again', async () => {
+    const { createStatus } = await import('./status')
+    const ws = await open(SLEEP)
+    const notify = vi.fn()
+    const status = createStatus({ onChange: () => {}, notify })
+    await status.refresh()
+    say(ws.session, 'needs-you', 'Claude dice: He terminado el paso.')
+    await status.refresh()
+    expect(notify.mock.calls.map((c) => [c[1], c[2]])).toEqual([['done', 'Claude dice: He terminado el paso.']])
+    // Same wait, now a question: one more, with the new text; the same question again is nothing.
+    say(ws.session, 'needs-you', 'Te pregunta: ¿Sigo?')
+    await status.refresh()
+    await status.refresh()
+    // A question after a question, or an end of turn after a question, is not news.
+    say(ws.session, 'needs-you', 'Te pregunta: ¿Y ahora?')
+    await status.refresh()
+    say(ws.session, 'needs-you', 'Claude dice: Vale.')
+    await status.refresh()
+    expect(notify.mock.calls.map((c) => [c[1], c[2]])).toEqual([
+      ['done', 'Claude dice: He terminado el paso.'],
+      ['ask', 'Te pregunta: ¿Sigo?']
+    ])
+    // Once per such change: back to «dice» then «pregunta» is a new change.
+    say(ws.session, 'needs-you', 'Te pregunta: ¿Otra?')
+    await status.refresh()
+    expect(notify).toHaveBeenCalledTimes(3)
+  })
+
+  it('an agent that stops is a notice', async () => {
+    const { createStatus } = await import('./status')
+    const works = [await open(SLEEP, 'feat/a'), await open(SLEEP, 'feat/b'), await open(SLEEP, 'feat/c')]
+    // Already stopped when Atril starts: no notice (the first pass only records).
+    kill(works[2]!)
+    const stopped = vi.fn()
+    const status = createStatus({ onChange: () => {}, notify: () => {}, stopped })
+    await status.refresh()
+    say(works[1]!.session, 'needs-you')
+    await status.refresh()
+    kill(works[0]!)
+    await settle(status, () => stopped.mock.calls.length, 1)
+    expect(stopped.mock.calls.map((c) => c[0].map((w: WorkspaceView) => w.branch))).toEqual([['feat/a']])
+    // From needs-you too; staying stopped is not a second notice.
+    kill(works[1]!)
+    await settle(status, () => stopped.mock.calls.length, 2)
+    await status.refresh()
+    expect(stopped.mock.calls.map((c) => c[0].map((w: WorkspaceView) => w.branch))).toEqual([['feat/a'], ['feat/b']])
+  }, 30_000)
+
+  it('closing a work from Atril is not a stop', async () => {
+    const { createStatus } = await import('./status')
+    const ws = await open(SLEEP)
+    const closing = new Set<string>()
+    const stopped = vi.fn()
+    const status = createStatus({ onChange: () => {}, notify: () => {}, stopped, closing: (id) => closing.has(id) })
+    await status.refresh()
+    closing.add(ws.id)
+    kill(ws)
+    // It is seen stopped, and still no notice.
+    await settle(status, () => (status.states()[ws.id] === 'stopped' ? 1 : 0), 1)
+    expect(status.states()[ws.id]).toBe('stopped')
+    expect(stopped).not.toHaveBeenCalled()
+  })
+
+  it('several stops in one pass are one Mac notice', async () => {
+    const { createStatus } = await import('./status')
+    const { createAvisos } = await import('./avisos')
+    const works = [await open(SLEEP, 'feat/a'), await open(SLEEP, 'feat/b')]
+    const avisos = createAvisos()
+    const stopped = vi.fn()
+    const status = createStatus({ onChange: () => {}, notify: () => {}, stopped })
+    await status.refresh()
+    works.forEach(kill)
+    await settle(status, () => stopped.mock.calls.length, 1)
+    // One call for the pass, with both: main turns it into one Mac notification.
+    expect(stopped.mock.calls.map((c) => c[0].map((w: WorkspaceView) => w.branch).sort())).toEqual([['feat/a', 'feat/b']])
+    // Avisos keeps one per workspace.
+    for (const w of stopped.mock.calls[0]![0] as WorkspaceView[]) await avisos.onAgent(w, 'stopped')
+    expect((await avisos.list()).map((n) => [n.kind, n.title]).sort()).toEqual([['stopped', 'feat/a'], ['stopped', 'feat/b']])
+  }, 30_000)
+
+  it('a long wait reminds you once', async () => {
+    const { createStatus } = await import('./status')
+    const [old, fresh, gone] = [await open(SLEEP, 'feat/old'), await open(SLEEP, 'feat/new'), await open(SLEEP, 'feat/gone')]
+    // Already waiting when Atril starts: it counts from that start.
+    say(old.session, 'needs-you')
+    let now = 0
+    let minutes = 15
+    const idle = vi.fn()
+    const status = createStatus({ onChange: () => {}, notify: () => {}, idle, idleMinutes: async () => minutes, now: () => now })
+    await status.refresh()
+    now = 60_000
+    say(fresh.session, 'needs-you')
+    say(gone.session, 'needs-you')
+    await status.refresh()
+    // One that leaves needs-you before its time gets none.
+    now = 5 * 60_000
+    say(gone.session, 'working')
+    await status.refresh()
+    now = 15 * 60_000 - 1
+    await status.refresh()
+    expect(idle).not.toHaveBeenCalled()
+    now = 15 * 60_000
+    await status.refresh()
+    expect(idle.mock.calls.map((c) => c[0].branch)).toEqual(['feat/old'])
+    // Changing the minutes applies to waits in progress: 10 min is already past for the newer one.
+    minutes = 10
+    await status.refresh()
+    await status.refresh()
+    expect(idle.mock.calls.map((c) => [c[0].branch, c[1]])).toEqual([['feat/old', 15], ['feat/new', 10]])
+    // Once per entry: a new entry counts again.
+    say(old.session, 'working')
+    await status.refresh()
+    say(old.session, 'needs-you')
+    now = 30 * 60_000
+    await status.refresh()
+    now = 40 * 60_000
+    await status.refresh()
+    expect(idle).toHaveBeenCalledTimes(3)
   }, 30_000)
 })
