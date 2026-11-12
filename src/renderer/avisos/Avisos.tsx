@@ -43,7 +43,17 @@ export function Avisos({ avisos, open }: { avisos: AvisosState; open: (to: Aviso
     following: t('MR nueva en lo que sigues'),
     opened: t('Has abierto una MR'),
     gone: t('Ya no está abierta'),
-    agent: t('Agente')
+    agent: t('Agente'),
+    cipass: t('La CI vuelve a pasar'),
+    merged: t('MR fusionada'),
+    closed: t('MR cerrada'),
+    ask: t('Te pregunta algo'),
+    done: t('Ha terminado su turno'),
+    stopped: t('Se ha parado'),
+    idle: t('Te espera'),
+    radar: t('Choca con otro trabajo'),
+    qa: t('QA terminada'),
+    quota: t('Cuota de Claude')
   }
   const shown = [...avisos.items].sort((a, b) => b.at - a.at).filter((n) => !filter || n.kind === filter)
   const pick = (n: Aviso): void => {

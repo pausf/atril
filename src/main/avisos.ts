@@ -14,6 +14,10 @@ interface Seen {
   title: string
   notes?: number
   ci?: CiState
+  /** V16: the last `pass` or `fail`, kept across `running` and `none`. */
+  ciSettled?: 'pass' | 'fail'
+  branch?: string
+  project?: string
 }
 
 interface Stored {
@@ -24,6 +28,10 @@ interface Stored {
   /** Newest first. */
   items: Aviso[]
 }
+
+type Found = Omit<Aviso, 'id' | 'at' | 'read'>
+/** W184: what the forge says of MRs that left Mías; an URL it does not answer is «Ya no está abierta». */
+export type OutcomeOf = (gone: Array<{ url: string; forge: ForgeId }>) => Promise<Record<string, 'merged' | 'closed'>>
 
 const file = (): string => join(atrilHome(), 'avisos.json')
 
@@ -36,8 +44,21 @@ async function load(): Promise<Stored> {
   }
 }
 
-/** V1: what one listing says against the previous one, per forge. */
-function diff(prev: Stored, lists: MrLists): { baseline: Record<string, Seen>; forges: Stored['forges']; found: Array<Omit<Aviso, 'id' | 'at' | 'read'>> } {
+/** The Ajustes row that rules a notice kind. */
+export const typeOf = (kind: AvisoKind): NotifyType => (kind === 'closed' || kind === 'gone' ? 'merged' : kind === 'agent' ? 'ask' : kind)
+
+const settled = (c: CiState | undefined): 'pass' | 'fail' | undefined => (c === 'pass' || c === 'fail' ? c : undefined)
+const mrNotice = (kind: AvisoKind, m: { title: string; forge: ForgeId; branch?: string; project?: string }, url: string): Found => ({
+  kind,
+  title: m.title,
+  url,
+  forge: m.forge,
+  ...(m.branch && { branch: m.branch }),
+  ...(m.project && { project: m.project })
+})
+
+/** V1, V16: what one listing says against the previous one, per forge; `left` are the URLs that left Mías (V17). */
+function diff(prev: Stored, lists: MrLists): { baseline: Record<string, Seen>; forges: Stored['forges']; found: Found[]; left: Array<{ url: string; seen: Seen }> } {
   const failed = new Set(lists.errors.map((e) => e.forge))
   const now = new Map<string, MrItem & { list: MrListName }>()
   for (const l of LISTS) for (const m of lists[l]) if (!now.has(m.url)) now.set(m.url, { ...m, list: l })
@@ -47,11 +68,25 @@ function diff(prev: Stored, lists: MrLists): { baseline: Record<string, Seen>; f
   const baseline: Record<string, Seen> = {}
   // A failed forge keeps what it had: a broken refresh never looks like «everything closed».
   for (const [url, s] of Object.entries(prev.baseline)) if (failed.has(s.forge)) baseline[url] = s
-  for (const [url, m] of now)
-    if (!failed.has(m.forge)) baseline[url] = { forge: m.forge, lists: [m.list], title: m.title, ...(m.notes !== undefined && { notes: m.notes }), ...(m.ci && { ci: m.ci }) }
+  for (const [url, m] of now) {
+    if (failed.has(m.forge)) continue
+    const was = prev.baseline[url]
+    const ciSettled = settled(m.ci) ?? was?.ciSettled ?? settled(was?.ci)
+    const branch = m.branch ?? was?.branch
+    baseline[url] = {
+      forge: m.forge,
+      lists: [m.list],
+      title: m.title,
+      project: m.project,
+      ...(m.notes !== undefined && { notes: m.notes }),
+      ...(m.ci && { ci: m.ci }),
+      ...(ciSettled && { ciSettled }),
+      ...(branch && { branch })
+    }
+  }
 
-  const found: Array<Omit<Aviso, 'id' | 'at' | 'read'>> = []
-  const say = (kind: AvisoKind, m: { title: string; forge: ForgeId }, url: string): void => void found.push({ kind, title: m.title, url, forge: m.forge })
+  const found: Found[] = []
+  const say = (kind: AvisoKind, url: string): void => void found.push(mrNotice(kind, baseline[url]!, url))
   // Only a forge that answered cleanly both times may speak; a list cut at its cap, either time, says nothing new or gone.
   const speaks = (f: ForgeId): boolean => forges[f] !== undefined && prev.forges[f] !== undefined
   const cut = (f: ForgeId, l: MrListName): boolean => !!forges[f]?.includes(l) || !!prev.forges[f]?.includes(l)
@@ -61,42 +96,55 @@ function diff(prev: Stored, lists: MrLists): { baseline: Record<string, Seen>; f
     const was = prev.baseline[url]
     const fresh = !cut(m.forge, m.list)
     // A listing shows each MR once (M2): only an MR new to you, or one you merely followed, is a request.
-    if (m.list === 'review' && fresh && (!was || was.lists.every((l) => l === 'following'))) say('review', m, url)
-    if (m.list === 'following' && fresh && !was) say('following', m, url)
-    if (m.list === 'mine' && fresh && !was) say('opened', m, url)
-    if ((m.list === 'mine' || m.list === 'review') && was?.notes !== undefined && m.notes !== undefined && m.notes > was.notes) say('comment', m, url)
-    if (m.list === 'mine' && was?.ci && was.ci !== 'fail' && m.ci === 'fail') say('ci', m, url)
+    if (m.list === 'review' && fresh && (!was || was.lists.every((l) => l === 'following'))) say('review', url)
+    if (m.list === 'following' && fresh && !was) say('following', url)
+    if (m.list === 'mine' && fresh && !was) say('opened', url)
+    if ((m.list === 'mine' || m.list === 'review') && was?.notes !== undefined && m.notes !== undefined && m.notes > was.notes) say('comment', url)
+    const before = was?.ciSettled ?? settled(was?.ci)
+    if (m.list === 'mine' && before === 'pass' && m.ci === 'fail') say('ci', url)
+    if (m.list === 'mine' && before === 'fail' && m.ci === 'pass') say('cipass', url)
   }
-  for (const [url, s] of Object.entries(prev.baseline))
-    if (s.lists.includes('mine') && !now.has(url) && speaks(s.forge) && !cut(s.forge, 'mine')) say('gone', s, url)
-  return { baseline, forges, found }
+  const left = Object.entries(prev.baseline)
+    .filter(([url, s]) => s.lists.includes('mine') && !now.has(url) && speaks(s.forge) && !cut(s.forge, 'mine'))
+    .map(([url, seen]) => ({ url, seen }))
+  return { baseline, forges, found, left }
 }
 
-/** The notices feed: derived from listings and agent states, never from an extra forge request. */
-export function createAvisos(onChange: (items: Aviso[]) => void = () => {}) {
+export interface AvisosDeps {
+  /** W184; without it every departure is «Ya no está abierta». */
+  outcome?: OutcomeOf
+  settings?: () => Promise<NotifySettings>
+}
+
+/** The notices feed: derived from listings and agent states. */
+export function createAvisos(onChange: (items: Aviso[]) => void = () => {}, deps: AvisosDeps = {}) {
+  const settings = deps.settings ?? readNotifySettings
   let state: Promise<Stored> | null = null
   let queue: Promise<unknown> = Promise.resolve()
 
   // One change at a time, each written before the next reads.
-  const change = (fn: (s: Stored) => Stored | void): Promise<Aviso[]> => {
+  const change = <T>(fn: (s: Stored) => T | Promise<T>): Promise<T> => {
     const next = queue.then(async () => {
       state ??= load()
       const s = await state
-      const out = fn(s) ?? s
-      out.items = out.items.slice(0, KEEP)
-      state = Promise.resolve(out)
+      const out = await fn(s)
+      s.items = s.items.slice(0, KEEP)
       await mkdir(atrilHome(), { recursive: true })
-      await writeFile(`${file()}.tmp`, JSON.stringify(out))
+      await writeFile(`${file()}.tmp`, JSON.stringify(s))
       await rename(`${file()}.tmp`, file())
-      onChange(out.items)
-      return out.items
+      onChange(s.items)
+      return out
     })
     queue = next.catch(() => undefined)
     return next
   }
-  const add = (s: Stored, found: Array<Omit<Aviso, 'id' | 'at' | 'read'>>): void => {
+  /** V9: a muted kind is dropped here; what is stored is returned so main can show it. */
+  const add = async (s: Stored, found: Found[]): Promise<Aviso[]> => {
+    const types = (await settings()).types
     const at = Date.now()
-    s.items.unshift(...found.map((n) => ({ ...n, id: randomUUID(), at, read: false })))
+    const added = found.filter((n) => types[typeOf(n.kind)] !== 'mute').map((n) => ({ ...n, id: randomUUID(), at, read: false }))
+    s.items.unshift(...added)
+    return added
   }
 
   return {
@@ -105,17 +153,22 @@ export function createAvisos(onChange: (items: Aviso[]) => void = () => {}) {
       state ??= load()
       return (await state).items
     },
+    /** Returns the notices it added. */
     onListing: (lists: MrLists): Promise<Aviso[]> =>
-      change((s) => {
+      change(async (s) => {
         const d = diff(s, lists)
-        const out = { baseline: d.baseline, forges: d.forges, items: s.items }
-        add(out, d.found)
-        return out
+        s.baseline = d.baseline
+        s.forges = d.forges
+        const ask = d.left.length > 0 && (await settings()).types.merged !== 'mute' ? deps.outcome : undefined
+        const answers: Record<string, 'merged' | 'closed'> = ask ? await ask(d.left.map((l) => ({ url: l.url, forge: l.seen.forge }))).catch(() => ({})) : {}
+        const gone = d.left.map((l) => mrNotice(answers[l.url] ?? 'gone', l.seen, l.url))
+        return add(s, [...d.found, ...gone])
       }),
     onNeedsYou: (ws: { id: string; branch: string }): Promise<Aviso[]> => change((s) => add(s, [{ kind: 'agent', title: ws.branch, workspaceId: ws.id }])),
     markRead: (ids: string[] | 'all'): Promise<Aviso[]> =>
       change((s) => {
         s.items = s.items.map((n) => (ids === 'all' || ids.includes(n.id) ? { ...n, read: true } : n))
+        return s.items
       })
   }
 }

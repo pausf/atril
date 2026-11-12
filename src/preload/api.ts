@@ -428,9 +428,10 @@ export interface MrApi {
   openWork(url: string): Promise<WorkspaceResult>
 }
 
-export type AvisoKind = 'review' | 'comment' | 'ci' | 'following' | 'opened' | 'gone' | 'agent'
+/** `agent` is a notice stored before `ask` and `done` were apart. */
+export type AvisoKind = 'review' | 'comment' | 'ci' | 'cipass' | 'following' | 'opened' | 'gone' | 'merged' | 'closed' | 'agent' | 'ask' | 'done' | 'stopped' | 'idle' | 'radar' | 'qa' | 'quota'
 
-/** One notice; `title` is the MR's title or the agent's branch, never translated. */
+/** One notice; `title` is the MR's title or the work's name (its Jira key, else its branch), never translated. */
 export interface Aviso {
   id: string
   kind: AvisoKind
@@ -441,6 +442,15 @@ export interface Aviso {
   url?: string
   workspaceId?: string
   forge?: ForgeId
+  /** The agent's own words as the hook wrote them (V3). */
+  detail?: string
+  /** An MR's source branch and project (W187). */
+  branch?: string
+  project?: string
+  /** A work's repo, the Mac notification's subtitle (W177). */
+  repo?: string
+  /** What qa, radar, idle and quota notices fill in at the moment of showing (W48). */
+  vars?: Record<string, string | number | null>
 }
 
 /** The 14 notice types of Ajustes → Notificaciones; `merged` also rules `closed` and `gone`, `ask` the legacy `agent`. */

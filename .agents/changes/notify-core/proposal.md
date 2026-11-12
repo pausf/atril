@@ -195,7 +195,7 @@ Tests en rojo primero, caja por caja. Después, la app real con el arnés de `bo
 
 - [x] `NotifySettings` en `api.ts`; `readNotifySettings`/`patchNotifySettings` con limpieza y escritura atómica · Closes: V7, V8
 - [x] `route()` e `inQuiet()` puros · waits on box 1 · Closes: V10, W190
-- [ ] `diff()`: estado de CI asentado, `cipass`, `branch` en la referencia, `outcome` inyectado; los silenciados mueven las referencias · Closes: V1, V16, V17
+- [x] `diff()`: estado de CI asentado, `cipass`, `branch` en la referencia, `outcome` inyectado; los silenciados mueven las referencias · Closes: V1, V16, V17
 - [ ] `src/main/forge/outcome.ts`: una petición por MR que sale de Mías, tope 10, timeout 10 s, id de GitLab por ruta, sin petición si `merged` está en «Nada» · waits on box 3 · Closes: W184
 - [ ] `onAgent` con `ask`/`done` y `detail`; «Nada» no guarda; `expire`; ids devueltos y marcado por clic · waits on box 2 · Closes: V3, V9, V11, V12
 - [ ] Gancho: el recordatorio de inactividad conserva texto, opciones y hora · Closes: W195

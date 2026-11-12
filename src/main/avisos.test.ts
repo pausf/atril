@@ -1,6 +1,6 @@
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { MrItem, MrLists } from '../preload/api'
 import { createAvisos } from './avisos'
 import { cleanTmp, tmp } from './test-helpers'
@@ -41,29 +41,16 @@ const kinds = async (a: ReturnType<typeof createAvisos>) => (await a.list()).map
 describe('avisos', () => {
   it('listings turn into notices', async () => {
     const a = createAvisos()
-    await a.onListing(
-      lists({
-        mine: [mr(GH(1), { ci: 'pass', notes: 2 }), mr(GH(2)), mr(GL(3), { ci: 'running' })],
-        review: [mr(GH(4), { notes: 0 })],
-        following: [mr(GH(5))]
-      })
-    )
-    expect(await a.list()).toEqual([])
-
+    const first = lists({ mine: [mr(GH(1), { notes: 2 }), mr(GH(2))], review: [mr(GH(4), { notes: 0 })], following: [mr(GH(5))] })
+    await a.onListing(first)
     // Nothing changed: nothing to say.
-    await a.onListing(
-      lists({
-        mine: [mr(GH(1), { ci: 'pass', notes: 2 }), mr(GH(2)), mr(GL(3), { ci: 'running' })],
-        review: [mr(GH(4), { notes: 0 })],
-        following: [mr(GH(5))]
-      })
-    )
+    await a.onListing(first)
     expect(await a.list()).toEqual([])
 
     await a.onListing(
       lists({
-        // GH 1: comment and CI failing; GH 2 is gone; GL 3: CI fails (was running); GH 6 opened by you.
-        mine: [mr(GH(1), { ci: 'fail', notes: 3 }), mr(GL(3), { ci: 'fail' }), mr(GH(6))],
+        // GH 1: one more comment; GH 6 opened by you.
+        mine: [mr(GH(1), { notes: 3 }), mr(GH(2)), mr(GH(6))],
         // GH 4: one more comment; GH 7: review requested.
         review: [mr(GH(4), { notes: 1 }), mr(GH(7))],
         // GH 8: new in what you follow; GH 5 vanishing from Sigo is no notice.
@@ -71,31 +58,69 @@ describe('avisos', () => {
       })
     )
     const got = await a.list()
-    expect(got.map((n) => [n.kind, n.title, n.url]).sort()).toEqual(
-      [
-        ['comment', 'Título 1', GH(1)],
-        ['ci', 'Título 1', GH(1)],
-        ['ci', 'Título 3', GL(3)],
-        ['comment', 'Título 4', GH(4)],
-        ['review', 'Título 7', GH(7)],
-        ['following', 'Título 8', GH(8)],
-        ['opened', 'Título 6', GH(6)],
-        ['gone', 'Título 2', GH(2)]
-      ].sort()
-    )
+    const of = (kind: string): string[][] => got.filter((n) => n.kind === kind).map((n) => [n.title, n.url!]).sort()
+    expect(of('review')).toEqual([['Título 7', GH(7)]])
+    expect(of('comment')).toEqual([['Título 1', GH(1)], ['Título 4', GH(4)]])
+    expect(of('following')).toEqual([['Título 8', GH(8)]])
+    expect(of('opened')).toEqual([['Título 6', GH(6)]])
+    expect(got).toHaveLength(5)
     expect(got.every((n) => !n.read && typeof n.id === 'string' && n.at > 0)).toBe(true)
     expect(new Set(got.map((n) => n.id)).size).toBe(got.length)
 
-    // CI-known rule: a row whose CI was unknown (not fetched) gives no «La CI falla».
-    const b = createAvisos()
-    await b.markRead('all')
-    const before = (await b.list()).length
-    await b.onListing(lists({ mine: [mr(GH(1), { ci: 'fail', notes: 3 }), mr(GL(3), { ci: 'fail' }), mr(GH(6)), mr(GH(9))], review: [mr(GH(4), { notes: 1 }), mr(GH(7))], following: [mr(GH(8))] }))
-    await b.onListing(lists({ mine: [mr(GH(1), { ci: 'fail', notes: 3 }), mr(GL(3), { ci: 'fail' }), mr(GH(6), { ci: 'fail' }), mr(GH(9))], review: [mr(GH(4), { notes: 1 }), mr(GH(7))], following: [mr(GH(8))] }))
-    expect((await b.list()).slice(0, -before).map((n) => [n.kind, n.title])).toEqual([['opened', 'Título 9']])
-
     process.env['ATRIL_HOME'] = tmp()
     await failedAndCapped()
+  })
+
+  it('ci fail and pass count the last settled state across running', async () => {
+    const a = createAvisos()
+    const ci = async (state: Array<MrItem['ci']>): Promise<void> => {
+      for (const c of state) await a.onListing(lists({ mine: [mr(GH(1), c ? { ci: c } : {})], review: [mr(GH(2), { ci: c ?? 'none' })] }))
+    }
+    const kinds = async (): Promise<string[]> => (await a.list()).map((n) => n.kind).reverse()
+
+    // Unknown, running or none before the first settled state: nothing.
+    await ci([undefined, 'running', 'none', 'fail'])
+    expect(await kinds()).toEqual([])
+    // fail → running → pass: one «vuelve a pasar»; pass → running → fail: one «falla».
+    await ci(['running', 'pass', 'running', 'running', 'fail'])
+    expect(await kinds()).toEqual(['cipass', 'ci'])
+    // Staying failed, or only running in between, says nothing more.
+    await ci(['fail', 'running', 'fail', 'none'])
+    expect(await kinds()).toEqual(['cipass', 'ci'])
+    await ci(['pass'])
+    expect(await kinds()).toEqual(['cipass', 'ci', 'cipass'])
+    // Only Mías speaks: GH 2 in Me toca revisar went through the same states silently.
+    expect((await a.list()).every((n) => n.url === GH(1))).toBe(true)
+  })
+
+  it('an MR leaving Mías is merged, closed or gone', async () => {
+    const asked: string[][] = []
+    const outcome = vi.fn(async (gone: Array<{ url: string; forge: string }>) => {
+      asked.push(gone.map((g) => g.url))
+      return { [GH(1)]: 'merged' as const, [GL(2)]: 'closed' as const }
+    })
+    const a = createAvisos(undefined, { outcome })
+    await a.onListing(lists({ mine: [mr(GH(1), { branch: 'feat/uno' }), mr(GL(2)), mr(GH(3))], review: [mr(GH(4))] }))
+    expect(outcome).not.toHaveBeenCalled()
+    await a.onListing(lists({ review: [mr(GH(4))] }))
+    expect(asked).toEqual([[GH(1), GL(2), GH(3)]])
+    expect((await a.list()).map((n) => [n.kind, n.title, n.url, n.branch]).sort()).toEqual(
+      [
+        ['merged', 'Título 1', GH(1), 'feat/uno'],
+        ['closed', 'Título 2', GL(2), undefined],
+        ['gone', 'Título 3', GH(3), undefined]
+      ].sort()
+    )
+    // Leaving Me toca revisar is not a departure from Mías: nobody is asked.
+    await a.onListing(lists({}))
+    expect(asked).toHaveLength(1)
+
+    // A failing outcome is «Ya no está abierta», never a lost listing.
+    process.env['ATRIL_HOME'] = tmp()
+    const broken = createAvisos(undefined, { outcome: async () => Promise.reject(new Error('boom')) })
+    await broken.onListing(lists({ mine: [mr(GH(9))] }))
+    await broken.onListing(lists({}))
+    expect((await broken.list()).map((n) => n.kind)).toEqual(['gone'])
   })
 })
 
