@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 import type { UsageResult } from '../preload/api'
 import type { Runner } from './run'
-import { createUsage, readUsage } from './usage'
+import { createQuotaWatch, createUsage, readUsage } from './usage'
 
 // Shape of the real /api/oauth/usage answer, as the statusline reads it.
 const FIXTURE = {
@@ -115,5 +115,24 @@ describe('usage', () => {
     expect(emitted.at(-1)).not.toHaveProperty('stale')
     usage.stop()
     vi.useRealTimers()
+  })
+
+  it('the quota crossing 80 percent is one notice', () => {
+    const watch = createQuotaWatch()
+    const read = (five: number, seven: number, fiveAt = 'A', sevenAt = 'S'): UsageResult => ({ fiveHour: { pct: five, resetsAt: fiveAt }, sevenDay: { pct: seven, resetsAt: sevenAt } })
+    // The first reading only sets the baseline, even at 90 %.
+    expect(watch(read(90, 50))).toEqual([])
+    expect(watch(read(70, 79))).toEqual([])
+    expect(watch(read(70, 80))).toEqual([{ window: 'sevenDay', pct: 80, resetsAt: 'S' }])
+    // Staying above, dipping and coming back within the same window: no second notice.
+    expect(watch(read(70, 85))).toEqual([])
+    expect(watch(read(70, 75))).toEqual([])
+    expect(watch(read(81, 82))).toEqual([{ window: 'fiveHour', pct: 81, resetsAt: 'A' }])
+    // An error or stale numbers say nothing and leave the baseline as it was.
+    expect(watch({ error: 'x', detail: 'y', fix: 'retry' })).toEqual([])
+    expect(watch({ ...read(10, 10, 'B'), stale: { since: 1 } })).toEqual([])
+    // A new five-hour window starts over: below then above is one more.
+    expect(watch(read(20, 82, 'B'))).toEqual([])
+    expect(watch(read(80, 82, 'B'))).toEqual([{ window: 'fiveHour', pct: 80, resetsAt: 'B' }])
   })
 })

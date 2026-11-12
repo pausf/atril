@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { WorkspaceView } from '../preload/api'
 import { readCriteria } from './qa-criteria'
 import { launchQa } from './qa'
-import { qaBug, qaReport, qaRetest } from './qa-report'
+import { createQaDone, qaBug, qaReport, qaRetest } from './qa-report'
 import type { Runner } from './run'
 import { cleanTmp, killTmux, makeRegisteredRepo, tmp, tmuxOut, tmuxSock } from './test-helpers'
 
@@ -137,6 +137,47 @@ describe('the report', () => {
     const r = await qaReport('qrep0001', none)
     expect(r!.at).toBeGreaterThan(0)
     expect(r!.branch).toBe('feat/qrep0001')
+  })
+
+  it('a finished QA run is one notice', async () => {
+    const path = web()
+    seed(rec('qrep0001', path))
+    const done = vi.fn()
+    const watch = createQaDone(done)
+    const report = (statuses: Record<string, string>, mtime: number): void => {
+      write({ criteria: Object.entries(statuses).map(([id, status]) => ({ id, status, note: '', steps: [] })) })
+      utimesSync(join(shots(), 'report.json'), mtime / 1000, mtime / 1000)
+    }
+    const launched = Date.now()
+    // A report left from before the launch, even complete, does not count.
+    report({ W1: 'pass', W2: 'pass', W3: 'fail' }, launched - 60_000)
+    watch.arm('qrep0001', launched)
+    await watch.check()
+    // One criterion untested or missing: not yet.
+    report({ W1: 'pass', W2: 'untested', W3: 'fail' }, launched + 1000)
+    await watch.check()
+    report({ W1: 'pass', W3: 'fail' }, launched + 2000)
+    await watch.check()
+    expect(done).not.toHaveBeenCalled()
+    report({ W1: 'pass', W2: 'pass', W3: 'fail' }, launched + 3000)
+    await watch.check()
+    expect(done.mock.calls).toEqual([['qrep0001', 2, 1]])
+    // A later change in the same run adds none; the next launch arms it again.
+    report({ W1: 'fail', W2: 'pass', W3: 'fail' }, launched + 4000)
+    await watch.check()
+    expect(done).toHaveBeenCalledTimes(1)
+    watch.arm('qrep0001', launched + 5000)
+    report({ W1: 'pass', W2: 'pass', W3: 'pass' }, launched + 6000)
+    await watch.check()
+    expect(done.mock.calls.at(-1)).toEqual(['qrep0001', 3, 0])
+
+    // A change with no criteria adds none.
+    const bare = web('# add-x\n\n## Verification criteria\n- nothing with an id\n')
+    seed(rec('qrep0001', bare))
+    watch.arm('qrep0001', launched + 7000)
+    report({ W1: 'pass' }, launched + 8000)
+    await watch.check()
+    expect(done).toHaveBeenCalledTimes(2)
   })
 })
 

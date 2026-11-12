@@ -21,3 +21,23 @@ export async function radar(run: Runner): Promise<Record<string, RadarHit[]>> {
   })
   return out
 }
+
+export type Clash = { a: string; b: string; file: string; more: number }
+
+/** W182: per pair of works, the files they newly share; the first answer only sets the baseline. */
+export function createClashWatch(): (answer: Record<string, RadarHit[]>) => Clash[] {
+  let prev: Map<string, Set<string>> | undefined
+  return (answer) => {
+    const now = new Map<string, Set<string>>()
+    for (const [a, hits] of Object.entries(answer)) for (const h of hits) if (a < h.id) now.set(`${a}\n${h.id}`, new Set(h.files))
+    const out: Clash[] = []
+    if (prev)
+      for (const [pair, files] of [...now].sort(([x], [y]) => x.localeCompare(y))) {
+        const fresh = [...files].filter((f) => !prev!.get(pair)?.has(f)).sort()
+        const [a, b] = pair.split('\n') as [string, string]
+        if (fresh.length) out.push({ a, b, file: fresh[0]!, more: fresh.length - 1 })
+      }
+    prev = now
+    return out
+  }
+}

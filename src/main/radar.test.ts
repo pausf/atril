@@ -4,7 +4,8 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { run, type Runner } from './run'
 import { cleanTmp, git, tmp } from './test-helpers'
 import { clock, closeQuiet, openWatchers } from './flow/quiet'
-import { radar } from './radar'
+import { createClashWatch, radar } from './radar'
+import type { RadarHit } from '../preload/api'
 
 let home: string
 const realNow = clock.now
@@ -130,4 +131,25 @@ describe('the radar', () => {
     await radar(s.run)
     expect(s.spawns()).toBeGreaterThan(0)
   }, 90_000)
+
+  it('a new shared file is one notice per pair', () => {
+    const watch = createClashWatch()
+    const hit = (id: string, branch: string, files: string[]): RadarHit => ({ id, branch, files })
+    // The first answer only sets the baseline.
+    expect(watch({ a: [hit('b', 'feat/b', ['x.ts'])], b: [hit('a', 'feat/a', ['x.ts'])], c: [] })).toEqual([])
+    // A new file between a and b; a new pair a–c with two files.
+    expect(
+      watch({
+        a: [hit('b', 'feat/b', ['x.ts', 'y.ts']), hit('c', 'feat/c', ['m.ts', 'k.ts'])],
+        b: [hit('a', 'feat/a', ['x.ts', 'y.ts'])],
+        c: [hit('a', 'feat/a', ['k.ts', 'm.ts'])]
+      })
+    ).toEqual([
+      { a: 'a', b: 'b', file: 'y.ts', more: 0 },
+      { a: 'a', b: 'c', file: 'k.ts', more: 1 }
+    ])
+    // Still shared: never again; gone and back: new again.
+    expect(watch({ a: [hit('b', 'feat/b', ['x.ts', 'y.ts'])], b: [hit('a', 'feat/a', ['x.ts', 'y.ts'])], c: [] })).toEqual([])
+    expect(watch({ a: [hit('c', 'feat/c', ['k.ts'])], c: [hit('a', 'feat/a', ['k.ts'])], b: [] })).toEqual([{ a: 'a', b: 'c', file: 'k.ts', more: 0 }])
+  })
 })

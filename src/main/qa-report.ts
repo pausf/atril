@@ -116,3 +116,27 @@ export async function qaBug(id: string, req: QaBugRequest, deps: BugDeps): Promi
   if (!ws) return { error: replyGone() }
   return (await pasteText(ws.paneId, `${title.trim()}\n\n${body}`, deps.run)) ? { ok: true } : { error: replyGone() }
 }
+
+/** W181: armed by each launch; the first report modified after it with every criterion `pass` or `fail` is one call. */
+export function createQaDone(done: (id: string, pass: number, fail: number) => void) {
+  const armed = new Map<string, number>()
+  return {
+    arm: (id: string, at: number = Date.now()): void => void armed.set(id, at),
+    armed: (): number => armed.size,
+    async check(): Promise<void> {
+      for (const [id, at] of armed) {
+        const ws = await recordOf(id)
+        if (!ws) {
+          armed.delete(id)
+          continue
+        }
+        const { criteria } = await readCriteria(ws.path)
+        if (criteria.length === 0) continue
+        const { entries, at: mtime } = await readEntries(id, new Set(criteria.map((c) => c.id)))
+        if (mtime <= at || entries.length < criteria.length || entries.some((e) => e.status === 'untested')) continue
+        armed.delete(id)
+        done(id, entries.filter((e) => e.status === 'pass').length, entries.filter((e) => e.status === 'fail').length)
+      }
+    }
+  }
+}

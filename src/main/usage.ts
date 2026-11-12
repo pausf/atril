@@ -102,3 +102,27 @@ export function createUsage(deps: { run: Runner; emit: (u: UsageResult) => void;
     last: () => last
   }
 }
+
+export type QuotaCrossing = { window: 'fiveHour' | 'sevenDay'; pct: number; resetsAt: string | null }
+
+/** W183: a window reaching 80 % after a reading below it in the same window; once per window and `resetsAt`. */
+export function createQuotaWatch(): (u: UsageResult) => QuotaCrossing[] {
+  let prev: { fiveHour: UsageWindow; sevenDay: UsageWindow } | undefined
+  const fired = new Set<string>()
+  return (u) => {
+    // An error, or the last good numbers repeated, is no reading.
+    if ('error' in u || u.stale) return []
+    const out: QuotaCrossing[] = []
+    for (const window of ['fiveHour', 'sevenDay'] as const) {
+      const w = u[window]
+      const was = prev?.[window]
+      const key = `${window}\n${w.resetsAt}`
+      if (w.pct >= 80 && was && was.resetsAt === w.resetsAt && was.pct < 80 && !fired.has(key)) {
+        fired.add(key)
+        out.push({ window, pct: w.pct, resetsAt: w.resetsAt })
+      }
+    }
+    prev = { fiveHour: u.fiveHour, sevenDay: u.sevenDay }
+    return out
+  }
+}

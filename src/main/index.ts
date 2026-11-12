@@ -5,10 +5,10 @@ import { createSubagents } from './subagents'
 import { createCost } from './cost'
 import { readHistory } from './history'
 import { launchQa, qaStatus, stopQa } from './qa'
-import { qaBug, qaReport, qaRetest } from './qa-report'
+import { createQaDone, qaBug, qaReport, qaRetest } from './qa-report'
 import { runFix } from './qa-fix'
 import { addManual, chooseTarget, removeManual } from './qa-targets'
-import { createAvisos, readNotifySettings } from './avisos'
+import { createAvisos, readNotifySettings, workName } from './avisos'
 import { agentState, answerAgent, createStatus, pauseAgent, replyGone, replyPlaceholder, replyToAgent, resumeAgent, quickReplies } from './status'
 import { getLang, setLang, t } from './lang'
 import { resolveLang } from '../preload/i18n'
@@ -26,7 +26,7 @@ import { createThreads } from './forge/threads'
 import { createQaPublish } from './qa-publish'
 import { boxDiff, boxRanges, forgetPlans } from './flow/boxes'
 import { closeQuiet } from './flow/quiet'
-import { radar } from './radar'
+import { createClashWatch, radar } from './radar'
 import { changeFolders } from './flow/stage'
 import { nextUp } from './nextup'
 import { writeFile } from 'node:fs/promises'
@@ -47,8 +47,8 @@ import { dropIdea, editIdea, ideaToJira, librettoCounts, librettoState, queueIde
 import * as pty from './pty'
 import { loginPath } from './login-path'
 import { run } from './run'
-import { createUsage } from './usage'
-import { listWorkspaces, listWorkspacesOrNone, openWorktree, removeWorkspace, flowWorkspace, forgetWorkspace, reopenWorkspace, terminalAt } from './workspaces'
+import { createQuotaWatch, createUsage } from './usage'
+import { listWorkspaces, listWorkspacesOrNone, readRecordsOrNone, openWorktree, removeWorkspace, flowWorkspace, forgetWorkspace, reopenWorkspace, terminalAt } from './workspaces'
 import { createFlowHub } from './flow/watch'
 import { installMenu } from './menu'
 import { createNotifyGate } from './focus'
@@ -536,7 +536,22 @@ app.whenReady().then(async () => {
   })
   // W84: only a press reaches launch; nothing here starts a QA on its own.
   ipcMain.handle('atril:qa:status', (_e, id: unknown) => qaStatus(String(id), run))
-  ipcMain.handle('atril:qa:launch', (_e, id: unknown, key: unknown) => launchQa(String(id), run, undefined, typeof key === 'string' ? key : undefined))
+  // W181: a launch arms one «QA terminada»; the report is looked at only while something is armed.
+  const qaDone = createQaDone((id, p, f) => {
+    void readRecordsOrNone().then((recs) => {
+      const rec = recs.find((r) => r.id === id)
+      if (rec) void avisos.onAgent(rec, 'qa', undefined, { p, f }).catch(() => undefined)
+    })
+  })
+  setInterval(() => {
+    if (qaDone.armed()) void qaDone.check().catch(() => undefined)
+  }, 3000)
+  ipcMain.handle('atril:qa:launch', async (_e, id: unknown, key: unknown) => {
+    const at = Date.now()
+    const r = await launchQa(String(id), run, undefined, typeof key === 'string' ? key : undefined)
+    if ('ok' in r) qaDone.arm(String(id), at)
+    return r
+  })
   ipcMain.handle('atril:qa:stop', (_e, id: unknown) => stopQa(String(id), run))
   ipcMain.handle('atril:qa:report', (_e, id: unknown) => qaReport(String(id), run))
   ipcMain.handle('atril:qa:choose', (_e, id: unknown, key: unknown) => chooseTarget(String(id), key))
@@ -743,9 +758,13 @@ app.whenReady().then(async () => {
     await pushNext()
     return lastNext
   })
+  const quota = createQuotaWatch()
   const usage = createUsage({
     run,
-    emit: (u) => BrowserWindow.getAllWindows().forEach((w) => w.webContents.send('atril:usage:changed', u))
+    emit: (u) => {
+      BrowserWindow.getAllWindows().forEach((w) => w.webContents.send('atril:usage:changed', u))
+      for (const c of quota(u)) void avisos.onQuota({ window: c.window, pct: c.pct, resetsAt: c.resetsAt }).catch(() => undefined)
+    }
   })
   // ponytail: dev-only, a snapshot never reads the person's real quota (each launch was a call to api.anthropic.com).
   const fakeUsage = { fiveHour: { pct: 34, resetsAt: null }, sevenDay: { pct: 41, resetsAt: '2026-11-12T11:00:00Z' } }
@@ -771,7 +790,21 @@ app.whenReady().then(async () => {
   })
   ipcMain.handle('atril:cost:get', (_e, id: unknown) => cost.get(String(id)))
   cost.start()
-  ipcMain.handle('atril:radar:get', () => radar(run))
+  // W182: the window asks every 10 s; a file two works newly share is one notice per pair.
+  const clashes = createClashWatch()
+  ipcMain.handle('atril:radar:get', async () => {
+    const answer = await radar(run)
+    const news = clashes(answer)
+    if (news.length) {
+      const recs = await readRecordsOrNone()
+      for (const c of news) {
+        const a = recs.find((r) => r.id === c.a)
+        const b = recs.find((r) => r.id === c.b)
+        if (a && b) void avisos.onAgent(a, 'radar', undefined, { b: workName(b), file: c.file, more: c.more }).catch(() => undefined)
+      }
+    }
+    return answer
+  })
   ipcMain.handle('atril:status:list', () => status.states())
   ipcMain.handle('atril:status:quickReplies', async (_e, id: unknown) => {
     const ws = (await listWorkspaces(run)).find((w) => w.id === id)
