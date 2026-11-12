@@ -478,7 +478,18 @@ export interface NotifyPatch {
 
 /** W194: what a Mac notification asks the window to open. */
 export type NotifyTarget = { kind: 'mr'; url: string } | { kind: 'avisos' } | { kind: 'fixCi'; url: string } | { kind: 'close'; id: string }
+export type NotifyPermission = 'allowed' | 'blocked' | 'unknown'
 export interface NotifyApi {
+  /** V7. */
+  get(): Promise<NotifySettings>
+  /** V8: the stored settings after merging, or why they could not be saved. */
+  set(patch: NotifyPatch): Promise<NotifySettings | { error: string; detail: string }>
+  /** W193: that type's example on the Mac, past every rule. */
+  test(type: NotifyType): Promise<'shown' | 'blocked'>
+  /** W192. */
+  permission(): Promise<NotifyPermission>
+  /** W192: Ajustes del Sistema → Notificaciones. */
+  openSystem(): Promise<void>
   /** Returns the unsubscribe function. */
   onOpen(cb: (target: NotifyTarget) => void): () => void
 }

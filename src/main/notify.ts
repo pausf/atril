@@ -1,4 +1,4 @@
-import type { Aviso, NotifySettings } from '../preload/api'
+import type { Aviso, NotifyPermission, NotifySettings, NotifyType } from '../preload/api'
 import { localiseActivity } from '../preload/activity-i18n'
 import { route, typeOf } from './avisos'
 import { getLang, t } from './lang'
@@ -109,6 +109,19 @@ export function clickTarget(n: Aviso): NotifyTarget | { external: string } | nul
   if (n.url) return { kind: 'mr', url: n.url }
   if (n.workspaceId) return { kind: 'workspace', id: n.workspaceId }
   return null
+}
+
+/** W192: whether macOS lets Atril show notifications, read from `defaults export com.apple.ncprefs -`. */
+export function parseNcprefs(xml: string, bundleId: string): NotifyPermission {
+  const esc = bundleId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const at = new RegExp(`<key>bundle-id</key>\\s*<string>${esc}</string>`).exec(xml)
+  if (!at || !xml.includes('<key>apps</key>')) return 'unknown'
+  // The rest of this app's entry: up to the next app's bundle-id.
+  const rest = xml.slice(at.index + at[0].length)
+  const next = rest.indexOf('<key>bundle-id</key>')
+  const flags = /<key>flags<\/key>\s*<integer>(\d+)<\/integer>/.exec(next < 0 ? rest : rest.slice(0, next))
+  if (!flags) return 'unknown'
+  return Number(flags[1]) & 0x2000000 ? 'allowed' : 'blocked'
 }
 
 export interface NotifierDeps {
@@ -253,7 +266,48 @@ export function createNotifier(d: NotifierDeps) {
       for (const a of added) if (await isMac(a)) mac.push(a)
       if (mac.length) await push(mac)
     },
+    /** W193: the type's example, past every rule, stored nowhere; `blocked` when macOS will not show it. */
+    async test(type: NotifyType, permission: () => Promise<NotifyPermission>): Promise<'shown' | 'blocked'> {
+      display(present(example(type), { closeWork: type === 'merged' }), [], null)
+      return (await permission()) === 'blocked' ? 'blocked' : 'shown'
+    },
     held: (): number => shown.length,
     stop: (): void => clearTimeout(timer)
+  }
+}
+
+/** S42's examples, as stored notices that never reach the feed. */
+export function example(type: NotifyType): Aviso {
+  const base = { id: 'test', at: 0, read: false, repo: 'shop-web' }
+  const mr = (kind: Aviso['kind'], title: string): Aviso => ({ ...base, kind, title, url: 'https://example.com' })
+  switch (type) {
+    case 'ask':
+      return { ...base, kind: 'ask', title: 'WEB-3535', detail: `Te pregunta: ${t('¿Uso la tabla del BOE o la de la API?')}` }
+    case 'done':
+      return { ...base, kind: 'done', title: 'SHOP-2630', detail: `Claude dice: ${t('Plan listo, 9 tareas.')}` }
+    case 'stopped':
+      return { ...base, kind: 'stopped', title: 'OPS-4131' }
+    case 'idle':
+      return { ...base, kind: 'idle', title: 'WEB-3535', vars: { m: 15 } }
+    case 'radar':
+      return { ...base, kind: 'radar', title: 'WEB-3535', vars: { b: 'PF-4870', file: 'src/Delivery/PromiseDate.php', more: 0 } }
+    case 'qa':
+      return { ...base, kind: 'qa', title: 'WEB-3535', vars: { p: 5, f: 1 } }
+    case 'quota':
+      return { ...base, kind: 'quota', title: '', vars: { window: 'fiveHour', pct: 82, resetsAt: new Date(new Date().setHours(14, 0, 0, 0)).toISOString() } }
+    case 'review':
+      return mr('review', t('Filtros persistentes en el listado del vendedor'))
+    case 'comment':
+      return mr('comment', t('Festivos por provincia en la fecha prometida'))
+    case 'ci':
+      return mr('ci', t('Festivos por provincia en la fecha prometida'))
+    case 'cipass':
+      return mr('cipass', t('Festivos por provincia en la fecha prometida'))
+    case 'merged':
+      return mr('merged', t('Migrar el cron de stock a colas'))
+    case 'following':
+      return mr('following', t('Quitar el flag antiguo del carrusel'))
+    case 'opened':
+      return mr('opened', t('Índices para el listado de ofertas'))
   }
 }

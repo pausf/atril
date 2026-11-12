@@ -55,6 +55,11 @@ const api: AtrilApi = {
     }
   },
   notify: {
+    get: () => ipcRenderer.invoke('atril:notify:get'),
+    set: (patch) => ipcRenderer.invoke('atril:notify:set', patch),
+    test: (type) => ipcRenderer.invoke('atril:notify:test', type),
+    permission: () => ipcRenderer.invoke('atril:notify:permission'),
+    openSystem: () => ipcRenderer.invoke('atril:notify:openSystem'),
     onOpen: (cb) => {
       const h = (_e: Electron.IpcRendererEvent, target: NotifyTarget): void => cb(target)
       ipcRenderer.on('atril:notify:open', h)

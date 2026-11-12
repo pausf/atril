@@ -1,5 +1,5 @@
 import { vi } from 'vitest'
-import type { ActivityLine, SubagentEntry, SubagentLine, AddRepoResult, Aviso, FileChange, FlowBoxes, FlowDocs, ForgeId, ForgeStatus, Mode, MrDraft, MrDrafts, MrDraftsResult, MrFixCiResult, MrLists, MrReply, MrScoreState, MrThreads, MrWork, AgentState, StateProblem, QaBugResult, QaLaunchResult, QaManualRequest, QaMr, QaPublishResult, QaReport, QaResult, QaStatus, QaTargets, AtrilApi, RemoveResult, QuickAnswer, QuickReplies, RadarHit, FlowStage, HistoryEntry, IdeaJiraResult, IdeaResult, LibrettoCounts, LibrettoState, JiraIssue, JiraSettingsStatus, MenuAction, NextItem, StartProposalResult, StartRequest, StartResult, RepoResult, RepoView, ToolReport, UiState, WorkCost, WorkspaceResult, WorkspaceView } from '../preload/api'
+import type { ActivityLine, SubagentEntry, SubagentLine, AddRepoResult, Aviso, FileChange, FlowBoxes, FlowDocs, ForgeId, ForgeStatus, Mode, MrDraft, MrDrafts, MrDraftsResult, MrFixCiResult, MrLists, MrReply, MrScoreState, MrThreads, MrWork, NotifySettings, AgentState, StateProblem, QaBugResult, QaLaunchResult, QaManualRequest, QaMr, QaPublishResult, QaReport, QaResult, QaStatus, QaTargets, AtrilApi, RemoveResult, QuickAnswer, QuickReplies, RadarHit, FlowStage, HistoryEntry, IdeaJiraResult, IdeaResult, LibrettoCounts, LibrettoState, JiraIssue, JiraSettingsStatus, MenuAction, NextItem, StartProposalResult, StartRequest, StartResult, RepoResult, RepoView, ToolReport, UiState, WorkCost, WorkspaceResult, WorkspaceView } from '../preload/api'
 
 export const workspace = (id: string, branch: string, alive = true): WorkspaceView => ({
   id,
@@ -148,6 +148,13 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
   }
   const avisoListeners = new Set<(items: Aviso[]) => void>()
   let avisos = o.avisos ?? []
+  const notifySettings: NotifySettings = {
+    types: { ask: 'mac', done: 'mac', stopped: 'mac', idle: 'list', radar: 'list', qa: 'mac', review: 'list', comment: 'list', ci: 'mac', cipass: 'list', merged: 'list', following: 'list', opened: 'list', quota: 'mac' },
+    idleMinutes: 15,
+    focus: true,
+    group: true,
+    quiet: { on: false, from: '19:00', to: '09:00', days: ['sat', 'sun'] }
+  }
   // The mock is a Spanish Mac: Sistema resolves to Spanish, as main would there.
   const withLang = (): UiState => ({ ...stored, folded: { ...stored.folded }, lang: stored.language === 'en' ? 'en' : 'es' })
   const ui = {
@@ -268,6 +275,11 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
       })
     },
     notify: {
+      get: vi.fn(async () => notifySettings),
+      set: vi.fn(async () => notifySettings),
+      test: vi.fn(async () => 'shown' as const),
+      permission: vi.fn(async () => 'unknown' as const),
+      openSystem: vi.fn(async () => undefined),
       onOpen: () => () => undefined
     },
     avisos: {

@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Aviso, NotifySettings } from '../preload/api'
 import { NOTIFY_DEFAULTS } from './avisos'
 import { setLang } from './lang'
-import { createNotifier, present, type NoticeLike, type NotifierDeps, type NotifyTarget, type Shown } from './notify'
+import { createNotifier, parseNcprefs, present, type NoticeLike, type NotifierDeps, type NotifyTarget, type Shown } from './notify'
 
 const settings = (o: Partial<NotifySettings> = {}): NotifySettings => ({
   types: { ...NOTIFY_DEFAULTS, review: 'mac', cipass: 'mac', merged: 'mac', following: 'mac', opened: 'mac', comment: 'mac', idle: 'mac', radar: 'mac' },
@@ -235,5 +235,45 @@ describe('notify grouping', () => {
     await ntf.notify([aviso('ask', { title: 'Y' }), aviso('ask', { title: 'Z' })])
     expect(titles().slice(-2)).toEqual(['Y te pregunta', 'Z te pregunta'])
     ntf.stop()
+  })
+})
+
+describe('notify permission and test', () => {
+  it('permission reads macOS notification flags', () => {
+    const plist = (flags: number, id = 'dev.atril.app'): string =>
+      `<?xml version="1.0"?><plist><dict><key>apps</key><array>` +
+      `<dict><key>bundle-id</key><string>com.other.app</string><key>flags</key><integer>${0x2000000}</integer></dict>` +
+      `<dict><key>auth</key><integer>7</integer><key>bundle-id</key><string>${id}</string><key>content_visibility</key><integer>0</integer><key>flags</key><integer>${flags}</integer></dict>` +
+      `</array></dict></plist>`
+    expect(parseNcprefs(plist(0x2000000 | 0x6), 'dev.atril.app')).toBe('allowed')
+    expect(parseNcprefs(plist(0x6), 'dev.atril.app')).toBe('blocked')
+    // Another app's flags never count for Atril; no entry, no flags or no XML is «no lo sé».
+    expect(parseNcprefs(plist(0x6, 'com.someone.else'), 'dev.atril.app')).toBe('unknown')
+    expect(parseNcprefs(plist(0x6).replace(/<key>flags<\/key><integer>6<\/integer>/, ''), 'dev.atril.app')).toBe('unknown')
+    expect(parseNcprefs('', 'dev.atril.app')).toBe('unknown')
+    expect(parseNcprefs('not xml at all', 'dev.atril.app')).toBe('unknown')
+    // The bundle id is literal text, not a pattern.
+    expect(parseNcprefs(plist(0x6, 'devXatrilXapp'), 'dev.atril.app')).toBe('unknown')
+  })
+
+  it('a test notice skips every rule and the feed', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'Date'] })
+    const muted = settings({ group: true, quiet: { on: true, from: '00:00', to: '23:59', days: ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] }, types: { ...NOTIFY_DEFAULTS, ask: 'mute', ci: 'mute' } })
+    const { notifier: ntf, calls } = notifier({ s: muted, context: () => ({ focusOn: true, windowFocused: true }) })
+    // Muted, quiet, in focus and right after another: still shown at once, every time.
+    expect(await ntf.test('ask', async () => 'allowed')).toBe('shown')
+    expect(await ntf.test('ci', async () => 'unknown')).toBe('shown')
+    expect(Fake.made.map((f) => [f.opts.title, f.opts.body])).toEqual([
+      ['WEB-3535 te pregunta', '¿Uso la tabla del BOE o la de la API?'],
+      ['La CI falla en tu MR', 'Festivos por provincia en la fecha prometida']
+    ])
+    // Its click marks nothing read: it is in no feed.
+    Fake.made[0]!.fire('click')
+    expect(calls.read).toEqual([])
+    // Blocked by macOS: it says so.
+    expect(await ntf.test('quota', async () => 'blocked')).toBe('blocked')
+    // Every type has an example.
+    for (const type of Object.keys(NOTIFY_DEFAULTS) as Array<keyof typeof NOTIFY_DEFAULTS>) expect(await ntf.test(type, async () => 'allowed')).toBe('shown')
+    expect(Fake.made.every((f) => f.opts.title && f.opts.title !== 'Atril')).toBe(true)
   })
 })

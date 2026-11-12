@@ -8,7 +8,7 @@ import { launchQa, qaStatus, stopQa } from './qa'
 import { createQaDone, qaBug, qaReport, qaRetest } from './qa-report'
 import { runFix } from './qa-fix'
 import { addManual, chooseTarget, removeManual } from './qa-targets'
-import { createAvisos, readNotifySettings, workName } from './avisos'
+import { createAvisos, NOTIFY_DEFAULTS, patchNotifySettings, readNotifySettings, workName } from './avisos'
 import { agentState, answerAgent, createStatus, optionCount, pauseAgent, replyFromNotice, replyToAgent, resumeAgent, quickReplies } from './status'
 import { getLang, setLang, t } from './lang'
 import { resolveLang } from '../preload/i18n'
@@ -35,7 +35,7 @@ import { jiraSettings } from './credentials/jira'
 import { searchBoards } from './credentials/boards'
 import type { JiraCreds } from './credentials/check'
 import { doctor, inTerminal, installTool } from './doctor'
-import type { Aviso, CreateRepoRequest, Mode, MrDrafts, MrDraftsResult, MrItem, MrLists, MrScoreState, MrThreads, SubagentEntry, SubagentLine, UiState } from '../preload/api'
+import type { Aviso, NotifyPatch, NotifyPermission, NotifyType, CreateRepoRequest, Mode, MrDrafts, MrDraftsResult, MrItem, MrLists, MrScoreState, MrThreads, SubagentEntry, SubagentLine, UiState } from '../preload/api'
 import { readInbox } from './jira/inbox'
 import { inboxGroups } from './jira/board'
 import { proposeStart, start } from './jira/start'
@@ -51,7 +51,7 @@ import { createQuotaWatch, createUsage } from './usage'
 import { listWorkspaces, listWorkspacesOrNone, readRecordsOrNone, openWorktree, removeWorkspace, flowWorkspace, forgetWorkspace, reopenWorkspace, terminalAt } from './workspaces'
 import { createFlowHub } from './flow/watch'
 import { installMenu } from './menu'
-import { createNotifier } from './notify'
+import { createNotifier, parseNcprefs } from './notify'
 import { patchUi, readUi } from './ui'
 import { splitPane } from './tmux'
 import type { Agent, AgentState, QuickAnswer, QuickChoice } from '../preload/api'
@@ -417,6 +417,21 @@ app.whenReady().then(async () => {
     }
   })
   const tell = (p: Promise<Aviso[]>): void => void p.then((added) => notifier.notify(added)).catch(() => undefined)
+  // W192: what macOS says of Atril's notifications; any doubt is «no lo sé».
+  const permission = async (): Promise<NotifyPermission> => {
+    const r = await run('defaults', ['export', 'com.apple.ncprefs', '-'], { timeoutMs: 5000 })
+    return r.code === 0 ? parseNcprefs(r.stdout, app.isPackaged ? 'dev.atril.app' : 'com.github.Electron') : 'unknown'
+  }
+  ipcMain.handle('atril:notify:get', () => readNotifySettings())
+  ipcMain.handle('atril:notify:set', (_e, patch: unknown) =>
+    patchNotifySettings(patch as NotifyPatch).catch((err: unknown) => ({
+      error: t('No he podido guardar tus avisos: siguen como estaban.'),
+      detail: (err as { code?: unknown })?.code ? String((err as { code: unknown }).code) : err instanceof Error ? err.name : 'Error'
+    }))
+  )
+  ipcMain.handle('atril:notify:test', (_e, type: unknown) => (typeof type === 'string' && type in NOTIFY_DEFAULTS ? notifier.test(type as NotifyType, permission) : permission()))
+  ipcMain.handle('atril:notify:permission', permission)
+  ipcMain.handle('atril:notify:openSystem', () => shell.openExternal('x-apple.systempreferences:com.apple.Notifications-Settings.extension'))
   ipcMain.handle('atril:avisos:list', () => (fakeFeed ? fakeAvisos() : avisos.list()))
   ipcMain.handle('atril:avisos:markRead', (_e, ids: unknown) =>
     avisos.markRead(ids === 'all' ? 'all' : Array.isArray(ids) ? ids.filter((i): i is string => typeof i === 'string') : [])
