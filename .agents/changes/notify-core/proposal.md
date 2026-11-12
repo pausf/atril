@@ -39,6 +39,7 @@ Durable decisions: the ones in Prior decisions below (notifications.json, «Nada
 - Q: ¿Quién guarda la hora del último listado? → A: `lastMrs` de `index.ts` (el que ya usa la QA a la MR); `mrpoll` lo lee y lo escribe (assumed).
 - Q: ¿Partir el cambio? → A: sí, en dos: `notify-core` (main) y `notify-ui` (Ajustes y Avisos), como propuso la revisión (assumed).
 - Q: (Pau, 12 nov) «para una tarea tan pequeña tengo 40 avisos… cuando tenga 200 no es gestionable» (en la prueba, 32 de 40 eran `agent` sin leer de solo 3 trabajos) → A: un solo aviso de agente sin leer por trabajo (V18), los leídos caducan a los 7 días con tope de 300 (V19, sustituye el tope de 200 de V4, que pasa a amended) y el contador cuenta trabajos, no avisos de agente (V20, calculado en la ventana: `src/renderer/avisos/Avisos.tsx`).
+- Q: (Pau, 12 nov, comparando con Orca, cuyo contador «se limpia al visitar el trabajo») → A: abrir un trabajo marca leídos sus avisos de agente (V21); la ventana avisa a main con `avisos.seen(id)`.
 
 ## Outcomes
 
@@ -123,6 +124,8 @@ The 14 notice types, their group and their default, used by every criterion belo
   Proof: src/main/avisos.test.ts notices survive a restart and stay bounded
 - **V20** The Avisos badge count shall be the number of workspaces with an unread agent notice (`ask`, `done`, `idle`, legacy `agent`) plus the other unread notices, counted once per notice (so with V18 it never exceeds one per workspace for agents). The count is computed in the window (`src/renderer/avisos/Avisos.tsx`).
   Proof: src/renderer/avisos/avisos.test.ts the badge counts what waits for you
+- **V21** When the person opens a workspace (selects it in Trabajo or its notice), Atril shall mark read every unread `ask`, `done`, `idle` and legacy `agent` notice of that workspace. The window tells main through `avisos.seen(workspaceId)`.
+  Proof: src/main/avisos.test.ts opening a work reads its agent notices
 - **V3** (amended) When an agent enters «te necesita» (once per entry, W15), Atril shall add a notice of kind `done` when the hook text starts with «Claude dice: » or is exactly «Claude ha terminado», and `ask` otherwise (starts with «Te pregunta: », is «Claude te necesita», is missing or anything else), titled with the work's name (`jiraKey`, else the branch), linked to its workspace, and carrying the hook text as `detail`.
   Proof: src/main/avisos.test.ts an agent that needs you is a notice
   Proof: src/main/avisos.test.ts a question and an end of turn are different kinds
@@ -206,7 +209,7 @@ Tests en rojo primero, caja por caja. Después, la app real con el arnés de `bo
 - [x] `route()` e `inQuiet()` puros · waits on box 1 · Closes: V10, W190
 - [x] `diff()`: estado de CI asentado, `cipass`, `branch` en la referencia, `outcome` inyectado; los silenciados mueven las referencias · Closes: V1, V16, V17
 - [x] `src/main/forge/outcome.ts`: una petición por MR que sale de Mías, tope 10, timeout 10 s, id de GitLab por ruta, sin petición si `merged` está en «Nada» · waits on box 3 · Closes: W184
-- [ ] `onAgent` con `ask`/`done` y `detail`; «Nada» no guarda; `expire`; ids devueltos y marcado por clic; uno sin leer por trabajo, caducidad y tope de 300, contador por trabajo · waits on box 2 · Closes: V3, V9, V11, V12, V18, V19, V4, V20
+- [ ] `onAgent` con `ask`/`done` y `detail`; «Nada» no guarda; `expire`; ids devueltos y marcado por clic; uno sin leer por trabajo, caducidad y tope de 300, contador por trabajo · waits on box 2 · Closes: V3, V9, V11, V12, V18, V19, V4, V20, V21
 - [ ] Gancho: el recordatorio de inactividad conserva texto, opciones y hora · Closes: W195
 - [ ] `status.ts`: tipo por prefijo, pregunta nueva en la misma espera, parado (uno o agrupado por pasada, sin los que Atril cierra), espera de N min · waits on boxes 5, 6 · Closes: W15, W176, W178, W179, W180
 - [ ] Detectores: `qaFinished` (QA), `clashesNew` (radar), `quotaCrossed` (cuota) y su cableado · waits on box 5 · Closes: W181, W182, W183
