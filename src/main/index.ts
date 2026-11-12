@@ -19,6 +19,7 @@ import { createForgeGuards } from './forge/guards'
 import { listMrs } from './forge/mrs'
 import { createLenses } from './forge/lenses'
 import { createOpenMr, type MrEntry } from './forge/openmr'
+import { createOutcome } from './forge/outcome'
 import { createQueue, createScorer } from './forge/scores'
 import { createThreads } from './forge/threads'
 import { createQaPublish } from './qa-publish'
@@ -368,7 +369,7 @@ app.whenReady().then(async () => {
   }
   ipcMain.handle('atril:mr:list', listAllMrs)
   const fakeFeed = SNAPSHOT && process.env['ATRIL_SNAPSHOT_VIEW'] === 'avisos'
-  const avisos = createAvisos((items) => BrowserWindow.getAllWindows().forEach((w) => w.webContents.send('atril:avisos:changed', items)))
+  const avisos = createAvisos((items) => BrowserWindow.getAllWindows().forEach((w) => w.webContents.send('atril:avisos:changed', items)), { outcome: createOutcome(secretStore) })
   ipcMain.handle('atril:avisos:list', () => (fakeFeed ? fakeAvisos() : avisos.list()))
   ipcMain.handle('atril:avisos:markRead', (_e, ids: unknown) =>
     avisos.markRead(ids === 'all' ? 'all' : Array.isArray(ids) ? ids.filter((i): i is string => typeof i === 'string') : [])
