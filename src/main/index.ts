@@ -374,6 +374,7 @@ app.whenReady().then(async () => {
   ipcMain.handle('atril:avisos:markRead', (_e, ids: unknown) =>
     avisos.markRead(ids === 'all' ? 'all' : Array.isArray(ids) ? ids.filter((i): i is string => typeof i === 'string') : [])
   )
+  ipcMain.handle('atril:avisos:seen', (_e, id: unknown) => avisos.seen(String(id)))
   ipcMain.handle('atril:mr:open', (_e, url: unknown) => {
     if (typeof url === 'string' && guards.openable(url)) return shell.openExternal(url)
   })
@@ -685,11 +686,13 @@ app.whenReady().then(async () => {
     run,
     onChange: (id, state) => {
       BrowserWindow.getAllWindows().forEach((w) => w.webContents.send('atril:status:change', id, state))
+      // V11: leaving needs-you means its questions were answered.
+      if (state !== 'needs-you') void avisos.expire(id).catch(() => undefined)
       if (id === menu.selected) refreshMenu()
       void pushNext()
     },
     notify: (ws, body) => {
-      void avisos.onNeedsYou(ws).catch(() => undefined)
+      void avisos.onAgent(ws, 'ask').catch(() => undefined)
       // W78: minimised, hidden or on another Space is not focused; a quieted entry is never notified later.
       let allowed = false
       notifyGate(() => (allowed = true))

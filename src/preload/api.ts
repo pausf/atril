@@ -481,6 +481,8 @@ export interface AvisosApi {
   list(): Promise<Aviso[]>
   /** Returns the list after marking. */
   markRead(ids: string[] | 'all'): Promise<Aviso[]>
+  /** V21: the person opened that workspace; its agent notices are read. */
+  seen(workspaceId: string): Promise<Aviso[]>
   /** Returns the unsubscribe function. */
   onChange(cb: (items: Aviso[]) => void): () => void
 }

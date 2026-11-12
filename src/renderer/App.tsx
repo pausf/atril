@@ -200,6 +200,10 @@ function Shell() {
   )
 
   useEffect(() => window.atril.menu.setState(selected, workspaces.length), [selected, workspaces.length])
+  // V21: a workspace on screen has had its questions seen.
+  useEffect(() => {
+    if (screen === 'work' && selected) void window.atril.avisos.seen(selected).catch(() => undefined)
+  }, [screen, selected])
   // Also on load: a reload starts with focus off, and main must know (W78).
   useEffect(() => window.atril.menu.setFocus(focused, screen === 'work' && selected !== null), [focused, screen, selected])
   // W79: in focus, the agents waiting except the open one, in N1 order; tasks never count.

@@ -273,6 +273,12 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
         avisos = avisos.map((n) => (ids === 'all' || ids.includes(n.id) ? { ...n, read: true } : n))
         return avisos
       }),
+      // As main does: the agent notices of that workspace are read and every window hears it.
+      seen: vi.fn(async (id: string) => {
+        avisos = avisos.map((n) => (n.workspaceId === id && ['ask', 'done', 'idle', 'agent'].includes(n.kind) ? { ...n, read: true } : n))
+        avisoListeners.forEach((l) => l(avisos))
+        return avisos
+      }),
       onChange: (cb: (items: Aviso[]) => void) => {
         avisoListeners.add(cb)
         return () => avisoListeners.delete(cb)

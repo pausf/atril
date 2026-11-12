@@ -107,3 +107,24 @@ describe('avisos', () => {
     expect(screen.getByRole('button', { name: 'Trabajo' }).getAttribute('aria-current')).toBe('page')
   })
 })
+
+describe('avisos badge', () => {
+  it('the badge counts what waits for you', async () => {
+    mockApi({
+      avisos: [
+        // Two agent notices of one workspace (an old one from before V18) count once; another workspace once more.
+        aviso('a1', 'ask', 'WEB-1', 1, { workspaceId: 'w1' }),
+        aviso('a2', 'agent', 'feat/w1', 30, { workspaceId: 'w1' }),
+        aviso('a3', 'done', 'WEB-2', 2, { workspaceId: 'w2' }),
+        aviso('a4', 'idle', 'WEB-3', 2, { workspaceId: 'w3', read: true }),
+        // Everything else counts once per notice.
+        aviso('s1', 'stopped', 'WEB-1', 3, { workspaceId: 'w1' }),
+        aviso('r1', 'review', 'Envío con IVA', 4, { url: GH }),
+        aviso('q1', 'quota', '', 5),
+        aviso('r2', 'comment', 'Leído', 6, { url: GH, read: true })
+      ]
+    })
+    render(createElement(App))
+    expect(await screen.findByRole('button', { name: 'Avisos: 5 sin leer' })).toBeTruthy()
+  })
+})

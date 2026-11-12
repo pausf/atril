@@ -5,7 +5,8 @@ import type { Aviso, AvisoKind, CiState, ForgeId, MrItem, MrListName, MrLists, N
 import { atrilHome } from './paths'
 import { quietedByFocus } from './focus'
 
-const KEEP = 200
+const KEEP = 300
+const WEEK = 7 * 86_400_000
 const LISTS: readonly MrListName[] = ['mine', 'review', 'following']
 
 interface Seen {
@@ -116,6 +117,29 @@ export interface AvisosDeps {
   settings?: () => Promise<NotifySettings>
 }
 
+type Work = { id: string; branch: string; repoId: string; jiraKey?: string }
+type WorkKind = 'ask' | 'done' | 'stopped' | 'idle' | 'qa' | 'radar'
+/** The notices a person answers by answering the agent (V11, V18, V21). */
+const ANSWERED = new Set<AvisoKind>(['ask', 'done', 'idle', 'agent'])
+/** W177: a work is named by its Jira key, else its branch. */
+export const workName = (ws: { branch: string; jiraKey?: string }): string => ws.jiraKey || ws.branch
+
+/** V3: an end of turn says «Claude dice: » or is «Claude ha terminado»; anything else is a question. */
+export const kindOf = (text: string | undefined): 'ask' | 'done' =>
+  text !== undefined && (text.startsWith('Claude dice: ') || text === 'Claude ha terminado') ? 'done' : 'ask'
+
+/** V19, V4: read notices go after a week; past 300 the oldest read go first, then the oldest. Items are newest first. */
+function prune(items: Aviso[], now: number): Aviso[] {
+  const out = items.filter((n) => !(n.read && now - n.at > WEEK))
+  for (let i = out.length - 1; out.length > KEEP && i >= 0; i--) if (out[i]!.read) out.splice(i, 1)
+  return out.slice(0, KEEP)
+}
+
+function readAgent(s: Stored, workspaceId: string): Aviso[] {
+  s.items = s.items.map((n) => (n.workspaceId === workspaceId && !n.read && ANSWERED.has(n.kind) ? { ...n, read: true } : n))
+  return s.items
+}
+
 /** The notices feed: derived from listings and agent states. */
 export function createAvisos(onChange: (items: Aviso[]) => void = () => {}, deps: AvisosDeps = {}) {
   const settings = deps.settings ?? readNotifySettings
@@ -128,7 +152,7 @@ export function createAvisos(onChange: (items: Aviso[]) => void = () => {}, deps
       state ??= load()
       const s = await state
       const out = await fn(s)
-      s.items = s.items.slice(0, KEEP)
+      s.items = prune(s.items, Date.now())
       await mkdir(atrilHome(), { recursive: true })
       await writeFile(`${file()}.tmp`, JSON.stringify(s))
       await rename(`${file()}.tmp`, file())
@@ -164,7 +188,26 @@ export function createAvisos(onChange: (items: Aviso[]) => void = () => {}, deps
         const gone = d.left.map((l) => mrNotice(answers[l.url] ?? 'gone', l.seen, l.url))
         return add(s, [...d.found, ...gone])
       }),
-    onNeedsYou: (ws: { id: string; branch: string }): Promise<Aviso[]> => change((s) => add(s, [{ kind: 'agent', title: ws.branch, workspaceId: ws.id }])),
+    /** V3 and the other work notices: titled by the work's name, linked to it, with the agent's words or the numbers to show. */
+    onAgent: (ws: Work, kind: WorkKind, detail?: string, vars?: Aviso['vars']): Promise<Aviso[]> =>
+      change(async (s) => {
+        const added = await add(s, [{ kind, title: workName(ws), workspaceId: ws.id, repo: ws.repoId, ...(detail && { detail }), ...(vars && { vars }) }])
+        const [n] = added
+        if (!n || !ANSWERED.has(kind)) return added
+        // V18: one unread agent notice per workspace; the newest takes the place (and the id) of the ones before.
+        const before = s.items.filter((o) => o !== n && o.workspaceId === ws.id && !o.read && ANSWERED.has(o.kind))
+        if (before.length) {
+          s.items = s.items.filter((o) => !before.includes(o))
+          n.id = before[0]!.id
+        }
+        return added
+      }),
+    /** W183. */
+    onQuota: (vars: Aviso['vars']): Promise<Aviso[]> => change((s) => add(s, [{ kind: 'quota', title: '', ...(vars && { vars }) }])),
+    /** V11: a workspace that left needs-you, or the list, has had its questions answered. */
+    expire: (workspaceId: string): Promise<Aviso[]> => change((s) => readAgent(s, workspaceId)),
+    /** V21: the person opened that workspace. */
+    seen: (workspaceId: string): Promise<Aviso[]> => change((s) => readAgent(s, workspaceId)),
     markRead: (ids: string[] | 'all'): Promise<Aviso[]> =>
       change((s) => {
         s.items = s.items.map((n) => (ids === 'all' || ids.includes(n.id) ? { ...n, read: true } : n))

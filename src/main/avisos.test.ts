@@ -2,7 +2,7 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { MrItem, MrLists } from '../preload/api'
-import { createAvisos } from './avisos'
+import { createAvisos, patchNotifySettings } from './avisos'
 import { cleanTmp, tmp } from './test-helpers'
 
 const GH = (n: number): string => `https://github.com/acme/web/pull/${n}`
@@ -176,26 +176,38 @@ describe('avisos baseline and store', () => {
 
   it('an agent that needs you is a notice', async () => {
     const a = createAvisos()
-    await a.onNeedsYou({ id: 'ws1', branch: 'feat/envio' })
-    expect(await a.list()).toEqual([expect.objectContaining({ kind: 'agent', title: 'feat/envio', workspaceId: 'ws1', read: false })])
+    const added = await a.onAgent({ id: 'ws1', branch: 'feat/envio', repoId: 'shop-web', jiraKey: 'WEB-3535' }, 'ask', 'Te pregunta: ¿Uso la tabla del BOE?')
+    await a.onAgent({ id: 'ws2', branch: 'feat/sin-tarea', repoId: 'shop-web' }, 'done', 'Claude dice: Listo.')
+    expect(await a.list()).toEqual([
+      expect.objectContaining({ kind: 'done', title: 'feat/sin-tarea', workspaceId: 'ws2', repo: 'shop-web', detail: 'Claude dice: Listo.', read: false }),
+      expect.objectContaining({ kind: 'ask', title: 'WEB-3535', workspaceId: 'ws1', repo: 'shop-web', detail: 'Te pregunta: ¿Uso la tabla del BOE?', read: false })
+    ])
+    // What was stored comes back, so main can tie the Mac notification to it.
+    expect(added).toEqual([(await a.list())[1]])
   })
 
   it('notices survive a restart and stay bounded', async () => {
     const a = createAvisos()
     await a.onListing(lists({ mine: [mr(GH(1))] }))
-    for (let i = 0; i < 205; i++) await a.onNeedsYou({ id: `ws${i}`, branch: `b${i}` })
-    // Read or not, the oldest go first.
-    const oldest = (await a.list()).at(-1)!
-    expect(oldest.title).toBe('b5')
-    await a.markRead([oldest.id])
+    const work = (i: number) => ({ id: `ws${i}`, branch: `b${i}`, repoId: 'r' })
+    for (let i = 0; i < 305; i++) await a.onAgent(work(i), 'stopped')
+    // All unread: past 300 the oldest go.
+    const items = await a.list()
+    expect(items).toHaveLength(300)
+    expect([items[0]!.title, items.at(-1)!.title]).toEqual(['b304', 'b5'])
+    // A read one goes before any unread one, even a newer one.
+    const read = items[100]!
+    await a.markRead([read.id])
 
     const b = createAvisos()
     const kept = await b.list()
-    expect(kept).toHaveLength(200)
-    expect(kept[0]!.title).toBe('b204')
-    expect(kept.at(-1)).toEqual({ ...oldest, read: true })
-    await b.onNeedsYou({ id: 'ws205', branch: 'b205' })
-    expect((await b.list()).map((n) => n.title).slice(-1)).toEqual(['b6'])
+    expect(kept).toHaveLength(300)
+    expect(kept.find((n) => n.id === read.id)?.read).toBe(true)
+    await b.onAgent(work(305), 'stopped')
+    const after = await b.list()
+    expect(after).toHaveLength(300)
+    expect(after.some((n) => n.id === read.id)).toBe(false)
+    expect([after[0]!.title, after.at(-1)!.title]).toEqual(['b305', 'b5'])
 
     // The baseline came back too: the next listing is compared with it.
     await b.onListing(lists({ mine: [] }))
@@ -308,5 +320,126 @@ describe('notice routing', () => {
     expect(route('review', q, night)).toBe('list')
     expect(route('ask', q, awake)).toBe('mac')
     expect(route('ask', { ...q, quiet: { ...quiet, on: false } }, night)).toBe('mac')
+  })
+})
+
+describe('agent notices', () => {
+  const ws = (id: string, o: { branch?: string; jiraKey?: string } = {}) => ({ id, branch: o.branch ?? `feat/${id}`, repoId: 'shop-web', ...(o.jiraKey && { jiraKey: o.jiraKey }) })
+
+  it('a question and an end of turn are different kinds', async () => {
+    const { kindOf } = await import('./avisos')
+    expect(kindOf('Claude dice: Plan listo.')).toBe('done')
+    expect(kindOf('Claude ha terminado')).toBe('done')
+    expect(kindOf('Te pregunta: ¿Sigo?')).toBe('ask')
+    expect(kindOf('Claude te necesita')).toBe('ask')
+    expect(kindOf(undefined)).toBe('ask')
+    expect(kindOf('Leyendo a.ts')).toBe('ask')
+    // Only the exact words: a sentence that merely mentions them is a question.
+    expect(kindOf('Claude ha terminado de leer')).toBe('ask')
+    expect(kindOf('claude dice: x')).toBe('ask')
+  })
+
+  it('a muted type is neither stored nor shown', async () => {
+    await patchNotifySettings({ types: { ask: 'mute', review: 'mute', merged: 'mute' } })
+    const outcome = vi.fn(async () => ({}))
+    const a = createAvisos(undefined, { outcome })
+    expect(await a.onAgent(ws('w1'), 'ask', 'Te pregunta: ¿?')).toEqual([])
+    expect(await a.onAgent(ws('w1'), 'done', 'Claude dice: ok')).toHaveLength(1)
+    await a.onListing(lists({ mine: [mr(GH(1))] }))
+    // A muted review request and a departure from Mías: nothing stored, nobody asked.
+    expect(await a.onListing(lists({ review: [mr(GH(2))] }))).toEqual([])
+    expect(outcome).not.toHaveBeenCalled()
+    expect((await a.list()).map((n) => n.kind)).toEqual(['done'])
+    // The references still moved: unmuting does not bring back what was said while muted.
+    await patchNotifySettings({ types: { review: 'list', merged: 'list' } })
+    expect(await a.onListing(lists({ review: [mr(GH(2))] }))).toEqual([])
+  })
+
+  it('answered questions stop counting as unread', async () => {
+    // A notice stored before the split into ask and done.
+    writeFileSync(join(home, 'avisos.json'), JSON.stringify({ baseline: {}, forges: {}, items: [{ id: 'old', kind: 'agent', at: 1, read: false, title: 'feat/w1', workspaceId: 'w1' }] }))
+    const a = createAvisos()
+    await a.onAgent(ws('w1'), 'ask', 'Te pregunta: ¿?')
+    await a.onAgent(ws('w1'), 'done', 'Claude dice: ok')
+    await a.onAgent(ws('w1'), 'idle', undefined, { m: 15 })
+    await a.onAgent(ws('w1'), 'stopped')
+    await a.onAgent(ws('w2'), 'ask', 'Te pregunta: ¿otra?')
+    await a.expire('w1')
+    const unread = (await a.list()).filter((n) => !n.read).map((n) => [n.workspaceId, n.kind]).sort()
+    expect(unread).toEqual([['w1', 'stopped'], ['w2', 'ask']])
+  })
+
+  it('opening a work reads its agent notices', async () => {
+    const a = createAvisos()
+    await a.onAgent(ws('w1'), 'ask', 'Te pregunta: ¿?')
+    await a.onAgent(ws('w1'), 'qa', undefined, { p: 1, f: 0 })
+    await a.onAgent(ws('w2'), 'done', 'Claude dice: ok')
+    // What the window calls when the person selects w1 (V21): its questions are seen, its QA is not.
+    await a.seen('w1')
+    expect((await a.list()).filter((n) => !n.read).map((n) => [n.workspaceId, n.kind]).sort()).toEqual([['w1', 'qa'], ['w2', 'done']])
+  })
+
+  it('clicking the Mac notice marks its notice read', async () => {
+    const a = createAvisos()
+    const [one] = await a.onAgent(ws('w1'), 'ask', 'Te pregunta: ¿?')
+    const two = [...(await a.onAgent(ws('w2'), 'stopped')), ...(await a.onAgent(ws('w3'), 'stopped'))]
+    await a.onAgent(ws('w4'), 'ask')
+    await a.markRead([one!.id])
+    // A grouped notification carries every id it stands for.
+    await a.markRead(two.map((n) => n.id))
+    expect((await a.list()).filter((n) => !n.read).map((n) => n.workspaceId)).toEqual(['w4'])
+  })
+})
+
+describe('a feed that stays small', () => {
+  const ws = (id: string) => ({ id, branch: `feat/${id}`, repoId: 'shop-web' })
+
+  it('one unread agent notice per workspace', async () => {
+    // A legacy needs-you notice, unread, from before the split.
+    writeFileSync(join(home, 'avisos.json'), JSON.stringify({ baseline: {}, forges: {}, items: [{ id: 'old', kind: 'agent', at: 1, read: false, title: 'feat/w1', workspaceId: 'w1' }] }))
+    const a = createAvisos()
+    const [first] = await a.onAgent(ws('w1'), 'ask', 'Te pregunta: ¿A?')
+    await a.onAgent(ws('w2'), 'ask', 'Te pregunta: ¿B?')
+    const [second] = await a.onAgent(ws('w1'), 'done', 'Claude dice: listo.')
+    await a.onAgent(ws('w1'), 'stopped')
+    const items = await a.list()
+    // w1's question became its end of turn: one notice, unread, newer, above w2's.
+    const w1 = items.filter((n) => n.workspaceId === 'w1' && n.kind !== 'stopped')
+    expect(w1).toEqual([expect.objectContaining({ kind: 'done', detail: 'Claude dice: listo.', read: false })])
+    expect(second!.at).toBeGreaterThanOrEqual(first!.at)
+    expect(items.map((n) => [n.workspaceId, n.kind])).toEqual([['w1', 'stopped'], ['w1', 'done'], ['w2', 'ask']])
+    // An idle reminder replaces it too; a stop or a QA never replaces nor is replaced.
+    await a.onAgent(ws('w1'), 'idle', undefined, { m: 15 })
+    expect((await a.list()).map((n) => [n.workspaceId, n.kind])).toEqual([['w1', 'idle'], ['w1', 'stopped'], ['w2', 'ask']])
+    // Once read, a new question is a new notice.
+    await a.markRead('all')
+    await a.onAgent(ws('w1'), 'ask', 'Te pregunta: ¿C?')
+    expect((await a.list()).filter((n) => n.workspaceId === 'w1').map((n) => [n.kind, n.read])).toEqual([['ask', false], ['idle', true], ['stopped', true]])
+  })
+
+  it('old read notices are dropped', async () => {
+    const DAY = 86_400_000
+    const now = Date.now()
+    const item = (i: number, at: number, read: boolean) => ({ id: `n${i}`, kind: 'review', at, read, title: `t${i}`, url: `https://github.com/a/b/pull/${i}` })
+    // 8 days old: read goes, unread stays; 6 days old read stays.
+    const items = [item(1, now - 6 * DAY, true), item(2, now - 8 * DAY, false), item(3, now - 8 * DAY, true)]
+    writeFileSync(join(home, 'avisos.json'), JSON.stringify({ baseline: {}, forges: {}, items }))
+    const a = createAvisos()
+    await a.markRead([])
+    expect((await a.list()).map((n) => n.id)).toEqual(['n1', 'n2'])
+
+    // Past 300, the oldest read go first; unread stay while read ones remain.
+    const many = Array.from({ length: 320 }, (_, i) => item(i, now - i * 1000, i % 2 === 0))
+    writeFileSync(join(home, 'avisos.json'), JSON.stringify({ baseline: {}, forges: {}, items: many }))
+    const b = createAvisos()
+    await b.markRead([])
+    const kept = await b.list()
+    expect(kept).toHaveLength(300)
+    expect(kept.filter((n) => !n.read)).toHaveLength(160)
+    // The 20 dropped are the 20 oldest read.
+    const dropped = many.filter((n) => !kept.some((k) => k.id === n.id))
+    expect(dropped.every((n) => n.read)).toBe(true)
+    expect(Math.min(...dropped.map((n) => n.at))).toBe(Math.min(...many.filter((n) => n.read).map((n) => n.at)))
+    expect(Math.max(...dropped.map((n) => n.at))).toBeLessThan(Math.min(...kept.filter((n) => n.read).map((n) => n.at)))
   })
 })

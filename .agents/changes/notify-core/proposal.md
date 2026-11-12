@@ -209,7 +209,7 @@ Tests en rojo primero, caja por caja. Después, la app real con el arnés de `bo
 - [x] `route()` e `inQuiet()` puros · waits on box 1 · Closes: V10, W190
 - [x] `diff()`: estado de CI asentado, `cipass`, `branch` en la referencia, `outcome` inyectado; los silenciados mueven las referencias · Closes: V1, V16, V17
 - [x] `src/main/forge/outcome.ts`: una petición por MR que sale de Mías, tope 10, timeout 10 s, id de GitLab por ruta, sin petición si `merged` está en «Nada» · waits on box 3 · Closes: W184
-- [ ] `onAgent` con `ask`/`done` y `detail`; «Nada» no guarda; `expire`; ids devueltos y marcado por clic; uno sin leer por trabajo, caducidad y tope de 300, contador por trabajo · waits on box 2 · Closes: V3, V9, V11, V12, V18, V19, V4, V20, V21
+- [x] `onAgent` con `ask`/`done` y `detail`; «Nada» no guarda; `expire`; ids devueltos y marcado por clic; uno sin leer por trabajo, caducidad y tope de 300, contador por trabajo · waits on box 2 · Closes: V3, V9, V11, V12, V18, V19, V4, V20, V21
 - [ ] Gancho: el recordatorio de inactividad conserva texto, opciones y hora · Closes: W195
 - [ ] `status.ts`: tipo por prefijo, pregunta nueva en la misma espera, parado (uno o agrupado por pasada, sin los que Atril cierra), espera de N min · waits on boxes 5, 6 · Closes: W15, W176, W178, W179, W180
 - [ ] Detectores: `qaFinished` (QA), `clashesNew` (radar), `quotaCrossed` (cuota) y su cableado · waits on box 5 · Closes: W181, W182, W183

@@ -11,6 +11,14 @@ export interface AvisosState {
   markRead: (ids: string[] | 'all') => void
 }
 
+const AGENT: ReadonlySet<AvisoKind> = new Set(['ask', 'done', 'idle', 'agent'])
+/** V20: a workspace's unread agent notices count once; every other unread notice counts itself. */
+export function badgeCount(items: Aviso[]): number {
+  const unread = items.filter((n) => !n.read)
+  const waiting = new Set(unread.filter((n) => AGENT.has(n.kind) && n.workspaceId).map((n) => n.workspaceId))
+  return waiting.size + unread.filter((n) => !(AGENT.has(n.kind) && n.workspaceId)).length
+}
+
 // One reader for the whole app: the rail counter and the screen share it.
 export function useAvisos(): AvisosState {
   const [items, setItems] = useState<Aviso[]>([])
@@ -26,7 +34,7 @@ export function useAvisos(): AvisosState {
   const markRead = useCallback((ids: string[] | 'all') => {
     void window.atril.avisos.markRead(ids).then(setItems, () => undefined)
   }, [])
-  return { items, unread: items.filter((n) => !n.read).length, markRead }
+  return { items, unread: badgeCount(items), markRead }
 }
 
 export type AvisoTarget = { kind: 'mr'; url: string } | { kind: 'workspace'; id: string }
