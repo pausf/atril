@@ -321,7 +321,7 @@ describe('subagents hook', () => {
 
   interface Entry { id: string; type: string; description?: string; transcript?: string; startedAt: number; endedAt?: number }
   interface Pending { type: string; description: string; at: number }
-  interface Seed { entries?: Entry[]; pending?: Pending[] }
+  interface Seed { entries?: Entry[]; pending?: Pending[]; state?: object }
   const NOW = (): number => Math.floor(Date.now() / 1000)
   const agent = (type: string, extra: object = {}, tool = 'Agent'): [string, object] => ['PreToolUse', { tool_name: tool, tool_input: { subagent_type: type, description: `d-${type}`, prompt: 'SECRET-PROMPT', ...extra } }]
 
@@ -341,7 +341,11 @@ describe('subagents hook', () => {
     })
     if (!('workspace' in r)) throw new Error(r.error)
     const session = r.workspace.session
-    if (seed) {
+    if (seed?.state) {
+      mkdirSync(join(home, 'state'), { recursive: true })
+      writeFileSync(join(home, 'state', `${session}.json`), JSON.stringify(seed.state))
+    }
+    if (seed && !seed.state) {
       mkdirSync(join(home, 'subagents'), { recursive: true })
       writeFileSync(join(home, 'subagents', `${session}.json`), JSON.stringify({ entries: seed.entries ?? [], pending: seed.pending ?? [] }))
     }
@@ -454,6 +458,23 @@ describe('subagents hook', () => {
       expect(stateOf(none.session).options).toBeUndefined()
     }
   }, 90000)
+
+  it('the idle reminder keeps the question', async () => {
+    const stateOf = (session: string): Record<string, unknown> => JSON.parse(readFileSync(join(home, 'state', `${session}.json`), 'utf8'))
+    const waiting = { state: 'needs-you', at: 1234, text: 'Te pregunta: ¿Cuál?', options: ['A', 'B'], multiSelect: false }
+    const idle: [string, object] = ['Notification', { notification_type: 'idle_prompt', message: 'Claude is waiting for your input' }]
+    // Text, options, multiSelect and time exactly as the question left them.
+    const kept = await fireIn([idle], { state: waiting })
+    expect(stateOf(kept.session)).toEqual(waiting)
+    // The older wording without notification_type counts too.
+    const old = await fireIn([['Notification', { message: 'Claude is waiting for your input' }]], { state: waiting })
+    expect(stateOf(old.session)).toEqual(waiting)
+    // Not waiting: the reminder writes needs-you as before; a real notification still replaces the text.
+    const fresh = await fireIn([idle], { state: { state: 'working', at: 1 } })
+    expect(stateOf(fresh.session)).toMatchObject({ state: 'needs-you' })
+    const real = await fireIn([['Notification', { message: 'Necesito permiso' }]], { state: waiting })
+    expect(stateOf(real.session)).toMatchObject({ state: 'needs-you', text: 'Te pregunta: Necesito permiso' })
+  }, 60000)
 
   it('subagent events never change the agent state', async () => {
     const idle = await fireIn([start('a1', 'explorer'), start('x', ''), stop('zz', 'explorer'), stop('a1', '')])

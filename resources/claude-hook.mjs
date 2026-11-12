@@ -190,8 +190,19 @@ try {
   mkdirSync(dir, { recursive: true })
   const body = state === 'needs-you' && line ? { text: line.text } : {}
   const stateFile = join(dir, `${name}.json`)
-  Object.assign(body, quickReplies(event, state, payload, stateFile))
-  replace(stateFile, JSON.stringify({ state, at, ...body }) + '\n')
+  // W195: the idle reminder is no new question; a waiting state keeps its text, options and time.
+  let waiting = false
+  if (idle) {
+    try {
+      waiting = JSON.parse(readFileSync(stateFile, 'utf8')).state === 'needs-you'
+    } catch {
+      /* no state yet: the reminder writes one */
+    }
+  }
+  if (!waiting) {
+    Object.assign(body, quickReplies(event, state, payload, stateFile))
+    replace(stateFile, JSON.stringify({ state, at, ...body }) + '\n')
+  }
 
   try {
     trackSubagents(home, name, event, payload, at)
