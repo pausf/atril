@@ -47,6 +47,7 @@ import { dropIdea, editIdea, ideaToJira, librettoCounts, librettoState, queueIde
 import * as pty from './pty'
 import { loginPath } from './login-path'
 import { run } from './run'
+import { createMrPoll } from './mrpoll'
 import { createQuotaWatch, createUsage } from './usage'
 import { listWorkspaces, listWorkspacesOrNone, readRecordsOrNone, openWorktree, removeWorkspace, flowWorkspace, forgetWorkspace, reopenWorkspace, terminalAt } from './workspaces'
 import { createFlowHub } from './flow/watch'
@@ -369,6 +370,9 @@ app.whenReady().then(async () => {
     return r
   }
   ipcMain.handle('atril:mr:list', listAllMrs)
+  // W185: MR notices keep coming with the window closed.
+  const mrPoll = createMrPoll({ last: () => lastMrs, list: listAllMrs, connected: async () => (await Promise.all(FORGES.map((f) => secretStore.hasSecret(f)))).some((s) => s.saved) })
+  if (!SNAPSHOT) mrPoll.start()
   const fakeFeed = SNAPSHOT && process.env['ATRIL_SNAPSHOT_VIEW'] === 'avisos'
   const avisos = createAvisos((items) => BrowserWindow.getAllWindows().forEach((w) => w.webContents.send('atril:avisos:changed', items)), { outcome: createOutcome(secretStore) })
   ipcMain.handle('atril:avisos:list', () => (fakeFeed ? fakeAvisos() : avisos.list()))

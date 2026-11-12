@@ -213,7 +213,7 @@ Tests en rojo primero, caja por caja. Después, la app real con el arnés de `bo
 - [x] Gancho: el recordatorio de inactividad conserva texto, opciones y hora · Closes: W195
 - [x] `status.ts`: tipo por prefijo, pregunta nueva en la misma espera, parado (uno o agrupado por pasada, sin los que Atril cierra), espera de N min · waits on boxes 5, 6 · Closes: W15, W176, W178, W179, W180
 - [x] Detectores: `qaFinished` (QA), `clashesNew` (radar), `quotaCrossed` (cuota) y su cableado · waits on box 5 · Closes: W181, W182, W183
-- [ ] `src/main/mrpoll.ts` con `lastMrs` compartido · Closes: W185
+- [x] `src/main/mrpoll.ts` con `lastMrs` compartido · Closes: W185
 - [ ] `src/main/notify.ts`: `present()` con títulos del trabajo y acciones; respuesta con número; conjunto acotado y aviso de fallo retenido · waits on boxes 2, 5 · Closes: W177, N3, W186, W187, W188, W191, W194
 - [ ] Agrupador de 120 s que vuelve a enrutar al soltar, y foco según el ajuste · waits on box 10 · Closes: W189, W78
 - [ ] Permiso de macOS (`parseNcprefs`), abrir Ajustes del Sistema, aviso de prueba, IPC y preload `notify.*`; una línea en `bocetos/qa-final.html` para comprobar el bit 25 con avisos activados y desactivados · waits on box 10 · Closes: W192, W193
