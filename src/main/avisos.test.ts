@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import type { MrItem, MrLists } from '../preload/api'
@@ -177,5 +177,70 @@ describe('avisos baseline and store', () => {
     expect((await b.list())[0]).toEqual(expect.objectContaining({ kind: 'gone', title: 'Título 1' }))
     await b.markRead('all')
     expect((await createAvisos().list()).some((n) => !n.read)).toBe(false)
+  })
+})
+
+describe('notification settings', () => {
+  const file = (): string => join(process.env['ATRIL_HOME']!, 'notifications.json')
+  const write = (v: unknown): void => writeFileSync(file(), typeof v === 'string' ? v : JSON.stringify(v))
+  const DEFAULTS = {
+    types: { ask: 'mac', done: 'mac', stopped: 'mac', idle: 'list', radar: 'list', qa: 'mac', review: 'list', comment: 'list', ci: 'mac', cipass: 'list', merged: 'list', following: 'list', opened: 'list', quota: 'mac' },
+    idleMinutes: 15,
+    focus: true,
+    group: true,
+    quiet: { on: false, from: '19:00', to: '09:00', days: ['sat', 'sun'] }
+  }
+
+  it('notification settings default and clean', async () => {
+    const { readNotifySettings } = await import('./avisos')
+    // No file, then a file that is not JSON: every field at its default.
+    expect(await readNotifySettings()).toEqual(DEFAULTS)
+    write('{nope')
+    expect(await readNotifySettings()).toEqual(DEFAULTS)
+
+    // Valid fields kept; an unknown key, an invalid value or a malformed field reads as that field's default.
+    write({
+      types: { ask: 'list', done: 'mute', review: 'mac', ci: 'loud', bogus: 'mac' },
+      idleMinutes: 30,
+      focus: false,
+      group: 'yes',
+      quiet: { on: true, from: '22:30', to: '7:00', days: ['mon', 'sun'] },
+      extra: 1
+    })
+    expect(await readNotifySettings()).toEqual({
+      ...DEFAULTS,
+      types: { ...DEFAULTS.types, ask: 'list', done: 'mute', review: 'mac' },
+      idleMinutes: 30,
+      focus: false,
+      quiet: { on: true, from: '22:30', to: '09:00', days: ['mon', 'sun'] }
+    })
+
+    // idleMinutes outside 5–120 or off the 5-minute step; days with an unknown day.
+    for (const idleMinutes of [0, 3, 125, 17, 12.5, '15']) {
+      write({ idleMinutes, quiet: { days: ['mon', 'funday'] } })
+      expect(await readNotifySettings()).toEqual(DEFAULTS)
+    }
+    for (const idleMinutes of [5, 120]) {
+      write({ idleMinutes })
+      expect((await readNotifySettings()).idleMinutes).toBe(idleMinutes)
+    }
+  })
+
+  it('settings patches merge and both survive', async () => {
+    const { patchNotifySettings, readNotifySettings } = await import('./avisos')
+    // Sent back to back: the second must not overwrite the first.
+    const [a, b] = await Promise.all([patchNotifySettings({ types: { ask: 'list' } }), patchNotifySettings({ types: { ci: 'mute' }, quiet: { on: true } })])
+    expect(a).toEqual({ ...DEFAULTS, types: { ...DEFAULTS.types, ask: 'list' } })
+    const both = { ...DEFAULTS, types: { ...DEFAULTS.types, ask: 'list', ci: 'mute' }, quiet: { ...DEFAULTS.quiet, on: true } }
+    expect(b).toEqual(both)
+    expect(await readNotifySettings()).toEqual(both)
+
+    // quiet merges field by field; other fields replace; invalid fields are dropped and the stored value stays.
+    const c = await patchNotifySettings({ quiet: { from: '21:00', to: 'tarde' }, idleMinutes: 45, focus: false, group: 3, types: { done: 'x' }, other: true } as never)
+    expect(c).toEqual({ ...both, idleMinutes: 45, focus: false, quiet: { ...both.quiet, from: '21:00' } })
+    expect(JSON.parse(readFileSync(file(), 'utf8'))).toEqual(c)
+    expect(existsSync(`${file()}.tmp`)).toBe(false)
+    // Not an object at all: nothing changes.
+    expect(await patchNotifySettings(null as never)).toEqual(c)
   })
 })

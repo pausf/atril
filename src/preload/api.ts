@@ -443,6 +443,29 @@ export interface Aviso {
   forge?: ForgeId
 }
 
+/** The 14 notice types of Ajustes → Notificaciones; `merged` also rules `closed` and `gone`, `ask` the legacy `agent`. */
+export type NotifyType = 'ask' | 'done' | 'stopped' | 'idle' | 'radar' | 'qa' | 'review' | 'comment' | 'ci' | 'cipass' | 'merged' | 'following' | 'opened' | 'quota'
+/** Mac: Avisos and the Mac; list: only Avisos; mute: neither. */
+export type NotifyRoute = 'mac' | 'list' | 'mute'
+export type Weekday = 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun'
+/** V7: `$ATRIL_HOME/notifications.json`. */
+export interface NotifySettings {
+  types: Record<NotifyType, NotifyRoute>
+  /** 5–120, a multiple of 5. */
+  idleMinutes: number
+  focus: boolean
+  group: boolean
+  /** `from`/`to` as HH:MM; `days` are quiet all day. */
+  quiet: { on: boolean; from: string; to: string; days: Weekday[] }
+}
+export interface NotifyPatch {
+  types?: Partial<Record<NotifyType, NotifyRoute>>
+  idleMinutes?: number
+  focus?: boolean
+  group?: boolean
+  quiet?: Partial<NotifySettings['quiet']>
+}
+
 export interface AvisosApi {
   /** Newest first. */
   list(): Promise<Aviso[]>

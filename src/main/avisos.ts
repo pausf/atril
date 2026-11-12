@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
-import type { Aviso, AvisoKind, CiState, ForgeId, MrItem, MrListName, MrLists } from '../preload/api'
+import type { Aviso, AvisoKind, CiState, ForgeId, MrItem, MrListName, MrLists, NotifyPatch, NotifyRoute, NotifySettings, NotifyType, Weekday } from '../preload/api'
 import { atrilHome } from './paths'
 
 const KEEP = 200
@@ -117,4 +117,75 @@ export function createAvisos(onChange: (items: Aviso[]) => void = () => {}) {
         s.items = s.items.map((n) => (ids === 'all' || ids.includes(n.id) ? { ...n, read: true } : n))
       })
   }
+}
+
+/** The type table of notify-core: each key's default. */
+export const NOTIFY_DEFAULTS: Record<NotifyType, NotifyRoute> = {
+  ask: 'mac',
+  done: 'mac',
+  stopped: 'mac',
+  idle: 'list',
+  radar: 'list',
+  qa: 'mac',
+  review: 'list',
+  comment: 'list',
+  ci: 'mac',
+  cipass: 'list',
+  merged: 'list',
+  following: 'list',
+  opened: 'list',
+  quota: 'mac'
+}
+const ROUTES: readonly NotifyRoute[] = ['mac', 'list', 'mute']
+const WEEKDAYS: readonly Weekday[] = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat']
+const HHMM = /^([01]\d|2[0-3]):[0-5]\d$/
+const defaults = (): NotifySettings => ({ types: { ...NOTIFY_DEFAULTS }, idleMinutes: 15, focus: true, group: true, quiet: { on: false, from: '19:00', to: '09:00', days: ['sat', 'sun'] } })
+const notifyFile = (): string => join(atrilHome(), 'notifications.json')
+const obj = (v: unknown): Record<string, unknown> => (typeof v === 'object' && v !== null && !Array.isArray(v) ? (v as Record<string, unknown>) : {})
+
+/** V7/V8: each valid field of `raw` over `base`; anything else keeps `base`'s value. */
+function cleanOver(base: NotifySettings, raw: unknown): NotifySettings {
+  const r = obj(raw)
+  const q = obj(r['quiet'])
+  const types = { ...base.types }
+  for (const [k, v] of Object.entries(obj(r['types']))) if (k in NOTIFY_DEFAULTS && ROUTES.includes(v as NotifyRoute)) types[k as NotifyType] = v as NotifyRoute
+  const m = r['idleMinutes']
+  const days = q['days']
+  const validDays = Array.isArray(days) && days.every((d) => WEEKDAYS.includes(d as Weekday)) && new Set(days).size === days.length
+  return {
+    types,
+    idleMinutes: typeof m === 'number' && Number.isInteger(m) && m >= 5 && m <= 120 && m % 5 === 0 ? m : base.idleMinutes,
+    focus: typeof r['focus'] === 'boolean' ? r['focus'] : base.focus,
+    group: typeof r['group'] === 'boolean' ? r['group'] : base.group,
+    quiet: {
+      on: typeof q['on'] === 'boolean' ? q['on'] : base.quiet.on,
+      from: typeof q['from'] === 'string' && HHMM.test(q['from']) ? q['from'] : base.quiet.from,
+      to: typeof q['to'] === 'string' && HHMM.test(q['to']) ? q['to'] : base.quiet.to,
+      days: validDays ? (days as Weekday[]) : base.quiet.days
+    }
+  }
+}
+
+/** V7: a missing or damaged file, or any invalid field, reads as its default. */
+export async function readNotifySettings(): Promise<NotifySettings> {
+  try {
+    return cleanOver(defaults(), JSON.parse(await readFile(notifyFile(), 'utf8')))
+  } catch {
+    return defaults()
+  }
+}
+
+let notifyQueue: Promise<unknown> = Promise.resolve()
+
+/** V8: merged into what is stored, written atomically, one patch at a time. */
+export function patchNotifySettings(patch: NotifyPatch): Promise<NotifySettings> {
+  const next = notifyQueue.then(async () => {
+    const out = cleanOver(await readNotifySettings(), patch)
+    await mkdir(atrilHome(), { recursive: true })
+    await writeFile(`${notifyFile()}.tmp`, JSON.stringify(out, null, 2))
+    await rename(`${notifyFile()}.tmp`, notifyFile())
+    return out
+  })
+  notifyQueue = next.catch(() => undefined)
+  return next
 }
