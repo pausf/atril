@@ -25,6 +25,20 @@ Durable decisions: the ones in Prior decisions below (terminal de solo lectura, 
 - Q: ¿Qué manda «Sigue»? → A: nunca un «sí» suelto: en el dogfood, «Sí, sigue» se tomó como aprobación de lo último que Claude había ofrecido (publicar un comentario en la PR #11). Manda «Sigue con el plan; no hagas nada que no esté en él.» (assumed).
 - Q: ¿Queda alguna forma de escribir en la terminal? → A: no dentro de Atril; «Abrir en Terminal» (ya existe) sigue para quien quiera la TUI cruda (assumed).
 
+### Session 2026-11-13 (revisión en frío)
+- Q: ¿W74–W76 se amplían o se sustituyen? → A: se sustituyen, marcados `(amended)`: W74 guarda todas las preguntas sin recortar, W75 cambia sus formas de respuesta (sin «Sí, sigue»), W76 pasa a la tarjeta por tipo (assumed).
+- Q: ¿En Automático se suprime también el aviso en Avisos? → A: sí, en lo que Atril contesta solo no hay aviso de ningún tipo; V3 y W15 se enmiendan (assumed).
+- Q: ¿Y los paneles de shell de ⌘D? → A: también de solo lectura; ⌘D/⌘⇧D dejan de hacer nada y «Abrir en Terminal» da la shell escribible (assumed).
+- Q: ¿⌘↩? → A: envía el compositor solo cuando tiene el foco; en lo demás manda N2/W79 (assumed).
+- Q: ¿El recordatorio de inactividad cambia el `kind`? → A: no; pone `idle: true` y conserva el resto (W195 enmendado) (assumed).
+- Q: ¿Cuándo se reinicia el tope de 3 de Automático? → A: tras 30 s seguidos trabajando, no con el instante que sigue a nuestro propio «Sigue» (lo vimos en la prueba) (assumed).
+- Q: ¿La parada del push en Automático sale del texto o del permiso de W59? → A: del permiso de W59 (W207); no se lee el texto (assumed).
+- Q: ¿Selección múltiple en Automático? → A: se para como en Manual (assumed).
+- Q: ¿Quién lleva qué pregunta toca? → A: main, por sesión, desde 0 en cada entrada en needs-you; tras la última, Enter para enviar (assumed; se comprueba con Claude real).
+- Q: ¿Tareas de shell en segundo plano? → A: fuera; solo subagentes, que el gancho ya registra. Techo: con el Agent SDK llega como dato (assumed).
+- Q: ¿De dónde sale la herramienta de un permiso? → A: del último PreToolUse de esa sesión, que el gancho recuerda (assumed).
+- Q: ¿W45 sigue avisando a Claude? → A: no; el gancho reclama el umbral sin decirle nada y F25 lleva los botones; «Dejarla así» se guarda en `ui.json` `bigDismissed[workspaceId] = k` y sobrevive al reinicio (assumed).
+
 ## Outcomes
 
 - La terminal de cada trabajo se ve en vivo y se puede seleccionar y copiar, pero ninguna tecla llega al agente.
@@ -37,7 +51,7 @@ Durable decisions: the ones in Prior decisions below (terminal de solo lectura, 
 
 **In:** `src/renderer/components/Terminal.tsx`, `src/main/pty.ts` (attach), `resources/claude-hook.mjs` y `resources/summarise.mjs` (el `kind`, permisos, preguntas completas), `src/main/status.ts` (estado y respuestas), la tarjeta que sustituye a `QuickReplies.tsx` en la fila, en el resumen de agentes y encima de la terminal, el compositor, IPC y preload, textos.
 
-**Out (nombrado):** el Agent SDK (cambio siguiente); la selección múltiple contestada con botones; «Permitir siempre»; cambiar Libretto; las terminales de QA (siguen como hoy, también de solo lectura) más allá de no aceptar teclado.
+**Out (nombrado):** el Agent SDK (cambio siguiente); detectar tareas de shell en segundo plano (solo subagentes); ⌘D/⌘⇧D (se quitan); la selección múltiple contestada con botones; «Permitir siempre»; cambiar Libretto; las terminales de QA (siguen como hoy, también de solo lectura) más allá de no aceptar teclado.
 
 **Never scoped out:** la tarjeta y el compositor se manejan con teclado (números 1–4 contestan con la tarjeta enfocada, ⌘↩ envía el compositor); el texto del agente se pinta como texto, nunca como HTML; un fallo al mandar sigue la regla de errores; nada llama a Claude por su cuenta.
 
@@ -66,36 +80,44 @@ Durable decisions: the ones in Prior decisions below (terminal de solo lectura, 
 
 ## Verification criteria
 
-- **W196** The Trabajo terminal shall attach to the agent's tmux session as a read-only client (`tmux attach -r`) and send no keystroke, paste or mouse input to it; selecting text and ⌘C still copy. Main shall ignore `atril:term:input`.
+Deltas for other capabilities: `spec-avisos.md` (V3) and `spec-flow-status.md` (F25). The prose of workspaces line 35 («accepts typing as a real terminal does») becomes: «The centre column shows the agent's pane live, read-only: everything the person says to the agent goes through Atril (cards and the composer).» The next paragraph (⌘D / ⌘⇧D split into a shell pane) is removed: «Abrir en Terminal» opens a writable shell instead.
+
+- **W196** The Trabajo terminal shall attach to the agent's tmux session as a read-only client (`tmux attach -r`) and send no keystroke, paste or mouse input to it, including the shell panes an earlier ⌘D left in the session; selecting text and ⌘C still copy. Main shall ignore `atril:term:input`, and ⌘D / ⌘⇧D shall do nothing.
   Proof: src/main/pty.test.ts the terminal client is read only
   Proof: src/renderer/components/terminal.test.tsx typing in the terminal sends nothing
-- **W197** When the hook writes `needs-you`, it shall also write `kind`: `question` for a `PreToolUse` of `AskUserQuestion`, `permission` for a `Notification` with `notification_type` `permission_prompt` or a message starting «Claude needs your permission», `idle` for `idle_prompt` or «waiting for your input», and `turn-end` for `Stop`.
+- **W197** When the hook writes `needs-you`, it shall also write `kind`: `question` for a `PreToolUse` of `AskUserQuestion`, `permission` for a `Notification` with `notification_type` `permission_prompt` or a message starting «Claude needs your permission», and `turn-end` for `Stop`; an idle reminder (`idle_prompt` or «waiting for your input») shall leave `kind` as it was and set `idle: true` (W195 amended below).
   Proof: src/main/agent.test.ts the hook says what kind of wait it is
-- **W198** For a `question`, the hook shall store every question of the call in order as `{ question, header, options: [{ label, description }], multiSelect }`, labels and descriptions kept whole (no 40-character cut), and for a `permission` the tool name and a one-line summary of its input (the command for `Bash`, the path for `Edit`/`Write`).
+- **W74** (amended) When the hook gets a PreToolUse for `AskUserQuestion`, it shall add to the needs-you state every question of the call in order as `{ question, header, options: [{ label, description }], multiSelect }`, labels and descriptions whole with whitespace collapsed; the stored questions shall stay while the state stays needs-you (a later Notification or Stop included) and go when it leaves needs-you.
   Proof: src/main/agent.test.ts the hook keeps every question and what a permission is for
-- **W199** While a session is in `needs-you` with `kind` `turn-end`, if its subagents file holds an entry without `endedAt` or its transcript tail shows a background shell started and not finished, Atril shall show it as `working` with the activity «Esperando a una tarea en segundo plano» and not notify.
-  Proof: src/main/status.test.ts a turn end with background work still running is working
-- **W200** For a `question`, the card shall show the question, its header, each option as a button with its number, label and description, and the option whose label ends «(Recommended)» marked «Recomendada» without that suffix; pressing one shall answer W75's `{ option }`; with several questions the card shows the next one after each answer; for `multiSelect` it shows the options without buttons and «Contesta por escrito abajo».
-  Proof: src/renderer/components/agentcard.test.tsx a question card answers with its options
-- **W201** For a `permission`, the card shall read «Quiere ejecutar {summary}» (or «Quiere usar {tool}») with «Permitir» (sends `1`) and «Denegar» (sends Escape).
-  Proof: src/renderer/components/agentcard.test.tsx a permission card allows or denies
+- **W198** On every PreToolUse the hook shall remember, per session, the tool name and a one-line summary of its input (the command for `Bash`, the path for `Edit`/`Write`/`MultiEdit`, else nothing); when it writes a `permission` wait it shall store that pair as `{ tool, summary }`.
+  Proof: src/main/agent.test.ts a permission names the tool it waits for
+- **W195** (amended) When Claude Code's idle reminder fires (a `Notification` with `notification_type` `idle_prompt` or «waiting for your input») while the session's state file says `needs-you`, the hook shall keep that file's `text`, `kind`, `questions`, `permission` and `at` as they were and set `idle: true`.
+  Proof: src/main/agent.test.ts the idle reminder keeps the question
+- **W199** While a session is in `needs-you` with `kind` `turn-end` and its subagents file holds an entry without `endedAt`, Atril shall show it as `working` with the activity «Esperando a un subagente» and add no notice; on the first poll after the last entry ends, the state counts as entering `needs-you` (W15). Background shells are out of this change (Scope).
+  Proof: src/main/status.test.ts a turn end with a subagent still running is working
+- **W75** (amended) When the window asks `atril:status:answer(workspaceId, choice)`, main shall re-read that workspace's state and, while it is needs-you, act by the choice: `{ option: n, question: i }` for a stored question i with option n — type n plus one then Enter, and after the last question of the call also Enter to submit; `{ allow: true }` while `kind` is `permission` — type `1` then Enter; `{ deny: true }` while `kind` is `permission` — press Escape; `{ continue: true }` — paste «Sigue con el plan; no hagas nada que no esté en él.» as a bracketed paste then Enter. Any other shape, a stale question index or option, or a state that is not needs-you, shall type nothing and answer «Ese agente ya no está esperando una respuesta.» or «Esa opción ya no existe.»; a gone workspace or pane answers W53's sentence. Main shall remember per session which question is next, starting at 0 on each entry into needs-you.
+  Proof: src/main/status.test.ts each answer shape sends its own keys
   Proof: src/main/status.test.ts allow and deny send their keys
-- **W202** For a `turn-end`, the card shall show «Ha terminado: {last text}» with «Sigue» (sends «Sigue con el plan; no hagas nada que no esté en él.») and focus the composer; for `idle`, the row keeps the card it had (W195) and adds «Lleva un rato esperándote».
+- **W76** (amended) While a workspace is needs-you, its row and the strip above its terminal shall show one card by `kind` (W200–W202) instead of today's quick replies; pressing a button, by mouse or with keys 1–4 while the card has focus, shall send it (W75) and show «Enviado», disabling the card until the state changes, or show the error and keep it live.
+  Proof: src/renderer/components/agentcard.test.tsx a card answers by mouse and by number keys
+- **W200** For a `question`, the card shall show the next unanswered question, its header and each option as a button with its number, label and description, the option whose label ends «(Recommended)» or «(Recomendado)» marked «Recomendada» without that suffix; for `multiSelect` it shows the options without buttons and «Contesta por escrito abajo».
+  Proof: src/renderer/components/agentcard.test.tsx a question card answers with its options
+- **W201** For a `permission`, the card shall read «Quiere ejecutar {summary}» (or «Quiere usar {tool}», or «Quiere permiso para seguir» with no tool) with «Permitir» and «Denegar».
+  Proof: src/renderer/components/agentcard.test.tsx a permission card allows or denies
+- **W202** For a `turn-end`, the card shall show «Ha terminado: {last text}» with «Sigue» (`{ continue: true }`) and focus the composer; while `idle` is true it adds «Lleva un rato esperándote».
   Proof: src/renderer/components/agentcard.test.tsx a turn end offers to continue
 - **W203** No row, card, notification or Avisos text shall contain the hook's English messages «Claude needs your permission» or «Claude is waiting for your input».
   Proof: src/main/status.test.ts claude's english wait messages never reach the person
-- **W204** Under the terminal, the composer «Escribe al agente» shall send its trimmed text to the pane as a bracketed paste followed by Enter with ⌘↩ or «Enviar», clear itself on success, keep the text and show the error (Problem) on failure, and send nothing when empty or when the workspace is stopped.
+- **W204** Under the terminal, the composer «Escribe al agente» shall send its trimmed text to the pane as a bracketed paste followed by Enter with «Enviar», or ⌘↩ while the composer has focus (elsewhere N2 and W79 keep ⌘↩), clear itself on success, keep the text and show the error (Problem) on failure, and send nothing when empty or when the workspace is stopped.
   Proof: src/renderer/components/composer.test.tsx the composer sends to the agent
-
-- **W205** While a workspace is in Automático, when it enters `needs-you` with `kind` `question`, Atril shall answer the option marked «(Recommended)» (else the first) by itself, without a card or a notification, and show «Decidió: {label}» in the row's activity; a `multiSelect` question shall be answered by typing its recommended labels, else stop as Manual does.
+- **W205** While a workspace is in Automático, when it enters `needs-you` with `kind` `question` and no question of the call is `multiSelect`, Atril shall answer every question with the option marked recommended (else the first), by itself, adding no notice and showing no card, and show «Decidió: {label}» in the row's activity; a call with a `multiSelect` question stops as Manual does.
   Proof: src/main/status.test.ts automatic answers its own questions with the recommended option
-- **W206** While a workspace is in Automático, when it enters `needs-you` with `kind` `turn-end` or `idle` and W199 does not hold, Atril shall send «Sigue con el plan; no hagas nada que no esté en él.» by itself, at most 3 times in a row without a hook event of `working` between them; the fourth time, or when the last text asks to push or open the MR (W59) or says a gate failed twice, it shall show the card and notify as Manual does.
+- **W206** While a workspace is in Automático, when it enters `needs-you` with `kind` `turn-end` and W199 does not hold, Atril shall send `{ continue: true }` by itself, adding no notice, at most 3 times in a row; the count restarts only after the agent has been `working` for 30 s without a break; the fourth time it shows the card and notifies as Manual does.
   Proof: src/main/status.test.ts automatic keeps going on its own and stops where it must
-- **W207** While a workspace is in Automático, a `permission` wait shall show its card and notify as Manual does.
+- **W207** While a workspace is in Automático, a `permission` wait — including W59's push question — shall show its card and notify as Manual does.
   Proof: src/main/status.test.ts automatic never grants a permission by itself
-
-- **W208** While the branch is over the size threshold (F25), the warning shall carry «Separar en MRs encadenadas», which sends the agent «Separa esta rama en MRs encadenadas.» through the same path as the composer, and «Dejarla así», which hides the warning for that branch until it grows past the next threshold; the text shall no longer say that Claude was asked.
-  Proof: src/renderer/flow/changes.test.ts a large branch offers to split it from the warning
+- **W45** (amended) When a PostToolUse for Edit, Write, MultiEdit or Bash ends and the workspace's branch has more than 400 × k changed lines against its base, with k higher than any k already claimed in that session, the hook shall claim k and print nothing to Claude; F25 offers the split to the person.
+  Proof: src/main/agent.test.ts a big branch is claimed without asking claude
 
 ## Approach
 
@@ -138,10 +160,10 @@ Ninguna.
 ## Checklist
 
 - [ ] Terminal de solo lectura: `attach -r`, sin `onData`, main ignora `atril:term:input` · Closes: W196
-- [ ] Gancho: `kind`, preguntas completas, resumen del permiso · Closes: W197, W198
-- [ ] `status`: trabajo en segundo plano, acciones `allow`/`deny`/`continue`, sin textos en inglés · waits on box 2 · Closes: W199, W201, W203
-- [ ] `AgentCard` en la fila, el resumen y encima de la terminal · waits on box 3 · Closes: W200, W202
+- [ ] Gancho: `kind`, preguntas completas, resumen del permiso · Closes: W197, W74, W198, W195
+- [ ] `status`: trabajo en segundo plano, acciones `allow`/`deny`/`continue`, sin textos en inglés · waits on box 2 · Closes: W199, W75, W203
+- [ ] `AgentCard` en la fila, el resumen y encima de la terminal · waits on box 3 · Closes: W76, W200, W201, W202
 - [ ] Compositor «Escribe al agente» · waits on box 1 · Closes: W204
-- [ ] Automático sigue solo: recomendada, «Sigue con el plan; no hagas nada que no esté en él.» con tope, paradas de W59 y permisos · waits on box 3 · Closes: W205, W206, W207
-- [ ] Aviso de rama grande con sus dos botones · waits on box 5 · Closes: W208
+- [ ] Automático sigue solo: recomendada, «Sigue con el plan; no hagas nada que no esté en él.» con tope, paradas de W59 y permisos · waits on box 3 · Closes: W205, W206, W207, V3
+- [ ] Aviso de rama grande con sus dos botones; el gancho deja de avisar a Claude · waits on box 5 · Closes: F25, W45
 - [ ] Textos en inglés, S16/S19; app real; `bocetos/novedades.html` y `bocetos/fase1-nucleo.html` · waits on boxes 1–5
