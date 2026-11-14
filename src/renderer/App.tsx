@@ -305,6 +305,9 @@ function Shell() {
     () =>
       window.atril.menu.onAction((a) => {
         if (a.kind === 'next') {
+          // W204: ⌘↩ in the composer sends it; elsewhere it is N2 / W79.
+          const typing = document.activeElement
+          if (typing instanceof HTMLTextAreaElement && typing.form?.classList.contains('composer')) return void typing.form.requestSubmit()
           if (!focused) return openNext(next[0])
           if (waiting[0]) jump(waiting[0].id)
           return

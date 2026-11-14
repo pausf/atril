@@ -8,6 +8,7 @@ import { NavigationContext } from '../settings/navigation'
 import { StateLabel } from './StateLabel'
 import { Terminal } from './Terminal'
 import { AgentCard } from './AgentCard'
+import { Composer } from './Composer'
 
 /** W143: why the work stopped and the way back; the refusal reuses W135's fixes. */
 function Stopped({ ws, onReopened, onForget }: { ws: WorkspaceView; onReopened: (paneId: string) => Promise<void>; onForget: (id: string) => Promise<RemoveResult> }) {
@@ -136,11 +137,7 @@ export function Workspace({
           )}
         </div>
       </div>
-      {!stopped && (
-        <div className="hint">
-          <span>{t('Escribe en la terminal como siempre: será tu Claude Code.')}</span>
-        </div>
-      )}
+      {ws && !big && <Composer key={ws.id} workspaceId={ws.id} stopped={stopped} />}
     </main>
   )
 }

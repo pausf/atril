@@ -19,6 +19,8 @@ const pick = async (user: ReturnType<typeof userEvent.setup>, branch: string): P
   await user.click([...document.querySelectorAll('.ws-branch')].find((b) => b.textContent === branch)!.closest('button')!)
 }
 const TIP = 'Escribe en la terminal como siempre: será tu Claude Code.'
+// W204: the tip gave way to the composer, which a stopped work disables.
+const composer = (): HTMLTextAreaElement => within(center()).getByRole('textbox', { name: 'Escribe al agente' })
 
 describe('reopening a stopped work', () => {
   it('a stopped work offers to reopen', async () => {
@@ -46,6 +48,7 @@ describe('reopening a stopped work', () => {
     expect(c.textContent).toContain('PF-1 está parado: su sesión de tmux ya no existe (un reinicio o tmux cerrado).')
     expect(c.textContent).toContain('Su agente no sigue hasta que lo vuelvas a abrir.')
     expect(c.textContent).not.toContain(TIP)
+    expect(composer().disabled).toBe(true)
     expect(within(c).queryByTestId('term')).toBeNull()
     const reopen = within(c).getByRole('button', { name: 'Volver a abrir' })
     const more = within(c).getByRole('button', { name: 'Seguir con más esfuerzo' })
@@ -64,10 +67,10 @@ describe('reopening a stopped work', () => {
     expect(api.ws.reopen).toHaveBeenCalledTimes(1)
     finish({ workspace: workspace('aaaaaaa1', 'PF-1') })
 
-    // Back: the list says alive, the terminal attaches, the tip returns.
+    // Back: the list says alive, the terminal attaches, the composer takes text again.
     expect((await within(center()).findByTestId('term')).textContent).toBe('aaaaaaa1')
     expect(center().textContent).not.toContain('está parado')
-    expect(center().textContent).toContain(TIP)
+    expect(composer().disabled).toBe(false)
 
     // «Seguir con más esfuerzo» asks main for one level up; at the top it is not offered.
     await pick(user, 'PF-2')
@@ -107,6 +110,6 @@ describe('reopening a stopped work', () => {
     // A working agent shows none of it.
     await pick(user, 'PF-6')
     await waitFor(() => expect(within(center()).queryByRole('button', { name: 'Volver a abrir' })).toBeNull())
-    expect(center().textContent).toContain(TIP)
+    expect(composer().disabled).toBe(false)
   })
 })

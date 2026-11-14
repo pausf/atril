@@ -232,6 +232,15 @@ export async function answerAgent(id: string, choice: QuickChoice, run: Runner =
   return choice.question === questions.length - 1 ? sent(await pressKey(ws.paneId, 'Enter', run)) : { ok: true }
 }
 
+/** W204: the composer's trimmed text as a bracketed paste, then Enter, into that workspace's own pane. */
+export async function composeAgent(id: string, text: string, run: Runner = defaultRun): Promise<QuickAnswer> {
+  const line = text.trim()
+  if (!line) return { error: t('No hay nada que enviar.') }
+  const ws = await liveWorkspace(id, run)
+  if (!ws) return { error: replyGone() }
+  return (await pasteText(ws.paneId, line, run)) ? { ok: true } : { error: replyGone() }
+}
+
 export async function liveWorkspace(id: string, run: Runner): Promise<WorkspaceView | undefined> {
   const ws = await actingWorkspace(id, run)
   return ws?.alive && /^%\d+$/.test(ws.paneId) && !(await paneDead(ws.paneId, run)) ? ws : undefined

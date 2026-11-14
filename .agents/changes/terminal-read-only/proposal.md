@@ -47,6 +47,7 @@ Durable decisions: the ones in Prior decisions below (terminal de solo lectura, 
 - W203 se arregla en origen: `summarise.mjs` escribe «Te pregunta: ¿Puede usar {tool}?», «Te pregunta: ¿Puede seguir?» y «Claude te necesita» en lugar de los mensajes en inglés de Claude Code; las líneas viejas se traducen al enseñarlas (assumed).
 - Box 4: `QuickReplies.tsx` se borra y con él la IPC `status.quickReplies` (main la sigue usando para N3); su prueba vieja de W76 («a waiting row answers with one press») se quita de `src/renderer/quickreplies.test.ts`, que se queda con «the question card reads in every theme»; la del fila/tira encima de la terminal vive ahora en «a card answers by mouse and by number keys». W82 sigue diciendo que en «Todos» una pregunta multiSelect no lleva tarjeta: `AgentCard` tiene `skipMultiSelect` solo para ahí; `src/renderer/overview.test.ts` cambia el nombre del grupo y usa `waits`. Fuera de «In»: `src/renderer/styles.css` (cabecera, «Recomendada», descripción y la tira) (assumed).
 - La prueba de W76–W202 se escribió antes que `AgentCard.tsx`, pero no se vio en rojo: se corrió por primera vez con el componente ya escrito.
+- Box 5: el compositor sustituye la pista «Escribe en la terminal como siempre» (W143 decía que la pista no sale con el agente parado: ahora la pista no existe y el compositor sale desactivado; `src/renderer/reopen.test.ts` comprueba eso en lugar de la pista). ⌘↩ es el acelerador del menú «Siguiente», que Electron atiende antes que la página: `src/renderer/App.tsx` envía el compositor cuando tiene el foco y si no sigue con N2/W79 (fuera de «In»). Main: `composeAgent` en `status.ts` y la IPC `status.compose` (assumed). Su CSS viajó en el commit de box 4.
 
 ## Outcomes
 
@@ -172,7 +173,7 @@ Ninguna.
 - [x] Gancho: `kind`, preguntas completas, resumen del permiso · Closes: W197, W74, W198, W195
 - [x] `status`: trabajo en segundo plano, acciones `allow`/`deny`/`continue`, sin textos en inglés · waits on box 2 · Closes: W199, W75, W203
 - [x] `AgentCard` en la fila, el resumen y encima de la terminal · waits on box 3 · Closes: W76, W200, W201, W202
-- [ ] Compositor «Escribe al agente» · waits on box 1 · Closes: W204
+- [x] Compositor «Escribe al agente» · waits on box 1 · Closes: W204
 - [ ] Automático sigue solo: recomendada, «Sigue con el plan; no hagas nada que no esté en él.» con tope, paradas de W59 y permisos · waits on box 3 · Closes: W205, W206, W207, V3
 - [ ] Aviso de rama grande con sus dos botones; el gancho deja de avisar a Claude · waits on box 5 · Closes: F25, W45
 - [ ] Textos en inglés, S16/S19; app real; `bocetos/novedades.html` y `bocetos/fase1-nucleo.html` · waits on boxes 1–5

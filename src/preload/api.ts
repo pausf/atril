@@ -543,6 +543,8 @@ export interface StatusApi {
   list(): Promise<Record<string, AgentState>>
   /** What that workspace's agent waits for; null while it is not needs-you. */
   wait(workspaceId: string): Promise<AgentWait | null>
+  /** W204: the composer's text, pasted into that workspace's agent pane, then Enter. */
+  compose(workspaceId: string, text: string): Promise<QuickAnswer>
   /** Sends one answer to that workspace's agent (W75). */
   answer(workspaceId: string, choice: QuickChoice): Promise<QuickAnswer>
   /** Escape into a working agent and marks it paused (W86). */

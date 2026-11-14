@@ -322,6 +322,7 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
     status: {
       list: async () => o.states ?? {},
       wait: async (id: string) => o.waits?.[id] ?? null,
+      compose: vi.fn(async (): Promise<QuickAnswer> => ({ ok: true })),
       answer: vi.fn(async (): Promise<QuickAnswer> => o.answer ?? { ok: true }),
       pause: vi.fn(async (): Promise<QuickAnswer> => ({ ok: true })),
       resume: vi.fn(async (): Promise<QuickAnswer> => ({ ok: true })),
