@@ -6,7 +6,7 @@ import { atrilHome } from './paths'
 import { run as defaultRun, type Runner } from './run'
 import { listWorkspacesOrNone } from './workspaces'
 import { burst } from './burst'
-import { stateDir, waitingLine } from './status'
+import { decidedLine, stateDir, waitingLine } from './status'
 
 export const activityDir = (): string => join(atrilHome(), 'activity')
 
@@ -14,10 +14,11 @@ export const activityDir = (): string => join(atrilHome(), 'activity')
 export async function readActivity(session: string): Promise<ActivityLine[]> {
   const waiting = await waitingLine(session)
   const lines = await readLines(session)
-  return waiting ? [{ ...waiting, kind: 'agent' }, ...lines] : lines
+  const top = waiting ?? (await decidedLine(session, lines[0]))
+  return top ? [{ ...top, kind: waiting ? 'agent' : 'says' }, ...lines] : lines
 }
 
-async function readLines(session: string): Promise<ActivityLine[]> {
+export async function readLines(session: string): Promise<ActivityLine[]> {
   let raw: string
   try {
     raw = await readFile(join(activityDir(), `${session}.jsonl`), 'utf8')

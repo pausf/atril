@@ -32,6 +32,7 @@ export function useAsking(): [Set<string>, (id: string, shown: boolean) => void]
 
 export const composerId = (workspaceId: string): string => `composer-${workspaceId}`
 
+// The same mark Automático picks by (W205).
 const RECOMMENDED = /\s*\((Recommended|Recomendado)\)\s*$/
 
 interface Button {

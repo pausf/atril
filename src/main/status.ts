@@ -83,6 +83,22 @@ async function behindSubagent(session: string, file: HookFile): Promise<boolean>
   return ((await readSubagents(session)) ?? []).some((e) => e.endedAt === undefined)
 }
 
+// W205: an option Claude marks as the one it recommends.
+export const RECOMMENDED = /\s*\((Recommended|Recomendado)\)\s*$/
+
+/** W205: what Automático decided, shown until the agent writes a newer line. */
+const decided = new Map<string, { text: string; at?: number; line?: string }>()
+async function newestLine(session: string): Promise<{ at?: number; line?: string }> {
+  const { readLines } = await import('./activity')
+  const first = (await readLines(session))[0]
+  return first ? { at: first.at, line: first.text } : {}
+}
+export async function decidedLine(session: string, newest: { at: number; text: string } | undefined): Promise<{ at: number; text: string } | null> {
+  const d = decided.get(session)
+  if (!d || newest?.at !== d.at || newest?.text !== d.line) return null
+  return { at: d.at ?? 0, text: d.text }
+}
+
 /** W199: the line the row shows instead of the turn's last words while a subagent runs. */
 export async function waitingLine(session: string): Promise<{ at: number; text: string } | null> {
   const file = await hookFile(session)
@@ -313,7 +329,7 @@ export function createStatus({ run = defaultRun, onChange, notify, stopped = () 
       const stops: WorkspaceView[] = []
       const minutes = await idleMinutes()
       for (const ws of list) {
-        const next = await agentState(ws, run)
+        const next = await automatic(ws, await agentState(ws, run))
         const prev = known.get(ws.id)
         if (prev !== next) {
           known.set(ws.id, next)
@@ -353,6 +369,43 @@ export function createStatus({ run = defaultRun, onChange, notify, stopped = () 
     } finally {
       busy = false
     }
+  }
+
+  /** Per automatic workspace: the wait it already answered, its «Sigue» in a row, and since when it works (W206). */
+  const autos = new Map<string, { answered?: number; count: number; workingSince?: number }>()
+
+  /** W205–W207: in Automático, a question or an end of turn is answered here and reads as working. */
+  async function automatic(ws: WorkspaceView, state: AgentState): Promise<AgentState> {
+    if (ws.auto !== true) return state
+    const a = autos.get(ws.id) ?? { count: 0 }
+    autos.set(ws.id, a)
+    if (state !== 'needs-you') {
+      if (state !== 'working') a.workingSince = undefined
+      else if (a.workingSince === undefined) a.workingSince = now()
+      else if (now() - a.workingSince >= 30_000) a.count = 0
+      return state
+    }
+    a.workingSince = undefined
+    const file = await hookFile(ws.session)
+    if (file.at !== undefined && a.answered === file.at) return 'working'
+    const kind = kindOfWait(file)
+    if (kind === 'question') {
+      const questions = questionsOf(file)
+      if (questions.length === 0 || questions.some((q) => q.multiSelect || q.options.length === 0)) return state
+      const picks = questions.map((q) => Math.max(0, q.options.findIndex((o) => RECOMMENDED.test(o.label))))
+      for (const [question, option] of picks.entries())
+        if ('error' in (await answerAgent(ws.id, { option, question }, run))) return state
+      a.answered = file.at
+      decided.set(ws.session, { text: `Decidió: ${picks.map((o, i) => questions[i]!.options[o]!.label.replace(RECOMMENDED, '')).join(' · ')}`, ...(await newestLine(ws.session)) }) // i18n-ignore: an activity line, localised when shown
+      return 'working'
+    }
+    if (kind === 'turn-end' && a.count < 3) {
+      if ('error' in (await answerAgent(ws.id, { continue: true }, run))) return state
+      a.count++
+      a.answered = file.at
+      return 'working'
+    }
+    return state
   }
 
   const api = {

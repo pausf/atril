@@ -21,6 +21,7 @@ export function localiseActivity(text: string, t: T): string {
   if ((d = after('Lanzando un subagente: ')) !== null) return t('Lanzando un subagente: {detail}', { detail: d })
   if ((d = after('Le has escrito: ')) !== null) return t('Le has escrito: {detail}', { detail: d })
   if ((d = after('Te pregunta: ')) !== null) return t('Te pregunta: {detail}', { detail: d })
+  if ((d = after('Decidió: ')) !== null) return t('Decidió: {detail}', { detail: d }) // i18n-ignore: matches main's line, shown through t()
   if ((d = after('Claude dice: ')) !== null) return t('Claude dice: {detail}', { detail: d })
   if ((d = after('Escribiendo ')) !== null) return t('Escribiendo {detail}', { detail: d })
   if ((d = after('Ejecutando ')) !== null) return t('Ejecutando {detail}', { detail: d })

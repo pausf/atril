@@ -26,6 +26,7 @@ export const EN: Record<string, string> = {
   'Esa opción ya no existe.': 'That option no longer exists.',
   'Sigue': 'Go on',
   'Esperando a un subagente': 'Waiting for a subagent',
+  'Decidió: {detail}': 'Decided: {detail}',
   'Te pregunta: ¿Puede usar {detail}?': 'Asks you: may it use {detail}?',
   'Te pregunta: ¿Puede seguir?': 'Asks you: may it go on?',
   'Enviado': 'Sent',

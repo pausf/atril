@@ -520,3 +520,122 @@ describe('answers', () => {
     expect(localiseActivity('Te pregunta: Claude is waiting for your input', t)).toBe('Claude te necesita')
   }, 60_000)
 })
+
+describe('automatic', () => {
+  async function openAuto(branch: string, auto = true): Promise<WorkspaceView> {
+    makeRegisteredRepo(home)
+    const { openWorktree } = await import('./workspaces')
+    const r = await openWorktree({ repoId: 'demo', branch, agent: 'claude', argv: ['cat'], ...(auto && { auto: true }) })
+    if (!('workspace' in r)) throw new Error(r.error)
+    return r.workspace
+  }
+  const working = (session: string, at: number): void => wait(session, { state: 'working', at })
+
+  it('automatic answers its own questions with the recommended option', async () => {
+    const { createStatus } = await import('./status')
+    const { readActivity } = await import('./activity')
+    const a = await openAuto('feat/auto-q')
+    const m = await openAuto('feat/manual-q', false)
+    const { run, sent } = await spied()
+    const notify = vi.fn()
+    const status = createStatus({ run, onChange: () => {}, notify })
+    await status.refresh()
+
+    // Every question, each with its recommended option (else the first), by itself: no card, no notice.
+    const questions = [q('¿Cómo?', ['Corto', 'Largo (Recommended)']), q('¿Pruebas?', ['Sí', 'No'])]
+    wait(a.session, { at: 10, kind: 'question', text: 'Te pregunta: ¿Cómo?', questions })
+    wait(m.session, { at: 10, kind: 'question', text: 'Te pregunta: ¿Cómo?', questions })
+    await status.refresh()
+    expect(sent.filter((x) => x.includes(a.paneId)).map((x) => x.at(-1))).toEqual(['2', 'Enter', '1', 'Enter', 'Enter'])
+    expect(status.states()[a.id]).toBe('working')
+    expect((await readActivity(a.session))[0]?.text).toBe('Decidió: Largo · Sí')
+    // A manual workspace waits for the person, as before.
+    expect(sent.filter((x) => x.includes(m.paneId))).toEqual([])
+    expect(status.states()[m.id]).toBe('needs-you')
+    expect(notify.mock.calls.map((c) => c[0].branch)).toEqual(['feat/manual-q'])
+    // Answered once: the next poll sends nothing more.
+    sent.length = 0
+    await status.refresh()
+    expect(sent).toEqual([])
+
+    // A call with a multiSelect question stops as Manual does.
+    working(a.session, 11)
+    await status.refresh()
+    wait(a.session, { at: 12, kind: 'question', text: 'Te pregunta: ¿Cuáles?', questions: [q('¿Cómo?', ['A']), q('¿Cuáles?', ['A', 'B'], true)] })
+    await status.refresh()
+    expect(sent).toEqual([])
+    expect(status.states()[a.id]).toBe('needs-you')
+    expect(notify.mock.calls.map((c) => [c[0].branch, c[1]])).toEqual([['feat/manual-q', 'ask'], ['feat/auto-q', 'ask']])
+  }, 30_000)
+
+  it('automatic keeps going on its own and stops where it must', async () => {
+    const { createStatus } = await import('./status')
+    const a = await openAuto('feat/auto-t')
+    const { run, sent } = await spied()
+    const notify = vi.fn()
+    let now = 0
+    const status = createStatus({ run, onChange: () => {}, notify, now: () => now })
+    await status.refresh()
+    const pastes = (): number => sent.filter((x) => x.includes('paste-buffer')).length
+    let at = 1
+    const turn = async (): Promise<void> => {
+      wait(a.session, { at: at++, kind: 'turn-end', text: 'Claude dice: listo' })
+      await status.refresh()
+    }
+    const work = async (ms: number): Promise<void> => {
+      working(a.session, at++)
+      await status.refresh()
+      now += ms
+      await status.refresh()
+    }
+
+    // Three ends of turn in a row: «Sigue con el plan…» by itself, no card, no notice.
+    for (let i = 1; i <= 3; i++) {
+      await turn()
+      expect(pastes()).toBe(i)
+      expect(status.states()[a.id]).toBe('working')
+      await work(1000)
+    }
+    expect(notify).not.toHaveBeenCalled()
+    // The fourth stops as Manual does.
+    await turn()
+    expect(pastes()).toBe(3)
+    expect(status.states()[a.id]).toBe('needs-you')
+    expect(notify.mock.calls.map((c) => c[1])).toEqual(['done'])
+    // Working for less than 30 s without a break does not restart the count.
+    await work(29_999)
+    await turn()
+    expect(pastes()).toBe(3)
+    expect(notify).toHaveBeenCalledTimes(2)
+    // 30 s working: the count restarts and the next end of turn goes on by itself.
+    await work(30_000)
+    await turn()
+    expect(pastes()).toBe(4)
+    expect(status.states()[a.id]).toBe('working')
+
+    // A turn end behind a running subagent is working (W199): nothing is sent.
+    await work(1000)
+    mkdirSync(join(home, 'subagents'), { recursive: true })
+    writeFileSync(join(home, 'subagents', `${a.session}.json`), JSON.stringify({ entries: [{ id: 's', type: 'explorer', startedAt: 1 }] }))
+    await turn()
+    expect(pastes()).toBe(4)
+    expect(status.states()[a.id]).toBe('working')
+    expect(sent.filter((x) => x.includes('paste-buffer')).every((x) => x.includes(a.paneId))).toBe(true)
+  }, 30_000)
+
+  it('automatic never grants a permission by itself', async () => {
+    const { createStatus } = await import('./status')
+    const a = await openAuto('feat/auto-p')
+    const { run, sent } = await spied()
+    const notify = vi.fn()
+    const status = createStatus({ run, onChange: () => {}, notify })
+    await status.refresh()
+    // W59's push question and any other permission: the card and the notice, as Manual.
+    wait(a.session, { at: 5, kind: 'permission', text: 'Te pregunta: ¿Puede usar Bash?', permission: { tool: 'Bash', summary: 'git push origin feat/auto-p' } })
+    await status.refresh()
+    await status.refresh()
+    expect(sent).toEqual([])
+    expect(status.states()[a.id]).toBe('needs-you')
+    expect(notify.mock.calls.map((c) => [c[1], c[2]])).toEqual([['ask', 'Te pregunta: ¿Puede usar Bash?']])
+  }, 30_000)
+})
