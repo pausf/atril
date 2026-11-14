@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { branchSize, sizeNotice, THRESHOLD } from '../../resources/branchsize.mjs'
+import { branchSize, THRESHOLD } from '../../resources/branchsize.mjs'
 import { summarise } from '../../resources/summarise.mjs'
 import { WARN_AT } from '../renderer/flow/warn'
 import { listChanges } from './flow/changes'
@@ -231,40 +231,6 @@ describe('activity', () => {
     const answered = await open(fire([['PreToolUse', ask], ['PostToolUse', { tool_name: 'AskUserQuestion', tool_response: {} }]]), 'feat/answered')
     await until(() => stateFile(answered.session)?.state, (s) => s === 'working')
     expect(stateFile(answered.session)?.state).toBe('working')
-  })
-
-  it('a large branch asks claude to offer a split', () => {
-    const repo = tmp()
-    git(repo, 'init', '-q')
-    writeFileSync(join(repo, 'a.txt'), 'x\n')
-    git(repo, 'add', '.')
-    git(repo, 'commit', '-q', '-m', 'base')
-    const base = git(repo, 'rev-parse', 'HEAD').trim()
-    writeFileSync(
-      join(home, 'workspaces.json'),
-      JSON.stringify({ workspaces: [{ id: 't1', branch: 'b1', session: 'atril-t1', path: repo, baseCommit: base }, { id: 't2', branch: 'b2', session: 'atril-t2', path: repo, baseCommit: base }] })
-    )
-    const grow = (n: number): void => writeFileSync(join(repo, 'big.txt'), 'línea\n'.repeat(n))
-    const ask = (tool = 'Edit', session = 'atril-t1'): string | null => sizeNotice({ home, session, event: 'PostToolUse', tool })
-
-    grow(300)
-    expect(ask()).toBeNull()
-    grow(500)
-    expect(ask()).toMatch(/^Atril: esta rama ya cambia 500 líneas respecto a su base \(más de 400\)\..*AskUserQuestion.*chained-pr.*No separes nada sin preguntar\.$/s)
-    expect(ask()).toBeNull()
-    grow(1300)
-    expect(ask('Write')).toContain('1300 líneas')
-    grow(1400)
-    expect(ask('Bash')).toBeNull()
-    grow(2000)
-    expect(ask('Read')).toBeNull()
-    expect(ask('Edit', 'atril-unknown')).toBeNull()
-    // A jump from nothing to 1300 announces once; shrinking back under a passed threshold stays quiet.
-    grow(1300)
-    expect(ask('Edit', 'atril-t2')).toContain('1300 líneas')
-    grow(500)
-    expect(ask('Edit', 'atril-t2')).toBeNull()
-    expect(sizeNotice({ home, session: 'atril-t1', event: 'PreToolUse', tool: 'Edit' })).toBeNull()
   })
 
   it('the hook counts like the change list', async () => {

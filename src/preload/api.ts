@@ -946,6 +946,8 @@ export interface UiState {
   language?: LangChoice
   /** The language main resolved from it; main sets it, the window only reads it (W48). */
   lang?: Lang
+  /** F25: per workspace, the branch-size threshold the person chose «Dejarla así» for; merges key by key. */
+  bigDismissed?: Record<string, number>
 }
 
 export interface UiApi {

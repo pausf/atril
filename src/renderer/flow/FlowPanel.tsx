@@ -102,7 +102,7 @@ function LibrettoFlow({ flow, workspaceId, boxes, subs, onBig, onOpenLibretto }:
     )
   return (
     <>
-      <BigWarning lines={boxes.total} />
+      {workspaceId && <BigWarning key={workspaceId} lines={boxes.total} workspaceId={workspaceId} />}
       {flow?.change && (
         <p className="fmeta crow">
           <span className="cname" title={flow.change}>
@@ -130,13 +130,39 @@ function LibrettoFlow({ flow, workspaceId, boxes, subs, onBig, onOpenLibretto }:
   )
 }
 
-/** F25: past the hook's threshold the total turns into a warning, on top, that says what Atril already did. */
-function BigWarning({ lines }: { lines: number }) {
+const SPLIT = 'Separa esta rama en MRs encadenadas.' // i18n-ignore: words for Claude, not the person
+
+/** F25: past the hook's threshold, on top: split it through the composer's path (W204) or leave it until the next threshold. */
+function BigWarning({ lines, workspaceId }: { lines: number; workspaceId: string }) {
   const t = useT()
-  if (lines <= WARN_AT) return null
+  const k = Math.floor((lines - 1) / WARN_AT)
+  // Undefined until ui.json is read, so a dismissed warning never flashes.
+  const [left, setLeft] = useState<number | undefined>()
+  const [sent, setSent] = useState<string | null>(null)
+  useEffect(() => {
+    void window.atril.ui.get().then((u) => setLeft(u.bigDismissed?.[workspaceId] ?? 0))
+  }, [workspaceId])
+  if (lines <= WARN_AT || left === undefined || left >= k) return null
+  const split = (): void => {
+    setSent('')
+    void window.atril.status.compose(workspaceId, SPLIT).then((r) => setSent('ok' in r ? t('Enviado') : r.error))
+  }
+  const leave = (): void => {
+    setLeft(k)
+    void window.atril.ui.set({ bigDismissed: { [workspaceId]: k } })
+  }
   return (
-    <p className="fbig" role="status">
-      {t('⚠ {lines} líneas: rama grande (más de {max}). Atril le ha pedido a Claude que te proponga separarla en MRs más pequeñas.', { lines, max: WARN_AT })}
-    </p>
+    <div className="fbig" role="status">
+      <span className="fbig-text">{t('⚠ {lines} líneas: rama grande (más de {max}).', { lines, max: WARN_AT })}</span>
+      <span className="fbig-acts">
+        <button type="button" className="btn" disabled={sent === ''} onClick={split}>
+          {t('Separar en MRs encadenadas')}
+        </button>
+        <button type="button" className="btn" onClick={leave}>
+          {t('Dejarla así')}
+        </button>
+        {sent && <span className="fbig-sent">{sent}</span>}
+      </span>
+    </div>
   )
 }

@@ -31,6 +31,13 @@ describe('ui store', () => {
     writeFileSync(join(process.env['ATRIL_HOME']!, 'ui.json'), '{nope')
     expect((await readUi()).theme).toBe('auto')
   })
+  it('remembers each branch-size threshold left as it is, per work', async () => {
+    // F25: «Dejarla así» stores the threshold per workspace; patches merge key by key; nonsense is dropped.
+    await patchUi({ bigDismissed: { aaaaaaa1: 1 } })
+    await patchUi({ bigDismissed: { aaaaaaa2: 2, bad: 'x', zero: 0 } })
+    await patchUi({ theme: 'dark' })
+    expect((await readUi()).bigDismissed).toEqual({ aaaaaaa1: 1, aaaaaaa2: 2 })
+  })
   it('keeps the palette and reads an unknown one as the original', async () => {
     await patchUi({ palette: 'grafito' })
     expect((await readUi()).palette).toBe('grafito')

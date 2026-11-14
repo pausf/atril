@@ -8,7 +8,7 @@ import { join } from 'node:path'
 import process from 'node:process'
 import { Buffer } from 'node:buffer'
 import { summarise } from './summarise.mjs'
-import { sizeNotice } from './branchsize.mjs'
+import { claimSize } from './branchsize.mjs'
 
 // W59: pushes and request creation in an automatic workspace need the person.
 // ponytail: any git … push in one command segment; a `push` word in a commit message only adds a question.
@@ -238,9 +238,8 @@ try {
     /* the subagent list never costs the state its write */
   }
 
-  // W45: past each 400-line threshold, Claude is asked once to offer a split into smaller MRs.
-  const notice = sizeNotice({ home, session: name, event, tool: payload?.tool_name })
-  if (notice) process.stdout.write(JSON.stringify({ hookSpecificOutput: { hookEventName: 'PostToolUse', additionalContext: notice } }))
+  // W45: past each 400-line threshold the hook only claims it; F25 offers the split to the person.
+  claimSize({ home, session: name, event, tool: payload?.tool_name })
 } catch {
   /* a hook must never disturb Claude */
 }

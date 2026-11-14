@@ -2696,6 +2696,16 @@ kbd {
   font-size: 12.5px;
   line-height: 1.4;
 }
+.fbig-acts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+}
+.fbig-sent {
+  color: var(--sub);
+}
 
 /* The create-repo dialog (S23, S26). */
 .dlg:focus {

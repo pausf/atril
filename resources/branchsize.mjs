@@ -1,4 +1,4 @@
-// The branch-size note (W45): plain Node, so the hook can run it without the TypeScript build.
+// The branch-size claim (W45): plain Node, so the hook can run it without the TypeScript build.
 // Counts like src/main/flow/changes.ts (F18); W46 pins the two together.
 import { execFileSync } from 'node:child_process'
 import { lstatSync, mkdirSync, openSync, closeSync, readdirSync, readFileSync } from 'node:fs'
@@ -37,14 +37,8 @@ export function branchSize(path, base) {
   return total
 }
 
-const note = (total) =>
-  `Atril: esta rama ya cambia ${total} líneas respecto a su base (más de ${THRESHOLD}). ` +
-  'En tu siguiente parada natural, pregunta a la persona con AskUserQuestion si quiere separar el trabajo ' +
-  'en MRs más pequeñas encadenadas (usa la skill chained-pr si está disponible) o seguir en una sola. ' +
-  'No separes nada sin preguntar.'
-
-/** The note to hand Claude, or null; each threshold k is claimed once per session. */
-export function sizeNotice({ home, session, event, tool }) {
+/** The threshold k this call claims, or null; each k is claimed once per session. Claude is told nothing: F25 asks the person. */
+export function claimSize({ home, session, event, tool }) {
   if (event !== 'PostToolUse' || !TOOLS.has(tool)) return null
   let ws
   try {
@@ -66,5 +60,5 @@ export function sizeNotice({ home, session, event, tool }) {
   } catch {
     return null
   }
-  return note(total)
+  return k
 }

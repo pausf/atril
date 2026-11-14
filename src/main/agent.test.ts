@@ -497,6 +497,45 @@ describe('subagents hook', () => {
     expect(stateOf((await fireIn([permit()])).session)).not.toHaveProperty('permission')
   }, 120000)
 
+  it('a big branch is claimed without asking claude', async () => {
+    const { claimSize } = await import('../../resources/branchsize.mjs')
+    const dir = tmp()
+    const gate = join(dir, 'go')
+    const hook = (event: string, i: number): string => `${hooksSettings().hooks[event]?.[0]?.hooks[0]?.command ?? ''} <'${join(dir, `in-${i}.json`)}' >'${join(dir, `out-${i}`)}'`
+    writeFileSync(join(dir, 'in-0.json'), JSON.stringify({ tool_name: 'Edit', tool_input: { file_path: 'big.txt' } }))
+    writeFileSync(join(dir, 'in-1.json'), JSON.stringify({ tool_name: 'Edit', tool_input: { file_path: 'big.txt' } }))
+    const r = await openWorktree({
+      repoId: 'demo',
+      branch: 'feat/big',
+      agent: 'claude',
+      argv: ['sh', '-c', `while [ ! -f '${gate}' ]; do sleep 0.1; done; ${hook('PostToolUse', 0)}; ${hook('PostToolUse', 1)}; touch '${join(dir, 'done')}'; sleep 300`]
+    })
+    if (!('workspace' in r)) throw new Error(r.error)
+    const ws = r.workspace
+    writeFileSync(join(ws.path, 'big.txt'), 'línea\n'.repeat(500))
+    writeFileSync(gate, '')
+    const end = Date.now() + 15000
+    while (!existsSync(join(dir, 'done')) && Date.now() < end) await new Promise((ok) => setTimeout(ok, 100))
+    // Past 400 the hook claims the threshold and says nothing to Claude, then or the next time.
+    expect(readFileSync(join(dir, 'out-0'), 'utf8')).toBe('')
+    expect(readFileSync(join(dir, 'out-1'), 'utf8')).toBe('')
+    expect(readdirSync(join(home, 'size', ws.session))).toEqual(['k1'])
+
+    // Each threshold once per session, only above the highest claimed, only after Edit, Write, MultiEdit or Bash.
+    const claim = (tool = 'Edit', event = 'PostToolUse'): number | null => claimSize({ home, session: ws.session, event, tool })
+    const grow = (n: number): void => writeFileSync(join(ws.path, 'big.txt'), 'línea\n'.repeat(n))
+    expect(claim()).toBeNull()
+    grow(1300)
+    expect(claim('Read')).toBeNull()
+    expect(claim('Edit', 'PreToolUse')).toBeNull()
+    expect(claim('Write')).toBe(3)
+    grow(1400)
+    expect(claim('Bash')).toBeNull()
+    grow(500)
+    expect(claim('MultiEdit')).toBeNull()
+    expect(claimSize({ home, session: 'atril-unknown', event: 'PostToolUse', tool: 'Edit' })).toBeNull()
+  }, 60000)
+
   it('the idle reminder keeps the question', async () => {
     const questions = [{ question: '¿Cuál?', header: 'Cuál', multiSelect: false, options: [{ label: 'A', description: '' }, { label: 'B', description: '' }] }]
     const waiting = { state: 'needs-you', at: 1234, text: 'Te pregunta: ¿Cuál?', kind: 'question', questions, permission: { tool: 'Bash', summary: 'ls' } }

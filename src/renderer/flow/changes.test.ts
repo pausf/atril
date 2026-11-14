@@ -3,7 +3,7 @@ import { createElement } from 'react'
 import { cleanup, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { FileChange, FlowStage } from '../../preload/api'
+import type { FileChange, FlowStage, UiState } from '../../preload/api'
 import { App } from '../App'
 import { mockApi, mockSystemTheme, workspace } from '../mockApi'
 
@@ -14,10 +14,11 @@ const changes: FileChange[] = [
 ]
 const building: FlowStage = { stage: 'construir', change: 'add-x', others: [], checklist: { file: 'proposal.md', closed: 1, total: 3, firstOpen: 'b' } }
 
-async function boot(flow: FlowStage, files: FileChange[] = changes) {
-  mockApi({ workspaces: [workspace('aaaaaaa1', 'PF-1', false)], states: { aaaaaaa1: 'working' }, flow, changes: files })
+async function boot(flow: FlowStage, files: FileChange[] = changes, stored?: UiState) {
+  const api = mockApi({ workspaces: [workspace('aaaaaaa1', 'PF-1', false)], states: { aaaaaaa1: 'working' }, flow, changes: files }, stored)
   render(createElement(App))
   await userEvent.setup().click(await screen.findByRole('button', { name: /^PF-1/ }))
+  return api
 }
 
 beforeEach(() => mockSystemTheme(false))
@@ -39,17 +40,42 @@ describe('file changes', () => {
     }
   })
 
-  it('a large branch warns at the top of the panel', async () => {
-    // F25 (amended by panel-c): the warning is a line at the top of the panel, from the branch total that main sends.
+  it('a large branch offers to split it from the warning', async () => {
+    // F25 (amended by terminal-read-only): the line says the total and offers the split or leaving it.
     const big: FileChange[] = [{ path: 'src/Big.php', status: 'A', added: 380, removed: 0 }, { path: 'src/Old.php', status: 'M', added: 70, removed: 50 }]
-    await boot(building, big)
-    const warn = await vi.waitFor(() => {
-      const el = document.querySelector('.col.right .fbig')
-      if (!el) throw new Error('no warning yet')
-      return el
-    })
-    expect(warn.textContent).toBe('⚠ 500 líneas: rama grande (más de 400). Atril le ha pedido a Claude que te proponga separarla en MRs más pequeñas.')
+    const warning = (): Promise<Element> =>
+      vi.waitFor(() => {
+        const el = document.querySelector('.col.right .fbig')
+        if (!el) throw new Error('no warning yet')
+        return el
+      })
+    const stored: UiState = { tutorialSeen: true, theme: 'auto', folded: {} }
+    const api = await boot(building, big, stored)
+    const warn = await warning()
+    expect(warn.querySelector('.fbig-text')?.textContent).toBe('⚠ 500 líneas: rama grande (más de 400).')
+    expect(warn.textContent).not.toContain('Atril le ha pedido a Claude')
     expect(document.querySelector('.col.right [role="tabpanel"]')!.firstElementChild).toBe(warn)
+
+    // «Separar en MRs encadenadas» tells the agent through the composer's path.
+    const user = userEvent.setup()
+    await user.click(screen.getByRole('button', { name: 'Separar en MRs encadenadas' }))
+    expect(api.statusApi.compose).toHaveBeenLastCalledWith('aaaaaaa1', 'Separa esta rama en MRs encadenadas.')
+
+    // «Dejarla así» remembers the threshold for that work and hides the line.
+    await user.click(screen.getByRole('button', { name: 'Dejarla así' }))
+    expect(api.ui.set).toHaveBeenLastCalledWith({ bigDismissed: { aaaaaaa1: 1 } })
+    await vi.waitFor(() => expect(document.querySelector('.fbig')).toBeNull())
+    cleanup()
+
+    // After a restart it stays hidden at that threshold…
+    await boot(building, big, stored)
+    await screen.findByRole('group', { name: 'Pasos de Libretto' })
+    await vi.waitFor(() => expect(window.atril.flow.boxes).toHaveBeenCalled())
+    expect(document.querySelector('.fbig')).toBeNull()
+    cleanup()
+    // …and comes back past the next one.
+    await boot(building, [...big, { path: 'src/More.php', status: 'A', added: 400, removed: 0 }], stored)
+    expect((await warning()).querySelector('.fbig-text')?.textContent).toBe('⚠ 900 líneas: rama grande (más de 400).')
     cleanup()
 
     // At or under the threshold, nothing.

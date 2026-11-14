@@ -167,7 +167,7 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
   const ui = {
     get: vi.fn(async () => withLang()),
     set: vi.fn(async (p: Partial<UiState>) => {
-      Object.assign(stored, p, { folded: { ...stored.folded, ...p.folded } })
+      Object.assign(stored, p, { folded: { ...stored.folded, ...p.folded } }, p.bigDismissed && { bigDismissed: { ...stored.bigDismissed, ...p.bigDismissed } })
       return withLang()
     })
   }
