@@ -1117,6 +1117,93 @@ kbd {
   text-align: center;
   padding: 0 3px;
 }
+/* W200–W202: the card says what the agent waits for. */
+.ask:focus-visible {
+  outline: 2px solid var(--you);
+  outline-offset: -2px;
+}
+.ask-head {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--sub);
+  margin: 0 0 2px;
+}
+.ask-text {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 8px;
+  min-width: 0;
+}
+.ask-label {
+  overflow-wrap: anywhere;
+}
+.ask-rec {
+  font-size: 11px;
+  color: var(--text);
+  border: 1px solid color-mix(in oklch, var(--you) 60%, var(--line));
+  border-radius: 4px;
+  padding: 0 4px;
+}
+.ask-desc {
+  flex-basis: 100%;
+  font-size: 11.5px;
+  color: var(--sub);
+  overflow-wrap: anywhere;
+}
+.ask-multi {
+  margin: 4px 0 0;
+  padding-left: 18px;
+  font-size: 12.5px;
+  color: var(--text);
+}
+.ask-multi li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 8px;
+}
+.ask-note {
+  font-size: 11.5px;
+  color: var(--sub);
+  margin: 6px 0 0;
+}
+/* Above the terminal the card stands alone, not joined to a row. */
+.term-ask .ask {
+  border-top: 1px solid color-mix(in oklch, var(--you) 50%, var(--line));
+  border-radius: var(--r);
+  margin: 0 0 8px;
+}
+/* W204: «Escribe al agente», under the terminal. */
+.composer {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.composer-row {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+}
+.composer textarea {
+  flex: 1;
+  min-width: 0;
+  resize: vertical;
+  font: inherit;
+  font-size: 12.5px;
+  color: var(--text);
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 6px 8px;
+}
+.composer textarea:focus-visible {
+  outline: 2px solid var(--you);
+  outline-offset: -1px;
+}
+.composer textarea:disabled {
+  color: var(--sub);
+}
 .quick-replies {
   display: flex;
   flex-wrap: wrap;

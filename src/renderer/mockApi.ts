@@ -1,5 +1,5 @@
 import { vi } from 'vitest'
-import type { ActivityLine, SubagentEntry, SubagentLine, AddRepoResult, Aviso, FileChange, FlowBoxes, FlowDocs, ForgeId, ForgeStatus, Mode, MrDraft, MrDrafts, MrDraftsResult, MrFixCiResult, MrLists, MrReply, MrScoreState, MrThreads, MrWork, NotifyPatch, NotifyPermission, NotifySettings, AgentState, StateProblem, QaBugResult, QaLaunchResult, QaManualRequest, QaMr, QaPublishResult, QaReport, QaResult, QaStatus, QaTargets, AtrilApi, RemoveResult, QuickAnswer, QuickReplies, RadarHit, FlowStage, HistoryEntry, IdeaJiraResult, IdeaResult, LibrettoCounts, LibrettoState, JiraIssue, JiraSettingsStatus, MenuAction, NextItem, StartProposalResult, StartRequest, StartResult, RepoResult, RepoView, ToolReport, UiState, WorkCost, WorkspaceResult, WorkspaceView } from '../preload/api'
+import type { ActivityLine, SubagentEntry, SubagentLine, AddRepoResult, Aviso, FileChange, FlowBoxes, FlowDocs, ForgeId, ForgeStatus, Mode, MrDraft, MrDrafts, MrDraftsResult, MrFixCiResult, MrLists, MrReply, MrScoreState, MrThreads, MrWork, NotifyPatch, NotifyPermission, NotifySettings, AgentState, StateProblem, QaBugResult, QaLaunchResult, QaManualRequest, QaMr, QaPublishResult, QaReport, QaResult, QaStatus, QaTargets, AtrilApi, RemoveResult, QuickAnswer, AgentWait, RadarHit, FlowStage, HistoryEntry, IdeaJiraResult, IdeaResult, LibrettoCounts, LibrettoState, JiraIssue, JiraSettingsStatus, MenuAction, NextItem, StartProposalResult, StartRequest, StartResult, RepoResult, RepoView, ToolReport, UiState, WorkCost, WorkspaceResult, WorkspaceView } from '../preload/api'
 
 export const workspace = (id: string, branch: string, alive = true): WorkspaceView => ({
   id,
@@ -53,8 +53,8 @@ interface Options {
   flows?: Record<string, FlowStage>
   /** Newest first, per workspace id. */
   activity?: Record<string, ActivityLine[]>
-  /** What status.quickReplies answers per workspace id; missing means no options. */
-  quickReplies?: Record<string, QuickReplies>
+  /** What status.wait answers per workspace id; missing means not waiting. */
+  waits?: Record<string, AgentWait>
   /** What status.answer answers; missing means sent. */
   answer?: QuickAnswer
   /** Subagent entries per workspace id. */
@@ -321,8 +321,7 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
     },
     status: {
       list: async () => o.states ?? {},
-      quickReplies: async (id: string) => o.quickReplies?.[id] ?? { options: [], multiSelect: false, question: 0 },
-      wait: async () => null,
+      wait: async (id: string) => o.waits?.[id] ?? null,
       answer: vi.fn(async (): Promise<QuickAnswer> => o.answer ?? { ok: true }),
       pause: vi.fn(async (): Promise<QuickAnswer> => ({ ok: true })),
       resume: vi.fn(async (): Promise<QuickAnswer> => ({ ok: true })),

@@ -1,12 +1,13 @@
 import { useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 import type { FlowStage, RemoveResult, WorkspaceResult, WorkspaceView } from '../../preload/api'
-import { stateOf, useAgentStates } from '../agents'
+import { stateOf, useAgentStates, useLatestActivity } from '../agents'
 import { Steps } from '../flow/Steps'
 import { useT } from '../ui'
 import { fixLabel, Problem, sharedFix } from './Problem'
 import { NavigationContext } from '../settings/navigation'
 import { StateLabel } from './StateLabel'
 import { Terminal } from './Terminal'
+import { AgentCard } from './AgentCard'
 
 /** W143: why the work stopped and the way back; the refusal reuses W135's fixes. */
 function Stopped({ ws, onReopened, onForget }: { ws: WorkspaceView; onReopened: (paneId: string) => Promise<void>; onForget: (id: string) => Promise<RemoveResult> }) {
@@ -82,6 +83,7 @@ export function Workspace({
     wasBig.current = Boolean(big)
   }, [big])
   const states = useAgentStates()
+  const latest = useLatestActivity()
   // The status poll says «stopped» for up to 2 s after a reopen: the pane just started is not stopped.
   const [fresh, setFresh] = useState<string | null>(null)
   const stopped = ws !== undefined && (!ws.alive || (stateOf(states, ws) === 'stopped' && `${ws.id}:${ws.paneId}` !== fresh))
@@ -116,6 +118,11 @@ export function Workspace({
               }}
               onForget={onForget}
             />
+          )}
+          {ws && stateOf(states, ws) === 'needs-you' && (
+            <div className="term-ask">
+              <AgentCard key={ws.id} workspaceId={ws.id} activityAt={latest[ws.id]?.at} focusComposer />
+            </div>
           )}
           {ws?.alive ? (
             // The pane id changes on a reopen: a new key attaches the terminal to the new session.

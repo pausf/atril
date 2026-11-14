@@ -169,7 +169,10 @@ describe('agents overview', () => {
     const api = mockApi({
       ...base,
       activity: { ...base.activity, aaaaaaa4: asked, aaaaaaa3: asked },
-      quickReplies: { aaaaaaa4: { options: ['Sí', 'Rehaz el plan'], multiSelect: false, question: 0 }, aaaaaaa3: { options: ['a', 'b'], multiSelect: true, question: 0 } }
+      waits: {
+        aaaaaaa4: { kind: 'question', questions: [{ question: '¿Aplico el plan completo?', header: '', multiSelect: false, options: [{ label: 'Sí', description: '' }, { label: 'Rehaz el plan', description: '' }] }], next: 0, idle: false },
+        aaaaaaa3: { kind: 'question', questions: [{ question: '¿Aplico el plan completo?', header: '', multiSelect: true, options: [{ label: 'a', description: '' }] }], next: 0, idle: false }
+      }
     })
     render(createElement(App))
     await screen.findByText('PF-5')
@@ -177,7 +180,7 @@ describe('agents overview', () => {
     await waitFor(() => expect(branches()[0]).toBe('PF-4'))
 
     // A needs-you card carries W76's replies outside its button; multiSelect and other states carry none.
-    const replies = (b: string) => within(card(b)).queryByRole('group', { name: 'Respuestas rápidas' })
+    const replies = (b: string) => within(card(b)).queryByRole('group', { name: 'Lo que espera el agente' })
     await waitFor(() => expect(replies('PF-4')).toBeTruthy())
     expect(card('PF-4').querySelector('.ov-main')?.contains(replies('PF-4'))).toBe(false)
     expect(card('PF-4').querySelector('.ov-main button')).toBeNull()

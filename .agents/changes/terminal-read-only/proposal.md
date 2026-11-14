@@ -45,6 +45,8 @@ Durable decisions: the ones in Prior decisions below (terminal de solo lectura, 
 - Box 3: «a quick answer reaches its own pane» (src/main/reply.test.ts, la prueba vieja de W75) se quita: W75 enmendado cita las dos de `status.test.ts`, que cubren sus cláusulas (pantalla propia, opción fuera de rango, estado que ya no espera, formas raras, trabajo que ya no está). N3 («a number answers the option with its key») ahora espera el Enter final de W75 tras la última pregunta. `QuickReplies.tsx` y su test pasan a `{ option, question }` y «Sigue» hasta que box 4 los sustituya. Fuera de «In»: `src/main/activity.ts` (W199: la línea «Esperando a un subagente» encima y el vigilante también mira `state/`), `src/preload/activity-i18n.ts` (W203 para líneas viejas), `src/renderer/mockApi.ts` y `src/renderer/overview.test.ts` (la forma nueva) (assumed).
 - W75 dice «a gone workspace or pane answers W53's sentence», pero W53 es del runner: se usa la de N3 («No se pudo enviar: ese trabajo ya no está»), como hasta ahora (assumed).
 - W203 se arregla en origen: `summarise.mjs` escribe «Te pregunta: ¿Puede usar {tool}?», «Te pregunta: ¿Puede seguir?» y «Claude te necesita» en lugar de los mensajes en inglés de Claude Code; las líneas viejas se traducen al enseñarlas (assumed).
+- Box 4: `QuickReplies.tsx` se borra y con él la IPC `status.quickReplies` (main la sigue usando para N3); su prueba vieja de W76 («a waiting row answers with one press») se quita de `src/renderer/quickreplies.test.ts`, que se queda con «the question card reads in every theme»; la del fila/tira encima de la terminal vive ahora en «a card answers by mouse and by number keys». W82 sigue diciendo que en «Todos» una pregunta multiSelect no lleva tarjeta: `AgentCard` tiene `skipMultiSelect` solo para ahí; `src/renderer/overview.test.ts` cambia el nombre del grupo y usa `waits`. Fuera de «In»: `src/renderer/styles.css` (cabecera, «Recomendada», descripción y la tira) (assumed).
+- La prueba de W76–W202 se escribió antes que `AgentCard.tsx`, pero no se vio en rojo: se corrió por primera vez con el componente ya escrito.
 
 ## Outcomes
 
@@ -169,7 +171,7 @@ Ninguna.
 - [x] Terminal de solo lectura: `attach -r`, sin `onData`, main ignora `atril:term:input` · Closes: W196
 - [x] Gancho: `kind`, preguntas completas, resumen del permiso · Closes: W197, W74, W198, W195
 - [x] `status`: trabajo en segundo plano, acciones `allow`/`deny`/`continue`, sin textos en inglés · waits on box 2 · Closes: W199, W75, W203
-- [ ] `AgentCard` en la fila, el resumen y encima de la terminal · waits on box 3 · Closes: W76, W200, W201, W202
+- [x] `AgentCard` en la fila, el resumen y encima de la terminal · waits on box 3 · Closes: W76, W200, W201, W202
 - [ ] Compositor «Escribe al agente» · waits on box 1 · Closes: W204
 - [ ] Automático sigue solo: recomendada, «Sigue con el plan; no hagas nada que no esté en él.» con tope, paradas de W59 y permisos · waits on box 3 · Closes: W205, W206, W207, V3
 - [ ] Aviso de rama grande con sus dos botones; el gancho deja de avisar a Claude · waits on box 5 · Closes: F25, W45

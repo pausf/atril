@@ -5,7 +5,7 @@ import type { RadarHit, RemoveResult, StateProblem, WorkspaceView } from '../../
 import { stateOf, useAgentStates, useLatestActivity } from '../agents'
 import { runningCount, useSubagents } from '../subagents'
 import { localiseActivity } from '../../preload/activity-i18n'
-import { QuickReplies, useAsking } from './QuickReplies'
+import { AgentCard, useAsking } from './AgentCard'
 import { fixLabel, Problem, sharedFix } from './Problem'
 import { NavigationContext } from '../settings/navigation'
 import { useRadar } from '../radar'
@@ -112,12 +112,7 @@ export function WorkspaceList({ workspaces, problem, selected, onSelect, onRemov
             )}
           </button>
           {states[w.id] === 'needs-you' && (
-            <QuickReplies
-              workspaceId={w.id}
-              activityAt={latest[w.id]?.at}
-              question={latest[w.id] && localiseActivity(latest[w.id]!.text, t)}
-              onShown={(shown) => markAsking(w.id, shown)}
-            />
+            <AgentCard workspaceId={w.id} activityAt={latest[w.id]?.at} onShown={(shown) => markAsking(w.id, shown)} />
           )}
           <button
             type="button"

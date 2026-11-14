@@ -512,7 +512,7 @@ export type AgentState = 'working' | 'needs-you' | 'paused' | 'stopped'
 
 /** W75: an option of the question due now, or one of main's own actions; main chooses the keys and words. */
 export type QuickChoice = { option: number; question: number } | { allow: true } | { deny: true } | { continue: true }
-/** The question due now as the row's numbered buttons (until the card replaces them). */
+/** The question due now as numbers a Mac reply can answer (N3). */
 export interface QuickReplies {
   options: string[]
   multiSelect: boolean
@@ -543,8 +543,6 @@ export interface StatusApi {
   list(): Promise<Record<string, AgentState>>
   /** What that workspace's agent waits for; null while it is not needs-you. */
   wait(workspaceId: string): Promise<AgentWait | null>
-  /** The question due now (W74); empty while it is not needs-you. */
-  quickReplies(workspaceId: string): Promise<QuickReplies>
   /** Sends one answer to that workspace's agent (W75). */
   answer(workspaceId: string, choice: QuickChoice): Promise<QuickAnswer>
   /** Escape into a working agent and marks it paused (W86). */

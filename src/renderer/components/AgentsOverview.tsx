@@ -8,7 +8,7 @@ import { runningCount, useSubagents } from '../subagents'
 import { useT } from '../ui'
 import { Icon } from './Icon'
 import { StateLabel } from './StateLabel'
-import { QuickReplies, useAsking } from './QuickReplies'
+import { AgentCard, useAsking } from './AgentCard'
 
 interface Props {
   workspaces: WorkspaceView[]
@@ -105,12 +105,7 @@ export function AgentsOverview({ workspaces, next, switcher, onOpen }: Props) {
               </button>
               {/* Outside the card's button: answering must not open it (W82). */}
               {state === 'needs-you' && (
-                <QuickReplies
-                  workspaceId={w.id}
-                  activityAt={act?.at}
-                  question={act && localiseActivity(act.text, t)}
-                  onShown={(shown) => markAsking(w.id, shown)}
-                />
+                <AgentCard workspaceId={w.id} activityAt={act?.at} onShown={(shown) => markAsking(w.id, shown)} skipMultiSelect />
               )}
               {(state === 'working' || state === 'paused') && <PauseButton workspaceId={w.id} paused={state === 'paused'} />}
             </div>
