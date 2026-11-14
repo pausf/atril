@@ -7,6 +7,7 @@ con agentes de Claude Code en tmux, y gestiona MRs de GitHub/GitLab. Remoto PRIV
 ## Dónde lo dejamos (10 nov 2026) — empieza por aquí
 
 Las ramas van apiladas: cada una sale de la anterior y `main` no se ha movido. La última es
+**`terminal-read-only`** (14 nov: terminal de solo lectura, una tarjeta por tipo de espera —pregunta, permiso, fin de turno—, «Escribe al agente», Automático sigue solo hasta 3 veces, rama grande con «Separar»/«Dejarla así»; sin probar con Claude real: dígito + Enter en el selector y «Permitir» = 1). Antes,
 **`notify-ui`** (14 nov: tarjetas «Notificaciones» y «Cuándo» en Ajustes, pantalla Avisos con los tipos nuevos). Antes,
 **`notify-core`** (12 nov: avisos con nombre del trabajo, tipos nuevos, uno sin leer por trabajo, agrupar, foco y horas de silencio en main; `notify-ui` sigue). Antes,
 **`plain-errors`** (11 nov: cuota, herramientas y Jira con frase, botón y «Ver detalle»; hallazgos 1, 2 y 24). Antes, **`qa-targets`**, aterrizada y subida el 11 nov (QA: pestañas por plataforma con su porqué, `.atril/qa.json` y «Elegir a mano», un emulador o simulador reservado por trabajo, errores con su arreglo). Antes, `qa-screen`, `subagent-branches` y `panel-c`. **Siguiente: arreglar los 42 hallazgos de la vuelta por la app** (`hallazgos` del 11 nov, copia en `bocetos/hallazgos.md`), de grave a leve. Ideas para después: `bocetos/ideas.html` (120, con ★ las favoritas; 51–120 añadidas el 11 nov).

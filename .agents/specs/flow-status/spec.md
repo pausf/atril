@@ -609,10 +609,8 @@ Aterrizado**.
   Proof: src/renderer/flow/boxes.test.ts the live diff shows even when it answers slower than the 3 s poll
 ### Large branches (add-split-large-branch, 9 nov 2026)
 
-- **F25** While the branch totals more than the hook's threshold (400), the top of the Libretto panel shall
-  show a warning element (class `fbig`) reading «⚠ N líneas: rama grande (más de 400). Atril le ha pedido a Claude
-  que te proponga separarla en MRs más pequeñas.»
-  Proof: src/renderer/flow/changes.test.ts a large branch warns at the top of the panel
+- **F25** While the branch totals more than the hook's threshold (400) and the person has not chosen «Dejarla así» for that threshold, the top of the Libretto panel shall show a warning element (class `fbig`) reading «⚠ N líneas: rama grande (más de 400).» with «Separar en MRs encadenadas», which sends the agent «Separa esta rama en MRs encadenadas.» through the composer's path (W204), and «Dejarla así», which stores `bigDismissed[workspaceId] = k` in `ui.json` and hides the warning until the branch passes the next threshold.
+  Proof: src/renderer/flow/changes.test.ts a large branch offers to split it from the warning
 ### Automatic or manual mode (add-auto-mode, 9 nov 2026)
 
 - **F26** In an automatic workspace, Spec and Plan shall open read-only whatever the agent's state (an

@@ -335,6 +335,14 @@ textos, en «Pasos» abajo. Los que tienen elemento en pantalla lo iluminan; los
 - At most one Mac notification every 2 min when grouping is on; nothing on the Mac in quiet hours or, if you ask for it, in focus mode.
 - MR notices keep coming with the window closed.
 
+### Terminal de solo lectura (terminal-read-only, 14 nov 2026)
+
+- La terminal de cada trabajo se ve en vivo y se puede seleccionar y copiar, pero ninguna tecla llega al agente.
+- Cuando el agente espera, Atril dice qué espera, en castellano, con botones: una pregunta con sus opciones y su porqué; un permiso con lo que quiere ejecutar; un fin de turno con lo que ha dicho; nunca «Claude needs your permission» ni «Claude is waiting for your input».
+- Debajo de la terminal, una caja «Escribe al agente» manda cualquier mensaje.
+- En Automático no sale ninguna tarjeta: Atril elige la recomendada y dice «Sigue con el plan; no hagas nada que no esté en él.» solo, y en la fila queda «Decidió: {opción}»; solo se para en el push y la MR, en un fallo de verdad o en un permiso que Claude Code no concede solo.
+- Un agente que acaba su turno mientras sigue con subagentes o tareas en segundo plano sale como «trabajando», no como «te necesita».
+
 ## Scope boundaries
 
 **In:** the three columns and footer of `bocetos/fase1-nucleo.html` (boceto 8), the
@@ -674,6 +682,14 @@ Nunca fuera: validar `.atril/qa.json` (lo escribe el repo, no Atril); la ventana
 
 **In:** `src/main/status.ts`, `src/main/avisos.ts`'s settings, `src/main/focus.ts`, new `src/main/notify.ts`, new `src/main/mrpoll.ts`, new `src/main/forge/outcome.ts`, `src/main/usage.ts`, `src/main/radar.ts`, `src/main/qa-report.ts`, `src/main/index.ts` wiring and IPC, `src/preload/**`, `resources/claude-hook.mjs`. **Out:** see `proposal.md` (summary on return, Dock badge, reviewer comments, 95 % quota, radar without a window).
 
+### Terminal de solo lectura (terminal-read-only, 14 nov 2026)
+
+**In:** `src/renderer/components/Terminal.tsx`, `src/main/pty.ts` (attach), `resources/claude-hook.mjs` y `resources/summarise.mjs` (el `kind`, permisos, preguntas completas), `src/main/status.ts` (estado y respuestas), la tarjeta que sustituye a `QuickReplies.tsx` en la fila, en el resumen de agentes y encima de la terminal, el compositor, IPC y preload, textos.
+
+**Out (nombrado):** el Agent SDK (cambio siguiente); detectar tareas de shell en segundo plano (solo subagentes); ⌘D/⌘⇧D (se quitan); la selección múltiple contestada con botones; «Permitir siempre»; cambiar Libretto; las terminales de QA (siguen como hoy, también de solo lectura) más allá de no aceptar teclado.
+
+**Never scoped out:** la tarjeta y el compositor se manejan con teclado (números 1–4 contestan con la tarjeta enfocada, ⌘↩ envía el compositor); el texto del agente se pinta como texto, nunca como HTML; un fallo al mandar sigue la regla de errores; nada llama a Claude por su cuenta.
+
 ## Constraints
 
 - Electron (current stable) + TypeScript in strict mode, pnpm, Node 24 (installed:
@@ -880,6 +896,13 @@ Textos por `t()`.
 - No detector runs `claude` or calls Anthropic beyond `usage.ts`'s existing poll.
 - Every detector's first observation after Atril starts only sets its baseline (as V2 and the status first pass do).
 - Notification texts are built with main's `t()` at the moment of showing (W48).
+
+### Terminal de solo lectura (terminal-read-only, 14 nov 2026)
+
+- Ningún cambio en `resources/libretto/**`.
+- Textos por `t()`/`useT()` con su entrada en `src/preload/i18n-en.ts`; colores solo con tokens.
+- Los estados de hoy sin `kind` siguen valiendo (se lee como hoy, por prefijo).
+- Después de `notify-core`: este cambio se construye sobre su rama, porque los dos tocan el gancho y `status.ts`.
 
 ## Prior decisions
 
@@ -2245,6 +2268,61 @@ Textos por `t()`.
 
 - See `proposal.md` → Prior decisions; all of them apply here.
 
+### Terminal de solo lectura (terminal-read-only, 14 nov 2026)
+
+- **Terminal de solo lectura** (Pau, 12 nov): ninguna entrada de la persona pasa por el xterm.
+- **Libretto no cambia** (assumed): Atril se adapta a cómo pregunta Libretto, nunca al revés.
+- **`kind` en el estado** (assumed): amplía, no sustituye, el prefijo del texto de `notify-core`.
+- **Teclas por tmux como transporte** (assumed). Techo: depende del dibujo de la TUI de Claude Code; el Agent SDK lo sustituye.
+
+#### Alternatives that lost
+
+| Considered | Why it lost |
+|---|---|
+| Agent SDK ya | reescribe tmux, pausa, reabrir y respuestas; Pau eligió paso a paso |
+| Dejar la terminal escribible con un aviso | Pau: «deberían ser solo lectura» |
+| Hook `PermissionRequest` que decide él | bloquea el gancho esperando a Atril; las teclas ya funcionan y el SDK lo resolverá con datos |
+
+#### Decision log, answers as given (2026-11-14)
+- Q: ¿Cómo se hace la terminal de solo lectura? → A: «Paso a paso (Recommended)»: ya, con los ganchos que hay; el Agent SDK como cambio aparte después.
+- Q: ¿Se toca Libretto? → A: no; Libretto sigue preguntando con `AskUserQuestion` y terminando turnos con texto; Atril solo cambia quién contesta (assumed, «te dejo a tu elección»).
+- Q: ¿Cómo se sabe qué espera el agente? → A: un campo nuevo `kind` en el estado (`question`, `permission`, `turn-end`, `idle`), además del texto; sustituye a «pregunta frente a fin de turno por prefijo» de `notify-core` sin romperlo: el texto sigue con su prefijo (assumed). Si es incorrecto: se deduce del prefijo y de `notification_type` en main.
+- Q: ¿Cómo contesta Atril? → A: como hoy, con teclas al panel por tmux (`sendKey`, `pressKey`, `pasteText`); la persona nunca teclea en la terminal (assumed). El Agent SDK lo cambiará por datos.
+- Q: ¿Permitir un permiso cómo? → A: «Permitir» manda `1` (Sí, una vez), «Denegar» manda Escape; «Permitir siempre» queda fuera (assumed: cambia ajustes del proyecto sin que la persona lo vea).
+- Q: ¿Varias preguntas en un `AskUserQuestion`? → A: la tarjeta las enseña de una en una, en el orden de Claude Code; contestar una pasa a la siguiente (assumed; se comprueba en la app real con Claude de verdad).
+- Q: ¿Selección múltiple? → A: fuera de este cambio: la tarjeta enseña la pregunta y las opciones y dice «Contesta por escrito abajo» (assumed). Techo: con el SDK llega como dato.
+- Q: ¿Y en modo Automático? → A: «cuando es modo automático… no tiene que salir nada, o sea, tiene que seguir hacia adelante la gente, con sus decisiones y todo» (Pau, 12 nov). Atril contesta él mismo: la opción recomendada en una pregunta, «Sigue con el plan; no hagas nada que no esté en él.» en un fin de turno; solo se para en lo que ya acordamos que pregunta (push y MR, W59) y en un fallo de verdad (una puerta que falla dos veces, una herramienta que falta) (assumed para las dos excepciones; si Pau quiere también el push sin preguntar, cambia W59).
+- Q: ¿Un permiso en Automático se concede solo? → A: no; el modo automático de permisos de Claude Code ya decide casi todo, y lo que aun así pregunte sale como tarjeta: conceder a ciegas lo que el propio Claude Code no se atreve es un riesgo de seguridad (assumed).
+- Q: ¿Qué manda «Sigue»? → A: nunca un «sí» suelto: en el dogfood, «Sí, sigue» se tomó como aprobación de lo último que Claude había ofrecido (publicar un comentario en la PR #11). Manda «Sigue con el plan; no hagas nada que no esté en él.» (assumed).
+- Q: ¿Queda alguna forma de escribir en la terminal? → A: no dentro de Atril; «Abrir en Terminal» (ya existe) sigue para quien quiera la TUI cruda (assumed).
+
+- Q: ¿W74–W76 se amplían o se sustituyen? → A: se sustituyen, marcados `(amended)`: W74 guarda todas las preguntas sin recortar, W75 cambia sus formas de respuesta (sin «Sí, sigue»), W76 pasa a la tarjeta por tipo (assumed).
+- Q: ¿En Automático se suprime también el aviso en Avisos? → A: sí, en lo que Atril contesta solo no hay aviso de ningún tipo; V3 y W15 se enmiendan (assumed).
+- Q: ¿Y los paneles de shell de ⌘D? → A: también de solo lectura; ⌘D/⌘⇧D dejan de hacer nada y «Abrir en Terminal» da la shell escribible (assumed).
+- Q: ¿⌘↩? → A: envía el compositor solo cuando tiene el foco; en lo demás manda N2/W79 (assumed).
+- Q: ¿El recordatorio de inactividad cambia el `kind`? → A: no; pone `idle: true` y conserva el resto (W195 enmendado) (assumed).
+- Q: ¿Cuándo se reinicia el tope de 3 de Automático? → A: tras 30 s seguidos trabajando, no con el instante que sigue a nuestro propio «Sigue» (lo vimos en la prueba) (assumed).
+- Q: ¿La parada del push en Automático sale del texto o del permiso de W59? → A: del permiso de W59 (W207); no se lee el texto (assumed).
+- Q: ¿Selección múltiple en Automático? → A: se para como en Manual (assumed).
+- Q: ¿Quién lleva qué pregunta toca? → A: main, por sesión, desde 0 en cada entrada en needs-you; tras la última, Enter para enviar (assumed; se comprueba con Claude real).
+- Q: ¿Tareas de shell en segundo plano? → A: fuera; solo subagentes, que el gancho ya registra. Techo: con el Agent SDK llega como dato (assumed).
+- Q: ¿De dónde sale la herramienta de un permiso? → A: del último PreToolUse de esa sesión, que el gancho recuerda (assumed).
+- Q: ¿W45 sigue avisando a Claude? → A: no; el gancho reclama el umbral sin decirle nada y F25 lleva los botones; «Dejarla así» se guarda en `ui.json` `bigDismissed[workspaceId] = k` y sobrevive al reinicio (assumed).
+
+- Box 1 toca fuera de «In»: `src/main/menu.ts` (fuera «Dividir a la derecha/abajo», ⌘D/⌘⇧D, W196) y los tests que montaban el menú con `split` (`src/main/i18n.test.ts` cambia la etiqueta de ejemplo a «Pausar»; `src/renderer/flow/boxes.test.ts` comprueba que ⌘D/⌘⇧D ya no existen; `tutorial`, `pause`, `focus` y `overview` solo pierden `split`); `src/renderer/tour/Tour.tsx` (el paso de la terminal decía «escribe en él» y ⌘D); `src/main/pty.test.ts` pierde las llamadas a `input`, que ya no existe. `splitPane` sigue en `tmux.ts`: sus tests prueban otros criterios (W163, el destino exacto) (assumed).
+- Box 2: «an asked question keeps its options» (la prueba vieja de W74) se sustituye por la que nombra W74 enmendado. El gancho ya no escribe `options`/`multiSelect`; main los sigue leyendo en estados viejos (Constraints). W198 «recordar por sesión» vive en una opción de la sesión de tmux (`@atril-tool`), leída y escrita en la misma llamada `display` que el gancho ya hacía: guardarla en disco rompía la prueba de A1 («hook appends a short summary, never the payload»: ningún archivo bajo `ATRIL_HOME` con el comando). Así un comando solo llega a disco cuando un permiso espera por él, como pide W198 (assumed).
+- Box 3: «a quick answer reaches its own pane» (src/main/reply.test.ts, la prueba vieja de W75) se quita: W75 enmendado cita las dos de `status.test.ts`, que cubren sus cláusulas (pantalla propia, opción fuera de rango, estado que ya no espera, formas raras, trabajo que ya no está). N3 («a number answers the option with its key») ahora espera el Enter final de W75 tras la última pregunta. `QuickReplies.tsx` y su test pasan a `{ option, question }` y «Sigue» hasta que box 4 los sustituya. Fuera de «In»: `src/main/activity.ts` (W199: la línea «Esperando a un subagente» encima y el vigilante también mira `state/`), `src/preload/activity-i18n.ts` (W203 para líneas viejas), `src/renderer/mockApi.ts` y `src/renderer/overview.test.ts` (la forma nueva) (assumed).
+- W75 dice «a gone workspace or pane answers W53's sentence», pero W53 es del runner: se usa la de N3 («No se pudo enviar: ese trabajo ya no está»), como hasta ahora (assumed).
+- W203 se arregla en origen: `summarise.mjs` escribe «Te pregunta: ¿Puede usar {tool}?», «Te pregunta: ¿Puede seguir?» y «Claude te necesita» en lugar de los mensajes en inglés de Claude Code; las líneas viejas se traducen al enseñarlas (assumed).
+- Box 4: `QuickReplies.tsx` se borra y con él la IPC `status.quickReplies` (main la sigue usando para N3); su prueba vieja de W76 («a waiting row answers with one press») se quita de `src/renderer/quickreplies.test.ts`, que se queda con «the question card reads in every theme»; la del fila/tira encima de la terminal vive ahora en «a card answers by mouse and by number keys». W82 sigue diciendo que en «Todos» una pregunta multiSelect no lleva tarjeta: `AgentCard` tiene `skipMultiSelect` solo para ahí; `src/renderer/overview.test.ts` cambia el nombre del grupo y usa `waits`. Fuera de «In»: `src/renderer/styles.css` (cabecera, «Recomendada», descripción y la tira) (assumed).
+- La prueba de W76–W202 se escribió antes que `AgentCard.tsx`, pero no se vio en rojo: se corrió por primera vez con el componente ya escrito.
+- Box 5: el compositor sustituye la pista «Escribe en la terminal como siempre» (W143 decía que la pista no sale con el agente parado: ahora la pista no existe y el compositor sale desactivado; `src/renderer/reopen.test.ts` comprueba eso en lugar de la pista). ⌘↩ es el acelerador del menú «Siguiente», que Electron atiende antes que la página: `src/renderer/App.tsx` envía el compositor cuando tiene el foco y si no sigue con N2/W79 (fuera de «In»). Main: `composeAgent` en `status.ts` y la IPC `status.compose` (assumed). Su CSS viajó en el commit de box 4.
+- Box 6: lo que Automático contesta él mismo se lee como `working` en `createStatus` (por eso no hay tarjeta ni aviso, V3); la espera contestada se recuerda por su `at` para no contestarla dos veces. «Decidió: …» es una línea de actividad que pone main (como la de W199) hasta que el agente escribe otra; con varias preguntas, las etiquetas van unidas por « · ». Una opción sin `options` o una llamada con una pregunta sin opciones se para como Manual. Si mandar falla, se para como Manual. Las pruebas de box 3, 5 y 6 se escribieron antes que el código pero se corrieron con el código ya puesto; para ver que muerden, se rompió el código a propósito (`automatic` desactivado: dos de tres en rojo; la tercera es un «nunca» que solo cae si Atril concede) y se devolvió (assumed).
+- Box 7: `sizeNotice` pasa a `claimSize` (devuelve el `k` reclamado) y el gancho ya no imprime nada; la prueba vieja de W45 («a large branch asks claude to offer a split», src/main/activity.test.ts) se quita: la nueva de `agent.test.ts` corre el gancho de verdad y repite sus casos. La de F25 («a large branch warns at the top of the panel») la sustituye «a large branch offers to split it from the warning». Fuera de «In»: `src/renderer/flow/FlowPanel.tsx`, `src/main/ui.ts` y `src/preload/api.ts` (`bigDismissed`, que se mezcla clave a clave como `folded`; prueba nueva «remembers each branch-size threshold left as it is, per work» en `src/main/ui.test.ts`), `resources/branchsize.mjs`/`.d.mts`, `src/renderer/tour/Tour.tsx` (el paso de las casillas decía que Atril ya se lo había pedido a Claude) y `src/renderer/styles.css` (assumed).
+- Box 8 (app real): con la terminal enganchada con `attach -r`, tmux 3.7 rechaza todo `send-keys` a esa sesión («client is read-only»): ninguna respuesta, pausa ni Enter llegaba. Los tests no lo veían porque ninguno engancha un cliente de solo lectura. Arreglo en `src/main/tmux.ts` (fuera de «In»): si `send-keys` falla por eso, los mismos bytes van como pegado sin corchetes (`paste-buffer -r`), que llega como tecleado; `Enter` es `\r` y `Escape` es `\x1b`. Prueba nueva con un cliente `-r` de verdad: «keys reach a pane that a read-only client watches» (src/main/tmux.test.ts). Las pruebas existentes siguen viendo `send-keys` porque no enganchan clientes (assumed). Se comprueba con Claude real que un dígito tecleado así lo toma el selector.
+- Box 8 (app real), dos arreglos más: la tarjeta de la fila y la de encima de la terminal no se enteraban de una respuesta dada en la otra (con varias preguntas, la fila seguía ofreciendo la primera, que main ya rechaza): ahora una respuesta avisa a las dos y, contestadas todas, la tarjeta dice solo «Enviado» (caso nuevo en «a question card answers with its options»). Y «Decidió: …» no salía hasta la siguiente escritura del gancho: el feed de actividad relee cuando Automático decide (assumed).
+- Box 8, app real (dev, `claude` falso detrás de un `SHELL` falso, paneles con `cat` para ver cada tecla): cuatro filas con tarjeta (pregunta con dos preguntas y porqués, permiso de Bash, fin de turno, fin de turno con `idle`); teclear en la terminal no llegó al panel; «1» con la tarjeta enfocada mandó `1`+Enter y las dos tarjetas pasaron a la segunda pregunta; la última mandó su número, Enter y el Enter final; ⌘↩ en el compositor mandó el texto y vació la caja; «Permitir» mandó `1`; el fin de turno enfocó el compositor y «Sigue» pegó «Sigue con el plan…»; Automático contestó la recomendada («Decidió: Contarlos como festivos» en la fila, sin tarjeta), pegó «Sigue con el plan…» tres veces y a la cuarta enseñó la tarjeta; un permiso en Automático enseñó su tarjeta. Sin errores de consola. Foto: `bocetos/novedades/tarjetas.png`. Sin comprobar (necesita Claude real, no se gastó cuota): que el selector de Claude Code tome el dígito + Enter y el Enter final con varias preguntas, y que «Permitir» = `1` en su permiso.
+
 ## Task breakdown
 
 - App shell: Electron main, preload bridge, renderer with sidebar / centre / right panel /
@@ -2473,16 +2551,8 @@ Textos por `t()`.
 
 ### Large branches (add-split-large-branch, 9 nov 2026)
 
-- **W45** When a PostToolUse for Edit, Write, MultiEdit or Bash ends and the workspace's branch
-  has more than 400 × k changed lines against its base, with k higher than any k already claimed
-  in that session, the hook shall claim k and print one `additionalContext` naming the exact total
-  and asking Claude to offer a split into chained MRs at its next stop; otherwise — at or below
-  400, k not higher than one claimed, another tool, or no workspace record for the session — it
-  shall print nothing.
-  (One proof holds all: it runs `sizeNotice` over a real repo through 300 lines, 500, 500 again,
-  1300, 1400, Read at 2000, an unknown session, PreToolUse, and a second session jumping from
-  nothing to 1300 and back to 500, and checks each result.)
-  Proof: src/main/activity.test.ts a large branch asks claude to offer a split
+- **W45** When a PostToolUse for Edit, Write, MultiEdit or Bash ends and the workspace's branch has more than 400 × k changed lines against its base, with k higher than any k already claimed in that session, the hook shall claim k and print nothing to Claude; F25 offers the split to the person.
+  Proof: src/main/agent.test.ts a big branch is claimed without asking claude
 - **W46** The hook's count shall equal F18's total for the same tree, and the renderer's warning
   threshold shall be the hook's.
   Proof: src/main/activity.test.ts the hook counts like the change list
@@ -2664,25 +2734,13 @@ Textos por `t()`.
 
 ### Respuestas rápidas (quick-replies, 10 nov 2026)
 
-- **W74** When the hook gets a PreToolUse for `AskUserQuestion`, it shall add to the needs-you state the
-  labels of the first question's options (at most 4, each cut to 40 characters, whitespace collapsed);
-  a multiSelect question shall store none; the stored options shall stay while the state stays needs-you
-  (a later Notification or Stop included) and go when it leaves needs-you. One test holds a case per clause.
-  Proof: src/main/agent.test.ts an asked question keeps its options
-- **W75** When the window asks `atril:status:answer(workspaceId, choice)` with choice `{ option: n }` or
-  `{ fixed: 'yes' | 'no' }`, main shall re-read that workspace's state and, while it is needs-you, type
-  n plus one then Enter for an option among the stored ones, or «Sí, sigue» / «No, espera» as literal
-  text then Enter for a fixed reply, into that workspace's pane; otherwise it shall type nothing and answer
-  «Ese agente ya no está esperando una respuesta.», «Esa opción ya no existe.» or, for a gone workspace,
-  N3's message. Any other choice shape shall be refused. One test holds a case per clause.
-  Proof: src/main/reply.test.ts a quick answer reaches its own pane
-- **W76** While a workspace is needs-you and its question is not multiSelect, its row shall be joined by
-  a card holding the question's full text (its latest activity line, uncut) and its stored options as numbered
-  buttons — «1», «2»… then the label — or «Sí, sigue» and «No, espera» when it has none, and the row shall not repeat
-  the cut activity line; pressing one, by mouse or keyboard, shall send it (W75) and show «Enviado» — disabling the
-  buttons until the state changes — or show the error and keep the buttons live; the card shall go when the state
-  leaves needs-you. One test holds a case per clause.
-  Proof: src/renderer/quickreplies.test.ts a waiting row answers with one press
+- **W74** When the hook gets a PreToolUse for `AskUserQuestion`, it shall add to the needs-you state every question of the call in order as `{ question, header, options: [{ label, description }], multiSelect }`, labels and descriptions whole with whitespace collapsed; the stored questions shall stay while the state stays needs-you (a later Notification or Stop included) and go when it leaves needs-you.
+  Proof: src/main/agent.test.ts the hook keeps every question and what a permission is for
+- **W75** When the window asks `atril:status:answer(workspaceId, choice)`, main shall re-read that workspace's state and, while it is needs-you, act by the choice: `{ option: n, question: i }` for a stored question i with option n — type n plus one then Enter, and after the last question of the call also Enter to submit; `{ allow: true }` while `kind` is `permission` — type `1` then Enter; `{ deny: true }` while `kind` is `permission` — press Escape; `{ continue: true }` — paste «Sigue con el plan; no hagas nada que no esté en él.» as a bracketed paste then Enter. Any other shape, a stale question index or option, or a state that is not needs-you, shall type nothing and answer «Ese agente ya no está esperando una respuesta.» or «Esa opción ya no existe.»; a gone workspace or pane answers W53's sentence. Main shall remember per session which question is next, starting at 0 on each entry into needs-you.
+  Proof: src/main/status.test.ts each answer shape sends its own keys
+  Proof: src/main/status.test.ts allow and deny send their keys
+- **W76** While a workspace is needs-you, its row and the strip above its terminal shall show one card by `kind` (W200–W202) instead of today's quick replies; pressing a button, by mouse or with keys 1–4 while the card has focus, shall send it (W75) and show «Enviado», disabling the card until the state changes, or show the error and keep it live.
+  Proof: src/renderer/components/agentcard.test.tsx a card answers by mouse and by number keys
 ### Escritura atómica (atomic-records, 10 nov 2026)
 
 - **W80** Atril shall replace `workspaces.json` and `repos.json` by writing a temporary file and renaming it,
@@ -3147,5 +3205,33 @@ Textos por `t()`.
   Proof: src/main/notify.test.ts a test notice skips every rule and the feed
 - **W194** When the person clicks a Mac notification, main shall bring the window to the front and open what V6 says for its type (for `ask`, `done`, `idle` the Trabajo screen with that workspace, as W38), and mark its notice read (V12); a click within 1 s of a reply is ignored (N3).
   Proof: src/main/notify.test.ts a click opens what the notice is about
-- **W195** When Claude Code's idle reminder fires (a `Notification` with `notification_type` `idle_prompt` or «waiting for your input») while the session's state file says `needs-you`, the hook shall keep that file's `text`, `options`, `multiSelect` and `at` as they were.
+- **W195** When Claude Code's idle reminder fires (a `Notification` with `notification_type` `idle_prompt` or «waiting for your input») while the session's state file says `needs-you`, the hook shall keep that file's `text`, `kind`, `questions`, `permission` and `at` as they were and set `idle: true`.
   Proof: src/main/agent.test.ts the idle reminder keeps the question
+
+### Terminal de solo lectura (terminal-read-only, 14 nov 2026)
+
+- **W196** The Trabajo terminal shall attach to the agent's tmux session as a read-only client (`tmux attach -r`) and send no keystroke, paste or mouse input to it, including the shell panes an earlier ⌘D left in the session; selecting text and ⌘C still copy. Main shall ignore `atril:term:input`, and ⌘D / ⌘⇧D shall do nothing.
+  Proof: src/main/pty.test.ts the terminal client is read only
+  Proof: src/renderer/components/terminal.test.tsx typing in the terminal sends nothing
+- **W197** When the hook writes `needs-you`, it shall also write `kind`: `question` for a `PreToolUse` of `AskUserQuestion`, `permission` for a `Notification` with `notification_type` `permission_prompt` or a message starting «Claude needs your permission», and `turn-end` for `Stop`; an idle reminder (`idle_prompt` or «waiting for your input») shall leave `kind` as it was and set `idle: true` (W195 amended below).
+  Proof: src/main/agent.test.ts the hook says what kind of wait it is
+- **W198** On every PreToolUse the hook shall remember, per session, the tool name and a one-line summary of its input (the command for `Bash`, the path for `Edit`/`Write`/`MultiEdit`, else nothing); when it writes a `permission` wait it shall store that pair as `{ tool, summary }`.
+  Proof: src/main/agent.test.ts a permission names the tool it waits for
+- **W199** While a session is in `needs-you` with `kind` `turn-end` and its subagents file holds an entry without `endedAt`, Atril shall show it as `working` with the activity «Esperando a un subagente» and add no notice; on the first poll after the last entry ends, the state counts as entering `needs-you` (W15). Background shells are out of this change (Scope).
+  Proof: src/main/status.test.ts a turn end with a subagent still running is working
+- **W200** For a `question`, the card shall show the next unanswered question, its header and each option as a button with its number, label and description, the option whose label ends «(Recommended)» or «(Recomendado)» marked «Recomendada» without that suffix; for `multiSelect` it shows the options without buttons and «Contesta por escrito abajo».
+  Proof: src/renderer/components/agentcard.test.tsx a question card answers with its options
+- **W201** For a `permission`, the card shall read «Quiere ejecutar {summary}» (or «Quiere usar {tool}», or «Quiere permiso para seguir» with no tool) with «Permitir» and «Denegar».
+  Proof: src/renderer/components/agentcard.test.tsx a permission card allows or denies
+- **W202** For a `turn-end`, the card shall show «Ha terminado: {last text}» with «Sigue» (`{ continue: true }`) and focus the composer; while `idle` is true it adds «Lleva un rato esperándote».
+  Proof: src/renderer/components/agentcard.test.tsx a turn end offers to continue
+- **W203** No row, card, notification or Avisos text shall contain the hook's English messages «Claude needs your permission» or «Claude is waiting for your input».
+  Proof: src/main/status.test.ts claude's english wait messages never reach the person
+- **W204** Under the terminal, the composer «Escribe al agente» shall send its trimmed text to the pane as a bracketed paste followed by Enter with «Enviar», or ⌘↩ while the composer has focus (elsewhere N2 and W79 keep ⌘↩), clear itself on success, keep the text and show the error (Problem) on failure, and send nothing when empty or when the workspace is stopped.
+  Proof: src/renderer/components/composer.test.tsx the composer sends to the agent
+- **W205** While a workspace is in Automático, when it enters `needs-you` with `kind` `question` and no question of the call is `multiSelect`, Atril shall answer every question with the option marked recommended (else the first), by itself, adding no notice and showing no card, and show «Decidió: {label}» in the row's activity; a call with a `multiSelect` question stops as Manual does.
+  Proof: src/main/status.test.ts automatic answers its own questions with the recommended option
+- **W206** While a workspace is in Automático, when it enters `needs-you` with `kind` `turn-end` and W199 does not hold, Atril shall send `{ continue: true }` by itself, adding no notice, at most 3 times in a row; the count restarts only after the agent has been `working` for 30 s without a break; the fourth time it shows the card and notifies as Manual does.
+  Proof: src/main/status.test.ts automatic keeps going on its own and stops where it must
+- **W207** While a workspace is in Automático, a `permission` wait — including W59's push question — shall show its card and notify as Manual does.
+  Proof: src/main/status.test.ts automatic never grants a permission by itself
