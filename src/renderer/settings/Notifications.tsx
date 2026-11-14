@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
-import type { NotifyPatch, NotifyRoute, NotifySettings, NotifyType } from '../../preload/api'
+import { Fragment, useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
+import type { NotifyPatch, NotifyPermission, NotifyRoute, NotifySettings, NotifyType, Weekday } from '../../preload/api'
+import { Problem } from '../components/Problem'
 import { useFolded, useT } from '../ui'
 import { example, typeGroups, type TypeGroup, type TypeRow } from './notifyTypes'
 
@@ -46,13 +47,16 @@ export function AppMark({ className }: { className?: string }) {
 
 /** Fills a placeholder with MARK; splice puts a node (bold, a stepper…) there, whatever the language's word order. */
 export const MARK = '\u0001'
-export function splice(text: string, node: ReactNode): ReactNode {
-  const [a, b] = text.split(MARK)
+export function splice(text: string, ...nodes: ReactNode[]): ReactNode {
+  const parts = text.split(MARK)
   return (
     <>
-      {a}
-      {node}
-      {b}
+      {parts.map((p, i) => (
+        <Fragment key={i}>
+          {p}
+          {nodes[i]}
+        </Fragment>
+      ))}
     </>
   )
 }
@@ -71,8 +75,14 @@ export interface NotifyState {
 }
 
 /** Each change saves at once; only the answer to the latest request replaces what is shown. */
-export function useNotifySettings(): { s: NotifySettings | null; save: (patch: NotifyPatch) => void } {
+export interface SaveFailure {
+  patch: NotifyPatch
+  detail: string
+}
+
+export function useNotifySettings(): { s: NotifySettings | null; save: (patch: NotifyPatch) => void; failed: SaveFailure | null } {
   const [s, setS] = useState<NotifySettings | null>(null)
+  const [failed, setFailed] = useState<SaveFailure | null>(null)
   const seq = useRef(0)
   useEffect(() => {
     let live = true
@@ -84,14 +94,16 @@ export function useNotifySettings(): { s: NotifySettings | null; save: (patch: N
   const save = (patch: NotifyPatch): void => {
     const n = ++seq.current
     setS((v) => v && mergePatch(v, patch))
+    setFailed(null)
     void window.atril.notify.set(patch).then(
       (r) => {
-        if (n === seq.current && !('error' in r)) setS(r)
+        if ('error' in r) setFailed({ patch, detail: r.detail || r.error })
+        else if (n === seq.current) setS(r)
       },
-      () => undefined
+      (err: unknown) => setFailed({ patch, detail: String(err) })
     )
   }
-  return { s, save }
+  return { s, save, failed }
 }
 
 function Seg({ row, value, onPick }: { row: TypeRow; value: NotifyRoute; onPick: (v: NotifyRoute) => void }) {
@@ -198,7 +210,7 @@ function Group({ g, st }: { g: TypeGroup; st: NotifyState }) {
   )
 }
 
-function Preview({ st, label }: { st: NotifyState; label: string }) {
+function Preview({ st, label, shot }: { st: NotifyState; label: string; shot: number }) {
   const t = useT()
   const v = st.s.types[st.cur]
   const ex = example(t, st.cur, st.s.idleMinutes)
@@ -208,7 +220,7 @@ function Preview({ st, label }: { st: NotifyState; label: string }) {
       <p className="lb" id="nt-prev-h">
         {t('Así te llega')}
       </p>
-      <div className={`nt-ban${v === 'mac' ? '' : ' dim'}`}>
+      <div key={shot} className={`nt-ban${shot > 0 ? ' slide' : v === 'mac' ? '' : ' dim'}`}>
         <AppMark className="ap" />
         <div className="tx">
           <div className="hd">
@@ -237,33 +249,191 @@ function Preview({ st, label }: { st: NotifyState; label: string }) {
   )
 }
 
-/** S37–S42: Ajustes → Notificaciones, and «Cuándo» beside it. */
+const DAYS: ReadonlyArray<Weekday> = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']
+
+function Switch({ on, label, onToggle }: { on: boolean; label: string; onToggle: () => void }) {
+  return <button type="button" className="nt-sw" role="switch" aria-checked={on} aria-label={label} onClick={onToggle} />
+}
+
+const hours = (hhmm: string): number => {
+  const [h, m] = hhmm.split(':').map(Number)
+  return (h ?? 0) + (m ?? 0) / 60
+}
+
+/** S43: the quiet span over 24 h, wrapping past midnight. */
+function QuietBar({ from, to }: { from: string; to: string }) {
+  const t = useT()
+  const f = hours(from)
+  const e = hours(to)
+  const spans = f === e ? [] : f < e ? [[f, e]] : [[f, 24], [0, e]]
+  return (
+    <span className="nt-tl" role="img" aria-label={t('Silencio de {from} a {to}', { from, to })}>
+      {spans.map(([a, b]) => (
+        <i key={a} style={{ left: `${(a! / 24) * 100}%`, width: `${((b! - a!) / 24) * 100}%` }} />
+      ))}
+      <span className="tk" aria-hidden>
+        {[0, 6, 12, 18, 24].map((x) => (
+          <em key={x} style={{ left: `${(x / 24) * 100}%` }}>
+            {x}
+          </em>
+        ))}
+      </span>
+    </span>
+  )
+}
+
+/** S43, S44: when the Mac may interrupt, and a real test notice. */
+function When({ st, onTest, said }: { st: NotifyState; onTest: () => void; said: string | null }) {
+  const t = useT()
+  const q = st.s.quiet
+  const off = q.on ? {} : { tabIndex: -1 }
+  const letter: Record<Weekday, [string, string]> = {
+    mon: [t('L'), t('lunes')],
+    tue: [t('M'), t('martes')],
+    wed: [t('X'), t('miércoles')],
+    thu: [t('J'), t('jueves')],
+    fri: [t('V'), t('viernes')],
+    sat: [t('S'), t('sábado')],
+    sun: [t('D'), t('domingo')]
+  }
+  const toggleDay = (d: Weekday): void => st.save({ quiet: { days: DAYS.filter((x) => (x === d ? !q.days.includes(d) : q.days.includes(x))) } })
+  return (
+    <section className="scard nt-card" aria-labelledby="when-h">
+      <h3 id="when-h">{t('Cuándo')}</h3>
+      <p className="hint2">{t('Cuándo te interrumpe el Mac. Avisos lo guarda todo, siempre.')}</p>
+      <div className="nt-w">
+        <span className="ic">
+          <NtIcon name="moon" />
+        </span>
+        <span className="tx">
+          <b>{t('Respetar el modo foco')}</b>
+          <span className="ex">{t('Con el modo foco y Atril delante, el Mac se calla: te avisa la píldora de arriba.')}</span>
+        </span>
+        <Switch on={st.s.focus} label={t('Respetar el modo foco')} onToggle={() => st.save({ focus: !st.s.focus })} />
+      </div>
+      <div className="nt-w">
+        <span className="ic">
+          <NtIcon name="list" />
+        </span>
+        <span className="tx">
+          <b>{t('Agrupar')}</b>
+          <span className="ex">{t('Un solo aviso del Mac por cada 2 min.')}</span>
+          <span className={`nt-stack${st.s.group ? '' : ' off'}`} aria-hidden>
+            <span className="three">
+              <i>{t('{work} te pregunta', { work: 'WEB-3535' })}</i>
+              <i>{t('{work} te pregunta', { work: 'SHOP-2630' })}</i>
+              <i>{t('{work} se ha parado', { work: 'OPS-4131' })}</i>
+            </span>
+            <span className="arr">→</span>
+            <span className="one">
+              <AppMark />
+              <span>
+                <b>{t('{n} agentes te necesitan', { n: 3 })}</b>
+                <span>{t('{list} y {last}', { list: 'WEB-3535, SHOP-2630', last: 'OPS-4131' })}</span>
+              </span>
+            </span>
+          </span>
+        </span>
+        <Switch on={st.s.group} label={t('Agrupar')} onToggle={() => st.save({ group: !st.s.group })} />
+      </div>
+      <div className="nt-w">
+        <span className="ic">
+          <NtIcon name="mute" />
+        </span>
+        <span className="tx">
+          <b>{t('Horas de silencio')}</b>
+          <span className="ex">{t('Nada suena; todo queda en Avisos para cuando vuelvas.')}</span>
+          <span className="nt-quiet" aria-disabled={q.on ? undefined : true}>
+            <span className="rg">
+              {splice(
+                t('de {from} a {to}', { from: MARK, to: MARK }),
+                <input type="time" value={q.from} aria-label={t('Desde')} {...off} onChange={(e) => e.target.value && st.save({ quiet: { from: e.target.value } })} />,
+                <input type="time" value={q.to} aria-label={t('Hasta')} {...off} onChange={(e) => e.target.value && st.save({ quiet: { to: e.target.value } })} />
+              )}
+            </span>
+            <QuietBar from={q.from} to={q.to} />
+            <span className="nt-days" role="group" aria-label={t('Todo el día')}>
+              <span aria-hidden>{t('Todo el día:')}</span>
+              {DAYS.map((d) => (
+                <button key={d} type="button" aria-pressed={q.days.includes(d)} aria-label={letter[d][1]} {...off} onClick={() => toggleDay(d)}>
+                  {letter[d][0]}
+                </button>
+              ))}
+            </span>
+          </span>
+        </span>
+        <Switch on={q.on} label={t('Horas de silencio')} onToggle={() => st.save({ quiet: { on: !q.on } })} />
+      </div>
+      <div className="nt-test">
+        <button type="button" className="btn" onClick={onTest}>
+          {t('Probar un aviso')}
+        </button>
+        <span className="lockn" role="status">
+          {said}
+        </span>
+      </div>
+    </section>
+  )
+}
+
+/** S37–S46: Ajustes → Notificaciones, and «Cuándo» beside it. */
 export function Notifications() {
   const t = useT()
-  const { s, save } = useNotifySettings()
+  const { s, save, failed } = useNotifySettings()
   const [cur, setCur] = useState<NotifyType>('ask')
+  const [perm, setPerm] = useState<NotifyPermission>('unknown')
+  const [said, setSaid] = useState<string | null>(null)
+  const [shot, setShot] = useState(0)
+  const check = (): void => void window.atril.notify.permission().then(setPerm, () => setPerm('unknown'))
+  useEffect(check, [])
   if (!s) return null
   const st: NotifyState = { s, save, cur, setCur }
   const groups = typeGroups(t, s.idleMinutes)
   const label = groups.flatMap((g) => g.rows).find((r) => r.k === cur)!.label
+  const test = (): void => {
+    setShot((n) => n + 1)
+    void window.atril.notify.test(cur).then(
+      (r) => {
+        if (r === 'blocked') setPerm('blocked')
+        setSaid(r === 'blocked' ? t('macOS no lo dejará salir: arréglalo arriba.') : t('Enviado: mira la esquina de tu pantalla.'))
+      },
+      () => setSaid(t('macOS no lo dejará salir: arréglalo arriba.'))
+    )
+  }
   return (
     <>
       <section className="scard nt-card" aria-labelledby="ntf-h">
+        {perm === 'blocked' && (
+          <Problem
+            what={t('macOS no deja a Atril mostrar avisos.')}
+            cant={t('Todo sigue llegando a Avisos, pero el Mac no te interrumpe aunque elijas «Mac».')}
+            fix={t('Abrir Ajustes del Sistema')}
+            onFix={() => void window.atril.notify.openSystem()}
+            alt={t('Volver a comprobar')}
+            onAlt={check}
+            detail=""
+          />
+        )}
+        {failed && (
+          <Problem
+            what={t('No he podido guardar tus avisos: el cambio se perderá al cerrar Atril.')}
+            fix={t('Volver a intentar')}
+            onFix={() => save(failed.patch)}
+            detail={failed.detail}
+          />
+        )}
         <div className="nt-hd">
           <div className="nt-intro">
             <h3 id="ntf-h">{t('Notificaciones')}</h3>
             <p className="hint2">{t('Todo llega a Avisos. Aquí eliges qué más te interrumpe con un aviso del Mac.')}</p>
           </div>
-          <Preview st={st} label={label} />
+          <Preview st={st} label={label} shot={shot} />
         </div>
         {groups.map((g) => (
           <Group key={g.id} g={g} st={st} />
         ))}
       </section>
-      <section className="scard nt-card" aria-labelledby="when-h">
-        <h3 id="when-h">{t('Cuándo')}</h3>
-        <p className="hint2">{t('Cuándo te interrumpe el Mac. Avisos lo guarda todo, siempre.')}</p>
-      </section>
+      <When st={st} onTest={test} said={said} />
     </>
   )
 }

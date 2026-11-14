@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { createElement } from 'react'
-import { act, cleanup, render, screen, within } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { NotifySettings, UiState } from '../../preload/api'
@@ -195,3 +195,104 @@ describe('notifications card', () => {
   })
 })
 
+describe('when card', () => {
+  const when = (): HTMLElement => screen.getByRole('region', { name: 'Cuándo' })
+
+  it('when-settings save and quiet fields follow their switch', async () => {
+    const { user, notify } = await open({ focus: true, group: true, quiet: { on: false, from: '19:00', to: '09:00', days: ['sat', 'sun'] } })
+    const w = when()
+    const sw = (name: string): HTMLElement => within(w).getByRole('switch', { name })
+    expect(within(w).getByText('Un solo aviso del Mac por cada 2 min.')).toBeTruthy()
+    expect(sw('Respetar el modo foco').getAttribute('aria-checked')).toBe('true')
+    expect(sw('Agrupar').getAttribute('aria-checked')).toBe('true')
+    expect(sw('Horas de silencio').getAttribute('aria-checked')).toBe('false')
+
+    // Each switch saves at once.
+    await user.click(sw('Respetar el modo foco'))
+    expect(notify.set).toHaveBeenLastCalledWith({ focus: false })
+    await user.click(sw('Agrupar'))
+    expect(notify.set).toHaveBeenLastCalledWith({ group: false })
+    await vi.waitFor(() => expect(sw('Agrupar').getAttribute('aria-checked')).toBe('false'))
+
+    // Quiet off: its fields are aria-disabled and out of the tab order.
+    const quiet = w.querySelector('.nt-quiet') as HTMLElement
+    const from = within(w).getByLabelText('Desde') as HTMLInputElement
+    const to = within(w).getByLabelText('Hasta') as HTMLInputElement
+    const days = within(within(w).getByRole('group', { name: 'Todo el día' })).getAllByRole('button')
+    expect(quiet.getAttribute('aria-disabled')).toBe('true')
+    expect([from, to, ...days].map((e) => e.tabIndex)).toEqual(Array(9).fill(-1))
+    expect(days.map((d) => d.textContent)).toEqual(['L', 'M', 'X', 'J', 'V', 'S', 'D'])
+    expect(days.filter((d) => d.getAttribute('aria-pressed') === 'true').map((d) => d.textContent)).toEqual(['S', 'D'])
+    expect(within(w).getByRole('img', { name: 'Silencio de 19:00 a 09:00' })).toBeTruthy()
+
+    await user.click(sw('Horas de silencio'))
+    expect(notify.set).toHaveBeenLastCalledWith({ quiet: { on: true } })
+    await vi.waitFor(() => expect(quiet.hasAttribute('aria-disabled')).toBe(false))
+    expect([from, to, ...days].map((e) => e.tabIndex)).toEqual(Array(9).fill(0))
+
+    // The times and the days save their own field.
+    fireEvent.change(from, { target: { value: '20:30' } })
+    expect(notify.set).toHaveBeenLastCalledWith({ quiet: { from: '20:30' } })
+    fireEvent.change(to, { target: { value: '08:00' } })
+    expect(notify.set).toHaveBeenLastCalledWith({ quiet: { to: '08:00' } })
+    await vi.waitFor(() => expect(within(w).getByRole('img', { name: 'Silencio de 20:30 a 08:00' })).toBeTruthy())
+    await user.click(within(w).getByRole('button', { name: 'lunes' }))
+    expect(notify.set).toHaveBeenLastCalledWith({ quiet: { days: ['mon', 'sat', 'sun'] } })
+    await user.click(within(w).getByRole('button', { name: 'domingo' }))
+    expect(notify.set).toHaveBeenLastCalledWith({ quiet: { days: ['mon', 'sat'] } })
+  })
+
+  it('testing a notice says where it went', async () => {
+    const { user, card, notify } = await open()
+    await user.hover(row(radios(card, 'La CI falla en tu MR')))
+    await user.click(within(when()).getByRole('button', { name: 'Probar un aviso' }))
+    expect(notify.test).toHaveBeenLastCalledWith('ci')
+    expect(await within(when()).findByText('Enviado: mira la esquina de tu pantalla.')).toBeTruthy()
+
+    vi.mocked(notify.test).mockResolvedValueOnce('blocked')
+    await user.click(within(when()).getByRole('button', { name: 'Probar un aviso' }))
+    expect(await within(when()).findByText('macOS no lo dejará salir: arréglalo arriba.')).toBeTruthy()
+  })
+
+  it('a blocked Mac shows the problem with its fix', async () => {
+    mockApi({ notifyPermission: 'blocked' })
+    const user = userEvent.setup()
+    render(createElement(App))
+    await user.click(rail(/Ajustes/))
+    const card = await screen.findByRole('region', { name: 'Notificaciones' })
+    const alert = await within(card).findByRole('alert')
+    // Above everything in the card.
+    expect(card.firstElementChild).toBe(alert)
+    expect(within(alert).getByText('macOS no deja a Atril mostrar avisos.')).toBeTruthy()
+    expect(within(alert).getByText('Todo sigue llegando a Avisos, pero el Mac no te interrumpe aunque elijas «Mac».')).toBeTruthy()
+    await user.click(within(alert).getByRole('button', { name: 'Abrir Ajustes del Sistema' }))
+    expect(window.atril.notify.openSystem).toHaveBeenCalled()
+
+    // Rechecked: allowed hides it; the answer is asked again, not assumed.
+    vi.mocked(window.atril.notify.permission).mockResolvedValueOnce('allowed')
+    await user.click(within(alert).getByRole('button', { name: 'Volver a comprobar' }))
+    await vi.waitFor(() => expect(within(card).queryByRole('alert')).toBeNull())
+    expect(window.atril.notify.permission).toHaveBeenCalledTimes(2)
+
+    // «No lo sé» shows nothing.
+    cleanup()
+    const unknown = await open()
+    expect(within(unknown.card).queryByRole('alert')).toBeNull()
+  })
+
+  it('a failed save says so and retries', async () => {
+    const { user, card, notify } = await open()
+    vi.mocked(notify.set).mockResolvedValueOnce({ error: 'No se pudo guardar', detail: 'EACCES: permission denied, rename notifications.json' })
+    await user.click(within(radios(card, 'Te piden revisión')).getByRole('radio', { name: 'Nada' }))
+    const alert = await within(card).findByRole('alert')
+    expect(within(alert).getByText('No he podido guardar tus avisos: el cambio se perderá al cerrar Atril.')).toBeTruthy()
+    expect(within(alert).getByText('EACCES: permission denied, rename notifications.json')).toBeTruthy()
+    expect(within(alert).getByText('Ver detalle').closest('details')?.open).toBe(false)
+
+    await user.click(within(alert).getByRole('button', { name: 'Volver a intentar' }))
+    expect(notify.set).toHaveBeenCalledTimes(2)
+    expect(notify.set).toHaveBeenLastCalledWith({ types: { review: 'mute' } })
+    await vi.waitFor(() => expect(within(card).queryByRole('alert')).toBeNull())
+    expect(checked(radios(card, 'Te piden revisión'))).toBe('Nada')
+  })
+})

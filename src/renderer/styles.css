@@ -4150,3 +4150,215 @@ button.fx-bt {
   font-weight: 600;
   box-shadow: 0 1px 3px var(--shadow);
 }
+
+/* S43–S46: «Cuándo». */
+.nt-sw {
+  position: relative;
+  width: 34px;
+  height: 20px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--faint);
+  cursor: pointer;
+  flex: none;
+  padding: 0;
+}
+.nt-sw::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--card);
+  box-shadow: 0 1px 2px var(--shadow);
+  transition: transform 0.15s;
+}
+.nt-sw[aria-checked='true'] {
+  background: var(--run);
+}
+.nt-sw[aria-checked='true']::after {
+  transform: translateX(14px);
+}
+.nt-w {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: start;
+  padding: 10px 0;
+  border-top: 1px solid var(--line);
+}
+.nt-w .ic {
+  padding-top: 2px;
+}
+.nt-w .nt-sw {
+  margin-top: 2px;
+}
+.nt-w .tx > b {
+  font-size: 13.5px;
+  font-weight: 600;
+}
+.nt-w .ex {
+  font-size: 12px;
+  color: var(--sub);
+}
+.nt-stack {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+  transition: opacity 0.2s;
+}
+.nt-stack.off {
+  opacity: 0.4;
+}
+.nt-stack .three {
+  display: grid;
+  gap: 3px;
+}
+.nt-stack .three i {
+  font-style: normal;
+  font-size: 10px;
+  color: var(--sub);
+  background: var(--chip);
+  border-radius: 6px;
+  padding: 1px 7px;
+  white-space: nowrap;
+}
+.nt-stack .arr {
+  color: var(--sub);
+}
+.nt-stack .one {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 6px 9px;
+  box-shadow: 0 4px 14px var(--shadow-sm);
+  min-width: 0;
+}
+.nt-stack .one svg {
+  width: 20px;
+  height: 20px;
+  flex: none;
+}
+.nt-stack .one > span {
+  display: grid;
+  line-height: 1.25;
+  min-width: 0;
+}
+.nt-stack .one b {
+  font-size: 11.5px;
+  white-space: nowrap;
+}
+.nt-stack .one span span {
+  font-size: 10px;
+  color: var(--sub);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.nt-quiet {
+  display: grid;
+  gap: 8px;
+  margin-top: 8px;
+  transition: opacity 0.2s;
+}
+.nt-quiet[aria-disabled='true'] {
+  opacity: 0.45;
+  pointer-events: none;
+}
+.nt-quiet .rg {
+  font-size: 12.5px;
+  color: var(--sub);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.nt-quiet input {
+  font: inherit;
+  font-size: 12.5px;
+  border: 1px solid var(--faint);
+  border-radius: 8px;
+  padding: 2px 6px;
+  background: var(--card);
+  color: var(--text);
+}
+.nt-tl {
+  position: relative;
+  height: 10px;
+  border-radius: 5px;
+  background: var(--hover);
+  margin-bottom: 14px;
+}
+.nt-tl > i {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: color-mix(in oklch, var(--run) 55%, var(--hover));
+}
+.nt-tl > i:first-child {
+  border-radius: 5px 0 0 5px;
+}
+.nt-tl > i:last-of-type {
+  border-radius: 0 5px 5px 0;
+}
+.nt-tl > i:only-of-type {
+  border-radius: 5px;
+}
+.nt-tl .tk em {
+  position: absolute;
+  top: 12px;
+  font-style: normal;
+  font-size: 10px;
+  color: var(--sub);
+  transform: translateX(-50%);
+}
+.nt-tl .tk em:first-child {
+  transform: none;
+}
+.nt-tl .tk em:last-child {
+  transform: translateX(-100%);
+}
+.nt-days {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+  font-size: 12px;
+  color: var(--sub);
+}
+.nt-days > span {
+  margin-right: 4px;
+}
+.nt-days button {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1px solid var(--faint);
+  background: var(--card);
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+  color: var(--sub);
+  padding: 0;
+}
+.nt-days button[aria-pressed='true'] {
+  background: var(--text);
+  border-color: var(--text);
+  color: var(--on-text);
+  font-weight: 600;
+}
+.nt-test {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+.nt-card .problem .btn + .btn {
+  margin-left: 6px;
+}
