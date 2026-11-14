@@ -31,6 +31,7 @@ export function useAsking(): [Set<string>, (id: string, shown: boolean) => void]
 }
 
 export const composerId = (workspaceId: string): string => `composer-${workspaceId}`
+const ANSWERED = 'atril-answered'
 
 // The same mark Automático picks by (W205).
 const RECOMMENDED = /\s*\((Recommended|Recomendado)\)\s*$/
@@ -48,18 +49,29 @@ export function AgentCard({ workspaceId, activityAt, onShown, focusComposer, ski
   const [wait, setWait] = useState<AgentWait | null>(null)
   const [result, setResult] = useState<{ sent: boolean; text: string } | null>(null)
 
-  const load = useCallback(() => window.atril.status.wait(workspaceId), [workspaceId])
+  // The row and the strip above the terminal show the same wait: an answer in one moves both on.
+  const [answers, setAnswers] = useState(0)
+  useEffect(() => {
+    const on = (e: Event): void => {
+      if ((e as CustomEvent<string>).detail === workspaceId) setAnswers((n) => n + 1)
+    }
+    window.addEventListener(ANSWERED, on)
+    return () => window.removeEventListener(ANSWERED, on)
+  }, [workspaceId])
+  const seen = useRef<{ at: number | undefined; next: number } | null>(null)
   useEffect(() => {
     let live = true
-    void load().then((w) => {
+    void window.atril.status.wait(workspaceId).then((w) => {
       if (!live) return
       setWait(w)
-      setResult(null)
+      // «Enviado» stays until something new is asked: a new line, or the next question of the call.
+      if (seen.current?.at !== activityAt || seen.current?.next !== w?.next) setResult(null)
+      seen.current = { at: activityAt, next: w?.next ?? 0 }
     })
     return () => {
       live = false
     }
-  }, [load, activityAt])
+  }, [workspaceId, activityAt, answers])
 
   const tell = useRef(onShown)
   tell.current = onShown
@@ -77,6 +89,13 @@ export function AgentCard({ workspaceId, activityAt, onShown, focusComposer, ski
 
   if (!wait || !shown) return null
   const question = wait.kind === 'question' ? wait.questions[wait.next] : undefined
+  // Every question of the call answered: the agent takes it from here.
+  if (wait.kind === 'question' && !question && wait.questions.length > 0)
+    return (
+      <div className="ask" role="group" aria-label={t('Lo que espera el agente')}>
+        <span className="quick-sent">{t('Enviado')}</span>
+      </div>
+    )
   const said = wait.text ? localiseActivity(wait.text, t) : ''
   let head: string
   let buttons: Button[] = []
@@ -105,15 +124,11 @@ export function AgentCard({ workspaceId, activityAt, onShown, focusComposer, ski
 
   const press = (choice: QuickChoice): void => {
     setResult({ sent: false, text: '' })
-    void window.atril.status.answer(workspaceId, choice).then(async (r) => {
+    void window.atril.status.answer(workspaceId, choice).then((r) => {
       if (!('ok' in r)) return setResult({ sent: false, text: r.error })
       setResult({ sent: true, text: t('Enviado') })
-      // Several questions in one call: the next one shows once main has moved on.
-      const now = await load()
-      if (now && wait.kind === 'question' && now.next !== wait.next) {
-        setWait(now)
-        setResult(null)
-      }
+      // Several questions in one call: the next one shows once main has moved on, here and in the other card.
+      window.dispatchEvent(new CustomEvent(ANSWERED, { detail: workspaceId }))
     })
   }
   const sent = result?.sent === true

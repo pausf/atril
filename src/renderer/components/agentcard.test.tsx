@@ -140,6 +140,20 @@ describe('agent card', () => {
     expect(answer).toHaveBeenLastCalledWith('w1', { option: 1, question: 1 })
     cleanup()
 
+    // The row and the strip show the same wait: answering in one moves both to the next question, and the last says «Enviado».
+    const two = (next: number): AgentWait => ({ kind: 'question', questions: [q('¿Primera?', [['A'], ['B']]), q('¿Segunda?', [['C'], ['D']])], next, idle: false })
+    wait = two(0)
+    const { container } = render(createElement('div', null, createElement(AgentCard, { workspaceId: 'w9', activityAt: 1 }), createElement(AgentCard, { workspaceId: 'w9', activityAt: 1 })))
+    await waitFor(() => expect(screen.getAllByText('¿Primera?')).toHaveLength(2))
+    wait = two(1)
+    await user.click(within(container.querySelectorAll<HTMLElement>('.ask')[0]!).getByRole('button', { name: 'B' }))
+    await waitFor(() => expect(screen.getAllByText('¿Segunda?')).toHaveLength(2))
+    wait = two(2)
+    await user.click(within(container.querySelectorAll<HTMLElement>('.ask')[1]!).getByRole('button', { name: 'C' }))
+    await waitFor(() => expect(screen.getAllByText('Enviado')).toHaveLength(2))
+    expect(screen.queryAllByRole('button')).toEqual([])
+    cleanup()
+
     // multiSelect: the options without buttons, and where to answer.
     wait = { kind: 'question', questions: [q('¿Cuáles?', [['A', 'la a'], ['B']], true)], next: 0, idle: false }
     render(createElement(AgentCard, { workspaceId: 'w1', activityAt: 1 }))

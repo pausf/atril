@@ -88,6 +88,12 @@ export const RECOMMENDED = /\s*\((Recommended|Recomendado)\)\s*$/
 
 /** W205: what Automático decided, shown until the agent writes a newer line. */
 const decided = new Map<string, { text: string; at?: number; line?: string }>()
+/** The activity feed re-reads when Automático decides: no hook write may follow at once. */
+const decidedListeners = new Set<() => void>()
+export function onDecided(cb: () => void): () => void {
+  decidedListeners.add(cb)
+  return () => void decidedListeners.delete(cb)
+}
 async function newestLine(session: string): Promise<{ at?: number; line?: string }> {
   const { readLines } = await import('./activity')
   const first = (await readLines(session))[0]
@@ -397,6 +403,7 @@ export function createStatus({ run = defaultRun, onChange, notify, stopped = () 
         if ('error' in (await answerAgent(ws.id, { option, question }, run))) return state
       a.answered = file.at
       decided.set(ws.session, { text: `Decidió: ${picks.map((o, i) => questions[i]!.options[o]!.label.replace(RECOMMENDED, '')).join(' · ')}`, ...(await newestLine(ws.session)) }) // i18n-ignore: an activity line, localised when shown
+      decidedListeners.forEach((cb) => cb())
       return 'working'
     }
     if (kind === 'turn-end' && a.count < 3) {

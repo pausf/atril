@@ -6,7 +6,7 @@ import { atrilHome } from './paths'
 import { run as defaultRun, type Runner } from './run'
 import { listWorkspacesOrNone } from './workspaces'
 import { burst } from './burst'
-import { decidedLine, stateDir, waitingLine } from './status'
+import { decidedLine, onDecided, stateDir, waitingLine } from './status'
 
 export const activityDir = (): string => join(atrilHome(), 'activity')
 
@@ -48,6 +48,7 @@ export function createActivity({ run = defaultRun, emit }: ActivityOptions) {
   const known = new Map<string, ActivityLine[]>()
   let watcher: FSWatcher | undefined
   let states: FSWatcher | undefined
+  let offDecided = (): void => {}
 
   async function refresh(): Promise<void> {
     for (const ws of await listWorkspacesOrNone(run)) {
@@ -81,10 +82,12 @@ export function createActivity({ run = defaultRun, emit }: ActivityOptions) {
       // W199: a turn end that waits on a subagent changes the line without a new activity write.
       await mkdir(stateDir(), { recursive: true })
       states = watch(stateDir(), poke)
+      offDecided = onDecided(poke)
     },
     stop(): void {
       watcher?.close()
       states?.close()
+      offDecided()
       poke.cancel()
     }
   }
