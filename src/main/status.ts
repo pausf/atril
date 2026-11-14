@@ -1,10 +1,11 @@
 import { existsSync, watch, type FSWatcher } from 'node:fs'
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
-import type { AgentState, QuickAnswer, QuickChoice, QuickReplies, WorkspaceView } from '../preload/api'
+import type { AgentState, AgentWait, QuickAnswer, QuickChoice, QuickReplies, WaitKind, WaitQuestion, WorkspaceView } from '../preload/api'
 import { atrilHome } from './paths'
 import { run as defaultRun, type Runner } from './run'
-import { hasSession, paneDead, paneListedDead, pressKey, sendKey, sendText } from './tmux'
+import { hasSession, paneDead, paneListedDead, pasteText, pressKey, sendKey, sendText } from './tmux'
+import { readSubagents } from './subagents'
 import type { AgentSnapshot } from './nextup'
 import { listWorkspaces, readRecords } from './workspaces'
 import { orProblem, readState, StateError } from './state'
@@ -21,7 +22,20 @@ const pauseFile = (session: string): string => join(atrilHome(), 'paused', sessi
 export const shouldNotify = (prev: AgentState | undefined, next: AgentState): boolean =>
   next === 'needs-you' && prev !== 'needs-you'
 
-async function hookFile(session: string): Promise<{ state?: string; text?: string; at?: number; options?: unknown; multiSelect?: unknown }> {
+interface HookFile {
+  state?: string
+  text?: string
+  at?: number
+  kind?: unknown
+  questions?: unknown
+  permission?: unknown
+  idle?: unknown
+  /** Before W197: the first question's labels. */
+  options?: unknown
+  multiSelect?: unknown
+}
+
+async function hookFile(session: string): Promise<HookFile> {
   try {
     return JSON.parse(await readFile(join(stateDir(), `${session}.json`), 'utf8'))
   } catch {
@@ -30,17 +44,88 @@ async function hookFile(session: string): Promise<{ state?: string; text?: strin
   }
 }
 
+const str = (v: unknown): string => (typeof v === 'string' ? v : '')
+
+/** W197: the hook's kind, else read from its text as before it wrote one. */
+function kindOfWait(file: HookFile): WaitKind | undefined {
+  if (file.kind === 'question' || file.kind === 'permission' || file.kind === 'turn-end') return file.kind
+  const text = str(file.text)
+  if (/^Te pregunta: Claude needs your permission/.test(text)) return 'permission'
+  if (Array.isArray(file.options) || file.multiSelect === true) return 'question'
+  if (text.startsWith('Claude dice: ') || text === 'Claude ha terminado') return 'turn-end'
+  return undefined
+}
+
+/** W74: every stored question; a state from before W197 holds its first question's labels only. */
+function questionsOf(file: HookFile): WaitQuestion[] {
+  if (Array.isArray(file.questions))
+    return file.questions.map((q: Record<string, unknown>) => ({
+      question: str(q?.['question']),
+      header: str(q?.['header']),
+      options: Array.isArray(q?.['options']) ? q['options'].map((o: Record<string, unknown>) => ({ label: str(o?.['label']), description: str(o?.['description']) })) : [],
+      multiSelect: q?.['multiSelect'] === true
+    }))
+  if (!Array.isArray(file.options) && file.multiSelect !== true) return []
+  const labels = Array.isArray(file.options) ? file.options.filter((o): o is string => typeof o === 'string') : []
+  return [{ question: str(file.text).replace(/^Te pregunta: /, ''), header: '', options: labels.map((label) => ({ label, description: '' })), multiSelect: file.multiSelect === true }]
+}
+
+/** W75: per session, the question answered next, kept with the state's time so a new entry starts at 0. */
+const progress = new Map<string, { at: number | undefined; next: number }>()
+const nextQuestion = (session: string, file: HookFile): number => {
+  const p = progress.get(session)
+  return p && p.at === file.at ? p.next : 0
+}
+
+/** W199: an end of turn while one of its subagents still runs is not a wait yet. */
+async function behindSubagent(session: string, file: HookFile): Promise<boolean> {
+  if (file.state !== 'needs-you' || kindOfWait(file) !== 'turn-end') return false
+  return ((await readSubagents(session)) ?? []).some((e) => e.endedAt === undefined)
+}
+
+/** W199: the line the row shows instead of the turn's last words while a subagent runs. */
+export async function waitingLine(session: string): Promise<{ at: number; text: string } | null> {
+  const file = await hookFile(session)
+  return (await behindSubagent(session, file)) ? { at: file.at ?? 0, text: 'Esperando a un subagente' } : null // i18n-ignore: an activity line, localised when shown
+}
+
 async function hookState(session: string): Promise<AgentState> {
   // W86: the mark outranks the hook's state until the hook removes it (UserPromptSubmit or needs-you) or Reanudar does.
   if (existsSync(pauseFile(session))) return 'paused'
-  const { state } = await hookFile(session)
-  return state === 'needs-you' || state === 'working' ? state : 'working'
+  const file = await hookFile(session)
+  if (await behindSubagent(session, file)) return 'working'
+  return file.state === 'needs-you' || file.state === 'working' ? file.state : 'working'
+}
+
+/** What a needs-you agent waits for (W200–W202); null otherwise. */
+export async function waitOf(session: string): Promise<AgentWait | null> {
+  const file = await hookFile(session)
+  if (file.state !== 'needs-you' || (await behindSubagent(session, file))) return null
+  const kind = kindOfWait(file)
+  const p = file.permission as { tool?: unknown; summary?: unknown } | undefined
+  return {
+    ...(kind && { kind }),
+    ...(typeof file.text === 'string' && file.text && { text: plainWait(file.text) }),
+    questions: questionsOf(file),
+    next: nextQuestion(session, file),
+    ...(kind === 'permission' && typeof p?.tool === 'string' && p.tool && { permission: { tool: p.tool, ...(typeof p.summary === 'string' && p.summary && { summary: p.summary }) } }),
+    idle: file.idle === true
+  }
+}
+
+/** W203: the hook's English wait messages, in Atril's words, for text written before the hook said them itself. */
+export function plainWait(text: string): string {
+  const tool = /^Te pregunta: Claude needs your permission to use (.+)$/.exec(text) // i18n-ignore: matches Claude Code's English, never shown
+  if (tool) return `Te pregunta: ¿Puede usar ${tool[1]}?` // i18n-ignore: a hook line, localised when shown
+  if (/^Te pregunta: Claude needs your permission/.test(text)) return 'Te pregunta: ¿Puede seguir?' // i18n-ignore: a hook line, localised when shown
+  if (/^Te pregunta: Claude is waiting for your input/.test(text)) return 'Claude te necesita' // i18n-ignore: a hook line, localised when shown
+  return text
 }
 
 /** The agent's own words written with the state change (A4), else today's body. */
 export async function notificationBody(ws: WorkspaceView): Promise<string> {
   const { text } = await hookFile(ws.session)
-  return typeof text === 'string' && text ? localiseActivity(text, t) : t('{branch} te necesita', { branch: ws.branch })
+  return typeof text === 'string' && text ? localiseActivity(plainWait(text), t) : t('{branch} te necesita', { branch: ws.branch })
 }
 
 export async function agentState(ws: WorkspaceView, run: Runner = defaultRun): Promise<AgentState> {
@@ -63,9 +148,14 @@ export function planReply(text: string, ws: Pick<WorkspaceView, 'paneId' | 'aliv
   return { kind: 'send', paneId: ws.paneId, text: line }
 }
 
-/** W74: how many options the waiting question offers; 0 for none. */
+/** W74: how many options the question due now offers; 0 for none. */
 export async function optionCount(session: string): Promise<number> {
   return (await quickReplies(session)).options.length
+}
+
+/** The question a numbered reply from the Mac answers (N3). */
+async function dueQuestion(session: string): Promise<number> {
+  return nextQuestion(session, await hookFile(session))
 }
 
 /** N3: a reply from the Mac notification; with options, a number from 1 to their count answers that option (W75). */
@@ -80,7 +170,7 @@ export async function replyFromNotice(id: string, text: string, run: Runner = de
   if (/^\d+$/.test(line)) {
     const rec = (await readRecords()).find((r) => r.id === id)
     const n = Number(line)
-    if (rec && n >= 1 && n <= (await optionCount(rec.session))) return fromAnswer(await answerAgent(id, { option: n - 1 }, run))
+    if (rec && n >= 1 && n <= (await optionCount(rec.session))) return fromAnswer(await answerAgent(id, { option: n - 1, question: await dueQuestion(rec.session) }, run))
   }
   return replyToAgent(id, text, run)
 }
@@ -100,35 +190,46 @@ export async function replyToAgent(id: string, text: string, run: Runner = defau
   return (await sendText(plan.paneId, plan.text, run)) ? 'sent' : 'gone'
 }
 
-/** What the row may offer for that session's question (W74); multiSelect offers nothing. */
+/** The question due now, as the row's options (W74); multiSelect offers nothing. */
 export async function quickReplies(session: string): Promise<QuickReplies> {
-  const { state, options, multiSelect } = await hookFile(session)
-  if (state !== 'needs-you') return { options: [], multiSelect: false }
-  return { options: Array.isArray(options) ? options.filter((o): o is string => typeof o === 'string') : [], multiSelect: multiSelect === true }
+  const wait = await waitOf(session)
+  const q = wait?.questions[wait.next]
+  return q ? { options: q.options.map((o) => o.label), multiSelect: q.multiSelect, question: wait.next } : { options: [], multiSelect: false, question: 0 }
 }
+
+// W75, W206: never a bare «sí»: it was read as approval of whatever Claude had last offered.
+export const CONTINUE = 'Sigue con el plan; no hagas nada que no esté en él.' // i18n-ignore: words for Claude, not the person
 
 const isChoice = (c: unknown): c is QuickChoice => {
   if (typeof c !== 'object' || c === null) return false
-  const keys = Object.keys(c)
-  if (keys.length !== 1) return false
-  const v = (c as Record<string, unknown>)[keys[0]!]
-  return keys[0] === 'option' ? Number.isInteger(v) : keys[0] === 'fixed' && (v === 'yes' || v === 'no')
+  const v = c as Record<string, unknown>
+  const keys = Object.keys(c).sort().join(',')
+  if (keys === 'option,question') return Number.isInteger(v['option']) && Number.isInteger(v['question'])
+  return (keys === 'allow' || keys === 'deny' || keys === 'continue') && v[keys] === true
 }
 
-/** W75: re-reads the state, then types an option's number key or main's own fixed words into that workspace's pane. */
+/** W75: re-reads the state, then turns the choice into keys for that workspace's pane. */
 export async function answerAgent(id: string, choice: QuickChoice, run: Runner = defaultRun): Promise<QuickAnswer> {
-  if (!isChoice(choice)) return { error: t('Esa opción ya no existe.') }
+  const noOption = { error: t('Esa opción ya no existe.') }
+  if (!isChoice(choice)) return noOption
   const ws = await actingWorkspace(id, run)
   if (!ws?.alive || !/^%\d+$/.test(ws.paneId) || (await paneDead(ws.paneId, run))) return { error: replyGone() }
-  const { state, options } = await hookFile(ws.session)
-  if (state !== 'needs-you') return { error: t('Ese agente ya no está esperando una respuesta.') }
-  if ('option' in choice) {
-    const n = Array.isArray(options) ? options.length : 0
-    if (choice.option < 0 || choice.option >= n) return { error: t('Esa opción ya no existe.') }
-    return (await sendKey(ws.paneId, String(choice.option + 1), run)) ? { ok: true } : { error: replyGone() }
+  const file = await hookFile(ws.session)
+  if (file.state !== 'needs-you') return { error: t('Ese agente ya no está esperando una respuesta.') }
+  const sent = (ok: boolean): QuickAnswer => (ok ? { ok: true } : { error: replyGone() })
+  if ('continue' in choice) return sent(await pasteText(ws.paneId, CONTINUE, run))
+  if ('allow' in choice || 'deny' in choice) {
+    if (kindOfWait(file) !== 'permission') return noOption
+    // «1» is «Sí» in Claude Code's permission prompt; Escape refuses it.
+    return sent('allow' in choice ? await sendKey(ws.paneId, '1', run) : await pressKey(ws.paneId, 'Escape', run))
   }
-  const words = choice.fixed === 'yes' ? t('Sí, sigue') : t('No, espera')
-  return (await sendText(ws.paneId, words, run)) ? { ok: true } : { error: replyGone() }
+  const questions = questionsOf(file)
+  const q = questions[choice.question]
+  if (choice.question !== nextQuestion(ws.session, file) || !q || q.multiSelect || choice.option < 0 || choice.option >= q.options.length) return noOption
+  if (!(await sendKey(ws.paneId, String(choice.option + 1), run))) return { error: replyGone() }
+  progress.set(ws.session, { at: file.at, next: choice.question + 1 })
+  // After the call's last question, Claude Code waits for its answers to be submitted.
+  return choice.question === questions.length - 1 ? sent(await pressKey(ws.paneId, 'Enter', run)) : { ok: true }
 }
 
 export async function liveWorkspace(id: string, run: Runner): Promise<WorkspaceView | undefined> {
@@ -211,7 +312,7 @@ export function createStatus({ run = defaultRun, onChange, notify, stopped = () 
           since.set(ws.id, file.at ?? 0)
           onChange(ws.id, next)
           if (next === 'needs-you') {
-            const text = typeof file.text === 'string' ? file.text : undefined
+            const text = typeof file.text === 'string' ? plainWait(file.text) : undefined
             waits.set(ws.id, { at: now(), text, reminded: false })
             // The first pass only records: reopening Atril must not announce what was already waiting.
             if (seeded && shouldNotify(prev, next)) notify(ws, kindOf(text), text)
@@ -222,7 +323,7 @@ export function createStatus({ run = defaultRun, onChange, notify, stopped = () 
         const wait = next === 'needs-you' ? waits.get(ws.id) : undefined
         if (!wait) continue
         const { text } = await hookFile(ws.session)
-        const now_ = typeof text === 'string' ? text : undefined
+        const now_ = typeof text === 'string' ? plainWait(text) : undefined
         // W176: a question after an end of turn, in the same wait, is news.
         if (seeded && wait.text?.startsWith('Claude dice: ') && now_?.startsWith('Te pregunta: ')) notify(ws, 'ask', now_)
         wait.text = now_

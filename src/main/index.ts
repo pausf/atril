@@ -9,7 +9,7 @@ import { createQaDone, qaBug, qaReport, qaRetest } from './qa-report'
 import { runFix } from './qa-fix'
 import { addManual, chooseTarget, removeManual } from './qa-targets'
 import { createAvisos, NOTIFY_DEFAULTS, patchNotifySettings, readNotifySettings, workName } from './avisos'
-import { agentState, answerAgent, createStatus, optionCount, pauseAgent, replyFromNotice, replyToAgent, resumeAgent, quickReplies } from './status'
+import { agentState, answerAgent, createStatus, optionCount, pauseAgent, replyFromNotice, replyToAgent, resumeAgent, quickReplies, waitOf } from './status'
 import { getLang, setLang, t } from './lang'
 import { resolveLang } from '../preload/i18n'
 import { readDocs, saveDoc } from './flow/document'
@@ -837,7 +837,11 @@ app.whenReady().then(async () => {
   ipcMain.handle('atril:status:list', () => status.states())
   ipcMain.handle('atril:status:quickReplies', async (_e, id: unknown) => {
     const ws = (await listWorkspaces(run)).find((w) => w.id === id)
-    return ws ? quickReplies(ws.session) : { options: [], multiSelect: false }
+    return ws ? quickReplies(ws.session) : { options: [], multiSelect: false, question: 0 }
+  })
+  ipcMain.handle('atril:status:wait', async (_e, id: unknown) => {
+    const ws = (await listWorkspacesOrNone(run)).find((w) => w.id === id)
+    return ws ? waitOf(ws.session) : null
   })
   // answerAgent checks the shape itself: the window's value is never trusted.
   ipcMain.handle('atril:status:answer', (_e, id: unknown, choice: unknown) => answerAgent(String(id), choice as QuickChoice, run))

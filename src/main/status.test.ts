@@ -354,3 +354,169 @@ describe('status notices', () => {
     expect(idle).toHaveBeenCalledTimes(3)
   }, 30_000)
 })
+
+/** Records every tmux send-keys and paste so "nothing was sent" is observed, not assumed. */
+async function spied(): Promise<{ run: Runner; sent: string[][] }> {
+  const { run } = await import('./run')
+  const sent: string[][] = []
+  return { sent, run: (cmd, args, opts) => ((args.includes('send-keys') || args.includes('paste-buffer')) && sent.push(args.slice(2)), run(cmd, args, opts)) }
+}
+const wait = (session: string, body: object): void => {
+  mkdirSync(join(home, 'state'), { recursive: true })
+  writeFileSync(join(home, 'state', `${session}.json`), JSON.stringify({ state: 'needs-you', at: 1, ...body }))
+}
+const q = (question: string, labels: string[], multiSelect = false) => ({ question, header: question, multiSelect, options: labels.map((label) => ({ label, description: '' })) })
+const NOT_WAITING = { error: 'Ese agente ya no está esperando una respuesta.' }
+const NO_OPTION = { error: 'Esa opción ya no existe.' }
+
+describe('answers', () => {
+  it('each answer shape sends its own keys', async () => {
+    const { answerAgent, replyGone } = await import('./status')
+    const { removeWorkspace } = await import('./workspaces')
+    const a = await open(['cat'], 'feat/qa')
+    const b = await open(['cat'], 'feat/qb')
+    const { run, sent } = await spied()
+    const capture = (ws: WorkspaceView): string => tmuxOut(sock, 'capture-pane', '-p', '-t', ws.paneId)
+    wait(a.session, { at: 10, kind: 'question', text: 'Te pregunta: ¿Cómo?', questions: [q('¿Cómo?', ['Corto', 'Largo', 'Ninguno']), q('¿Pruebas?', ['Sí', 'No'])] })
+
+    // The first question: its option's number as a key, then Enter, into that pane only.
+    expect(await answerAgent(a.id, { option: 1, question: 0 }, run)).toEqual({ ok: true })
+    expect(sent).toEqual([['send-keys', '-t', a.paneId, '2'], ['send-keys', '-t', a.paneId, 'Enter']])
+    // Main remembers which question is next: the same index again is stale, and so is an option past the end.
+    sent.length = 0
+    for (const choice of [{ option: 0, question: 0 }, { option: 2, question: 1 }, { option: 0, question: 2 }]) expect(await answerAgent(a.id, choice, run)).toEqual(NO_OPTION)
+    expect(sent).toEqual([])
+    // The last question: its key, Enter, and one more Enter to submit the answers.
+    expect(await answerAgent(a.id, { option: 0, question: 1 }, run)).toEqual({ ok: true })
+    expect(sent).toEqual([['send-keys', '-t', a.paneId, '1'], ['send-keys', '-t', a.paneId, 'Enter'], ['send-keys', '-t', a.paneId, 'Enter']])
+    expect(capture(b).trim()).toBe('')
+    // A new entry into needs-you starts again at the first question.
+    sent.length = 0
+    wait(a.session, { at: 20, kind: 'question', questions: [q('¿Otra?', ['A', 'B'])] })
+    expect(await answerAgent(a.id, { option: 1, question: 0 }, run)).toEqual({ ok: true })
+    expect(sent).toEqual([['send-keys', '-t', a.paneId, '2'], ['send-keys', '-t', a.paneId, 'Enter'], ['send-keys', '-t', a.paneId, 'Enter']])
+    // A state written before kinds existed: its options are one question.
+    sent.length = 0
+    wait(a.session, { at: 30, text: 'Te pregunta: ¿?', options: ['Sí', 'No'] })
+    expect(await answerAgent(a.id, { option: 0, question: 0 }, run)).toEqual({ ok: true })
+    expect(sent.map((x) => x.at(-1))).toEqual(['1', 'Enter', 'Enter'])
+    // A multiSelect question has no option to press.
+    sent.length = 0
+    wait(a.session, { at: 40, kind: 'question', questions: [q('¿Cuáles?', ['A', 'B'], true)] })
+    expect(await answerAgent(a.id, { option: 0, question: 0 }, run)).toEqual(NO_OPTION)
+    expect(sent).toEqual([])
+
+    // Continue: main's own sentence as a bracketed paste, then Enter; never a bare «sí».
+    wait(b.session, { at: 5, kind: 'turn-end', text: 'Claude dice: listo' })
+    expect(await answerAgent(b.id, { continue: true }, run)).toEqual({ ok: true })
+    expect(sent[0]).toEqual(expect.arrayContaining(['paste-buffer', '-p', '-t', b.paneId]))
+    expect(sent.at(-1)).toEqual(['send-keys', '-t', b.paneId, 'Enter'])
+    expect(await until(() => capture(b), (c) => c.includes('Sigue con el plan; no hagas nada que no esté en él.'))).toContain('Sigue con el plan; no hagas nada que no esté en él.')
+
+    // Re-read at press time: a state that is not needs-you types nothing, whatever the shape.
+    sent.length = 0
+    wait(a.session, { state: 'working', at: 50, kind: 'question', questions: [q('¿?', ['A'])] })
+    for (const choice of [{ option: 0, question: 0 }, { allow: true }, { deny: true }, { continue: true }] as const) expect(await answerAgent(a.id, choice, run)).toEqual(NOT_WAITING)
+    // Any other shape is refused: the window never gets text typed.
+    wait(a.session, { at: 60, kind: 'question', questions: [q('¿?', ['A'])] })
+    for (const choice of ['yes', 1, null, { fixed: 'yes' }, { option: 0 }, { option: '0', question: 0 }, { option: 0.5, question: 0 }, { allow: false }, { continue: 'sí' }, { text: 'hola' }, { continue: true, text: 'x' }])
+      expect(await answerAgent(a.id, choice as never, run)).toEqual(NO_OPTION)
+    expect(sent).toEqual([])
+
+    // A gone workspace or pane: nothing is sent and the caller says so (W53).
+    expect(await removeWorkspace(b.id)).toEqual({ ok: true })
+    expect(await answerAgent(b.id, { continue: true }, run)).toEqual({ error: replyGone() })
+    expect(await answerAgent('nosuchid', { option: 0, question: 0 }, run)).toEqual({ error: replyGone() })
+    expect(sent).toEqual([])
+  }, 30_000)
+
+  it('allow and deny send their keys', async () => {
+    const { answerAgent } = await import('./status')
+    const a = await open(['cat'], 'feat/pa')
+    const { run, sent } = await spied()
+    wait(a.session, { kind: 'permission', text: 'Te pregunta: ¿Puede usar Bash?', permission: { tool: 'Bash', summary: 'git push' } })
+    // Permitir: «1» (Sí, una vez), then Enter.
+    expect(await answerAgent(a.id, { allow: true }, run)).toEqual({ ok: true })
+    expect(sent).toEqual([['send-keys', '-t', a.paneId, '1'], ['send-keys', '-t', a.paneId, 'Enter']])
+    // Denegar: Escape and nothing else.
+    sent.length = 0
+    expect(await answerAgent(a.id, { deny: true }, run)).toEqual({ ok: true })
+    expect(sent).toEqual([['send-keys', '-t', a.paneId, 'Escape']])
+    // A permission written before kinds existed reads by its text.
+    sent.length = 0
+    wait(a.session, { text: 'Te pregunta: Claude needs your permission to use Bash' })
+    expect(await answerAgent(a.id, { allow: true }, run)).toEqual({ ok: true })
+    expect(sent.map((x) => x.at(-1))).toEqual(['1', 'Enter'])
+    // Only a permission can be allowed or denied.
+    sent.length = 0
+    for (const body of [{ kind: 'question', questions: [q('¿?', ['A'])] }, { kind: 'turn-end', text: 'Claude dice: hecho' }]) {
+      wait(a.session, body)
+      expect(await answerAgent(a.id, { allow: true }, run)).toEqual(NO_OPTION)
+      expect(await answerAgent(a.id, { deny: true }, run)).toEqual(NO_OPTION)
+    }
+    expect(sent).toEqual([])
+  }, 30_000)
+
+  it('a turn end with a subagent still running is working', async () => {
+    const { createStatus } = await import('./status')
+    const { readActivity } = await import('./activity')
+    const ws = await open(SLEEP)
+    const notify = vi.fn()
+    const status = createStatus({ onChange: () => {}, notify })
+    await status.refresh()
+    const subs = (entries: object[]): void => {
+      mkdirSync(join(home, 'subagents'), { recursive: true })
+      writeFileSync(join(home, 'subagents', `${ws.session}.json`), JSON.stringify({ entries }))
+    }
+    subs([{ id: 'a1', type: 'explorer', startedAt: 1 }, { id: 'a0', type: 'explorer', startedAt: 0, endedAt: 1 }])
+    wait(ws.session, { at: 7, kind: 'turn-end', text: 'Claude dice: espero al explorador' })
+    await status.refresh()
+    // Working, with what it waits for, and no notice.
+    expect(status.states()[ws.id]).toBe('working')
+    expect((await readActivity(ws.session))[0]).toMatchObject({ text: 'Esperando a un subagente' })
+    expect(notify).not.toHaveBeenCalled()
+    // A question is a question even with a subagent running.
+    wait(ws.session, { at: 8, kind: 'question', text: 'Te pregunta: ¿?', questions: [q('¿?', ['A'])] })
+    await status.refresh()
+    expect(status.states()[ws.id]).toBe('needs-you')
+    wait(ws.session, { at: 9, kind: 'turn-end', text: 'Claude dice: espero al explorador' })
+    await status.refresh()
+    expect(status.states()[ws.id]).toBe('working')
+    notify.mockClear()
+    // The last one ends: the next poll is an entry into needs-you, with its notice.
+    subs([{ id: 'a1', type: 'explorer', startedAt: 1, endedAt: 9 }])
+    await status.refresh()
+    expect(status.states()[ws.id]).toBe('needs-you')
+    expect(notify.mock.calls.map((c) => [c[1], c[2]])).toEqual([['done', 'Claude dice: espero al explorador']])
+    expect((await readActivity(ws.session))[0]?.text).not.toBe('Esperando a un subagente')
+  }, 30_000)
+
+  it("claude's english wait messages never reach the person", async () => {
+    const { createStatus, notificationBody } = await import('./status')
+    const { readActivity } = await import('./activity')
+    const { localiseActivity } = await import('../preload/activity-i18n')
+    const { t } = await import('./lang')
+    const ENGLISH = /Claude needs your permission|Claude is waiting for your input/
+    const msgs = ['Claude needs your permission to use Bash', 'Claude needs your permission', 'Claude is waiting for your input']
+    for (const [i, message] of msgs.entries()) {
+      const dir = tmp()
+      writeFileSync(join(dir, 'in.json'), JSON.stringify({ message, ...(i < 2 ? { notification_type: 'permission_prompt' } : {}) }))
+      const ws = await open(['sh', '-c', `${hookCommand('Notification')} <'${join(dir, 'in.json')}'; sleep 300`], `feat/en${i}`)
+      const notify = vi.fn()
+      const status = createStatus({ onChange: () => {}, notify })
+      const seen = await until(async () => (await readActivity(ws.session)).length, (n) => n > 0, 10_000)
+      expect(seen).toBeGreaterThan(0)
+      await status.refresh()
+      const shown = [
+        readFileSync(join(home, 'state', `${ws.session}.json`), 'utf8'),
+        ...(await readActivity(ws.session)).map((l) => localiseActivity(l.text, t)),
+        await notificationBody(ws)
+      ]
+      for (const text of shown) expect(text).not.toMatch(ENGLISH)
+    }
+    // Lines written before this change are told in Atril's words when shown.
+    for (const m of msgs) expect(localiseActivity(`Te pregunta: ${m}`, t)).not.toMatch(ENGLISH)
+    expect(localiseActivity('Te pregunta: Claude needs your permission to use Bash', t)).toBe('Te pregunta: ¿Puede usar Bash?')
+    expect(localiseActivity('Te pregunta: Claude is waiting for your input', t)).toBe('Claude te necesita')
+  }, 60_000)
+})

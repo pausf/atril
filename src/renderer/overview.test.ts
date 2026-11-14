@@ -169,7 +169,7 @@ describe('agents overview', () => {
     const api = mockApi({
       ...base,
       activity: { ...base.activity, aaaaaaa4: asked, aaaaaaa3: asked },
-      quickReplies: { aaaaaaa4: { options: ['Sí', 'Rehaz el plan'], multiSelect: false }, aaaaaaa3: { options: ['a', 'b'], multiSelect: true } }
+      quickReplies: { aaaaaaa4: { options: ['Sí', 'Rehaz el plan'], multiSelect: false, question: 0 }, aaaaaaa3: { options: ['a', 'b'], multiSelect: true, question: 0 } }
     })
     render(createElement(App))
     await screen.findByText('PF-5')
@@ -192,7 +192,7 @@ describe('agents overview', () => {
 
     // Answering there sends it and leaves «Todos» on screen, nothing opened.
     await user.click(within(replies('PF-4')!).getByRole('button', { name: 'Rehaz el plan' }))
-    expect(api.statusApi.answer).toHaveBeenLastCalledWith('aaaaaaa4', { option: 1 })
+    expect(api.statusApi.answer).toHaveBeenLastCalledWith('aaaaaaa4', { option: 1, question: 0 })
     expect(await within(card('PF-4')).findByText('Enviado')).toBeTruthy()
     expect(overview()).toBeTruthy()
     expect(screen.queryByRole('heading', { name: 'PF-4' })).toBeNull()

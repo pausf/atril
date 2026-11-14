@@ -42,6 +42,9 @@ Durable decisions: the ones in Prior decisions below (terminal de solo lectura, 
 ### Session 2026-11-14 (construcción)
 - Box 1 toca fuera de «In»: `src/main/menu.ts` (fuera «Dividir a la derecha/abajo», ⌘D/⌘⇧D, W196) y los tests que montaban el menú con `split` (`src/main/i18n.test.ts` cambia la etiqueta de ejemplo a «Pausar»; `src/renderer/flow/boxes.test.ts` comprueba que ⌘D/⌘⇧D ya no existen; `tutorial`, `pause`, `focus` y `overview` solo pierden `split`); `src/renderer/tour/Tour.tsx` (el paso de la terminal decía «escribe en él» y ⌘D); `src/main/pty.test.ts` pierde las llamadas a `input`, que ya no existe. `splitPane` sigue en `tmux.ts`: sus tests prueban otros criterios (W163, el destino exacto) (assumed).
 - Box 2: «an asked question keeps its options» (la prueba vieja de W74) se sustituye por la que nombra W74 enmendado. El gancho ya no escribe `options`/`multiSelect`; main los sigue leyendo en estados viejos (Constraints). W198 «recordar por sesión» vive en una opción de la sesión de tmux (`@atril-tool`), leída y escrita en la misma llamada `display` que el gancho ya hacía: guardarla en disco rompía la prueba de A1 («hook appends a short summary, never the payload»: ningún archivo bajo `ATRIL_HOME` con el comando). Así un comando solo llega a disco cuando un permiso espera por él, como pide W198 (assumed).
+- Box 3: «a quick answer reaches its own pane» (src/main/reply.test.ts, la prueba vieja de W75) se quita: W75 enmendado cita las dos de `status.test.ts`, que cubren sus cláusulas (pantalla propia, opción fuera de rango, estado que ya no espera, formas raras, trabajo que ya no está). N3 («a number answers the option with its key») ahora espera el Enter final de W75 tras la última pregunta. `QuickReplies.tsx` y su test pasan a `{ option, question }` y «Sigue» hasta que box 4 los sustituya. Fuera de «In»: `src/main/activity.ts` (W199: la línea «Esperando a un subagente» encima y el vigilante también mira `state/`), `src/preload/activity-i18n.ts` (W203 para líneas viejas), `src/renderer/mockApi.ts` y `src/renderer/overview.test.ts` (la forma nueva) (assumed).
+- W75 dice «a gone workspace or pane answers W53's sentence», pero W53 es del runner: se usa la de N3 («No se pudo enviar: ese trabajo ya no está»), como hasta ahora (assumed).
+- W203 se arregla en origen: `summarise.mjs` escribe «Te pregunta: ¿Puede usar {tool}?», «Te pregunta: ¿Puede seguir?» y «Claude te necesita» en lugar de los mensajes en inglés de Claude Code; las líneas viejas se traducen al enseñarlas (assumed).
 
 ## Outcomes
 
@@ -165,7 +168,7 @@ Ninguna.
 
 - [x] Terminal de solo lectura: `attach -r`, sin `onData`, main ignora `atril:term:input` · Closes: W196
 - [x] Gancho: `kind`, preguntas completas, resumen del permiso · Closes: W197, W74, W198, W195
-- [ ] `status`: trabajo en segundo plano, acciones `allow`/`deny`/`continue`, sin textos en inglés · waits on box 2 · Closes: W199, W75, W203
+- [x] `status`: trabajo en segundo plano, acciones `allow`/`deny`/`continue`, sin textos en inglés · waits on box 2 · Closes: W199, W75, W203
 - [ ] `AgentCard` en la fila, el resumen y encima de la terminal · waits on box 3 · Closes: W76, W200, W201, W202
 - [ ] Compositor «Escribe al agente» · waits on box 1 · Closes: W204
 - [ ] Automático sigue solo: recomendada, «Sigue con el plan; no hagas nada que no esté en él.» con tope, paradas de W59 y permisos · waits on box 3 · Closes: W205, W206, W207, V3

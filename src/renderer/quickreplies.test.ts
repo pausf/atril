@@ -26,17 +26,17 @@ describe('quick replies', () => {
       states: { aaaaaaa1: 'needs-you', aaaaaaa2: 'needs-you', aaaaaaa3: 'needs-you', aaaaaaa4: 'working' },
       activity: { aaaaaaa1: asked, aaaaaaa2: asked, aaaaaaa3: asked, aaaaaaa4: [{ at: 5, kind: 'read' as const, text: 'src/a.ts' }] },
       quickReplies: {
-        aaaaaaa1: { options: ['Sí', '<b>Rehaz</b> el plan'], multiSelect: false },
-        aaaaaaa3: { options: [], multiSelect: true }
+        aaaaaaa1: { options: ['Sí', '<b>Rehaz</b> el plan'], multiSelect: false, question: 0 },
+        aaaaaaa3: { options: [], multiSelect: true, question: 0 }
       }
     })
     render(createElement(App))
     await screen.findByText('PF-4')
 
-    // Stored options as buttons, their labels as text; none stored: the two fixed replies.
+    // Stored options as buttons, their labels as text; none stored: «Sigue» (W75: never a bare «sí»).
     await waitFor(() => expect(labels('PF-1')).toEqual(['Sí', '<b>Rehaz</b> el plan']))
     expect(item('PF-1').querySelector('b')).toBeNull()
-    await waitFor(() => expect(labels('PF-2')).toEqual(['Sí, sigue', 'No, espera']))
+    await waitFor(() => expect(labels('PF-2')).toEqual(['Sigue']))
     // A multiSelect question and a working agent offer nothing.
     expect(replies('PF-3')).toBeNull()
     expect(replies('PF-4')).toBeNull()
@@ -54,16 +54,16 @@ describe('quick replies', () => {
 
     // A mouse press sends the option, says «Enviado» and disables the buttons.
     await user.click(within(replies('PF-1')!).getByRole('button', { name: '<b>Rehaz</b> el plan' }))
-    expect(api.statusApi.answer).toHaveBeenLastCalledWith('aaaaaaa1', { option: 1 })
+    expect(api.statusApi.answer).toHaveBeenLastCalledWith('aaaaaaa1', { option: 1, question: 0 })
     expect(await within(item('PF-1')).findByText('Enviado')).toBeTruthy()
     expect(within(replies('PF-1')!).getAllByRole('button').every((b) => (b as HTMLButtonElement).disabled)).toBe(true)
     // PF-1 never got selected: the press stays in the row.
     expect(item('PF-1').querySelector('.ws-row')?.getAttribute('aria-pressed')).toBe('false')
 
-    // A keyboard press sends a fixed reply.
-    within(replies('PF-2')!).getByRole('button', { name: 'No, espera' }).focus()
+    // A keyboard press sends «Sigue».
+    within(replies('PF-2')!).getByRole('button', { name: 'Sigue' }).focus()
     await user.keyboard('{Enter}')
-    expect(api.statusApi.answer).toHaveBeenLastCalledWith('aaaaaaa2', { fixed: 'no' })
+    expect(api.statusApi.answer).toHaveBeenLastCalledWith('aaaaaaa2', { continue: true })
     expect(await within(item('PF-2')).findByText('Enviado')).toBeTruthy()
 
     // Leaving needs-you takes the buttons and the «Enviado» away.
@@ -78,7 +78,7 @@ describe('quick replies', () => {
     await waitFor(() => expect(labels('PF-1')).toEqual(['Sí', '<b>Rehaz</b> el plan']))
     vi.mocked(api.statusApi.answer).mockResolvedValueOnce({ error: 'Esa opción ya no existe.' })
     await user.click(within(replies('PF-1')!).getByRole('button', { name: 'Sí' }))
-    expect(api.statusApi.answer).toHaveBeenLastCalledWith('aaaaaaa1', { option: 0 })
+    expect(api.statusApi.answer).toHaveBeenLastCalledWith('aaaaaaa1', { option: 0, question: 0 })
     expect(await within(item('PF-1')).findByText('Esa opción ya no existe.')).toBeTruthy()
     // A failed send leaves the buttons live, so the person can try again.
     expect(within(replies('PF-1')!).getAllByRole('button').some((b) => (b as HTMLButtonElement).disabled)).toBe(false)

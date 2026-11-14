@@ -190,6 +190,7 @@ const api: AtrilApi = {
   },
   status: {
     list: () => ipcRenderer.invoke('atril:status:list'),
+    wait: (id) => ipcRenderer.invoke('atril:status:wait', id),
     quickReplies: (id) => ipcRenderer.invoke('atril:status:quickReplies', id),
     answer: (id, choice) => ipcRenderer.invoke('atril:status:answer', id, choice),
     pause: (id) => ipcRenderer.invoke('atril:status:pause', id),

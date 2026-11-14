@@ -510,19 +510,42 @@ export type ForgeStatus = { saved: false } | { saved: true; account?: string; si
 
 export type AgentState = 'working' | 'needs-you' | 'paused' | 'stopped'
 
-/** An option's index (W74) or one of the two fixed replies; main chooses the words (W75). */
-export type QuickChoice = { option: number } | { fixed: 'yes' | 'no' }
+/** W75: an option of the question due now, or one of main's own actions; main chooses the keys and words. */
+export type QuickChoice = { option: number; question: number } | { allow: true } | { deny: true } | { continue: true }
+/** The question due now as the row's numbered buttons (until the card replaces them). */
 export interface QuickReplies {
   options: string[]
   multiSelect: boolean
+  question: number
+}
+export interface WaitQuestion {
+  question: string
+  header: string
+  options: { label: string; description: string }[]
+  multiSelect: boolean
+}
+export type WaitKind = 'question' | 'permission' | 'turn-end'
+/** W197–W202: what a needs-you agent waits for, as the card shows it. */
+export interface AgentWait {
+  /** Missing when the hook's text says nothing known (read by its prefix, as before W197). */
+  kind?: WaitKind
+  /** The hook's text, in Atril's words (W203). */
+  text?: string
+  questions: WaitQuestion[]
+  /** The question main will answer next (W75). */
+  next: number
+  permission?: { tool: string; summary?: string }
+  idle: boolean
 }
 export type QuickAnswer = { ok: true } | { error: string }
 
 export interface StatusApi {
   list(): Promise<Record<string, AgentState>>
-  /** What that workspace's question stored (W74); empty while it is not needs-you. */
+  /** What that workspace's agent waits for; null while it is not needs-you. */
+  wait(workspaceId: string): Promise<AgentWait | null>
+  /** The question due now (W74); empty while it is not needs-you. */
   quickReplies(workspaceId: string): Promise<QuickReplies>
-  /** Sends one quick reply to that workspace's agent (W75). */
+  /** Sends one answer to that workspace's agent (W75). */
   answer(workspaceId: string, choice: QuickChoice): Promise<QuickAnswer>
   /** Escape into a working agent and marks it paused (W86). */
   pause(workspaceId: string): Promise<QuickAnswer>

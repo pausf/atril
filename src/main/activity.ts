@@ -6,11 +6,18 @@ import { atrilHome } from './paths'
 import { run as defaultRun, type Runner } from './run'
 import { listWorkspacesOrNone } from './workspaces'
 import { burst } from './burst'
+import { stateDir, waitingLine } from './status'
 
 export const activityDir = (): string => join(atrilHome(), 'activity')
 
-/** Newest first; a half-written or foreign line is skipped, never thrown. */
+/** Newest first; a half-written or foreign line is skipped, never thrown. W199 puts «Esperando a un subagente» on top while it holds. */
 export async function readActivity(session: string): Promise<ActivityLine[]> {
+  const waiting = await waitingLine(session)
+  const lines = await readLines(session)
+  return waiting ? [{ ...waiting, kind: 'agent' }, ...lines] : lines
+}
+
+async function readLines(session: string): Promise<ActivityLine[]> {
   let raw: string
   try {
     raw = await readFile(join(activityDir(), `${session}.jsonl`), 'utf8')
@@ -39,6 +46,7 @@ export interface ActivityOptions {
 export function createActivity({ run = defaultRun, emit }: ActivityOptions) {
   const known = new Map<string, ActivityLine[]>()
   let watcher: FSWatcher | undefined
+  let states: FSWatcher | undefined
 
   async function refresh(): Promise<void> {
     for (const ws of await listWorkspacesOrNone(run)) {
@@ -69,9 +77,13 @@ export function createActivity({ run = defaultRun, emit }: ActivityOptions) {
       // Like the watcher's: a damaged workspaces.json (W145) must not reject the app's start.
       await refresh().catch(() => undefined)
       watcher = watch(activityDir(), poke)
+      // W199: a turn end that waits on a subagent changes the line without a new activity write.
+      await mkdir(stateDir(), { recursive: true })
+      states = watch(stateDir(), poke)
     },
     stop(): void {
       watcher?.close()
+      states?.close()
       poke.cancel()
     }
   }

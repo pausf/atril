@@ -52,11 +52,8 @@ export function QuickReplies({ workspaceId, activityAt, question, onShown }: Pro
   if (!stored || stored.multiSelect) return null
   const choices: [string, QuickChoice][] =
     stored.options.length > 0
-      ? stored.options.map((label, option) => [label, { option }])
-      : [
-          [t('Sí, sigue'), { fixed: 'yes' }],
-          [t('No, espera'), { fixed: 'no' }]
-        ]
+      ? stored.options.map((label, option) => [label, { option, question: stored.question }])
+      : [[t('Sigue'), { continue: true }]]
   const press = (choice: QuickChoice): void => {
     setResult({ sent: false, text: '' })
     void window.atril.status.answer(workspaceId, choice).then((r) => setResult('ok' in r ? { sent: true, text: t('Enviado') } : { sent: false, text: r.error }))

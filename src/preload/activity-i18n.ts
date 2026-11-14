@@ -8,6 +8,12 @@ type T = (es: string, vars?: Record<string, string | number>) => string
 export function localiseActivity(text: string, t: T): string {
   if (text === 'Claude te necesita') return t('Claude te necesita')
   if (text === 'Claude ha terminado') return t('Claude ha terminado')
+  if (text === 'Esperando a un subagente') return t('Esperando a un subagente')
+  // W203: lines written before the hook told Claude Code's English messages in Atril's words.
+  const tool = /^Te pregunta: Claude needs your permission to use (.+)$/.exec(text) // i18n-ignore: matches Claude Code's English, never shown
+  if (tool) return t('Te pregunta: ¿Puede usar {detail}?', { detail: tool[1]! })
+  if (text.startsWith('Te pregunta: Claude needs your permission')) return t('Te pregunta: ¿Puede seguir?')
+  if (text.startsWith('Te pregunta: Claude is waiting for your input')) return t('Claude te necesita')
   const failed = /^✗ ([\s\S]*) falló$/.exec(text) // i18n-ignore: matches the hook's Spanish, never shown
   if (failed) return t('✗ {detail} falló', { detail: failed[1]! })
   const after = (prefix: string): string | null => (text.startsWith(prefix) ? text.slice(prefix.length) : null)

@@ -74,8 +74,15 @@ export function summarise(event, payload, readTranscriptTail) {
       if (p.tool_name !== 'Bash' || !failed(p.tool_response)) return null
       return done('fail', `✗ ${flat(p.tool_input?.command).slice(0, COMMAND)} falló`)
     }
-    case 'Notification':
-      return done('asks', flat(p.message) ? `Te pregunta: ${flat(p.message)}` : 'Claude te necesita')
+    case 'Notification': {
+      // W203: Claude Code's own English wait messages never reach the person.
+      const message = flat(p.message)
+      const tool = /^Claude needs your permission to use (.+)$/i.exec(message)
+      if (tool) return done('asks', `Te pregunta: ¿Puede usar ${tool[1]}?`)
+      if (/^Claude needs your permission/i.test(message) || p.notification_type === 'permission_prompt') return done('asks', 'Te pregunta: ¿Puede seguir?')
+      if (!message || /waiting for your input/i.test(message)) return done('asks', 'Claude te necesita')
+      return done('asks', `Te pregunta: ${message}`)
+    }
     case 'Stop': {
       let said = ''
       try {
