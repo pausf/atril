@@ -501,6 +501,8 @@ export interface AvisosApi {
   markRead(ids: string[] | 'all'): Promise<Aviso[]>
   /** V21: the person opened that workspace; its agent notices are read. */
   seen(workspaceId: string): Promise<Aviso[]>
+  /** V15: the work a merged or closed MR's notice can close (W187's match), or null. */
+  closable(id: string): Promise<string | null>
   /** Returns the unsubscribe function. */
   onChange(cb: (items: Aviso[]) => void): () => void
 }

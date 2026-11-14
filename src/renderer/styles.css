@@ -2795,6 +2795,28 @@ kbd {
 .mr-row.aviso .tag {
   justify-self: start;
 }
+/* V13: the agent's own words under the title. */
+.mr-row.aviso .s .detail {
+  display: block;
+  font-weight: 400;
+  font-size: 12.5px;
+  color: var(--sub);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* V15: beside the row, never inside its button. */
+.avisos-list li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.avisos-list li > .mr-row {
+  flex: 1;
+  min-width: 0;
+}
+.avisos-list .aviso-close {
+  flex: none;
+}
 .mr-row.aviso.unread .s {
   font-weight: 600;
 }

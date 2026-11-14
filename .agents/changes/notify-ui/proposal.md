@@ -108,5 +108,5 @@ Ninguna.
 
 - [x] Tarjeta «Notificaciones»: grupos, filas, radios, setters, resumen y plegado, paso de minutos, vista previa; columna derecha · Closes: S31, S37, S38, S39, S40, S41, S42
 - [x] Tarjeta «Cuándo», «Probar un aviso», el problema de macOS y el de guardado · waits on box 1 · Closes: S43, S44, S45, S46
-- [ ] Pantalla Avisos: etiquetas y filtros, `detail`, destinos de cada tipo, «Cerrar su trabajo» · Closes: V6, V13, V14, V15
+- [x] Pantalla Avisos: etiquetas y filtros, `detail`, destinos de cada tipo, «Cerrar su trabajo» · Closes: V6, V13, V14, V15
 - [ ] Entradas en inglés; S16/S19 en verde; prueba en la app real con Playwright y foto; `bocetos/novedades.html` y `bocetos/fase1-nucleo.html` (tarjeta hecha) · waits on boxes 1–3

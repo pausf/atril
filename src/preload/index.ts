@@ -70,6 +70,7 @@ const api: AtrilApi = {
     list: () => ipcRenderer.invoke('atril:avisos:list'),
     markRead: (ids) => ipcRenderer.invoke('atril:avisos:markRead', ids),
     seen: (id) => ipcRenderer.invoke('atril:avisos:seen', id),
+    closable: (id) => ipcRenderer.invoke('atril:avisos:closable', id),
     onChange: (cb) => {
       const h = (_e: Electron.IpcRendererEvent, items: Aviso[]): void => cb(items)
       ipcRenderer.on('atril:avisos:changed', h)

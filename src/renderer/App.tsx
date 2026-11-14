@@ -269,9 +269,19 @@ function Shell() {
 
   // V6: only what the latest listing (or the workspace list) still holds can be opened.
   const openAviso = (to: AvisoTarget): string | null => {
-    if (to.kind === 'workspace') {
+    if (to.kind === 'forge') {
+      void window.atril.mr.open(to.url)
+      return null
+    }
+    if (to.kind !== 'mr') {
       if (!workspaces.some((w) => w.id === to.id)) return t('Ese trabajo ya no está')
+      if (to.kind === 'qa') {
+        setSelected(to.id)
+        setScreen('qa')
+        return null
+      }
       openWorkspace(to.id)
+      if (to.kind === 'close') askClose(to.id)
       return null
     }
     const r = mrs.result

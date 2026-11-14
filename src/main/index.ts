@@ -373,6 +373,17 @@ app.whenReady().then(async () => {
   const mrPoll = createMrPoll({ last: () => lastMrs, list: listAllMrs, connected: async () => (await Promise.all(FORGES.map((f) => secretStore.hasSecret(f)))).some((s) => s.saved) })
   if (!SNAPSHOT) mrPoll.start()
   const fakeFeed = SNAPSHOT && process.env['ATRIL_SNAPSHOT_VIEW'] === 'avisos'
+  // W187, V15: the non-review work on that MR's branch whose repo's remote names the MR's project.
+  const closable = async (a: Aviso): Promise<string | undefined> => {
+    if (!a.branch || !a.project || !a.url) return undefined
+    const host = new URL(a.url).hostname
+    const repos = await readRepos()
+    for (const rec of await readRecordsOrNone()) {
+      const repo = rec.mode !== 'review' && rec.branch === a.branch ? repos.find((r) => r.id === rec.repoId) : undefined
+      if (repo && (await remoteNaming(run, repo.path, a.project, host))) return rec.id
+    }
+    return undefined
+  }
   const avisos = createAvisos((items) => BrowserWindow.getAllWindows().forEach((w) => w.webContents.send('atril:avisos:changed', items)), { outcome: createOutcome(secretStore) })
   // W177, W186–W194: what reaches the Mac, and what a click or an action on it does.
   const notifier = createNotifier({
@@ -405,16 +416,7 @@ app.whenReady().then(async () => {
       const r = await reopenWorkspace(id, {}, run).finally(() => void pushNext())
       return 'error' in r ? { error: r.error } : {}
     },
-    closable: async (a) => {
-      if (!a.branch || !a.project || !a.url) return undefined
-      const host = new URL(a.url).hostname
-      const repos = await readRepos()
-      for (const rec of await readRecordsOrNone()) {
-        const repo = rec.mode !== 'review' && rec.branch === a.branch ? repos.find((r) => r.id === rec.repoId) : undefined
-        if (repo && (await remoteNaming(run, repo.path, a.project, host))) return rec.id
-      }
-      return undefined
-    }
+    closable
   })
   const tell = (p: Promise<Aviso[]>): void => void p.then((added) => notifier.notify(added)).catch(() => undefined)
   // W192: what macOS says of Atril's notifications; any doubt is «no lo sé».
@@ -436,6 +438,11 @@ app.whenReady().then(async () => {
   ipcMain.handle('atril:avisos:markRead', (_e, ids: unknown) =>
     avisos.markRead(ids === 'all' ? 'all' : Array.isArray(ids) ? ids.filter((i): i is string => typeof i === 'string') : [])
   )
+  // V15: the same match as the Mac's «Cerrar su trabajo».
+  ipcMain.handle('atril:avisos:closable', async (_e, id: unknown) => {
+    const a = (await avisos.list()).find((n) => n.id === id && (n.kind === 'merged' || n.kind === 'closed'))
+    return (a && (await closable(a))) ?? null
+  })
   ipcMain.handle('atril:avisos:seen', (_e, id: unknown) => avisos.seen(String(id)))
   ipcMain.handle('atril:mr:open', (_e, url: unknown) => {
     if (typeof url === 'string' && guards.openable(url)) return shell.openExternal(url)

@@ -97,6 +97,8 @@ interface Options {
   openWork?: Record<string, WorkspaceResult>
   /** What mr.ciAgent answers per URL (the agent's branch); missing means no agent. */
   ciAgents?: Record<string, string>
+  /** What avisos.closable answers per notice id; missing means no work to close. */
+  closable?: Record<string, string>
   /** The stored notices, newest first; markRead changes them in place. */
   avisos?: Aviso[]
   /** What libretto.state answers per repo id; missing means a repo without Libretto. */
@@ -302,6 +304,7 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
         avisoListeners.forEach((l) => l(avisos))
         return avisos
       }),
+      closable: vi.fn(async (id: string) => o.closable?.[id] ?? null),
       onChange: (cb: (items: Aviso[]) => void) => {
         avisoListeners.add(cb)
         return () => avisoListeners.delete(cb)

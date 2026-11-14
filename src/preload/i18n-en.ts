@@ -885,4 +885,5 @@ export const EN: Record<string, string> = {
   "Todo sigue llegando a Avisos, pero el Mac no te interrumpe aunque elijas «Mac».": "Everything still reaches Notices, but the Mac does not interrupt you even if you choose «Mac».",
   "Abrir Ajustes del Sistema": "Open System Settings",
   "No he podido guardar tus avisos: el cambio se perderá al cerrar Atril.": "I could not save your notifications: the change will be lost when Atril closes.",
+  "{work} choca con otro trabajo": "{work} clashes with another work",
 }
