@@ -109,31 +109,66 @@ function keepTranscript(home, name, path) {
   replace(file, `${raw}${path}\n`)
 }
 
-// W74: the first question's labels, for the row's quick replies; an empty label would shift the numbers, so none then.
-// A multiSelect question is only flagged: the row offers nothing for it. Both last while the state stays needs-you.
-function quickReplies(event, state, payload, stateFile) {
-  if (state !== 'needs-you') return {}
-  if (event !== 'PreToolUse') {
-    try {
-      const prev = JSON.parse(readFileSync(stateFile, 'utf8'))
-      if (prev.state !== 'needs-you') return {}
-      return { ...(Array.isArray(prev.options) && { options: prev.options }), ...(prev.multiSelect === true && { multiSelect: true }) }
-    } catch {
-      return {}
-    }
-  }
-  const q = payload?.tool_input?.questions?.[0]
-  if (q?.multiSelect === true) return { multiSelect: true }
-  const list = q?.options
-  if (!Array.isArray(list) || list.length === 0) return {}
-  const labels = list.slice(0, 4).map((o) => text(o?.label).slice(0, 40))
-  return labels.every(Boolean) ? { options: labels } : {}
+// W74: every question of the call, whole, for the card; W198: the tool a permission waits on.
+const QUESTION = (q) => ({
+  question: text(q?.question),
+  header: text(q?.header),
+  options: Array.isArray(q?.options) ? q.options.map((o) => ({ label: text(o?.label), description: text(o?.description) })) : [],
+  multiSelect: q?.multiSelect === true
+})
+const PATHS = ['Edit', 'Write', 'MultiEdit']
+
+function toolOf(payload) {
+  const tool = text(payload?.tool_name)
+  if (!tool) return undefined
+  const input = payload?.tool_input
+  const summary = tool === 'Bash' ? text(input?.command) : PATHS.includes(tool) ? text(input?.file_path) : ''
+  return summary ? { tool, summary } : { tool }
 }
 
-function session() {
+const isPermission = (payload) => payload?.notification_type === 'permission_prompt' || /^Claude needs your permission/i.test(text(payload?.message))
+
+function readState(file) {
+  try {
+    const v = JSON.parse(readFileSync(file, 'utf8'))
+    return v && typeof v === 'object' ? v : {}
+  } catch {
+    return {}
+  }
+}
+
+/** W197, W74, W198: the kind of wait, the call's questions while it waits, and the tool a permission is for. */
+function details(event, state, payload, prev, lastTool) {
+  if (state !== 'needs-you') return {}
+  const asked = event === 'PreToolUse'
+  const waited = prev.state === 'needs-you'
+  const list = asked ? payload?.tool_input?.questions : waited ? prev.questions : undefined
+  const out = Array.isArray(list) && list.length > 0 ? { questions: asked ? list.map(QUESTION) : list } : {}
+  if (asked) return { ...out, kind: 'question' }
+  if (event === 'Stop') return { ...out, kind: 'turn-end' }
+  if (!isPermission(payload)) return out
+  const tool = lastTool ?? (waited ? prev.permission : undefined)
+  return { ...out, kind: 'permission', ...(tool && { permission: tool }) }
+}
+
+/**
+ * The session's name and the latest tool it asked for (W198), in the one tmux call the hook already makes.
+ * The tool lives in a tmux session option, never on disk: a command reaches a file only when a permission waits on it (A1).
+ */
+function session(remember) {
   const sock = process.env.ATRIL_TMUX_SOCKET
   const env = { ...process.env, PATH: `${process.env.PATH ?? ''}:/opt/homebrew/bin:/usr/local/bin` }
-  return execFileSync('tmux', [...(sock ? ['-L', sock] : []), 'display', '-p', '#S'], { env, encoding: 'utf8' }).trim()
+  const target = process.env.TMUX_PANE ? ['-t', process.env.TMUX_PANE] : []
+  const args = ['display', '-p', ...target, '#S\n#{@atril-tool}']
+  if (remember) args.push(';', 'set-option', '-q', ...target, '@atril-tool', JSON.stringify(remember))
+  const [name = '', tool = ''] = execFileSync('tmux', [...(sock ? ['-L', sock] : []), ...args], { env, encoding: 'utf8' }).split('\n')
+  let lastTool
+  try {
+    lastTool = tool.trim() ? JSON.parse(tool) : undefined
+  } catch {
+    /* not ours */
+  }
+  return { name: name.trim(), lastTool }
 }
 
 try {
@@ -149,7 +184,7 @@ try {
   // W44: Claude's question tool is a stop (Libretto's before code is one): it waits for the person.
   const state = event === 'PreToolUse' && payload?.tool_name === 'AskUserQuestion' ? 'needs-you' : STATES[event]
 
-  const name = session()
+  const { name, lastTool } = session(event === 'PreToolUse' ? toolOf(payload) : undefined)
   if (!name) process.exit(0)
   const home = process.env.ATRIL_HOME ?? join(homedir(), '.atril')
   const at = Math.floor(Date.now() / 1000)
@@ -188,20 +223,13 @@ try {
 
   const dir = join(home, 'state')
   mkdirSync(dir, { recursive: true })
-  const body = state === 'needs-you' && line ? { text: line.text } : {}
   const stateFile = join(dir, `${name}.json`)
-  // W195: the idle reminder is no new question; a waiting state keeps its text, options and time.
-  let waiting = false
-  if (idle) {
-    try {
-      waiting = JSON.parse(readFileSync(stateFile, 'utf8')).state === 'needs-you'
-    } catch {
-      /* no state yet: the reminder writes one */
-    }
-  }
-  if (!waiting) {
-    Object.assign(body, quickReplies(event, state, payload, stateFile))
-    replace(stateFile, JSON.stringify({ state, at, ...body }) + '\n')
+  const prev = readState(stateFile)
+  // W195: the idle reminder is no new question; a waiting state keeps everything and only says it has been a while.
+  if (idle && prev.state === 'needs-you') replace(stateFile, JSON.stringify({ ...prev, idle: true }) + '\n')
+  else {
+    const body = state === 'needs-you' && line ? { text: line.text } : {}
+    replace(stateFile, JSON.stringify({ state, at, ...body, ...details(event, state, payload, prev, lastTool), ...(idle && { idle: true }) }) + '\n')
   }
 
   try {

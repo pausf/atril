@@ -41,6 +41,7 @@ Durable decisions: the ones in Prior decisions below (terminal de solo lectura, 
 
 ### Session 2026-11-14 (construcción)
 - Box 1 toca fuera de «In»: `src/main/menu.ts` (fuera «Dividir a la derecha/abajo», ⌘D/⌘⇧D, W196) y los tests que montaban el menú con `split` (`src/main/i18n.test.ts` cambia la etiqueta de ejemplo a «Pausar»; `src/renderer/flow/boxes.test.ts` comprueba que ⌘D/⌘⇧D ya no existen; `tutorial`, `pause`, `focus` y `overview` solo pierden `split`); `src/renderer/tour/Tour.tsx` (el paso de la terminal decía «escribe en él» y ⌘D); `src/main/pty.test.ts` pierde las llamadas a `input`, que ya no existe. `splitPane` sigue en `tmux.ts`: sus tests prueban otros criterios (W163, el destino exacto) (assumed).
+- Box 2: «an asked question keeps its options» (la prueba vieja de W74) se sustituye por la que nombra W74 enmendado. El gancho ya no escribe `options`/`multiSelect`; main los sigue leyendo en estados viejos (Constraints). W198 «recordar por sesión» vive en una opción de la sesión de tmux (`@atril-tool`), leída y escrita en la misma llamada `display` que el gancho ya hacía: guardarla en disco rompía la prueba de A1 («hook appends a short summary, never the payload»: ningún archivo bajo `ATRIL_HOME` con el comando). Así un comando solo llega a disco cuando un permiso espera por él, como pide W198 (assumed).
 
 ## Outcomes
 
@@ -163,7 +164,7 @@ Ninguna.
 ## Checklist
 
 - [x] Terminal de solo lectura: `attach -r`, sin `onData`, main ignora `atril:term:input` · Closes: W196
-- [ ] Gancho: `kind`, preguntas completas, resumen del permiso · Closes: W197, W74, W198, W195
+- [x] Gancho: `kind`, preguntas completas, resumen del permiso · Closes: W197, W74, W198, W195
 - [ ] `status`: trabajo en segundo plano, acciones `allow`/`deny`/`continue`, sin textos en inglés · waits on box 2 · Closes: W199, W75, W203
 - [ ] `AgentCard` en la fila, el resumen y encima de la terminal · waits on box 3 · Closes: W76, W200, W201, W202
 - [ ] Compositor «Escribe al agente» · waits on box 1 · Closes: W204

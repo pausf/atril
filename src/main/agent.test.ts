@@ -417,63 +417,101 @@ describe('subagents hook', () => {
     expect(pointer(none.session)).toBeUndefined()
   }, 60000)
 
-  it('an asked question keeps its options', async () => {
-    const stateOf = (session: string): { state?: string; options?: string[]; multiSelect?: boolean } => JSON.parse(readFileSync(join(home, 'state', `${session}.json`), 'utf8'))
-    const ask = (questions: unknown): [string, object] => ['PreToolUse', { tool_name: 'AskUserQuestion', tool_input: { questions } }]
-    const long = `Usar   la\nopción ${'larga '.repeat(12)}`
-    const first = {
-      question: '¿Cómo seguimos?',
-      options: [{ label: 'Sí' }, { label: long, description: 'SECRET-DESC' }, { label: 'No' }, { label: 'Quizá' }, { label: 'Quinta' }]
-    }
+  const stateOf = (session: string): Record<string, unknown> => JSON.parse(readFileSync(join(home, 'state', `${session}.json`), 'utf8'))
+  const ask = (questions: unknown): [string, object] => ['PreToolUse', { tool_name: 'AskUserQuestion', tool_input: { questions } }]
+  const bash = (command: string): [string, object] => ['PreToolUse', { tool_name: 'Bash', tool_input: { command } }]
+  const permit = (extra: object = { notification_type: 'permission_prompt' }): [string, object] => ['Notification', { message: 'Claude needs your permission to use Bash', ...extra }]
+  const idle: [string, object] = ['Notification', { notification_type: 'idle_prompt', message: 'Claude is waiting for your input' }]
 
-    // The first question's labels, at most 4, collapsed and cut to 40; a second question is ignored.
-    const asked = await fireIn([ask([first, { question: 'otra', options: [{ label: 'X' }] }])])
-    const s = stateOf(asked.session)
-    expect(s.state).toBe('needs-you')
-    expect(s.options).toEqual(['Sí', long.replace(/\s+/g, ' ').trim().slice(0, 40), 'No', 'Quizá'])
-    expect(s.options?.[1]).toHaveLength(40)
-    expect(readFileSync(join(home, 'state', `${asked.session}.json`), 'utf8')).not.toContain('SECRET')
-
-    // A multiSelect question stores none, and says so, so the row offers no quick reply at all.
-    const multi = await fireIn([ask([{ ...first, multiSelect: true }])])
-    expect(stateOf(multi.session)).toMatchObject({ state: 'needs-you', multiSelect: true })
-    expect(stateOf(multi.session).options).toBeUndefined()
-
-    // The options stay while the state stays needs-you: a later Notification or Stop keeps them.
-    const kept = await fireIn([ask([first]), ['Notification', { message: 'hola' }], ['Stop', {}]])
-    expect(stateOf(kept.session)).toMatchObject({ state: 'needs-you', options: ['Sí', expect.any(String), 'No', 'Quizá'] })
-
-    // They go when the state leaves needs-you, and do not come back with the next stop.
-    const left = await fireIn([ask([first]), ['PostToolUse', { tool_name: 'AskUserQuestion' }], ['Stop', {}]])
-    expect(stateOf(left.session)).toMatchObject({ state: 'needs-you' })
-    expect(stateOf(left.session).options).toBeUndefined()
-    const leaving = await fireIn([ask([first]), ['UserPromptSubmit', { prompt: 'sigue' }]])
-    expect(stateOf(leaving.session)).toMatchObject({ state: 'working' })
-    expect(stateOf(leaving.session).options).toBeUndefined()
-
-    // A question without options, or no questions at all, stores none.
-    for (const q of [[{ question: 'sin opciones' }], 'raro']) {
-      const none = await fireIn([ask(q)])
-      expect(stateOf(none.session)).toMatchObject({ state: 'needs-you' })
-      expect(stateOf(none.session).options).toBeUndefined()
-    }
+  it('the hook says what kind of wait it is', async () => {
+    const q = { question: '¿Sigo?', header: 'Seguir', options: [{ label: 'Sí' }, { label: 'No' }] }
+    expect(stateOf((await fireIn([ask([q])])).session)).toMatchObject({ state: 'needs-you', kind: 'question' })
+    expect(stateOf((await fireIn([bash('ls'), permit()])).session)).toMatchObject({ state: 'needs-you', kind: 'permission' })
+    // The older wording without notification_type is a permission too.
+    expect(stateOf((await fireIn([bash('ls'), permit({})])).session)).toMatchObject({ state: 'needs-you', kind: 'permission' })
+    expect(stateOf((await fireIn([['Stop', {}]])).session)).toMatchObject({ state: 'needs-you', kind: 'turn-end' })
+    // The idle reminder leaves the kind as it was and only says it has been a while.
+    const reminded = stateOf((await fireIn([['Stop', {}], idle])).session)
+    expect(reminded).toMatchObject({ state: 'needs-you', kind: 'turn-end', idle: true })
+    // Any other notification is a wait of no known kind, read by its prefix as before.
+    expect(stateOf((await fireIn([['Notification', { message: 'hola' }]])).session).kind).toBeUndefined()
+    // Working states carry no kind.
+    expect(stateOf((await fireIn([ask([q]), ['PostToolUse', { tool_name: 'AskUserQuestion' }]])).session)).not.toHaveProperty('kind')
   }, 90000)
 
+  it('the hook keeps every question and what a permission is for', async () => {
+    const long = `Usar   la\nopción ${'larga '.repeat(12)}`
+    const first = {
+      question: '¿Cómo   seguimos?',
+      header: 'Camino',
+      options: [{ label: 'Sí (Recommended)', description: 'Lo  más\ncorto' }, { label: long, description: 'Otra vía' }, { label: 'No' }, { label: 'Quizá' }, { label: 'Quinta' }]
+    }
+    const second = { question: '¿Qué pruebas?', header: 'Pruebas', options: [{ label: 'Unitarias' }, { label: 'E2E' }], multiSelect: true }
+    const flatten = (v: string): string => v.replace(/\s+/g, ' ').trim()
+    const stored = [
+      { question: '¿Cómo seguimos?', header: 'Camino', multiSelect: false, options: first.options.map((o) => ({ label: flatten(o.label), description: flatten(o.description ?? '') })) },
+      { question: '¿Qué pruebas?', header: 'Pruebas', multiSelect: true, options: [{ label: 'Unitarias', description: '' }, { label: 'E2E', description: '' }] }
+    ]
+
+    // Every question, in order, labels and descriptions whole with whitespace collapsed.
+    const asked = stateOf((await fireIn([ask([first, second])])).session)
+    expect(asked).toMatchObject({ state: 'needs-you', kind: 'question', questions: stored })
+    expect((asked['questions'] as { options: { label: string }[] }[])[0]!.options[1]!.label.length).toBeGreaterThan(40)
+
+    // They stay while the state stays needs-you: a later Notification or Stop keeps them.
+    const kept = stateOf((await fireIn([ask([first, second]), ['Notification', { message: 'hola' }], ['Stop', {}]])).session)
+    expect(kept).toMatchObject({ state: 'needs-you', kind: 'turn-end', questions: stored })
+
+    // They go when the state leaves needs-you, and do not come back with the next stop.
+    const left = stateOf((await fireIn([ask([first]), ['PostToolUse', { tool_name: 'AskUserQuestion' }], ['Stop', {}]])).session)
+    expect(left).toMatchObject({ state: 'needs-you', kind: 'turn-end' })
+    expect(left).not.toHaveProperty('questions')
+    const leaving = stateOf((await fireIn([ask([first]), ['UserPromptSubmit', { prompt: 'sigue' }]])).session)
+    expect(leaving).toMatchObject({ state: 'working' })
+    expect(leaving).not.toHaveProperty('questions')
+
+    // A call with no questions stores none.
+    expect(stateOf((await fireIn([ask('raro')])).session)).not.toHaveProperty('questions')
+
+    // What a permission is for: the tool and command it waits on.
+    expect(stateOf((await fireIn([bash('git push'), permit()])).session)).toMatchObject({ kind: 'permission', permission: { tool: 'Bash', summary: 'git push' } })
+  }, 120000)
+
+  it('a permission names the tool it waits for', async () => {
+    // The command for Bash, whitespace collapsed and whole.
+    const cmd = `rm   -rf\n  build ${'x'.repeat(120)}`
+    expect(stateOf((await fireIn([bash(cmd), permit()])).session)['permission']).toEqual({ tool: 'Bash', summary: cmd.replace(/\s+/g, ' ').trim() })
+    // The path for Edit, Write and MultiEdit.
+    for (const tool of ['Edit', 'Write', 'MultiEdit']) {
+      const edit: [string, object] = ['PreToolUse', { tool_name: tool, tool_input: { file_path: '/repo/src/a.ts', old_string: 'SECRET' } }]
+      expect(stateOf((await fireIn([edit, permit()])).session)['permission']).toEqual({ tool, summary: '/repo/src/a.ts' })
+    }
+    // Any other tool: its name and nothing else.
+    const web: [string, object] = ['PreToolUse', { tool_name: 'WebFetch', tool_input: { url: 'https://SECRET' } }]
+    const s = stateOf((await fireIn([web, permit()])).session)
+    expect(s['permission']).toEqual({ tool: 'WebFetch' })
+    expect(JSON.stringify(s)).not.toContain('SECRET')
+    // The latest PreToolUse of that session wins, a PostToolUse keeps it, and a permission with none known names no tool.
+    expect(stateOf((await fireIn([bash('ls'), bash('git status'), ['PostToolUse', { tool_name: 'Bash' }], permit()])).session)['permission']).toEqual({ tool: 'Bash', summary: 'git status' })
+    expect(stateOf((await fireIn([permit()])).session)).toMatchObject({ kind: 'permission' })
+    expect(stateOf((await fireIn([permit()])).session)).not.toHaveProperty('permission')
+  }, 120000)
+
   it('the idle reminder keeps the question', async () => {
-    const stateOf = (session: string): Record<string, unknown> => JSON.parse(readFileSync(join(home, 'state', `${session}.json`), 'utf8'))
-    const waiting = { state: 'needs-you', at: 1234, text: 'Te pregunta: ¿Cuál?', options: ['A', 'B'], multiSelect: false }
-    const idle: [string, object] = ['Notification', { notification_type: 'idle_prompt', message: 'Claude is waiting for your input' }]
-    // Text, options, multiSelect and time exactly as the question left them.
+    const questions = [{ question: '¿Cuál?', header: 'Cuál', multiSelect: false, options: [{ label: 'A', description: '' }, { label: 'B', description: '' }] }]
+    const waiting = { state: 'needs-you', at: 1234, text: 'Te pregunta: ¿Cuál?', kind: 'question', questions, permission: { tool: 'Bash', summary: 'ls' } }
+    // Text, kind, questions, permission and time exactly as the question left them, and idle set.
     const kept = await fireIn([idle], { state: waiting })
-    expect(stateOf(kept.session)).toEqual(waiting)
+    expect(stateOf(kept.session)).toEqual({ ...waiting, idle: true })
     // The older wording without notification_type counts too.
     const old = await fireIn([['Notification', { message: 'Claude is waiting for your input' }]], { state: waiting })
-    expect(stateOf(old.session)).toEqual(waiting)
-    // Not waiting: the reminder writes needs-you as before; a real notification still replaces the text.
+    expect(stateOf(old.session)).toEqual({ ...waiting, idle: true })
+    // Not waiting: the reminder writes needs-you as before; a real notification still replaces the text and clears idle.
     const fresh = await fireIn([idle], { state: { state: 'working', at: 1 } })
-    expect(stateOf(fresh.session)).toMatchObject({ state: 'needs-you' })
-    const real = await fireIn([['Notification', { message: 'Necesito permiso' }]], { state: waiting })
+    expect(stateOf(fresh.session)).toMatchObject({ state: 'needs-you', idle: true })
+    const real = await fireIn([['Notification', { message: 'Necesito permiso' }]], { state: { ...waiting, idle: true } })
     expect(stateOf(real.session)).toMatchObject({ state: 'needs-you', text: 'Te pregunta: Necesito permiso' })
+    expect(stateOf(real.session)).not.toHaveProperty('idle')
   }, 60000)
 
   it('subagent events never change the agent state', async () => {
