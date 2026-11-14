@@ -1,5 +1,5 @@
 import { vi } from 'vitest'
-import type { ActivityLine, SubagentEntry, SubagentLine, AddRepoResult, Aviso, FileChange, FlowBoxes, FlowDocs, ForgeId, ForgeStatus, Mode, MrDraft, MrDrafts, MrDraftsResult, MrFixCiResult, MrLists, MrReply, MrScoreState, MrThreads, MrWork, NotifySettings, AgentState, StateProblem, QaBugResult, QaLaunchResult, QaManualRequest, QaMr, QaPublishResult, QaReport, QaResult, QaStatus, QaTargets, AtrilApi, RemoveResult, QuickAnswer, QuickReplies, RadarHit, FlowStage, HistoryEntry, IdeaJiraResult, IdeaResult, LibrettoCounts, LibrettoState, JiraIssue, JiraSettingsStatus, MenuAction, NextItem, StartProposalResult, StartRequest, StartResult, RepoResult, RepoView, ToolReport, UiState, WorkCost, WorkspaceResult, WorkspaceView } from '../preload/api'
+import type { ActivityLine, SubagentEntry, SubagentLine, AddRepoResult, Aviso, FileChange, FlowBoxes, FlowDocs, ForgeId, ForgeStatus, Mode, MrDraft, MrDrafts, MrDraftsResult, MrFixCiResult, MrLists, MrReply, MrScoreState, MrThreads, MrWork, NotifyPatch, NotifyPermission, NotifySettings, AgentState, StateProblem, QaBugResult, QaLaunchResult, QaManualRequest, QaMr, QaPublishResult, QaReport, QaResult, QaStatus, QaTargets, AtrilApi, RemoveResult, QuickAnswer, QuickReplies, RadarHit, FlowStage, HistoryEntry, IdeaJiraResult, IdeaResult, LibrettoCounts, LibrettoState, JiraIssue, JiraSettingsStatus, MenuAction, NextItem, StartProposalResult, StartRequest, StartResult, RepoResult, RepoView, ToolReport, UiState, WorkCost, WorkspaceResult, WorkspaceView } from '../preload/api'
 
 export const workspace = (id: string, branch: string, alive = true): WorkspaceView => ({
   id,
@@ -104,6 +104,10 @@ interface Options {
   /** What libretto.queue and libretto.start answer; missing means done (start opens a live workspace on feat/<name>). */
   librettoQueue?: { name: string } | { error: string }
   librettoStart?: WorkspaceResult
+  /** The stored notification settings over the defaults; notify.set merges into them as main does (V8). */
+  notify?: Partial<NotifySettings>
+  /** What notify.permission answers; missing means «no lo sé». */
+  notifyPermission?: NotifyPermission
   /** What settings.jira.status answers; missing means a saved token. */
   jira?: JiraSettingsStatus
   /** What the doctor answers; missing means every tool is installed. */
@@ -149,11 +153,12 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
   const avisoListeners = new Set<(items: Aviso[]) => void>()
   let avisos = o.avisos ?? []
   const notifySettings: NotifySettings = {
-    types: { ask: 'mac', done: 'mac', stopped: 'mac', idle: 'list', radar: 'list', qa: 'mac', review: 'list', comment: 'list', ci: 'mac', cipass: 'list', merged: 'list', following: 'list', opened: 'list', quota: 'mac' },
     idleMinutes: 15,
     focus: true,
     group: true,
-    quiet: { on: false, from: '19:00', to: '09:00', days: ['sat', 'sun'] }
+    quiet: { on: false, from: '19:00', to: '09:00', days: ['sat', 'sun'] },
+    ...o.notify,
+    types: { ask: 'mac', done: 'mac', stopped: 'mac', idle: 'list', radar: 'list', qa: 'mac', review: 'list', comment: 'list', ci: 'mac', cipass: 'list', merged: 'list', following: 'list', opened: 'list', quota: 'mac', ...o.notify?.types }
   }
   // The mock is a Spanish Mac: Sistema resolves to Spanish, as main would there.
   const withLang = (): UiState => ({ ...stored, folded: { ...stored.folded }, lang: stored.language === 'en' ? 'en' : 'es' })
@@ -275,10 +280,13 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
       })
     },
     notify: {
-      get: vi.fn(async () => notifySettings),
-      set: vi.fn(async () => notifySettings),
+      get: vi.fn(async () => structuredClone(notifySettings)),
+      set: vi.fn(async (p: NotifyPatch) => {
+        Object.assign(notifySettings, { ...p, types: { ...notifySettings.types, ...p.types }, quiet: { ...notifySettings.quiet, ...p.quiet } })
+        return structuredClone(notifySettings)
+      }),
       test: vi.fn(async () => 'shown' as const),
-      permission: vi.fn(async () => 'unknown' as const),
+      permission: vi.fn(async (): Promise<NotifyPermission> => o.notifyPermission ?? 'unknown'),
       openSystem: vi.fn(async () => undefined),
       onOpen: () => () => undefined
     },

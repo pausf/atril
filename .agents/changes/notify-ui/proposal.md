@@ -21,6 +21,11 @@ Durable decisions: none
 - Q: ¿Partir el cambio? → A: sí; este es la mitad de la ventana y espera a `notify-core` (assumed).
 - Q: ¿S37 y S43 se parten? → A: no; cada una es una tarjeta que se pinta de una vez y un test la recorre entera, con una aserción por cosa prometida. Techo: si una parte cambia sola, se parte entonces (assumed).
 
+### Session 2026-11-14 (construcción)
+- Q: ¿Qué botones lleva el aviso de ejemplo en «Así te llega»? → A: solo los que lleva el aviso real del Mac (W177, W186–W188): «Responder» en ask, done e idle; «Reabrir» en stopped; «Arreglar con Claude» en ci; «Cerrar su trabajo» en merged. Los inventados del boceto («Ver el plan», «Más tarde»…) no (assumed).
+- Q: ¿Los días marcados de «Todo el día» con el acento? → A: no; en gris (`--text` sobre `--on-text`): el blanco sobre `--run` no llega al contraste en oscuro (assumed).
+- Q: ¿Cómo sabe la ventana que un trabajo es del mismo repo que la MR (V15)? → A: una llamada IPC pequeña a main que reutiliza `closable` (el de W187, que mira los remotos); la ventana no tiene los remotos. Amplía el alcance a `src/main/**` y `src/preload/**` solo para esa llamada (assumed).
+
 ## Outcomes
 
 
@@ -28,7 +33,7 @@ Durable decisions: none
 
 ## Scope boundaries
 
-**In:** `src/renderer/settings/Notifications.tsx` (both cards), `src/renderer/avisos/**` (bug 4, the new kinds), its place in `Ajustes.tsx` (second column, after «Idioma»), styles as tokens. **Out:** sounds, per-repo settings, the summary on return.
+**In:** `src/renderer/settings/Notifications.tsx` (both cards), `src/renderer/avisos/**` (bug 4, the new kinds), its place in `Ajustes.tsx` (second column, after «Idioma»), styles as tokens; in `src/main/**` and `src/preload/**`, only the one IPC call V15 needs to reuse main's `closable` (Decision log, 2026-11-14). **Out:** sounds, per-repo settings, the summary on return.
 
 ## Constraints
 
@@ -101,7 +106,7 @@ Ninguna.
 
 ## Checklist
 
-- [ ] Tarjeta «Notificaciones»: grupos, filas, radios, setters, resumen y plegado, paso de minutos, vista previa; columna derecha · Closes: S31, S37, S38, S39, S40, S41, S42
+- [x] Tarjeta «Notificaciones»: grupos, filas, radios, setters, resumen y plegado, paso de minutos, vista previa; columna derecha · Closes: S31, S37, S38, S39, S40, S41, S42
 - [ ] Tarjeta «Cuándo», «Probar un aviso», el problema de macOS y el de guardado · waits on box 1 · Closes: S43, S44, S45, S46
 - [ ] Pantalla Avisos: etiquetas y filtros, `detail`, destinos de cada tipo, «Cerrar su trabajo» · Closes: V6, V13, V14, V15
 - [ ] Entradas en inglés; S16/S19 en verde; prueba en la app real con Playwright y foto; `bocetos/novedades.html` y `bocetos/fase1-nucleo.html` (tarjeta hecha) · waits on boxes 1–3

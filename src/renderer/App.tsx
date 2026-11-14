@@ -27,6 +27,7 @@ import { FocusButton } from './components/FocusButton'
 import { startOrAsk, useNextUp } from './nextup'
 import { NavigationContext } from './settings/navigation'
 import { Language } from './settings/Language'
+import { Notifications } from './settings/Notifications'
 import { focusRegion } from './focus'
 import { Tour } from './tour/Tour'
 import { Palette } from './palette/Palette'
@@ -474,6 +475,7 @@ function Shell() {
           {screen === 'settings' && (
             <Ajustes>
               <Language />
+              <Notifications />
             </Ajustes>
           )}
         </div>

@@ -3818,3 +3818,335 @@ button.fx-bt {
 .ws-stopped .problem {
   margin: 12px 0 0;
 }
+
+/* S37–S42: Ajustes → Notificaciones (bocetos/fase1-nucleo.html «Notificaciones»). Grey plus the one accent. */
+.app-mark rect {
+  fill: var(--text);
+}
+.app-mark path {
+  fill: none;
+  stroke: var(--card);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.nt-hd {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+.nt-intro {
+  flex: 1 1 200px;
+  min-width: 0;
+}
+.nt-prev {
+  flex: 1 1 280px;
+  min-width: 0;
+  background: var(--chip);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 8px 10px 6px;
+  overflow: hidden;
+}
+.nt-prev .lb {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--sub);
+  margin: 0 2px 6px;
+}
+.nt-ban {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  min-height: 74px;
+  padding: 0 12px;
+  border-radius: 12px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  transition: opacity 0.2s;
+}
+.nt-ban.dim {
+  opacity: 0.5;
+}
+.nt-ban .ap {
+  width: 30px;
+  height: 30px;
+}
+.nt-ban .tx {
+  min-width: 0;
+  display: grid;
+  line-height: 1.3;
+}
+.nt-ban .hd {
+  display: flex;
+  gap: 6px;
+  font-size: 10.5px;
+  color: var(--sub);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.nt-ban .hd span {
+  margin-left: auto;
+  text-transform: none;
+  letter-spacing: 0;
+}
+.nt-ban .t,
+.nt-ban .b {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.nt-ban .t {
+  font-size: 12.5px;
+}
+.nt-ban .b {
+  font-size: 12px;
+  color: var(--sub);
+}
+.nt-ban .ac {
+  display: grid;
+  gap: 4px;
+}
+.nt-ban .ac span {
+  font-size: 11px;
+  background: var(--hover);
+  border-radius: 7px;
+  padding: 2px 8px;
+  text-align: center;
+  white-space: nowrap;
+}
+.nt-ban.slide {
+  animation: nt-slide 0.55s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+}
+@keyframes nt-slide {
+  from {
+    transform: translateX(70%);
+    opacity: 0;
+  }
+}
+.nt-cap {
+  margin: 6px 2px 0;
+  font-size: 11.5px;
+  color: var(--sub);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.nt-cap b {
+  color: var(--text);
+  font-weight: 600;
+}
+.nt-g {
+  border-top: 1px solid var(--line);
+  margin-top: 10px;
+}
+.nt-gh {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 8px 0 4px;
+}
+.nt-gt {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: var(--text);
+  cursor: pointer;
+  padding: 4px 6px 4px 0;
+  border-radius: 8px;
+  min-width: 0;
+  flex: 1 1 220px;
+  text-align: left;
+}
+.nt-gt .chev {
+  width: 6px;
+  height: 6px;
+  border-right: 2px solid var(--sub);
+  border-bottom: 2px solid var(--sub);
+  transform: rotate(-45deg);
+  transition: transform 0.15s;
+  flex: none;
+  margin: 0 2px;
+}
+.nt-gt[aria-expanded='true'] .chev {
+  transform: rotate(45deg);
+}
+.nt-gt .gi {
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  background: var(--chip);
+  display: grid;
+  place-items: center;
+  color: var(--sub);
+  flex: none;
+}
+.nt-gt .gi svg {
+  width: 16px;
+  height: 16px;
+}
+.nt-gt b {
+  font-size: 14px;
+  white-space: nowrap;
+}
+.nt-gt .sum {
+  font-size: 12px;
+  color: var(--sub);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+.nt-all {
+  display: inline-flex;
+  gap: 2px;
+}
+.nt-all button {
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 11.5px;
+  color: var(--sub);
+  padding: 3px 7px;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.nt-all button:hover {
+  background: var(--hover);
+  color: var(--text);
+}
+.nt-row {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 7px 8px;
+  margin: 0 -8px;
+  border-radius: 10px;
+}
+.nt-row.on {
+  background: var(--chip);
+}
+.nt-row .ic svg,
+.nt-w .ic svg {
+  width: 16px;
+  height: 16px;
+  color: var(--sub);
+  display: block;
+}
+.nt-row .tx,
+.nt-w .tx {
+  min-width: 0;
+  display: grid;
+}
+.nt-row .l {
+  display: flex;
+  align-items: center;
+  gap: 2px 8px;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+.nt-row .l b {
+  font-size: 13.5px;
+  font-weight: 600;
+}
+.nt-row .ex {
+  font-size: 12px;
+  color: var(--sub);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.nt-row.off .l b,
+.nt-row.off .ex,
+.nt-row.off .ic {
+  opacity: 0.5;
+}
+.nt-new {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--sub);
+  border: 1px solid var(--faint);
+  border-radius: 999px;
+  padding: 0 6px;
+  line-height: 15px;
+  flex: none;
+}
+.nt-step {
+  display: inline-flex;
+  align-items: center;
+  vertical-align: middle;
+  border: 1px solid var(--faint);
+  border-radius: 999px;
+  margin: 0 4px;
+  height: 20px;
+}
+.nt-step button {
+  border: 0;
+  background: none;
+  width: 20px;
+  height: 18px;
+  padding: 0;
+  cursor: pointer;
+  color: var(--sub);
+  font: inherit;
+  font-size: 13px;
+  line-height: 1;
+  border-radius: 999px;
+}
+.nt-step button:hover:not(:disabled) {
+  color: var(--text);
+  background: var(--hover);
+}
+.nt-step button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.nt-step output {
+  min-width: 20px;
+  text-align: center;
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+}
+.nt-seg {
+  display: grid;
+  grid-template-columns: auto auto auto;
+  background: var(--hover);
+  border-radius: 999px;
+  padding: 2px;
+}
+.nt-seg button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 11.5px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  color: var(--sub);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.nt-seg svg {
+  width: 13px;
+  height: 13px;
+  flex: none;
+}
+.nt-seg button[aria-checked='true'] {
+  background: var(--card);
+  color: var(--text);
+  font-weight: 600;
+  box-shadow: 0 1px 3px var(--shadow);
+}

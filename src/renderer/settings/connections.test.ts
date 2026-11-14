@@ -173,7 +173,7 @@ describe('connections', () => {
     const cols = main.querySelectorAll(':scope > .ajustes-col')
     expect(cols).toHaveLength(2)
     expect(names(cols[0]!)).toEqual(['Conexiones', 'Repos'])
-    expect(names(cols[1]!)).toEqual(['Apariencia', 'Idioma'])
+    expect(names(cols[1]!)).toEqual(['Apariencia', 'Idioma', 'Notificaciones', 'Cuándo'])
 
     // One column, left first, by default; side by side from 1100 px of window width.
     const css = readFileSync(join(__dirname, '..', 'styles.css'), 'utf8')
