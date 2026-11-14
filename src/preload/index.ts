@@ -215,7 +215,6 @@ const api: AtrilApi = {
   },
   term: {
     attach: (id, cols, rows) => ipcRenderer.invoke('atril:term:attach', id, cols, rows),
-    input: (id, data) => ipcRenderer.send('atril:term:input', id, data),
     resize: (id, cols, rows) => ipcRenderer.send('atril:term:resize', id, cols, rows),
     detach: (id) => ipcRenderer.send('atril:term:detach', id),
     onData: (cb) => {

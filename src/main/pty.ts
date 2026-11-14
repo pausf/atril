@@ -4,12 +4,12 @@ import { sessionName, tmuxArgs } from './tmux'
 // The only process spawned outside the runner: a pty needs a tty, which the runner does not give.
 const attached = new Map<string, pty.IPty>()
 
-/** W160: a client that cannot start (posix_spawnp failed) answers its message and keeps nothing. */
+/** W160: a client that cannot start (posix_spawnp failed) answers its message and keeps nothing. W196: `-r` makes it read-only. */
 export function attach(id: string, cwd: string, cols: number, rows: number, onData: (d: string) => void): { ok: true } | { error: string } {
   detach(id)
   let p: pty.IPty
   try {
-    p = pty.spawn('tmux', [...tmuxArgs(), 'attach', '-t', `=${sessionName(id)}`], {
+    p = pty.spawn('tmux', [...tmuxArgs(), 'attach', '-r', '-t', `=${sessionName(id)}`], {
       name: 'xterm-256color',
       cwd,
       cols,
@@ -37,7 +37,6 @@ const quietly = (f: () => void): void => {
   }
 }
 
-export const input = (id: string, data: string): void => quietly(() => attached.get(id)?.write(data))
 export const resize = (id: string, cols: number, rows: number): void => quietly(() => attached.get(id)?.resize(cols, rows))
 
 /** Kills the tmux client only: the session and its agent keep running. */

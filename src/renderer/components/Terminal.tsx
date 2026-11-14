@@ -28,7 +28,8 @@ export function Terminal({ id }: { id: string }) {
     const term = new Xterm({
       fontFamily: 'ui-monospace, Menlo, monospace',
       fontSize: 12.5,
-      cursorBlink: true,
+      // W196: the terminal only shows; everything said to the agent goes through Atril.
+      disableStdin: true,
       theme: { background: '#16161a', foreground: '#d1d1d6' }
     })
     const fit = new FitAddon()
@@ -40,9 +41,7 @@ export function Terminal({ id }: { id: string }) {
     const off = window.atril.term.onData((wid, data) => {
       if (wid === id) term.write(data)
     })
-    const typed = term.onData((d) => window.atril.term.input(id, d))
     attach(term.cols, term.rows)
-    term.focus()
 
     const ro = new ResizeObserver(() => {
       fit.fit()
@@ -54,7 +53,6 @@ export function Terminal({ id }: { id: string }) {
       shown.current = ''
       xterm.current = null
       ro.disconnect()
-      typed.dispose()
       off()
       window.atril.term.detach(id)
       term.dispose()

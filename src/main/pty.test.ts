@@ -1,9 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+const spawned: string[][] = []
 const clients: Array<{ exit: () => void; resize: ReturnType<typeof vi.fn>; write: ReturnType<typeof vi.fn>; kill: ReturnType<typeof vi.fn> }> = []
 let refuse = false
 vi.mock('node-pty', () => ({
-  spawn: () => {
+  spawn: (_file: string, args: string[]) => {
+    spawned.push(args)
     if (refuse) throw new Error('posix_spawnp failed.')
     let onExit = (): void => undefined
     const dead = (): never => {
@@ -15,10 +17,12 @@ vi.mock('node-pty', () => ({
   }
 }))
 
-const { attach, detach, input, resize } = await import('./pty')
+const pty = await import('./pty')
+const { attach, detach, resize } = pty
 
 beforeEach(() => {
   clients.length = 0
+  spawned.length = 0
   refuse = false
 })
 
@@ -27,7 +31,6 @@ describe('pty', () => {
     attach('w1', '/tmp', 80, 24, () => undefined)
     // tmux died: node-pty throws EBADF on anything sent to the closed descriptor.
     expect(() => resize('w1', 100, 30)).not.toThrow()
-    expect(() => input('w1', 'x')).not.toThrow()
     expect(() => detach('w1')).not.toThrow()
 
     attach('w2', '/tmp', 80, 24, () => undefined)
@@ -35,9 +38,7 @@ describe('pty', () => {
     second.exit()
     // Once the client exits it is forgotten: nothing reaches it any more.
     resize('w2', 100, 30)
-    input('w2', 'x')
     expect(second.resize).not.toHaveBeenCalled()
-    expect(second.write).not.toHaveBeenCalled()
   })
 
   it('a client that cannot start answers an error and keeps nothing', () => {
@@ -46,12 +47,18 @@ describe('pty', () => {
     refuse = true
     expect(attach('w3', '/tmp', 80, 24, () => undefined)).toEqual({ error: 'posix_spawnp failed.' })
     // The earlier client was let go and no new one was kept: nothing reaches w3.
-    first.write.mockClear()
     first.resize.mockClear()
-    input('w3', 'x')
     resize('w3', 100, 30)
-    expect(first.write).not.toHaveBeenCalled()
     expect(first.resize).not.toHaveBeenCalled()
     expect(clients).toHaveLength(1)
+  })
+
+  it('the terminal client is read only', () => {
+    attach('w4', '/tmp', 80, 24, () => undefined)
+    // W196: tmux's own read-only client, so nothing typed into it reaches any pane of the session.
+    expect(spawned.at(-1)).toEqual(expect.arrayContaining(['attach', '-r', '-t', '=atril-w4']))
+    // Main has no way to write to the client.
+    expect('input' in pty).toBe(false)
+    expect(clients.at(-1)!.write).not.toHaveBeenCalled()
   })
 })

@@ -14,7 +14,7 @@ afterEach(cleanup)
 
 const pauseItem = (selectedState?: AgentState) =>
   (
-    menuTemplate({ selected: 'aaaaaaa1', selectedState, count: 3, nextEnabled: false, focusOn: false, focusAvailable: true, overviewAvailable: true, split: () => {}, send: () => {} }).find(
+    menuTemplate({ selected: 'aaaaaaa1', selectedState, count: 3, nextEnabled: false, focusOn: false, focusAvailable: true, overviewAvailable: true, send: () => {} }).find(
       (m) => m.label === 'Trabajo'
     )?.submenu as Array<{ label?: string; accelerator?: string; enabled?: boolean }>
   ).find((i) => i.accelerator === 'CmdOrCtrl+Shift+P')

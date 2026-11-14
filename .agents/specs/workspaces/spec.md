@@ -32,9 +32,8 @@ The `workspaces` capability, phase 1. Its siblings in this change: `.agents/spec
   persists across restarts.
 - Opening a workspace creates it (a new worktree on a new branch, or — in `in-place` — a
   branch switch in the main checkout) and starts an agent session in tmux. The centre column
-  shows its pane live and accepts typing as a real terminal does.
-- `⌘D` and `⌘⇧D` split the focused pane into a new shell pane of the same session; panes
-  sit side by side or stacked, as tmux lays them.
+  shows the agent's pane live, read-only: everything the person says to the agent goes through
+  Atril (cards and the composer). «Abrir en Terminal» opens a writable shell instead.
 - Quitting Atril leaves every agent session running. Reopening lists them from tmux and
   attaches to them; nothing is restarted and nothing is lost.
 - Each workspace shows its **agent state** with a dot and a text label. Entering `needs-you`

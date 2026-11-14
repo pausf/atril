@@ -39,6 +39,9 @@ Durable decisions: the ones in Prior decisions below (terminal de solo lectura, 
 - Q: ¿De dónde sale la herramienta de un permiso? → A: del último PreToolUse de esa sesión, que el gancho recuerda (assumed).
 - Q: ¿W45 sigue avisando a Claude? → A: no; el gancho reclama el umbral sin decirle nada y F25 lleva los botones; «Dejarla así» se guarda en `ui.json` `bigDismissed[workspaceId] = k` y sobrevive al reinicio (assumed).
 
+### Session 2026-11-14 (construcción)
+- Box 1 toca fuera de «In»: `src/main/menu.ts` (fuera «Dividir a la derecha/abajo», ⌘D/⌘⇧D, W196) y los tests que montaban el menú con `split` (`src/main/i18n.test.ts` cambia la etiqueta de ejemplo a «Pausar»; `src/renderer/flow/boxes.test.ts` comprueba que ⌘D/⌘⇧D ya no existen; `tutorial`, `pause`, `focus` y `overview` solo pierden `split`); `src/renderer/tour/Tour.tsx` (el paso de la terminal decía «escribe en él» y ⌘D); `src/main/pty.test.ts` pierde las llamadas a `input`, que ya no existe. `splitPane` sigue en `tmux.ts`: sus tests prueban otros criterios (W163, el destino exacto) (assumed).
+
 ## Outcomes
 
 - La terminal de cada trabajo se ve en vivo y se puede seleccionar y copiar, pero ninguna tecla llega al agente.
@@ -159,7 +162,7 @@ Ninguna.
 
 ## Checklist
 
-- [ ] Terminal de solo lectura: `attach -r`, sin `onData`, main ignora `atril:term:input` · Closes: W196
+- [x] Terminal de solo lectura: `attach -r`, sin `onData`, main ignora `atril:term:input` · Closes: W196
 - [ ] Gancho: `kind`, preguntas completas, resumen del permiso · Closes: W197, W74, W198, W195
 - [ ] `status`: trabajo en segundo plano, acciones `allow`/`deny`/`continue`, sin textos en inglés · waits on box 2 · Closes: W199, W75, W203
 - [ ] `AgentCard` en la fila, el resumen y encima de la terminal · waits on box 3 · Closes: W76, W200, W201, W202

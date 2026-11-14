@@ -53,7 +53,6 @@ import { createFlowHub } from './flow/watch'
 import { installMenu } from './menu'
 import { createNotifier, parseNcprefs } from './notify'
 import { patchUi, readUi } from './ui'
-import { splitPane } from './tmux'
 import type { Agent, AgentState, QuickAnswer, QuickChoice } from '../preload/api'
 
 // Dev-only evidence hooks (screenshots for review). A packaged app ignores them all, so no
@@ -693,7 +692,6 @@ app.whenReady().then(async () => {
     })
     return 'ok' in r ? r : { error: t('No he podido abrir la terminal de {branch}.', { branch: ws.branch }), detail: r.error }
   })
-  ipcMain.on('atril:term:input', (_e, id: string, data: string) => pty.input(id, data))
   ipcMain.on('atril:term:resize', (_e, id: string, c: number, r: number) => pty.resize(id, c, r))
   ipcMain.on('atril:term:detach', (_e, id: string) => pty.detach(id))
   ipcMain.handle('atril:snapshot-view', () => (SNAPSHOT ? (process.env['ATRIL_SNAPSHOT_VIEW'] ?? null) : null))
@@ -734,14 +732,6 @@ app.whenReady().then(async () => {
       selectedState: menu.selected ? states()[menu.selected] : undefined,
       togglePause: () => {
         if (menu.selected) togglePause(menu.selected)
-      },
-      split: (dir) => {
-        const id = menu.selected
-        if (!id) return
-        void listWorkspaces(run).then((all) => {
-          const ws = all.find((w) => w.id === id)
-          if (ws?.alive) void splitPane(id, dir, ws.path, run).catch(() => undefined)
-        })
       },
       send: (a) => BrowserWindow.getAllWindows().forEach((w) => w.webContents.send('atril:menu:action', a))
     })

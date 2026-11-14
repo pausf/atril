@@ -154,17 +154,17 @@ describe('boxes timeline', () => {
   })
 
   it('the large code opens and closes from the menu and the keyboard', async () => {
-    // Trabajo → Ampliar código, ⌘⇧E, enabled only where the window says so; ⌘⇧D stays «Dividir abajo».
+    // Trabajo → Ampliar código, ⌘⇧E, enabled only where the window says so; ⌘D and ⌘⇧D do nothing (W196).
     const sent: unknown[] = []
     const work = (bigAvailable?: boolean) =>
-      menuTemplate({ selected: 'aaaaaaa1', count: 1, nextEnabled: false, focusOn: false, focusAvailable: true, overviewAvailable: true, bigAvailable, split: () => {}, send: (a) => sent.push(a) }).find((m) => m.label === 'Trabajo')!
+      menuTemplate({ selected: 'aaaaaaa1', count: 1, nextEnabled: false, focusOn: false, focusAvailable: true, overviewAvailable: true, bigAvailable, send: (a) => sent.push(a) }).find((m) => m.label === 'Trabajo')!
         .submenu as Array<{ label?: string; accelerator?: string; enabled?: boolean; click?: () => void }>
     const item = (on?: boolean) => work(on).find((i) => i.label === 'Ampliar código')!
     expect(item(true).accelerator).toBe('CmdOrCtrl+Shift+E')
     expect([item(true).enabled, item(false).enabled, item().enabled]).toEqual([true, false, false])
     item(true).click!()
     expect(sent).toEqual([{ kind: 'bigCode' }])
-    expect(work().find((i) => i.label === 'Dividir abajo')?.accelerator).toBe('CmdOrCtrl+Shift+D')
+    expect(work().filter((i) => i.accelerator === 'CmdOrCtrl+D' || i.accelerator === 'CmdOrCtrl+Shift+D')).toEqual([])
 
     const api = mockApi({ workspaces: [workspace('aaaaaaa1', 'PF-1', true)], states: { aaaaaaa1: 'working' }, flow: building, boxes, boxDiff: DIFF })
     const user = userEvent.setup()

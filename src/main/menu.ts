@@ -19,21 +19,17 @@ export interface MenuDeps {
   selectedState?: AgentState
   /** Pauses a working selected workspace or resumes a paused one (W86, W87). */
   togglePause?(): void
-  split(direction: 'h' | 'v'): void
   send(action: MenuAction): void
 }
 
 /** Accelerators live here, not in the renderer: Electron handles them before xterm.js sees the key. */
 export function menuTemplate(d: MenuDeps): MenuItemConstructorOptions[] {
-  const none = d.selected === null
   return [
     { role: 'appMenu' },
     { label: t('Edición'), submenu: [{ role: 'undo' }, { role: 'redo' }, { type: 'separator' }, { role: 'cut' }, { role: 'copy' }, { role: 'paste' }, { role: 'selectAll' }] },
     {
       label: t('Trabajo'),
       submenu: [
-        { label: t('Dividir a la derecha'), accelerator: 'CmdOrCtrl+D', enabled: !none, click: () => d.split('h') },
-        { label: t('Dividir abajo'), accelerator: 'CmdOrCtrl+Shift+D', enabled: !none, click: () => d.split('v') },
         {
           label: d.selectedState === 'paused' ? t('Reanudar') : t('Pausar'),
           accelerator: 'CmdOrCtrl+Shift+P',

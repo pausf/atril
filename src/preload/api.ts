@@ -118,7 +118,6 @@ export type TermAttach = { ok: boolean } | { error: string; detail: string }
 export interface TermApi {
   /** W160: `ok: false` for an unknown or stopped work; never rejects. */
   attach(id: string, cols: number, rows: number): Promise<TermAttach>
-  input(id: string, data: string): void
   resize(id: string, cols: number, rows: number): void
   detach(id: string): void
   /** Returns the unsubscribe function. */

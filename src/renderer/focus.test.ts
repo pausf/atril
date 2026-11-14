@@ -18,7 +18,7 @@ const strip = () => screen.queryByRole('navigation', { name: 'Qué me toca' })
 const rail = (name: RegExp) => within(screen.getByRole('navigation', { name: 'Pantallas' })).getByRole('button', { name })
 const flow = () => document.querySelector('.col.right')
 const workItems = (focusOn: boolean, focusAvailable: boolean) => {
-  const work = menuTemplate({ selected: 'aaaaaaa1', count: 2, nextEnabled: false, focusOn, focusAvailable, overviewAvailable: true, split: () => {}, send: () => {} }).find((m) => m.label === 'Trabajo')
+  const work = menuTemplate({ selected: 'aaaaaaa1', count: 2, nextEnabled: false, focusOn, focusAvailable, overviewAvailable: true, send: () => {} }).find((m) => m.label === 'Trabajo')
   return work?.submenu as Array<{ label?: string; accelerator?: string; enabled?: boolean; checked?: boolean }>
 }
 

@@ -30,11 +30,11 @@ describe('main language', () => {
     const { setLang } = await import('./lang')
     const { menuTemplate } = await import('./menu')
     const { replyGone, replyPlaceholder } = await import('./status')
-    const deps = { selected: 'x', count: 2, nextEnabled: true, focusOn: false, focusAvailable: false, overviewAvailable: false, split: () => undefined, send: () => undefined }
+    const deps = { selected: 'x', count: 2, nextEnabled: true, focusOn: false, focusAvailable: false, overviewAvailable: false, send: () => undefined }
     const labels = (): string[] => menuTemplate(deps).flatMap((m) => [m.label ?? '', ...((m.submenu as { label?: string }[] | undefined) ?? []).map((s) => s.label ?? '')]).filter(Boolean)
 
     setLang('en')
-    expect(labels()).toEqual(expect.arrayContaining(['Edit', 'Work', 'Split right', 'Next', 'Search…', 'Work 1', 'Tutorial']))
+    expect(labels()).toEqual(expect.arrayContaining(['Edit', 'Work', 'Pause', 'Next', 'Search…', 'Work 1', 'Tutorial']))
     expect(labels().some((l) => /[áéíóúñ]|Dividir|Trabajo/.test(l))).toBe(false)
     expect(replyGone()).toBe('Could not send: that workspace is gone')
     expect(replyPlaceholder()).toBe('Reply to Claude…')
@@ -42,7 +42,7 @@ describe('main language', () => {
     expect(translate('en', 'No se pudo enviar: ese trabajo ya no está', { detail: 'fatal: ruta inválida' })).toBe('Could not send: that workspace is gone')
 
     setLang('es')
-    expect(labels()).toEqual(expect.arrayContaining(['Edición', 'Trabajo', 'Dividir a la derecha']))
+    expect(labels()).toEqual(expect.arrayContaining(['Edición', 'Trabajo', 'Pausar']))
     expect(replyGone()).toBe('No se pudo enviar: ese trabajo ya no está')
   })
 

@@ -26,7 +26,7 @@ const flow = (stage: FlowStage['stage'], closed?: number, total?: number): FlowS
   ...(total !== undefined && { change: 'add-x', checklist: { file: 'proposal.md', closed: closed!, total } })
 })
 const workMenu = (overviewAvailable: boolean) =>
-  menuTemplate({ selected: null, count: 1, nextEnabled: false, focusOn: false, focusAvailable: false, overviewAvailable, split: () => {}, send: () => {} }).find((m) => m.label === 'Trabajo')
+  menuTemplate({ selected: null, count: 1, nextEnabled: false, focusOn: false, focusAvailable: false, overviewAvailable, send: () => {} }).find((m) => m.label === 'Trabajo')
     ?.submenu as Array<{ label?: string; accelerator?: string; enabled?: boolean }>
 
 // Stopped in tmux terms: a live one would mount xterm, which jsdom cannot run. The state files say otherwise.
