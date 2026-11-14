@@ -350,3 +350,9 @@ A numbered reply from the Mac turned every refusal of `answerAgent` into «ese t
 
 ## 2026-11-12 · notify-core · 6→7
 Two docs files from other work (`bocetos/qa-real.md`, `bocetos/dogfood-juegos.md`) rode in the change's range because they were committed on its branch before the build. Harmless, but a reviewer cannot tell them from scope creep. Commit unrelated docs on their own branch or say in the change which ones ride along.
+
+## 2026-11-14 · notify-ui · 6→7
+The test-notice animation and the «not at Mac» dimming shared one ternary, so after the first «Probar un aviso» the banner was never dimmed again (S42). Two independent states folded into one class expression; the S42 test never pressed the test button first. Fixed by composing the classes separately; «testing a notice says where it went» now hovers a list type after a test.
+
+## 2026-11-14 · notify-ui · 6→7
+`App.tsx` and `Problem.tsx` changed for V6/V15 and S45 but the scope's «In» did not name them. When a criterion needs a shared component, name it in the contract as the box is cut.

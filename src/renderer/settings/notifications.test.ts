@@ -248,6 +248,9 @@ describe('when card', () => {
     await user.click(within(when()).getByRole('button', { name: 'Probar un aviso' }))
     expect(notify.test).toHaveBeenLastCalledWith('ci')
     expect(await within(when()).findByText('Enviado: mira la esquina de tu pantalla.')).toBeTruthy()
+    // S42 still holds after a test: a type not at «Mac» keeps its banner dimmed.
+    await user.hover(row(radios(card, 'Te piden revisión')))
+    expect(document.querySelector('.nt-prev .nt-ban')!.classList.contains('dim')).toBe(true)
 
     vi.mocked(notify.test).mockResolvedValueOnce('blocked')
     await user.click(within(when()).getByRole('button', { name: 'Probar un aviso' }))

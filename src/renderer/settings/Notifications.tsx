@@ -220,7 +220,7 @@ function Preview({ st, label, shot }: { st: NotifyState; label: string; shot: nu
       <p className="lb" id="nt-prev-h">
         {t('Así te llega')}
       </p>
-      <div key={shot} className={`nt-ban${shot > 0 ? ' slide' : v === 'mac' ? '' : ' dim'}`}>
+      <div key={shot} className={`nt-ban${shot > 0 ? ' slide' : ''}${v === 'mac' ? '' : ' dim'}`}>
         <AppMark className="ap" />
         <div className="tx">
           <div className="hd">

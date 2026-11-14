@@ -33,7 +33,7 @@ Durable decisions: none
 
 ## Scope boundaries
 
-**In:** `src/renderer/settings/Notifications.tsx` (both cards), `src/renderer/avisos/**` (bug 4, the new kinds), its place in `Ajustes.tsx` (second column, after «Idioma»), styles as tokens; in `src/main/**` and `src/preload/**`, only the one IPC call V15 needs to reuse main's `closable` (Decision log, 2026-11-14). **Out:** sounds, per-repo settings, the summary on return.
+**In:** `src/renderer/settings/Notifications.tsx` (both cards), `src/renderer/avisos/**` (bug 4, the new kinds), `src/renderer/App.tsx` (mounting the card, the new targets of `openAviso`), `src/renderer/components/Problem.tsx` (an optional second button, `cant` optional), its place in `Ajustes.tsx` (second column, after «Idioma»), styles as tokens; in `src/main/**` and `src/preload/**`, only the one IPC call V15 needs to reuse main's `closable` (Decision log, 2026-11-14). **Out:** sounds, per-repo settings, the summary on return.
 
 ## Constraints
 
