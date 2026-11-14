@@ -71,6 +71,11 @@ describe('agent card', () => {
     answer.mockClear()
     await user.keyboard('4')
     expect(answer).not.toHaveBeenCalled()
+    // The error says the agent still waits and tries the same answer again.
+    const alert = within(card()).getByRole('alert')
+    expect(alert.textContent).toContain('El agente sigue esperando tu respuesta.')
+    await user.click(within(alert).getByRole('button', { name: 'Volver a intentar' }))
+    expect(answer).toHaveBeenLastCalledWith('w2', { option: 0, question: 0 })
 
     // A permission card answers with 1 and 2 too.
     cleanup()

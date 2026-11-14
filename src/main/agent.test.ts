@@ -458,6 +458,11 @@ describe('subagents hook', () => {
     expect(asked).toMatchObject({ state: 'needs-you', kind: 'question', questions: stored })
     expect((asked['questions'] as { options: { label: string }[] }[])[0]!.options[1]!.label.length).toBeGreaterThan(40)
 
+    // A Notification while the question waits, even a permission prompt, keeps it a question.
+    expect(stateOf((await fireIn([ask([first, second]), ['Notification', { message: 'hola' }]])).session)).toMatchObject({ kind: 'question', questions: stored })
+    expect(stateOf((await fireIn([ask([first, second]), permit()])).session)).toMatchObject({ kind: 'question', questions: stored })
+    expect(stateOf((await fireIn([ask([first, second]), permit()])).session)).not.toHaveProperty('permission')
+
     // They stay while the state stays needs-you: a later Notification or Stop keeps them.
     const kept = stateOf((await fireIn([ask([first, second]), ['Notification', { message: 'hola' }], ['Stop', {}]])).session)
     expect(kept).toMatchObject({ state: 'needs-you', kind: 'turn-end', questions: stored })

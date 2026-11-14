@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from 're
 import type { AgentWait, QuickChoice } from '../../preload/api'
 import { localiseActivity } from '../../preload/activity-i18n'
 import { useT } from '../ui'
+import { Problem } from './Problem'
 
 interface Props {
   workspaceId: string
@@ -47,7 +48,7 @@ interface Button {
 export function AgentCard({ workspaceId, activityAt, onShown, focusComposer, skipMultiSelect }: Props) {
   const t = useT()
   const [wait, setWait] = useState<AgentWait | null>(null)
-  const [result, setResult] = useState<{ sent: boolean; text: string } | null>(null)
+  const [result, setResult] = useState<{ sent: boolean; text: string; choice?: QuickChoice } | null>(null)
 
   // The row and the strip above the terminal show the same wait: an answer in one moves both on.
   const [answers, setAnswers] = useState(0)
@@ -125,7 +126,7 @@ export function AgentCard({ workspaceId, activityAt, onShown, focusComposer, ski
   const press = (choice: QuickChoice): void => {
     setResult({ sent: false, text: '' })
     void window.atril.status.answer(workspaceId, choice).then((r) => {
-      if (!('ok' in r)) return setResult({ sent: false, text: r.error })
+      if (!('ok' in r)) return setResult({ sent: false, text: r.error, choice })
       setResult({ sent: true, text: t('Enviado') })
       // Several questions in one call: the next one shows once main has moved on, here and in the other card.
       window.dispatchEvent(new CustomEvent(ANSWERED, { detail: workspaceId }))
@@ -167,7 +168,10 @@ export function AgentCard({ workspaceId, activityAt, onShown, focusComposer, ski
         </>
       )}
       {wait.idle && <p className="ask-note">{t('Lleva un rato esperándote')}</p>}
-      {result?.text && <span className={result.sent ? 'quick-sent' : 'bad'}>{result.text}</span>}
+      {result?.text && result.sent && <span className="quick-sent">{result.text}</span>}
+      {result?.text && !result.sent && result.choice && (
+        <Problem what={result.text} cant={t('El agente sigue esperando tu respuesta.')} fix={t('Volver a intentar')} onFix={() => press(result.choice!)} detail="" />
+      )}
     </div>
   )
 }

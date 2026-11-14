@@ -3,6 +3,7 @@ import type { FlowStage } from '../../preload/api'
 import { useT, type T } from '../ui'
 import { ActivityFeed } from './ActivityFeed'
 import { Boxes } from './Boxes'
+import { Problem } from '../components/Problem'
 import { Branches, type SubView } from './Branches'
 import { useSubagentView } from './Subagents'
 import { BUILDING, type BoxesState } from './useFlow'
@@ -139,13 +140,18 @@ function BigWarning({ lines, workspaceId }: { lines: number; workspaceId: string
   // Undefined until ui.json is read, so a dismissed warning never flashes.
   const [left, setLeft] = useState<number | undefined>()
   const [sent, setSent] = useState<string | null>(null)
+  const [failed, setFailed] = useState<string | null>(null)
   useEffect(() => {
     void window.atril.ui.get().then((u) => setLeft(u.bigDismissed?.[workspaceId] ?? 0))
   }, [workspaceId])
   if (lines <= WARN_AT || left === undefined || left >= k) return null
   const split = (): void => {
     setSent('')
-    void window.atril.status.compose(workspaceId, SPLIT).then((r) => setSent('ok' in r ? t('Enviado') : r.error))
+    setFailed(null)
+    void window.atril.status.compose(workspaceId, SPLIT).then((r) => {
+      setSent('ok' in r ? t('Enviado') : null)
+      if (!('ok' in r)) setFailed(r.error)
+    })
   }
   const leave = (): void => {
     setLeft(k)
@@ -163,6 +169,7 @@ function BigWarning({ lines, workspaceId }: { lines: number; workspaceId: string
         </button>
         {sent && <span className="fbig-sent">{sent}</span>}
       </span>
+      {failed && <Problem what={failed} cant={t('La rama sigue entera.')} fix={t('Volver a intentar')} onFix={split} detail="" />}
     </div>
   )
 }

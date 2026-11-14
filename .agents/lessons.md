@@ -356,3 +356,12 @@ The test-notice animation and the «not at Mac» dimming shared one ternary, so 
 
 ## 2026-11-14 · notify-ui · 6→7
 `App.tsx` and `Problem.tsx` changed for V6/V15 and S45 but the scope's «In» did not name them. When a criterion needs a shared component, name it in the contract as the box is cut.
+
+## 2026-11-14 · terminal-read-only · 6→7
+The hook dropped `kind: 'question'` when any Notification arrived while an `AskUserQuestion` waited, so the card fell back to «Sigue» (pasting the continue sentence into the selector), Automático stopped answering, and a `permission_prompt` turned «Permitir» into option 1. The test fired that exact sequence but only asserted the state after the later Stop. Fixed: a Notification while a question waits keeps it a question; «the hook keeps every question…» now asserts the in-between state after a plain and a permission Notification. Assert every intermediate state a sequence passes through, not only the last.
+
+## 2026-11-14 · terminal-read-only · 6→7
+A failed «Separar en MRs encadenadas» and a failed card answer showed the bare error in a span, outside the error rule (what happened, what it stops, one fixing button). The composer already used `Problem` for the same failure. Fixed: both use `Problem` with «Volver a intentar», proved in changes.test and agentcard.test (seen red without the fix). A new send path copies the error shape of the sibling that already exists.
+
+## 2026-11-14 · terminal-read-only · 6
+With a `tmux attach -r` client on the session, tmux 3.7 refuses every `send-keys` («client is read-only»): answers, pause and the Enter after a paste all stopped, while every unit test passed because none attached a read-only client. Only the real-app drive found it. `tmux.ts` falls back to `paste-buffer -r`; «keys reach a pane that a read-only client watches» attaches a real `-r` client. When a change alters how a tmux client attaches, test sending keys with that client attached.

@@ -146,6 +146,8 @@ function details(event, state, payload, prev, lastTool) {
   const out = Array.isArray(list) && list.length > 0 ? { questions: asked ? list.map(QUESTION) : list } : {}
   if (asked) return { ...out, kind: 'question' }
   if (event === 'Stop') return { ...out, kind: 'turn-end' }
+  // A Notification while a question waits is about that question, a permission prompt included.
+  if (waited && prev.kind === 'question') return { ...out, kind: 'question' }
   if (!isPermission(payload)) return out
   const tool = lastTool ?? (waited ? prev.permission : undefined)
   return { ...out, kind: 'permission', ...(tool && { permission: tool }) }

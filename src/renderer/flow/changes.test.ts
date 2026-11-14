@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { createElement } from 'react'
-import { cleanup, render, screen } from '@testing-library/react'
+import { cleanup, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { FileChange, FlowStage, UiState } from '../../preload/api'
@@ -60,6 +60,14 @@ describe('file changes', () => {
     const user = userEvent.setup()
     await user.click(screen.getByRole('button', { name: 'Separar en MRs encadenadas' }))
     expect(api.statusApi.compose).toHaveBeenLastCalledWith('aaaaaaa1', 'Separa esta rama en MRs encadenadas.')
+    // A failed send says what happened and offers to try again.
+    vi.mocked(api.statusApi.compose).mockResolvedValueOnce({ error: 'No se pudo enviar: ese trabajo ya no está' })
+    await user.click(screen.getByRole('button', { name: 'Separar en MRs encadenadas' }))
+    const alert = await vi.waitFor(() => within(warn as HTMLElement).getByRole('alert'))
+    expect(alert.textContent).toContain('La rama sigue entera.')
+    await user.click(within(alert).getByRole('button', { name: 'Volver a intentar' }))
+    expect(api.statusApi.compose).toHaveBeenCalledTimes(3)
+    await vi.waitFor(() => expect(within(warn as HTMLElement).queryByRole('alert')).toBeNull())
 
     // «Dejarla así» remembers the threshold for that work and hides the line.
     await user.click(screen.getByRole('button', { name: 'Dejarla así' }))

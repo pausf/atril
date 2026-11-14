@@ -73,6 +73,8 @@ export const EN: Record<string, string> = {
   'Escribe al agente…  ⌘↩ envía': 'Write to the agent…  ⌘↩ sends',
   'El agente está parado.': 'The agent is stopped.',
   'Tu mensaje sigue en la caja.': 'Your message is still in the box.',
+  'El agente sigue esperando tu respuesta.': 'The agent is still waiting for your answer.',
+  'La rama sigue entera.': 'The branch is still in one piece.',
   'No hay nada que enviar.': 'There is nothing to send.',
   '{branch} te necesita': '{branch} needs you',
   'Por defecto (tu Claude Code)': 'Default (your Claude Code)',
