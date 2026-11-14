@@ -73,6 +73,10 @@ Governs: src/main/credentials/** src/renderer/settings/**
 
 - Ajustes → Repos marca un repo roto y deja buscar su carpeta o quitarlo; cualquier repo se puede quitar.
 
+### Notificaciones (Ajustes y Avisos) (notify-ui, 14 nov 2026)
+
+- In Ajustes you choose, per type, whether it reaches the Mac, only Avisos or nothing; set a whole group at once; see how each one arrives; set the waiting reminder, focus, grouping and quiet hours; send a test; and learn — with a button to fix it — when macOS blocks Atril.
+
 ## Scope boundaries
 
 **In:** storing, checking, replacing and deleting the Jira token, through a store and a card
@@ -153,6 +157,10 @@ errores visibles junto al campo.
 
 **In:** `src/renderer/settings/Repos.tsx`. **Out:** clonar de nuevo.
 
+### Notificaciones (Ajustes y Avisos) (notify-ui, 14 nov 2026)
+
+**In:** `src/renderer/settings/Notifications.tsx` (both cards), `src/renderer/avisos/**` (bug 4, the new kinds), `src/renderer/App.tsx` (mounting the card, the new targets of `openAviso`), `src/renderer/components/Problem.tsx` (an optional second button, `cant` optional), its place in `Ajustes.tsx` (second column, after «Idioma»), styles as tokens; in `src/main/**` and `src/preload/**`, only the one IPC call V15 needs to reuse main's `closable` (Decision log, 2026-11-14). **Out:** sounds, per-repo settings, the summary on return.
+
 ## Constraints
 
 - Electron `safeStorage` (macOS Keychain-backed key) encrypts each token; the ciphertext lives
@@ -205,6 +213,11 @@ errores visibles junto al campo.
 ### Repos rotos (repo-gone, 11 nov 2026)
 
 - La ventana manda solo ids; el diálogo de carpeta lo abre main.
+
+### Notificaciones (Ajustes y Avisos) (notify-ui, 14 nov 2026)
+
+- Every text through `useT()` with its English entry; colours only from tokens; keyboard-operable (S-a11y as the rest of Ajustes).
+- Each change saves at once through `notify.set(patch)`; there is no «Guardar».
 
 ## Prior decisions
 
@@ -382,6 +395,28 @@ errores visibles junto al campo.
     - Queda superada la línea de move-repos-to-settings que dice «entre Jira y Apariencia».
   - **El boceto y la foto** no tienen criterio: son dibujo y evidencia.
 
+### Notificaciones (Ajustes y Avisos) (notify-ui, 14 nov 2026)
+
+- The settings file, the type table and `notify.*` are `notify-core`'s. The fold state of each group lives in `ui.json` `folded` under `ntf-agents`, `ntf-mr`, `ntf-account` (default unfolded) (assumed).
+
+#### Alternatives that lost
+
+| Considered | Why it lost |
+|---|---|
+| Botón «Guardar» | el resto de Ajustes guarda al momento |
+
+#### Decision log, answers as given (2026-11-14)
+- Q: ¿«Nada» guarda el aviso en Avisos? → A: no; «Nada» no interrumpe ni guarda: la tarjeta dice «silenciado, no te avisa» (assumed).
+- Q: ¿«Cerrar su trabajo» cierra sin preguntar? → A: no; abre la confirmación de siempre (W136) para ese trabajo (assumed).
+- Q: ¿Dónde se recuerda el plegado de cada grupo? → A: en `ui.json` `folded`, con `ntf-agents`, `ntf-mr` y `ntf-account`, desplegados por defecto (assumed).
+
+- Q: ¿Partir el cambio? → A: sí; este es la mitad de la ventana y espera a `notify-core` (assumed).
+- Q: ¿S37 y S43 se parten? → A: no; cada una es una tarjeta que se pinta de una vez y un test la recorre entera, con una aserción por cosa prometida. Techo: si una parte cambia sola, se parte entonces (assumed).
+
+- Q: ¿Qué botones lleva el aviso de ejemplo en «Así te llega»? → A: solo los que lleva el aviso real del Mac (W177, W186–W188): «Responder» en ask, done e idle; «Reabrir» en stopped; «Arreglar con Claude» en ci; «Cerrar su trabajo» en merged. Los inventados del boceto («Ver el plan», «Más tarde»…) no (assumed).
+- Q: ¿Los días marcados de «Todo el día» con el acento? → A: no; en gris (`--text` sobre `--on-text`): el blanco sobre `--run` no llega al contraste en oscuro (assumed).
+- Q: ¿Cómo sabe la ventana que un trabajo es del mismo repo que la MR (V15)? → A: una llamada IPC pequeña a main que reutiliza `closable` (el de W187, que mira los remotos); la ventana no tiene los remotos. Amplía el alcance a `src/main/**` y `src/preload/**` solo para esa llamada (assumed).
+
 ## Task breakdown
 
 - Encrypted store with save / exists / delete.
@@ -506,11 +541,8 @@ errores visibles junto al campo.
   comprobar» is disabled only while a check runs («Comprobando…») and, if a field is empty, says which
   next to that field without calling main. One test holds a case per clause.
   Proof: src/renderer/settings/connections.test.ts connect guides in three steps
-- **S31** Ajustes shall group Conexiones and Repos in a left column and Apariencia and Idioma in a right
-  one, and `.ajustes` shall show them side by side while the window is at least 1100 px wide and as one
-  column, left first, below that.
+- **S31** Ajustes shall group Conexiones and Repos in a left column and Apariencia, Idioma, Notificaciones and Cuándo in a right one, and `.ajustes` shall show them side by side while the window is at least 1100 px wide and as one column, left first, below that.
   Proof: src/renderer/settings/connections.test.ts settings use two columns when wide
-
 ### Errores claros (plain-errors, 11 nov 2026)
 
 - **S32** If the Jira check's request throws (an HTTP status or a malformed address keep their own sentences), then Ajustes shall say what failed by cause — host not found (`ENOTFOUND`, `EAI_AGAIN`): «No encuentro {host}.»; a certificate code (starting `CERT_`, `ERR_TLS_`, `SELF_SIGNED`, `UNABLE_TO_`, `DEPTH_ZERO`): «El certificado de {host} no es válido.»; a timeout: «Jira no ha respondido en 10 s.»; anything else: «No responde nada en {origin}.» — each followed by «Revisa la dirección: la de tu Jira suele ser https://tuempresa.atlassian.net.», never with the exception name in the sentence, and under a folded «Ver detalle» the code read from `err.cause.code` when it matches `^[A-Z0-9_]+$`, else the exception's name.
@@ -533,3 +565,27 @@ errores visibles junto al campo.
   Proof: src/renderer/settings/repos.test.ts any repo can be removed and a refusal can be dismissed
 - **S36** A repo with health `missing` or `not-git` shall show «Carpeta no encontrada» or «No es un repo de git» instead of its mode select, and «Buscar la carpeta…».
   Proof: src/renderer/settings/repos.test.ts a broken repo can be found again
+
+### Notificaciones (Ajustes y Avisos) (notify-ui, 14 nov 2026)
+
+- **S37** Ajustes shall show «Notificaciones» after «Idioma» with the intro «Todo llega a Avisos. Aquí eliges qué más te interrumpe con un aviso del Mac.» and three groups — «Tus agentes» (ask, done, stopped, idle, radar, qa), «Tus MR» (review, comment, ci, cipass, merged, following, opened) and «Tu cuenta» (quota) — each row with its label, its example text from the sketch, the tag «nuevo» on stopped, idle, radar, qa, cipass and quota, and a radio group «Mac · Solo Avisos · Nada» checked at the stored value; a row at «Nada» is dimmed. One test renders the card and asserts each of these.
+  Proof: src/renderer/settings/notifications.test.ts the card lists every type at its stored value
+- **S38** When the person picks a position in a row (click, or ← → within the group, which moves and selects), Ajustes shall send `notify.set({ types: { [key]: value } })` and show the answered value; reopening Ajustes shows it.
+  Proof: src/renderer/settings/notifications.test.ts a choice saves and survives reopening
+  Proof: src/renderer/settings/notifications.test.ts arrows move the choice
+- **S39** When the person presses «Todo al Mac», «Todo a Avisos» or «Silenciar» in a group header, Ajustes shall set every type of that group to `mac`, `list` or `mute` in one `notify.set` and leave the other groups unchanged.
+  Proof: src/renderer/settings/notifications.test.ts a group setter changes only its group
+- **S40** Each group header shall read «{n} tipos · {mac} al Mac» plus « · {list} solo en Avisos» when that count is not zero («1 tipo» in the singular), and fold or unfold its rows with `aria-expanded`, remembered in `ui.json` `folded`.
+  Proof: src/renderer/settings/notifications.test.ts a group header counts and folds
+- **S41** The `idle` row's title shall read «Lleva {m} min esperándote» with − and + buttons that change `idleMinutes` by 5 between 5 and 120 (− disabled at 5, + at 120), saving each change.
+  Proof: src/renderer/settings/notifications.test.ts the waiting minutes step by five within bounds
+- **S42** When a row is hovered or focused, the preview «Así te llega» shall show that type's example — title and body as in the sketch's `t`/`b` (e.g. «WEB-3535 te pregunta» / «¿Uso la tabla del BOE o la de la API?»), «{m}» filled — and the caption «Así te sale en el Mac: {label}» at `mac`, «{label}: solo en Avisos, sin globo ni sonido» at `list`, «{label}: silenciado, no te avisa» at `mute`, the banner dimmed when not `mac`.
+  Proof: src/renderer/settings/notifications.test.ts the preview follows the hovered type
+- **S43** The «Cuándo» card shall show three switches saved at once — «Respetar el modo foco» (`focus`), «Agrupar» («Un solo aviso del Mac por cada 2 min.», `group`) and «Horas de silencio» (`quiet.on`) — and, under the last, «de {from} a {to}» time inputs, a 24 h bar of the quiet span and day toggles L M X J V S D («Todo el día») that save `quiet.from`, `quiet.to` and `quiet.days`; while `quiet.on` is off those controls are `aria-disabled` and out of the tab order. One test renders the card and asserts each of these.
+  Proof: src/renderer/settings/notifications.test.ts when-settings save and quiet fields follow their switch
+- **S44** When the person presses «Probar un aviso», Ajustes shall call `notify.test(previewed type)` and say «Enviado: mira la esquina de tu pantalla.», or «macOS no lo dejará salir: arréglalo arriba.» when it answers `blocked`.
+  Proof: src/renderer/settings/notifications.test.ts testing a notice says where it went
+- **S45** If `notify.permission()` answers `blocked` when the card mounts or after «Volver a comprobar», then the card shall show, above everything, the problem «macOS no deja a Atril mostrar avisos.» / «Todo sigue llegando a Avisos, pero el Mac no te interrumpe aunque elijas «Mac».» with «Abrir Ajustes del Sistema» (W192) and «Volver a comprobar»; `allowed` and `unknown` show nothing.
+  Proof: src/renderer/settings/notifications.test.ts a blocked Mac shows the problem with its fix
+- **S46** If saving a change fails, then the card shall show «No he podido guardar tus avisos: el cambio se perderá al cerrar Atril.» with «Volver a intentar», which resends the same patch, and main's reason folded under «Ver detalle».
+  Proof: src/renderer/settings/notifications.test.ts a failed save says so and retries

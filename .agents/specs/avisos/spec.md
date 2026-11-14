@@ -154,11 +154,9 @@ MR's title as `{detail}`, shown as text; the screen is keyboard-operable.
   leído» shall clear the count.
   (The proof asserts the badge, the order, a filter hiding other kinds, and the count going to zero.)
   Proof: src/renderer/avisos/avisos.test.ts the feed lists, filters and marks read
-- **V6** Opening a notice shall mark it read and open its MR view when the MR is in the latest
-  listing (held app-wide, M9), otherwise say «Esta MR ya no está en la lista»; an agent notice shall
-  open its workspace, or say «Ese trabajo ya no está» when it is gone.
+- **V6** Opening a notice shall mark it read and: for `review`, `comment`, `ci`, `cipass`, `following` and `opened`, open its MR view when the MR is in the latest listing, otherwise say «Esta MR ya no está en la lista»; for `merged`, `closed` and `gone`, open the MR in its forge; for `ask`, `done`, `idle`, `stopped`, `qa`, `radar` and the stored legacy `agent`, open its workspace (for `qa`, its QA screen; for `radar`, the first of the two), or say «Ese trabajo ya no está» when it is gone; for `quota`, open nothing beyond marking it read.
   Proof: src/renderer/avisos/avisos.test.ts a notice opens what it is about
-
+  Proof: src/renderer/avisos/avisos.test.ts merged, closed and gone open the forge
 ### Notificaciones (main) (notify-core, 12 nov 2026)
 
 - **V16** When an MR listing completes, Atril shall add «La CI falla» (`ci`) for an MR in Mías whose last settled CI state (`pass` or `fail`, ignoring `running` and `none`) was `pass` and is now `fail`, and «La CI vuelve a pasar» (`cipass`) when it was `fail` and is now `pass`.
@@ -185,3 +183,12 @@ MR's title as `{detail}`, shown as text; the screen is keyboard-operable.
   Proof: src/main/avisos.test.ts answered questions stop counting as unread
 - **V12** When the person clicks a Mac notification that came from a stored notice, Atril shall mark that notice read; a grouped notification, or W179's, shall mark read every stored notice id it carries. (Bug 2.)
   Proof: src/main/avisos.test.ts clicking the Mac notice marks its notice read
+
+### Notificaciones (Ajustes y Avisos) (notify-ui, 14 nov 2026)
+
+- **V13** The Avisos screen shall show, under the title of an `ask` or `done` notice that has a `detail`, that text localised as the needs-you body is (S28), as plain text; a notice without `detail` shows its title alone. (Bug 4.)
+  Proof: src/renderer/avisos/avisos.test.ts a question keeps what it asked
+- **V14** The Avisos screen shall give each kind its own label — «te pregunta», «ha terminado su turno», «se ha parado», «te espera», «choca con otro trabajo», «QA terminada», «La CI vuelve a pasar», «MR fusionada», «MR cerrada», plus today's — and the kind filter shall list every kind present in the stored notices.
+  Proof: src/renderer/avisos/avisos.test.ts every kind has its label and its filter
+- **V15** Where a `merged` or `closed` notice's MR branch matches a non-review workspace of the same repo, the notice row shall offer «Cerrar su trabajo», which opens that workspace's close confirmation (W136) without closing anything by itself; with no matching workspace the button is absent.
+  Proof: src/renderer/avisos/avisos.test.ts a merged MR offers to close its work
