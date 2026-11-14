@@ -1,3 +1,4 @@
+import { spawn } from 'node:child_process'
 import { existsSync, readFileSync, realpathSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -23,6 +24,40 @@ afterEach(() => {
 })
 
 describe('tmux', () => {
+  it('keys reach a pane that a read-only client watches', async () => {
+    // W196: Atril's terminal is `tmux attach -r`; tmux 3.7 then refuses send-keys to that session ("client is read-only").
+    const tmux = await import('./tmux')
+    const pane = await tmux.newSession('roro', tmp(), ['cat'])
+    // `script` gives the client the tty it needs; the sleep keeps its stdin open while the test runs.
+    const watcher = spawn('sh', ['-c', `sleep 30 | script -q /dev/null tmux -L ${sock} attach -r -t =atril-roro`], { stdio: 'ignore', detached: true })
+    try {
+      const clients = (): string => tmuxOut(sock, 'list-clients', '-F', '#{client_readonly}').trim()
+      const end = Date.now() + 5000
+      while (clients() !== '1' && Date.now() < end) await new Promise((ok) => setTimeout(ok, 50))
+      expect(clients()).toBe('1')
+      const shown = async (want: string): Promise<string> => {
+        const until = Date.now() + 3000
+        let v = tmuxOut(sock, 'capture-pane', '-p', '-t', pane)
+        while (!v.includes(want) && Date.now() < until) {
+          await new Promise((ok) => setTimeout(ok, 50))
+          v = tmuxOut(sock, 'capture-pane', '-p', '-t', pane)
+        }
+        return v
+      }
+      expect(await tmux.sendText(pane, 'hola literal', undefined)).toBe(true)
+      expect(await tmux.sendKey(pane, '2')).toBe(true)
+      expect(await tmux.pasteText(pane, 'pegado')).toBe(true)
+      expect(await tmux.pressKey(pane, 'Enter')).toBe(true)
+      // `cat` echoes each line it gets: the typed one, the key with its Enter, the paste with its Enter.
+      const lines = (await shown('pegado\npegado')).split('\n')
+      expect(lines.filter((l) => l === 'hola literal')).toHaveLength(2)
+      expect(lines.filter((l) => l === '2')).toHaveLength(2)
+      expect(lines.filter((l) => l === 'pegado')).toHaveLength(2)
+    } finally {
+      process.kill(-watcher.pid!, 'SIGTERM')
+    }
+  })
+
   it('an agent that exits at once still leaves its session', async () => {
     makeRegisteredRepo(home)
     const { openWorktree } = await import('./workspaces')

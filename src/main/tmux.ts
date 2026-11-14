@@ -120,30 +120,46 @@ export async function killPane(paneId: string, run: Runner = defaultRun): Promis
   await tmux(run, ['kill-pane', '-t', paneId])
 }
 
+// eslint-disable-next-line no-control-regex
+const CONTROL = /[\x00-\x08\x0b-\x1f\x7f]/g
+const BYTES: Record<string, string> = { Enter: '\r', Escape: '\x1b' }
+
+/**
+ * W196: while Atril's read-only terminal is attached, tmux 3.7 refuses send-keys to that session («client is
+ * read-only»). The same bytes then go as an unbracketed paste, which reaches the pane as if typed.
+ */
+async function keys(run: Runner, paneId: string, args: string[], bytes: string): Promise<boolean> {
+  const r = await tmux(run, ['send-keys', '-t', paneId, ...args])
+  if (r.code === 0) return true
+  if (!/read-only/.test(r.stderr)) return false
+  const buffer = `atril-${randomUUID().slice(0, 8)}`
+  if ((await run('tmux', [...tmuxArgs(), 'load-buffer', '-b', buffer, '-'], { input: bytes })).code !== 0) return false
+  // -r: no line-ending translation; no -p: typed, not a bracketed paste.
+  return (await tmux(run, ['paste-buffer', '-d', '-r', '-b', buffer, '-t', paneId])).code === 0
+}
+
 /** Types `text` into one pane as literal characters, then Enter. `-l` keeps `C-c` or `Enter` from being read as key names. */
 export async function sendText(paneId: string, text: string, run: Runner = defaultRun): Promise<boolean> {
   // `--` so text that starts with a dash is not parsed as a flag.
-  const typed = await tmux(run, ['send-keys', '-t', paneId, '-l', '--', text])
-  return typed.code === 0 && (await tmux(run, ['send-keys', '-t', paneId, 'Enter'])).code === 0
+  return (await keys(run, paneId, ['-l', '--', text], text.replace(CONTROL, ''))) && keys(run, paneId, ['Enter'], BYTES['Enter']!)
 }
 
 /** Presses one key in one pane, then Enter: how Claude Code's selector takes an option's number (W75). */
 export async function sendKey(paneId: string, key: string, run: Runner = defaultRun): Promise<boolean> {
-  return (await tmux(run, ['send-keys', '-t', paneId, key])).code === 0 && (await tmux(run, ['send-keys', '-t', paneId, 'Enter'])).code === 0
+  return (await keys(run, paneId, [key], BYTES[key] ?? key)) && keys(run, paneId, ['Enter'], BYTES['Enter']!)
 }
 
 /** Presses one key in one pane and nothing else: Escape interrupts Claude Code's turn without closing it (W86). */
 export async function pressKey(paneId: string, key: string, run: Runner = defaultRun): Promise<boolean> {
-  return (await tmux(run, ['send-keys', '-t', paneId, key])).code === 0
+  return keys(run, paneId, [key], BYTES[key] ?? key)
 }
 
 /** Pastes `text` into one pane as a bracketed paste (line breaks do not send), then Enter. Escapes are dropped so the text cannot close the paste early. */
 export async function pasteText(paneId: string, text: string, run: Runner = defaultRun): Promise<boolean> {
   const buffer = `atril-${randomUUID().slice(0, 8)}`
   // Only \n and \t survive: no ESC to close the paste early, no ^C/^D/\r to act before Enter.
-  // eslint-disable-next-line no-control-regex
-  const loaded = await run('tmux', [...tmuxArgs(), 'load-buffer', '-b', buffer, '-'], { input: text.replace(/[\x00-\x08\x0b-\x1f\x7f]/g, '') })
+  const loaded = await run('tmux', [...tmuxArgs(), 'load-buffer', '-b', buffer, '-'], { input: text.replace(CONTROL, '') })
   if (loaded.code !== 0) return false
   // -d drops the buffer after the paste, -p brackets it when the pane asked for bracketed paste.
-  return (await tmux(run, ['paste-buffer', '-d', '-p', '-b', buffer, '-t', paneId])).code === 0 && (await tmux(run, ['send-keys', '-t', paneId, 'Enter'])).code === 0
+  return (await tmux(run, ['paste-buffer', '-d', '-p', '-b', buffer, '-t', paneId])).code === 0 && keys(run, paneId, ['Enter'], BYTES['Enter']!)
 }
