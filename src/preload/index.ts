@@ -47,6 +47,7 @@ const api: AtrilApi = {
     fixCi: (url) => ipcRenderer.invoke('atril:mr:fixCi', url),
     discardDraft: (url, id) => ipcRenderer.invoke('atril:mr:discardDraft', url, id),
     page: (url) => ipcRenderer.invoke('atril:mr:page', url),
+    merge: (url, confirmed) => ipcRenderer.invoke('atril:mr:merge', url, confirmed),
     workFor: (url) => ipcRenderer.invoke('atril:mr:workFor', url),
     openWork: (url) => ipcRenderer.invoke('atril:mr:openWork', url),
     onScoreChange: (cb) => {

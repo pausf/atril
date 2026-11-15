@@ -95,7 +95,8 @@ export interface WorkspaceView extends WorkspaceRecord {
  */
 export type WorkFix = 'worktree' | 'terminal' | 'forget' | 'reveal' | 'settings' | 'git'
 /** W150: what fixes a failed request to Jira, GitHub or GitLab. */
-export type NetFix = 'settings' | 'retry'
+/** `forge`: «Abrir en {forge} ↗», the MR's own page (M50). */
+export type NetFix = 'settings' | 'retry' | 'forge'
 export type WorkRefusal = { error: string; detail?: string; fix?: WorkFix; file?: StateFile }
 export type WorkspaceResult = { workspace: WorkspaceView } | WorkRefusal
 export type RemoveResult = { ok: true } | WorkRefusal
@@ -428,6 +429,8 @@ export type MrPage =
   | { files: MrPageFile[]; cut?: true; reviewers: MrReviewer[] | { error: string; detail?: string; fix?: NetFix }; contract?: string }
   | { error: string; detail?: string; fix?: NetFix }
 export type MrFixCiResult = { sent: string } | { error: string }
+/** M41, M50: `list` when the merge went through but listing again did not. A refusal never rejects. */
+export type MrMergeResult = { merged: true; list?: { error: string; detail: string; fix: NetFix } } | { error: string; detail?: string; fix: NetFix }
 
 export interface MrApi {
   list(): Promise<MrLists>
@@ -457,6 +460,8 @@ export interface MrApi {
   discardDraft(url: string, id: string): Promise<MrDraftsResult>
   /** M46: the diff as files, the reviewers and the contract of an MR of the latest listing. */
   page(url: string): Promise<MrPage>
+  /** M41: merges an MR of Mías that the forge says can merge; main refuses without `confirmed === true`. */
+  merge(url: string, confirmed: boolean): Promise<MrMergeResult>
   /** M33: how an MR of the latest listing opens in Atril. */
   workFor(url: string): Promise<MrWork>
   /** M34: opens it as review session or continued workspace; a record of that kind already there is returned. */

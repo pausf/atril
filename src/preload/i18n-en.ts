@@ -904,4 +904,9 @@ export const EN: Record<string, string> = {
   "Abrir Ajustes del Sistema": "Open System Settings",
   "No he podido guardar tus avisos: el cambio se perderá al cerrar Atril.": "I could not save your notifications: the change will be lost when Atril closes.",
   "{work} choca con otro trabajo": "{work} clashes with another work",
+  "Esta MR no se puede fusionar desde Atril ahora: actualiza": "This MR cannot be merged from Atril right now: refresh",
+  "La MR ha cambiado desde que la abriste: actualiza y vuelve a mirarla.": "The MR has changed since you opened it: refresh and look at it again.",
+  "{forge} no ha dejado fusionar esta MR.": "{forge} did not let this MR merge.",
+  "No he podido volver a listar tus MR.": "I could not list your MRs again.",
+  "Ya se está fusionando esta MR": "This MR is already merging",
 }

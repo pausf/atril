@@ -23,6 +23,7 @@ import { createOutcome } from './forge/outcome'
 import { createQueue, createScorer } from './forge/scores'
 import { createThreads } from './forge/threads'
 import { createPage } from './forge/page'
+import { createMerge } from './forge/merge'
 import { createQaPublish } from './qa-publish'
 import { boxDiff, boxRanges, forgetPlans } from './flow/boxes'
 import { closeQuiet } from './flow/quiet'
@@ -369,6 +370,17 @@ app.whenReady().then(async () => {
     return r
   }
   ipcMain.handle('atril:mr:list', listAllMrs)
+  // M41: merge only what the latest listing has in Mías as mergeable, with its known head and API path.
+  const merger = createMerge({
+    store: secretStore,
+    entry: (url) => {
+      const row = lastMrs?.lists.mine.find((m) => m.url === url)
+      const tgt = guards.scoreTarget(url)
+      return row && tgt ? { list: 'mine', forge: row.forge, ref: tgt.ref, ...(row.head && { head: row.head }), ...(row.mergeable && { mergeable: true }) } : undefined
+    },
+    relist: listAllMrs
+  })
+  ipcMain.handle('atril:mr:merge', (_e, url: unknown, confirmed: unknown) => merger.merge(typeof url === 'string' ? url : '', confirmed === true))
   // W185: MR notices keep coming with the window closed.
   const mrPoll = createMrPoll({ last: () => lastMrs, list: listAllMrs, connected: async () => (await Promise.all(FORGES.map((f) => secretStore.hasSecret(f)))).some((s) => s.saved) })
   if (!SNAPSHOT) mrPoll.start()
