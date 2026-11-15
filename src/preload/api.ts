@@ -358,6 +358,10 @@ export interface MrThread {
   forge: ForgeId
   file?: string
   line?: number
+  /** M18: `old` when the line is a number of the old side (GitHub `LEFT`, GitLab `old_line` alone). */
+  side?: 'old'
+  /** M18: GitHub's `line` is null, so `line` is the original one and no longer in the diff. */
+  outdated?: true
   /** GitHub only: the code line the comment points at. */
   code?: string
   resolved?: boolean
@@ -397,6 +401,32 @@ export interface MrDrafts {
   canSend: boolean
 }
 export type MrDraftsResult = MrDrafts | { error: string }
+
+/** M46: one diff line; `old`/`new` are its numbers on each side (an added line has no old one). */
+export interface MrPageLine {
+  kind: 'context' | 'added' | 'removed'
+  old?: number
+  new?: number
+  text: string
+}
+/** M46: one file of the MR's diff. `cut`: past the 1 MB shown; `tooLarge`: GitLab did not send it. Both carry no lines. */
+export interface MrPageFile {
+  path: string
+  oldPath: string
+  added: number
+  removed: number
+  lines: MrPageLine[]
+  cut?: true
+  tooLarge?: true
+}
+export interface MrReviewer {
+  name: string
+  state: 'approved' | 'changes' | 'commented' | 'pending'
+}
+/** M46: what the page reads when it opens. `cut`: GitHub would not send the diff at all; a failed reviewers request is its own problem. */
+export type MrPage =
+  | { files: MrPageFile[]; cut?: true; reviewers: MrReviewer[] | { error: string; detail?: string; fix?: NetFix }; contract?: string }
+  | { error: string; detail?: string; fix?: NetFix }
 export type MrFixCiResult = { sent: string } | { error: string }
 
 export interface MrApi {
@@ -425,6 +455,8 @@ export interface MrApi {
   /** M30: asks that agent to fix the MR's failing CI. */
   fixCi(url: string): Promise<MrFixCiResult>
   discardDraft(url: string, id: string): Promise<MrDraftsResult>
+  /** M46: the diff as files, the reviewers and the contract of an MR of the latest listing. */
+  page(url: string): Promise<MrPage>
   /** M33: how an MR of the latest listing opens in Atril. */
   workFor(url: string): Promise<MrWork>
   /** M34: opens it as review session or continued workspace; a record of that kind already there is returned. */

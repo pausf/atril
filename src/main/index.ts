@@ -22,6 +22,7 @@ import { createOpenMr, remoteNaming, type MrEntry } from './forge/openmr'
 import { createOutcome } from './forge/outcome'
 import { createQueue, createScorer } from './forge/scores'
 import { createThreads } from './forge/threads'
+import { createPage } from './forge/page'
 import { createQaPublish } from './qa-publish'
 import { boxDiff, boxRanges, forgetPlans } from './flow/boxes'
 import { closeQuiet } from './flow/quiet'
@@ -35,7 +36,7 @@ import { jiraSettings } from './credentials/jira'
 import { searchBoards } from './credentials/boards'
 import type { JiraCreds } from './credentials/check'
 import { doctor, inTerminal, installTool } from './doctor'
-import type { Aviso, NotifyPatch, NotifyPermission, NotifyType, CreateRepoRequest, Mode, MrDrafts, MrDraftsResult, MrItem, MrLists, MrScoreState, MrThreads, SubagentEntry, SubagentLine, UiState } from '../preload/api'
+import type { Aviso, NotifyPatch, NotifyPermission, NotifyType, CreateRepoRequest, Mode, MrDrafts, MrDraftsResult, MrItem, MrLists, MrPage, MrScoreState, MrThreads, SubagentEntry, SubagentLine, UiState } from '../preload/api'
 import { readInbox } from './jira/inbox'
 import { inboxGroups } from './jira/board'
 import { proposeStart, start } from './jira/start'
@@ -465,6 +466,8 @@ app.whenReady().then(async () => {
       : scorer.stateOf(Array.isArray(urls) ? urls.filter((u): u is string => typeof u === 'string') : [])
   )
   const threads = createThreads({ store: secretStore, target: guards.threadTarget })
+  const mrPage = createPage({ store: secretStore, target: guards.threadTarget })
+  ipcMain.handle('atril:mr:page', (_e, url: unknown): Promise<MrPage> => mrPage.read(typeof url === 'string' ? url : ''))
   ipcMain.handle('atril:mr:threads', (_e, url: unknown): Promise<MrThreads> =>
     // ponytail: dev-only, ATRIL_SNAPSHOT_VIEW=mr-thread|mr-lens photographs two believable threads.
     SNAPSHOT && /^mr-(thread|lens)$/.test(process.env['ATRIL_SNAPSHOT_VIEW'] ?? '') ? Promise.resolve(fakeThreads()) : threads.read(typeof url === 'string' ? url : '')

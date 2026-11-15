@@ -20,6 +20,7 @@ interface GhComment {
   path?: string
   line?: number | null
   original_line?: number | null
+  side?: string
   diff_hunk?: string
   user?: { login?: string }
   author?: { username?: string }
@@ -84,7 +85,16 @@ function github(review: GhComment[], issue: GhComment[]): { drafts: Draft[]; gen
     const root = cs.find((c) => c.id === id) ?? cs[0]!
     const line = root.line ?? root.original_line
     const code = root.diff_hunk?.split('\n').at(-1)
-    return { id: String(id), forge: 'github', ...(root.path && { file: root.path }), ...(line != null && { line }), ...(code && { code }), comments: cs.map(comment) }
+    return {
+      id: String(id),
+      forge: 'github',
+      ...(root.path && { file: root.path }),
+      ...(line != null && { line }),
+      ...(root.line == null && line != null && { outdated: true as const }),
+      ...(root.side === 'LEFT' && { side: 'old' as const }),
+      ...(code && { code }),
+      comments: cs.map(comment)
+    }
   })
   return { drafts, general: issue.map(comment) }
 }
@@ -102,12 +112,14 @@ function gitlab(discussions: GlDiscussion[]): { drafts: Draft[]; general: MrComm
     const pos = notes[0]!.position
     const file = pos?.new_path ?? pos?.old_path
     const line = pos?.new_line ?? pos?.old_line
+    const old = pos?.new_line == null && pos?.old_line != null
     const resolvable = notes.filter((n) => n.resolvable)
     drafts.push({
       id: d.id,
       forge: 'gitlab',
       ...(file && { file }),
       ...(line != null && { line }),
+      ...(old && { side: 'old' as const }),
       ...(resolvable.length > 0 && { resolved: resolvable.every((n) => n.resolved) }),
       comments: notes.map(comment)
     })
