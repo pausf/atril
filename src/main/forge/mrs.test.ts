@@ -327,4 +327,64 @@ describe('mr lists', () => {
     expect(gh(r.mine).every((m) => m.ci === 'pass')).toBe(true)
     expect(gh(r.following).filter((m) => m.ci === undefined && m.files === undefined)).toHaveLength(40)
   })
+
+  it('merge state and conflict come from both forges', async () => {
+    const store = await connected()
+    // GitHub: one pull per case, by number.
+    const ghDetail: Record<number, object> = {
+      1: { mergeable: true, mergeable_state: 'clean' },
+      2: { mergeable: true, mergeable_state: 'unstable' },
+      3: { mergeable: true, mergeable_state: 'has_hooks' },
+      4: { mergeable: true, mergeable_state: 'blocked' },
+      5: { mergeable: null, mergeable_state: 'unknown' },
+      6: { mergeable: false, mergeable_state: 'dirty' },
+      7: { mergeable: true, mergeable_state: 'behind' },
+      8: { mergeable: true, mergeable_state: 'draft' }
+    }
+    const gh = githubRoutes({ mine: Object.keys(ghDetail).map((n) => ghHit('pau/web', Number(n), 'pau')) })
+    const glDetail: Record<number, object> = {
+      11: { detailed_merge_status: 'mergeable', has_conflicts: false, target_branch: 'main' },
+      12: { detailed_merge_status: 'broken_status', has_conflicts: true, target_branch: 'develop' },
+      13: { detailed_merge_status: 'not_approved', has_conflicts: false, target_branch: 'main' },
+      14: { has_conflicts: false, target_branch: 'main' }
+    }
+    const gl = gitlabRoutes({ mine: Object.keys(glDetail).map((n) => glMr('grp/x', 5, Number(n), 'pau')) })
+    const { f } = fake(
+      (u) => {
+        const m = /^\/repos\/pau\/web\/pulls\/(\d+)$/.exec(u.pathname)
+        return m ? { ...ghPull('pau/web', Number(m[1]), 'pau'), base: { ref: `base${m[1]}`, repo: { full_name: 'pau/web' } }, ...ghDetail[Number(m[1])] } : gh(u)
+      },
+      (u) => {
+        const m = /^\/api\/v4\/projects\/5\/merge_requests\/(\d+)$/.exec(u.pathname)
+        return m ? { ...glMr('grp/x', 5, Number(m[1]), 'pau'), ...glDetail[Number(m[1])] } : gl(u)
+      }
+    )
+    const r = await listMrs(store, f)
+    const row = (forge: string, n: number) => {
+      const m = r.mine.find((x) => x.forge === forge && x.url.endsWith(`/${n}`))!
+      return { target: m.target, mergeable: m.mergeable, conflict: m.conflict }
+    }
+    // GitHub: base.ref is the target; mergeable only with a clean, unstable or has_hooks state.
+    expect(row('github', 1)).toEqual({ target: 'base1', mergeable: true, conflict: undefined })
+    expect(row('github', 2)).toEqual({ target: 'base2', mergeable: true, conflict: undefined })
+    expect(row('github', 3)).toEqual({ target: 'base3', mergeable: true, conflict: undefined })
+    expect(row('github', 4)).toEqual({ target: 'base4', mergeable: undefined, conflict: undefined })
+    expect(row('github', 5)).toEqual({ target: 'base5', mergeable: undefined, conflict: undefined })
+    expect(row('github', 6)).toEqual({ target: 'base6', mergeable: undefined, conflict: true })
+    expect(row('github', 7)).toEqual({ target: 'base7', mergeable: undefined, conflict: undefined })
+    expect(row('github', 8)).toEqual({ target: 'base8', mergeable: undefined, conflict: undefined })
+    // GitLab: target_branch; mergeable only from detailed_merge_status, conflict from has_conflicts.
+    expect(row('gitlab', 11)).toEqual({ target: 'main', mergeable: true, conflict: undefined })
+    expect(row('gitlab', 12)).toEqual({ target: 'develop', mergeable: undefined, conflict: true })
+    expect(row('gitlab', 13)).toEqual({ target: 'main', mergeable: undefined, conflict: undefined })
+    expect(row('gitlab', 14)).toEqual({ target: 'main', mergeable: undefined, conflict: undefined })
+  })
+
+  it('a row whose detail was not fetched carries no merge state', async () => {
+    const store = await connected(['github'])
+    const gh = githubRoutes({ mine: [ghHit('pau/web', 9, 'pau')] })
+    const { f } = fake((u) => (u.pathname === '/repos/pau/web/pulls/9' ? undefined : gh(u)), () => undefined)
+    const [m] = (await listMrs(store, f)).mine
+    expect([m!.target, m!.mergeable, m!.conflict]).toEqual([undefined, undefined, undefined])
+  })
 })

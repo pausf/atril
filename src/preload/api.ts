@@ -281,6 +281,10 @@ export interface MrItem {
   notes?: number
   /** The source branch (GitHub `head.ref` from the detail call, GitLab `source_branch`). */
   branch?: string
+  /** M39, from the detail call: the target branch, and whether the forge says it merges or conflicts; unknown is unset. */
+  target?: string
+  mergeable?: true
+  conflict?: true
 }
 
 export type MrListName = 'mine' | 'review' | 'following'

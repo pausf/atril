@@ -236,7 +236,7 @@ Tests en rojo primero, caja por caja. Después, la app real con Playwright a ~90
 
 ## Checklist
 
-- [ ] `MrItem` gana `target`, `mergeable`, `conflict`; `details()` los rellena en ambas forjas · Closes: M39
+- [x] `MrItem` gana `target`, `mergeable`, `conflict`; `details()` los rellena en ambas forjas · Closes: M39
 - [ ] `threads.ts` con el lado de cada hilo; `src/main/forge/page.ts` (`parseDiff`, revisores, contrato, tope de 1 MB); IPC `atril:mr:page` y preload · Closes: M18, M46
 - [ ] `src/main/forge/merge.ts` con sus guardas, una vez, errores por estado y nuevo listado; IPC `atril:mr:merge` y preload · waits on box 1 · Closes: M41, M50
 - [ ] `lenses.ts`: la petición (MR y `The ask, verbatim` del trabajo, sin enlaces) delante del diff · Closes: M49

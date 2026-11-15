@@ -16,6 +16,7 @@ const GH_PASS = ['success', 'neutral', 'skipped']
 const GL_FAIL = ['failed', 'canceled']
 const GL_RUNNING = ['running', 'pending', 'created', 'preparing', 'waiting_for_resource', 'scheduled']
 const GL_PASS = ['success', 'skipped', 'manual']
+const GH_MERGEABLE = ['clean', 'unstable', 'has_hooks']
 
 /** M4. A conclusion the contract does not name (stale…) leaves the CI unknown. */
 export function ciGithub(runs: Array<{ status?: string; conclusion?: string | null }>): CiState | undefined {
@@ -44,7 +45,9 @@ interface GhPull {
   number: number
   updated_at: string
   repository_url?: string
-  base?: { repo?: { full_name?: string } }
+  base?: { ref?: string; repo?: { full_name?: string } }
+  mergeable?: boolean | null
+  mergeable_state?: string
   head?: { sha?: string; ref?: string }
   additions?: number
   deletions?: number
@@ -65,6 +68,9 @@ interface GlMr {
   changes_count?: string
   user_notes_count?: number
   head_pipeline?: { status?: string } | null
+  target_branch?: string
+  detailed_merge_status?: string
+  has_conflicts?: boolean
 }
 
 const hasNext = (res: Response): boolean => /rel="next"/.test(res.headers.get('link') ?? '') || !!res.headers.get('x-next-page')
@@ -123,9 +129,12 @@ async function details(forge: ForgeId, get: Get, row: Row): Promise<void> {
     const files = parseInt(m.changes_count ?? '', 10)
     if (!Number.isNaN(files)) row.files = files
     row.ci = ciGitlab(m.head_pipeline?.status)
+    Object.assign(row, m.target_branch && { target: m.target_branch }, m.detailed_merge_status === 'mergeable' && { mergeable: true }, m.has_conflicts === true && { conflict: true })
     return
   }
   const p = r.body as GhPull
+  // M39: GitHub computes `mergeable` apart; null while it does, and then neither shows.
+  Object.assign(row, p.base?.ref && { target: p.base.ref }, p.mergeable === true && GH_MERGEABLE.includes(p.mergeable_state ?? '') && { mergeable: true }, p.mergeable === false && { conflict: true })
   Object.assign(row, { added: p.additions, removed: p.deletions, files: p.changed_files }, p.head?.sha && { head: p.head.sha }, p.head?.ref && { branch: p.head.ref })
   // No head sha, no check runs to ask for: CI stays unknown rather than a false forge error.
   if (!p.head?.sha) return
