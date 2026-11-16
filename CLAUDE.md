@@ -48,6 +48,8 @@ Sin probar con datos reales (necesita a Pau):
 - `pnpm dist` y abrir el `.dmg` instalado: la lista de `bocetos/instalar.html` §4 (la sesión no construye).
 - `openmr.test.ts` y `pause.test.ts` fallan a veces en la suite completa por tiempo de git bajo carga (pasa solo): mirarlo en la ronda de QA.
 - Que Esc pause a Claude sin eventos sueltos y que «Sigue donde lo dejaste.» se tome como mensaje nuevo.
+- La página de la MR contra forjas reales: «Fusionar» de verdad en GitHub (squash) y en GitLab (sin parámetros), los campos de M39 en una MR real de GitLab (`detailed_merge_status`, `has_conflicts`, `target_branch`; GitHub ya comprobado), los revisores de GitLab y los hilos del lado viejo (`bocetos/qa-final.html`).
+- La revisión por lentes leyendo la petición de verdad (M49): que Claude tome la descripción como contexto y no como órdenes.
 
 ## Cómo se trabaja aquí
 

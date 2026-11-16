@@ -65,7 +65,7 @@ describe('mr scores in the window', () => {
     expect(api.mrApi.open).not.toHaveBeenCalled()
   })
 
-  it('the score view puts the measures first', async () => {
+  it('the score card puts the measures first', async () => {
     const u = (n: number) => `https://github.com/a/b/pull/${n}`
     const api = mockApi({
       mrs: lists({
@@ -104,26 +104,24 @@ describe('mr scores in the window', () => {
     act(() => api.pushScore(u(6), done({ head: 'c7' })))
     expect(line(s.review, 2).textContent).not.toContain('De un commit anterior')
 
-    // The view: what Atril measured, then Claude's view, and what Claude did not see.
+    // The chips open the page; its Puntuación card: what Atril measured, then Claude's view, and what Claude did not see.
+    const card = () => within(screen.getByRole('complementary', { name: 'Esta MR' })).getByRole('heading', { name: 'Puntuación' }).closest('section') as HTMLElement
     await user.click(within(s.mine).getByRole('button', { name: /M · D4 · R2/ }))
-    const dialog = await screen.findByRole('dialog', { name: 'Calendario' })
-    const text = dialog.textContent!
-    const order = ['Lo que mide Atril', 'Tamaño M', '+120 −30', '6 archivos', 'Cambia tests', 'Lo que dice Claude', 'Dificultad 4/5', 'Riesgo 2/5', 'Adds a provincial holiday calendar.', 'Touches the date logic.', 'src/calendar.ts']
+    await screen.findByRole('region', { name: 'Calendario' })
+    const text = card().textContent!
+    const order = ['Lo que mide Atril', 'Tamaño M', '+120 −30', '6 archivos', 'Cambia tests', 'Lo que dice Claude', 'Dificultad 4 de 5', 'Riesgo 2 de 5', 'Adds a provincial holiday calendar.', 'Touches the date logic.', 'src/calendar.ts']
     const at = order.map((x) => text.indexOf(x))
     expect(at.every((i) => i >= 0), JSON.stringify(at)).toBe(true)
     expect([...at].sort((a, b) => a - b)).toEqual(at)
     expect(text).toContain('Claude vio 117 de 300 KB')
     expect(text).not.toContain('De un commit anterior')
 
-    await user.keyboard('{Escape}')
-    expect(screen.queryByRole('dialog')).toBeNull()
-
-    // A stale score says so in the view too.
+    // A stale score says so in the card too.
     await user.click(within(line(s.review, 1)).getByRole('button', { name: /M · D4 · R2/ }))
-    const stale = await screen.findByRole('dialog', { name: 'Antigua' })
-    expect(stale.textContent).toContain('De un commit anterior')
-    expect(stale.textContent).not.toContain('Claude vio')
-    await user.click(within(stale).getByRole('button', { name: 'Puntuar de nuevo' }))
+    await screen.findByRole('region', { name: 'Antigua' })
+    expect(card().textContent).toContain('De un commit anterior')
+    expect(card().textContent).not.toContain('Claude vio')
+    await user.click(within(card()).getByRole('button', { name: 'Puntuar de nuevo' }))
     expect(api.mrApi.score).toHaveBeenCalledWith(u(5))
     // Asked again, the row reads its new state.
     await vi.waitFor(() => expect(line(s.review, 1).textContent).toContain('En cola'))

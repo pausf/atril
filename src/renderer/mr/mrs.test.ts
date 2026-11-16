@@ -74,11 +74,11 @@ describe('mr screen', () => {
     ])
     expect(screen.getByRole('alert').querySelector('b')?.textContent).toBe('GitLab está fallando ahora mismo.')
 
-    // M5 (amended): the row opens its MR view; «Abrir en GitLab» opens the browser.
+    // M5 (amended): the row opens its MR page; «Abrir en GitLab ↗» opens the browser.
     await user.click(within(review).getAllByRole('button')[1]!)
-    const view = await screen.findByRole('dialog', { name: 'Nuevo filtro' })
+    const view = await screen.findByRole('region', { name: 'Nuevo filtro' })
     expect(api.mrApi.open).not.toHaveBeenCalled()
-    await user.click(within(view).getByRole('button', { name: 'Abrir en GitLab' }))
+    await user.click(within(view).getByRole('button', { name: 'Abrir en GitLab ↗' }))
     expect(api.mrApi.open).toHaveBeenCalledWith('https://git.example.com/grp/shop/-/merge_requests/7')
   })
 

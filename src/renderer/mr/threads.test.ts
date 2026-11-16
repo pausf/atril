@@ -26,13 +26,15 @@ afterEach(() => {
 })
 
 async function openView(user: ReturnType<typeof userEvent.setup>, title: string) {
-  await user.click(await screen.findByRole('button', { name: /^MR/ }))
+  if (!screen.queryByRole('heading', { level: 1, name: /^MR/ })) await user.click(await screen.findByRole('button', { name: /^MR/ }))
   await user.click(await screen.findByRole('button', { name: new RegExp(`^${title}`) }))
-  return screen.findByRole('dialog', { name: title })
+  const view = await screen.findByRole('region', { name: title })
+  await user.click(within(view).getByRole('tab', { name: /^Conversación/ }))
+  return view
 }
 
 describe('mr threads in the window', () => {
-  it('a row opens the mr view with its threads', async () => {
+  it('threads show their comments, place and state', async () => {
     const api = mockApi({
       mrs: lists({ review: [mr(GH, { title: 'Envío con IVA' })], following: [mr(GL, { forge: 'gitlab', title: 'Nuevo filtro', project: 'grp/shop' })] }),
       threads: { [GH]: { threads: [INLINE, GENERAL], more: true }, [GL]: { threads: [RESOLVED, OPEN], more: false } }
@@ -40,16 +42,12 @@ describe('mr threads in the window', () => {
     const user = userEvent.setup()
     render(createElement(App))
 
-    // M5: the row opens the view, not the browser.
     const view = await openView(user, 'Envío con IVA')
-    expect(api.mrApi.open).not.toHaveBeenCalled()
     expect(api.mrApi.threads).toHaveBeenCalledWith(GH)
     expect(view.textContent).toContain('acme/web')
-    await user.click(within(view).getByRole('button', { name: 'Abrir en GitHub' }))
-    expect(api.mrApi.open).toHaveBeenCalledWith(GH)
 
-    // M24: the header counts the threads waiting for you; M19's note when the forge had more.
-    expect(await within(view).findByText('Te toca responder: 2')).toBeTruthy()
+    // M24: the tab counts the threads waiting for you; M19's note when the forge had more.
+    expect(await within(view).findByRole('tab', { name: 'Conversación 2 · te toca 2' })).toBeTruthy()
     expect(within(view).getByText('Hay más en GitHub: “Te toca responder” puede estar incompleto')).toBeTruthy()
 
     // M18: the inline thread with its file, line and code, oldest first; General apart.
@@ -69,7 +67,7 @@ describe('mr threads in the window', () => {
 
     // M23: Escape closes; with unsent text it asks first.
     await user.keyboard('{Escape}')
-    expect(screen.queryByRole('dialog')).toBeNull()
+    expect(screen.queryByRole('region', { name: 'Envío con IVA' })).toBeNull()
 
     const gl = await openView(user, 'Nuevo filtro')
     const [resolved, open] = await within(gl).findAllByRole('article')
@@ -77,18 +75,18 @@ describe('mr threads in the window', () => {
     expect(resolved!.textContent).toContain('Resuelto')
     expect(open!.textContent).toContain('app/b.rb')
     expect(open!.textContent).toContain('Sin resolver')
-    expect(within(gl).getByText('Te toca responder: 0')).toBeTruthy()
-    expect(within(gl).getByRole('button', { name: 'Abrir en GitLab' })).toBeTruthy()
+    expect(within(gl).getByRole('tab', { name: 'Conversación 2' })).toBeTruthy()
+    expect(within(gl).getByRole('button', { name: 'Abrir en GitLab ↗' })).toBeTruthy()
 
     await user.type(within(open!).getByRole('textbox', { name: 'Responder' }), 'Lo miro')
     const ask = vi.spyOn(window, 'confirm').mockReturnValue(false)
     await user.keyboard('{Escape}')
-    expect(ask).toHaveBeenCalledWith('Tienes una respuesta sin enviar. ¿Cerrar y descartarla?')
-    expect(screen.getByRole('dialog', { name: 'Nuevo filtro' })).toBeTruthy()
+    expect(ask).toHaveBeenCalledWith('Tienes una respuesta sin enviar. ¿Salir y descartarla?')
+    expect(screen.getByRole('region', { name: 'Nuevo filtro' })).toBeTruthy()
     expect((within(open!).getByRole('textbox', { name: 'Responder' }) as HTMLTextAreaElement).value).toBe('Lo miro')
     ask.mockReturnValue(true)
     await user.keyboard('{Escape}')
-    expect(screen.queryByRole('dialog')).toBeNull()
+    expect(screen.queryByRole('region', { name: 'Nuevo filtro' })).toBeNull()
   })
 
   it('a reply is sent with one click and kept on failure', async () => {
@@ -118,7 +116,7 @@ describe('mr threads in the window', () => {
     expect(box.value).toBe('')
     // Your own last word: no longer your turn.
     expect(inline!.textContent).not.toContain('Te toca responder')
-    expect(within(view).getByText('Te toca responder: 1')).toBeTruthy()
+    expect(within(view).getByRole('tab', { name: 'Conversación 2 · te toca 1' })).toBeTruthy()
 
     // A failure keeps the text and says why.
     vi.mocked(api.mrApi.reply).mockResolvedValueOnce({ error: 'GitHub ha respondido 403' })

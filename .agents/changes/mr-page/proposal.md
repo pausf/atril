@@ -53,6 +53,21 @@ Durable decisions: the ones in Prior decisions below (la MR se abre en página, 
 - Q: ¿Dónde se enganchan el tutorial y las fotos de dev? → A: `data-tour="mr-tools"` va en «Revisar ▾»; los ganchos de foto `mr-thread` y `mr-lens` apuntan a la pestaña Conversación de la página y a los borradores en Código (Approach y última caja) (assumed).
 - Q: ¿Cómo se prueba un criterio con varios `shall` y una sola Proof? → A: cada uno lleva «One test holds every clause, one assertion each.» (o su variante por caso o por lado) (assumed).
 
+### Session 2026-11-15 (construcción)
+- Q: ¿Archivos fuera de «In»? → A: `src/renderer/mockApi.ts` (gana `page` y `merge`, como pide Constraints), `src/renderer/avisos/avisos.test.ts` (la prueba de V6 busca la página, no el modal), `src/main/forge/linecomments.test.ts` (M36 contaba toda lectura de la MR en GitLab; con M49 la revisión lee una más, y la prueba cuenta ahora solo la de antes de publicar), `bocetos/qa-final.html` y `CLAUDE.md` («Sin probar»), por el encargo de la última caja.
+- Q: ¿`page.ts` usa `forgeGet`? → A: no: `forgeGet` solo lleva la frase y M46 pide frase, detalle y arreglo por parte; `page.ts` tiene su propio GET con `netProblem`, `redirect: 'error'` y 10 s, y reutiliza `fetchDiff` (assumed).
+- Q: ¿Cómo se ve el salto entre dos trozos del diff? → A: las líneas solo son contexto, añadida o borrada (M46); la ventana marca con una raya discontinua la línea donde salta la numeración (assumed).
+- Q: ¿Un hilo cuyo archivo se renombró? → A: se busca por la ruta nueva y, si no, por la vieja (assumed).
+- Q: ¿Dónde va `data-tour="mr-tools"` sin página abierta? → A: en «Revisar ▾» mientras hay una página; sin página, en el «Puntuar» de las filas, para que el paso del tutorial siempre tenga a qué apuntar (W23 no cambia) (assumed).
+- Q: ¿Qué botón lleva un fallo de `mr.page` con arreglo `settings`? → A: «Abrir Ajustes» y, al lado, «Volver a comprobar» (M51 lo pide siempre) (assumed).
+- Q: ¿Fusionar sin token guardado? → A: la negativa general de M41, sin petición (assumed).
+- Q: ¿Y si `relist()` lanza tras fusionar? → A: `list` con «No he podido volver a listar tus MR.» y `retry` (assumed).
+- Q: ¿La ventana vuelve a listar tras fusionar? → A: sí, cuando la respuesta no trae `list`: main ya listó, pero la ventana lee su propia lista; son las peticiones de un listado más (assumed).
+- Q: ¿Qué pasa con las fichas «M · D4 · R2» de la fila? → A: abren la página de esa MR, con la puntuación en su tarjeta; `ScoreView` deja de ser modal y es el cuerpo de la tarjeta (assumed).
+- Q: ¿Qué queda de la sección «Libretto»? → A: solo tras una revisión o un fallo: «De un commit anterior», el fallo, «Libretto no ha encontrado nada que comentar» y los borradores sin línea; Comentar está en «Revisar ▾» (M44, M45) (assumed).
+- Q: ¿La entrada de la revisión sin título, descripción ni petición? → A: lleva igual las dos líneas de Atril («the author's request…» y «the diff follows») (assumed).
+- Boxes 5–9 land in one commit with one gate: box 5 alone (MrView removed) breaks tests that box 7 renames (`openmr.test`) and the palette test that expected the old dialog (now the page region, outside «In»: `src/renderer/palette/palette.test.ts`). Cutting them apart would mean commits that are red in between (assumed).
+
 ## Outcomes
 
 - Pulsar una MR abre su página dentro de la pantalla MR, sin modal: la bandeja a la izquierda con esa fila marcada, en el centro su código con cada hilo y cada borrador de Libretto en su línea, y a la derecha la puntuación, «Contra su spec», los revisores y la CI.
@@ -240,8 +255,8 @@ Tests en rojo primero, caja por caja. Después, la app real con Playwright a ~90
 - [x] `threads.ts` con el lado de cada hilo; `src/main/forge/page.ts` (`parseDiff`, revisores, contrato, tope de 1 MB); IPC `atril:mr:page` y preload · Closes: M18, M46
 - [x] `src/main/forge/merge.ts` con sus guardas, una vez, errores por estado y nuevo listado; IPC `atril:mr:merge` y preload · waits on box 1 · Closes: M41, M50
 - [x] `lenses.ts`: la petición (MR y `The ask, verbatim` del trabajo, sin enlaces) delante del diff · Closes: M49
-- [ ] Ventana · marco: bandeja en columna, página y columna derecha en `MrScreen`, salir con Escape / «‹ Tus MR» / otra fila, `openUrl`, ganchos de foto; «En conflicto» en la fila; `MrView.tsx` retirado; Escape por capas; el `Problem` de una página que no carga · waits on boxes 1, 2 · Closes: M5, M23, M40, M43, M51
-- [ ] Ventana · Código y Conversación: archivos con sus líneas, hilos y borradores en su línea, avisos de corte · waits on box 5 · Closes: M24, M29, M47
-- [ ] Ventana · cabecera y tarjetas: «Revisar ▾» con teclado, «Seguir en Atril»/«Ir al trabajo», «Abrir en {forja} ↗»; Puntuación, Contra su spec, Revisores, CI con «Arreglar CI con Claude»; cada tarjeta con su propio error · waits on box 5 · Closes: M13, M15, M25, M26, M31, M35, M44, M45, M48
-- [ ] Ventana · «Fusionar» con confirmación y sus errores; `NetFix` `'forge'` en `Problem` · waits on boxes 3, 7 · Closes: M42, M50
-- [ ] Textos de los pasos `mr` y `mr-tools` con `data-tour="mr-tools"` en «Revisar ▾»; ganchos de foto `mr-thread` (pestaña Conversación) y `mr-lens` (borradores en Código); entradas en inglés, S16/S19 en verde; prueba en la app real con Playwright; foto, `bocetos/novedades.html`, `bocetos/fase1-nucleo.html`, `bocetos/qa-final.html` y «Sin probar» de CLAUDE.md; en el commit de aterrizaje, las líneas `Governs:` de `mr` (gana `src/main/forge/page.ts src/main/forge/merge.ts`) y `workspaces` (los excluye) a mano, porque `land.py` no las mueve · waits on boxes 1–8 · Closes: V6
+- [x] Ventana · marco: bandeja en columna, página y columna derecha en `MrScreen`, salir con Escape / «‹ Tus MR» / otra fila, `openUrl`, ganchos de foto; «En conflicto» en la fila; `MrView.tsx` retirado; Escape por capas; el `Problem` de una página que no carga · waits on boxes 1, 2 · Closes: M5, M23, M40, M43, M51
+- [x] Ventana · Código y Conversación: archivos con sus líneas, hilos y borradores en su línea, avisos de corte · waits on box 5 · Closes: M24, M29, M47
+- [x] Ventana · cabecera y tarjetas: «Revisar ▾» con teclado, «Seguir en Atril»/«Ir al trabajo», «Abrir en {forja} ↗»; Puntuación, Contra su spec, Revisores, CI con «Arreglar CI con Claude»; cada tarjeta con su propio error · waits on box 5 · Closes: M13, M15, M25, M26, M31, M35, M44, M45, M48
+- [x] Ventana · «Fusionar» con confirmación y sus errores; `NetFix` `'forge'` en `Problem` · waits on boxes 3, 7 · Closes: M42, M50
+- [x] Textos de los pasos `mr` y `mr-tools` con `data-tour="mr-tools"` en «Revisar ▾»; ganchos de foto `mr-thread` (pestaña Conversación) y `mr-lens` (borradores en Código); entradas en inglés, S16/S19 en verde; prueba en la app real con Playwright; foto, `bocetos/novedades.html`, `bocetos/fase1-nucleo.html`, `bocetos/qa-final.html` y «Sin probar» de CLAUDE.md; en el commit de aterrizaje, las líneas `Governs:` de `mr` (gana `src/main/forge/page.ts src/main/forge/merge.ts`) y `workspaces` (los excluye) a mano, porque `land.py` no las mueve · waits on boxes 1–8 · Closes: V6

@@ -168,9 +168,9 @@ describe('command palette', () => {
     expect(rail(/Trabajo/).getAttribute('aria-current')).toBe('page')
     expect(await screen.findByRole('heading', { name: 'feat/festivos' })).toBeTruthy()
 
-    // An MR opens its view on the MR screen.
+    // An MR opens its page on the MR screen (M40).
     await run('envio')
-    expect(await screen.findByRole('dialog', { name: 'Envío con IVA' })).toBeTruthy()
+    expect(await screen.findByRole('region', { name: 'Envío con IVA' })).toBeTruthy()
     expect(rail(/MR/).getAttribute('aria-current')).toBe('page')
     await user.keyboard('{Escape}')
 

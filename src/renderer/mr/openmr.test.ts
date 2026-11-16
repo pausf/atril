@@ -30,12 +30,12 @@ afterEach(() => {
 async function openView(user: ReturnType<typeof userEvent.setup>, title: string) {
   await user.click(await screen.findByRole('button', { name: /^MR/ }))
   await user.click(await screen.findByRole('button', { name: new RegExp(`^${title}`) }))
-  return screen.findByRole('dialog', { name: title })
+  return screen.findByRole('region', { name: title })
 }
 const selectedRow = (): string | null | undefined => document.querySelector('.ws-row[aria-pressed="true"]')?.textContent
 
-describe('open an mr in atril from its view (M35)', () => {
-  it('the mr view opens or finds its workspace', async () => {
+describe('open an mr in atril from its page (M35)', () => {
+  it('the mr page opens or finds its workspace', async () => {
     const dead = workspace('old1', 'feat/done', false)
     const api = mockApi({
       workspaces: [workspace('w1', 'feat/other'), dead],
@@ -59,18 +59,19 @@ describe('open an mr in atril from its view (M35)', () => {
     const user = userEvent.setup()
     render(createElement(App))
 
-    // Review: beside M25's «Revisar con Libretto»; pressing it ends on Trabajo with the review session selected.
+    // Review: «A fondo» in «Revisar ▾»; pressing it ends on Trabajo with the review session selected.
     let view = await openView(user, 'Filtros')
-    await within(view).findByRole('button', { name: 'Revisar con Libretto' })
-    await user.click(await within(view).findByRole('button', { name: 'Revisar en Atril' }))
+    await user.click(await within(view).findByRole('button', { name: 'Revisar ▾' }))
+    await user.click(await screen.findByRole('menuitem', { name: /^A fondo/ }))
     expect(api.mrApi.openWork).toHaveBeenCalledWith(REVIEW)
-    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Filtros' })).toBeNull())
+    await waitFor(() => expect(screen.queryByRole('region', { name: 'Filtros' })).toBeNull())
     await waitFor(() => expect(selectedRow()).toContain('feat/filters'))
     expect(selectedRow()).toContain('Revisión')
 
-    // Continue: Mías says «Seguir en Atril».
+    // Continue: Mías says «Seguir en Atril» in the header.
     view = await openView(user, 'Calendario')
     expect(within(view).queryByRole('button', { name: 'Revisar en Atril' })).toBeNull()
+    expect((await within(view).findByRole('button', { name: 'Seguir en Atril' })).closest('.mr-page-head')).toBeTruthy()
     await user.click(await within(view).findByRole('button', { name: 'Seguir en Atril' }))
     expect(api.mrApi.openWork).toHaveBeenCalledWith(MINE)
     await waitFor(() => expect(selectedRow()).toContain('feat/calendar'))
@@ -89,10 +90,10 @@ describe('open an mr in atril from its view (M35)', () => {
     await user.click(within(view).getByRole('button', { name: 'Ajustes → Repos' }))
     expect(await screen.findByRole('heading', { name: 'Repos' })).toBeTruthy()
 
-    // An error stays in the view, as main says it.
+    // An error stays on the page, as main says it.
     view = await openView(user, 'Rota')
     await user.click(await within(view).findByRole('button', { name: 'Seguir en Atril' }))
     expect((await within(view).findByRole('alert')).textContent).toBe('No se pudo traer la rama: fatal: couldn\'t find remote ref feat/rota')
-    expect(screen.getByRole('dialog', { name: 'Rota' })).toBeTruthy()
+    expect(screen.getByRole('region', { name: 'Rota' })).toBeTruthy()
   })
 })

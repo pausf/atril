@@ -1828,11 +1828,6 @@ kbd {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.dlg.edmodal.scoremodal {
-  width: min(720px, 94vw);
-  height: auto;
-  max-height: 88vh;
-}
 .score-body {
   padding: 16px 22px 22px;
   overflow: auto;
@@ -1872,21 +1867,6 @@ kbd {
 .score-stale {
   color: var(--chg-mod);
 }
-.dlg.edmodal.mrmodal {
-  width: min(820px, 94vw);
-  height: auto;
-  max-height: 88vh;
-}
-.mr-threads {
-  padding: 12px 22px 22px;
-  overflow: auto;
-  font-size: 13.5px;
-  line-height: 1.5;
-}
-.mrmodal .tag {
-  background: var(--ed-3);
-  color: var(--ed-2);
-}
 .mr-thread {
   border: 1px solid var(--ed-7);
   border-radius: 10px;
@@ -1903,18 +1883,6 @@ kbd {
   align-items: center;
   gap: 8px;
   overflow-wrap: anywhere;
-}
-.mrmodal .tag.your-turn {
-  color: var(--ed-17);
-}
-.mr-open {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-.mr-open .btn {
-  white-space: nowrap;
 }
 .mr-lens {
   border: 1px solid var(--ed-7);
@@ -4480,4 +4448,385 @@ button.fx-bt {
 }
 .nt-card .problem .btn + .btn {
   margin-left: 6px;
+}
+
+/* M43: the MR page — inbox column, page, side cards. */
+.mr-screen.open {
+  max-width: none;
+}
+.mr-layout {
+  display: grid;
+  grid-template-columns: minmax(190px, 240px) minmax(0, 1fr) minmax(180px, 230px);
+  gap: 18px;
+  align-items: start;
+}
+.mr-inbox .mr-line {
+  flex-wrap: wrap;
+  gap: 2px 8px;
+}
+.mr-inbox .mr-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 8px;
+  padding: 6px 10px;
+}
+.mr-inbox .mr-row .s {
+  flex: 1 1 100%;
+  white-space: normal;
+}
+.mr-inbox .mr-row .who,
+.mr-inbox .mr-row .size {
+  display: none;
+}
+.mr-inbox .mr-score {
+  padding-left: 10px;
+}
+.mr-row[aria-current='true'] {
+  border-color: var(--run);
+  box-shadow: inset 3px 0 0 var(--run);
+}
+.mr-row .tag.conflict,
+.mr-card .conflict {
+  color: var(--bad-text);
+}
+.mr-page {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+.mr-page .back {
+  align-self: flex-start;
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  font-size: 12px;
+  color: var(--sub);
+  cursor: pointer;
+}
+.mr-page .back:hover {
+  color: var(--text);
+}
+.mr-page .sub {
+  font-size: 12px;
+  color: var(--sub);
+  overflow-wrap: anywhere;
+}
+.mr-page .mr-conflict {
+  color: var(--bad-text);
+}
+.mr-page-title {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.mr-page-title h2 {
+  margin: 0;
+  font-size: 20px;
+  letter-spacing: -0.02em;
+  flex: 1 1 220px;
+  overflow-wrap: anywhere;
+}
+.mr-page-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+/* Pau: header buttons sized to their short text, never wide or tall. */
+.mr-page-head .btn,
+.mr-card .btn,
+.mr-page .mr-thread .btn {
+  padding: 2px 11px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.mr-tabs {
+  display: flex;
+  gap: 2px;
+  border-bottom: 1px solid var(--line);
+}
+.mr-tabs button {
+  border: 0;
+  background: none;
+  color: var(--sub);
+  font: inherit;
+  font-size: 12.5px;
+  padding: 6px 10px;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+}
+.mr-tabs button.on {
+  color: var(--text);
+  border-bottom-color: var(--text);
+  font-weight: 600;
+}
+.mr-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+.mr-file {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--card);
+  overflow: hidden;
+}
+.mr-file-h {
+  margin: 0;
+  padding: 6px 10px;
+  font: 600 12px ui-monospace, Menlo, monospace;
+  background: var(--chip);
+  overflow-wrap: anywhere;
+}
+.mr-side {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 12.5px;
+  min-width: 0;
+}
+.mr-card {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--card);
+  padding: 10px 12px;
+  overflow-wrap: anywhere;
+}
+.mr-card h3 {
+  margin: 0 0 4px;
+  font-size: 12.5px;
+}
+.mr-page .mr-thread,
+.mr-page .mr-lens {
+  border-color: var(--line);
+  background: var(--card);
+  margin: 0;
+}
+.mr-page .mr-thread.you {
+  border-color: var(--you);
+}
+.mr-page .mr-thread .tag,
+.mr-page .mr-lens .tag {
+  background: var(--chip);
+  color: var(--text);
+}
+.mr-page .mr-thread .tag.your-turn {
+  color: var(--you-text);
+}
+.mr-page .mr-code,
+.mr-page .mr-draft {
+  background: var(--chip);
+  color: var(--text);
+}
+.mr-page .mr-comment .age,
+.mr-page .mr-draft-place {
+  color: var(--sub);
+}
+.mr-page .mr-thread textarea {
+  background: var(--card);
+  color: var(--text);
+  border-color: var(--faint);
+}
+.mr-file-h {
+  display: flex;
+  gap: 8px;
+  justify-content: space-between;
+}
+.mr-file-n {
+  font-weight: 400;
+  color: var(--sub);
+  white-space: nowrap;
+}
+.mr-file-note {
+  margin: 6px 10px;
+}
+.mr-file > .mr-thread {
+  margin: 8px;
+}
+/* M47: both numbers, the sign and the code; added and removed reuse Trabajo's diff tokens. */
+.mr-lines {
+  overflow-x: auto;
+  font: 12px/1.5 ui-monospace, Menlo, monospace;
+}
+.mr-ln {
+  display: grid;
+  grid-template-columns: 3.2em 3.2em 1.2em minmax(0, 1fr);
+  min-width: max-content;
+}
+.mr-ln.gap {
+  border-top: 1px dashed var(--faint);
+}
+.mr-ln .ln-o,
+.mr-ln .ln-n {
+  color: var(--sub);
+  text-align: right;
+  padding-right: 6px;
+  user-select: none;
+}
+.mr-ln .ln-c {
+  color: var(--sub);
+  text-align: center;
+  user-select: none;
+}
+.mr-ln code {
+  font: inherit;
+  white-space: pre;
+  background: none;
+  padding: 0;
+  color: inherit;
+}
+.mr-ln.added {
+  background: var(--diff-add-bg);
+}
+.mr-ln.removed {
+  background: var(--diff-del-bg);
+}
+.mr-lines > .mr-thread,
+.mr-onl {
+  margin: 6px 8px;
+  font: 13px/1.5 -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
+  white-space: normal;
+}
+.mr-page .mr-draft {
+  border: 1px dashed var(--faint);
+}
+.mr-draft-actions .btn {
+  padding: 2px 11px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+/* M45: «Revisar ▾» and its levels; the long texts live in the menu, not on buttons. */
+.rvw {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.rvst {
+  font-size: 12px;
+  color: var(--sub);
+}
+.rvst:empty {
+  display: none;
+}
+.rvch {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 6px);
+  left: 0;
+  width: 260px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: 0 12px 30px var(--shadow);
+  padding: 4px;
+}
+.rvo {
+  display: grid;
+  gap: 1px;
+  width: 100%;
+  text-align: left;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: var(--text);
+  border-radius: 8px;
+  padding: 7px 10px;
+  cursor: pointer;
+}
+.rvo:hover,
+.rvo:focus-visible {
+  background: var(--hover);
+  outline: none;
+}
+.rvo[aria-disabled='true'] {
+  color: var(--sub);
+  cursor: default;
+}
+.rvo b {
+  font-size: 13px;
+}
+.rvo span {
+  font-size: 12px;
+  color: var(--sub);
+}
+.mr-none {
+  margin: 0;
+}
+.mr-card p {
+  margin: 2px 0 6px;
+}
+.mr-card .score-body {
+  padding: 0;
+  font-size: 12.5px;
+}
+.mr-card .score-body h4 {
+  margin: 6px 0 4px;
+  font-size: 12px;
+  color: var(--sub);
+}
+.mr-card .score-body h5 {
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: var(--sub);
+}
+.mr-card .score-measures li {
+  background: var(--chip);
+  padding: 0 8px;
+}
+.mr-card .score-body .f-note {
+  color: var(--sub);
+}
+.mr-reviewers {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.mr-reviewers li {
+  margin: 2px 0;
+}
+.mr-card .problem {
+  margin: 0;
+}
+/* M42: the question before merging, small and centred like the other modals. */
+.dlg.mr-confirm {
+  width: min(420px, 92vw);
+  padding: 18px 20px;
+}
+.mr-confirm h3 {
+  margin: 0 0 14px;
+  font-size: 15px;
+  overflow-wrap: anywhere;
+}
+.mr-confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.mr-merged {
+  margin: 0 0 8px;
+}
+/* Pau's window is ~900 px: the page keeps the room, the two columns give theirs. */
+.mr-tabs button {
+  white-space: nowrap;
+}
+@media (max-width: 1100px) {
+  .mr-screen.open {
+    padding: 20px 16px;
+  }
+  .mr-layout {
+    grid-template-columns: 168px minmax(0, 1fr) 176px;
+    gap: 12px;
+  }
+  .mr-inbox .mr-row .k,
+  .mr-inbox .mr-row .age {
+    display: none;
+  }
+  .mr-page-title h2 {
+    font-size: 17px;
+  }
 }

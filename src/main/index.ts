@@ -22,7 +22,7 @@ import { createOpenMr, remoteNaming, type MrEntry } from './forge/openmr'
 import { createOutcome } from './forge/outcome'
 import { createQueue, createScorer } from './forge/scores'
 import { createThreads } from './forge/threads'
-import { createPage } from './forge/page'
+import { createPage, parseDiff } from './forge/page'
 import { createMerge } from './forge/merge'
 import { createQaPublish } from './qa-publish'
 import { boxDiff, boxRanges, forgetPlans } from './flow/boxes'
@@ -191,6 +191,42 @@ function fakeDrafts(): MrDrafts {
       { id: 'd4', lens: 'design', severity: 'low', file: 'src/Delivery/PromiseDate.php', text: 'El calendario nacional y el provincial podrían compartir una sola interfaz.', state: 'sent' } // i18n-ignore
     ]
   }
+}
+
+// ponytail: dev-only, the MR page photos show a believable diff with the threads and drafts above on their lines.
+function fakePage(): MrPage {
+  const promise = parseDiff(
+    [
+      'diff --git a/src/Delivery/PromiseDate.php b/src/Delivery/PromiseDate.php',
+      '--- a/src/Delivery/PromiseDate.php',
+      '+++ b/src/Delivery/PromiseDate.php',
+      '@@ -44,7 +44,9 @@ final class PromiseDate',
+      '     public function for(Order $order): \\DateTimeImmutable',
+      '     {',
+      '         $date = $this->clock->today();',
+      '-        if ($this->holidays->isHoliday($date)) {',
+      '+        $province = $order->province();',
+      '+        if ($this->holidays->isHoliday($date, $province)) {',
+      '             $date = $date->modify(\'+1 day\');',
+      '         }',
+      '         return $date;',
+      'diff --git a/src/Delivery/Import.php b/src/Delivery/Import.php',
+      '--- a/src/Delivery/Import.php',
+      '+++ b/src/Delivery/Import.php',
+      '@@ -10,3 +10,4 @@',
+      '     $rows = $this->boe->fetch();',
+      '+    $rows = array_filter($rows);',
+      '     foreach ($rows as $row) {',
+      '+        $this->store($row);',
+      'diff --git a/.agents/changes/festivos-provincia/proposal.md b/.agents/changes/festivos-provincia/proposal.md',
+      '--- /dev/null',
+      '+++ b/.agents/changes/festivos-provincia/proposal.md',
+      '@@ -0,0 +1,2 @@',
+      '+# festivos-provincia',
+      '+'
+    ].join('\n')
+  )
+  return { files: promise, reviewers: [{ name: 'marta', state: 'changes' }, { name: 'jordi', state: 'approved' }, { name: 'laia', state: 'pending' }], contract: 'festivos-provincia' }
 }
 
 function fakeIssues(): JiraIssue[] {
@@ -479,7 +515,10 @@ app.whenReady().then(async () => {
   )
   const threads = createThreads({ store: secretStore, target: guards.threadTarget })
   const mrPage = createPage({ store: secretStore, target: guards.threadTarget })
-  ipcMain.handle('atril:mr:page', (_e, url: unknown): Promise<MrPage> => mrPage.read(typeof url === 'string' ? url : ''))
+  ipcMain.handle('atril:mr:page', (_e, url: unknown): Promise<MrPage> =>
+    // ponytail: dev-only, the MR photos read a fake page; their fake listing never reaches main's targets.
+    SNAPSHOT && process.env['ATRIL_SNAPSHOT_VIEW']?.startsWith('mr') ? Promise.resolve(fakePage()) : mrPage.read(typeof url === 'string' ? url : '')
+  )
   ipcMain.handle('atril:mr:threads', (_e, url: unknown): Promise<MrThreads> =>
     // ponytail: dev-only, ATRIL_SNAPSHOT_VIEW=mr-thread|mr-lens photographs two believable threads.
     SNAPSHOT && /^mr-(thread|lens)$/.test(process.env['ATRIL_SNAPSHOT_VIEW'] ?? '') ? Promise.resolve(fakeThreads()) : threads.read(typeof url === 'string' ? url : '')

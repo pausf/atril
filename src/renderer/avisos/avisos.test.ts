@@ -84,17 +84,17 @@ describe('avisos', () => {
       await user.click(within(feed()).getByRole('button', { name: title }))
     }
 
-    // An MR in the latest listing: marked read, its MR view opens on the MR screen.
+    // An MR in the latest listing: marked read, its MR page opens on the MR screen (M43).
     await open(/Envío con IVA/)
     expect(api.avisosApi.markRead).toHaveBeenLastCalledWith(['r'])
-    expect(await screen.findByRole('dialog', { name: 'Envío con IVA' })).toBeTruthy()
+    expect(await screen.findByRole('region', { name: 'Envío con IVA' })).toBeTruthy()
     expect(screen.getByRole('heading', { level: 1, name: /^MR/ })).toBeTruthy()
 
     // An MR no longer listed: read, and a word instead of a view.
     await open(/Cola de pagos/)
     expect(api.avisosApi.markRead).toHaveBeenLastCalledWith(['g'])
     expect((await screen.findByRole('status')).textContent).toBe('Esta MR ya no está en la lista')
-    expect(screen.queryByRole('dialog')).toBeNull()
+    expect(screen.queryByRole('region', { name: 'Cola de pagos' })).toBeNull()
 
     // A workspace that is gone.
     await user.click(within(feed()).getByRole('button', { name: /feat\/borrada/ }))

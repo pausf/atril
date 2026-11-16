@@ -2,8 +2,10 @@ import type { NetFix, WorkFix } from '../../preload/api'
 import { useT, type T } from '../ui'
 
 /** The one button each fix gets (W130, W133, W135, W147, W150, W159); no fix, no button. */
-export const fixLabel = (t: T, fix: WorkFix | NetFix | undefined): string | undefined =>
-  fix === 'worktree'
+export const fixLabel = (t: T, fix: WorkFix | NetFix | undefined, forge?: string): string | undefined =>
+  fix === 'forge'
+    ? t('Abrir en {forge} ↗', { forge: forge ?? '' })
+    : fix === 'worktree'
     ? t('Usar un worktree esta vez')
     : fix === 'terminal'
       ? t('Abrir en Terminal')

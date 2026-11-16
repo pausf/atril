@@ -23,7 +23,8 @@ afterEach(() => {
 async function openView(user: ReturnType<typeof userEvent.setup>, title: string) {
   await user.click(await screen.findByRole('button', { name: /^MR/ }))
   await user.click(await screen.findByRole('button', { name: new RegExp(`^${title}`) }))
-  return screen.findByRole('dialog', { name: title })
+  await screen.findByRole('region', { name: title })
+  return screen.getByRole('complementary', { name: 'Esta MR' })
 }
 
 describe('fix ci with claude in the window (M31)', () => {
@@ -50,13 +51,13 @@ describe('fix ci with claude in the window (M31)', () => {
     await user.keyboard('{Enter}')
     expect((await within(view).findByRole('alert')).textContent).toBe('La CI de esta MR ya no falla.')
     expect(within(view).queryByRole('status')).toBeNull()
-    await user.click(within(view).getByRole('button', { name: 'Cerrar' }))
+    await user.click(screen.getByRole('button', { name: '‹ Tus MR' }))
 
     // Another CI state, even with an agent: no button.
     view = await openView(user, 'Envío verde')
     await waitFor(() => expect(api.mrApi.ciAgent).toHaveBeenCalledWith(PASSING))
     expect(within(view).queryByRole('button', { name: 'Arreglar CI con Claude' })).toBeNull()
-    await user.click(within(view).getByRole('button', { name: 'Cerrar' }))
+    await user.click(screen.getByRole('button', { name: '‹ Tus MR' }))
 
     // Failing CI with no agent: no button.
     view = await openView(user, 'Envío solo')

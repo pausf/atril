@@ -1,5 +1,5 @@
 import { vi } from 'vitest'
-import type { ActivityLine, SubagentEntry, SubagentLine, AddRepoResult, Aviso, FileChange, FlowBoxes, FlowDocs, ForgeId, ForgeStatus, Mode, MrDraft, MrDrafts, MrDraftsResult, MrFixCiResult, MrLists, MrReply, MrScoreState, MrThreads, MrWork, NotifyPatch, NotifyPermission, NotifySettings, AgentState, StateProblem, QaBugResult, QaLaunchResult, QaManualRequest, QaMr, QaPublishResult, QaReport, QaResult, QaStatus, QaTargets, AtrilApi, RemoveResult, QuickAnswer, AgentWait, RadarHit, FlowStage, HistoryEntry, IdeaJiraResult, IdeaResult, LibrettoCounts, LibrettoState, JiraIssue, JiraSettingsStatus, MenuAction, NextItem, StartProposalResult, StartRequest, StartResult, RepoResult, RepoView, ToolReport, UiState, WorkCost, WorkspaceResult, WorkspaceView } from '../preload/api'
+import type { ActivityLine, SubagentEntry, SubagentLine, AddRepoResult, Aviso, FileChange, FlowBoxes, FlowDocs, ForgeId, ForgeStatus, Mode, MrDraft, MrDrafts, MrDraftsResult, MrFixCiResult, MrLists, MrMergeResult, MrPage, MrReply, MrScoreState, MrThreads, MrWork, NotifyPatch, NotifyPermission, NotifySettings, AgentState, StateProblem, QaBugResult, QaLaunchResult, QaManualRequest, QaMr, QaPublishResult, QaReport, QaResult, QaStatus, QaTargets, AtrilApi, RemoveResult, QuickAnswer, AgentWait, RadarHit, FlowStage, HistoryEntry, IdeaJiraResult, IdeaResult, LibrettoCounts, LibrettoState, JiraIssue, JiraSettingsStatus, MenuAction, NextItem, StartProposalResult, StartRequest, StartResult, RepoResult, RepoView, ToolReport, UiState, WorkCost, WorkspaceResult, WorkspaceView } from '../preload/api'
 
 export const workspace = (id: string, branch: string, alive = true): WorkspaceView => ({
   id,
@@ -95,6 +95,10 @@ interface Options {
   work?: Record<string, MrWork>
   /** What mr.openWork answers per URL; missing means a new live workspace on branch «mr». */
   openWork?: Record<string, WorkspaceResult>
+  /** What mr.page answers per URL; a function answers per call (it may throw); missing means an empty diff. */
+  pages?: Record<string, MrPage | (() => Promise<MrPage>)>
+  /** What mr.merge answers per URL; missing means merged. */
+  merges?: Record<string, MrMergeResult | (() => Promise<MrMergeResult>)>
   /** What mr.ciAgent answers per URL (the agent's branch); missing means no agent. */
   ciAgents?: Record<string, string>
   /** What avisos.closable answers per notice id; missing means no work to close. */
@@ -274,6 +278,14 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
       discardDraft: vi.fn(async (url: string, id: string) => changeDrafts(url, (ds) => ds.filter((d) => d.id !== id))),
       ciAgent: vi.fn(async (url: string): Promise<string | null> => o.ciAgents?.[url] ?? null),
       fixCi: vi.fn(async (url: string): Promise<MrFixCiResult> => (o.ciAgents?.[url] ? { sent: o.ciAgents[url]! } : { error: 'No hay un único trabajo de esta MR abierto en Atril.' })),
+      page: vi.fn(async (url: string): Promise<MrPage> => {
+        const p = o.pages?.[url]
+        return typeof p === 'function' ? p() : (p ?? { files: [], reviewers: [] })
+      }),
+      merge: vi.fn(async (url: string): Promise<MrMergeResult> => {
+        const r = o.merges?.[url]
+        return typeof r === 'function' ? r() : (r ?? { merged: true })
+      }),
       workFor: vi.fn(async (url: string): Promise<MrWork> => o.work?.[url] ?? { kind: 'none', reason: 'Añade el repo en Ajustes' }),
       openWork: vi.fn(async (url: string): Promise<WorkspaceResult> => {
         const r = o.openWork?.[url] ?? { workspace: workspace('mr', 'mr') }
