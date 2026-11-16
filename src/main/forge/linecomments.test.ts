@@ -120,8 +120,10 @@ describe('mr line comments', () => {
     const gl = await lenser({ findings: [LINE, renamed] })
     const [g, rn] = drafts(await gl.l.review(GL_URL))
     const reads = () => gl.forge.calls.filter((c) => c.method === 'GET' && c.url.pathname === '/api/v4/projects/10/merge_requests/5').length
+    // The review read the MR for its description (M49); publishing reads it once more, just before posting.
+    const reviewed = reads()
     expect(drafts(await gl.l.publish(GL_URL, g!.id))).toEqual([{ ...g, state: 'published' }, rn])
-    expect(reads()).toBe(1)
+    expect(reads() - reviewed).toBe(1)
     expect(gl.forge.posts()).toHaveLength(1)
     const note = gl.forge.posts()[0]!
     expect(note.url.href).toBe(`${GL}/api/v4/projects/10/merge_requests/5/discussions`)

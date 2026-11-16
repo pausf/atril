@@ -239,7 +239,7 @@ Tests en rojo primero, caja por caja. Después, la app real con Playwright a ~90
 - [x] `MrItem` gana `target`, `mergeable`, `conflict`; `details()` los rellena en ambas forjas · Closes: M39
 - [x] `threads.ts` con el lado de cada hilo; `src/main/forge/page.ts` (`parseDiff`, revisores, contrato, tope de 1 MB); IPC `atril:mr:page` y preload · Closes: M18, M46
 - [x] `src/main/forge/merge.ts` con sus guardas, una vez, errores por estado y nuevo listado; IPC `atril:mr:merge` y preload · waits on box 1 · Closes: M41, M50
-- [ ] `lenses.ts`: la petición (MR y `The ask, verbatim` del trabajo, sin enlaces) delante del diff · Closes: M49
+- [x] `lenses.ts`: la petición (MR y `The ask, verbatim` del trabajo, sin enlaces) delante del diff · Closes: M49
 - [ ] Ventana · marco: bandeja en columna, página y columna derecha en `MrScreen`, salir con Escape / «‹ Tus MR» / otra fila, `openUrl`, ganchos de foto; «En conflicto» en la fila; `MrView.tsx` retirado; Escape por capas; el `Problem` de una página que no carga · waits on boxes 1, 2 · Closes: M5, M23, M40, M43, M51
 - [ ] Ventana · Código y Conversación: archivos con sus líneas, hilos y borradores en su línea, avisos de corte · waits on box 5 · Closes: M24, M29, M47
 - [ ] Ventana · cabecera y tarjetas: «Revisar ▾» con teclado, «Seguir en Atril»/«Ir al trabajo», «Abrir en {forja} ↗»; Puntuación, Contra su spec, Revisores, CI con «Arreglar CI con Claude»; cada tarjeta con su propio error · waits on box 5 · Closes: M13, M15, M25, M26, M31, M35, M44, M45, M48
