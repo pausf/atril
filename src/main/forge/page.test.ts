@@ -179,6 +179,22 @@ describe('mr page', () => {
     expect(lab.reviewers).toEqual([{ name: 'leo', state: 'pending' }, { name: 'ana', state: 'approved' }])
     expect(lab.contract).toBeUndefined()
 
+    // GitLab's deleted proposal.md is no contract; its added one is.
+    const glC = fakeForge({
+      [`/api/v4${GL_REF}/diffs`]: [
+        { old_path: '.agents/changes/old-y/proposal.md', new_path: '.agents/changes/old-y/proposal.md', deleted_file: true, diff: '@@ -1 +0,0 @@\n-# old-y\n' },
+        { old_path: '.agents/changes/add-z/proposal.md', new_path: '.agents/changes/add-z/proposal.md', new_file: true, diff: '@@ -0,0 +1 @@\n+# add-z\n' }
+      ],
+      [`/api/v4${GL_REF}`]: { reviewers: [] }
+    })
+    expect(await (await page(glC)).read(GL_URL)).toMatchObject({ contract: 'add-z' })
+
+    // A reviewers answer that is not JSON fails its card only.
+    const junk = fakeForge({ [`${GH_REF}#diff`]: DIFF, [GH_REF]: { requested_reviewers: [] }, [`${GH_REF}/reviews`]: '<html>proxy</html>' })
+    const junkPage = await (await page(junk)).read(GH_URL)
+    expect(junkPage).toMatchObject({ contract: 'add-x', reviewers: { error: expect.any(String) } })
+    expect('files' in junkPage && junkPage.files).toHaveLength(4)
+
     // A failed reviewers request fails its card only: files and contract still come.
     const halfGh = fakeForge({ [`${GH_REF}#diff`]: DIFF, [GH_REF]: { requested_reviewers: [] }, [`${GH_REF}/reviews`]: 500 })
     const half = await (await page(halfGh)).read(GH_URL)

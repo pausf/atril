@@ -32,7 +32,8 @@ export function place(files: MrPageFile[], threads: MrThread[], drafts: MrDraft[
       out.talk.push({ th, gone: false })
       continue
     }
-    if (th.line === undefined) {
+    // A cut or unsent file shows no lines, yet its line is still in the MR: the thread stays with the file.
+    if (th.line === undefined || f.cut || f.tooLarge) {
       out.onFile.set(f.path, [...(out.onFile.get(f.path) ?? []), th])
       continue
     }

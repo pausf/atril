@@ -125,9 +125,9 @@ export async function fetchDiff(get: Get, target: ScoreTarget): Promise<string> 
   let out = ''
   for (let page = 1; page <= GL_PAGES; page++) {
     const res = await get(`${target.ref}/diffs?per_page=100&page=${page}`)
-    const files = (await res.json()) as Array<{ old_path: string; new_path: string; diff?: string; too_large?: boolean; collapsed?: boolean }>
+    const files = (await res.json()) as Array<{ old_path: string; new_path: string; diff?: string; too_large?: boolean; collapsed?: boolean; new_file?: boolean; deleted_file?: boolean }>
     for (const f of Array.isArray(files) ? files : []) {
-      out += `diff --git a/${f.old_path} b/${f.new_path}\n--- a/${f.old_path}\n+++ b/${f.new_path}\n`
+      out += `diff --git a/${f.old_path} b/${f.new_path}\n--- ${f.new_file ? '/dev/null' : `a/${f.old_path}`}\n+++ ${f.deleted_file ? '/dev/null' : `b/${f.new_path}`}\n`
       if (f.too_large || f.collapsed) out += '\\ GitLab did not send this file: too large\n'
       else out += f.diff && !f.diff.endsWith('\n') ? `${f.diff}\n` : (f.diff ?? '')
     }

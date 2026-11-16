@@ -139,6 +139,7 @@ describe('the mr page', () => {
       th('t4', { file: 'src/envio.ts', line: 99, code: '+perdida' }),
       th('t5', { file: 'src/envio.ts', line: 11, outdated: true }),
       th('t6', { file: 'otro.ts', line: 3 }),
+      th('t7', { file: 'big.json', line: 1 }),
       { ...GENERAL, yourTurn: false }
     ]
     const drafts = [
@@ -189,12 +190,14 @@ describe('the mr page', () => {
     expect(within(top).getByRole('button', { name: 'Publicar' })).toBeTruthy()
     // Cut and unsent files say why they show no lines.
     expect(within(within(view).getByRole('region', { name: 'big.json' })).getByText('Demasiado grande para enseñarlo aquí: ábrela en GitHub')).toBeTruthy()
+    // A thread on a cut file stays with its file: its line is still in the MR, only not shown here.
+    expect(within(within(view).getByRole('region', { name: 'big.json' })).getByText('hilo t7')).toBeTruthy()
     expect(within(within(view).getByRole('region', { name: 'huge.bin' })).getByText('GitLab no manda este archivo: es demasiado grande')).toBeTruthy()
     // Código shows none of the rest.
     for (const gone of ['hilo t4', 'hilo t5', 'hilo t6', 'borrador d3', 'borrador d4', 'borrador d5']) expect(within(view).queryByText(gone)).toBeNull()
 
     // M24: each tab counts the threads it shows, and its own «te toca» only above zero.
-    expect(within(view).getByRole('tab', { name: 'Código 3 · te toca 1' })).toBeTruthy()
+    expect(within(view).getByRole('tab', { name: 'Código 4 · te toca 1' })).toBeTruthy()
     await user.click(within(view).getByRole('tab', { name: 'Conversación 4' }))
     const talk = within(view).getByRole('tabpanel')
     const note = 'Esa línea ya no está en el diff'

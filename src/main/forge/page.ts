@@ -151,10 +151,8 @@ export function createPage({ store, fetchImpl = fetch, target }: Deps) {
             return { problem: err.problem }
           }
         ),
-        reviewers().catch((err: unknown): Problem => {
-          if (!(err instanceof Failure)) throw err
-          return err.problem
-        })
+        // Anything that breaks the reviewers, a body that is not JSON included, fails their card only (M46).
+        reviewers().catch((err: unknown): Problem => (err instanceof Failure ? err.problem : netProblem(name, { error: err })))
       ])
       if ('problem' in diff) return diff.problem
       const files = 'text' in diff ? parsed(diff.text, CAP_BYTES) : []

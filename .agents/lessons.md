@@ -365,3 +365,15 @@ A failed «Separar en MRs encadenadas» and a failed card answer showed the bare
 
 ## 2026-11-14 · terminal-read-only · 6
 With a `tmux attach -r` client on the session, tmux 3.7 refuses every `send-keys` («client is read-only»): answers, pause and the Enter after a paste all stopped, while every unit test passed because none attached a read-only client. Only the real-app drive found it. `tmux.ts` falls back to `paste-buffer -r`; «keys reach a pane that a read-only client watches» attaches a real `-r` client. When a change alters how a tmux client attaches, test sending keys with that client attached.
+
+## 2026-11-16 · mr-page · 6→7
+GitLab's assembled diff (`fetchDiff`) always wrote `--- a/` and `+++ b/` headers, so a deleted `proposal.md` on GitLab still counted as the MR's contract (M46); only GitHub's real diff carried `/dev/null`. Fixed by writing `/dev/null` from GitLab's `new_file`/`deleted_file`; page.test now holds a GitLab deleted and added proposal. When one forge's data is rebuilt to look like the other's, test the rule on both.
+
+## 2026-11-16 · mr-page · 6→7
+The reviewers branch rethrew anything not a `Failure`, so a 200 with a non-JSON body (a proxy page) failed the whole MR page instead of its card (M46). Fixed: any reviewers error becomes the card's problem; page.test feeds an HTML body (seen red). A «fails only its part» rule has to catch every error of that part, not just the typed ones.
+
+## 2026-11-16 · mr-page · 6→7
+A thread on a cut or unsent file went to Conversación with «Esa línea ya no está en el diff», which is false: the line is in the MR, only not drawn (M47). Fixed: it stays with its file. Placing rules for drafts already handled cut files; threads were not given the same case.
+
+## 2026-11-16 · mr-page · 6→7
+Not fixed, reported: a lens review waiting behind a score reads «Revisando…», not «En cola» (M45). Main never sends the review's queue state to the window; the behaviour predates this change and M45 may mean only scores.
