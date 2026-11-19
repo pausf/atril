@@ -226,6 +226,7 @@ const api: AtrilApi = {
       return () => ipcRenderer.removeListener('atril:term:data', h)
     }
   },
+  refine: { ask: (text) => ipcRenderer.invoke('atril:refine:ask', text) },
   revealState: (file) => ipcRenderer.invoke('atril:state:reveal', file),
   snapshotWorkspace: () => ipcRenderer.invoke('atril:snapshot-ws'),
   snapshotView: () => ipcRenderer.invoke('atril:snapshot-view')

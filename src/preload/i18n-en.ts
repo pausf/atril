@@ -948,4 +948,10 @@ export const EN: Record<string, string> = {
   "Atril no ha podido fusionar esta MR.": "Atril could not merge this MR.",
   "Tres listas de GitHub y GitLab: Mías, Me toca revisar y Sigo, con su CI, su tamaño, cuándo se movieron y si están en conflicto. Pulsa una y su página se abre junto a la bandeja: el código con cada hilo y cada borrador en su línea, la conversación y, a la derecha, la puntuación, «Contra su spec», los revisores y la CI. En las tuyas que la forja deja fusionar, «Fusionar» te pregunta antes de hacerlo.": "Three lists from GitHub and GitLab: Mine, To review and Following, with their CI, their size, when they last moved and whether they are in conflict. Click one and its page opens beside the inbox: the code with each thread and each draft on its line, the conversation and, on the right, the score, “Against its spec”, the reviewers and the CI. On yours that the forge lets merge, “Merge” asks you before doing it.",
   "En la página de una MR, «Revisar ▾» ofrece Puntuar (dificultad y riesgo del 1 al 5, con Claude Sonnet), Comentar (borradores por lente en su línea, que publicas, descartas o mandas al agente) y A fondo (Libretto revisándola en tu repo). Puntuar y Comentar salen en Mías y en Me toca revisar, y en la bandeja cada una de esas filas trae también «Puntuar». Solo gastan cuota cuando los pulsas.": "On an MR’s page, “Review ▾” offers Score (difficulty and risk from 1 to 5, with Claude Sonnet), Comment (drafts per lens on their line, which you publish, discard or send to the agent) and In depth (Libretto reviewing it in your repo). Score and Comment show in Mine and To review, and in the inbox each of those rows also has “Score”. They only spend quota when you click them.",
+  'No hay petición que afinar.': 'There is no request to refine.',
+  'Ya está preguntando.': 'Already asking.',
+  'Claude no ha contestado a tiempo.': 'Claude did not answer in time.',
+  'No encuentro Claude Code en este Mac.': 'I cannot find Claude Code on this Mac.',
+  'Claude ha fallado.': 'Claude failed.',
+  'Claude no ha devuelto preguntas.': 'Claude did not return any questions.',
 }

@@ -1027,6 +1027,14 @@ export interface RadarApi {
   get(): Promise<Record<string, RadarHit[]>>
 }
 
+/** W208–W209: Haiku's questions about a request, or why there are none. */
+export type RefineResult = { questions: string[] } | { error: string; detail: string; fix: 'retry' }
+
+export interface RefineApi {
+  /** Only when the person presses «Que Claude me pregunte» (I31); one at a time. */
+  ask(text: string): Promise<RefineResult>
+}
+
 export interface AtrilApi {
   menu: MenuApi
   ui: UiApi
@@ -1045,6 +1053,7 @@ export interface AtrilApi {
   radar: RadarApi
   history: HistoryApi
   qa: QaApi
+  refine: RefineApi
   doctor(): Promise<DoctorReport>
   installTool(tool: string): Promise<{ ok: true } | { error: string }>
   repos: ReposApi

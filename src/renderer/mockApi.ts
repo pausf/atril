@@ -1,5 +1,5 @@
 import { vi } from 'vitest'
-import type { ActivityLine, SubagentEntry, SubagentLine, AddRepoResult, Aviso, FileChange, FlowBoxes, FlowDocs, ForgeId, ForgeStatus, Mode, MrDraft, MrDrafts, MrDraftsResult, MrFixCiResult, MrLists, MrMergeResult, MrPage, MrReply, MrScoreState, MrThreads, MrWork, NotifyPatch, NotifyPermission, NotifySettings, AgentState, StateProblem, QaBugResult, QaLaunchResult, QaManualRequest, QaMr, QaPublishResult, QaReport, QaResult, QaStatus, QaTargets, AtrilApi, RemoveResult, QuickAnswer, AgentWait, RadarHit, FlowStage, HistoryEntry, IdeaJiraResult, IdeaResult, LibrettoCounts, LibrettoState, JiraIssue, JiraSettingsStatus, MenuAction, NextItem, StartProposalResult, StartRequest, StartResult, RepoResult, RepoView, ToolReport, UiState, WorkCost, WorkspaceResult, WorkspaceView } from '../preload/api'
+import type { ActivityLine, SubagentEntry, SubagentLine, AddRepoResult, Aviso, FileChange, FlowBoxes, FlowDocs, ForgeId, ForgeStatus, Mode, MrDraft, MrDrafts, MrDraftsResult, MrFixCiResult, MrLists, MrMergeResult, MrPage, MrReply, MrScoreState, MrThreads, MrWork, NotifyPatch, RefineResult, NotifyPermission, NotifySettings, AgentState, StateProblem, QaBugResult, QaLaunchResult, QaManualRequest, QaMr, QaPublishResult, QaReport, QaResult, QaStatus, QaTargets, AtrilApi, RemoveResult, QuickAnswer, AgentWait, RadarHit, FlowStage, HistoryEntry, IdeaJiraResult, IdeaResult, LibrettoCounts, LibrettoState, JiraIssue, JiraSettingsStatus, MenuAction, NextItem, StartProposalResult, StartRequest, StartResult, RepoResult, RepoView, ToolReport, UiState, WorkCost, WorkspaceResult, WorkspaceView } from '../preload/api'
 
 export const workspace = (id: string, branch: string, alive = true): WorkspaceView => ({
   id,
@@ -83,6 +83,8 @@ interface Options {
   subagentLogs?: Record<string, SubagentLine[]>
   /** What mr.list answers; missing means no forge connected. */
   mrs?: MrLists
+  /** What refine.ask answers; a function answers per call; missing means three questions. */
+  refine?: RefineResult | ((text: string) => Promise<RefineResult>)
   /** What mr.scoreOf answers per URL; missing means never scored. */
   scores?: Record<string, MrScoreState>
   /** What mr.threads answers per URL; missing means no threads. */
@@ -453,6 +455,11 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
       fix: vi.fn(async () => ({ ok: true as const }))
     },
     term: { onData: () => off, input: vi.fn(), attach: vi.fn(async () => ({ ok: true })), resize: vi.fn(), detach: vi.fn() },
+    refine: {
+      ask: vi.fn(async (text: string): Promise<RefineResult> =>
+        typeof o.refine === 'function' ? o.refine(text) : (o.refine ?? { questions: ['¿Para quién es?', '¿Qué pasa si no hay datos?', '¿Hay un diseño?'] })
+      )
+    },
     revealState: vi.fn(async () => true),
     snapshotView: async () => null,
     snapshotWorkspace: async () => false

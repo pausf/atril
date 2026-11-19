@@ -43,6 +43,7 @@ import { inboxGroups } from './jira/board'
 import { proposeStart, start } from './jira/start'
 import type { Effort, InboxGroup, InboxResult, JiraIssue, Model, NextItem, QaBugRequest, StartIssue, StartRequest } from '../preload/api'
 import { listRepos, readRepos, registerRepo, relocateRepo, removeRepo, setOverride } from './repos'
+import { createRefiner } from './refine'
 import { orProblem, revealState } from './state'
 import { dropIdea, editIdea, ideaToJira, librettoCounts, librettoState, queueIdea, startQueued } from './libretto'
 import * as pty from './pty'
@@ -504,6 +505,9 @@ app.whenReady().then(async () => {
     target: guards.scoreTarget,
     emit: (url, state) => BrowserWindow.getAllWindows().forEach((w) => w.webContents.send('atril:mr:score-changed', url, state))
   })
+  // W208: beside the queue, not in it; its own one-at-a-time.
+  const refiner = createRefiner({ run })
+  ipcMain.handle('atril:refine:ask', (_e, text: unknown) => refiner.ask(text))
   ipcMain.handle('atril:mr:score', (_e, url: unknown): Promise<MrScoreState> =>
     scorer.score(typeof url === 'string' ? url : '')
   )
