@@ -971,4 +971,6 @@ export const EN: Record<string, string> = {
   'Que Claude me pregunte': 'Let Claude ask me',
   'Usa Claude Haiku, solo cuando lo pulsas.': 'Uses Claude Haiku, only when you press it.',
   'Con las respuestas pasa de 2000 caracteres: acorta algo.': 'With the answers it goes over 2000 characters: shorten something.',
+  'Volver a preguntar': 'Ask again',
+  'Puedes empezar igual: afinar es opcional.': 'You can start anyway: refining is optional.',
 }

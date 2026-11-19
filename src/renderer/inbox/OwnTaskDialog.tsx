@@ -120,7 +120,7 @@ export function OwnTaskDialog({ textOptional = false, onClose, onOpenSettings, o
           <textarea id="own-text" rows={5} maxLength={2000} value={text} onChange={(e) => setText(e.target.value)} placeholder={t('Añadir filtro de laboratorios al listado…')} />
         </div>
 
-        {!blank && <Refine fixed={fixed} onFixed={setFixed} asked={asked} onAsked={setAsked} count={pairs.length} />}
+        {!blank && <Refine text={text} fixed={fixed} onFixed={setFixed} asked={asked} onAsked={setAsked} count={pairs.length} />}
 
         <div className="f">
           <label htmlFor="own-repo">{t('Repo')}</label>

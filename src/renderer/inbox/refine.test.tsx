@@ -3,7 +3,7 @@ import { createElement } from 'react'
 import { cleanup, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { RepoView } from '../../preload/api'
+import type { RefineResult, RepoView } from '../../preload/api'
 import { App } from '../App'
 import { mockApi, mockSystemTheme } from '../mockApi'
 import { withAnswers } from './Refine'
@@ -115,5 +115,67 @@ describe('refine the request', () => {
     await user.click(field(FIXED[2]!))
     await user.keyboard('{Meta>}{Enter}{/Meta}')
     await vi.waitFor(() => expect(api.ws.open).toHaveBeenCalledWith('web', 'anadir-filtro', 'claude', 'default', 'Añadir filtro\n\nHecho cuando: a\nNo entra: a\nDónde: a'))
+  })
+
+  it('claude asks only when pressed and its answers join the request', async () => {
+    const replies: Array<(r: RefineResult) => void> = []
+    const api = mockApi({ repos, refine: () => new Promise<RefineResult>((res) => replies.push(res)) })
+    const { user, q, text, go, section, launch, field } = await openDialog()
+    expect(q.queryByRole('button', { name: 'Que Claude me pregunte' })).toBeNull()
+    await user.type(text, 'Añadir filtro')
+    await user.click(section()!.querySelector('summary')!)
+    await user.type(field(FIXED[0]!), 'Filtra')
+    expect(api.refine.ask).not.toHaveBeenCalled()
+
+    const ask = q.getByRole('button', { name: 'Que Claude me pregunte' })
+    await user.click(ask)
+    expect(api.refine.ask).toHaveBeenCalledTimes(1)
+    expect(api.refine.ask).toHaveBeenCalledWith('Añadir filtro')
+    expect(q.getByText('Pensando…')).toBeTruthy()
+    expect(ask.hasAttribute('disabled')).toBe(true)
+
+    replies[0]!({ questions: ['¿Varios a la vez?', '¿En la URL?'] })
+    expect(await q.findByText('Claude pregunta, sobre tu petición')).toBeTruthy()
+    expect(q.queryByText('Pensando…')).toBeNull()
+    await user.type(field('¿En la URL?'), ' sí ')
+    expect(launch()).toBe('/libretto:libretto-flow «Añadir filtro\n\nHecho cuando: Filtra\n¿En la URL? sí»')
+    expect(section()!.querySelector('summary')!.textContent).toContain('2 respuestas añadidas')
+
+    await user.type(text, ' de laboratorios')
+    expect(field('¿En la URL?').value).toBe(' sí ')
+    expect(api.refine.ask).toHaveBeenCalledTimes(1)
+
+    await user.click(q.getByRole('button', { name: 'Volver a preguntar' }))
+    expect(api.refine.ask).toHaveBeenLastCalledWith('Añadir filtro de laboratorios')
+    replies[1]!({ questions: ['¿Orden alfabético?'] })
+    expect(await q.findByLabelText('¿Orden alfabético?')).toBeTruthy()
+    expect(q.queryByLabelText('¿En la URL?')).toBeNull()
+    expect(field(FIXED[0]!).value).toBe('Filtra')
+    await user.type(field('¿Orden alfabético?'), 'Sí')
+
+    await user.click(go)
+    await vi.waitFor(() => expect(api.ws.open).toHaveBeenCalledWith('web', 'anadir-filtro-de-laboratorios', 'claude', 'default', 'Añadir filtro de laboratorios\n\nHecho cuando: Filtra\n¿Orden alfabético? Sí'))
+    expect(api.refine.ask).toHaveBeenCalledTimes(2)
+  })
+
+  it('a failed ask says why and leaves the dialog usable', async () => {
+    const api = mockApi({ repos, refine: { error: 'Claude no ha contestado a tiempo.', detail: 'timeout', fix: 'retry' } })
+    const { user, q, text, go, section } = await openDialog()
+    await user.type(text, 'Añadir filtro')
+    await user.click(section()!.querySelector('summary')!)
+    await user.click(q.getByRole('button', { name: 'Que Claude me pregunte' }))
+
+    const problem = (await q.findByText('Claude no ha contestado a tiempo.')).closest('.problem') as HTMLElement
+    expect(within(problem).getByText('Puedes empezar igual: afinar es opcional.')).toBeTruthy()
+    const details = problem.querySelector('details')!
+    expect(details.open).toBe(false)
+    expect(details.textContent).toContain('timeout')
+    expect(go.hasAttribute('disabled')).toBe(false)
+
+    await user.click(within(problem).getByRole('button', { name: 'Volver a intentar' }))
+    await vi.waitFor(() => expect(api.refine.ask).toHaveBeenCalledTimes(2))
+
+    await user.click(go)
+    await vi.waitFor(() => expect(api.ws.open).toHaveBeenCalledWith('web', 'anadir-filtro', 'claude', 'default', 'Añadir filtro'))
   })
 })

@@ -1,4 +1,6 @@
-import type { KeyboardEvent } from 'react'
+import { useState, type KeyboardEvent } from 'react'
+import type { RefineResult } from '../../preload/api'
+import { Problem } from '../components/Problem'
 import { useT, type T } from '../ui'
 
 /** One of Claude's questions and what the person answered. */
@@ -30,6 +32,8 @@ export function withAnswers(text: string, pairs: Array<[string, string]>): strin
 }
 
 interface Props {
+  /** The request as typed: what Claude asks about. */
+  text: string
   fixed: string[]
   onFixed: (fixed: string[]) => void
   asked: Asked[]
@@ -46,8 +50,23 @@ function walk(e: KeyboardEvent<HTMLDivElement>): void {
   items[items.indexOf(e.target as HTMLElement) + 1]?.focus()
 }
 
-export function Refine({ fixed, onFixed, asked, onAsked, count }: Props) {
+type Failed = Extract<RefineResult, { error: string }>
+
+export function Refine({ text, fixed, onFixed, asked, onAsked, count }: Props) {
   const t = useT()
+  const [asking, setAsking] = useState(false)
+  const [failed, setFailed] = useState<Failed | null>(null)
+
+  // I31: the only call to Claude in the dialog, and only on this press.
+  const ask = async (): Promise<void> => {
+    setAsking(true)
+    setFailed(null)
+    const r: RefineResult = await window.atril.refine.ask(text).catch((e: unknown) => ({ error: t('Claude ha fallado.'), detail: String(e), fix: 'retry' as const }))
+    setAsking(false)
+    if ('error' in r) return setFailed(r)
+    onAsked(r.questions.map((q) => ({ q, a: '' })))
+  }
+
   return (
     <details className="refine">
       <summary>
@@ -70,11 +89,17 @@ export function Refine({ fixed, onFixed, asked, onAsked, count }: Props) {
           </div>
         ))}
         <div className="ask">
-          <button type="button" className="btn">
-            {t('Que Claude me pregunte')}
+          <button type="button" className="btn" disabled={asking} onClick={() => void ask()}>
+            {asked.length ? t('Volver a preguntar') : t('Que Claude me pregunte')}
           </button>
           <span>{t('Usa Claude Haiku, solo cuando lo pulsas.')}</span>
         </div>
+        {asking && (
+          <div className="think" role="status">
+            {t('Pensando…')}
+          </div>
+        )}
+        {failed && <Problem what={failed.error} cant={t('Puedes empezar igual: afinar es opcional.')} fix={t('Volver a intentar')} onFix={() => void ask()} detail={failed.detail} />}
       </div>
     </details>
   )
