@@ -32,6 +32,7 @@ export function withAnswers(text: string, pairs: Array<[string, string]>): strin
 }
 
 interface Props {
+  startOpen?: boolean
   /** The request as typed: what Claude asks about. */
   text: string
   fixed: string[]
@@ -46,13 +47,13 @@ function walk(e: KeyboardEvent<HTMLDivElement>): void {
   if (e.key !== 'Enter' || e.metaKey || (e.target as HTMLElement).tagName !== 'INPUT') return
   e.preventDefault()
   e.stopPropagation()
-  const items = Array.from(e.currentTarget.querySelectorAll<HTMLElement>('input, .ask button'))
+  const items = Array.from(e.currentTarget.querySelectorAll<HTMLElement>('input, .rask button'))
   items[items.indexOf(e.target as HTMLElement) + 1]?.focus()
 }
 
 type Failed = Extract<RefineResult, { error: string }>
 
-export function Refine({ text, fixed, onFixed, asked, onAsked, count }: Props) {
+export function Refine({ startOpen, text, fixed, onFixed, asked, onAsked, count }: Props) {
   const t = useT()
   const [asking, setAsking] = useState(false)
   const [failed, setFailed] = useState<Failed | null>(null)
@@ -68,7 +69,7 @@ export function Refine({ text, fixed, onFixed, asked, onAsked, count }: Props) {
   }
 
   return (
-    <details className="refine">
+    <details className="refine" open={startOpen}>
       <summary>
         {t('Afinar la petición')}
         <span className="op"> · {t('opcional')}</span>
@@ -88,7 +89,7 @@ export function Refine({ text, fixed, onFixed, asked, onAsked, count }: Props) {
             <input id={`refine-a${i}`} value={a} onChange={(e) => onAsked(asked.map((x, j) => (j === i ? { q, a: e.target.value } : x)))} />
           </div>
         ))}
-        <div className="ask">
+        <div className="rask">
           <button type="button" className="btn" disabled={asking} onClick={() => void ask()}>
             {asked.length ? t('Volver a preguntar') : t('Que Claude me pregunte')}
           </button>

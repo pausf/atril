@@ -18,7 +18,7 @@ import type { QaPending } from './qa/pending'
 import { Avisos, useAvisos, type AvisoTarget } from './avisos/Avisos'
 import { useMrs } from './mr/useMrs'
 import { StartDialog } from './inbox/StartDialog'
-import { OwnTaskDialog } from './inbox/OwnTaskDialog'
+import { OwnTaskDialog, type OwnSeed } from './inbox/OwnTaskDialog'
 import { NextUpStrip } from './components/NextUpStrip'
 import { FocusBar } from './components/FocusBar'
 import { AgentsOverview } from './components/AgentsOverview'
@@ -138,6 +138,7 @@ function Shell() {
   const [openUrl, setOpenUrl] = useState<string | null>(null)
   const [starting, setStarting] = useState<JiraIssue | null>(null)
   const [dialog, setDialog] = useState<'task' | 'work' | null>(null)
+  const [ownSeed, setOwnSeed] = useState<OwnSeed | undefined>(undefined)
   const [startError, setStartError] = useState<string | null>(null)
   /** The palette's starting query; null while it is closed. */
   const [palette, setPalette] = useState<string | null>(null)
@@ -150,10 +151,21 @@ function Shell() {
       if (v === 'mr-score' || v === 'mr-thread' || v === 'mr-lens') setScreen('mr')
       if (v === 'tasks-board') setScreen('tasks')
       if (v === 'settings-board' || v === 'create-repo') setScreen('settings')
-      if (v === 'tasks-own') {
+      if (v === 'tasks-own' || v === 'tasks-refine') {
         setScreen('tasks')
         setDialog('task')
       }
+      // ponytail: dev-only, ATRIL_SNAPSHOT_VIEW=tasks-refine opens «Afinar la petición» answered, with Claude's questions, without calling Claude.
+      if (v === 'tasks-refine')
+        setOwnSeed({
+          text: 'Añadir filtro de laboratorios al listado de productos', // i18n-ignore
+          fixed: ['El listado filtra por laboratorio y recuerda el filtro', 'La app móvil', '', ''], // i18n-ignore
+          asked: [
+            { q: '¿Se pueden elegir varios laboratorios a la vez?', a: 'Sí, varios' }, // i18n-ignore
+            { q: '¿El filtro va en la URL para poder compartirlo?', a: '' }, // i18n-ignore
+            { q: '¿Qué se enseña si un laboratorio no tiene productos?', a: '' } // i18n-ignore
+          ]
+        })
       // ponytail: dev-only, ATRIL_SNAPSHOT_VIEW=palette opens it with a query typed for a photo.
       if (v === 'palette') setPalette('listado')
       // ponytail: dev-only, ATRIL_SNAPSHOT_VIEW=focus turns focus mode on over the first workspace for a photo.
@@ -510,6 +522,7 @@ function Shell() {
       {dialog && (
         <OwnTaskDialog
           textOptional={dialog === 'work'}
+          seed={ownSeed}
           onClose={() => setDialog(null)}
           onOpenSettings={() => {
             setDialog(null)

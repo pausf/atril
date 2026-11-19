@@ -2093,7 +2093,7 @@ kbd {
 }
 .refine .rq label,
 .refine .aih,
-.refine .ask span,
+.refine .rask span,
 .refine .think {
   color: var(--sub);
   font-size: 12px;
@@ -2112,7 +2112,7 @@ kbd {
   margin: 10px 0 6px;
   font-weight: 600;
 }
-.refine .ask {
+.refine .rask {
   display: flex;
   align-items: center;
   gap: 10px;

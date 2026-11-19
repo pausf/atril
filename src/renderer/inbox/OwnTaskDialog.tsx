@@ -9,7 +9,15 @@ import { answers, Refine, withAnswers, type Asked } from './Refine'
 import { suggest, type Suggestion } from './suggest'
 import { SuggestLine } from './SuggestLine'
 
+/** Dev snapshot only: what the dialog opens with, its refine section open. */
+export interface OwnSeed {
+  text: string
+  fixed: string[]
+  asked: Asked[]
+}
+
 interface Props {
+  seed?: OwnSeed
   /** «Nuevo trabajo» from Trabajo: without text the agent is plain Claude (I27). */
   textOptional?: boolean
   onClose: () => void
@@ -20,11 +28,11 @@ interface Props {
 const MAX_TEXT = 2000
 const FOCUSABLE = 'button:not(:disabled), select:not(:disabled), input:not(:disabled), textarea:not(:disabled)'
 
-export function OwnTaskDialog({ textOptional = false, onClose, onOpenSettings, onStarted }: Props) {
+export function OwnTaskDialog({ seed, textOptional = false, onClose, onOpenSettings, onStarted }: Props) {
   const t = useT()
   const dialog = useRef<HTMLDivElement>(null)
   const [repos, setRepos] = useState<RepoView[] | null>(null)
-  const [text, setText] = useState('')
+  const [text, setText] = useState(seed?.text ?? '')
   const [repoId, setRepoId] = useState('')
   const [edited, setEdited] = useState<string | null>(null)
   const [model, setModel] = useState<Model>('default')
@@ -34,8 +42,8 @@ export function OwnTaskDialog({ textOptional = false, onClose, onOpenSettings, o
   // W130: a refusal main can get past with a worktree this once, or from Terminal in the repo.
   const [problem, setProblem] = useState<WorkRefusal | null>(null)
   const [busy, setBusy] = useState(false)
-  const [fixed, setFixed] = useState(['', '', '', ''])
-  const [asked, setAsked] = useState<Asked[]>([])
+  const [fixed, setFixed] = useState(seed?.fixed ?? ['', '', '', ''])
+  const [asked, setAsked] = useState<Asked[]>(seed?.asked ?? [])
   const branch = edited ?? slugBranch(text)
   const suggestion = suggest(t, text)
   const use = (s: Suggestion): void => {
@@ -120,7 +128,7 @@ export function OwnTaskDialog({ textOptional = false, onClose, onOpenSettings, o
           <textarea id="own-text" rows={5} maxLength={2000} value={text} onChange={(e) => setText(e.target.value)} placeholder={t('Añadir filtro de laboratorios al listado…')} />
         </div>
 
-        {!blank && <Refine text={text} fixed={fixed} onFixed={setFixed} asked={asked} onAsked={setAsked} count={pairs.length} />}
+        {!blank && <Refine startOpen={seed !== undefined} text={text} fixed={fixed} onFixed={setFixed} asked={asked} onAsked={setAsked} count={pairs.length} />}
 
         <div className="f">
           <label htmlFor="own-repo">{t('Repo')}</label>
