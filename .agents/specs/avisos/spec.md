@@ -155,7 +155,7 @@ MR's title as `{detail}`, shown as text; the screen is keyboard-operable.
   leído» shall clear the count.
   (The proof asserts the badge, the order, a filter hiding other kinds, and the count going to zero.)
   Proof: src/renderer/avisos/avisos.test.ts the feed lists, filters and marks read
-- **V6** Opening a notice shall mark it read and: for `review`, `comment`, `ci`, `cipass`, `following` and `opened`, open its MR view when the MR is in the latest listing, otherwise say «Esta MR ya no está en la lista»; for `merged`, `closed` and `gone`, open the MR in its forge; for `ask`, `done`, `idle`, `stopped`, `qa`, `radar` and the stored legacy `agent`, open its workspace (for `qa`, its QA screen; for `radar`, the first of the two), or say «Ese trabajo ya no está» when it is gone; for `quota`, open nothing beyond marking it read.
+- **V6** Opening a notice shall mark it read and: for `review`, `comment`, `ci`, `cipass`, `following` and `opened`, open its MR page (M43) when the MR is in the latest listing (held app-wide, M9), otherwise say «Esta MR ya no está en la lista»; for `merged`, `closed` and `gone`, open the MR in its forge; for `ask`, `done`, `idle`, `stopped`, `qa`, `radar` and the stored legacy `agent`, open its workspace (for `qa`, its QA screen; for `radar`, the first of the two), or say «Ese trabajo ya no está» when it is gone; for `quota`, open nothing beyond marking it read.
   Proof: src/renderer/avisos/avisos.test.ts a notice opens what it is about
   Proof: src/renderer/avisos/avisos.test.ts merged, closed and gone open the forge
 ### Notificaciones (main) (notify-core, 12 nov 2026)

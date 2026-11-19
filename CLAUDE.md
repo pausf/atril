@@ -7,6 +7,7 @@ con agentes de Claude Code en tmux, y gestiona MRs de GitHub/GitLab. Remoto PRIV
 ## Dónde lo dejamos (10 nov 2026) — empieza por aquí
 
 Las ramas van apiladas: cada una sale de la anterior y `main` no se ha movido. La última es
+**`mr-page`** (19 nov: la MR se abre como página junto a la bandeja, con código y sus hilos, Conversación, «Revisar ▾», tarjetas a la derecha y «Fusionar» con confirmación; sin probar contra forjas reales: fusionar y los campos de GitLab). Antes,
 **`terminal-read-only`** (14 nov: terminal de solo lectura, una tarjeta por tipo de espera —pregunta, permiso, fin de turno—, «Escribe al agente», Automático sigue solo hasta 3 veces, rama grande con «Separar»/«Dejarla así»; sin probar con Claude real: dígito + Enter en el selector y «Permitir» = 1). Antes,
 **`notify-ui`** (14 nov: tarjetas «Notificaciones» y «Cuándo» en Ajustes, pantalla Avisos con los tipos nuevos). Antes,
 **`notify-core`** (12 nov: avisos con nombre del trabajo, tipos nuevos, uno sin leer por trabajo, agrupar, foco y horas de silencio en main; `notify-ui` sigue). Antes,
