@@ -2065,6 +2065,77 @@ kbd {
   padding: 6px 8px;
   word-break: break-all;
 }
+/* afinar la petición (I30–I34) */
+.refine {
+  margin: -2px 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--chip);
+  font-size: 13px;
+}
+.refine > summary {
+  cursor: pointer;
+  padding: 9px 14px;
+}
+.refine > summary .op,
+.refine > summary .cnt {
+  color: var(--sub);
+  font-size: 12px;
+}
+.refine .rb {
+  padding: 0 14px 12px;
+}
+.refine .rq {
+  display: grid;
+  gap: 2px;
+  margin-bottom: 6px;
+  font-size: 12.5px;
+}
+.refine .rq label,
+.refine .aih,
+.refine .ask span,
+.refine .think {
+  color: var(--sub);
+  font-size: 12px;
+}
+.refine .rq input {
+  font: inherit;
+  font-size: 13px;
+  border: 1px solid var(--faint);
+  border-radius: 9px;
+  padding: 4px 10px;
+  width: 100%;
+  background: var(--card);
+  color: var(--text);
+}
+.refine .aih {
+  margin: 10px 0 6px;
+  font-weight: 600;
+}
+.refine .ask {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+.refine .problem {
+  margin-top: 8px;
+}
+.f code.launch {
+  white-space: pre-wrap;
+  word-break: normal;
+  overflow-wrap: anywhere;
+  max-height: 150px;
+  overflow: auto;
+}
+.dlg {
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+}
+
 .f-note {
   margin: -6px 0 12px 90px;
   font-size: 12px;

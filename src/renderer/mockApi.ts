@@ -464,8 +464,8 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
     snapshotView: async () => null,
     snapshotWorkspace: async () => false
   } as unknown as AtrilApi
-  const { menu: menuApi, jira, workspaces: ws, repos: reposApi, flow: flowApi, forge: forgeApi, mr: mrApi, avisos: avisosApi, status: statusApi, qa: qaApi, libretto: librettoApi, radar: radarApi } = window.atril
-  return { ui, qaApi, radarApi, setQa: (id: string, q: QaStatus | null) => qa.set(id, q), setReport: (id: string, r: QaReport | null) => reports.set(id, r), stored, menuApi, jira, ws, reposApi, flowApi, forgeApi, mrApi, avisosApi, statusApi, librettoApi,
+  const { menu: menuApi, jira, workspaces: ws, repos: reposApi, flow: flowApi, forge: forgeApi, mr: mrApi, avisos: avisosApi, status: statusApi, qa: qaApi, libretto: librettoApi, radar: radarApi, refine } = window.atril
+  return { ui, qaApi, radarApi, setQa: (id: string, q: QaStatus | null) => qa.set(id, q), setReport: (id: string, r: QaReport | null) => reports.set(id, r), stored, menuApi, jira, ws, reposApi, flowApi, forgeApi, mrApi, avisosApi, statusApi, librettoApi, refine,
     pushAvisos: (items: Aviso[]) => {
       avisos = items
       avisoListeners.forEach((cb) => cb(items))

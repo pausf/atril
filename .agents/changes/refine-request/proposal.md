@@ -97,6 +97,6 @@ Ninguna.
 ## Checklist
 
 - [x] `src/main/refine.ts` con su IPC `atril:refine:ask`, preload y `mockApi.ts` · Closes: W208, W209
-- [ ] `Refine.tsx`: sección plegada, cuatro fijas, texto compuesto en Empezar y «Lanza», tope de 2000 y Enter · Closes: I30, I33, I34
+- [x] `Refine.tsx`: sección plegada, cuatro fijas, texto compuesto en Empezar y «Lanza», tope de 2000 y Enter · Closes: I30, I33, I34
 - [ ] «Que Claude me pregunte», sus preguntas y su error · waits on boxes 1, 2 · Closes: I31, I32
 - [ ] Textos en inglés, S16/S19; app real; `bocetos/novedades.html` y `bocetos/fase1-nucleo.html` · waits on boxes 1–3
