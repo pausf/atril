@@ -22,6 +22,11 @@ Durable decisions: the two in Prior decisions below
 - Q: (spec-reviewer) `lessons.md` solo crece: ¿cómo se marcan las cubiertas? → A: una entrada nueva por casilla, `## 2026-11-19 · harness-ladder · arnés`, que nombra las lecciones que la regla sustituye (assumed).
 - Q: ¿Escrituras atómicas e `ipcMain` envuelto? → A: fuera de este cambio: 15 archivos con `writeFile` y 109 `ipcMain` en `index.ts` piden su propio cambio (assumed).
 
+### Session 2026-11-20
+- Q: (builder) ¿Cuánto tarda `.githooks/pre-commit`? → A: 5,3 s y 4,8 s (typecheck + lint, dos medidas con `time`), muy por debajo de los 60 s del riesgo: se queda como está.
+- Q: (builder) ¿Qué tipo tiene `over`? → A: parcial profundo laxo: una hoja función acepta cualquier función y cada nivel admite miembros de más, porque los tests guardan sus stubs tal cual (respuestas parciales y `term.input`, que la API ya no tiene y `components/terminal.test.tsx` stub-ea para probar que nadie lo llama) (assumed).
+- Q: (builder) ¿Con qué fecha van las entradas de lecciones? → A: `## 2026-11-20 · harness-ladder · arnés`, el día en que se construyen, no el 19 que dice la entrada de arriba (assumed).
+
 ## Outcomes
 
 Cuatro errores que ya se pagaron dejan de poder repetirse sin que `pnpm lint` o el commit lo paren, con un mensaje que dice qué usar en su lugar; las lecciones que los cubrían dicen qué regla las sustituye.
@@ -100,4 +105,4 @@ Ninguna.
 
 - [x] Frontera main↔renderer y `homedir()` en lint, con su entrada en lecciones · Closes: W210, W212
 - [x] `window.atril` solo por `mockApi` (con `over`), los 10 tests migrados, entrada en lecciones · Closes: W211
-- [ ] `prepare` y hook de commit, tiempo medido, entrada en lecciones · Closes: W213, W214
+- [x] `prepare` y hook de commit, tiempo medido, entrada en lecciones · Closes: W213, W214

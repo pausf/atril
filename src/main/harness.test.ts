@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { ESLint } from 'eslint'
 import { join } from 'node:path'
+import { spawnSync } from 'node:child_process'
+import { chmodSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
 
 const repoRoot = join(__dirname, '../..')
 const eslint = new ESLint({ cwd: repoRoot })
@@ -53,5 +56,33 @@ describe('harness', () => {
     for (const file of ['src/main/paths.ts', 'src/main/trust.ts', 'src/main/qa.ts', 'src/main/a.test.ts'])
       expect(await lint(calls[0], file)).not.toContainEqual(expect.stringContaining(HOME))
     expect(await lint("export const h = (env: NodeJS.ProcessEnv) => env['HOME']\n", 'src/main/login-path.ts')).not.toContainEqual(expect.stringContaining(HOME))
+  })
+
+  it('prepare points git at the hooks', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'atril-prepare-'))
+    try {
+      spawnSync('git', ['init', '-q'], { cwd: dir })
+      const prepare = JSON.parse(readFileSync(join(repoRoot, 'package.json'), 'utf8')).scripts.prepare as string
+      expect(spawnSync('sh', ['-c', prepare], { cwd: dir }).status).toBe(0)
+      expect(spawnSync('git', ['config', 'core.hooksPath'], { cwd: dir, encoding: 'utf8' }).stdout.trim()).toBe('.githooks')
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+
+  it('the pre-commit hook stops a red commit', () => {
+    const bin = mkdtempSync(join(tmpdir(), 'atril-hook-'))
+    try {
+      // A pnpm that fails only for the script named in FAIL.
+      writeFileSync(join(bin, 'pnpm'), '#!/bin/sh\nfor a in "$@"; do [ "$a" = "$FAIL" ] && exit 1; done\nexit 0\n')
+      chmodSync(join(bin, 'pnpm'), 0o755)
+      const run = (fail: string): number | null =>
+        spawnSync('sh', [join(repoRoot, '.githooks/pre-commit')], { env: { ...process.env, PATH: `${bin}:${process.env['PATH']}`, FAIL: fail } }).status
+      expect(run('typecheck')).not.toBe(0)
+      expect(run('lint')).not.toBe(0)
+      expect(run('none')).toBe(0)
+    } finally {
+      rmSync(bin, { recursive: true, force: true })
+    }
   })
 })

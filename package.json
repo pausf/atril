@@ -10,7 +10,8 @@
     "test": "vitest run",
     "lint": "eslint .",
     "dist": "electron-vite build && electron-builder --mac",
-    "rebuild": "electron-rebuild -f -w node-pty"
+    "rebuild": "electron-rebuild -f -w node-pty",
+    "prepare": "git config core.hooksPath .githooks"
   },
   "dependencies": {
     "@xterm/addon-fit": "^0.11.0",
