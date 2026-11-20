@@ -3,8 +3,9 @@ import { createElement } from 'react'
 import { cleanup, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import type { AtrilApi, JiraIssue, WorkspaceView } from '../../preload/api'
+import type { JiraIssue, WorkspaceView } from '../../preload/api'
 import { StartDialog } from './StartDialog'
+import { mockApi } from '../mockApi'
 
 afterEach(cleanup)
 
@@ -13,7 +14,7 @@ const issue = (type: string): JiraIssue => ({ key: 'PF-1', summary: 'Añadir fil
 function mount(type: string) {
   const proposeStart = vi.fn().mockResolvedValue({ repoId: 'shop-web', branch: 'PF-1', mode: 'worktree', reason: '', command: 'claude' })
   const start = vi.fn().mockResolvedValue({ workspace: { id: 'w1', branch: 'PF-1' } as WorkspaceView })
-  window.atril = { repos: { list: async () => [{ id: 'shop-web', path: '/r', mode: 'worktree', reason: '' }] }, jira: { proposeStart, start } } as unknown as AtrilApi
+  mockApi({}, undefined, { repos: { list: async () => [{ id: 'shop-web', path: '/r', mode: 'worktree', reason: '' }] }, jira: { proposeStart, start } })
   render(createElement(StartDialog, { issue: issue(type), onClose: () => undefined, onStarted: async () => undefined, onOpenWorkspace: () => undefined }))
   return { proposeStart, start }
 }

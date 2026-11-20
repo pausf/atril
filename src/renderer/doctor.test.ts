@@ -3,7 +3,7 @@ import { createElement } from 'react'
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { AtrilApi, ToolReport } from '../preload/api'
+import type { ToolReport } from '../preload/api'
 import { TopBar } from './components/TopBar'
 import { App } from './App'
 import { mockApi, mockSystemTheme } from './mockApi'
@@ -14,7 +14,7 @@ const problems: ToolReport[] = [
 ]
 
 beforeEach(() => {
-  window.atril = { settings: { jira: { status: vi.fn().mockResolvedValue({ saved: false }) } }, snapshotView: async () => null } as unknown as AtrilApi
+  mockApi({}, undefined, { settings: { jira: { status: vi.fn().mockResolvedValue({ saved: false }) } }, snapshotView: async () => null })
 })
 afterEach(cleanup)
 

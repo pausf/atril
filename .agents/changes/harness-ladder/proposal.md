@@ -99,5 +99,5 @@ Ninguna.
 ## Checklist
 
 - [x] Frontera main↔renderer y `homedir()` en lint, con su entrada en lecciones · Closes: W210, W212
-- [ ] `window.atril` solo por `mockApi` (con `over`), los 10 tests migrados, entrada en lecciones · Closes: W211
+- [x] `window.atril` solo por `mockApi` (con `over`), los 10 tests migrados, entrada en lecciones · Closes: W211
 - [ ] `prepare` y hook de commit, tiempo medido, entrada en lecciones · Closes: W213, W214

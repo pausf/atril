@@ -3,12 +3,13 @@ import { createElement } from 'react'
 import { cleanup, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import type { AtrilApi, UsageResult } from '../preload/api'
+import type { UsageResult } from '../preload/api'
 import { Footer } from './components/Footer'
+import { mockApi } from './mockApi'
 
 function mount(first: UsageResult) {
   const usage = { get: vi.fn().mockResolvedValue(first), onChange: vi.fn(() => () => undefined), fix: vi.fn().mockResolvedValue({ ok: true }) }
-  window.atril = { usage } as unknown as AtrilApi
+  mockApi({}, undefined, { usage })
   render(createElement(Footer))
   return usage
 }

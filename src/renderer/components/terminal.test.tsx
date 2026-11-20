@@ -3,6 +3,7 @@ import { createElement } from 'react'
 import { cleanup, fireEvent, render } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { Terminal } from './Terminal'
+import { mockApi } from '../mockApi'
 
 // jsdom cannot run xterm: a stand-in that remembers its options and anyone listening for keys.
 const made: Array<{ options: Record<string, unknown>; listeners: Array<(d: string) => void> }> = []
@@ -34,10 +35,10 @@ beforeEach(() => {
   sent.length = 0
   vi.stubGlobal('ResizeObserver', class { observe(): void {} disconnect(): void {} })
   const record = (name: string) => (...a: unknown[]) => void sent.push([name, ...a])
-  window.atril = {
+  mockApi({}, undefined, {
     term: { attach: async () => ({ ok: true }), onData: () => () => undefined, input: record('input'), resize: vi.fn(), detach: vi.fn() },
     status: { answer: record('answer'), compose: record('compose') }
-  } as unknown as typeof window.atril
+  })
 })
 afterEach(() => {
   cleanup()

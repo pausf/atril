@@ -5,6 +5,7 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { TermAttach } from '../preload/api'
 import { Terminal } from './components/Terminal'
+import { mockApi } from './mockApi'
 
 // jsdom cannot run xterm: a stand-in with the size and calls the component uses.
 vi.mock('@xterm/xterm', () => ({
@@ -30,7 +31,7 @@ let attach: ReturnType<typeof vi.fn<(id: string, cols: number, rows: number) => 
 beforeEach(() => {
   vi.stubGlobal('ResizeObserver', class { observe(): void {} disconnect(): void {} })
   attach = vi.fn(async () => FAIL)
-  window.atril = { term: { attach, onData: () => () => undefined, input: vi.fn(), resize: vi.fn(), detach: vi.fn() } } as unknown as typeof window.atril
+  mockApi({}, undefined, { term: { attach, onData: () => () => undefined, input: vi.fn(), resize: vi.fn(), detach: vi.fn() } })
 })
 afterEach(() => {
   cleanup()

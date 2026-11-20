@@ -20,7 +20,7 @@ describe('new work dialog', () => {
       .fn()
       .mockResolvedValueOnce({ error: 'Tu copia de shop-web tiene 5 cambios sin commitear en feat/x: no puedo pasarla a qa-auto sin mezclarlos.', detail: ' M main.js', fix: 'worktree' })
       .mockResolvedValueOnce({ workspace: started })
-    window.atril = { repos: { list: async () => [{ id: 'shop-web', path: '/r', mode: 'in-place', reason: '' }] }, workspaces: { open } } as unknown as AtrilApi
+    mockApi({}, undefined, { repos: { list: async () => [{ id: 'shop-web', path: '/r', mode: 'in-place', reason: '' }] }, workspaces: { open } })
     const onStarted = vi.fn(async () => undefined)
     const user = userEvent.setup()
     render(createElement(OwnTaskDialog, { textOptional: true, onClose: () => undefined, onOpenSettings: () => undefined, onStarted }))
@@ -48,7 +48,7 @@ describe('new work dialog', () => {
       .fn()
       .mockResolvedValueOnce({ error: 'Tu copia…', detail: '', fix: 'worktree' })
       .mockResolvedValueOnce({ workspace: { id: 'w2', branch: 'solo' } as WorkspaceView })
-    window.atril = { repos: { list: async () => [{ id: 'shop-web', path: '/r', mode: 'in-place', reason: '' }] }, workspaces: { open } } as unknown as AtrilApi
+    mockApi({}, undefined, { repos: { list: async () => [{ id: 'shop-web', path: '/r', mode: 'in-place', reason: '' }] }, workspaces: { open } })
     const user = userEvent.setup()
     render(createElement(OwnTaskDialog, { textOptional: true, onClose: () => undefined, onOpenSettings: () => undefined, onStarted: async () => undefined }))
     await user.type(await screen.findByLabelText('Rama'), 'solo')
@@ -58,7 +58,7 @@ describe('new work dialog', () => {
   })
   it('a suggestion is shown and used only on click', async () => {
     const open = vi.fn().mockResolvedValue({ workspace: { id: 'w3', branch: 'b' } as WorkspaceView })
-    window.atril = { repos: { list: async () => [{ id: 'shop-web', path: '/r', mode: 'worktree', reason: '' }] }, workspaces: { open } } as unknown as AtrilApi
+    mockApi({}, undefined, { repos: { list: async () => [{ id: 'shop-web', path: '/r', mode: 'worktree', reason: '' }] }, workspaces: { open } })
     const user = userEvent.setup()
     render(createElement(OwnTaskDialog, { textOptional: true, onClose: () => undefined, onOpenSettings: () => undefined, onStarted: async () => undefined }))
     const model = screen.getByLabelText<HTMLSelectElement>('Modelo')
@@ -88,7 +88,7 @@ describe('new work dialog', () => {
   it('a git failure offers terminal for the repo', async () => {
     const open = vi.fn().mockResolvedValue({ error: 'git no ha podido crear la carpeta del trabajo.', detail: "fatal: '/wt/x' already exists", fix: 'terminal' })
     const terminal = vi.fn().mockResolvedValue({ ok: true })
-    window.atril = { repos: { list: async () => [{ id: 'shop-web', path: '/r', mode: 'worktree', reason: '' }] }, workspaces: { open, terminal } } as unknown as AtrilApi
+    mockApi({}, undefined, { repos: { list: async () => [{ id: 'shop-web', path: '/r', mode: 'worktree', reason: '' }] }, workspaces: { open, terminal } })
     const user = userEvent.setup()
     render(createElement(OwnTaskDialog, { textOptional: true, onClose: () => undefined, onOpenSettings: () => undefined, onStarted: async () => undefined }))
     await user.type(await screen.findByLabelText('Rama'), 'x')

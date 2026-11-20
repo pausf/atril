@@ -134,8 +134,25 @@ interface Options {
   relocateRepo?: Record<string, RepoResult | null>
 }
 
-/** ui.json lives in `stored`; pass the same object to a second mock to simulate a restart. */
-export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true, theme: 'auto', folded: {} }) {
+// Loose on purpose: tests keep their own stubs, which may answer partial shapes or stub a member the
+// API no longer has (term.input) to prove nobody calls it.
+type DeepPartial<T> = { [K in keyof T]?: T[K] extends (...a: never[]) => unknown ? (...a: never[]) => unknown : DeepPartial<T[K]> } & Record<string, unknown>
+
+const isPlain = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v)
+
+/** `over` laid on `base`: objects merge, anything else (functions included) replaces. */
+function merge(base: object, over: object): Record<string, unknown> {
+  const out: Record<string, unknown> = { ...base }
+  for (const [k, v] of Object.entries(over)) {
+    const was = out[k]
+    out[k] = isPlain(v) && isPlain(was) ? merge(was, v) : v
+  }
+  return out
+}
+
+/** ui.json lives in `stored`; pass the same object to a second mock to simulate a restart.
+ * `over` replaces single members of the full mock, for a test that needs its own stubs. */
+export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true, theme: 'auto', folded: {} }, over?: DeepPartial<AtrilApi>) {
   Object.assign(stored, o.ui)
   let menu: ((a: MenuAction) => void) | undefined
   let notified: ((id: string) => void) | undefined
@@ -188,7 +205,7 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
     const q = qa.get(id)
     if (q) qa.set(id, { ...q, live })
   }
-  window.atril = {
+  const api = {
     ui,
     menu: {
       setState: vi.fn(),
@@ -464,6 +481,7 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
     snapshotView: async () => null,
     snapshotWorkspace: async () => false
   } as unknown as AtrilApi
+  window.atril = over ? (merge(api, over) as unknown as AtrilApi) : api
   const { menu: menuApi, jira, workspaces: ws, repos: reposApi, flow: flowApi, forge: forgeApi, mr: mrApi, avisos: avisosApi, status: statusApi, qa: qaApi, libretto: librettoApi, radar: radarApi, refine } = window.atril
   return { ui, qaApi, radarApi, setQa: (id: string, q: QaStatus | null) => qa.set(id, q), setReport: (id: string, r: QaReport | null) => reports.set(id, r), stored, menuApi, jira, ws, reposApi, flowApi, forgeApi, mrApi, avisosApi, statusApi, librettoApi, refine,
     pushAvisos: (items: Aviso[]) => {

@@ -3,11 +3,11 @@ import { createElement } from 'react'
 import { cleanup, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { AtrilApi } from '../../preload/api'
 import { Ajustes } from './Ajustes'
 import { ConnectInSettings } from './ConnectInSettings'
 import { TopBar } from '../components/TopBar'
 import { NavigationContext } from './navigation'
+import { mockApi as fullMock } from '../mockApi'
 
 const TOKEN = 'ATATT-super-secret-token'
 
@@ -23,7 +23,7 @@ function mockApi(status: { saved: boolean; account?: string; site?: string; avat
     openTokenPage: vi.fn().mockResolvedValue(undefined)
   }
   // The forge cards stay loading here: this file is about the Jira card.
-  window.atril = { settings: { ...settings, forge: { status: () => new Promise(() => undefined) } }, repos: { list: async () => [] }, snapshotView: async () => null } as unknown as AtrilApi
+  fullMock({}, undefined, { settings: { ...settings, forge: { status: () => new Promise(() => undefined) } }, repos: { list: async () => [] }, snapshotView: async () => null })
   return settings
 }
 

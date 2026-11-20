@@ -34,7 +34,7 @@ let answer: ReturnType<typeof vi.fn<(id: string, choice: unknown) => Promise<Qui
 beforeEach(() => {
   wait = null
   answer = vi.fn(async () => ({ ok: true as const }))
-  window.atril = { status: { wait: vi.fn(async () => wait), answer } } as unknown as typeof window.atril
+  mockApi({}, undefined, { status: { wait: vi.fn(async () => wait), answer } })
 })
 afterEach(() => {
   cleanup()

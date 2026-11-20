@@ -9,6 +9,7 @@ const HOME = [
   "MemberExpression[object.object.name='process'][object.property.name='env'][property.name='HOME']",
   "MemberExpression[object.object.name='process'][object.property.name='env'][property.value='HOME']"
 ].map((selector) => ({ selector, message: homeMessage }))
+const MOCK = { selector: "AssignmentExpression > MemberExpression.left[property.name='atril']", message: 'usa mockApi() de src/renderer/mockApi.ts' }
 
 export default tseslint.config(
   { files: ['**/*.cjs'], languageOptions: { globals: { module: 'readonly', process: 'readonly' } } },
@@ -25,9 +26,11 @@ export default tseslint.config(
     ignores: ['**/*.test.ts'],
     rules: { 'no-restricted-imports': ['error', { patterns: [{ group: ['**/renderer/**'], message: BOUNDARY }] }] }
   },
+  { files: ['src/**/*.{ts,tsx}'], ignores: ['src/renderer/mockApi.ts'], rules: { 'no-restricted-syntax': ['error', MOCK] } },
+  // A later no-restricted-syntax replaces the earlier one for the same file, so this one repeats MOCK.
   {
     files: ['src/main/**/*.ts'],
     ignores: ['**/*.test.ts', 'src/main/paths.ts', 'src/main/trust.ts', 'src/main/qa.ts'],
-    rules: { 'no-restricted-syntax': ['error', ...HOME] }
+    rules: { 'no-restricted-syntax': ['error', MOCK, ...HOME] }
   }
 )

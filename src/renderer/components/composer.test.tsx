@@ -24,7 +24,7 @@ vi.mock('@xterm/xterm/css/xterm.css', () => ({}))
 let compose: ReturnType<typeof vi.fn<(id: string, text: string) => Promise<QuickAnswer>>>
 beforeEach(() => {
   compose = vi.fn(async () => ({ ok: true as const }))
-  window.atril = { status: { compose } } as unknown as typeof window.atril
+  mockApi({}, undefined, { status: { compose } })
 })
 afterEach(() => {
   cleanup()

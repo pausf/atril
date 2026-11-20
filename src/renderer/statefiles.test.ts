@@ -3,7 +3,7 @@ import { createElement } from 'react'
 import { cleanup, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { AtrilApi, StateProblem } from '../preload/api'
+import type { StateProblem } from '../preload/api'
 import { App } from './App'
 import { OwnTaskDialog } from './inbox/OwnTaskDialog'
 import { mockApi, mockSystemTheme, workspace } from './mockApi'
@@ -65,14 +65,14 @@ describe('damaged state files', () => {
     // And the new-work dialog, both for its repo list and for an open refused by a damaged file.
     const reveal = vi.fn(async () => true)
     const open = vi.fn().mockResolvedValue(WS)
-    window.atril = { repos: { list: async () => [{ id: 'shop-web', path: '/r', mode: 'worktree', reason: '' }] }, workspaces: { open }, revealState: reveal } as unknown as AtrilApi
+    mockApi({}, undefined, { repos: { list: async () => [{ id: 'shop-web', path: '/r', mode: 'worktree', reason: '' }] }, workspaces: { open }, revealState: reveal })
     render(createElement(OwnTaskDialog, { textOptional: true, onClose: () => undefined, onOpenSettings: () => undefined, onStarted: async () => undefined }))
     await user.type(await screen.findByLabelText('Rama'), 'solo')
     await user.click(screen.getByRole('button', { name: 'Empezar' }))
     await user.click(await screen.findByRole('button', { name: 'Mostrar en Finder' }))
     expect(reveal).toHaveBeenLastCalledWith('workspaces')
     cleanup()
-    window.atril = { repos: { list: async () => ({ problem: REPOS }) }, workspaces: { open }, revealState: reveal } as unknown as AtrilApi
+    mockApi({}, undefined, { repos: { list: async () => ({ problem: REPOS }) }, workspaces: { open }, revealState: reveal })
     render(createElement(OwnTaskDialog, { textOptional: true, onClose: () => undefined, onOpenSettings: () => undefined, onStarted: async () => undefined }))
     const repoAlert = await screen.findByRole('alert')
     expect(repoAlert.querySelector('b')!.textContent).toBe(REPOS.error)
