@@ -24,6 +24,8 @@ describe('harness', () => {
     expect(await lint("import type { X } from '../../main/paths'\nexport type Y = X\n", 'src/renderer/components/a.tsx')).toContainEqual(expect.stringContaining(BOUNDARY))
     expect(await lint("export { x } from '../renderer/a'\n", 'src/main/a.ts')).toContainEqual(expect.stringContaining(BOUNDARY))
     expect(await lint("import { x } from '../renderer/a'\nexport const y = x\n", 'src/main/b.ts')).toContainEqual(expect.stringContaining(BOUNDARY))
+    expect(await lint("import { x } from '../main'\nexport const y = x\n", 'src/renderer/c.ts')).toContainEqual(expect.stringContaining(BOUNDARY))
+    expect(await lint("import { x } from '../renderer'\nexport const y = x\n", 'src/main/c.ts')).toContainEqual(expect.stringContaining(BOUNDARY))
     // Tests may cross to compare constants, and preload is the bridge itself.
     expect(await lint("import { x } from '../main/paths'\nexport const y = x\n", 'src/renderer/a.test.ts')).not.toContainEqual(expect.stringContaining(BOUNDARY))
     expect(await lint("import type { X } from '../preload/api'\nexport type Y = X\n", 'src/renderer/a.ts')).not.toContainEqual(expect.stringContaining(BOUNDARY))
@@ -37,6 +39,7 @@ describe('harness', () => {
     ]
     for (const file of ['src/renderer/a.test.tsx', 'src/renderer/b.ts', 'src/main/c.ts', 'src/main/paths.ts', 'src/preload/d.ts'])
       for (const code of assignments) expect(await lint(code, file)).toContainEqual(expect.stringContaining(MOCK))
+    expect(await lint(assignments[0], 'test/setup.ts')).toContainEqual(expect.stringContaining(MOCK))
     expect(await lint(assignments[0], 'src/renderer/mockApi.ts')).not.toContainEqual(expect.stringContaining(MOCK))
     expect(await lint('export const a = window.atril\n', 'src/renderer/b.ts')).not.toContainEqual(expect.stringContaining(MOCK))
     // Both rules share no-restricted-syntax: the home rule must survive in main.
@@ -53,6 +56,7 @@ describe('harness', () => {
       "export const h = process.env['HOME']\n"
     ]
     for (const code of calls) expect(await lint(code, 'src/main/forge/a.ts')).toContainEqual(expect.stringContaining(HOME))
+    expect(await lint("import { homedir as h } from 'node:os'\nexport const p = h()\n", 'src/main/forge/b.ts')).toContainEqual(expect.stringContaining(HOME))
     for (const file of ['src/main/paths.ts', 'src/main/trust.ts', 'src/main/qa.ts', 'src/main/a.test.ts'])
       expect(await lint(calls[0], file)).not.toContainEqual(expect.stringContaining(HOME))
     expect(await lint("export const h = (env: NodeJS.ProcessEnv) => env['HOME']\n", 'src/main/login-path.ts')).not.toContainEqual(expect.stringContaining(HOME))

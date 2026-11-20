@@ -401,3 +401,15 @@ Two rules moved from prose to `pnpm lint` (W210, W212). Files under `src/rendere
 
 ## 2026-11-20 · harness-ladder · arnés
 A commit with red typecheck or lint can no longer go in (W213, W214). The `prepare` script sets `core.hooksPath` to `.githooks`, and `.githooks/pre-commit` runs `pnpm -s typecheck` and `pnpm -s lint` with `set -e`, in about 5 s. This replaces the typecheck and lint half of «2026-11-09 · add-atril-core · 8» (a gate inside an `&&` chain that always returned 0), «2026-11-09 · add-agent-activity · 6» (two commits in a row while red) and «2026-11-09 · add-language · 6» (proofs committed while red). The test half still depends on the gate: the hook does not run the suite, which takes more than 10 min under load.
+
+## 2026-11-20 · harness-ladder · 6→7
+`no-restricted-imports` with `**/main/**` missed `'../main'`, a directory import that resolves to `src/main/index.ts`. A glob boundary needs the bare directory too (`**/main`). Fixed, with that case in the test.
+
+## 2026-11-20 · harness-ladder · 6→7
+The `window.atril` rule was scoped to `src/**` while W211 says any file; `test/setup.ts` slipped through. Scope a rule by the criterion's words, not by where the offenders happen to live today. Fixed: `**/*.{ts,tsx}`.
+
+## 2026-11-20 · harness-ladder · 6→7
+A call-site selector (`callee.name='homedir'`) misses `import { homedir as h }`. Ban the import specifier as well as the call. Fixed: `ImportSpecifier[imported.name='homedir']`.
+
+## 2026-11-20 · harness-ladder · arnés
+Every full gate in this change failed 12–14 tmux/git tests under load and passed them alone on rerun. The gate is green but twice as slow; queue: run the tmux/git files in their own vitest project with fewer workers.

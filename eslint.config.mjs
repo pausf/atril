@@ -5,6 +5,7 @@ const BOUNDARY = 'renderer y main solo hablan por preload'
 const homeMessage = 'las rutas de casa salen de paths.ts (ATRIL_HOME en tests)'
 const HOME = [
   "CallExpression[callee.name='homedir']",
+  "ImportSpecifier[imported.name='homedir']",
   "CallExpression[callee.property.name='homedir']",
   "MemberExpression[object.object.name='process'][object.property.name='env'][property.name='HOME']",
   "MemberExpression[object.object.name='process'][object.property.name='env'][property.value='HOME']"
@@ -19,14 +20,14 @@ export default tseslint.config(
   {
     files: ['src/renderer/**/*.{ts,tsx}'],
     ignores: ['**/*.test.ts', '**/*.test.tsx'],
-    rules: { 'no-restricted-imports': ['error', { patterns: [{ group: ['**/main/**'], message: BOUNDARY }] }] }
+    rules: { 'no-restricted-imports': ['error', { patterns: [{ group: ['**/main', '**/main/**'], message: BOUNDARY }] }] }
   },
   {
     files: ['src/main/**/*.ts'],
     ignores: ['**/*.test.ts'],
-    rules: { 'no-restricted-imports': ['error', { patterns: [{ group: ['**/renderer/**'], message: BOUNDARY }] }] }
+    rules: { 'no-restricted-imports': ['error', { patterns: [{ group: ['**/renderer', '**/renderer/**'], message: BOUNDARY }] }] }
   },
-  { files: ['src/**/*.{ts,tsx}'], ignores: ['src/renderer/mockApi.ts'], rules: { 'no-restricted-syntax': ['error', MOCK] } },
+  { files: ['**/*.{ts,tsx}'], ignores: ['src/renderer/mockApi.ts'], rules: { 'no-restricted-syntax': ['error', MOCK] } },
   // A later no-restricted-syntax replaces the earlier one for the same file, so this one repeats MOCK.
   {
     files: ['src/main/**/*.ts'],
