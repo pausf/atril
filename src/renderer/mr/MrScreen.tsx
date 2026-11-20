@@ -33,13 +33,25 @@ export function MrScreen({ mrs, openUrl }: { mrs: MrsState; openUrl?: string | n
   }
   const goRef = useRef(go)
   goRef.current = go
+  const stepRef = useRef<(d: number) => string | undefined>(() => undefined)
   // M43: Escape closes only the topmost layer: the page's own (menu, confirmation), else the page.
+  // M52: J/K open the next or previous MR, unless typing, held, modified or under a menu or dialog.
   useEffect(() => {
     if (!opened) return
     const onKey = (e: KeyboardEvent): void => {
-      if (e.key !== 'Escape' || e.defaultPrevented || document.querySelector('[aria-modal="true"]')) return
-      if (escape.current?.()) return
-      goRef.current(null)
+      if (e.defaultPrevented) return
+      if (e.key === 'Escape') {
+        if (document.querySelector('[aria-modal="true"]') || escape.current?.()) return
+        return goRef.current(null)
+      }
+      if ((e.key !== 'j' && e.key !== 'k') || e.repeat || e.metaKey || e.ctrlKey || e.altKey || e.shiftKey) return
+      if (document.querySelector('[aria-modal="true"], [role="menu"]')) return
+      const el = document.activeElement as HTMLElement | null
+      if (el && (/^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName) || el.isContentEditable)) return
+      const next = stepRef.current(e.key === 'j' ? 1 : -1)
+      if (!next) return
+      e.preventDefault()
+      goRef.current(next)
     }
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
@@ -69,6 +81,7 @@ export function MrScreen({ mrs, openUrl }: { mrs: MrsState; openUrl?: string | n
   // M43: Mías, Me toca revisar and Sigo in order, an MR in two lists only at its first.
   const order = result ? [...new Set([...result.mine, ...result.review, ...result.following].map((r) => r.url))] : []
   const at = opened ? order.indexOf(opened) : -1
+  stepRef.current = (d) => (at >= 0 ? order[at + d] : undefined)
   return (
     <section className={`tasks-screen mr-screen${opened ? ' open' : ''}`} data-tour="mr">
       <h1>

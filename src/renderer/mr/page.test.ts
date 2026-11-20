@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { createElement } from 'react'
-import { act, cleanup, render, screen, waitFor, within } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi, type Mock } from 'vitest'
 import type { Aviso, MrDraft, MrDrafts, MrDraftsResult, MrItem, MrLists, MrPageFile, MrScore, MrThread, WorkspaceView } from '../../preload/api'
@@ -158,6 +158,80 @@ describe('the mr page', () => {
     await user.click(screen.getByRole('button', { name: /^Avisos/ }))
     await user.click(within(screen.getByRole('list', { name: 'Avisos' })).getByRole('button', { name: /Nuevo filtro/ }))
     expect(back(await page('Nuevo filtro')).nextElementSibling?.textContent).toBe('2 de 3 · J/K')
+  })
+
+  it('j and k move between mrs', async () => {
+    const FOLLOW = 'https://github.com/acme/web/pull/3'
+    const api = mockApi({ mrs: lists({ mine: [{ ...MINE, mergeable: true }], review: [REVIEW], following: [REVIEW, mr(FOLLOW, { title: 'Ajena' })] }), threads: { [GH]: { threads: [GENERAL], more: false } } })
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false)
+    const user = userEvent.setup()
+    render(createElement(App))
+    await toMr(user)
+    const showing = (title: string) => expect(screen.getByRole('region', { name: title })).toBeTruthy()
+    const blur = () => (document.activeElement as HTMLElement | null)?.blur()
+    await user.click(await screen.findByRole('button', { name: /^Envío con IVA/ }))
+    await page('Envío con IVA')
+
+    // M52: K at the first does nothing; J walks Mías, Me toca revisar and Sigo, the MR in two lists once; J at the last does nothing.
+    blur()
+    await user.keyboard('k')
+    showing('Envío con IVA')
+    await user.keyboard('j')
+    await page('Nuevo filtro')
+    await user.keyboard('j')
+    await page('Ajena')
+    await user.keyboard('j')
+    showing('Ajena')
+    await user.keyboard('k')
+    await page('Nuevo filtro')
+    await user.keyboard('k')
+    await page('Envío con IVA')
+
+    // With a modifier, or held down, it does nothing; ↑/↓ do not change MR.
+    for (const keys of ['{Meta>}j{/Meta}', '{Control>}j{/Control}', '{Alt>}j{/Alt}', '{Shift>}j{/Shift}', '{ArrowDown}', '{ArrowUp}']) {
+      await user.keyboard(keys)
+      showing('Envío con IVA')
+    }
+    fireEvent.keyDown(document, { key: 'j', repeat: true })
+    showing('Envío con IVA')
+
+    // With the «Revisar ▾» menu or the «Fusionar» confirmation open, it does nothing.
+    const now = screen.getByRole('region', { name: 'Envío con IVA' })
+    await user.click(within(now).getByRole('button', { name: 'Revisar ▾' }))
+    await user.keyboard('j')
+    expect(screen.getByRole('menu')).toBeTruthy()
+    showing('Envío con IVA')
+    await user.keyboard('{Escape}')
+    await user.click(within(now).getByRole('button', { name: 'Fusionar' }))
+    await screen.findByRole('dialog')
+    await user.keyboard('j')
+    showing('Envío con IVA')
+    await user.keyboard('{Escape}')
+
+    // In a text field J is a letter; outside it, an unsent reply asks M43's question first.
+    await user.click(within(now).getByRole('tab', { name: /^Conversación/ }))
+    const box = await within(now).findByRole('textbox', { name: 'Responder' })
+    await user.type(box, 'jk')
+    expect((box as HTMLTextAreaElement).value).toBe('jk')
+    showing('Envío con IVA')
+    blur()
+    await user.keyboard('j')
+    expect(confirm).toHaveBeenLastCalledWith('Tienes una respuesta sin enviar. ¿Salir y descartarla?')
+    showing('Envío con IVA')
+    confirm.mockReturnValue(true)
+    await user.keyboard('j')
+    await page('Nuevo filtro')
+
+    // An open MR the latest listing dropped: no place and no J/K.
+    const list = api.mrApi.list as unknown as Mock<() => Promise<MrLists>>
+    list.mockResolvedValue(lists({ mine: [MINE], following: [mr(FOLLOW, { title: 'Ajena' })] }))
+    await user.click(screen.getByRole('button', { name: 'Actualizar' }))
+    await screen.findByText('Esta MR ya no está en la lista')
+    expect(screen.queryByText(/ de \d+ · J\/K$/)).toBeNull()
+    blur()
+    await user.keyboard('j')
+    await user.keyboard('k')
+    expect(screen.getByText('Esta MR ya no está en la lista')).toBeTruthy()
   })
 
   it('threads and drafts sit on their lines', async () => {
