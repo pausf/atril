@@ -3,6 +3,7 @@ import type { SkillItem, SkillsList } from '../../preload/api'
 import { Problem } from '../components/Problem'
 import { useT } from '../ui'
 import { SkillCard } from './SkillCard'
+import { SkillDetail } from './SkillDetail'
 
 type Filter = 'all' | 'on' | 'off'
 
@@ -25,6 +26,8 @@ export function Skills() {
   const [error, setError] = useState<string | null>(null)
   const [q, setQ] = useState('')
   const [filter, setFilter] = useState<Filter>('all')
+  const [open, setOpen] = useState<SkillItem | null>(null)
+  const opener = useRef<HTMLButtonElement | null>(null)
   const search = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -48,6 +51,11 @@ export function Skills() {
   }, [repos, repo])
   useEffect(load, [load])
 
+  const close = (): void => {
+    setOpen(null)
+    opener.current?.focus()
+  }
+
   const items = data?.items ?? []
   const shown = items.filter((i) => matches(i, q) && (filter === 'all' || (filter === 'on' ? isActive(i) : isOff(i))))
   const active = items.filter(isActive)
@@ -65,7 +73,10 @@ export function Skills() {
             id={`sk-${key}`}
             item={i}
             repo={repoName}
-            onOpen={() => undefined}
+            onOpen={(el) => {
+              opener.current = el
+              setOpen(i)
+            }}
           />
         )
       })}
@@ -201,6 +212,7 @@ export function Skills() {
           </>
         )
       )}
+      {open && <SkillDetail item={open} repo={repoName} onClose={close} />}
     </section>
   )
 }

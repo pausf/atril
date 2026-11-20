@@ -1015,4 +1015,11 @@ export const EN: Record<string, string> = {
   'activo': 'on',
   'apagado entero': 'off entirely',
   'solo lectura': 'read-only',
+  'sí': 'yes',
+  'no': 'no',
+  'Cuándo usarla': 'When to use it',
+  'Argumentos': 'Arguments',
+  'Herramientas': 'Tools',
+  'Claude la usa solo': 'Claude uses it on its own',
+  'Se llama con /': 'Called with /',
 }

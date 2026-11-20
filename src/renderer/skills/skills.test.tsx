@@ -178,4 +178,43 @@ describe('skills screen', () => {
     expect(within(s).queryByRole('alert')).toBeNull()
     expect(within(s).getByText('/x/skills tiene más de 300 entradas: solo se leen las primeras.')).toBeTruthy()
   })
+
+  it('a card opens its detail and escape closes it', async () => {
+    const full = item('revisar-cambios', 'personal', {
+      description: 'Revisa el diff',
+      whenToUse: 'Al acabar',
+      argumentHint: '[rama]',
+      allowedTools: ['Read', 'Bash(git diff:*)'],
+      model: 'sonnet',
+      effort: 'high',
+      disableModelInvocation: true,
+      userInvocable: false,
+      state: 'name-only',
+      body: 'Lee el diff y <b>no</b> toques nada.',
+      path: '/x/skills/revisar-cambios/SKILL.md'
+    })
+    mockApi({ repos: [repo('shop-web')], skills: { 'shop-web': list([full, item('otra', 'personal')]) } })
+    render(createElement(App))
+    const s = await open()
+    const user = userEvent.setup()
+    const c = await within(s).findByRole('button', { name: /^\/revisar-cambios/ })
+    await user.click(c)
+    const d = screen.getByRole('complementary', { name: '/revisar-cambios' })
+    const txt = d.textContent ?? ''
+    for (const v of ['Personal', 'Solo el nombre', 'Revisa el diff', 'Al acabar', '[rama]', 'Read, Bash(git diff:*)', 'sonnet', 'high', '/x/skills/revisar-cambios/SKILL.md']) expect(txt).toContain(v)
+    expect(within(d).getByText('Lee el diff y <b>no</b> toques nada.')).toBeTruthy()
+    expect(d.querySelector('b')?.textContent).not.toBe('no')
+    expect(txt).not.toContain('Esfuerzo' + 'undefined')
+
+    await user.keyboard('{Escape}')
+    expect(screen.queryByRole('complementary', { name: '/revisar-cambios' })).toBeNull()
+    expect(document.activeElement).toBe(within(s).getByRole('button', { name: /^\/revisar-cambios/ }))
+
+    await user.click(within(s).getByRole('button', { name: /^\/otra/ }))
+    const d2 = screen.getByRole('complementary', { name: '/otra' })
+    expect(d2.textContent).not.toContain('Modelo')
+    await user.click(within(d2).getByRole('button', { name: 'Cerrar' }))
+    expect(screen.queryByRole('complementary')).toBeNull()
+    expect(document.activeElement).toBe(within(s).getByRole('button', { name: /^\/otra/ }))
+  })
 })
