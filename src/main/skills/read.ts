@@ -4,6 +4,7 @@ import type { SkillItem, SkillOrigin, SkillsList } from '../../preload/api'
 import { t } from '../lang'
 import { claudeDir } from '../paths'
 import { asBool, parseFrontmatter, unquote, type Value } from './frontmatter'
+import { resolve } from './state'
 
 const MAX_ENTRIES = 300
 const MAX_BYTES = 256 * 1024
@@ -175,6 +176,6 @@ export async function listSkills(repoId: string | undefined, repos: () => Promis
       if (!repoDir) warnings.push(t('{repo} ya no está en tu lista de repos.', { repo: repoId }))
     }
   }
-  const { items } = await readAll({ claude: claudeDir(), repoDir, libretto }, warnings)
-  return { items, warnings }
+  const { items, settings } = await readAll({ claude: claudeDir(), repoDir, libretto }, warnings)
+  return { items: resolve(items, settings), warnings }
 }

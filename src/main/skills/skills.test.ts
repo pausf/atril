@@ -181,4 +181,52 @@ describe('skills', () => {
     expect(warnings).toHaveLength(3)
     for (const f of [plugins, settings, local]) expect(warnings.filter((w) => w.includes(f))).toHaveLength(1)
   })
+  it('state comes from skillOverrides and plugins from enabledPlugins', async () => {
+    const { claude, repo, libretto } = seed()
+    put(claude, 'settings.json', JSON.stringify({ skillOverrides: { 'revisar-cambios': 'off', deploy: 'name-only', 'escribir-docs': 'off', formatear: 'off', evidence: 'off', 'sin-nombre': 'raro' }, enabledPlugins: { 'estilo@acme': false } }))
+    put(repo, '.claude/settings.json', JSON.stringify({ skillOverrides: { 'escribir-docs': 'user-invocable-only', probar: 'off' }, enabledPlugins: { 'estilo@acme': true } }))
+    put(repo, '.claude/settings.local.json', JSON.stringify({ skillOverrides: { probar: 'on' }, enabledPlugins: { 'estilo@acme': false } }))
+    const { items } = await listSkills('shop-web', repos(repo), libretto)
+    expect(find(items, 'personal', 'revisar-cambios')?.state).toBe('off')
+    expect(find(items, 'personal', 'deploy', 'command')?.state).toBe('name-only')
+    expect(find(items, 'personal', 'sin-nombre')?.state).toBe('on')
+    // repo beats user, local beats repo
+    expect(find(items, 'project', 'escribir-docs')?.state).toBe('user-invocable-only')
+    expect(find(items, 'project', 'probar', 'command')?.state).toBe('on')
+    // skillOverrides never reaches plugins; the plugin is off whole by the local file
+    expect(find(items, 'plugin', 'formatear')).toMatchObject({ state: 'on', enabled: false })
+    expect(find(items, 'plugin', 'limpiar', 'command')).toMatchObject({ state: 'on', enabled: false })
+    expect(find(items, 'atril', 'evidence')).toMatchObject({ state: 'on', enabled: true })
+    expect(find(items, 'personal', 'revisar-cambios')?.enabled).toBeUndefined()
+
+    // Without a repo only the user file counts.
+    const userOnly = await listSkills(undefined, repos(repo), libretto)
+    expect(find(userOnly.items, 'plugin', 'formatear')?.enabled).toBe(false)
+    put(claude, 'settings.json', '{}')
+    const plain = await listSkills(undefined, repos(repo), libretto)
+    expect(find(plain.items, 'plugin', 'formatear')?.enabled).toBe(true)
+  })
+
+  it('a personal skill wins over the repo\'s and a skill over a command', async () => {
+    const { claude, repo, libretto, plugin } = seed()
+    put(claude, 'settings.json', JSON.stringify({ skillOverrides: { 'escribir-docs': 'off' } }))
+    put(claude, 'skills/escribir-docs/SKILL.md', skill('description: La mía'))
+    put(claude, 'skills/deploy/SKILL.md', skill('description: Skill de deploy'))
+    put(repo, '.claude/commands/escribir-docs.md', skill('description: comando del repo'))
+    put(repo, '.claude/skills/probar/SKILL.md', skill('description: skill del repo'))
+    put(plugin, 'skills/deploy/SKILL.md', skill('description: del plugin'))
+    put(libretto, 'skills/deploy/SKILL.md', skill('description: de Atril'))
+    const { items } = await listSkills('shop-web', repos(repo), libretto)
+    expect(find(items, 'personal', 'escribir-docs')?.shadowedBy).toBeUndefined()
+    // a shadowed item keeps its state
+    expect(find(items, 'project', 'escribir-docs')).toMatchObject({ shadowedBy: 'personal', state: 'off' })
+    // personal comes first even for a repo command that a repo skill also shadows
+    expect(find(items, 'project', 'escribir-docs', 'command')?.shadowedBy).toBe('personal')
+    expect(find(items, 'project', 'probar', 'command')?.shadowedBy).toBe('skill')
+    expect(find(items, 'project', 'probar')?.shadowedBy).toBeUndefined()
+    expect(find(items, 'personal', 'deploy', 'command')?.shadowedBy).toBe('skill')
+    expect(find(items, 'personal', 'deploy')?.shadowedBy).toBeUndefined()
+    expect(find(items, 'plugin', 'deploy')?.shadowedBy).toBeUndefined()
+    expect(find(items, 'atril', 'deploy')?.shadowedBy).toBeUndefined()
+  })
 })

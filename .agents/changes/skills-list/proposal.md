@@ -120,6 +120,6 @@ El parser de frontmatter propio: `ponytail:` con su techo (solo claves planas de
 ## Checklist
 
 - [x] `claudeDir()`, `librettoDir` exportado, lectura de las cuatro fuentes con cabeceras, topes y avisos, IPC, preload y `mockApi` · Closes: K1, K2, K9, K10
-- [ ] Estado desde `skillOverrides` y `enabledPlugins`, y choques · waits on box 1 · Closes: K3, K4
+- [x] Estado desde `skillOverrides` y `enabledPlugins`, y choques · waits on box 1 · Closes: K3, K4
 - [ ] Pantalla en el raíl y ⌘K: resumen, grupos, tarjetas, búsqueda, filtro, error, con sus textos en inglés · waits on box 2 · Closes: K5, K6, K8
 - [ ] Detalle de una skill con sus textos en inglés, foto con datos sembrados, novedades y boceto · waits on box 3 · Closes: K7
