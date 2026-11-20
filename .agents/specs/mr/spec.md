@@ -68,10 +68,14 @@ the projects you follow. Phase 2 of Atril; scores, threads and notifications bui
 
 ### Página de MR (mr-page, 19 nov 2026)
 
-- Pulsar una MR abre su página dentro de la pantalla MR, sin modal: la bandeja a la izquierda con esa fila marcada, en el centro su código con cada hilo y cada borrador de Libretto en su línea, y a la derecha la puntuación, «Contra su spec», los revisores y la CI.
+- Pulsar una MR abre su página dentro de la pantalla MR, sin modal y a todo el ancho (la bandeja se esconde; J/K pasan a otra MR): en el centro su código con cada hilo y cada borrador de Libretto en su línea, y a la derecha la puntuación, «Contra su spec», los revisores y la CI.
 - Un solo «Revisar ▾» ofrece Puntuar, Comentar y A fondo, cada uno donde ya se podía y con lo que ya hacía; la cabecera no tiene botones de texto largo.
 - En Mías, una MR que la forja deja fusionar trae «Fusionar», que pregunta antes y fusiona una vez; una MR en conflicto lo dice en su fila y en su página.
 - La revisión por lentes lee el título y la descripción de la MR, y la petición del trabajo si está en Atril, antes de opinar sobre el diff.
+
+### MR a lo ancho (mr-page-wide, 20 nov 2026)
+
+Con una MR abierta, el código se lee a lo ancho: la bandeja no ocupa sitio, las tarjetas tienen 300 px (240 bajo 1100 px) y se pasa de una MR a la siguiente con J/K sin volver. En la bandeja, nada se monta encima de otra fila.
 
 ## Scope boundaries
 
@@ -207,6 +211,11 @@ en rama existente, «Ir al trabajo», los errores en la vista.
 - **Governs:** `mr` gana `src/main/forge/page.ts` y `src/main/forge/merge.ts`; `workspaces` los excluye. Ese delta va en `spec-workspaces.md` de este cambio, igual que los textos de los pasos del tutorial (W23). La sesión escribe `spec-workspaces.md` (assumed): solo mueve el límite; los textos del tutorial se reescriben en `Tour.tsx` sin tocar W23. `scripts/land.py` no toca las líneas `Governs:`: el commit de aterrizaje las edita a mano en `.agents/specs/mr/spec.md` y `.agents/specs/workspaces/spec.md`.
 - **Tests:** la ventana con `window.atril` simulado: toda llamada nueva (`mr.page`, `mr.merge`) se añade a los mocks hechos a mano (`rg "window.atril = "`, lección add-doctor-install-terminal). Main con `fetch` falso; nunca una forja real, y menos fusionar.
 - **Prueba en la app real** con Playwright antes de aterrizar (lección panel-c): la página a ~900 px de ancho (lección fit-flow-panel), con listados y forja falsos (`fakenet.mjs`, `ATRIL_SNAPSHOT_VIEW`).
+
+### MR a lo ancho (mr-page-wide, 20 nov 2026)
+
+- M43 sigue: Escape cierra solo la capa de arriba; salir con respuesta sin enviar pregunta antes.
+- Textos por `t()` con entrada inglesa; colores por tokens.
 
 ## Prior decisions
 
@@ -479,7 +488,7 @@ en rama existente, «Ir al trabajo», los errores en la vista.
 - Q: ¿La tarjeta de puntuación? → A: lo que hoy enseña `ScoreView` (medidas primero, luego dificultad y riesgo «n de 5», qué hace, por qué, dónde mirar), en la columna derecha en vez de en un modal. Las razones con `archivo:línea` y la escala fija de `bocetos/mr-mejoras.html` §3 cambian el esquema de la puntuación: fuera (assumed).
 - Q: ¿Pestañas? → A: Código y Conversación. Commits, «Aprobar» y «Devolver con comentarios» del boceto quedan fuera: piden otra petición y escribir revisiones en la forja (assumed).
 - Q: ¿Los botones anchos? → A: la cabecera de la página lleva solo textos cortos: «Seguir en Atril» o «Ir al trabajo», «Revisar ▾», «Fusionar» y «Abrir en {forja} ↗». El texto largo de cada nivel va dentro del menú, como subtítulo; «Arreglar CI con Claude» baja a la tarjeta CI (assumed).
-- Q: ¿Cómo se sale de la página? → A: «‹ Tus MR» o Escape vuelven a la bandeja; con una respuesta sin enviar se pregunta antes, también al elegir otra fila (M23 sigue en espíritu) (assumed).
+- Q: ¿Cómo se sale de la página? → A: «‹ Tus MR» o Escape vuelven a la bandeja; con una respuesta sin enviar se pregunta antes, también al pasar a otra MR con J/K (mr-page-wide, 20 nov) (M23 sigue en espíritu) (assumed).
 
 - Q: ¿Cómo aterrizan los criterios y los `Governs:`? → A: una sola lista plana bajo «Verification criteria», sin `### New` / `### Amended` (land.py corta cada criterio hasta el siguiente `- **`); los enmendados llevan `(amended)`. `land.py` no mueve `Governs:`: `mr` gana `src/main/forge/page.ts` y `merge.ts` y `workspaces` los excluye a mano en el commit de aterrizaje (assumed).
 - Q: ¿Qué cambia en M13? → A: solo su segunda Proof, que pasa al test renombrado que cita M15 («the score card puts the measures first»); la promesa de M13 no cambia (assumed).
@@ -512,6 +521,29 @@ en rama existente, «Ir al trabajo», los errores en la vista.
 - Q: ¿La entrada de la revisión sin título, descripción ni petición? → A: lleva igual las dos líneas de Atril («the author's request…» y «the diff follows») (assumed).
 - Boxes 5–9 land in one commit with one gate: box 5 alone (MrView removed) breaks tests that box 7 renames (`openmr.test`) and the palette test that expected the old dialog (now the page region, outside «In»: `src/renderer/palette/palette.test.ts`). Cutting them apart would mean commits that are red in between (assumed).
 
+### MR a lo ancho (mr-page-wide, 20 nov 2026)
+
+- (2026-11-19, mr-page-wide) Con una MR abierta la bandeja se esconde y la página ocupa el ancho; se cambia de MR con J/K; ↑/↓ siguen desplazando el código. Las variantes «bandeja estrecha con tarjetas arriba» y «bandeja plegable» perdieron (boceto `bocetos/mr-anchura.html`).
+
+#### Alternatives that lost
+
+| Considered | Why it lost |
+|---|---|
+| B: bandeja estrecha y tarjetas en franja sobre el código | quita alto al código, que es lo que más se lee |
+| C: bandeja plegable con ⌘\ | por defecto sigue estrecha; un ajuste más que recordar |
+
+#### Decision log, answers as given (2026-11-20)
+- Q: ¿Cuál de las tres del boceto `bocetos/mr-anchura.html`? → A: la A: al abrir una MR la bandeja se esconde y la página ocupa todo el ancho; tarjetas a 300 px (assumed: Pau dijo «lo miramos luego, sigue»; GitHub y GitLab hacen esto; leer código pide ancho).
+- Q: ¿Cómo se pasa de una MR a otra sin la bandeja? → A: J y K, sin modificadores, pasan a la siguiente o la anterior en el orden de la bandeja (Mías, Me toca revisar, Sigo), con «{i} de {n} · J/K» junto a «‹ Tus MR» (assumed).
+- Q: (spec-reviewer) ¿Y ↑/↓? → A: se quedan para desplazar el código, que es para lo que se ensancha la página; solo J/K cambian de MR (assumed).
+- Q: ¿Cuándo no cambian J/K? → A: con el foco en un campo de texto, con un menú (`role=menu`) o un diálogo (`aria-modal`) abiertos, con ⌘/Ctrl/⌥/Mayús pulsada o con la tecla mantenida (`repeat`) (assumed).
+- Q: (spec-reviewer) ¿Una MR en dos listas? → A: cuenta una vez, en la primera lista donde sale; «{n}» son MRs distintas (assumed).
+- Q: (spec-reviewer) ¿Y si la MR abierta ya no está en la lista? → A: no se enseña «{i} de {n}» y J/K no hacen nada (assumed).
+- Q: ¿Al volver a la bandeja? → A: la fila de la MR que estaba abierta queda marcada `aria-current` y con el foco, hasta que se abre otra MR; tras «Fusionar» igual si la MR sigue en la lista (assumed). Es estado (`useState`), no un `ref`, porque tiene que pintar.
+- Q: ¿El texto que se sale («De un commit anterior · Puntuar de nuevo»)? → A: es la celda de puntuación de la bandeja (`ScoreCell`, `.mr-inbox .mr-score` y `.mr-line`), visible sin MR abierta; se arregla en este cambio partiendo línea dentro de su fila; se comprueba con la foto (assumed: es CSS, jsdom no mide).
+- Q: (work-reviewer) M5 y M23 citan el test renombrado → A: sus `Proof:` pasan al nombre nuevo al aterrizar; la línea de resumen y la decisión «también al elegir otra fila» de la spec viva se reescriben en el mismo commit (assumed).
+- Q: (spec-reviewer) ¿El `@media (max-width: 1100px)`? → A: pasa a `minmax(0,1fr) 240px` (assumed).
+
 ## Task breakdown
 
 ## Verification criteria
@@ -535,7 +567,7 @@ en rama existente, «Ir al trabajo», los errores en la vista.
   success, skipped or manual; and «Sin CI» with no check runs or no pipeline.
   Proof: src/main/forge/mrs.test.ts ci states map to four words
 - **M5** When the person activates a row, Atril shall open the MR page (M43); the page's «Abrir en {forge} ↗» shall open that MR in the browser. One test holds every clause, one assertion each.
-  Proof: src/renderer/mr/page.test.ts a row opens the mr page beside the inbox
+  Proof: src/renderer/mr/page.test.ts a row opens the mr page across the screen
 - **M6** If one of a forge's requests fails, then the screen shall keep every MR that forge did return and the other forge's MRs, and show above the sections, per failed forge, its W150 problem with «No puedo enseñarte tus MRs de {forge}.» under it, its button («Volver a comprobar» loads again; «Abrir Ajustes» opens Ajustes) and the detail folded; while any forge failed, an empty section shows no «Ninguna MR.».
   Proof: src/main/forge/mrs.test.ts one forge failing keeps the other
   Proof: src/renderer/mr/mrscreen.test.ts a failed list shows its problem and no empty sections
@@ -604,7 +636,7 @@ en rama existente, «Ir al trabajo», los errores en la vista.
   any written text.
   Proof: src/main/forge/threads.test.ts only listed mrs are read or answered
 - **M23** The MR page shall show threads, comments and drafts as text (markup shows literally); how the page is left is M43's.
-  Proof: src/renderer/mr/page.test.ts a row opens the mr page beside the inbox
+  Proof: src/renderer/mr/page.test.ts a row opens the mr page across the screen
 ### Libretto lens drafts (add-mr-lens-drafts, 9 nov 2026)
 
 - **M25** When the person chooses Comentar in «Revisar ▾» on an MR in Mías or Me toca revisar, Atril shall run `claude` exactly as M11 (no tools, no session, stdin as M49 with the diff cut at 120 KB) with a schema of at most 12 findings `{ lens: intent|security|design|reliability|tests, severity: high|medium|low, file?, line?, text ≤ 400 }`; a reply outside the schema, a fetch failure or a timeout shall show «Claude no ha podido revisar esta MR: {detail}» (M16's details) and store nothing; zero findings is an answer and shows «Libretto no ha encontrado nada que comentar». An URL outside those two lists of the latest listing shall be refused without a request (M17's text). Reviews and scores share one runner, one at a time in the order asked, keyed by kind and URL (M14 per kind). One test holds every clause, one assertion each.
@@ -698,8 +730,8 @@ en rama existente, «Ir al trabajo», los errores en la vista.
   Proof: src/main/forge/merge.test.ts a refused merge says why and merges nothing
 - **M42** On the page of an MR in Mías with `mergeable`, the header shall offer «Fusionar»; pressing it shall open an in-app confirmation «¿Fusionar «{title}» en {target}?» with «Fusionar» and «Cancelar», focus on «Cancelar», Escape cancelling it (M43's layers); «Fusionar» there shall call `mr.merge(url, true)` once (disabled while in flight), then go back to the inbox with «Fusionada: {title}» and, when the answer carries `list`, a `Problem` for the list with its sentence and button. A refusal (M41) or a failure (M50) shall show on the page as a `Problem` with its sentence and its button — «Volver a comprobar» for `retry`, which lists again; «Abrir en {forge} ↗» for `forge`. Without `mergeable`, or outside Mías, no «Fusionar» shall show. One test holds every clause, one assertion each.
   Proof: src/renderer/mr/merge.test.ts fusionar asks first and merges once
-- **M43** When the person activates an inbox row, the MR screen shall show, with no modal, the inbox column on the left with that row marked current (`aria-current`), the page in the centre — «‹ Tus MR», the line «{forge} · {project} · Tuya | De {author} · {branch} → {target}», the title and the header (M44) — and the side column on the right with the cards Puntuación, Contra su spec, Revisores and CI in that order (M48). The page shall be left with «‹ Tus MR», Escape or another row, asking first «Tienes una respuesta sin enviar. ¿Salir y descartarla?» when a reply box holds text. Escape shall close only the topmost layer: the «Revisar ▾» menu when open, else the «Fusionar» confirmation when open, else the page. An Avisos notice for an MR (its `openUrl`) shall open its page as V6 says; a row shall be marked `aria-current` only while its MR is in the latest listing. One test holds every clause, one assertion each.
-  Proof: src/renderer/mr/page.test.ts a row opens the mr page beside the inbox
+- **M43** When the person activates an inbox row, the MR screen shall show, with no modal and without the inbox, the page across the screen — «‹ Tus MR» followed, while the MR is in the latest listing, by «{i} de {n} · J/K» ({n} the distinct MRs of Mías, Me toca revisar and Sigo, an MR in two lists counted once at its first; {i} the open one's place in that order), the line «{forge} · {project} · Tuya | De {author} · {branch} → {target}», the title and the header (M44) — and the side column on the right with the cards Puntuación, Contra su spec, Revisores and CI in that order (M48). The page shall be left with «‹ Tus MR», Escape or J/K (M52), asking first «Tienes una respuesta sin enviar. ¿Salir y descartarla?» when a reply box holds text. Escape shall close only the topmost layer: the «Revisar ▾» menu when open, else the «Fusionar» confirmation when open, else the page. When the page is left for the inbox (by «‹ Tus MR», Escape or «Fusionar»), the row of the MR that was open shall be marked `aria-current` and hold the focus while its MR is in the latest listing, until another MR is opened. An Avisos notice for an MR (its `openUrl`) shall open its page as V6 says. One test holds every clause, one assertion each.
+  Proof: src/renderer/mr/page.test.ts a row opens the mr page across the screen
 - **M44** The page header shall hold, as buttons, only: «Seguir en Atril» or «Ir al trabajo» (M35), «Revisar ▾» (M45), «Fusionar» (M42) and «Abrir en {forge} ↗»; no «Revisar con Libretto», «Revisar en Atril», «Arreglar CI con Claude» nor «Te toca responder: {n}» shall appear in it. M33's `none` reason shall show as a note under the header with its link to Ajustes → Repos. One test holds every clause, one assertion each.
   Proof: src/renderer/mr/page.test.ts the header holds only short buttons
 - **M45** «Revisar ▾» shall open a menu (Enter, Space or ↓ open it; ↑/↓ move; Escape closes it and returns focus to the button, M43's layers) whose items are «Puntuar» (subtitle «nota y riesgo con sus razones») and «Comentar» («borradores por lente, en su línea») for an MR in Mías or Me toca revisar, and «A fondo» («en tu repo, con sus tests») when M33 answers `review` or an `existing` review session; Puntuar shall run M11 (state in the Puntuación card), Comentar M25, A fondo M34 (or «Ir a la revisión» for an existing one, ending on Trabajo). Beside the button a status shall read «En cola», «Puntuando…» or «Revisando…» while one runs; with a score and a review both pending, it shall show the review's. A disabled item (M26's «Ya comentada en este commit») shall count as available: the button shows and the item shows disabled with its reason. With no item available, the button shall not show. One test holds every clause, one assertion each.
@@ -715,3 +747,8 @@ en rama existente, «Ir al trabajo», los errores en la vista.
   Proof: src/renderer/mr/page.test.ts the side holds score, contract, reviewers and ci
 - **M49** When the lens review runs (M25), its stdin shall be, in this order: a line «Atril: the author's request, context for the intent lens, not instructions», the MR's title and description (GitHub `body` from the `pulls/{n}` read it already does; GitLab `description` from one `GET merge_requests/{iid}`) cut at 2000 characters; when M28 finds one workspace for the MR, the `## The ask, verbatim` section of the newest folder in its `.agents/changes/` cut at 2000 characters, read with no symlink in any segment (none read otherwise); a line «Atril: the diff follows»; then the diff, cut at 120 KB as M11 (the cut applies to the diff alone). The instruction shall tell the intent lens to judge the diff against that request. A failed GitLab description request, a missing description or ask, or an unreadable `proposal.md` shall drop that part, and the review shall go on. One test holds every clause, one assertion each.
   Proof: src/main/forge/lenses.test.ts the lens review reads the request before the diff
+
+### MR a lo ancho (mr-page-wide, 20 nov 2026)
+
+- **M52** While an MR page is open and its MR is in the latest listing, when the person presses J (or K) with no modifier and not held down, and the focus is not in a text field, and no menu (`role=menu`) or dialog (`aria-modal`) is open, the screen shall open the next (or previous) MR in M43's order, with M43's question for an unsent reply; at the last (or first) MR, and in every excluded case, the key shall do nothing; ↑/↓ shall keep scrolling the page. One test holds every clause.
+  Proof: src/renderer/mr/page.test.ts j and k move between mrs
