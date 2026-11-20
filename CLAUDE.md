@@ -7,6 +7,7 @@ con agentes de Claude Code en tmux, y gestiona MRs de GitHub/GitLab. Remoto PRIV
 ## Dónde lo dejamos (10 nov 2026) — empieza por aquí
 
 Las ramas van apiladas: cada una sale de la anterior y `main` no se ha movido. La última es
+**`harness-ladder`** (20 nov: escalera de corrección: `pnpm lint` falla si renderer y main se importan, si se monta `window.atril` fuera de `mockApi()` o si se usa `homedir()` fuera de `paths.ts`; hook `.githooks/pre-commit` con typecheck y lint, ~5 s). Antes,
 **`refine-request`** (20 nov: «Afinar la petición · opcional» en Nueva tarea y Nuevo trabajo: cuatro preguntas fijas y «Que Claude me pregunte» con Haiku solo al pulsar; las respuestas viajan pegadas a la petición; sin probar con Claude real). Antes,
 **`mr-page`** (19 nov: la MR se abre como página junto a la bandeja, con código y sus hilos, Conversación, «Revisar ▾», tarjetas a la derecha y «Fusionar» con confirmación; sin probar contra forjas reales: fusionar y los campos de GitLab). Antes,
 **`terminal-read-only`** (14 nov: terminal de solo lectura, una tarjeta por tipo de espera —pregunta, permiso, fin de turno—, «Escribe al agente», Automático sigue solo hasta 3 veces, rama grande con «Separar»/«Dejarla así»; sin probar con Claude real: dígito + Enter en el selector y «Permitir» = 1). Antes,
@@ -63,7 +64,7 @@ Sin probar con datos reales (necesita a Pau):
   - Por último, aterrizar.
 - **Autonomía (Pau):** sigue sin preguntar. Toma la opción recomendada y apúntala con `(assumed)`. Push solo a pausf/atril.
 - **Specs vivas** en `.agents/specs/{workspaces,work-inbox,flow-status,settings,mr,avisos}/spec.md`. Léelas antes de tocar código.
-- **Puertas:** `pnpm -s typecheck`, `pnpm -s lint` y `pnpm -s test`, todas antes de cada commit, con un `if` que no deje commitear en rojo. **Nunca `pnpm build`.**
+- **Puertas:** `pnpm -s typecheck`, `pnpm -s lint` y `pnpm -s test`, todas antes de cada commit, con un `if` que no deje commitear en rojo. El hook `.githooks/pre-commit` ya corre typecheck y lint (`pnpm run prepare` lo activa). **Nunca `pnpm build`.**
 - **Comandos:** rg/fd/eza/bat, no grep/find/ls/cat.
 - **Commits:** convencionales, sin `Co-Authored-By` ni atribución a IA.
 - **Antes de cada push**, escanea identificadores de trabajo reales con

@@ -1,6 +1,6 @@
 # Workspaces
 
-Governs: src/main/** src/preload/** src/renderer/** resources/** electron-builder.config.cjs build/** !src/main/jira/** !src/renderer/inbox/** !src/main/flow/** !src/renderer/flow/** !src/main/credentials/** !src/renderer/settings/** !src/main/forge/mrs.ts !src/main/forge/page.ts !src/main/forge/merge.ts !src/renderer/mr/** !src/main/forge/scores.ts !src/main/forge/threads.ts !src/main/forge/lenses.ts !src/main/forge/openmr.ts !src/main/forge/linecomments.ts !src/main/avisos.ts !src/renderer/avisos/**
+Governs: src/main/** src/preload/** src/renderer/** resources/** electron-builder.config.cjs build/** eslint.config.mjs .githooks/** !src/main/jira/** !src/renderer/inbox/** !src/main/flow/** !src/renderer/flow/** !src/main/credentials/** !src/renderer/settings/** !src/main/forge/mrs.ts !src/main/forge/page.ts !src/main/forge/merge.ts !src/renderer/mr/** !src/main/forge/scores.ts !src/main/forge/threads.ts !src/main/forge/lenses.ts !src/main/forge/openmr.ts !src/main/forge/linecomments.ts !src/main/avisos.ts !src/renderer/avisos/**
 
 ## Vocabulary
 
@@ -342,6 +342,10 @@ textos, en «Pasos» abajo. Los que tienen elemento en pantalla lo iluminan; los
 - Debajo de la terminal, una caja «Escribe al agente» manda cualquier mensaje.
 - En Automático no sale ninguna tarjeta: Atril elige la recomendada y dice «Sigue con el plan; no hagas nada que no esté en él.» solo, y en la fila queda «Decidió: {opción}»; solo se para en el push y la MR, en un fallo de verdad o en un permiso que Claude Code no concede solo.
 - Un agente que acaba su turno mientras sigue con subagentes o tareas en segundo plano sale como «trabajando», no como «te necesita».
+
+### Escalera de corrección (harness-ladder, 20 nov 2026)
+
+Cuatro errores que ya se pagaron dejan de poder repetirse sin que `pnpm lint` o el commit lo paren, con un mensaje que dice qué usar en su lugar; las lecciones que los cubrían dicen qué regla las sustituye.
 
 ## Scope boundaries
 
@@ -903,6 +907,11 @@ Textos por `t()`.
 - Textos por `t()`/`useT()` con su entrada en `src/preload/i18n-en.ts`; colores solo con tokens.
 - Los estados de hoy sin `kind` siguen valiendo (se lee como hoy, por prefijo).
 - Después de `notify-core`: este cambio se construye sobre su rama, porque los dos tocan el gancho y `status.ts`.
+
+### Escalera de corrección (harness-ladder, 20 nov 2026)
+
+- `pnpm lint` tiene que salir limpio al final de cada casilla.
+- Cada regla trae un `message` que dice qué usar en su lugar.
 
 ## Prior decisions
 
@@ -2323,6 +2332,34 @@ Textos por `t()`.
 - Box 8 (app real), dos arreglos más: la tarjeta de la fila y la de encima de la terminal no se enteraban de una respuesta dada en la otra (con varias preguntas, la fila seguía ofreciendo la primera, que main ya rechaza): ahora una respuesta avisa a las dos y, contestadas todas, la tarjeta dice solo «Enviado» (caso nuevo en «a question card answers with its options»). Y «Decidió: …» no salía hasta la siguiente escritura del gancho: el feed de actividad relee cuando Automático decide (assumed).
 - Box 8, app real (dev, `claude` falso detrás de un `SHELL` falso, paneles con `cat` para ver cada tecla): cuatro filas con tarjeta (pregunta con dos preguntas y porqués, permiso de Bash, fin de turno, fin de turno con `idle`); teclear en la terminal no llegó al panel; «1» con la tarjeta enfocada mandó `1`+Enter y las dos tarjetas pasaron a la segunda pregunta; la última mandó su número, Enter y el Enter final; ⌘↩ en el compositor mandó el texto y vació la caja; «Permitir» mandó `1`; el fin de turno enfocó el compositor y «Sigue» pegó «Sigue con el plan…»; Automático contestó la recomendada («Decidió: Contarlos como festivos» en la fila, sin tarjeta), pegó «Sigue con el plan…» tres veces y a la cuarta enseñó la tarjeta; un permiso en Automático enseñó su tarjeta. Sin errores de consola. Foto: `bocetos/novedades/tarjetas.png`. Sin comprobar (necesita Claude real, no se gastó cuota): que el selector de Claude Code tome el dígito + Enter y el Enter final con varias preguntas, y que «Permitir» = `1` en su permiso.
 
+### Escalera de corrección (harness-ladder, 20 nov 2026)
+
+- (2026-11-19, harness-ladder) Una lección que se repite sube al peldaño más alto que la pare (diseño > tipo o lint > test > texto); una entrada nueva en `lessons.md` nombra las lecciones sustituidas para que la retro no las vuelva a contar.
+- (2026-11-19, harness-ladder) El hook de commit corre typecheck y lint, no la suite: la suite sigue en la puerta.
+
+#### Alternatives that lost
+
+| Considered | Why it lost |
+|---|---|
+| husky / lefthook | una dependencia para un archivo de tres líneas |
+| Mover `WARN_AT` y los modelos a `src/shared` para aplicar la frontera también a tests | el test que cruza solo compara una constante; mover no evita ningún fallo |
+| Probar las reglas corriendo `pnpm lint` sobre archivos fixture | escribe archivos en el árbol; `lintText` no |
+
+#### Decision log, answers as given (2026-11-20)
+- Q: ¿Qué lecciones suben primero? → A: las que se repiten y caben en una regla que hoy pasa o pasa con pocos arreglos: frontera main↔renderer, mocks de `window.atril` a mano, `homedir()` fuera de su sitio y commits en rojo (assumed; informe en `report.md` de la cola).
+- Q: ¿Las reglas valen también en tests? → A: la frontera no (siete tests la cruzan para comparar constantes; moverlas no evita ningún fallo real); la de mocks solo en tests (assumed).
+- Q: ¿El hook de commit corre la suite entera? → A: no, typecheck y lint: la suite tarda más de 10 min bajo carga; la suite sigue en la puerta (assumed). Si es incorrecto: el hook llama a `gate.sh`.
+- Q: (spec-reviewer) ¿Qué cuenta como importar? → A: declaraciones `import`/`export … from`, de tipos incluidas; `import()` dinámico y `vi.mock` no (assumed: `no-restricted-imports` no los ve y hoy nadie los usa así). Test es un archivo `*.test.ts(x)`; `test-helpers.ts` no lo es. `src/preload/**` queda fuera de la regla.
+- Q: (spec-reviewer) ¿Qué cuenta como asignar `window.atril`? → A: cualquier asignación a una propiedad llamada `atril` (`window.atril =`, `(window as X).atril =`, `globalThis.atril =`); `vi.stubGlobal`, `Object.assign` y `defineProperty` quedan fuera (assumed: nadie los usa para `atril` hoy).
+- Q: (spec-reviewer) ¿Qué cuenta como leer HOME? → A: `process.env.HOME` y `process.env['HOME']`; `env['HOME']` sobre un parámetro (`login-path.ts`) y la lista de variables permitidas de `forge/create.ts` no, porque no buscan la casa del usuario (assumed).
+- Q: (spec-reviewer) ¿Cómo migran los tests sin cambiar lo que prueban? → A: `mockApi` acepta un tercer argumento `over`, un parcial profundo de `AtrilApi` que se mezcla sobre el mock completo; cada test pasa sus stubs de hoy tal cual, promesas que no resuelven incluidas, y sus `expect` no se tocan (assumed).
+- Q: (spec-reviewer) `lessons.md` solo crece: ¿cómo se marcan las cubiertas? → A: una entrada nueva por casilla, `## 2026-11-19 · harness-ladder · arnés`, que nombra las lecciones que la regla sustituye (assumed).
+- Q: ¿Escrituras atómicas e `ipcMain` envuelto? → A: fuera de este cambio: 15 archivos con `writeFile` y 109 `ipcMain` en `index.ts` piden su propio cambio (assumed).
+
+- Q: (builder) ¿Cuánto tarda `.githooks/pre-commit`? → A: 5,3 s y 4,8 s (typecheck + lint, dos medidas con `time`), muy por debajo de los 60 s del riesgo: se queda como está.
+- Q: (builder) ¿Qué tipo tiene `over`? → A: parcial profundo laxo: una hoja función acepta cualquier función y cada nivel admite miembros de más, porque los tests guardan sus stubs tal cual (respuestas parciales y `term.input`, que la API ya no tiene y `components/terminal.test.tsx` stub-ea para probar que nadie lo llama) (assumed).
+- Q: (builder) ¿Con qué fecha van las entradas de lecciones? → A: `## 2026-11-20 · harness-ladder · arnés`, el día en que se construyen, no el 19 que dice la entrada de arriba (assumed).
+
 ## Task breakdown
 
 - App shell: Electron main, preload bridge, renderer with sidebar / centre / right panel /
@@ -3242,3 +3279,16 @@ Textos por `t()`.
   Proof: src/main/refine.test.ts asks haiku once with the request on stdin and keeps well-formed questions
 - **W209** If the run does not give questions, then main shall answer `{ error, detail, fix: 'retry' }`, never rejecting the IPC call and never carrying Claude's output: exit 124 → «Claude no ha contestado a tiempo.», detail `timeout`; exit 127 → «No encuentro Claude Code en este Mac.», detail `claude`; any other non-zero exit → «Claude ha fallado.», detail `exit {code}`; exit 0 with stdout that is not JSON, `is_error: true`, no `structured_output.questions` array, or no question left after W208's cleaning → «Claude no ha devuelto preguntas.», detail `json`, `is_error`, `schema` or `empty`. A call while one runs shall answer «Ya está preguntando.», detail `busy`, with no new run.
   Proof: src/main/refine.test.ts a failed ask says why and runs one at a time
+
+### Escalera de corrección (harness-ladder, 20 nov 2026)
+
+- **W210** If a file under `src/renderer/**` that is not `*.test.ts(x)` has an `import` or `export … from` declaration (type-only included) whose path resolves under `src/main/`, or one under `src/main/**` whose path resolves under `src/renderer/`, then `pnpm lint` shall fail with «renderer y main solo hablan por preload».
+  Proof: src/main/harness.test.ts lint refuses an import across main and renderer
+- **W211** If any file other than `src/renderer/mockApi.ts` assigns to a member named `atril` (`window.atril`, `(window as X).atril`, `globalThis.atril`), then `pnpm lint` shall fail with «usa mockApi() de src/renderer/mockApi.ts».
+  Proof: src/main/harness.test.ts lint refuses a hand-made window.atril
+- **W212** If a file under `src/main/**` that is not `*.test.ts` and not `paths.ts`, `trust.ts` or `qa.ts` calls `homedir()`, or reads `process.env.HOME` or `process.env['HOME']`, then `pnpm lint` shall fail with «las rutas de casa salen de paths.ts (ATRIL_HOME en tests)».
+  Proof: src/main/harness.test.ts lint refuses homedir outside paths
+- **W213** When the `prepare` script of `package.json` runs in a git repository, that repository's `core.hooksPath` shall be `.githooks`.
+  Proof: src/main/harness.test.ts prepare points git at the hooks
+- **W214** If `pnpm -s typecheck` fails, or if `pnpm -s lint` fails, then `.githooks/pre-commit` shall exit non-zero.
+  Proof: src/main/harness.test.ts the pre-commit hook stops a red commit
