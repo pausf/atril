@@ -14,6 +14,7 @@ import { Inbox, useInbox } from './inbox/Inbox'
 import { MrScreen } from './mr/MrScreen'
 import { Libretto } from './libretto/Libretto'
 import { QaScreen } from './qa/QaScreen'
+import { Skills } from './skills/Skills'
 import type { QaPending } from './qa/pending'
 import { Avisos, useAvisos, type AvisoTarget } from './avisos/Avisos'
 import { useMrs } from './mr/useMrs'
@@ -147,7 +148,7 @@ function Shell() {
 
   useEffect(() => {
     void window.atril.snapshotView().then((v) => {
-      if (v === 'settings' || v === 'tasks' || v === 'work' || v === 'mr' || v === 'avisos' || v === 'libretto' || v === 'qa') setScreen(v)
+      if (v === 'settings' || v === 'tasks' || v === 'work' || v === 'mr' || v === 'avisos' || v === 'libretto' || v === 'qa' || v === 'skills') setScreen(v)
       if (v === 'mr-score' || v === 'mr-thread' || v === 'mr-lens') setScreen('mr')
       if (v === 'tasks-board') setScreen('tasks')
       if (v === 'settings-board' || v === 'create-repo') setScreen('settings')
@@ -497,6 +498,7 @@ function Shell() {
           {screen === 'libretto' && <Libretto />}
           {screen === 'qa' && <QaScreen workspaces={workspaces} selected={selected} pending={qaPending} setPending={setQaPending} openSettings={() => setScreen('settings')} />}
           {screen === 'avisos' && <Avisos avisos={avisos} open={openAviso} />}
+          {screen === 'skills' && <Skills />}
           {screen === 'settings' && (
             <Ajustes>
               <Language />

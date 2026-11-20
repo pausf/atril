@@ -38,6 +38,7 @@ export function paletteItems(s: PaletteSources): PaletteItem[] {
     ['libretto', t('Libretto')],
     ['qa', t('QA')],
     ['avisos', t('Avisos')],
+    ['skills', t('Skills')],
     ['settings', t('Ajustes')]
   ]
   const actions: [string, string, () => void][] = [

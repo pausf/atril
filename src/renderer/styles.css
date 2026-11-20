@@ -4891,3 +4891,212 @@ button.fx-bt {
     font-size: 17px;
   }
 }
+
+/* Skills (K5–K7): summary tiles, groups of cards, a side panel for one. */
+.skills {
+  max-width: 1100px;
+}
+.skills > h1 .n {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--sub);
+}
+.sk-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 4px 0 14px;
+}
+.sk-bar input[type='search'] {
+  flex: 1;
+  min-width: 200px;
+  font: inherit;
+  font-size: 13px;
+  padding: 6px 12px;
+  border: 1px solid var(--faint);
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--text);
+}
+.sk-bar select {
+  font: inherit;
+  font-size: 12.5px;
+}
+.sksum {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.skct {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--card);
+}
+.skct b {
+  font-size: 20px;
+}
+.skct span {
+  font-size: 12.5px;
+}
+.skct small {
+  font-size: 11.5px;
+  color: var(--sub);
+}
+.skg {
+  margin-bottom: 14px;
+}
+.skg > summary {
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+.skg .where {
+  font-weight: 400;
+  color: var(--sub);
+  font-size: 12px;
+  margin-left: 6px;
+}
+.skcards {
+  list-style: none;
+  margin: 0 0 8px;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 10px;
+}
+.skc-open {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: left;
+  font: inherit;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--card);
+  color: var(--text);
+  cursor: pointer;
+}
+.skc-open:hover {
+  background: var(--hover);
+}
+.skc.off .skc-open {
+  color: var(--sub);
+}
+.skc-h {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.skc-h b {
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.skc-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.skc-d {
+  font-size: 12.5px;
+  color: var(--sub);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.skc-m {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.skc-m:empty {
+  display: none;
+}
+.skmark {
+  font-size: 11px;
+  color: var(--sub);
+}
+.skmark.lose {
+  color: var(--you-text);
+}
+.skp-bar {
+  font-size: 12.5px;
+  color: var(--sub);
+  margin: 0 0 6px;
+}
+.skp-bar b {
+  color: var(--text);
+}
+.skd {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(440px, 90vw);
+  overflow: auto;
+  padding: 20px 22px;
+  background: var(--card);
+  border-left: 1px solid var(--line);
+  box-shadow: -8px 0 24px var(--shadow-sm);
+  z-index: 20;
+}
+.skd-h {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.skd-h h2 {
+  flex: 1;
+  margin: 0;
+  font-size: 17px;
+  overflow-wrap: anywhere;
+}
+.skd-chips {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.skd-d {
+  font-size: 13px;
+}
+.skd dl {
+  display: grid;
+  gap: 6px;
+  font-size: 12.5px;
+}
+.skd dl div {
+  display: grid;
+  grid-template-columns: 130px minmax(0, 1fr);
+  gap: 8px;
+}
+.skd dt {
+  color: var(--sub);
+}
+.skd dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.skd-body {
+  white-space: pre-wrap;
+  font-size: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--chip);
+  color: var(--text);
+}
+.skd-path code {
+  font-size: 11.5px;
+  color: var(--sub);
+  overflow-wrap: anywhere;
+}

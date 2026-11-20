@@ -1,0 +1,181 @@
+// @vitest-environment jsdom
+import { createElement } from 'react'
+import { act, cleanup, render, screen, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import type { RepoView, SkillItem, SkillsList } from '../../preload/api'
+import { App } from '../App'
+import { mockApi, mockSystemTheme } from '../mockApi'
+
+const repo = (id: string): RepoView => ({ id, path: `/r/${id}`, mode: 'worktree', reason: '', health: 'ok' })
+const item = (name: string, origin: SkillItem['origin'], o: Partial<SkillItem> = {}): SkillItem => ({
+  name,
+  kind: 'skill',
+  origin,
+  path: `/x/${origin}/${name}/SKILL.md`,
+  body: '',
+  state: 'on',
+  ...(origin === 'plugin' || origin === 'atril' ? { enabled: true } : {}),
+  ...o
+})
+
+const ITEMS: SkillItem[] = [
+  item('revisar-cambios', 'personal', { description: 'Revisa el diff antes del commit', whenToUse: 'Al acabar' }),
+  item('deploy', 'personal', { kind: 'command', description: 'Despliega shop-web', shadowedBy: 'skill' }),
+  item('deploy', 'personal', { description: 'Skill de deploy', state: 'name-only' }),
+  item('explicar-sql', 'personal', { description: 'Explica un plan de consulta', state: 'off' }),
+  item('manual', 'personal', { description: 'Solo a mano', state: 'user-invocable-only' }),
+  item('escribir-docs', 'project', { description: 'Escribe la documentación', shadowedBy: 'personal' }),
+  item('sembrar', 'project', { description: 'Carga datos de ejemplo', disableModelInvocation: true }),
+  item('mal', 'project', { broken: true }),
+  item('formatear', 'plugin', { plugin: 'estilo@acme', description: 'Formatea el código', enabled: false }),
+  item('changelog', 'plugin', { plugin: 'release@acme', description: 'Escribe el changelog' }),
+  item('evidence', 'atril', { plugin: 'libretto', description: 'Nada es cierto hasta verlo' })
+]
+const list = (items: SkillItem[], warnings: string[] = []): SkillsList => ({ items, warnings })
+
+beforeEach(() => mockSystemTheme(false))
+afterEach(cleanup)
+
+const rail = (): HTMLElement => screen.getByRole('navigation', { name: 'Pantallas' })
+const open = async (): Promise<HTMLElement> => {
+  await userEvent.setup().click(within(rail()).getByRole('button', { name: /Skills/ }))
+  return screen.findByRole('region', { name: 'Skills' })
+}
+const cards = (): string[] => screen.queryAllByRole('button', { name: /^\// }).map((b) => b.getAttribute('aria-label') ?? '')
+
+describe('skills screen', () => {
+  it('the screen groups every skill by where it comes from', async () => {
+    const api = mockApi({ repos: [repo('shop-web'), repo('cms')], skills: { 'shop-web': list(ITEMS), cms: list([]) } })
+    render(createElement(App))
+    // Rail order: after Avisos, before Ajustes.
+    const names = within(rail()).getAllByRole('button').map((b) => b.textContent ?? '')
+    expect(names.indexOf('Skills')).toBe(names.findIndex((n) => n.startsWith('Avisos')) + 1)
+    const s = await open()
+    expect(window.atril.skills.list).toHaveBeenCalledWith('shop-web')
+    expect(within(s).getByRole('heading', { level: 1 }).textContent).toBe(`Skills${ITEMS.length}`)
+    expect(s.textContent).toContain('Las skills y los comandos / que tu Claude Code tiene a mano en cada trabajo. Los lee de sus carpetas, sin gastar cuota.')
+    expect((within(s).getByRole('combobox', { name: 'Repo del proyecto' }) as HTMLSelectElement).value).toBe('shop-web')
+
+    // Activas: on or name-only, not shadowed, plugin on → revisar-cambios, deploy (skill), sembrar, mal, changelog, evidence.
+    const tile = (label: string): string => within(s).getByRole('group', { name: label }).textContent ?? ''
+    const activeChars = ['revisar-cambios' + 'Revisa el diff antes del commit' + 'Al acabar', 'deploy' + 'Skill de deploy', 'sembrar' + 'Carga datos de ejemplo', 'mal', 'changelog' + 'Escribe el changelog', 'evidence' + 'Nada es cierto hasta verlo']
+    const tokens = Math.round(activeChars.join('').length / 3.2)
+    expect(tile('Activas')).toBe(`6Activas~${tokens} tokens de contexto`)
+    expect(tile('Apagadas')).toMatch(/^2Apagadas/)
+    expect(tile('Choques')).toMatch(/^2Choques/)
+
+    const group = (name: string): HTMLElement => within(s).getByRole('group', { name: new RegExp(`^${name.replace(/[()]/g, (c) => `\\${c}`)}`) })
+    expect(within(group('Personal')).getAllByRole('button', { name: /^\// })).toHaveLength(5)
+    expect(within(group('Proyecto (shop-web)')).getAllByRole('button', { name: /^\// })).toHaveLength(3)
+    const plugins = group('Plugins')
+    expect(plugins.textContent).toContain('estilo@acme · 1 skills · apagado entero')
+    expect(plugins.textContent).toContain('release@acme · 1 skills · activo')
+    const atril = group('Atril')
+    expect(atril.textContent).toContain('solo lectura')
+    expect((atril as HTMLDetailsElement).open).toBe(false)
+
+    const text = (name: string, i = 0): string => screen.getAllByRole('button', { name: new RegExp(`^${name}( |$)`) })[i]!.textContent ?? ''
+    expect(text('/revisar-cambios')).toContain('Personal')
+    expect(text('/revisar-cambios')).toContain('Activa')
+    expect(text('/revisar-cambios')).toContain('Revisa el diff antes del commit')
+    const cmd = screen.getAllByRole('button', { name: /^\/deploy/ }).map((b) => b.textContent ?? '')
+    expect(cmd.find((c) => c.includes('comando'))).toContain('No se carga: gana la skill')
+    expect(cmd.find((c) => !c.includes('comando'))).toContain('Solo el nombre')
+    expect(text('/explicar-sql')).toContain('Apagada')
+    expect(text('/manual')).toContain('Solo si la llamas tú')
+    expect(text('/escribir-docs')).toContain('No se carga: gana la personal')
+    expect(text('/escribir-docs')).toContain('shop-web')
+    expect(text('/sembrar')).toContain('Claude no la usa sola')
+    expect(text('/mal')).toContain('Cabecera ilegible')
+    expect(text('/estilo:formatear')).toContain('estilo')
+    expect(text('/libretto:evidence')).toContain('Atril')
+
+    // Another repo reloads; its empty project says so.
+    await userEvent.setup().selectOptions(within(s).getByRole('combobox', { name: 'Repo del proyecto' }), 'cms')
+    expect(window.atril.skills.list).toHaveBeenLastCalledWith('cms')
+    expect(await within(s).findByText('cms aún no tiene skills propias.')).toBeTruthy()
+
+    // ⌘K reaches it too.
+    await userEvent.setup().click(within(rail()).getByRole('button', { name: /Ajustes/ }))
+    act(() => api.menu({ kind: 'palette' }))
+    await userEvent.setup().type(screen.getByRole('combobox', { name: 'Buscar en Atril' }), 'skills{Enter}')
+    expect(within(rail()).getByRole('button', { name: /Skills/ }).getAttribute('aria-current')).toBe('page')
+  })
+
+  it('without repos there is no project group', async () => {
+    mockApi({ repos: [], skills: { '': list(ITEMS.filter((i) => i.origin !== 'project')) } })
+    render(createElement(App))
+    const s = await open()
+    expect(window.atril.skills.list).toHaveBeenCalledWith(undefined)
+    expect(await within(s).findByText('Añade un repo en Ajustes → Repos para ver sus skills.')).toBeTruthy()
+    expect(within(s).queryByRole('combobox', { name: 'Repo del proyecto' })).toBeNull()
+    expect(within(s).queryByRole('group', { name: /^Proyecto/ })).toBeNull()
+  })
+
+  it('search and filter narrow the cards', async () => {
+    mockApi({ repos: [repo('shop-web')], skills: { 'shop-web': list(ITEMS) } })
+    render(createElement(App))
+    const s = await open()
+    const user = userEvent.setup()
+    const search = within(s).getByRole('searchbox', { name: 'Buscar por nombre o descripción…' })
+    await user.type(search, 'DIFF')
+    expect(cards()).toEqual(['/revisar-cambios'])
+    await user.clear(search)
+    await user.type(search, 'al acabar')
+    expect(cards()).toEqual(['/revisar-cambios'])
+
+    await user.clear(search)
+    await user.click(within(s).getByRole('button', { name: 'Apagadas' }))
+    expect(cards().sort()).toEqual(['/estilo:formatear', '/explicar-sql'])
+    await user.click(within(s).getByRole('button', { name: 'Activas' }))
+    expect(cards().sort()).toEqual(['/release:changelog', '/deploy', '/libretto:evidence', '/mal', '/revisar-cambios', '/sembrar'].sort())
+
+    await user.type(search, 'zzz')
+    expect(cards()).toEqual([])
+    expect(within(s).getByText('Nada se llama «zzz».')).toBeTruthy()
+    await user.click(within(s).getByRole('button', { name: 'Borrar la búsqueda' }))
+    expect((search as HTMLInputElement).value).toBe('')
+    expect(cards()).toHaveLength(6)
+    await user.click(within(s).getByRole('button', { name: 'Todas' }))
+    expect(cards()).toHaveLength(ITEMS.length)
+  })
+
+  it('an empty filter says so', async () => {
+    mockApi({ repos: [repo('shop-web')], skills: { 'shop-web': list([item('apagada', 'personal', { state: 'off' })]) } })
+    render(createElement(App))
+    const s = await open()
+    const user = userEvent.setup()
+    await within(s).findByRole('button', { name: /^\/apagada/ })
+    await user.click(within(s).getByRole('button', { name: 'Activas' }))
+    expect(within(s).getByText('No tienes ninguna activa.')).toBeTruthy()
+    cleanup()
+    mockApi({ repos: [repo('shop-web')], skills: { 'shop-web': list([item('encendida', 'personal')]) } })
+    render(createElement(App))
+    const s2 = await open()
+    await within(s2).findByRole('button', { name: /^\/encendida/ })
+    await user.click(within(s2).getByRole('button', { name: 'Apagadas' }))
+    expect(within(s2).getByText('No tienes ninguna apagada.')).toBeTruthy()
+  })
+
+  it('a failed read says why and offers to retry', async () => {
+    let fail = true
+    mockApi({
+      repos: [repo('shop-web')],
+      skills: async () => {
+        if (fail) throw new Error('EACCES: permission denied')
+        return list([item('revisar-cambios', 'personal')], ['/x/skills tiene más de 300 entradas: solo se leen las primeras.'])
+      }
+    })
+    render(createElement(App))
+    const s = await open()
+    const alert = await within(s).findByRole('alert')
+    expect(alert.textContent).toContain('No he podido leer tus skills.')
+    expect(alert.textContent).toContain('EACCES: permission denied')
+    fail = false
+    await userEvent.setup().click(within(alert).getByRole('button', { name: 'Volver a intentar' }))
+    expect(await within(s).findByRole('button', { name: /^\/revisar-cambios/ })).toBeTruthy()
+    expect(within(s).queryByRole('alert')).toBeNull()
+    expect(within(s).getByText('/x/skills tiene más de 300 entradas: solo se leen las primeras.')).toBeTruthy()
+  })
+})

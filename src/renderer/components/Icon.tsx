@@ -6,6 +6,7 @@ const PATHS = {
   libretto: '<rect x="4" y="3.5" width="16" height="17" rx="3"/><path d="M8 8.5h8M8 12h8M8 15.5h4.5"/>',
   qa: '<circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5 5M8 10.5l2 2 3.5-3.5"/>',
   avisos: '<path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 0 0 4 0"/>',
+  skills: '<rect x="3.5" y="4.5" width="17" height="15" rx="3"/><path d="M13.5 8.5l-3 7"/>',
   settings: '<path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/>',
   working: '<path d="M12 3.5a8.5 8.5 0 1 1-8.5 8.5" opacity=".35"/><path d="M3.5 12A8.5 8.5 0 0 1 12 3.5"/>',
   'needs-you':
