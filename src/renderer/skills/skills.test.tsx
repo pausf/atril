@@ -101,16 +101,15 @@ describe('skills screen', () => {
     act(() => api.menu({ kind: 'palette' }))
     await userEvent.setup().type(screen.getByRole('combobox', { name: 'Buscar en Atril' }), 'skills{Enter}')
     expect(within(rail()).getByRole('button', { name: /Skills/ }).getAttribute('aria-current')).toBe('page')
-  })
 
-  it('without repos there is no project group', async () => {
+    cleanup()
     mockApi({ repos: [], skills: { '': list(ITEMS.filter((i) => i.origin !== 'project')) } })
     render(createElement(App))
-    const s = await open()
+    const n = await open()
     expect(window.atril.skills.list).toHaveBeenCalledWith(undefined)
-    expect(await within(s).findByText('Añade un repo en Ajustes → Repos para ver sus skills.')).toBeTruthy()
-    expect(within(s).queryByRole('combobox', { name: 'Repo del proyecto' })).toBeNull()
-    expect(within(s).queryByRole('group', { name: /^Proyecto/ })).toBeNull()
+    expect(await within(n).findByText('Añade un repo en Ajustes → Repos para ver sus skills.')).toBeTruthy()
+    expect(within(n).queryByRole('combobox', { name: 'Repo del proyecto' })).toBeNull()
+    expect(within(n).queryByRole('group', { name: /^Proyecto/ })).toBeNull()
   })
 
   it('search and filter narrow the cards', async () => {
@@ -139,16 +138,15 @@ describe('skills screen', () => {
     expect(cards()).toHaveLength(6)
     await user.click(within(s).getByRole('button', { name: 'Todas' }))
     expect(cards()).toHaveLength(ITEMS.length)
-  })
 
-  it('an empty filter says so', async () => {
+    cleanup()
     mockApi({ repos: [repo('shop-web')], skills: { 'shop-web': list([item('apagada', 'personal', { state: 'off' })]) } })
     render(createElement(App))
-    const s = await open()
-    const user = userEvent.setup()
-    await within(s).findByRole('button', { name: /^\/apagada/ })
-    await user.click(within(s).getByRole('button', { name: 'Activas' }))
-    expect(within(s).getByText('No tienes ninguna activa.')).toBeTruthy()
+    const e = await open()
+    await within(e).findByRole('button', { name: /^\/apagada/ })
+    expect(within(e).getByText('shop-web aún no tiene skills propias.')).toBeTruthy()
+    await user.click(within(e).getByRole('button', { name: 'Activas' }))
+    expect(within(e).getByText('No tienes ninguna activa.')).toBeTruthy()
     cleanup()
     mockApi({ repos: [repo('shop-web')], skills: { 'shop-web': list([item('encendida', 'personal')]) } })
     render(createElement(App))
@@ -156,6 +154,17 @@ describe('skills screen', () => {
     await within(s2).findByRole('button', { name: /^\/encendida/ })
     await user.click(within(s2).getByRole('button', { name: 'Apagadas' }))
     expect(within(s2).getByText('No tienes ninguna apagada.')).toBeTruthy()
+  })
+
+  it('a late reply for the previous repo is dropped', async () => {
+    const waiting: Record<string, (l: SkillsList) => void> = {}
+    mockApi({ repos: [repo('shop-web'), repo('cms')], skills: (id) => new Promise((r) => (waiting[id ?? ''] = r)) })
+    render(createElement(App))
+    const s = await open()
+    await userEvent.setup().selectOptions(within(s).getByRole('combobox', { name: 'Repo del proyecto' }), 'cms')
+    await act(async () => waiting.cms!(list([item('de-cms', 'project')])))
+    await act(async () => waiting['shop-web']!(list([item('de-shop', 'project')])))
+    expect(cards()).toEqual(['/de-cms'])
   })
 
   it('a failed read says why and offers to retry', async () => {

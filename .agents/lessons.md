@@ -425,3 +425,12 @@ The outcome «nada se monta encima de otra fila» was checked on a photo that st
 
 ## 2026-11-20 · mr-page-wide · 6→7
 Tour text and two test helpers changed outside Scope «In»; they followed from M43 but were not named. Fixed: listed in Scope.
+
+## 2026-11-20 · skills-list · 6→7
+K5 said «one test holds every clause» but the builder split the no-repo case into its own uncited test. When a criterion names one test, every clause goes in that test or the criterion names both. Fixed: folded into the cited test.
+
+## 2026-11-20 · skills-list · 6→7
+K6's empty-filter and «aún no tiene skills propias» clauses were proven only in uncited tests. Same rule as above. Fixed: folded into «search and filter narrow the cards».
+
+## 2026-11-20 · skills-list · 6→7
+A screen that reloads on a selector change took every reply, so a slow reply for the previous repo could land under the new one. Any `.then(setState)` keyed on a choice drops replies from a superseded choice. Fixed: K11 and its test, forced red without the guard.

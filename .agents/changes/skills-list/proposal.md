@@ -35,7 +35,7 @@ La pantalla Skills, en el raíl, enseña todas las skills y comandos que Claude 
 
 ## Scope
 
-**In:** `src/main/skills/` nuevo (leer carpetas, cabeceras y ajustes), `src/main/paths.ts` (`claudeDir()`), `src/main/agent.ts` (exportar `librettoDir`), el ⌘K (`src/renderer/components/` donde viva la paleta), el IPC `atril:skills:list` en `src/main/index.ts` y `src/preload/{api,index}.ts`, `src/renderer/mockApi.ts`, `src/renderer/skills/` nuevo (pantalla, tarjeta, detalle), `src/renderer/components/Rail.tsx` y `src/renderer/App.tsx` (la pantalla), `src/preload/i18n-en.ts`, estilos con tokens, `bocetos/novedades.html`, `bocetos/fase1-nucleo.html`, la foto; la spec nueva `skills` y el `Governs:` de `workspaces` (`spec-workspaces.md`).
+**In:** `src/main/skills/` nuevo (leer carpetas, cabeceras y ajustes), `src/main/paths.ts` (`claudeDir()`), `src/main/agent.ts` (exportar `librettoDir`), el ⌘K (`src/renderer/components/` donde viva la paleta), el IPC `atril:skills:list` en `src/main/index.ts` y `src/preload/{api,index}.ts`, `src/renderer/mockApi.ts`, `src/renderer/skills/` nuevo (pantalla, tarjeta, detalle), `src/renderer/components/Rail.tsx` y `src/renderer/App.tsx` (la pantalla), `src/renderer/palette/palette.test.ts` (una pantalla más en la lista fija), `src/preload/i18n-en.ts`, estilos con tokens, `bocetos/novedades.html`, `bocetos/fase1-nucleo.html`, la foto; la spec nueva `skills` y el `Governs:` de `workspaces` (`spec-workspaces.md`).
 **Out (nombrado):** cambiar el estado (switch, menú, «Apagar todas»); crear, editar, duplicar; instalar plugins y marketplaces; uso, gráficas y «Sin usar en 30 días»; la vista Lista y el donut; skills de empresa (managed), anidadas en subcarpetas del proyecto y de `--add-dir`; comandos en subcarpetas de `commands/`; recordar el repo elegido.
 
 ## Constraints
@@ -76,6 +76,8 @@ La pantalla Skills, en el raíl, enseña todas las skills y comandos que Claude 
   Proof: src/renderer/skills/skills.test.tsx the screen groups every skill by where it comes from
 - **K6** When the person types in «Buscar por nombre o descripción…» (matching name, description or whenToUse, case-insensitive) or picks «Todas», «Activas» or «Apagadas» (K5's definitions), the screen shall show only the matching cards; with a search and none it shall say «Nada se llama «{q}».» with «Borrar la búsqueda»; with no search and none, «No tienes ninguna activa.» or «No tienes ninguna apagada.»; a repo with no project items shall say «{repo} aún no tiene skills propias.».
   Proof: src/renderer/skills/skills.test.tsx search and filter narrow the cards
+- **K11** If the reply for a repo arrives after the person has picked another repo, then the screen shall drop it and show only the picked repo's items.
+  Proof: src/renderer/skills/skills.test.tsx a late reply for the previous repo is dropped
 - **K7** When the person activates a card, a detail panel shall open with `/name`, origin, state, the description, the header fields that are set, the instructions as plain text (markup shown literally) and the path; Escape or «Cerrar» shall close it and return focus to the card.
   Proof: src/renderer/skills/skills.test.tsx a card opens its detail and escape closes it
 - **K8** If `atril:skills:list` rejects, then the screen shall show a `Problem` «No he podido leer tus skills.» with «Volver a intentar» and the error in its detail; each of `warnings` shall show as a note under the heading.

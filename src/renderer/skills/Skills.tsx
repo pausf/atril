@@ -43,11 +43,20 @@ export function Skills() {
 
   const load = useCallback(() => {
     if (repos === undefined) return
+    let live = true
     setError(null)
-    window.atril.skills.list(repo).then(setData, (e: unknown) => {
-      setData(null)
-      setError(e instanceof Error ? e.message : String(e))
-    })
+    window.atril.skills.list(repo).then(
+      (d) => live && setData(d),
+      (e: unknown) => {
+        if (!live) return
+        setData(null)
+        setError(e instanceof Error ? e.message : String(e))
+      }
+    )
+    // A reply for the repo picked before this one must not land under the new one (K11).
+    return () => {
+      live = false
+    }
   }, [repos, repo])
   useEffect(load, [load])
 
