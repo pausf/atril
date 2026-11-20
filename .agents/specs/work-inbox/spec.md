@@ -55,6 +55,10 @@ Governs: src/main/jira/** src/renderer/inbox/**
 - Con la lista de MRs fallida no sale «Ninguna MR.».
 - Conectar GitHub o GitLab dice la causa sin nombres de excepción, como ya hace Jira (S32).
 
+### Afinar la petición (refine-request, 20 nov 2026)
+
+Quien crea una tarea puede, si quiere, contestar cuatro preguntas fijas o pedir a Claude Haiku 3–5 preguntas sobre su petición, y lo contestado viaja con la petición al agente. Sin tocarlo, todo es como hoy.
+
 ## Scope boundaries
 
 **In:** reading tasks, the Jira→repo memory, Start, the In Progress transition.
@@ -143,6 +147,12 @@ the dialog.
 
 - `err.message` nunca llega a la ventana; solo códigos de lista (`ENOTFOUND`…), el nombre de la excepción o `HTTP <n>`, y solo en el detalle.
 - Los tokens no salen de main.
+
+### Afinar la petición (refine-request, 20 nov 2026)
+
+- Nada de llamadas a Claude sin pulsar el botón (CLAUDE.md, cuota).
+- Textos por `t()` con su entrada inglesa; errores con `Problem`.
+- La llamada usa el mismo `run` que las puntuaciones (`claude -p … --tools '' --no-session-persistence --json-schema`), con la petición por stdin, nunca en argv.
 
 ## Prior decisions
 
@@ -248,6 +258,32 @@ the dialog.
 - Q: (constructor) ¿Qué código lleva un timeout? → A: el nombre de la excepción, `TimeoutError` (W150); `networkCode` deja de traducirlo a `timeout`, y `UND_ERR_CONNECT_TIMEOUT` también cuenta como timeout (assumed).
 - Q: (constructor) ¿Y si falla el puente con main al leer Tareas? → A: «No llego a Jira: ¿hay conexión?» con «Volver a comprobar» y el nombre de la excepción en el detalle, nunca su mensaje (assumed).
 - Q: (constructor) ¿Y un id de tablero no válido o una configuración sin columnas? → A: se quedan con su texto de antes tras «No puedo leer el tablero:», sin detalle; no son fallos de red (assumed).
+
+### Afinar la petición (refine-request, 20 nov 2026)
+
+- (2026-11-16, refine-request) Las respuestas de afinar viajan dentro del texto de la petición, no como campo aparte: Libretto las recibe en `The ask, verbatim` sin cambiar nada de Libretto.
+- (2026-11-16, refine-request) «Que Claude me pregunte» usa Haiku y solo corre al pulsarlo; ninguna otra acción del diálogo llama a Claude.
+
+#### Alternatives that lost
+
+| Considered | Why it lost |
+|---|---|
+| Mandar las respuestas como campo aparte a main y que main las pegue | main tendría que conocer el formato; el texto compuesto en el diálogo es lo que la persona ve en «Lanza» |
+| Subir el tope de 2000 en main | toca `workspaces` y su criterio; el caso es raro y el aviso basta |
+| Sonnet para las preguntas | el boceto dice Haiku; preguntas cortas no necesitan más |
+
+#### Decision log, answers as given (2026-11-20)
+- Q: ¿Dónde vive? → A: en «Nueva tarea» y «Nuevo trabajo», plegado y opcional, como el boceto; solo se enseña con texto escrito, igual que Modo (assumed).
+- Q: ¿Cómo llegan las respuestas al agente? → A: pegadas al texto de la petición tras una línea en blanco, una por línea: las fijas como «Hecho cuando: …», las de Claude como «¿pregunta? respuesta». Las vacías no se mandan (assumed; así Libretto las lee en `The ask, verbatim` sin tocar Libretto).
+- Q: ¿Y si el texto con respuestas pasa de 2000 caracteres (el tope de main, W-MAX_TASK)? → A: el diálogo lo dice y deshabilita Empezar; main no cambia (assumed). Si es incorrecto: sube el tope en `workspaces.ts`.
+- Q: ¿Qué modelo y cuándo? → A: Haiku, solo al pulsar «Que Claude me pregunte»; nunca automático (regla de cuota de CLAUDE.md) (assumed).
+- Q: ¿«Volver a preguntar» borra lo contestado? → A: sustituye las preguntas de Claude y sus respuestas; las cuatro fijas se quedan (assumed).
+- Q: (spec-reviewer) ¿Quién gobierna `refine.ts`? → A: `workspaces`, que gobierna `src/main/**`; I35/I36 pasan a W208/W209 en `spec-workspaces.md` (assumed).
+- Q: (spec-reviewer) ¿Qué dice el error de Claude? → A: frase fija y el código en `detail` («Ver detalle»), nunca la salida de Claude, como M16 (assumed).
+- Q: (spec-reviewer) ¿Respuestas escondidas si se borra el texto? → A: con texto en blanco no se manda nada de afinar (I27 abre Claude a secas); lo contestado se queda en el diálogo y vuelve a verse al escribir (assumed).
+- Q: (spec-reviewer) ¿Comparte la cola de puntuaciones? → A: no: Haiku corre a su lado, una pregunta a la vez; esperar a una puntuación de 3 min para unas preguntas no tiene sentido (assumed).
+- Q: (work-reviewer) ¿La vista de foto de `App.tsx` entra? → A: sí, solo en desarrollo, para la foto de la casilla 4; añadida a Scope (assumed).
+- Q: ¿Enter en un campo de afinar empieza la tarea, como Enter en Rama? → A: no: pasa al campo siguiente; ⌘↩ sigue empezando (assumed; empezar a medio contestar sería un susto).
 
 ## Task breakdown
 
@@ -371,3 +407,17 @@ the dialog.
 - **I29** While Jira is connected and reading the tasks fails (including a 401 or 403), Tareas shall show the W150 problem with «No puedo enseñarte tus tareas.» under it, its button («Volver a comprobar» reads again; «Abrir Ajustes» opens Ajustes) and the detail folded — never «Conecta Jira en Ajustes», which stays for Jira not connected.
   Proof: src/main/jira/inbox.test.ts a jira failure says its cause and fix
   Proof: src/renderer/inbox/inbox.test.ts a connected jira failure shows its problem and button
+
+### Afinar la petición (refine-request, 20 nov 2026)
+
+- **I30** (amends what I22 and I27 call «the text»: from here it is the composed text below) While the text of «Nueva tarea» or «Nuevo trabajo» is not blank, the dialog shall show a folded `<details>` «Afinar la petición · opcional»; opened, it shall hold four fields — «¿Qué tiene que pasar cuando esté hecho?», «¿Qué no entra?», «¿Dónde se toca? (pantalla, archivos)», «Un ejemplo». The composed text shall be the request as typed, then — only if any answer (fixed or Claude's, I31) is filled — a blank line and one line per filled answer: the fixed ones first, in that order, as «Hecho cuando: …», «No entra: …», «Dónde: …», «Ejemplo: …», then Claude's (I31). Every answer shall be trimmed with inner newlines turned into spaces; blank ones add nothing. While the text is blank the section shall be hidden and nothing of it sent (I27 opens plain Claude), its answers kept in the dialog. Empezar shall send the composed text, and the «Lanza» line shall show the template with the composed text in place of «tu texto» whenever the text is not blank. The `<details>` summary shall add «1 respuesta añadida» or «{n} respuestas añadidas», n counting fixed and Claude's filled answers, and nothing at 0.
+  Proof: src/renderer/inbox/refine.test.tsx the fixed questions add their answers to the request
+  Proof: src/renderer/inbox/refine.test.tsx nuevo trabajo in automatic mode launches the composed text too
+- **I31** When the person presses «Que Claude me pregunte» with text written, the dialog shall call `refine.ask(text)` once, show «Pensando…» with the button disabled while it waits, then one field per returned question under «Claude pregunta, sobre tu petición»; each filled one shall add «{pregunta} {respuesta}» after the fixed lines, cleaned as I30. Claude's questions stay when the request is edited. The button shall then read «Volver a preguntar», and pressing it shall replace Claude's questions and their answers, keeping the fixed ones. With blank text the button shall not exist (I30), and no other action of the dialog shall call `refine.ask`.
+  Proof: src/renderer/inbox/refine.test.tsx claude asks only when pressed and its answers join the request
+- **I32** If `refine.ask` answers an error, then the section shall show a `Problem` with that sentence, its `detail` folded, «Puedes empezar igual: afinar es opcional.» and «Volver a intentar», which asks again; Empezar shall stay usable.
+  Proof: src/renderer/inbox/refine.test.tsx a failed ask says why and leaves the dialog usable
+- **I33** While the request with its answers is longer than 2000 characters, Empezar shall be disabled and the dialog shall say «Con las respuestas pasa de 2000 caracteres: acorta algo.».
+  Proof: src/renderer/inbox/refine.test.tsx a request too long with its answers cannot start
+- **I34** When Enter is pressed in a field of the section, focus shall move to the next field of the section (from the last, to «Que Claude me pregunte»), and nothing shall start; ⌘↩ shall still start (I22).
+  Proof: src/renderer/inbox/refine.test.tsx enter moves through the questions
