@@ -116,14 +116,17 @@ describe('mr scores in the window', () => {
     expect(text).toContain('Claude vio 117 de 300 KB')
     expect(text).not.toContain('De un commit anterior')
 
-    // A stale score says so in the card too.
-    await user.click(within(line(s.review, 1)).getByRole('button', { name: /M · D4 · R2/ }))
+    // A stale score says so in the card too; the inbox is behind «‹ Tus MR» while a page is open (M43).
+    await user.click(screen.getByRole('button', { name: '‹ Tus MR' }))
+    await user.click(within(line(await section(/^Me toca revisar/), 1)).getByRole('button', { name: /M · D4 · R2/ }))
     await screen.findByRole('region', { name: 'Antigua' })
     expect(card().textContent).toContain('De un commit anterior')
     expect(card().textContent).not.toContain('Claude vio')
     await user.click(within(card()).getByRole('button', { name: 'Puntuar de nuevo' }))
     expect(api.mrApi.score).toHaveBeenCalledWith(u(5))
     // Asked again, the row reads its new state.
-    await vi.waitFor(() => expect(line(s.review, 1).textContent).toContain('En cola'))
+    await user.click(screen.getByRole('button', { name: '‹ Tus MR' }))
+    const review = await section(/^Me toca revisar/)
+    await vi.waitFor(() => expect(line(review, 1).textContent).toContain('En cola'))
   })
 })

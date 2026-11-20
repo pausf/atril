@@ -56,26 +56,34 @@ const row = (title: string) => screen.getByRole('button', { name: new RegExp(`^$
 async function toMr(user: ReturnType<typeof userEvent.setup>) {
   await user.click(await screen.findByRole('button', { name: /^MR/ }))
 }
+// M43: the inbox hides while a page is open, so another row is reached through «‹ Tus MR».
+async function reopen(user: ReturnType<typeof userEvent.setup>, title: string) {
+  const back = screen.queryByRole('button', { name: '‹ Tus MR' })
+  if (back) await user.click(back)
+  await user.click(row(title))
+}
 
 describe('the mr page', () => {
-  it('a row opens the mr page beside the inbox', async () => {
+  it('a row opens the mr page across the screen', async () => {
+    const FOLLOW = 'https://github.com/acme/web/pull/3'
     const aviso: Aviso = { id: 'n1', kind: 'review', at: Date.now(), read: false, title: 'Nuevo filtro', url: GL, forge: 'gitlab' }
-    const api = mockApi({ mrs: lists({ mine: [MINE], review: [REVIEW] }), threads: { [GH]: { threads: [GENERAL], more: false } }, avisos: [aviso] })
+    // REVIEW is in Sigo too: it counts once, at its first list.
+    const api = mockApi({ mrs: lists({ mine: [{ ...MINE, mergeable: true }], review: [REVIEW], following: [REVIEW, mr(FOLLOW, { title: 'Ajena' })] }), threads: { [GH]: { threads: [GENERAL], more: false } }, avisos: [aviso] })
     const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false)
     const user = userEvent.setup()
     render(createElement(App))
     await toMr(user)
+    const first = (title: string) => screen.getAllByRole('button', { name: new RegExp(`^${title}`) })[0]!
+    const back = (view: HTMLElement) => within(view).getByRole('button', { name: '‹ Tus MR' })
     await user.click(await screen.findByRole('button', { name: /^Envío con IVA/ }))
 
-    // M43: no modal; the inbox stays on the left with the row marked, the page in the centre.
+    // M43: no modal and no inbox; «‹ Tus MR», its place, the line, the title and the side cards in order.
     const view = await page('Envío con IVA')
     expect(screen.queryByRole('dialog')).toBeNull()
-    expect(row('Envío con IVA').getAttribute('aria-current')).toBe('true')
-    expect(row('Nuevo filtro').getAttribute('aria-current')).toBeNull()
-    expect(within(view).getByRole('button', { name: '‹ Tus MR' })).toBeTruthy()
+    expect(screen.queryAllByRole('button', { name: /^Nuevo filtro/ })).toEqual([])
+    expect(back(view).nextElementSibling?.textContent).toBe('1 de 3 · J/K')
     expect(within(view).getByText('GitHub · acme/web · Tuya · feat/envio → main')).toBeTruthy()
     expect(within(view).getByRole('heading', { name: 'Envío con IVA' })).toBeTruthy()
-    // The side column holds its four cards in order.
     const side = screen.getByRole('complementary', { name: 'Esta MR' })
     expect(within(side).getAllByRole('heading').map((h) => h.textContent)).toEqual(['Puntuación', 'Contra su spec', 'Revisores', 'CI'])
     expect(api.mrApi.page).toHaveBeenCalledWith(GH)
@@ -90,45 +98,66 @@ describe('the mr page', () => {
     expect(await within(view).findByText('Esto es <b>IVA</b> fijo: **¿y Canarias?**')).toBeTruthy()
     expect(view.querySelector('b')).toBeNull()
 
-    // Another row leaves this page for that one; the line says whose it is.
-    await user.click(row('Nuevo filtro'))
-    const other = await page('Nuevo filtro')
-    expect(within(other).getByText('GitLab · grp/shop · De ana · feat/filtro → develop')).toBeTruthy()
-    expect(row('Nuevo filtro').getAttribute('aria-current')).toBe('true')
-    expect(row('Envío con IVA').getAttribute('aria-current')).toBeNull()
-
-    // «‹ Tus MR» goes back to the inbox.
-    await user.click(within(other).getByRole('button', { name: '‹ Tus MR' }))
-    expect(screen.queryByRole('region', { name: 'Nuevo filtro' })).toBeNull()
-    expect(screen.queryByRole('complementary', { name: 'Esta MR' })).toBeNull()
-
-    // Escape leaves too; with a reply written it asks first, and stays when told no.
-    await user.click(row('Envío con IVA'))
-    await page('Envío con IVA')
+    // Escape closes the top layer only: the menu, then the confirmation, then the page.
+    await user.click(within(view).getByRole('button', { name: 'Revisar ▾' }))
+    await user.keyboard('{Escape}')
+    expect(screen.queryByRole('menu')).toBeNull()
+    expect(screen.getByRole('region', { name: 'Envío con IVA' })).toBeTruthy()
+    await user.click(within(view).getByRole('button', { name: 'Fusionar' }))
+    await screen.findByRole('dialog')
+    await user.keyboard('{Escape}')
+    expect(screen.queryByRole('dialog')).toBeNull()
+    expect(screen.getByRole('region', { name: 'Envío con IVA' })).toBeTruthy()
     await user.keyboard('{Escape}')
     expect(screen.queryByRole('region', { name: 'Envío con IVA' })).toBeNull()
+    expect(screen.queryByRole('complementary', { name: 'Esta MR' })).toBeNull()
     expect(confirm).not.toHaveBeenCalled()
-    await user.click(row('Envío con IVA'))
+    // Back in the inbox, the row that was open is marked and holds the focus.
+    expect(row('Envío con IVA').getAttribute('aria-current')).toBe('true')
+    expect(document.activeElement).toBe(row('Envío con IVA'))
+
+    // Another MR: its own place; «‹ Tus MR» marks that one instead.
+    await user.click(first('Nuevo filtro'))
+    const other = await page('Nuevo filtro')
+    expect(within(other).getByText('GitLab · grp/shop · De ana · feat/filtro → develop')).toBeTruthy()
+    expect(back(other).nextElementSibling?.textContent).toBe('2 de 3 · J/K')
+    await user.click(back(other))
+    expect(screen.queryByRole('region', { name: 'Nuevo filtro' })).toBeNull()
+    expect(first('Nuevo filtro').getAttribute('aria-current')).toBe('true')
+    expect(row('Envío con IVA').getAttribute('aria-current')).toBeNull()
+    expect(document.activeElement).toBe(first('Nuevo filtro'))
+    await reopen(user, 'Ajena')
+    expect(back(await page('Ajena')).nextElementSibling?.textContent).toBe('3 de 3 · J/K')
+    await user.click(back(await page('Ajena')))
+
+    // With a reply written, Escape and «‹ Tus MR» ask first, and stay when told no.
+    await reopen(user, 'Envío con IVA')
     const again = await page('Envío con IVA')
     await user.click(within(again).getByRole('tab', { name: /^Conversación/ }))
     await user.type(await within(again).findByRole('textbox', { name: 'Responder' }), 'a medias')
     await user.keyboard('{Escape}')
     expect(confirm).toHaveBeenLastCalledWith('Tienes una respuesta sin enviar. ¿Salir y descartarla?')
     expect(screen.getByRole('region', { name: 'Envío con IVA' })).toBeTruthy()
-    // The same question before another row, then before «‹ Tus MR».
-    await user.click(row('Nuevo filtro'))
+    await user.click(back(again))
     expect(confirm).toHaveBeenCalledTimes(2)
     expect(screen.getByRole('region', { name: 'Envío con IVA' })).toBeTruthy()
     confirm.mockReturnValue(true)
-    await user.click(within(again).getByRole('button', { name: '‹ Tus MR' }))
+    await user.click(back(again))
     expect(confirm).toHaveBeenCalledTimes(3)
     expect(screen.queryByRole('region', { name: 'Envío con IVA' })).toBeNull()
+
+    // «Fusionar» back to the inbox: the row, still listed, is marked and focused.
+    await reopen(user, 'Envío con IVA')
+    await user.click(await within(await page('Envío con IVA')).findByRole('button', { name: 'Fusionar' }))
+    await user.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Fusionar' }))
+    expect(await screen.findByText('Fusionada: Envío con IVA')).toBeTruthy()
+    await waitFor(() => expect(row('Envío con IVA').getAttribute('aria-current')).toBe('true'))
+    expect(document.activeElement).toBe(row('Envío con IVA'))
 
     // An Avisos notice opens its MR's page (V6).
     await user.click(screen.getByRole('button', { name: /^Avisos/ }))
     await user.click(within(screen.getByRole('list', { name: 'Avisos' })).getByRole('button', { name: /Nuevo filtro/ }))
-    expect(await page('Nuevo filtro')).toBeTruthy()
-    expect(row('Nuevo filtro').getAttribute('aria-current')).toBe('true')
+    expect(back(await page('Nuevo filtro')).nextElementSibling?.textContent).toBe('2 de 3 · J/K')
   })
 
   it('threads and drafts sit on their lines', async () => {
@@ -237,12 +266,12 @@ describe('the mr page', () => {
     expect(await within(screen.getByRole('complementary', { name: 'Esta MR' })).findByRole('button', { name: 'Arreglar CI con Claude' })).toBeTruthy()
 
     // Me toca revisar: the review goes in the menu as «A fondo», not as a header button.
-    await user.click(row('Nuevo filtro'))
+    await reopen(user, 'Nuevo filtro')
     view = await page('Nuevo filtro')
     await waitFor(() => expect(head(view)).toEqual(['Revisar ▾', 'Abrir en GitLab ↗']))
 
     // M33's none: the reason under the header with its link to Ajustes → Repos; Sigo without A fondo has no «Revisar ▾».
-    await user.click(row('Ajena'))
+    await reopen(user, 'Ajena')
     view = await page('Ajena')
     const note = await within(view).findByText('Añade el repo de acme/web en Ajustes')
     expect(note.closest('.mr-page-head')).toBeNull()
@@ -311,7 +340,7 @@ describe('the mr page', () => {
     expect(within(view).getByRole('status').textContent).toBe('Puntuando…')
 
     // M26: drafts for this head disable Comentar with its reason; it still counts, so the button shows.
-    await user.click(row('Ya comentada'))
+    await reopen(user, 'Ya comentada')
     view = await page('Ya comentada')
     await user.click(await within(view).findByRole('button', { name: 'Revisar ▾' }))
     const done = await screen.findByRole('menuitem', { name: /^Comentar/ })
@@ -322,14 +351,14 @@ describe('the mr page', () => {
     await user.keyboard('{Escape}')
 
     // An older head: «Comentar de nuevo».
-    await user.click(row('Vieja'))
+    await reopen(user, 'Vieja')
     view = await page('Vieja')
     await user.click(await within(view).findByRole('button', { name: 'Revisar ▾' }))
     expect(await screen.findByRole('menuitem', { name: /^Comentar de nuevo/ })).toBeTruthy()
     await user.keyboard('{Escape}')
 
     // Me toca revisar with M33's review: the three levels; A fondo runs M34 and ends on Trabajo.
-    await user.click(row('Nuevo filtro'))
+    await reopen(user, 'Nuevo filtro')
     view = await page('Nuevo filtro')
     await user.click(await within(view).findByRole('button', { name: 'Revisar ▾' }))
     await waitFor(() => expect(items()).toEqual(['Puntuarnota y riesgo con sus razones', 'Comentarborradores por lente, en su línea', 'A fondoen tu repo, con sus tests']))
@@ -394,7 +423,7 @@ describe('the mr page', () => {
     expect(within(card('CI')).queryByRole('button', { name: 'Arreglar CI con Claude' })).toBeNull()
 
     // A stale score offers to score again; no contract says so; a failed reviewers request fails its card only.
-    await user.click(row('Nuevo filtro'))
+    await reopen(user, 'Nuevo filtro')
     await page('Nuevo filtro')
     await waitFor(() => expect(card('Puntuación').textContent).toContain('De un commit anterior'))
     await user.click(within(card('Puntuación')).getByRole('button', { name: 'Puntuar de nuevo' }))
@@ -408,14 +437,14 @@ describe('the mr page', () => {
     expect(await within(card('CI')).findByRole('button', { name: 'Arreglar CI con Claude' })).toBeTruthy()
 
     // Sigo is never scored; no reviewers yet.
-    await user.click(row('Ajena'))
+    await reopen(user, 'Ajena')
     await page('Ajena')
     await waitFor(() => expect(card('Puntuación').textContent).toContain('Las MR de Sigo no se puntúan.'))
     expect(card('Revisores').textContent).toContain('Aún sin revisores')
     expect(card('CI').textContent).toContain('En curso')
 
     // Not scored yet: «Sin puntuar» with Puntuar.
-    await user.click(row('Envío con IVA'))
+    await reopen(user, 'Envío con IVA')
     act(() => api.pushScore(GH, { state: 'none' }))
     await waitFor(() => expect(card('Puntuación').textContent).toContain('Sin puntuar'))
     await user.click(within(card('Puntuación')).getByRole('button', { name: 'Puntuar' }))
@@ -429,7 +458,7 @@ describe('the mr page', () => {
     await toMr(user)
     expect(within(await screen.findByRole('button', { name: /^Envío con IVA/ })).getByText('En conflicto')).toBeTruthy()
     expect(within(row('Nuevo filtro')).queryByText('En conflicto')).toBeNull()
-    await user.click(row('Envío con IVA'))
+    await reopen(user, 'Envío con IVA')
     const view = await page('Envío con IVA')
     expect(within(view).getByText('En conflicto con main')).toBeTruthy()
     expect(within(view).queryByRole('button', { name: 'Fusionar' })).toBeNull()
@@ -460,7 +489,7 @@ describe('the mr page', () => {
     expect(within(view).queryByRole('alert')).toBeNull()
 
     // A rejected call says Atril could not open it.
-    await user.click(row('Nuevo filtro'))
+    await reopen(user, 'Nuevo filtro')
     const broken = await page('Nuevo filtro')
     expect((await within(broken).findByRole('alert')).textContent).toContain('Atril no ha podido abrir esta MR.')
     expect(within(broken).getByRole('button', { name: 'Volver a comprobar' })).toBeTruthy()

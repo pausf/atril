@@ -88,6 +88,6 @@ Ninguna.
 
 ## Checklist
 
-- [ ] La página a lo ancho sin bandeja, con «{i} de {n} · J/K», la fila marcada y con foco al volver, y los tests de `page.test.ts` que cambiaban de fila adaptados · Closes: M43
+- [x] La página a lo ancho sin bandeja, con «{i} de {n} · J/K», la fila marcada y con foco al volver, y los tests de `page.test.ts` que cambiaban de fila adaptados · Closes: M43
 - [ ] J/K entre MRs, con sus guardas · waits on box 1 · Closes: M52
 - [ ] CSS (300/240 px, la línea de puntuación que parte), textos en inglés, foto a 1440 px mirada, boceto `bocetos/mr-anchura.html` y novedades · waits on boxes 1–2 · Closes: M43

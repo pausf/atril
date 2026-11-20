@@ -15,10 +15,11 @@ const NAME: Record<ForgeId, string> = { github: 'GitHub', gitlab: 'GitLab' }
 type Loaded = PageData | { rejected: true }
 
 /**
- * M43: one MR as a page beside the inbox: its line, title and header, Código and Conversación, and the side cards.
+ * M43: one MR as a page across the screen: its line, title and header, Código and Conversación, and the side cards.
+ * `pos`: its place in the inbox's order (M52), while listed.
  * `dirty` tells the screen a reply box holds text; `escape` closes the page's own top layer and says whether it did.
  */
-export function MrPage({ m, list, score, onScore, onLeave, onMerged, onRelist, dirty, escape }: { m: MrItem; list: MrListName; score: MrScoreState; onScore: () => void; onLeave: () => void; onMerged: (r: Extract<MrMergeResult, { merged: true }>) => void; onRelist: () => void; dirty: MutableRefObject<boolean>; escape: MutableRefObject<(() => boolean) | null> }) {
+export function MrPage({ m, list, pos, score, onScore, onLeave, onMerged, onRelist, dirty, escape }: { m: MrItem; list: MrListName; pos?: { i: number; n: number } | undefined; score: MrScoreState; onScore: () => void; onLeave: () => void; onMerged: (r: Extract<MrMergeResult, { merged: true }>) => void; onRelist: () => void; dirty: MutableRefObject<boolean>; escape: MutableRefObject<(() => boolean) | null> }) {
   const t = useT()
   const { openSettings, openWorkspace } = useContext(NavigationContext)
   const [work, setWork] = useState<MrWork | null>(null)
@@ -150,6 +151,7 @@ export function MrPage({ m, list, score, onScore, onLeave, onMerged, onRelist, d
         <button type="button" className="back" onClick={onLeave}>
           {t('‹ Tus MR')}
         </button>
+        {pos && <span className="mr-pos f-note">{t('{i} de {n} · J/K', pos)}</span>}
         <div className="sub">{`${NAME[m.forge]} · ${m.project} · ${whose}${branch}`}</div>
         <div className="mr-page-title">
           <h2 id="mr-page-title">{m.title}</h2>

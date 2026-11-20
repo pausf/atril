@@ -22,6 +22,8 @@ afterEach(() => {
 
 async function openPage(user: ReturnType<typeof userEvent.setup>, title: string) {
   if (!screen.queryByRole('heading', { level: 1, name: /^MR/ })) await user.click(await screen.findByRole('button', { name: /^MR/ }))
+  const back = screen.queryByRole('button', { name: '‹ Tus MR' })
+  if (back) await user.click(back)
   await user.click(await screen.findByRole('button', { name: new RegExp(`^${title}`) }))
   return screen.findByRole('region', { name: title })
 }

@@ -15,6 +15,8 @@ const NAME: Record<ForgeId, string> = { github: 'GitHub', gitlab: 'GitLab' }
 export function MrScreen({ mrs, openUrl }: { mrs: MrsState; openUrl?: string | null }) {
   const { result, loading, refresh, scores, score } = mrs
   const [opened, setOpened] = useState<string | null>(null)
+  // M43: the row of the MR just left stays marked and focused until another MR opens.
+  const [last, setLast] = useState<string | null>(null)
   const [merged, setMerged] = useState<{ title: string; list?: { error: string; detail: string; fix: NetFix } } | null>(null)
   const dirty = useRef(false)
   const escape = useRef<(() => boolean) | null>(null)
@@ -26,6 +28,7 @@ export function MrScreen({ mrs, openUrl }: { mrs: MrsState; openUrl?: string | n
     if (dirty.current && !window.confirm(t('Tienes una respuesta sin enviar. ¿Salir y descartarla?'))) return
     dirty.current = false
     if (url) setMerged(null)
+    setLast(url ? null : opened)
     setOpened(url)
   }
   const goRef = useRef(go)
@@ -41,6 +44,9 @@ export function MrScreen({ mrs, openUrl }: { mrs: MrsState; openUrl?: string | n
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
   }, [opened])
+  useEffect(() => {
+    if (!opened && last) document.querySelector<HTMLElement>('.mr-row[aria-current="true"]')?.focus()
+  }, [opened, last])
   // M9: opening the screen loads the lists again.
   useEffect(() => void refresh(), [refresh])
   // ponytail: dev-only, ATRIL_SNAPSHOT_VIEW=mr-score|mr-thread|mr-lens opens the first row of Mías for a photo.
@@ -53,12 +59,16 @@ export function MrScreen({ mrs, openUrl }: { mrs: MrsState; openUrl?: string | n
     const m = result && [...result.mine, ...result.review, ...result.following].find((r) => r.url === openUrl)
     if (!m || handled.current === openUrl) return
     handled.current = m.url
+    setLast(null)
     setOpened(m.url)
   }, [result, openUrl])
   const titles: Record<MrListName, string> = { mine: t('Mías'), review: t('Me toca revisar'), following: t('Sigo') }
   const listOf = (url: string): MrListName | undefined => (['mine', 'review', 'following'] as const).find((l) => result?.[l].some((r) => r.url === url))
   const openList = opened ? listOf(opened) : undefined
   const openRow = opened && openList ? result![openList].find((r) => r.url === opened) : undefined
+  // M43: Mías, Me toca revisar and Sigo in order, an MR in two lists only at its first.
+  const order = result ? [...new Set([...result.mine, ...result.review, ...result.following].map((r) => r.url))] : []
+  const at = opened ? order.indexOf(opened) : -1
   return (
     <section className={`tasks-screen mr-screen${opened ? ' open' : ''}`} data-tour="mr">
       <h1>
@@ -87,8 +97,7 @@ export function MrScreen({ mrs, openUrl }: { mrs: MrsState; openUrl?: string | n
         />
       ))}
       <div className={opened ? 'mr-layout' : undefined}>
-      <div className={opened ? 'mr-inbox' : undefined}>
-      {!result ? (
+      {opened ? null : !result ? (
         <div className="empty">{t('Cargando tus MR…')}</div>
       ) : result.connected.length === 0 ? (
         <div className="empty">
@@ -104,7 +113,7 @@ export function MrScreen({ mrs, openUrl }: { mrs: MrsState; openUrl?: string | n
             {result[l].length === 0 && result.errors.length === 0 && <p className="f-note">{t('Ninguna MR.')}</p>}
             {result[l].map((m) => (
               <div key={m.url} className="mr-line">
-                <Row m={m} current={opened === m.url} onOpen={() => go(m.url)} />
+                <Row m={m} current={last === m.url} onOpen={() => go(m.url)} />
                 {/* M12: never «Sigo». */}
                 {l !== 'following' && (
                   <ScoreCell m={m} state={scores[m.url] ?? { state: 'none' }} onScore={() => score(m.url)} onView={() => go(m.url)} tour={!openRow} />
@@ -119,13 +128,13 @@ export function MrScreen({ mrs, openUrl }: { mrs: MrsState; openUrl?: string | n
           </FoldSection>
         ))
       )}
-      </div>
       {opened &&
         (openRow && openList ? (
-          <MrPage key={opened} m={openRow} list={openList} score={scores[openRow.url] ?? { state: 'none' }} onScore={() => score(openRow.url)} onLeave={() => go(null)}
+          <MrPage key={opened} m={openRow} list={openList} pos={at >= 0 ? { i: at + 1, n: order.length } : undefined} score={scores[openRow.url] ?? { state: 'none' }} onScore={() => score(openRow.url)} onLeave={() => go(null)}
             onMerged={(r) => {
               // M42: back to the inbox; main listed again, so the window reads that listing unless it failed.
               dirty.current = false
+              setLast(opened)
               setOpened(null)
               setMerged({ title: openRow.title, ...(r.list && { list: r.list }) })
               if (!r.list) void refresh()
