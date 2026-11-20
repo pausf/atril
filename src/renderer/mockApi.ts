@@ -1,5 +1,5 @@
 import { vi } from 'vitest'
-import type { ActivityLine, SubagentEntry, SubagentLine, AddRepoResult, Aviso, FileChange, FlowBoxes, FlowDocs, ForgeId, ForgeStatus, Mode, MrDraft, MrDrafts, MrDraftsResult, MrFixCiResult, MrLists, MrMergeResult, MrPage, MrReply, MrScoreState, MrThreads, MrWork, NotifyPatch, RefineResult, NotifyPermission, NotifySettings, AgentState, StateProblem, QaBugResult, QaLaunchResult, QaManualRequest, QaMr, QaPublishResult, QaReport, QaResult, QaStatus, QaTargets, AtrilApi, RemoveResult, QuickAnswer, AgentWait, RadarHit, FlowStage, HistoryEntry, IdeaJiraResult, IdeaResult, LibrettoCounts, LibrettoState, JiraIssue, JiraSettingsStatus, MenuAction, NextItem, StartProposalResult, StartRequest, StartResult, RepoResult, RepoView, ToolReport, UiState, WorkCost, WorkspaceResult, WorkspaceView } from '../preload/api'
+import type { ActivityLine, SubagentEntry, SubagentLine, AddRepoResult, Aviso, FileChange, FlowBoxes, FlowDocs, ForgeId, ForgeStatus, Mode, MrDraft, MrDrafts, MrDraftsResult, MrFixCiResult, MrLists, MrMergeResult, MrPage, MrReply, MrScoreState, MrThreads, MrWork, NotifyPatch, RefineResult, NotifyPermission, SkillsList, NotifySettings, AgentState, StateProblem, QaBugResult, QaLaunchResult, QaManualRequest, QaMr, QaPublishResult, QaReport, QaResult, QaStatus, QaTargets, AtrilApi, RemoveResult, QuickAnswer, AgentWait, RadarHit, FlowStage, HistoryEntry, IdeaJiraResult, IdeaResult, LibrettoCounts, LibrettoState, JiraIssue, JiraSettingsStatus, MenuAction, NextItem, StartProposalResult, StartRequest, StartResult, RepoResult, RepoView, ToolReport, UiState, WorkCost, WorkspaceResult, WorkspaceView } from '../preload/api'
 
 export const workspace = (id: string, branch: string, alive = true): WorkspaceView => ({
   id,
@@ -130,6 +130,8 @@ interface Options {
   reposProblem?: StateProblem
   /** What repos.remove answers per id; missing means removed. */
   removeRepo?: Record<string, RepoResult>
+  /** What skills.list answers per repo id ('' without one), or a function of the repo id; missing means none. */
+  skills?: Record<string, SkillsList> | ((repoId?: string) => Promise<SkillsList>)
   /** What repos.relocate answers per id; missing means found again (health turns ok). */
   relocateRepo?: Record<string, RepoResult | null>
 }
@@ -475,6 +477,11 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
     refine: {
       ask: vi.fn(async (text: string): Promise<RefineResult> =>
         typeof o.refine === 'function' ? o.refine(text) : (o.refine ?? { questions: ['¿Para quién es?', '¿Qué pasa si no hay datos?', '¿Hay un diseño?'] })
+      )
+    },
+    skills: {
+      list: vi.fn(async (repoId?: string): Promise<SkillsList> =>
+        typeof o.skills === 'function' ? o.skills(repoId) : (o.skills?.[repoId ?? ''] ?? { items: [], warnings: [] })
       )
     },
     revealState: vi.fn(async () => true),

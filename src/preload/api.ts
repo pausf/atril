@@ -1035,6 +1035,45 @@ export interface RefineApi {
   ask(text: string): Promise<RefineResult>
 }
 
+/** K1: where Claude Code loads a skill or command from. */
+export type SkillOrigin = 'personal' | 'project' | 'plugin' | 'atril'
+/** K3: `skillOverrides` values in Claude Code's settings; absent = `on`. */
+export type SkillState = 'on' | 'name-only' | 'user-invocable-only' | 'off'
+
+export interface SkillItem {
+  name: string
+  kind: 'skill' | 'command'
+  origin: SkillOrigin
+  /** `name@marketplace` for plugin items, `libretto` for Atril's. */
+  plugin?: string
+  path: string
+  description?: string
+  whenToUse?: string
+  argumentHint?: string
+  allowedTools?: string[]
+  model?: string
+  effort?: string
+  disableModelInvocation?: boolean
+  userInvocable?: boolean
+  body: string
+  broken?: true
+  state: SkillState
+  /** Plugin and Atril items: whether the plugin is on (K3). */
+  enabled?: boolean
+  /** K4: why it is not loaded. */
+  shadowedBy?: 'personal' | 'skill'
+}
+
+export interface SkillsList {
+  items: SkillItem[]
+  warnings: string[]
+}
+
+export interface SkillsApi {
+  /** Read-only: folders and settings, never Claude (K1). */
+  list(repoId?: string): Promise<SkillsList>
+}
+
 export interface AtrilApi {
   menu: MenuApi
   ui: UiApi
@@ -1054,6 +1093,7 @@ export interface AtrilApi {
   history: HistoryApi
   qa: QaApi
   refine: RefineApi
+  skills: SkillsApi
   doctor(): Promise<DoctorReport>
   installTool(tool: string): Promise<{ ok: true } | { error: string }>
   repos: ReposApi

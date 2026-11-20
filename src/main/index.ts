@@ -1,5 +1,5 @@
 import { app, BrowserWindow, dialog, ipcMain, Notification, safeStorage, shell } from 'electron'
-import { effortError, MODELS, writeHooksFile } from './agent'
+import { effortError, librettoDir, MODELS, writeHooksFile } from './agent'
 import { createActivity } from './activity'
 import { createSubagents } from './subagents'
 import { createCost } from './cost'
@@ -42,6 +42,7 @@ import { readInbox } from './jira/inbox'
 import { inboxGroups } from './jira/board'
 import { proposeStart, start } from './jira/start'
 import type { Effort, InboxGroup, InboxResult, JiraIssue, Model, NextItem, QaBugRequest, StartIssue, StartRequest } from '../preload/api'
+import { listSkills } from './skills/read'
 import { listRepos, readRepos, registerRepo, relocateRepo, removeRepo, setOverride } from './repos'
 import { createRefiner } from './refine'
 import { orProblem, revealState } from './state'
@@ -508,6 +509,9 @@ app.whenReady().then(async () => {
   // W208: beside the queue, not in it; its own one-at-a-time.
   const refiner = createRefiner({ run })
   ipcMain.handle('atril:refine:ask', (_e, text: unknown) => refiner.ask(text))
+  ipcMain.handle('atril:skills:list', (_e, repoId: unknown) =>
+    listSkills(typeof repoId === 'string' ? repoId : undefined, readRepos, librettoDir())
+  )
   ipcMain.handle('atril:mr:score', (_e, url: unknown): Promise<MrScoreState> =>
     scorer.score(typeof url === 'string' ? url : '')
   )

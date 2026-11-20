@@ -1,0 +1,184 @@
+import { mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { dirname, join } from 'node:path'
+import { afterEach, describe, expect, it } from 'vitest'
+import type { SkillItem } from '../../preload/api'
+import { claudeDir } from '../paths'
+import { listSkills } from './read'
+
+const made: string[] = []
+const tmp = (): string => {
+  const d = realpathSync(mkdtempSync(join(tmpdir(), 'atril-skills-')))
+  made.push(d)
+  return d
+}
+const put = (root: string, rel: string, text: string): string => {
+  const file = join(root, rel)
+  mkdirSync(dirname(file), { recursive: true })
+  writeFileSync(file, text)
+  return file
+}
+const saved = process.env['ATRIL_CLAUDE_DIR']
+afterEach(() => {
+  if (saved === undefined) delete process.env['ATRIL_CLAUDE_DIR']
+  else process.env['ATRIL_CLAUDE_DIR'] = saved
+  for (const d of made.splice(0)) rmSync(d, { recursive: true, force: true })
+})
+
+const skill = (fields: string, body = 'Haz esto.'): string => `---\n${fields}\n---\n${body}`
+const find = (items: SkillItem[], origin: string, name: string, kind = 'skill'): SkillItem | undefined =>
+  items.find((i) => i.origin === origin && i.name === name && i.kind === kind)
+
+/** A claude dir, a repo and Atril's Libretto folder; plugins installed in the first shape. */
+function seed(): { claude: string; repo: string; libretto: string; plugin: string } {
+  const claude = tmp()
+  const repo = tmp()
+  const libretto = tmp()
+  const plugin = tmp()
+  put(
+    claude,
+    'skills/revisar-cambios/SKILL.md',
+    skill(
+      [
+        'name: revisar-cambios',
+        'description: "Revisa el diff: busca fallos"',
+        'when_to_use: >',
+        '  Cuando acabas un cambio',
+        '  y antes del commit.',
+        'argument-hint: [rama]',
+        'allowed-tools: [Read, Grep, "Bash(git diff:*)"]',
+        'model: sonnet',
+        'effort: high',
+        'disable-model-invocation: yes',
+        'user-invocable: false',
+        'metadata:',
+        '  author: acme'
+      ].join('\n'),
+      'Primero lee el diff.\n'
+    )
+  )
+  put(claude, 'skills/sin-nombre/SKILL.md', skill('description: Sin nombre en la cabecera'))
+  put(claude, 'commands/deploy.md', skill("description: 'Despliega shop-web'\nallowed-tools:\n  - Bash\n  - Read"))
+  put(claude, 'commands/sub/anidado.md', skill('description: no cuenta'))
+  put(repo, '.claude/skills/escribir-docs/SKILL.md', skill('description: Escribe la documentación'))
+  put(repo, '.claude/commands/probar.md', 'Sin cabecera: ejecuta los tests.')
+  put(plugin, 'skills/formatear/SKILL.md', skill('description: Formatea el código'))
+  put(plugin, 'commands/limpiar.md', skill('description: Limpia'))
+  put(claude, 'plugins/installed_plugins.json', JSON.stringify({ version: 2, plugins: { 'estilo@acme': [{ scope: 'user', installPath: plugin }] } }))
+  put(libretto, 'skills/evidence/SKILL.md', skill('name: evidence\ndescription: Nada es cierto hasta verlo'))
+  put(libretto, 'commands/libretto-flow.md', skill('description: Lleva el flujo'))
+  process.env['ATRIL_CLAUDE_DIR'] = claude
+  return { claude, repo, libretto, plugin }
+}
+const repos = (path: string) => async () => [{ id: 'shop-web', path }]
+
+describe('skills', () => {
+  it('lists skills and commands from every origin with their header', async () => {
+    const { claude, repo, libretto, plugin } = seed()
+    expect(claudeDir()).toBe(claude)
+    const { items, warnings } = await listSkills('shop-web', repos(repo), libretto)
+    expect(warnings).toEqual([])
+
+    const rc = find(items, 'personal', 'revisar-cambios')
+    expect(rc).toMatchObject({
+      kind: 'skill',
+      path: join(claude, 'skills/revisar-cambios/SKILL.md'),
+      description: 'Revisa el diff: busca fallos',
+      whenToUse: 'Cuando acabas un cambio y antes del commit.',
+      argumentHint: '[rama]',
+      allowedTools: ['Read', 'Grep', 'Bash(git diff:*)'],
+      model: 'sonnet',
+      effort: 'high',
+      disableModelInvocation: true,
+      userInvocable: false,
+      body: 'Primero lee el diff.\n'
+    })
+    expect(rc?.broken).toBeUndefined()
+    expect(find(items, 'personal', 'sin-nombre')?.description).toBe('Sin nombre en la cabecera')
+    expect(find(items, 'personal', 'deploy', 'command')).toMatchObject({ description: 'Despliega shop-web', allowedTools: ['Bash', 'Read'], path: join(claude, 'commands/deploy.md') })
+    expect(items.some((i) => i.name === 'anidado')).toBe(false)
+
+    expect(find(items, 'project', 'escribir-docs')?.path).toBe(join(repo, '.claude/skills/escribir-docs/SKILL.md'))
+    // A command without frontmatter is a plain command: its whole text is the body.
+    expect(find(items, 'project', 'probar', 'command')).toMatchObject({ body: 'Sin cabecera: ejecuta los tests.' })
+    expect(find(items, 'project', 'probar', 'command')?.broken).toBeUndefined()
+
+    expect(find(items, 'plugin', 'formatear')).toMatchObject({ plugin: 'estilo@acme', path: join(plugin, 'skills/formatear/SKILL.md') })
+    expect(find(items, 'plugin', 'limpiar', 'command')?.plugin).toBe('estilo@acme')
+    expect(find(items, 'atril', 'evidence')).toMatchObject({ plugin: 'libretto', description: 'Nada es cierto hasta verlo' })
+    expect(find(items, 'atril', 'libretto-flow', 'command')?.plugin).toBe('libretto')
+    expect(items).toHaveLength(9)
+
+    // Without a repo there is no project origin and nothing to warn about.
+    const none = await listSkills(undefined, repos(repo), libretto)
+    expect(none.items.some((i) => i.origin === 'project')).toBe(false)
+    expect(none.warnings).toEqual([])
+    // An unknown repo and a failing repo list each say so once.
+    const unknown = await listSkills('otro', repos(repo), libretto)
+    expect(unknown.items.some((i) => i.origin === 'project')).toBe(false)
+    expect(unknown.warnings).toHaveLength(1)
+    const failed = await listSkills('shop-web', async () => ({ problem: { error: 'roto', detail: 'x', fix: 'reveal', file: 'repos' } }), libretto)
+    expect(failed.items.some((i) => i.origin === 'project')).toBe(false)
+    expect(failed.warnings).toHaveLength(1)
+  })
+
+  it('reads the second shape of installed_plugins.json and follows linked skills', async () => {
+    const { claude, libretto, plugin } = seed()
+    put(claude, 'plugins/installed_plugins.json', JSON.stringify({ 'estilo@acme': { installPath: plugin } }))
+    const elsewhere = tmp()
+    put(elsewhere, 'enlazada/SKILL.md', skill('description: Vive en otra carpeta'))
+    symlinkSync(join(elsewhere, 'enlazada'), join(claude, 'skills/enlazada'))
+    const { items } = await listSkills(undefined, repos(''), libretto)
+    expect(find(items, 'plugin', 'formatear')?.plugin).toBe('estilo@acme')
+    expect(find(items, 'personal', 'enlazada')?.description).toBe('Vive en otra carpeta')
+  })
+
+  it('a broken header never hides the rest', async () => {
+    const { claude, repo, libretto } = seed()
+    put(claude, 'skills/sin-cierre/SKILL.md', '---\nname: otro-nombre\ndescription: nunca se cierra\n')
+    put(claude, 'skills/linea-rara/SKILL.md', '---\ndescription: bien\nesto no es una clave\n---\nCuerpo')
+    put(repo, '.claude/commands/mal.md', '---\n: : :\n---\n')
+    rmSync(join(libretto, 'commands'), { recursive: true })
+    const { items, warnings } = await listSkills('shop-web', repos(repo), libretto)
+    expect(find(items, 'personal', 'sin-cierre')).toMatchObject({ broken: true, kind: 'skill' })
+    expect(find(items, 'personal', 'linea-rara')?.broken).toBe(true)
+    expect(find(items, 'project', 'mal', 'command')?.broken).toBe(true)
+    expect(find(items, 'personal', 'revisar-cambios')?.broken).toBeUndefined()
+    // a missing folder adds nothing and says nothing
+    expect(items.some((i) => i.origin === 'atril' && i.kind === 'command')).toBe(false)
+    expect(find(items, 'atril', 'evidence')).toBeDefined()
+    expect(warnings).toEqual([])
+    // no claude dir at all
+    process.env['ATRIL_CLAUDE_DIR'] = join(tmp(), 'no-existe')
+    const empty = await listSkills(undefined, repos(repo), libretto)
+    expect(empty.items.map((i) => i.origin)).toEqual(['atril'])
+    expect(empty.warnings).toEqual([])
+  })
+
+  it('a huge file or folder is cut with a warning', async () => {
+    const { claude, repo, libretto } = seed()
+    put(claude, 'skills/enorme/SKILL.md', skill('description: grande', 'x'.repeat(256 * 1024 + 1)))
+    for (let i = 0; i < 305; i++) put(repo, `.claude/commands/c${String(i).padStart(3, '0')}.md`, skill(`description: comando ${i}`))
+    const { items, warnings } = await listSkills('shop-web', repos(repo), libretto)
+    const enorme = find(items, 'personal', 'enorme')
+    expect(enorme?.description).toBeUndefined()
+    expect(enorme?.body).toBe('')
+    expect(warnings.filter((w) => w.includes(join(claude, 'skills')))).toHaveLength(1)
+    expect(items.filter((i) => i.origin === 'project' && i.kind === 'command')).toHaveLength(300)
+    expect(warnings.filter((w) => w.includes(join(repo, '.claude/commands')))).toHaveLength(1)
+    expect(warnings).toHaveLength(2)
+    expect(find(items, 'personal', 'revisar-cambios')?.description).toBe('Revisa el diff: busca fallos')
+  })
+
+  it('an unreadable settings or plugins file is a warning', async () => {
+    const { claude, repo, libretto } = seed()
+    const plugins = put(claude, 'plugins/installed_plugins.json', '{ no es json')
+    const settings = put(claude, 'settings.json', '[')
+    const local = put(repo, '.claude/settings.local.json', 'nope')
+    const { items, warnings } = await listSkills('shop-web', repos(repo), libretto)
+    expect(items.some((i) => i.origin === 'plugin')).toBe(false)
+    expect(find(items, 'personal', 'revisar-cambios')).toBeDefined()
+    expect(warnings).toHaveLength(3)
+    for (const f of [plugins, settings, local]) expect(warnings.filter((w) => w.includes(f))).toHaveLength(1)
+  })
+})

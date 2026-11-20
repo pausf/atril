@@ -11,6 +11,8 @@ export function envPath(name: string, fallback: () => string): string {
 }
 
 export const atrilHome = (): string => envPath('ATRIL_HOME', () => join(homedir(), '.atril'))
+/** Claude Code's own folder (skills, commands, plugins, settings); Atril only reads it. */
+export const claudeDir = (): string => envPath('ATRIL_CLAUDE_DIR', () => join(homedir(), '.claude'))
 
 // Packaged: electron-builder must copy resources/* to <resourcesPath>/ (extraResources).
 // Dev and tests: src/main and out/main both sit two levels under the repo root.

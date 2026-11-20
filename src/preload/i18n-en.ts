@@ -974,4 +974,9 @@ export const EN: Record<string, string> = {
   'Con las respuestas pasa de 2000 caracteres: acorta algo.': 'With the answers it goes over 2000 characters: shorten something.',
   'Volver a preguntar': 'Ask again',
   'Puedes empezar igual: afinar es opcional.': 'You can start anyway: refining is optional.',
+  '{dir} tiene más de {n} entradas: solo se leen las primeras.': '{dir} has more than {n} entries: only the first ones are read.',
+  '{dir} tiene archivos de más de 256 KB: no se leen.': '{dir} has files over 256 KB: they are not read.',
+  'No he podido leer {file}: lo trato como vacío.': 'I could not read {file}: I treat it as empty.',
+  'No he podido leer tu lista de repos: no salen las skills del proyecto.': 'I could not read your repo list: the project skills are not shown.',
+  '{repo} ya no está en tu lista de repos.': '{repo} is no longer in your repo list.',
 }
