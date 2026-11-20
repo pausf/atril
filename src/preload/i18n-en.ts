@@ -904,6 +904,7 @@ export const EN: Record<string, string> = {
   "Tuya": "Yours",
   "De {author}": "By {author}",
   "‹ Tus MR": "‹ Your MRs",
+  "{i} de {n} · J/K": "{i} of {n} · J/K",
   "Abrir en {forge} ↗": "Open in {forge} ↗",
   "En conflicto con {target}": "In conflict with {target}",
   "En conflicto": "In conflict",
