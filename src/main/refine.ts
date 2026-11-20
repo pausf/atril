@@ -52,7 +52,8 @@ export function createRefiner({ run }: { run: Runner }) {
     } catch {
       return fail(none, 'json')
     }
-    if (answer?.is_error !== false) return fail(none, 'is_error')
+    if (!answer || typeof answer !== 'object') return fail(none, 'json')
+    if (answer.is_error === true) return fail(none, 'is_error')
     const raw = answer.structured_output?.questions
     if (!Array.isArray(raw)) return fail(none, 'schema')
     const questions = clean(raw)

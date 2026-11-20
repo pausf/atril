@@ -21,6 +21,7 @@ Durable decisions: the two in Prior decisions below
 - Q: (spec-reviewer) ¿Qué dice el error de Claude? → A: frase fija y el código en `detail` («Ver detalle»), nunca la salida de Claude, como M16 (assumed).
 - Q: (spec-reviewer) ¿Respuestas escondidas si se borra el texto? → A: con texto en blanco no se manda nada de afinar (I27 abre Claude a secas); lo contestado se queda en el diálogo y vuelve a verse al escribir (assumed).
 - Q: (spec-reviewer) ¿Comparte la cola de puntuaciones? → A: no: Haiku corre a su lado, una pregunta a la vez; esperar a una puntuación de 3 min para unas preguntas no tiene sentido (assumed).
+- Q: (work-reviewer) ¿La vista de foto de `App.tsx` entra? → A: sí, solo en desarrollo, para la foto de la casilla 4; añadida a Scope (assumed).
 - Q: ¿Enter en un campo de afinar empieza la tarea, como Enter en Rama? → A: no: pasa al campo siguiente; ⌘↩ sigue empezando (assumed; empezar a medio contestar sería un susto).
 
 ## Outcomes
@@ -29,7 +30,7 @@ Quien crea una tarea puede, si quiere, contestar cuatro preguntas fijas o pedir 
 
 ## Scope
 
-**In:** `.agents/changes/refine-request/spec-workspaces.md` (W208, W209); `src/renderer/inbox/OwnTaskDialog.tsx` y un `Refine.tsx` nuevo a su lado; `src/main/refine.ts` nuevo (la llamada a Haiku); el IPC `atril:refine:ask` en `src/main/index.ts` y `src/preload/{api,index}.ts`; `src/renderer/mockApi.ts`; `src/preload/i18n-en.ts`; estilos con tokens; `bocetos/novedades.html` y `bocetos/fase1-nucleo.html`.
+**In:** `.agents/changes/refine-request/spec-workspaces.md` (W208, W209); `src/renderer/inbox/OwnTaskDialog.tsx` y un `Refine.tsx` nuevo a su lado; `src/main/refine.ts` nuevo (la llamada a Haiku); el IPC `atril:refine:ask` en `src/main/index.ts` y `src/preload/{api,index}.ts`; `src/renderer/mockApi.ts`; `src/preload/i18n-en.ts`; `src/renderer/App.tsx` (solo la vista de foto `tasks-refine` de desarrollo y la semilla del diálogo que la sirve); estilos con tokens; `bocetos/novedades.html` y `bocetos/fase1-nucleo.html`.
 **Out (nombrado):** cambiar el tope de 2000 de main; guardar respuestas entre diálogos; afinar desde Jira («Empezar» de una tarea de Jira); que Claude reescriba la petición; preguntas en otro idioma que el de la app.
 
 ## Constraints
@@ -53,6 +54,7 @@ Quien crea una tarea puede, si quiere, contestar cuatro preguntas fijas o pedir 
 
 - **I30** (amends what I22 and I27 call «the text»: from here it is the composed text below) While the text of «Nueva tarea» or «Nuevo trabajo» is not blank, the dialog shall show a folded `<details>` «Afinar la petición · opcional»; opened, it shall hold four fields — «¿Qué tiene que pasar cuando esté hecho?», «¿Qué no entra?», «¿Dónde se toca? (pantalla, archivos)», «Un ejemplo». The composed text shall be the request as typed, then — only if any answer (fixed or Claude's, I31) is filled — a blank line and one line per filled answer: the fixed ones first, in that order, as «Hecho cuando: …», «No entra: …», «Dónde: …», «Ejemplo: …», then Claude's (I31). Every answer shall be trimmed with inner newlines turned into spaces; blank ones add nothing. While the text is blank the section shall be hidden and nothing of it sent (I27 opens plain Claude), its answers kept in the dialog. Empezar shall send the composed text, and the «Lanza» line shall show the template with the composed text in place of «tu texto» whenever the text is not blank. The `<details>` summary shall add «1 respuesta añadida» or «{n} respuestas añadidas», n counting fixed and Claude's filled answers, and nothing at 0.
   Proof: src/renderer/inbox/refine.test.tsx the fixed questions add their answers to the request
+  Proof: src/renderer/inbox/refine.test.tsx nuevo trabajo in automatic mode launches the composed text too
 - **I31** When the person presses «Que Claude me pregunte» with text written, the dialog shall call `refine.ask(text)` once, show «Pensando…» with the button disabled while it waits, then one field per returned question under «Claude pregunta, sobre tu petición»; each filled one shall add «{pregunta} {respuesta}» after the fixed lines, cleaned as I30. Claude's questions stay when the request is edited. The button shall then read «Volver a preguntar», and pressing it shall replace Claude's questions and their answers, keeping the fixed ones. With blank text the button shall not exist (I30), and no other action of the dialog shall call `refine.ask`.
   Proof: src/renderer/inbox/refine.test.tsx claude asks only when pressed and its answers join the request
 - **I32** If `refine.ask` answers an error, then the section shall show a `Problem` with that sentence, its `detail` folded, «Puedes empezar igual: afinar es opcional.» and «Volver a intentar», which asks again; Empezar shall stay usable.

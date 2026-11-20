@@ -377,3 +377,18 @@ A thread on a cut or unsent file went to Conversación with «Esa línea ya no e
 
 ## 2026-11-16 · mr-page · 6→7
 Not fixed, reported: a lens review waiting behind a score reads «Revisando…», not «En cola» (M45). Main never sends the review's queue state to the window; the behaviour predates this change and M45 may mean only scores.
+
+## 2026-11-20 · refine-request · 6→7
+A dev-only snapshot view and a seed prop went into `App.tsx`, outside Scope «In», with no line saying so. Photo plumbing is scope too: name it in Scope when the box that needs the photo is cut. Fixed: added to Scope and the Decision log.
+
+## 2026-11-20 · refine-request · 6→7
+`withAnswers` trimmed the end of the request when answers were present, while I30 says «the request as typed». Small helpers that tidy input drift from criteria that promise verbatim text. Fixed: no trim, and a case with trailing spaces in the I30 test.
+
+## 2026-11-20 · refine-request · 6→7
+`is_error !== false` sent any exit-0 JSON without `is_error` (and `null`) to detail `is_error`, against W209's mapping. Copied from `scores.ts`, which has the same shape and is not fixed here (M16 owns it). Fixed in refine.ts with `null` → json and missing questions → schema, both tested.
+
+## 2026-11-20 · refine-request · 6→7
+I30 covers both dialogs and both «Lanza» templates; its proof drove only «Nueva tarea» with the flow template. A criterion naming two surfaces needs each one driven once. Fixed: a test for «Nuevo trabajo» in Automático with the composed text.
+
+## 2026-11-20 · refine-request · arnés
+A gate hung ~10 h overnight: killed runs left `atril-test-*` tmux servers alive and the next suite never got past RUN. The gate script now kills leftover test servers first and wraps each suite in a hard `alarm` (30 min, rerun 15 min).

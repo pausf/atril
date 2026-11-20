@@ -75,6 +75,22 @@ describe('refine the request', () => {
 
     expect(withAnswers('Pedir algo', [['Hecho cuando:', ' una\n  dos \r\n tres '], ['No entra:', '  '], ['¿Qué pantalla?', 'la de\nproductos']])).toBe('Pedir algo\n\nHecho cuando: una dos tres\n¿Qué pantalla? la de productos')
     expect(withAnswers('Pedir algo', [['No entra:', ' \n ']])).toBe('Pedir algo')
+    expect(withAnswers('Pedir algo  ', [['Ejemplo:', 'x']])).toBe('Pedir algo  \n\nEjemplo: x')
+  })
+
+  it('nuevo trabajo in automatic mode launches the composed text too', async () => {
+    mockApi({ repos })
+    const user = userEvent.setup()
+    render(createElement(App))
+    await user.click(await screen.findByRole('button', { name: '＋ Nuevo trabajo' }))
+    const dialog = await screen.findByRole('dialog', { name: 'Nuevo trabajo' })
+    const q = within(dialog)
+    expect(dialog.querySelector('details')).toBeNull()
+    await user.type(q.getByLabelText('¿Qué hay que hacer? (opcional)'), 'Añadir filtro')
+    await user.click(q.getByRole('radio', { name: /Automático/ }))
+    await user.click(dialog.querySelector('summary')!)
+    await user.type(q.getByLabelText('Un ejemplo'), 'Ibuprofeno')
+    expect(q.getByLabelText('Comando que se ejecutará').textContent).toBe('/libretto:libretto-attacca «Añadir filtro\n\nEjemplo: Ibuprofeno»')
   })
 
   it('a request too long with its answers cannot start', async () => {

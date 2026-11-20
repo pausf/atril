@@ -67,6 +67,8 @@ describe('refine', () => {
       [answer(['¿Qué?'], { is_error: true, result: SECRET }), 'Claude no ha devuelto preguntas.', 'is_error'],
       [{ code: 0, stdout: JSON.stringify({ is_error: false, result: SECRET }), stderr: '' }, 'Claude no ha devuelto preguntas.', 'schema'],
       [answer(SECRET), 'Claude no ha devuelto preguntas.', 'schema'],
+      [{ code: 0, stdout: 'null', stderr: '' }, 'Claude no ha devuelto preguntas.', 'json'],
+      [{ code: 0, stdout: JSON.stringify({ result: SECRET }), stderr: '' }, 'Claude no ha devuelto preguntas.', 'schema'],
       [answer(['  ', '\n', 7]), 'Claude no ha devuelto preguntas.', 'empty']
     ]
     for (const [result, error, detail] of cases) {

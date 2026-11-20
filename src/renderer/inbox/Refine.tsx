@@ -28,7 +28,7 @@ export function answers(t: T, fixed: string[], asked: Asked[]): Array<[string, s
 /** I30: the request as typed, then a blank line and one line per filled answer. */
 export function withAnswers(text: string, pairs: Array<[string, string]>): string {
   const lines = pairs.map(([lead, a]) => [lead, clean(a)] as const).filter(([, a]) => a !== '').map(([lead, a]) => `${lead} ${a}`)
-  return lines.length ? `${text.trimEnd()}\n\n${lines.join('\n')}` : text
+  return lines.length ? `${text}\n\n${lines.join('\n')}` : text
 }
 
 interface Props {
