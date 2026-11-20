@@ -20,6 +20,7 @@ Durable decisions: the one in Prior decisions below
 - Q: (spec-reviewer) ¿Y si la MR abierta ya no está en la lista? → A: no se enseña «{i} de {n}» y J/K no hacen nada (assumed).
 - Q: ¿Al volver a la bandeja? → A: la fila de la MR que estaba abierta queda marcada `aria-current` y con el foco, hasta que se abre otra MR; tras «Fusionar» igual si la MR sigue en la lista (assumed). Es estado (`useState`), no un `ref`, porque tiene que pintar.
 - Q: ¿El texto que se sale («De un commit anterior · Puntuar de nuevo»)? → A: es la celda de puntuación de la bandeja (`ScoreCell`, `.mr-inbox .mr-score` y `.mr-line`), visible sin MR abierta; se arregla en este cambio partiendo línea dentro de su fila; se comprueba con la foto (assumed: es CSS, jsdom no mide).
+- Q: (work-reviewer) M5 y M23 citan el test renombrado → A: sus `Proof:` pasan al nombre nuevo al aterrizar; la línea de resumen y la decisión «también al elegir otra fila» de la spec viva se reescriben en el mismo commit (assumed).
 - Q: (spec-reviewer) ¿El `@media (max-width: 1100px)`? → A: pasa a `minmax(0,1fr) 240px` (assumed).
 
 ## Outcomes
@@ -28,7 +29,7 @@ Con una MR abierta, el código se lee a lo ancho: la bandeja no ocupa sitio, las
 
 ## Scope
 
-**In:** `src/renderer/mr/MrScreen.tsx`, `src/renderer/mr/MrPage.tsx`, `src/renderer/styles.css` (`.mr-layout`, `.mr-score`), `src/renderer/mr/page.test.ts`, `src/preload/i18n-en.ts`, `bocetos/mr-anchura.html` (el boceto), `bocetos/novedades.html`, `bocetos/fase1-nucleo.html`, la foto.
+**In:** `src/renderer/mr/MrScreen.tsx`, `src/renderer/mr/MrPage.tsx`, `src/renderer/styles.css` (`.mr-layout`, `.mr-score`), `src/renderer/mr/page.test.ts`, `src/preload/i18n-en.ts`, `bocetos/mr-anchura.html` (el boceto), `bocetos/novedades.html`, `bocetos/fase1-nucleo.html`, las fotos (`mr-ancha.png`, `mr-bandeja.png`); también, porque M43 los volvía falsos: el paso `mr` del recorrido (`src/renderer/tour/Tour.tsx`) y los ayudantes de `merge.test.ts` y `scores.test.ts`, que vuelven con «‹ Tus MR» antes de pulsar otra fila.
 **Out (nombrado):** plegar la bandeja a mano (la C del boceto); mover las tarjetas encima del código (la B); recordar la MR abierta entre sesiones; reordenar o rediseñar la bandeja (solo se arregla la línea que se sale); ↑/↓ para cambiar de MR.
 
 ## Constraints
@@ -38,7 +39,7 @@ Con una MR abierta, el código se lee a lo ancho: la bandeja no ocupa sitio, las
 
 ## Prior decisions
 
-- (2026-11-19, mr-page-wide) Con una MR abierta la bandeja se esconde y la página ocupa el ancho; se cambia de MR con ↑/↓ o K/J. Las variantes «bandeja estrecha con tarjetas arriba» y «bandeja plegable» perdieron (boceto `bocetos/mr-anchura.html`).
+- (2026-11-19, mr-page-wide) Con una MR abierta la bandeja se esconde y la página ocupa el ancho; se cambia de MR con J/K; ↑/↓ siguen desplazando el código. Las variantes «bandeja estrecha con tarjetas arriba» y «bandeja plegable» perdieron (boceto `bocetos/mr-anchura.html`).
 
 ## Task breakdown
 

@@ -413,3 +413,15 @@ A call-site selector (`callee.name='homedir'`) misses `import { homedir as h }`.
 
 ## 2026-11-20 · harness-ladder · arnés
 Every full gate in this change failed 12–14 tmux/git tests under load and passed them alone on rerun. The gate is green but twice as slow; queue: run the tmux/git files in their own vitest project with fewer workers.
+
+## 2026-11-20 · mr-page-wide · 6→7
+Renaming a test that other criteria cite (M5, M23) leaves dead proofs in the live spec once only the amended criterion lands. Before renaming a proof, `rg` its name in `.agents/specs/`. Fixed at landing.
+
+## 2026-11-20 · mr-page-wide · 6→7
+The contract's Prior decisions still said «↑/↓ o K/J» after the spec review moved to J/K only; the durable line is the one that outlives the change, so it must be re-read after every contract fix. Fixed.
+
+## 2026-11-20 · mr-page-wide · 6→7
+The outcome «nada se monta encima de otra fila» was checked on a photo that stayed in the scratchpad. A photo that proves an outcome goes in the commit. Fixed: `bocetos/novedades/mr-bandeja.png`.
+
+## 2026-11-20 · mr-page-wide · 6→7
+Tour text and two test helpers changed outside Scope «In»; they followed from M43 but were not named. Fixed: listed in Scope.
