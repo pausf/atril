@@ -7,6 +7,7 @@ con agentes de Claude Code en tmux, y gestiona MRs de GitHub/GitLab. Remoto PRIV
 ## Dónde lo dejamos (10 nov 2026) — empieza por aquí
 
 Las ramas van apiladas: cada una sale de la anterior y `main` no se ha movido. La última es
+**`skills-list`** (20 nov: pantalla «Skills» en el rail y ⌘K: skills, comandos y plugins de Claude Code por origen —Personal, Proyecto, Plugins, Atril— con estado, choques, ~tokens, búsqueda, filtros y detalle; solo lectura, sin gastar cuota). Antes,
 **`mr-page-wide`** (20 nov: la página de MR a todo el ancho, sin bandeja; «‹ Tus MR · 2 de 5 · J/K», J/K cambian de MR, ↑/↓ desplazan; tarjetas a 300 px; al volver, la fila marcada y con foco). Antes,
 **`harness-ladder`** (20 nov: escalera de corrección: `pnpm lint` falla si renderer y main se importan, si se monta `window.atril` fuera de `mockApi()` o si se usa `homedir()` fuera de `paths.ts`; hook `.githooks/pre-commit` con typecheck y lint, ~5 s). Antes,
 **`refine-request`** (20 nov: «Afinar la petición · opcional» en Nueva tarea y Nuevo trabajo: cuatro preguntas fijas y «Que Claude me pregunte» con Haiku solo al pulsar; las respuestas viajan pegadas a la petición; sin probar con Claude real). Antes,

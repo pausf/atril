@@ -207,7 +207,7 @@ describe('skills', () => {
     expect(find(plain.items, 'plugin', 'formatear')?.enabled).toBe(true)
   })
 
-  it('a personal skill wins over the repo\'s and a skill over a command', async () => {
+  it("a personal skill wins over the repo's and a skill over a command", async () => {
     const { claude, repo, libretto, plugin } = seed()
     put(claude, 'settings.json', JSON.stringify({ skillOverrides: { 'escribir-docs': 'off' } }))
     put(claude, 'skills/escribir-docs/SKILL.md', skill('description: La mía'))
