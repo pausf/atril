@@ -148,10 +148,12 @@ export function MrPage({ m, list, pos, score, onScore, onLeave, onMerged, onReli
   return (
     <>
       <section className="mr-page" aria-labelledby="mr-page-title">
-        <button type="button" className="back" onClick={onLeave}>
-          {t('‹ Tus MR')}
-        </button>
-        {pos && <span className="mr-pos f-note">{t('{i} de {n} · J/K', pos)}</span>}
+        <div className="mr-crumb">
+          <button type="button" className="back" onClick={onLeave}>
+            {t('‹ Tus MR')}
+          </button>
+          {pos && <span className="mr-pos">{t('{i} de {n} · J/K', pos)}</span>}
+        </div>
         <div className="sub">{`${NAME[m.forge]} · ${m.project} · ${whose}${branch}`}</div>
         <div className="mr-page-title">
           <h2 id="mr-page-title">{m.title}</h2>

@@ -1802,20 +1802,26 @@ kbd {
 }
 .mr-line .mr-row {
   margin-bottom: 0;
+  min-width: 0;
 }
 .mr-score {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
-  flex: none;
+  gap: 2px 8px;
+  flex: 0 1 auto;
+  justify-content: flex-end;
+  max-width: 220px;
   font-size: 12px;
-  white-space: nowrap;
 }
 .mr-score.f-note {
   margin: 0;
 }
 .mr-score .f-note {
   margin: 0;
+}
+.mr-score button {
+  white-space: nowrap;
 }
 .mr-score .mr-chips {
   border: 0;
@@ -4521,36 +4527,24 @@ button.fx-bt {
   margin-left: 6px;
 }
 
-/* M43: the MR page — inbox column, page, side cards. */
+/* M43: the MR page across the screen, side cards on the right. */
 .mr-screen.open {
   max-width: none;
 }
 .mr-layout {
   display: grid;
-  grid-template-columns: minmax(190px, 240px) minmax(0, 1fr) minmax(180px, 230px);
+  grid-template-columns: minmax(0, 1fr) 300px;
   gap: 18px;
   align-items: start;
 }
-.mr-inbox .mr-line {
-  flex-wrap: wrap;
-  gap: 2px 8px;
-}
-.mr-inbox .mr-row {
+.mr-crumb {
   display: flex;
-  flex-wrap: wrap;
-  gap: 2px 8px;
-  padding: 6px 10px;
+  align-items: baseline;
+  gap: 10px;
 }
-.mr-inbox .mr-row .s {
-  flex: 1 1 100%;
-  white-space: normal;
-}
-.mr-inbox .mr-row .who,
-.mr-inbox .mr-row .size {
-  display: none;
-}
-.mr-inbox .mr-score {
-  padding-left: 10px;
+.mr-pos {
+  font-size: 12px;
+  color: var(--sub);
 }
 .mr-row[aria-current='true'] {
   border-color: var(--run);
@@ -4890,12 +4884,8 @@ button.fx-bt {
     padding: 20px 16px;
   }
   .mr-layout {
-    grid-template-columns: 168px minmax(0, 1fr) 176px;
+    grid-template-columns: minmax(0, 1fr) 240px;
     gap: 12px;
-  }
-  .mr-inbox .mr-row .k,
-  .mr-inbox .mr-row .age {
-    display: none;
   }
   .mr-page-title h2 {
     font-size: 17px;
