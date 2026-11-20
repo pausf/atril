@@ -392,3 +392,6 @@ I30 covers both dialogs and both «Lanza» templates; its proof drove only «Nue
 
 ## 2026-11-20 · refine-request · arnés
 A gate hung ~10 h overnight: killed runs left `atril-test-*` tmux servers alive and the next suite never got past RUN. The gate script now kills leftover test servers first and wraps each suite in a hard `alarm` (30 min, rerun 15 min).
+
+## 2026-11-20 · harness-ladder · arnés
+Two rules moved from prose to `pnpm lint` (W210, W212). Files under `src/renderer` and `src/main` (tests apart) can no longer import from each other: they talk through preload. Outside `paths.ts`, `trust.ts` and `qa.ts`, code in `src/main` can no longer call `homedir()` or read `process.env.HOME`. The home rule replaces «2026-11-09 · fix-test-home-leak · 6» (every module resolves the home through one function) and the home half of «2026-11-10 · add-qa-lab · 6→7». Both are proved by `src/main/harness.test.ts`, which lints one text that must fail and one that must pass against the real config.
