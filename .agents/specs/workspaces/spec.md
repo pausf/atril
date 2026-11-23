@@ -3292,3 +3292,8 @@ Textos por `t()`.
   Proof: src/main/harness.test.ts prepare points git at the hooks
 - **W214** If `pnpm -s typecheck` fails, or if `pnpm -s lint` fails, then `.githooks/pre-commit` shall exit non-zero.
   Proof: src/main/harness.test.ts the pre-commit hook stops a red commit
+
+### Skills: encender y apagar (skills-toggle, 23 nov 2026)
+
+- **W215** `skillsWriteOk` in `ui.json` shall survive a restart when it is `true`; any other value shall be dropped.
+  Proof: src/main/ui.test.ts remembers skills write consent and drops anything but true
