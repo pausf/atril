@@ -184,7 +184,7 @@ export function Skills() {
           ))}
         </div>
         {repos && repos.length > 0 && (
-          <select aria-label={t('Repo del proyecto')} value={repoName} onChange={(e) => setRepo(e.target.value)}>
+          <select aria-label={t('Repo del proyecto')} value={repoName} disabled={busy} onChange={(e) => setRepo(e.target.value)}>
             {repos.map((r) => (
               <option key={r}>{r}</option>
             ))}

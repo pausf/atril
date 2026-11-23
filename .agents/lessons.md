@@ -434,3 +434,12 @@ K6's empty-filter and «aún no tiene skills propias» clauses were proven only 
 
 ## 2026-11-20 · skills-list · 6→7
 A screen that reloads on a selector change took every reply, so a slow reply for the previous repo could land under the new one. Any `.then(setState)` keyed on a choice drops replies from a superseded choice. Fixed: K11 and its test, forced red without the guard.
+
+## 2026-11-23 · skills-toggle · 6→7
+The K11 lesson was applied to `load()` but not to the write's answer: a reply for one repo could still land under another while a write was pending. A guard for stale replies covers every `setData`, not only the first one found. Fixed: K18, selector disabled while writing.
+
+## 2026-11-23 · skills-toggle · 6→7
+Atomic write (`tmp` + `rename`) onto a symlinked settings file replaces the link with a plain file and silently cuts a dotfiles setup. Writing a file the person owns resolves `realpath` first. Fixed: K13 clause and test, forced red.
+
+## 2026-11-23 · skills-toggle · 6→7
+`revealFile` mapped any unknown origin to `personal`, so an `atril` ref revealed the user's settings although K12 gives it no `writesTo`. Map only the origins the contract names, refuse the rest. Fixed.

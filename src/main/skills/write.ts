@@ -1,4 +1,4 @@
-import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, realpath, rename, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import type { SkillRef, SkillSet, SkillsList, SkillState } from '../../preload/api'
 import { t } from '../lang'
@@ -33,6 +33,7 @@ async function target(req: SkillSet, repos: () => Promise<RepoList>): Promise<Ta
 
 /** The file a ref would write to, for «Ver en Finder» (K17); main recomputes it, never trusts a path. */
 export async function revealFile(ref: SkillRef, repos: () => Promise<RepoList>): Promise<string> {
+  if (ref.origin !== 'personal' && ref.origin !== 'project' && ref.origin !== 'plugin') throw new Error(t('Petición no válida.'))
   const req: SkillSet =
     ref.origin === 'plugin' && ref.plugin
       ? { plugin: ref.plugin, enabled: true, repoId: ref.repoId }
@@ -68,9 +69,11 @@ export async function setSkill(req: SkillSet, repos: () => Promise<RepoList>, li
   const lock = lockOf(read.settings, read.where, tg.section, tg.key, tg.index)
   if (lock) throw new Error(t('Lo fija {file}.', { file: lock }))
   obj[tg.section] = { ...(obj[tg.section] as object | undefined), [tg.key]: tg.value }
-  await mkdir(dirname(tg.file), { recursive: true })
-  const tmp = `${tg.file}.tmp`
+  // A settings file kept as a symlink (dotfiles) is written through, so the link survives the rename.
+  const file = text === null ? tg.file : await realpath(tg.file)
+  await mkdir(dirname(file), { recursive: true })
+  const tmp = `${file}.tmp`
   await writeFile(tmp, JSON.stringify(obj, null, 2) + '\n')
-  await rename(tmp, tg.file)
+  await rename(tmp, file)
   return listSkills(req.repoId, repos, libretto)
 }

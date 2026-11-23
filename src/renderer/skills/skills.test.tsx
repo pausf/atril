@@ -227,6 +227,22 @@ describe('skills screen', () => {
     expect(document.activeElement).toBe(within(s).getByRole('button', { name: /^\/otra/ }))
   })
 
+  it('the repo cannot change while a write is pending', async () => {
+    let done: (l: SkillsList) => void = () => undefined
+    const items = [item('revisar-cambios', 'personal', { writesTo: '/h/.claude/settings.json' })]
+    const set = vi.fn(() => new Promise<SkillsList>((r) => (done = r)))
+    mockApi({ repos: [repo('shop-web'), repo('cms')], skills: { 'shop-web': list(items), cms: list([]) }, ui: { skillsWriteOk: true } }, undefined, { skills: { set } })
+    render(createElement(App))
+    const s = await open()
+    const user = userEvent.setup()
+    await user.click(await within(s).findByRole('button', { name: /^\/revisar-cambios/ }))
+    await user.click(within(screen.getByRole('complementary', { name: '/revisar-cambios' })).getByRole('radio', { name: 'Apagada' }))
+    const select = within(s).getByRole('combobox', { name: 'Repo del proyecto' }) as HTMLSelectElement
+    expect(select.disabled).toBe(true)
+    await act(async () => done(list(items)))
+    expect(select.disabled).toBe(false)
+  })
+
   it('state and plugin switch write through set', async () => {
     const user = userEvent.setup()
     const U = '/h/.claude/settings.json'

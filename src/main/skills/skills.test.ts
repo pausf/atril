@@ -1,11 +1,11 @@
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
+import { existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import type { SkillItem } from '../../preload/api'
 import { claudeDir } from '../paths'
 import { listSkills } from './read'
-import { setSkill } from './write'
+import { revealFile, setSkill } from './write'
 
 const made: string[] = []
 const tmp = (): string => {
@@ -288,6 +288,15 @@ describe('skills write', () => {
     expect((json(user) as { enabledPlugins: unknown }).enabledPlugins).toEqual({ 'estilo@acme': true })
     expect(find(d.items, 'plugin', 'formatear')?.enabled).toBe(true)
     expect(Object.keys(json(user) as object)).toEqual(['zeta', 'skillOverrides', 'alfa', 'enabledPlugins'])
+
+    // A symlinked settings file stays a symlink; its target gets the key.
+    const real = join(tmp(), 'dotfiles-settings.json')
+    writeFileSync(real, '{}')
+    rmSync(user)
+    symlinkSync(real, user)
+    await setSkill({ origin: 'personal', name: 'deploy', state: 'off' }, r, libretto)
+    expect(lstatSync(user).isSymbolicLink()).toBe(true)
+    expect(json(real)).toEqual({ skillOverrides: { deploy: 'off' } })
   })
 
   it('set refuses and leaves the files alone', async () => {
@@ -317,6 +326,7 @@ describe('skills write', () => {
     // Atril and plugin items are not switched one by one; a bad state is not a state.
     put(claude, 'settings.json', '{"a":1}')
     await refuses({ ...base, origin: 'atril' }, /./)
+    await expect(revealFile({ origin: 'atril', name: 'evidence' }, r)).rejects.toThrow()
     await refuses({ ...base, origin: 'plugin' }, /./)
     await refuses({ ...base, state: 'maybe' as never }, /./)
     await refuses({ ...base, name: '' }, /./)
