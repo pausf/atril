@@ -4,6 +4,7 @@ import { Problem } from '../components/Problem'
 import { useT } from '../ui'
 import { SkillCard } from './SkillCard'
 import { SkillDetail } from './SkillDetail'
+import { SkillWriteDialog } from './SkillWriteDialog'
 
 type Filter = 'all' | 'on' | 'off'
 
@@ -30,10 +31,13 @@ export function Skills() {
   const [busy, setBusy] = useState(false)
   const [note, setNote] = useState<string | null>(null)
   const [fail, setFail] = useState<{ error: string; ref: SkillRef } | null>(null)
+  const [consent, setConsent] = useState(false)
+  const [pending, setPending] = useState<{ req: SkillSet; ref: SkillRef; file: string; key: string; value: string } | null>(null)
   const opener = useRef<HTMLButtonElement | null>(null)
   const search = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
+    void window.atril.ui.get().then((u) => setConsent(u.skillsWriteOk === true), () => undefined)
     void window.atril.repos.list().then(
       (l) => {
         const ids = Array.isArray(l) ? l.map((r) => r.id) : null
@@ -84,9 +88,23 @@ export function Skills() {
     }
   }
   const repoId = repo || undefined
+  // K16: the first write of all asks; `consent` comes from Atril's state.
+  const ask = (req: SkillSet, ref: SkillRef, file: string | undefined, key: string, value: string): void => {
+    if (consent) void change(req, ref)
+    else setPending({ req, ref, file: file ?? '', key, value })
+  }
   const setState = (i: SkillItem, state: SkillState): void =>
-    void change({ origin: i.origin, name: i.name, repoId, state }, { origin: i.origin, name: i.name, kind: i.kind, repoId })
-  const setPlugin = (plugin: string, enabled: boolean): void => void change({ plugin, enabled, repoId }, { origin: 'plugin', name: '', plugin, repoId })
+    ask({ origin: i.origin, name: i.name, repoId, state }, { origin: i.origin, name: i.name, kind: i.kind, repoId }, i.writesTo, `skillOverrides.${i.name}`, state)
+  const setPlugin = (plugin: string, enabled: boolean, file?: string): void =>
+    ask({ plugin, enabled, repoId }, { origin: 'plugin', name: '', plugin, repoId }, file, `enabledPlugins.${plugin}`, String(enabled))
+
+  // ponytail: dev-only, ATRIL_SNAPSHOT_VIEW=skills-estado opens the first personal skill's detail for a photo.
+  useEffect(() => {
+    if (!data) return
+    void window.atril.snapshotView().then((v) => {
+      if (v === 'skills-estado') setOpen((prev) => prev ?? data.items.find((i) => i.origin === 'personal' && !i.lockedBy) ?? null)
+    })
+  }, [data])
 
   const close = (): void => {
     setNote(null)
@@ -246,7 +264,7 @@ export function Skills() {
                     <div key={p} className="skp">
                       <p className="skp-bar">
                         <b>{p.split('@')[0]}</b> {t('{plugin} · {n} skills · {state}', { plugin: p, n: all.length, state: on ? t('activo') : t('apagado entero') })}
-                        <button type="button" role="switch" className="sw" aria-checked={on} aria-label={t('Activo')} aria-busy={busy} disabled={busy || lock !== undefined} onClick={() => setPlugin(p, !on)} />
+                        <button type="button" role="switch" className="sw" aria-checked={on} aria-label={t('Activo')} aria-busy={busy} disabled={busy || lock !== undefined} onClick={() => setPlugin(p, !on, all[0]?.writesTo)} />
                         {lock && <span className="where">{t('Lo fija {file}', { file: lock })}</span>}
                       </p>
                       {cardsOf(vis, `g-${p}`)}
@@ -264,7 +282,24 @@ export function Skills() {
           </>
         )
       )}
-      {open && <SkillDetail item={open} repo={repoName} busy={busy} note={note} onSet={(st) => setState(open, st)} onClose={close} />}
+      {open && <SkillDetail item={open} repo={repoName} busy={busy} note={note} onSet={(st) => setState(open, st)} onClose={pending ? () => undefined : close} />}
+      {pending && (
+        <SkillWriteDialog
+          file={pending.file}
+          keyName={pending.key}
+          value={pending.value}
+          onNo={() => setPending(null)}
+          onYes={(never) => {
+            const p = pending
+            setPending(null)
+            if (never) {
+              setConsent(true)
+              void window.atril.ui.set({ skillsWriteOk: true })
+            }
+            void change(p.req, p.ref)
+          }}
+        />
+      )}
     </section>
   )
 }

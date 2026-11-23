@@ -26,13 +26,15 @@ Durable decisions: the three in Prior decisions below
 - Q: (spec-reviewer) ¿`skillsWriteOk` sobrevive en `ui.json`? → A: sí, con W215 en `spec-workspaces.md` y su test en `src/main/ui.test.ts` (assumed).
 - Q: ¿Las sesiones abiertas lo notan? → A: no se promete: tras escribir, una nota «Hecho. Las sesiones nuevas de Claude Code ya lo cargan así.» (assumed: no está comprobado si Claude Code relee los ajustes en caliente).
 
+- Q: (builder) ¿Cómo se fotografía el detalle? → A: vista dev-only `ATRIL_SNAPSHOT_VIEW=skills-estado` que abre la primera skill personal; nombrada en Scope (assumed).
+
 ## Outcomes
 
 Desde la pantalla Skills la persona apaga, enciende o deja «solo el nombre» de una skill o comando, y apaga o enciende un plugin entero, sin abrir un JSON. Atril escribe solo la clave que cambia, en el archivo personal que de verdad decide, avisa la primera vez, nunca pisa un archivo que no entiende y nunca toca el `settings.json` que se sube al repo.
 
 ## Scope
 
-**In:** `src/main/skills/` (escribir una clave: `write.ts` nuevo; `read.ts`/`state.ts` para saber qué archivo fija cada clave), los IPC `atril:skills:set` y `atril:skills:reveal` en `src/main/index.ts` y `src/preload/{api,index}.ts`, `src/main/ui.ts`, su tipo y `src/main/ui.test.ts` (`skillsWriteOk`, delta en `spec-workspaces.md`), `src/renderer/mockApi.ts`, `src/renderer/skills/` (detalle, barra de plugin, diálogo), `src/preload/i18n-en.ts`, estilos con tokens, los tests, `bocetos/novedades.html`, `bocetos/fase1-nucleo.html`, la foto.
+**In:** `src/main/skills/` (escribir una clave: `write.ts` nuevo; `read.ts`/`state.ts` para saber qué archivo fija cada clave), los IPC `atril:skills:set` y `atril:skills:reveal` en `src/main/index.ts` y `src/preload/{api,index}.ts`, `src/main/ui.ts`, su tipo y `src/main/ui.test.ts` (`skillsWriteOk`, delta en `spec-workspaces.md`), `src/renderer/mockApi.ts`, `src/renderer/skills/` (detalle, barra de plugin, diálogo), `src/preload/i18n-en.ts`, estilos con tokens, `src/renderer/App.tsx` y `Skills.tsx` (vista de foto `skills-estado`, solo dev), los tests, `bocetos/novedades.html`, `bocetos/fase1-nucleo.html`, la foto.
 **Out (nombrado):** escribir en el `settings.json` del repo; editar el texto de una skill (skills-editor); instalar o quitar plugins (skills-plugins); cuánto se usa cada una (skills-usage); `managed-settings`; deshacer con ⌘Z; cambiar varias a la vez.
 
 ## Constraints
@@ -109,4 +111,4 @@ K13 y K14 con archivos reales en carpetas temporales; forzar rojo K14 quitando l
 
 - [x] Main: `writesTo`, `lockedBy` y `setSkill` con sus guardas, `atril:skills:reveal`, IPC y preload; `skillsWriteOk` en `ui.ts` · Closes: K12, K13, K14, W215
 - [x] «Estado» en el detalle, interruptor «Activo» en la barra de plugin, «Lo fija …» y el error · waits on box 1 · Closes: K15, K17
-- [ ] El diálogo de la primera vez con «No volver a preguntar» (`skillsWriteOk`), textos en inglés, foto y bocetos · waits on box 2 · Closes: K16
+- [x] El diálogo de la primera vez con «No volver a preguntar» (`skillsWriteOk`), textos en inglés, foto y bocetos · waits on box 2 · Closes: K16

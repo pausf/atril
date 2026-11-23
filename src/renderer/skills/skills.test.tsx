@@ -309,4 +309,63 @@ describe('skills screen', () => {
     await user.click(screen.getByRole('button', { name: 'Ver en Finder' }))
     expect(reveal).toHaveBeenCalledWith({ origin: 'personal', name: 'revisar-cambios', kind: 'skill', repoId: 'shop-web' })
   })
+
+  it('the first write asks and can be told not to again', async () => {
+    const user = userEvent.setup()
+    const U = '/h/.claude/settings.json'
+    let items: SkillItem[] = [
+      item('revisar-cambios', 'personal', { description: 'Revisa', writesTo: U }),
+      item('formatear', 'plugin', { plugin: 'estilo@acme', description: 'Formatea', writesTo: U })
+    ]
+    const set = vi.fn(async (req: { name?: string; state?: SkillItem['state']; plugin?: string; enabled?: boolean }) => {
+      items = items.map((i) => (req.plugin ? { ...i, enabled: req.enabled } : i.name === req.name ? { ...i, state: req.state! } : i))
+      return list(items)
+    })
+    const api = mockApi({ repos: [repo('shop-web')], skills: { 'shop-web': list(items) } }, undefined, { skills: { set } })
+    render(createElement(App))
+    const s = await open()
+    await user.click(await within(s).findByRole('button', { name: /^\/revisar-cambios/ }))
+    const d = screen.getByRole('complementary', { name: '/revisar-cambios' })
+    const dialog = (): HTMLElement => screen.getByRole('dialog', { name: 'Atril va a cambiar tus ajustes de Claude Code' })
+
+    // Cancelar writes nothing and leaves the control as it was.
+    await user.click(within(d).getByRole('radio', { name: 'Apagada' }))
+    expect(dialog().textContent).toContain(U)
+    expect(dialog().textContent).toContain('skillOverrides.revisar-cambios')
+    expect(dialog().textContent).toContain('off')
+    expect(document.activeElement).toBe(within(dialog()).getByRole('button', { name: 'Cambiar' }))
+    await user.click(within(dialog()).getByRole('button', { name: 'Cancelar' }))
+    expect(screen.queryByRole('dialog')).toBeNull()
+    expect(set).not.toHaveBeenCalled()
+    expect((within(d).getByRole('radio', { name: 'Activa' }) as HTMLInputElement).checked).toBe(true)
+
+    // Escape is the same as Cancelar, and does not close the panel behind it.
+    await user.click(within(d).getByRole('radio', { name: 'Apagada' }))
+    await user.keyboard('{Escape}')
+    expect(screen.queryByRole('dialog')).toBeNull()
+    expect(set).not.toHaveBeenCalled()
+    expect(screen.queryByRole('complementary', { name: '/revisar-cambios' })).not.toBeNull()
+
+    // Cambiar writes; without the box ticked the next change asks again.
+    await user.click(within(d).getByRole('radio', { name: 'Apagada' }))
+    await user.click(within(dialog()).getByRole('button', { name: 'Cambiar' }))
+    expect(set).toHaveBeenCalledTimes(1)
+    expect(api.stored.skillsWriteOk).toBeUndefined()
+    await user.click(within(screen.getByRole('complementary', { name: '/revisar-cambios' })).getByRole('radio', { name: 'Solo el nombre' }))
+    expect(dialog().textContent).toContain('name-only')
+    // The box stores the consent and the write goes through.
+    await user.click(within(dialog()).getByRole('checkbox', { name: 'No volver a preguntar' }))
+    await user.click(within(dialog()).getByRole('button', { name: 'Cambiar' }))
+    expect(set).toHaveBeenCalledTimes(2)
+    expect(api.stored.skillsWriteOk).toBe(true)
+
+    // After that no dialog shows, for a state or a plugin switch.
+    await user.click(within(screen.getByRole('complementary', { name: '/revisar-cambios' })).getByRole('radio', { name: 'Activa' }))
+    expect(screen.queryByRole('dialog')).toBeNull()
+    expect(set).toHaveBeenCalledTimes(3)
+    await user.keyboard('{Escape}')
+    await user.click(within(s).getByRole('switch', { name: 'Activo' }))
+    expect(screen.queryByRole('dialog')).toBeNull()
+    expect(set).toHaveBeenLastCalledWith({ plugin: 'estilo@acme', enabled: false, repoId: 'shop-web' })
+  })
 })

@@ -5077,6 +5077,52 @@ button.fx-bt {
   outline: 2px solid var(--ring);
   outline-offset: 2px;
 }
+.skw-back {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: var(--shadow-sm);
+  z-index: 40;
+}
+.skw {
+  width: min(460px, 92vw);
+  padding: 20px 22px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: 0 12px 32px var(--shadow-sm);
+}
+.skw h2 {
+  margin: 0 0 12px;
+  font-size: 16px;
+}
+.skw dl {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 12px;
+  margin: 0 0 12px;
+  font-size: 13px;
+}
+.skw dt {
+  color: var(--sub);
+}
+.skw dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.skw label {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 13px;
+}
+.skw-act {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 14px;
+}
 .skd-st [role='radiogroup'] {
   display: grid;
   gap: 4px;
