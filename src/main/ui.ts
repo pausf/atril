@@ -27,6 +27,7 @@ function clean(raw: unknown): UiState {
     language: LANG_CHOICES.includes(r['language'] as LangChoice) ? (r['language'] as LangChoice) : 'system',
     palette: PALETTES.includes(r['palette'] as Palette) ? (r['palette'] as Palette) : 'original',
     ...(r['setupDismissed'] === true ? { setupDismissed: true } : {}),
+    ...(r['skillsWriteOk'] === true ? { skillsWriteOk: true as const } : {}),
     ...(typeof r['librettoRepo'] === 'string' && r['librettoRepo'] !== '' ? { librettoRepo: r['librettoRepo'] } : {}),
     ...(Object.keys(big).length > 0 ? { bigDismissed: big } : {})
   }

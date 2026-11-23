@@ -107,6 +107,6 @@ K13 y K14 con archivos reales en carpetas temporales; forzar rojo K14 quitando l
 
 ## Checklist
 
-- [ ] Main: `writesTo`, `lockedBy` y `setSkill` con sus guardas, `atril:skills:reveal`, IPC y preload; `skillsWriteOk` en `ui.ts` · Closes: K12, K13, K14, W215
+- [x] Main: `writesTo`, `lockedBy` y `setSkill` con sus guardas, `atril:skills:reveal`, IPC y preload; `skillsWriteOk` en `ui.ts` · Closes: K12, K13, K14, W215
 - [ ] «Estado» en el detalle, interruptor «Activo» en la barra de plugin, «Lo fija …» y el error · waits on box 1 · Closes: K15, K17
 - [ ] El diálogo de la primera vez con «No volver a preguntar» (`skillsWriteOk`), textos en inglés, foto y bocetos · waits on box 2 · Closes: K16

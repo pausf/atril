@@ -989,6 +989,8 @@ export interface UiState {
   lang?: Lang
   /** F25: per workspace, the branch-size threshold the person chose «Dejarla así» for; merges key by key. */
   bigDismissed?: Record<string, number>
+  /** K16: the person ticked «No volver a preguntar» on the first skills write; only `true` is kept. */
+  skillsWriteOk?: true
 }
 
 export interface UiApi {
@@ -1062,6 +1064,22 @@ export interface SkillItem {
   enabled?: boolean
   /** K4: why it is not loaded. */
   shadowedBy?: 'personal' | 'skill'
+  /** K12: the settings file a change to this item is written to (personal, project and plugin items). */
+  writesTo?: string
+  /** K12: the repo-relative settings file that fixes its key over `writesTo`, so a change would do nothing. */
+  lockedBy?: string
+}
+
+/** K13: one item (never a plugin's, never Atril's) with its new state, or a whole plugin on or off. */
+export type SkillSet =
+  | { origin: SkillOrigin; name: string; repoId?: string; state: SkillState }
+  | { plugin: string; enabled: boolean; repoId?: string }
+/** K17: enough to recompute `writesTo` in main; the renderer never sends a path. */
+export interface SkillRef {
+  origin: SkillOrigin
+  name: string
+  plugin?: string
+  repoId?: string
 }
 
 export interface SkillsList {
@@ -1072,6 +1090,10 @@ export interface SkillsList {
 export interface SkillsApi {
   /** Read-only: folders and settings, never Claude (K1). */
   list(repoId?: string): Promise<SkillsList>
+  /** K13/K14: writes one key in one settings file and answers the new list; rejects naming the file or the reason. */
+  set(req: SkillSet): Promise<SkillsList>
+  /** K17: shows the item's `writesTo` in Finder (its folder when the file does not exist). */
+  reveal(ref: SkillRef): Promise<void>
 }
 
 export interface AtrilApi {

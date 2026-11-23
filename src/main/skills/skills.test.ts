@@ -1,10 +1,11 @@
-import { mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import type { SkillItem } from '../../preload/api'
 import { claudeDir } from '../paths'
 import { listSkills } from './read'
+import { setSkill } from './write'
 
 const made: string[] = []
 const tmp = (): string => {
@@ -228,5 +229,104 @@ describe('skills', () => {
     expect(find(items, 'personal', 'deploy')?.shadowedBy).toBeUndefined()
     expect(find(items, 'plugin', 'deploy')?.shadowedBy).toBeUndefined()
     expect(find(items, 'atril', 'deploy')?.shadowedBy).toBeUndefined()
+  })
+})
+
+describe('skills write', () => {
+  const json = (file: string): unknown => JSON.parse(readFileSync(file, 'utf8'))
+
+  it('a key fixed by a later file is locked', async () => {
+    const { claude, repo, libretto } = seed()
+    put(claude, 'settings.json', JSON.stringify({ skillOverrides: { 'revisar-cambios': 'off' } }))
+    put(repo, '.claude/settings.json', JSON.stringify({ skillOverrides: { deploy: 'off' }, enabledPlugins: { 'estilo@acme': false } }))
+    put(repo, '.claude/settings.local.json', JSON.stringify({ skillOverrides: { 'escribir-docs': 'name-only', deploy: 'on' } }))
+    const { items } = await listSkills('shop-web', repos(repo), libretto)
+    // Personal writes to the user file; the repo's files come later in the merge.
+    expect(find(items, 'personal', 'revisar-cambios')).toMatchObject({ writesTo: join(claude, 'settings.json') })
+    expect(find(items, 'personal', 'revisar-cambios')?.lockedBy).toBeUndefined()
+    expect(find(items, 'personal', 'deploy', 'command')?.lockedBy).toBe('.claude/settings.local.json')
+    // A project item writes to the repo's local file, the last one: nothing can lock it.
+    expect(find(items, 'project', 'escribir-docs')).toMatchObject({ writesTo: join(repo, '.claude/settings.local.json') })
+    expect(find(items, 'project', 'escribir-docs')?.lockedBy).toBeUndefined()
+    // A plugin item is locked by the repo's settings.json when it fixes enabledPlugins.
+    expect(find(items, 'plugin', 'formatear')).toMatchObject({ writesTo: join(claude, 'settings.json'), lockedBy: '.claude/settings.json' })
+    // Without a repo there is nothing later to lock the plugin.
+    const none = await listSkills(undefined, repos(repo), libretto)
+    expect(find(none.items, 'plugin', 'formatear')?.lockedBy).toBeUndefined()
+    expect(find(items, 'atril', 'evidence')?.writesTo).toBeUndefined()
+    expect(find(items, 'atril', 'evidence')?.lockedBy).toBeUndefined()
+  })
+
+  it('set writes one key in the file that decides', async () => {
+    const { claude, repo, libretto } = seed()
+    const user = join(claude, 'settings.json')
+    const local = join(repo, '.claude/settings.local.json')
+    put(claude, 'settings.json', JSON.stringify({ zeta: 1, skillOverrides: { otra: 'off' }, alfa: { x: [1] } }))
+    const r = repos(repo)
+
+    // Personal: the user file, other keys and their order untouched.
+    const a = await setSkill({ origin: 'personal', name: 'revisar-cambios', repoId: 'shop-web', state: 'off' }, r, libretto)
+    expect(readFileSync(user, 'utf8')).toBe(
+      JSON.stringify({ zeta: 1, skillOverrides: { otra: 'off', 'revisar-cambios': 'off' }, alfa: { x: [1] } }, null, 2) + '\n'
+    )
+    expect(find(a.items, 'personal', 'revisar-cambios')?.state).toBe('off')
+    expect(existsSync(user + '.tmp')).toBe(false)
+
+    // Project: the repo's local file, created with its folder.
+    expect(existsSync(local)).toBe(false)
+    const b = await setSkill({ origin: 'project', name: 'escribir-docs', repoId: 'shop-web', state: 'name-only' }, r, libretto)
+    expect(json(local)).toEqual({ skillOverrides: { 'escribir-docs': 'name-only' } })
+    expect(readFileSync(local, 'utf8').endsWith('}\n')).toBe(true)
+    expect(find(b.items, 'project', 'escribir-docs')?.state).toBe('name-only')
+    expect(existsSync(join(repo, '.claude/settings.json'))).toBe(false)
+
+    // Plugin: enabledPlugins in the user file, with or without a repo.
+    const c = await setSkill({ plugin: 'estilo@acme', enabled: false, repoId: 'shop-web' }, r, libretto)
+    expect((json(user) as { enabledPlugins: unknown }).enabledPlugins).toEqual({ 'estilo@acme': false })
+    expect(find(c.items, 'plugin', 'formatear')?.enabled).toBe(false)
+    const d = await setSkill({ plugin: 'estilo@acme', enabled: true }, r, libretto)
+    expect((json(user) as { enabledPlugins: unknown }).enabledPlugins).toEqual({ 'estilo@acme': true })
+    expect(find(d.items, 'plugin', 'formatear')?.enabled).toBe(true)
+    expect(Object.keys(json(user) as object)).toEqual(['zeta', 'skillOverrides', 'alfa', 'enabledPlugins'])
+  })
+
+  it('set refuses and leaves the files alone', async () => {
+    const { claude, repo, libretto } = seed()
+    const user = join(claude, 'settings.json')
+    const local = join(repo, '.claude/settings.local.json')
+    const r = repos(repo)
+    const snap = (): string => [user, local, join(repo, '.claude/settings.json')].map((f) => (existsSync(f) ? readFileSync(f, 'utf8') : '-')).join('|')
+    const refuses = async (req: Parameters<typeof setSkill>[0], why: RegExp): Promise<void> => {
+      const before = snap()
+      await expect(setSkill(req, r, libretto)).rejects.toThrow(why)
+      expect(snap()).toBe(before)
+    }
+    const base = { origin: 'personal', name: 'revisar-cambios', repoId: 'shop-web', state: 'off' } as const
+
+    // Not JSON, not an object, and keys that are not objects: the file is named.
+    for (const text of ['{nope', '[1]', '"x"', '{"skillOverrides": []}', '{"skillOverrides": "off"}']) {
+      put(claude, 'settings.json', text)
+      await refuses(base, /settings\.json/)
+    }
+    put(claude, 'settings.json', '{"enabledPlugins": 3}')
+    await refuses({ plugin: 'estilo@acme', enabled: false }, /settings\.json/)
+    put(repo, '.claude/settings.local.json', 'no json')
+    await refuses({ origin: 'project', name: 'escribir-docs', repoId: 'shop-web', state: 'off' }, /settings\.local\.json/)
+    rmSync(local)
+
+    // Atril and plugin items are not switched one by one; a bad state is not a state.
+    put(claude, 'settings.json', '{"a":1}')
+    await refuses({ ...base, origin: 'atril' }, /./)
+    await refuses({ ...base, origin: 'plugin' }, /./)
+    await refuses({ ...base, state: 'maybe' as never }, /./)
+    await refuses({ ...base, name: '' }, /./)
+    await refuses({ origin: 'project', name: 'x', state: 'off' }, /./)
+
+    // A later file already fixes the key: no write.
+    put(repo, '.claude/settings.local.json', JSON.stringify({ skillOverrides: { 'revisar-cambios': 'on' } }))
+    await refuses(base, /settings\.local\.json/)
+    put(repo, '.claude/settings.local.json', '{}')
+    put(repo, '.claude/settings.json', JSON.stringify({ enabledPlugins: { 'estilo@acme': true } }))
+    await refuses({ plugin: 'estilo@acme', enabled: false, repoId: 'shop-web' }, /settings\.json/)
   })
 })

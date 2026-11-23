@@ -227,7 +227,11 @@ const api: AtrilApi = {
     }
   },
   refine: { ask: (text) => ipcRenderer.invoke('atril:refine:ask', text) },
-  skills: { list: (repoId) => ipcRenderer.invoke('atril:skills:list', repoId) },
+  skills: {
+    list: (repoId) => ipcRenderer.invoke('atril:skills:list', repoId),
+    set: (req) => ipcRenderer.invoke('atril:skills:set', req),
+    reveal: (ref) => ipcRenderer.invoke('atril:skills:reveal', ref)
+  },
   revealState: (file) => ipcRenderer.invoke('atril:state:reveal', file),
   snapshotWorkspace: () => ipcRenderer.invoke('atril:snapshot-ws'),
   snapshotView: () => ipcRenderer.invoke('atril:snapshot-view')

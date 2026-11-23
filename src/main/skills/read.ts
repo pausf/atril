@@ -4,14 +4,14 @@ import type { SkillItem, SkillOrigin, SkillsList } from '../../preload/api'
 import { t } from '../lang'
 import { claudeDir } from '../paths'
 import { asBool, parseFrontmatter, unquote, type Value } from './frontmatter'
-import { resolve } from './state'
+import { resolve, type Where } from './state'
 
 const MAX_ENTRIES = 300
 const MAX_BYTES = 256 * 1024
 
 type Source = { origin: SkillOrigin; root: string; plugin?: string }
 type Settings = Record<string, unknown>
-export type Read = { items: SkillItem[]; warnings: string[]; settings: Settings[] }
+export type Read = { items: SkillItem[]; warnings: string[]; settings: Settings[]; where: Where }
 
 const str = (v: Value | undefined): string | undefined => (typeof v === 'string' && v ? v : undefined)
 const tools = (v: Value | undefined): string[] | undefined => {
@@ -147,11 +147,10 @@ function plugins(json: Settings): { plugin: string; root: string }[] {
 /** Every skill and command of the four origins, with the settings files in merge order (user < repo < repo local). */
 export async function readAll(opts: { claude: string; repoDir?: string; libretto: string }, warnings: string[]): Promise<Read> {
   const { claude, repoDir, libretto } = opts
-  const settings = [await readJson(join(claude, 'settings.json'), warnings)]
-  if (repoDir) {
-    settings.push(await readJson(join(repoDir, '.claude/settings.json'), warnings))
-    settings.push(await readJson(join(repoDir, '.claude/settings.local.json'), warnings))
-  }
+  const files = [join(claude, 'settings.json')]
+  if (repoDir) files.push(join(repoDir, '.claude/settings.json'), join(repoDir, '.claude/settings.local.json'))
+  const settings: Settings[] = []
+  for (const f of files) settings.push(await readJson(f, warnings))
   const sources: Source[] = [{ origin: 'personal', root: claude }]
   if (repoDir) sources.push({ origin: 'project', root: join(repoDir, '.claude') })
   const installed = await readJson(join(claude, 'plugins/installed_plugins.json'), warnings)
@@ -159,23 +158,28 @@ export async function readAll(opts: { claude: string; repoDir?: string; libretto
   sources.push({ origin: 'atril', root: libretto, plugin: 'libretto' })
   const items: SkillItem[] = []
   for (const src of sources) items.push(...(await readSource(src, warnings)))
-  return { items, warnings, settings }
+  return { items, warnings, settings, where: { files, repoDir } }
 }
 
-type RepoList = { id: string; path: string }[] | object
+export type RepoList = { id: string; path: string }[] | object
 
 /** K1: the IPC's answer for `repoId`, resolved against Atril's repo list. */
 export async function listSkills(repoId: string | undefined, repos: () => Promise<RepoList>, libretto: string): Promise<SkillsList> {
   const warnings: string[] = []
-  let repoDir: string | undefined
-  if (repoId) {
-    const list = await repos().catch(() => null)
-    if (!Array.isArray(list)) warnings.push(t('No he podido leer tu lista de repos: no salen las skills del proyecto.'))
-    else {
-      repoDir = list.find((r) => r.id === repoId)?.path
-      if (!repoDir) warnings.push(t('{repo} ya no está en tu lista de repos.', { repo: repoId }))
-    }
+  const repoDir = await repoDirOf(repoId, repos, warnings)
+  const { items, settings, where } = await readAll({ claude: claudeDir(), repoDir, libretto }, warnings)
+  return { items: resolve(items, settings, where), warnings }
+}
+
+/** The repo's folder for an id, or undefined with a warning when the list cannot say. */
+export async function repoDirOf(repoId: string | undefined, repos: () => Promise<RepoList>, warnings: string[]): Promise<string | undefined> {
+  if (!repoId) return undefined
+  const list = await repos().catch(() => null)
+  if (!Array.isArray(list)) warnings.push(t('No he podido leer tu lista de repos: no salen las skills del proyecto.'))
+  else {
+    const dir = list.find((r) => r.id === repoId)?.path
+    if (!dir) warnings.push(t('{repo} ya no está en tu lista de repos.', { repo: repoId }))
+    return dir
   }
-  const { items, settings } = await readAll({ claude: claudeDir(), repoDir, libretto }, warnings)
-  return { items: resolve(items, settings), warnings }
+  return undefined
 }

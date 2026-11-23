@@ -52,4 +52,14 @@ describe('ui store', () => {
     await patchUi({ theme: 'dark' })
     expect((await readUi()).setupDismissed).toBe(true)
   })
+
+  it('remembers skills write consent and drops anything but true', async () => {
+    await patchUi({ skillsWriteOk: 'yes' })
+    expect((await readUi()).skillsWriteOk).toBeUndefined()
+    await patchUi({ skillsWriteOk: true })
+    await patchUi({ theme: 'dark' })
+    expect((await readUi()).skillsWriteOk).toBe(true)
+    await patchUi({ skillsWriteOk: 1 })
+    expect((await readUi()).skillsWriteOk).toBeUndefined()
+  })
 })

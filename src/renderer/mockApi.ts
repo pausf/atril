@@ -482,7 +482,11 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
     skills: {
       list: vi.fn(async (repoId?: string): Promise<SkillsList> =>
         typeof o.skills === 'function' ? o.skills(repoId) : (o.skills?.[repoId ?? ''] ?? { items: [], warnings: [] })
-      )
+      ),
+      set: vi.fn(async (req: { repoId?: string }): Promise<SkillsList> =>
+        typeof o.skills === 'function' ? o.skills(req.repoId) : (o.skills?.[req.repoId ?? ''] ?? { items: [], warnings: [] })
+      ),
+      reveal: vi.fn(async () => undefined)
     },
     revealState: vi.fn(async () => true),
     snapshotView: async () => null,

@@ -31,18 +31,20 @@ import { createClashWatch, radar } from './radar'
 import { changeFolders } from './flow/stage'
 import { nextUp } from './nextup'
 import { writeFile } from 'node:fs/promises'
-import { join } from 'node:path'
+import { existsSync } from 'node:fs'
+import { dirname, join } from 'node:path'
 import { createSecretStore } from './credentials/store'
 import { jiraSettings } from './credentials/jira'
 import { searchBoards } from './credentials/boards'
 import type { JiraCreds } from './credentials/check'
 import { doctor, inTerminal, installTool } from './doctor'
-import type { Aviso, NotifyPatch, NotifyPermission, NotifyType, CreateRepoRequest, Mode, MrDrafts, MrDraftsResult, MrItem, MrLists, MrPage, MrScoreState, MrThreads, SubagentEntry, SubagentLine, UiState } from '../preload/api'
+import type { Aviso, NotifyPatch, NotifyPermission, NotifyType, CreateRepoRequest, Mode, MrDrafts, MrDraftsResult, MrItem, MrLists, MrPage, MrScoreState, MrThreads, SubagentEntry, SubagentLine, UiState, SkillRef, SkillSet } from '../preload/api'
 import { readInbox } from './jira/inbox'
 import { inboxGroups } from './jira/board'
 import { proposeStart, start } from './jira/start'
 import type { Effort, InboxGroup, InboxResult, JiraIssue, Model, NextItem, QaBugRequest, StartIssue, StartRequest } from '../preload/api'
 import { listSkills } from './skills/read'
+import { revealFile, setSkill } from './skills/write'
 import { listRepos, readRepos, registerRepo, relocateRepo, removeRepo, setOverride } from './repos'
 import { createRefiner } from './refine'
 import { orProblem, revealState } from './state'
@@ -512,6 +514,12 @@ app.whenReady().then(async () => {
   ipcMain.handle('atril:skills:list', (_e, repoId: unknown) =>
     listSkills(typeof repoId === 'string' ? repoId : undefined, readRepos, librettoDir())
   )
+  ipcMain.handle('atril:skills:set', (_e, req: unknown) => setSkill(req as SkillSet, readRepos, librettoDir()))
+  ipcMain.handle('atril:skills:reveal', async (_e, ref: unknown) => {
+    const file = await revealFile(ref as SkillRef, readRepos)
+    if (existsSync(file)) shell.showItemInFolder(file)
+    else void shell.openPath(dirname(file))
+  })
   ipcMain.handle('atril:mr:score', (_e, url: unknown): Promise<MrScoreState> =>
     scorer.score(typeof url === 'string' ? url : '')
   )
