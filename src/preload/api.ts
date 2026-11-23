@@ -1078,6 +1078,7 @@ export type SkillSet =
 export interface SkillRef {
   origin: SkillOrigin
   name: string
+  kind?: 'skill' | 'command'
   plugin?: string
   repoId?: string
 }

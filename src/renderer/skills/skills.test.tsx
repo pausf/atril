@@ -2,7 +2,7 @@
 import { createElement } from 'react'
 import { act, cleanup, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { RepoView, SkillItem, SkillsList } from '../../preload/api'
 import { App } from '../App'
 import { mockApi, mockSystemTheme } from '../mockApi'
@@ -225,5 +225,88 @@ describe('skills screen', () => {
     await user.click(within(d2).getByRole('button', { name: 'Cerrar' }))
     expect(screen.queryByRole('complementary')).toBeNull()
     expect(document.activeElement).toBe(within(s).getByRole('button', { name: /^\/otra/ }))
+  })
+
+  it('state and plugin switch write through set', async () => {
+    const user = userEvent.setup()
+    const U = '/h/.claude/settings.json'
+    const L = '/r/shop-web/.claude/settings.local.json'
+    let items: SkillItem[] = [
+      item('revisar-cambios', 'personal', { description: 'Revisa', writesTo: U }),
+      item('revisar-cambios', 'personal', { kind: 'command', description: 'Comando', writesTo: U }),
+      item('bloqueada', 'personal', { description: 'Fijada', writesTo: U, lockedBy: '.claude/settings.local.json' }),
+      item('sembrar', 'project', { description: 'Datos', writesTo: L }),
+      item('formatear', 'plugin', { plugin: 'estilo@acme', description: 'Formatea', writesTo: U }),
+      item('changelog', 'plugin', { plugin: 'release@acme', description: 'Changelog', writesTo: U, lockedBy: '.claude/settings.json' }),
+      item('evidence', 'atril', { plugin: 'libretto', description: 'Nada es cierto' })
+    ]
+    const set = vi.fn(async (req: { name?: string; state?: SkillItem['state']; plugin?: string; enabled?: boolean }) => {
+      items = items.map((i) =>
+        req.plugin ? (i.plugin === req.plugin ? { ...i, enabled: req.enabled } : i) : i.name === req.name && i.origin !== 'plugin' ? { ...i, state: req.state! } : i
+      )
+      return list(items)
+    })
+    mockApi({ repos: [repo('shop-web')], skills: { 'shop-web': list(items) }, ui: { skillsWriteOk: true } }, undefined, { skills: { set } })
+    render(createElement(App))
+    const s = await open()
+
+    await user.click((await within(s).findAllByRole('button', { name: /^\/revisar-cambios/ }))[0]!)
+    let d = screen.getByRole('complementary', { name: '/revisar-cambios' })
+    const group = within(d).getByRole('radiogroup', { name: 'Estado' })
+    expect(within(group).getAllByRole('radio').map((r) => r.getAttribute('aria-label') ?? r.parentElement?.textContent)).toEqual(['Activa', 'Solo el nombre', 'Solo si la llamas tú', 'Apagada'])
+    expect((within(group).getByRole('radio', { name: 'Activa' }) as HTMLInputElement).checked).toBe(true)
+    await user.click(within(group).getByRole('radio', { name: 'Apagada' }))
+    expect(set).toHaveBeenCalledWith({ origin: 'personal', name: 'revisar-cambios', repoId: 'shop-web', state: 'off' })
+    d = screen.getByRole('complementary', { name: '/revisar-cambios' })
+    expect((within(d).getByRole('radio', { name: 'Apagada' }) as HTMLInputElement).checked).toBe(true)
+    expect(d.textContent).toContain('Hecho. Las sesiones nuevas de Claude Code ya lo cargan así.')
+    expect(d.textContent).toContain('También cambia 1 más con el mismo nombre.')
+    expect(within(s).getAllByRole('button', { name: /^\/revisar-cambios/, description: /Apagada/ })).toHaveLength(2)
+    await user.keyboard('{Escape}')
+
+    // A key a later file fixes: the control is off and says which file.
+    await user.click(within(s).getByRole('button', { name: /^\/bloqueada/ }))
+    d = screen.getByRole('complementary', { name: '/bloqueada' })
+    expect(within(d).getAllByRole('radio').every((r) => (r as HTMLInputElement).disabled)).toBe(true)
+    expect(d.textContent).toContain('Lo fija .claude/settings.local.json')
+    await user.keyboard('{Escape}')
+    // An Atril item has no control at all.
+    await user.click(within(s).getByRole('button', { name: /^\/libretto:evidence/ }))
+    expect(within(screen.getByRole('complementary', { name: '/libretto:evidence' })).queryByRole('radiogroup')).toBeNull()
+    await user.keyboard('{Escape}')
+    // A plugin item is switched with its plugin, not here.
+    await user.click(within(s).getByRole('button', { name: /^\/estilo:formatear/ }))
+    expect(within(screen.getByRole('complementary', { name: '/estilo:formatear' })).queryByRole('radiogroup')).toBeNull()
+    await user.keyboard('{Escape}')
+
+    const switches = within(s).getAllByRole('switch', { name: 'Activo' })
+    expect(switches).toHaveLength(2)
+    expect(switches[0]?.getAttribute('aria-checked')).toBe('true')
+    await user.click(switches[0]!)
+    expect(set).toHaveBeenCalledWith({ plugin: 'estilo@acme', enabled: false, repoId: 'shop-web' })
+    expect(within(s).getAllByRole('switch', { name: 'Activo' })[0]?.getAttribute('aria-checked')).toBe('false')
+    expect(s.textContent).toContain('estilo@acme · 1 skills · apagado entero')
+    expect((switches[1] as HTMLButtonElement).disabled).toBe(true)
+    expect(s.textContent).toContain('Lo fija .claude/settings.json')
+  })
+
+  it('a failed write says why and keeps the old state', async () => {
+    const user = userEvent.setup()
+    const set = vi.fn(async () => {
+      throw new Error('EACCES: permission denied')
+    })
+    const reveal = vi.fn(async () => undefined)
+    mockApi({ repos: [repo('shop-web')], skills: { 'shop-web': list([item('revisar-cambios', 'personal', { writesTo: '/h/.claude/settings.json' })]) }, ui: { skillsWriteOk: true } }, undefined, { skills: { set, reveal } })
+    render(createElement(App))
+    const s = await open()
+    await user.click(await within(s).findByRole('button', { name: /^\/revisar-cambios/ }))
+    const d = screen.getByRole('complementary', { name: '/revisar-cambios' })
+    await user.click(within(d).getByRole('radio', { name: 'Apagada' }))
+    expect(await screen.findByText('No he podido cambiar tus ajustes de Claude Code.')).toBeTruthy()
+    expect(s.textContent).toContain('EACCES: permission denied')
+    expect((within(d).getByRole('radio', { name: 'Activa' }) as HTMLInputElement).checked).toBe(true)
+    expect(d.textContent).not.toContain('Hecho.')
+    await user.click(screen.getByRole('button', { name: 'Ver en Finder' }))
+    expect(reveal).toHaveBeenCalledWith({ origin: 'personal', name: 'revisar-cambios', kind: 'skill', repoId: 'shop-web' })
   })
 })

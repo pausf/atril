@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { SkillItem, SkillsList } from '../../preload/api'
+import type { SkillItem, SkillRef, SkillSet, SkillsList, SkillState } from '../../preload/api'
 import { Problem } from '../components/Problem'
 import { useT } from '../ui'
 import { SkillCard } from './SkillCard'
@@ -27,6 +27,9 @@ export function Skills() {
   const [q, setQ] = useState('')
   const [filter, setFilter] = useState<Filter>('all')
   const [open, setOpen] = useState<SkillItem | null>(null)
+  const [busy, setBusy] = useState(false)
+  const [note, setNote] = useState<string | null>(null)
+  const [fail, setFail] = useState<{ error: string; ref: SkillRef } | null>(null)
   const opener = useRef<HTMLButtonElement | null>(null)
   const search = useRef<HTMLInputElement>(null)
 
@@ -60,7 +63,33 @@ export function Skills() {
   }, [repos, repo])
   useEffect(load, [load])
 
+  /** K15/K17: one write through main; the lists and the open panel come from its answer, never from a guess. */
+  const change = async (req: SkillSet, ref: SkillRef): Promise<void> => {
+    setBusy(true)
+    setFail(null)
+    setNote(null)
+    try {
+      const d = await window.atril.skills.set(req)
+      setData(d)
+      const same = (a: SkillItem, b: SkillItem): boolean => a.origin === b.origin && a.kind === b.kind && a.name === b.name && a.plugin === b.plugin
+      const now = open && d.items.find((i) => same(i, open))
+      if (now) setOpen(now)
+      const sharing = now ? d.items.filter((i) => i.name === now.name && !same(i, now) && i.writesTo === now.writesTo && (i.origin === 'personal' || i.origin === 'project')).length : 0
+      const done = t('Hecho. Las sesiones nuevas de Claude Code ya lo cargan así.')
+      setNote(sharing > 0 ? `${done} ${t('También cambia {n} más con el mismo nombre.', { n: sharing })}` : done)
+    } catch (e) {
+      setFail({ error: e instanceof Error ? e.message : String(e), ref })
+    } finally {
+      setBusy(false)
+    }
+  }
+  const repoId = repo || undefined
+  const setState = (i: SkillItem, state: SkillState): void =>
+    void change({ origin: i.origin, name: i.name, repoId, state }, { origin: i.origin, name: i.name, kind: i.kind, repoId })
+  const setPlugin = (plugin: string, enabled: boolean): void => void change({ plugin, enabled, repoId }, { origin: 'plugin', name: '', plugin, repoId })
+
   const close = (): void => {
+    setNote(null)
     setOpen(null)
     opener.current?.focus()
   }
@@ -109,6 +138,17 @@ export function Skills() {
       ))}
       {repos?.length === 0 && <p className="notice">{t('Añade un repo en Ajustes → Repos para ver sus skills.')}</p>}
       {error !== null && <Problem what={t('No he podido leer tus skills.')} cant={t('No puedo enseñarte qué tiene a mano tu Claude Code.')} fix={t('Volver a intentar')} onFix={load} detail={error} />}
+
+      {fail && (
+        <Problem
+          what={t('No he podido cambiar tus ajustes de Claude Code.')}
+          cant={t('El cambio no se ha guardado: sigue como estaba.')}
+          fix={t('Ver en Finder')}
+          onFix={() => void window.atril.skills.reveal(fail.ref)}
+          onClose={() => setFail(null)}
+          detail={fail.error}
+        />
+      )}
 
       <div className="sk-bar">
         <input ref={search} type="search" placeholder={t('Buscar por nombre o descripción…')} aria-label={t('Buscar por nombre o descripción…')} value={q} onChange={(e) => setQ(e.target.value)} />
@@ -201,10 +241,13 @@ export function Skills() {
                   const vis = of('plugin').filter((i) => i.plugin === p)
                   if (narrowed && vis.length === 0) return null
                   const on = all[0]?.enabled !== false
+                  const lock = all[0]?.lockedBy
                   return (
                     <div key={p} className="skp">
                       <p className="skp-bar">
                         <b>{p.split('@')[0]}</b> {t('{plugin} · {n} skills · {state}', { plugin: p, n: all.length, state: on ? t('activo') : t('apagado entero') })}
+                        <button type="button" role="switch" className="sw" aria-checked={on} aria-label={t('Activo')} aria-busy={busy} disabled={busy || lock !== undefined} onClick={() => setPlugin(p, !on)} />
+                        {lock && <span className="where">{t('Lo fija {file}', { file: lock })}</span>}
                       </p>
                       {cardsOf(vis, `g-${p}`)}
                     </div>
@@ -221,7 +264,7 @@ export function Skills() {
           </>
         )
       )}
-      {open && <SkillDetail item={open} repo={repoName} onClose={close} />}
+      {open && <SkillDetail item={open} repo={repoName} busy={busy} note={note} onSet={(st) => setState(open, st)} onClose={close} />}
     </section>
   )
 }

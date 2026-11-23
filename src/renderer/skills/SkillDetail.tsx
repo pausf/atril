@@ -1,10 +1,12 @@
 import { useEffect, useRef } from 'react'
-import type { SkillItem } from '../../preload/api'
+import type { SkillItem, SkillState } from '../../preload/api'
 import { useT } from '../ui'
 import { fullName, originLabel, stateLabel } from './SkillCard'
 
-/** K7: a side panel, not a modal; the instructions are plain text, never markup. */
-export function SkillDetail({ item, repo, onClose }: { item: SkillItem; repo: string; onClose: () => void }) {
+const STATES: SkillState[] = ['on', 'name-only', 'user-invocable-only', 'off']
+
+/** K7: a side panel, not a modal; the instructions are plain text, never markup. K15: «Estado» for personal and project items. */
+export function SkillDetail({ item, repo, busy, note, onSet, onClose }: { item: SkillItem; repo: string; busy: boolean; note: string | null; onSet: (s: SkillState) => void; onClose: () => void }) {
   const t = useT()
   const closeBtn = useRef<HTMLButtonElement>(null)
   useEffect(() => closeBtn.current?.focus(), [item])
@@ -40,6 +42,20 @@ export function SkillDetail({ item, repo, onClose }: { item: SkillItem; repo: st
         <span className="tag">{stateLabel(t, item.state)}</span>
       </p>
       {item.description && <p className="skd-d">{item.description}</p>}
+      {(item.origin === 'personal' || item.origin === 'project') && (
+        <div className="skd-st">
+          <div role="radiogroup" aria-label={t('Estado')} aria-busy={busy}>
+            {STATES.map((s) => (
+              <label key={s}>
+                <input type="radio" name="sk-state" checked={item.state === s} disabled={busy || item.lockedBy !== undefined} onChange={() => onSet(s)} />
+                {stateLabel(t, s)}
+              </label>
+            ))}
+          </div>
+          {item.lockedBy && <p className="where">{t('Lo fija {file}', { file: item.lockedBy })}</p>}
+          {note && <p role="status">{note}</p>}
+        </div>
+      )}
       <dl>
         {fields
           .filter((f): f is [string, string] => Boolean(f[1]))
