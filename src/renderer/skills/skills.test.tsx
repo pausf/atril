@@ -610,5 +610,81 @@ describe('skills editor', () => {
     await user.click(crear())
     expect(create).toHaveBeenLastCalledWith({ origin: 'project', repoId: 'shop-web', name: 'del-repo' })
   })
+  it('add plugin installs from the catalog', async () => {
+    const user = userEvent.setup()
+    const catalog = {
+      installed: [{ pluginId: 'estilo@acme', scope: 'user' }],
+      available: [
+        { pluginId: 'estilo@acme', name: 'estilo', marketplace: 'acme', description: 'Formatea el código' },
+        { pluginId: 'release@acme', name: 'release', marketplace: 'acme', description: 'Escribe el changelog' },
+        { pluginId: 'lint@otros', name: 'lint', marketplace: 'otros', description: 'Pasa el linter' }
+      ]
+    }
+    const after = list([item('changelog', 'plugin', { plugin: 'release@acme', description: 'Escribe el changelog' })])
+    let release: (r: { list: SkillsList }) => void = () => undefined
+    const plugin = vi.fn(() => new Promise<{ list: SkillsList }>((res) => (release = res)))
+    const marketplace = vi.fn(async () => ({ catalog: { installed: catalog.installed, available: [...catalog.available, { pluginId: 'nuevo@mk', name: 'nuevo', marketplace: 'mk', description: 'Recién añadido' }] } }))
+    mockApi({ repos: [repo('shop-web'), repo('cms')], skills: { 'shop-web': list(ITEMS), cms: list([]) } }, undefined, {
+      skills: { catalog: vi.fn(async () => ({ catalog })), plugin, marketplace }
+    })
+    render(createElement(App))
+    const s = await open()
+    await user.click(within(within(s).getByRole('group', { name: 'Plugins' })).getByRole('button', { name: 'Añadir plugin' }))
+    const dlg = await screen.findByRole('dialog', { name: 'Añadir plugin' })
+    expect(dlg.getAttribute('aria-modal')).toBe('true')
+    expect(window.atril.skills.catalog).toHaveBeenCalledWith('shop-web')
+
+    // Not-installed plugins by marketplace, each with name, description and «Instalar».
+    const mk = (name: string): HTMLElement => within(dlg).getByRole('group', { name })
+    expect(within(mk('acme')).getAllByRole('listitem')).toHaveLength(1)
+    expect(mk('acme').textContent).toContain('release')
+    expect(mk('acme').textContent).toContain('Escribe el changelog')
+    expect(mk('otros').textContent).toContain('lint')
+    expect(within(dlg).queryByText('estilo')).toBeNull()
+    expect(within(dlg).getAllByRole('button', { name: 'Instalar' })).toHaveLength(2)
+
+    // The search box filters by name or description.
+    const search = within(dlg).getByRole('searchbox', { name: 'Buscar plugin' })
+    expect(document.activeElement).toBe(search)
+    await user.type(search, 'linter')
+    expect(within(dlg).queryByText('release')).toBeNull()
+    expect(within(dlg).getByText('lint')).toBeTruthy()
+    await user.clear(search)
+    await user.type(search, 'changelog')
+    expect(within(dlg).queryByText('lint')).toBeNull()
+
+    // «Instalar» offers both scopes with a repo.
+    await user.click(within(dlg).getByRole('button', { name: 'Instalar' }))
+    expect(within(dlg).getByRole('button', { name: 'Solo para mí en shop-web' })).toBeTruthy()
+    await user.click(within(dlg).getByRole('button', { name: 'Para mí, en todos los repos' }))
+    expect(plugin).toHaveBeenCalledWith({ action: 'install', plugin: 'release@acme', scope: 'user', repoId: 'shop-web' })
+
+    // While it runs every plugin button and the repo selector are disabled.
+    expect((within(s).getByRole('combobox', { name: 'Repo del proyecto' }) as HTMLSelectElement).disabled).toBe(true)
+    for (const b of within(dlg).getAllByRole('button')) if (b.textContent !== 'Cancelar') expect((b as HTMLButtonElement).disabled).toBe(true)
+    release({ list: after })
+
+    // On success the dialog closes, the list updates and the note shows.
+    expect(await screen.findByText('Instalado. Las sesiones nuevas de Claude Code ya lo cargan.')).toBeTruthy()
+    expect(screen.queryByRole('dialog')).toBeNull()
+    expect(within(s).getAllByRole('button', { name: /^\// })).toHaveLength(1)
+    expect((within(s).getByRole('combobox', { name: 'Repo del proyecto' }) as HTMLSelectElement).disabled).toBe(false)
+
+    // The local scope names the repo; «Añadir marketplace» reloads the catalog.
+    await user.click(within(within(s).getByRole('group', { name: 'Plugins' })).getByRole('button', { name: 'Añadir plugin' }))
+    const dlg2 = await screen.findByRole('dialog', { name: 'Añadir plugin' })
+    await user.click(within(dlg2).getAllByRole('button', { name: 'Instalar' })[0]!)
+    plugin.mockResolvedValueOnce({ list: after })
+    await user.click(within(dlg2).getByRole('button', { name: 'Solo para mí en shop-web' }))
+    expect(plugin).toHaveBeenLastCalledWith({ action: 'install', plugin: expect.any(String), scope: 'local', repoId: 'shop-web' })
+    await user.click(await within(s).findByRole('button', { name: 'Añadir plugin' }))
+    const dlg3 = await screen.findByRole('dialog', { name: 'Añadir plugin' })
+    await user.type(within(dlg3).getByRole('textbox', { name: 'owner/repo o URL' }), 'acme/tools')
+    await user.click(within(dlg3).getByRole('button', { name: 'Añadir' }))
+    expect(marketplace).toHaveBeenCalledWith({ source: 'acme/tools', repoId: 'shop-web' })
+    expect(await within(dlg3).findByText('nuevo')).toBeTruthy()
+    await user.keyboard('{Escape}')
+    expect(screen.queryByRole('dialog')).toBeNull()
+  })
 })
 

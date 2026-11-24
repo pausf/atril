@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { SkillItem, SkillRef, SkillSet, SkillsList, SkillState } from '../../preload/api'
+import type { PluginCatalogResult, PluginFailure, SkillItem, SkillRef, SkillSet, SkillsList, SkillState } from '../../preload/api'
 import { Problem } from '../components/Problem'
 import { useT } from '../ui'
+import { PluginAddDialog } from './PluginAddDialog'
 import { SkillCard } from './SkillCard'
 import { dropDraft, SkillDetail } from './SkillDetail'
 import { SkillLeaveDialog } from './SkillLeaveDialog'
@@ -33,6 +34,10 @@ export function Skills() {
   const [busy, setBusy] = useState(false)
   const [note, setNote] = useState<string | null>(null)
   const [fail, setFail] = useState<{ error: string; ref: SkillRef } | null>(null)
+  const [pluginBusy, setPluginBusy] = useState(false)
+  const [adding, setAdding] = useState(false)
+  const [pluginNote, setPluginNote] = useState<string | null>(null)
+  const [pluginFail, setPluginFail] = useState<PluginFailure | null>(null)
   const [consent, setConsent] = useState(false)
   const [saving, setSaving] = useState(false)
   // K24: set by the detail while its editor holds unsaved text; `leave` is the exit waiting for an answer.
@@ -98,6 +103,33 @@ export function Skills() {
     }
   }
   const repoId = repo || undefined
+
+  /** K32: one plugin operation at a time; a reply for a repo no longer picked is dropped (K11/K18). */
+  const pluginOp = async <T extends { list: SkillsList } | PluginCatalogResult>(work: () => Promise<T | PluginFailure>): Promise<T | undefined> => {
+    const forRepo = repoNow.current
+    setPluginBusy(true)
+    setPluginFail(null)
+    setPluginNote(null)
+    try {
+      const r = await work()
+      if (forRepo !== repoNow.current) return undefined
+      if ('error' in r) {
+        setPluginFail(r)
+        setAdding(false)
+        return undefined
+      }
+      return r
+    } finally {
+      setPluginBusy(false)
+    }
+  }
+  const installPlugin = async (plugin: string, scope: 'user' | 'local'): Promise<void> => {
+    const r = await pluginOp(() => window.atril.skills.plugin({ action: 'install', plugin, scope, repoId }))
+    if (!r) return
+    setData(r.list)
+    setAdding(false)
+    setPluginNote(t('Instalado. Las sesiones nuevas de Claude Code ya lo cargan.'))
+  }
   // K16: the first write of all asks; `consent` comes from Atril's state.
   const ask = (req: SkillSet, ref: SkillRef, file: string | undefined, key: string, value: string): void => {
     if (consent) void change(req, ref)
@@ -221,7 +253,7 @@ export function Skills() {
           ))}
         </div>
         {repos && repos.length > 0 && (
-          <select aria-label={t('Repo del proyecto')} value={repoName} disabled={busy || saving} onChange={(e) => {
+          <select aria-label={t('Repo del proyecto')} value={repoName} disabled={busy || saving || pluginBusy} onChange={(e) => {
               const v = e.target.value
               guard(() => {
                 setOpen(null)
@@ -296,28 +328,37 @@ export function Skills() {
                 </p>
               </details>
             )}
-            {plugins.length > 0 && (
-              <details className="skg" open aria-label={t('Plugins')}>
-                <summary>{t('Plugins')}</summary>
-                {plugins.map((p) => {
-                  const all = items.filter((i) => i.plugin === p)
-                  const vis = of('plugin').filter((i) => i.plugin === p)
-                  if (narrowed && vis.length === 0) return null
-                  const on = all[0]?.enabled !== false
-                  const lock = all[0]?.lockedBy
-                  return (
-                    <div key={p} className="skp">
-                      <p className="skp-bar">
-                        <b>{p.split('@')[0]}</b> {t('{plugin} · {n} skills · {state}', { plugin: p, n: all.length, state: on ? t('activo') : t('apagado entero') })}
-                        <button type="button" role="switch" className="sw" aria-checked={on} aria-label={t('Activo')} aria-busy={busy} disabled={busy || lock !== undefined} onClick={() => setPlugin(p, !on, all[0]?.writesTo)} />
-                        {lock && <span className="where">{t('Lo fija {file}', { file: lock })}</span>}
-                      </p>
-                      {cardsOf(vis, `g-${p}`)}
-                    </div>
-                  )
-                })}
-              </details>
-            )}
+            <details className="skg" open aria-label={t('Plugins')}>
+              <summary>{t('Plugins')}</summary>
+              {pluginNote && (
+                <p className="notice" role="status">
+                  {pluginNote}
+                </p>
+              )}
+              {pluginFail && (
+                <Problem what={t('No he podido completar la operación del plugin.')} onClose={() => setPluginFail(null)} detail={pluginFail.error} />
+              )}
+              <button type="button" className="btn" disabled={pluginBusy} onClick={() => setAdding(true)}>
+                {t('Añadir plugin')}
+              </button>
+              {plugins.map((p) => {
+                const all = items.filter((i) => i.plugin === p)
+                const vis = of('plugin').filter((i) => i.plugin === p)
+                if (narrowed && vis.length === 0) return null
+                const on = all[0]?.enabled !== false
+                const lock = all[0]?.lockedBy
+                return (
+                  <div key={p} className="skp">
+                    <p className="skp-bar">
+                      <b>{p.split('@')[0]}</b> {t('{plugin} · {n} skills · {state}', { plugin: p, n: all.length, state: on ? t('activo') : t('apagado entero') })}
+                      <button type="button" role="switch" className="sw" aria-checked={on} aria-label={t('Activo')} aria-busy={busy} disabled={busy || pluginBusy || lock !== undefined} onClick={() => setPlugin(p, !on, all[0]?.writesTo)} />
+                      {lock && <span className="where">{t('Lo fija {file}', { file: lock })}</span>}
+                    </p>
+                    {cardsOf(vis, `g-${p}`)}
+                  </div>
+                )
+              })}
+            </details>
             <details className="skg" open={narrowed} aria-label={t('Atril')}>
               <summary>
                 {t('Atril')} <span className="where">{t('solo lectura')}</span>
@@ -357,6 +398,15 @@ export function Skills() {
             setAutoEdit(true)
             if (made) setOpen(made)
           }}
+        />
+      )}
+      {adding && (
+        <PluginAddDialog
+          repo={repoId}
+          busy={pluginBusy}
+          install={(p, scope) => void installPlugin(p, scope)}
+          addMarketplace={(source) => pluginOp(() => window.atril.skills.marketplace({ source, repoId }))}
+          onNo={() => setAdding(false)}
         />
       )}
       {leave && (
