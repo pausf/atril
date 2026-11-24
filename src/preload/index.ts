@@ -230,7 +230,10 @@ const api: AtrilApi = {
   skills: {
     list: (repoId) => ipcRenderer.invoke('atril:skills:list', repoId),
     set: (req) => ipcRenderer.invoke('atril:skills:set', req),
-    reveal: (ref) => ipcRenderer.invoke('atril:skills:reveal', ref)
+    reveal: (ref) => ipcRenderer.invoke('atril:skills:reveal', ref),
+    read: (ref) => ipcRenderer.invoke('atril:skills:read', ref),
+    save: (req) => ipcRenderer.invoke('atril:skills:save', req),
+    create: (req) => ipcRenderer.invoke('atril:skills:create', req)
   },
   revealState: (file) => ipcRenderer.invoke('atril:state:reveal', file),
   snapshotWorkspace: () => ipcRenderer.invoke('atril:snapshot-ws'),

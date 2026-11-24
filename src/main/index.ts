@@ -38,11 +38,12 @@ import { jiraSettings } from './credentials/jira'
 import { searchBoards } from './credentials/boards'
 import type { JiraCreds } from './credentials/check'
 import { doctor, inTerminal, installTool } from './doctor'
-import type { Aviso, NotifyPatch, NotifyPermission, NotifyType, CreateRepoRequest, Mode, MrDrafts, MrDraftsResult, MrItem, MrLists, MrPage, MrScoreState, MrThreads, SubagentEntry, SubagentLine, UiState, SkillRef, SkillSet } from '../preload/api'
+import type { Aviso, NotifyPatch, NotifyPermission, NotifyType, CreateRepoRequest, Mode, MrDrafts, MrDraftsResult, MrItem, MrLists, MrPage, MrScoreState, MrThreads, SubagentEntry, SubagentLine, UiState, SkillRef, SkillSet, SkillFileRef, SkillSave, SkillCreate } from '../preload/api'
 import { readInbox } from './jira/inbox'
 import { inboxGroups } from './jira/board'
 import { proposeStart, start } from './jira/start'
 import type { Effort, InboxGroup, InboxResult, JiraIssue, Model, NextItem, QaBugRequest, StartIssue, StartRequest } from '../preload/api'
+import { createSkill, readSkillFile, saveSkill } from './skills/edit'
 import { listSkills } from './skills/read'
 import { revealFile, setSkill } from './skills/write'
 import { listRepos, readRepos, registerRepo, relocateRepo, removeRepo, setOverride } from './repos'
@@ -515,6 +516,9 @@ app.whenReady().then(async () => {
     listSkills(typeof repoId === 'string' ? repoId : undefined, readRepos, librettoDir())
   )
   ipcMain.handle('atril:skills:set', (_e, req: unknown) => setSkill(req as SkillSet, readRepos, librettoDir()))
+  ipcMain.handle('atril:skills:read', (_e, req: unknown) => readSkillFile(req as SkillFileRef, readRepos, librettoDir()))
+  ipcMain.handle('atril:skills:save', (_e, req: unknown) => saveSkill(req as SkillSave, readRepos, librettoDir()))
+  ipcMain.handle('atril:skills:create', (_e, req: unknown) => createSkill(req as SkillCreate, readRepos, librettoDir()))
   ipcMain.handle('atril:skills:reveal', async (_e, ref: unknown) => {
     const file = await revealFile(ref as SkillRef, readRepos)
     if (existsSync(file)) shell.showItemInFolder(file)

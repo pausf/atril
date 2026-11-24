@@ -1088,6 +1088,26 @@ export interface SkillsList {
   warnings: string[]
 }
 
+/** K26: a listed personal or project item, by its `path`. */
+export interface SkillFileRef {
+  path: string
+  repoId?: string
+}
+/** K19: `base` is the text the person opened; main compares it with the disk, never a date. */
+export interface SkillSave extends SkillFileRef {
+  base: string
+  text: string
+  force?: boolean
+  allowBroken?: boolean
+}
+export type SkillSaved = { list: SkillsList } | { conflict: true; disk: string } | { brokenHeader: true }
+/** K21 */
+export interface SkillCreate {
+  origin: 'personal' | 'project'
+  repoId?: string
+  name: string
+}
+
 export interface SkillsApi {
   /** Read-only: folders and settings, never Claude (K1). */
   list(repoId?: string): Promise<SkillsList>
@@ -1095,6 +1115,12 @@ export interface SkillsApi {
   set(req: SkillSet): Promise<SkillsList>
   /** K17: shows the item's `writesTo` in Finder (its folder when the file does not exist). */
   reveal(ref: SkillRef): Promise<void>
+  /** K26: the whole file of a listed personal or project item, header included. */
+  read(ref: SkillFileRef): Promise<string>
+  /** K19/K20: saves the file unless it changed underneath; a conflict or a broken header is an answer, not a throw. */
+  save(req: SkillSave): Promise<SkillSaved>
+  /** K21: a new `skills/<name>/SKILL.md` with an empty description; answers the new list. */
+  create(req: SkillCreate): Promise<SkillsList>
 }
 
 export interface AtrilApi {

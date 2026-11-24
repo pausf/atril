@@ -111,6 +111,6 @@ K19–K21 con archivos reales; forzar rojo K19 quitando la comparación con `bas
 
 ## Checklist
 
-- [ ] Main: `readSkillFile`, `saveSkill` y `createSkill` con sus guardas, IPC y preload · Closes: K19, K20, K21, K26
+- [x] Main: `readSkillFile`, `saveSkill` y `createSkill` con sus guardas, IPC y preload · Closes: K19, K20, K21, K26
 - [ ] «Editar» en el detalle, guardar, conflicto, cabecera rota y salir con cambios · waits on box 1 · Closes: K22, K23, K24
 - [ ] «Nueva skill», textos en inglés, foto y bocetos · waits on box 2 · Closes: K25

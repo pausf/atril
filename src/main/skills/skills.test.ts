@@ -1,9 +1,10 @@
-import { existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
+import { existsSync, lstatSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import type { SkillItem } from '../../preload/api'
 import { claudeDir } from '../paths'
+import { createSkill, readSkillFile, saveSkill } from './edit'
 import { listSkills } from './read'
 import { revealFile, setSkill } from './write'
 
@@ -340,3 +341,161 @@ describe('skills write', () => {
     await refuses({ plugin: 'estilo@acme', enabled: false, repoId: 'shop-web' }, /settings\.json/)
   })
 })
+
+describe('skills edit', () => {
+  const R = 'shop-web'
+  const pathOf = async (repo: string, libretto: string, origin: string, name: string, kind = 'skill'): Promise<string> => {
+    const { items } = await listSkills(R, repos(repo), libretto)
+    return find(items, origin, name, kind)!.path
+  }
+
+  it('read gives the whole file of a listed item', async () => {
+    const { claude, repo, libretto } = seed()
+    const r = repos(repo)
+    const personal = await pathOf(repo, libretto, 'personal', 'revisar-cambios')
+    expect(await readSkillFile({ path: personal }, r, libretto)).toBe(readFileSync(join(claude, 'skills/revisar-cambios/SKILL.md'), 'utf8'))
+    expect(await readSkillFile({ path: personal }, r, libretto)).toContain('name: revisar-cambios')
+    const project = await pathOf(repo, libretto, 'project', 'escribir-docs')
+    expect(await readSkillFile({ path: project, repoId: R }, r, libretto)).toBe(readFileSync(join(repo, '.claude/skills/escribir-docs/SKILL.md'), 'utf8'))
+    const cmd = await pathOf(repo, libretto, 'project', 'probar', 'command')
+    expect(await readSkillFile({ path: cmd, repoId: R }, r, libretto)).toBe('Sin cabecera: ejecuta los tests.')
+  })
+
+  it('save writes the item\'s file unless it changed underneath', async () => {
+    const { claude, repo, libretto } = seed()
+    const r = repos(repo)
+    const file = join(claude, 'skills/revisar-cambios/SKILL.md')
+    const path = await pathOf(repo, libretto, 'personal', 'revisar-cambios')
+    const base = readFileSync(file, 'utf8')
+    const good = '---\nname: renombrada\ndescription: Nueva\n---\nCuerpo nuevo\n'
+
+    // Changed outside: conflict first, even when the text is also broken; nothing is written.
+    writeFileSync(file, base + 'fuera\n')
+    expect(await saveSkill({ path, base, text: 'sin cabecera' }, r, libretto)).toEqual({ conflict: true, disk: base + 'fuera\n' })
+    expect(readFileSync(file, 'utf8')).toBe(base + 'fuera\n')
+    // force writes over it.
+    const forced = await saveSkill({ path, base, text: good, force: true }, r, libretto)
+    expect(readFileSync(file, 'utf8')).toBe(good)
+    expect(forced).toHaveProperty('list')
+    expect(find((forced as { list: { items: SkillItem[] } }).list.items, 'personal', 'renombrada')?.path).toBe(path)
+
+    // Broken or missing header: answered, not written, until allowBroken.
+    for (const bad of ['sin cabecera\n', '---\nname: x\nsin cierre\n', '---\nnombre sin dos puntos\n---\nx']) {
+      expect(await saveSkill({ path, base: good, text: bad }, r, libretto)).toEqual({ brokenHeader: true })
+      expect(readFileSync(file, 'utf8')).toBe(good)
+    }
+    const odd = '---\nname: x\nsin cierre\n'
+    expect(await saveSkill({ path, base: good, text: odd, allowBroken: true }, r, libretto)).toHaveProperty('list')
+    expect(readFileSync(file, 'utf8')).toBe(odd)
+    expect(existsSync(`${file}.tmp`)).toBe(false)
+
+    // A project item, with its repo.
+    const pp = await pathOf(repo, libretto, 'project', 'escribir-docs')
+    const pfile = join(repo, '.claude/skills/escribir-docs/SKILL.md')
+    const pbase = readFileSync(pfile, 'utf8')
+    await saveSkill({ path: pp, repoId: R, base: pbase, text: good }, r, libretto)
+    expect(readFileSync(pfile, 'utf8')).toBe(good)
+
+    // A linked SKILL.md is written through and stays a link.
+    const real = put(tmp(), 'dotfiles/SKILL.md', skill('description: Enlazada'))
+    mkdirSync(join(claude, 'skills/enlazada'), { recursive: true })
+    symlinkSync(real, join(claude, 'skills/enlazada/SKILL.md'))
+    const lp = await pathOf(repo, libretto, 'personal', 'enlazada')
+    await saveSkill({ path: lp, base: readFileSync(real, 'utf8'), text: good }, r, libretto)
+    expect(lstatSync(join(claude, 'skills/enlazada/SKILL.md')).isSymbolicLink()).toBe(true)
+    expect(readFileSync(real, 'utf8')).toBe(good)
+  })
+
+  it('save refuses outside its folders and leaves files alone', async () => {
+    const { claude, repo, libretto, plugin } = seed()
+    const r = repos(repo)
+    const outside = put(tmp(), 'otro/SKILL.md', skill('description: ajena'))
+    put(claude, 'skills/grande/SKILL.md', skill('description: grande', 'x'.repeat(300 * 1024)))
+    const files = [
+      join(claude, 'skills/revisar-cambios/SKILL.md'),
+      join(claude, 'skills/grande/SKILL.md'),
+      join(repo, '.claude/skills/escribir-docs/SKILL.md'),
+      join(plugin, 'skills/formatear/SKILL.md'),
+      join(libretto, 'skills/evidence/SKILL.md'),
+      outside
+    ]
+    const snap = (): string => files.map((f) => readFileSync(f, 'utf8')).join('|')
+    const before = snap()
+    const good = skill('description: x')
+    const personal = await pathOf(repo, libretto, 'personal', 'revisar-cambios')
+    const project = await pathOf(repo, libretto, 'project', 'escribir-docs')
+    const bad: [Parameters<typeof saveSkill>[0], RegExp][] = [
+      [{ path: files[3]!, base: '', text: good }, /./],
+      [{ path: files[4]!, base: '', text: good }, /./],
+      [{ path: outside, base: '', text: good }, /./],
+      [{ path: join(claude, 'skills/../settings.json'), base: '', text: good }, /./],
+      [{ path: join(claude, 'skills/nueva/SKILL.md'), base: '', text: good }, /./],
+      [{ path: project, base: '', text: good }, /./], // no repoId: not listed
+      [{ path: project, repoId: 'otro', base: '', text: good }, /./],
+      [{ path: personal, base: readFileSync(personal, 'utf8'), text: 'x'.repeat(256 * 1024 + 1) }, /256/],
+      [{ path: 3 as never, base: '', text: good }, /./]
+    ]
+    for (const [req, why] of bad) {
+      await expect(saveSkill(req, r, libretto)).rejects.toThrow(why)
+      expect(snap()).toBe(before)
+    }
+    const reads = [{ path: files[3]! }, { path: outside }, { path: project }, { path: join(claude, 'skills/grande/SKILL.md') }]
+    for (const req of reads) await expect(readSkillFile(req, r, libretto)).rejects.toThrow()
+    await expect(readSkillFile({ path: join(claude, 'skills/grande/SKILL.md') }, r, libretto)).rejects.toThrow(/demasiado grande/)
+    expect(snap()).toBe(before)
+  })
+
+  it('create makes a new skill and refuses a bad or taken name', async () => {
+    const { claude, repo, libretto } = seed()
+    const r = repos(repo)
+    const body = (n: string): string => `---\nname: ${n}\ndescription: \n---\n\n`
+    const made = await createSkill({ origin: 'personal', name: 'nueva-1' }, r, libretto)
+    expect(readFileSync(join(claude, 'skills/nueva-1/SKILL.md'), 'utf8')).toBe(body('nueva-1'))
+    expect(find(made.items, 'personal', 'nueva-1')).toBeTruthy()
+    const proj = await createSkill({ origin: 'project', repoId: R, name: 'del-repo' }, r, libretto)
+    expect(readFileSync(join(repo, '.claude/skills/del-repo/SKILL.md'), 'utf8')).toBe(body('del-repo'))
+    expect(find(proj.items, 'project', 'del-repo')).toBeTruthy()
+    // The same name in the other origin is fine.
+    await createSkill({ origin: 'project', repoId: R, name: 'revisar-cambios' }, r, libretto)
+    expect(existsSync(join(repo, '.claude/skills/revisar-cambios/SKILL.md'))).toBe(true)
+
+    const tree = (): string => fd(claude) + fd(repo)
+    const before = tree()
+    put(claude, 'skills/carpeta-sola/notas.txt', 'x')
+    const withFolder = tree()
+    const refuses = async (req: Parameters<typeof createSkill>[0]): Promise<void> => {
+      const was = tree()
+      await expect(createSkill(req, r, libretto)).rejects.toThrow(/./)
+      expect(tree()).toBe(was)
+    }
+    for (const name of ['', 'Mayus', '1x', 'a_b', '-a', 'a b', 'a/b', '..', 'a'.repeat(65)]) await refuses({ origin: 'personal', name })
+    await refuses({ origin: 'personal', name: 'revisar-cambios' })
+    await refuses({ origin: 'project', repoId: R, name: 'escribir-docs' })
+    await refuses({ origin: 'personal', name: 'carpeta-sola' })
+    await refuses({ origin: 'project', name: 'sin-repo' })
+    await refuses({ origin: 'project', repoId: 'otro', name: 'sin-repo' })
+    await refuses({ origin: 'plugin' as never, name: 'x' })
+    expect(tree()).toBe(withFolder)
+    expect(before).not.toBe(withFolder)
+    // A first skill makes the folders.
+    const fresh = tmp()
+    process.env['ATRIL_CLAUDE_DIR'] = join(fresh, 'nuevo-claude')
+    await createSkill({ origin: 'personal', name: 'primera' }, r, libretto)
+    expect(existsSync(join(fresh, 'nuevo-claude/skills/primera/SKILL.md'))).toBe(true)
+    expect(lstatSync(join(fresh, 'nuevo-claude/skills/primera')).isDirectory()).toBe(true)
+  })
+})
+
+/** Every path under a folder with its size, to prove a refusal wrote nothing. */
+function fd(root: string): string {
+  const out: string[] = []
+  const walk = (d: string): void => {
+    for (const e of readdirSync(d, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) {
+      const p = join(d, e.name)
+      if (e.isDirectory()) walk(p)
+      else out.push(`${p}:${readFileSync(p, 'utf8').length}`)
+    }
+  }
+  walk(root)
+  return out.join('\n')
+}
