@@ -60,7 +60,7 @@ export async function createSkill(req: SkillCreate, repos: () => Promise<RepoLis
     root = join(repoDir, '.claude')
   }
   const { items } = await listSkills(repoId, repos, libretto)
-  if (items.some((i) => i.origin === req.origin && i.name === req.name)) throw new Error(t('Ya hay una skill con ese nombre.'))
+  if (items.some((i) => i.origin === req.origin && i.kind === 'skill' && i.name === req.name)) throw new Error(t('Ya hay una skill con ese nombre.'))
   const dir = join(root, 'skills', req.name)
   await mkdir(dirname(dir), { recursive: true })
   try {

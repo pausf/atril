@@ -443,3 +443,9 @@ Atomic write (`tmp` + `rename`) onto a symlinked settings file replaces the link
 
 ## 2026-11-23 · skills-toggle · 6→7
 `revealFile` mapped any unknown origin to `personal`, so an `atril` ref revealed the user's settings although K12 gives it no `writesTo`. Map only the origins the contract names, refuse the rest. Fixed.
+
+## 2026-11-24 · skills-editor · 6→7
+A guard that clears the dirty flag must also end the state that was dirty: «Nueva skill» discarded the changes but left the editor open with the text, so later exits no longer asked and the text was lost. When `next()` does not unmount the editor, discarding closes it. Fixed and forced red.
+
+## 2026-11-24 · skills-editor · 6→7
+Creating a skill was refused when only a command had that name, though K21 names skills; a check over a list keyed by name filters by every field the criterion names (`kind`). Fixed.

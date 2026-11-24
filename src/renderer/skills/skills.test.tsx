@@ -538,6 +538,8 @@ describe('skills editor', () => {
     await stay()
     await user.selectOptions(within(s).getByRole('combobox', { name: 'Repo del proyecto' }), 'cms')
     await stay()
+    await user.click(within(within(s).getByRole('group', { name: /^Personal/ })).getByRole('button', { name: 'Nueva skill' }))
+    await stay()
     expect((within(s).getByRole('combobox', { name: 'Repo del proyecto' }) as HTMLSelectElement).value).toBe('shop-web')
     // Only «Descartar cambios» leaves, and the text is gone for good.
     await user.click(within(d()).getByRole('button', { name: 'Descartar' }))
@@ -546,6 +548,16 @@ describe('skills editor', () => {
     await user.click(within(d()).getByRole('button', { name: 'Editar' }))
     expect(box('revisar-cambios').value).toBe(FILE)
     expect(d().textContent).not.toContain('Tienes cambios sin guardar de antes.')
+
+    // Discarding for «Nueva skill» closes the editor too: no editor left holding text nobody guards.
+    await user.type(box('revisar-cambios'), 'z')
+    await user.click(within(within(s).getByRole('group', { name: /^Personal/ })).getByRole('button', { name: 'Nueva skill' }))
+    await user.click(within(dialog()).getByRole('button', { name: 'Descartar cambios' }))
+    expect(screen.queryByRole('complementary')).toBeNull()
+    await user.click(within(dialog()).getByRole('button', { name: 'Cancelar' }))
+    await user.click(within(s).getByRole('button', { name: /^\/revisar-cambios/ }))
+    await user.click(within(d()).getByRole('button', { name: 'Editar' }))
+    expect(box('revisar-cambios').value).toBe(FILE)
 
     // Leaving the screen keeps the text in memory; the editor brings it back.
     await user.type(box('revisar-cambios'), 'y')

@@ -171,7 +171,7 @@ export function Skills() {
     </ul>
   )
   const newButton = (origin: 'personal' | 'project') => (
-    <button type="button" className="btn" onClick={() => guard(() => setCreating(origin))}>
+    <button type="button" className="btn" onClick={() => guard(() => { setOpen(null); setCreating(origin) })}>
       {t('Nueva skill')}
     </button>
   )
