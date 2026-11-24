@@ -686,5 +686,121 @@ describe('skills editor', () => {
     await user.keyboard('{Escape}')
     expect(screen.queryByRole('dialog')).toBeNull()
   })
+  it('update and remove a plugin from its bar', async () => {
+    const user = userEvent.setup()
+    const items = [
+      item('formatear', 'plugin', { plugin: 'estilo@acme', description: 'Formatea' }),
+      item('changelog', 'plugin', { plugin: 'release@acme', description: 'Changelog' }),
+      item('ajeno', 'plugin', { plugin: 'ajeno@acme', description: 'De otro repo' }),
+      item('evidence', 'atril', { plugin: 'libretto', description: 'Nada es cierto' })
+    ]
+    const catalog = {
+      installed: [
+        { pluginId: 'estilo@acme', scope: 'user' },
+        { pluginId: 'release@acme', scope: 'local', projectPath: '/r/shop-web' },
+        { pluginId: 'ajeno@acme', scope: 'local', projectPath: '/r/cms' }
+      ],
+      available: []
+    }
+    const plugin = vi.fn(async () => ({ list: list(items) }))
+    mockApi({ repos: [repo('shop-web'), repo('cms')], skills: { 'shop-web': list(items), cms: list([]) } }, undefined, { skills: { catalog: vi.fn(async () => ({ catalog })), plugin } })
+    render(createElement(App))
+    const s = await open()
+    expect(window.atril.skills.catalog).toHaveBeenCalledWith('shop-web')
+    const bar = async (name: string): Promise<HTMLElement> => within(s).findByRole('group', { name })
+    const estilo = await bar('estilo@acme')
+    await within(estilo).findByRole('button', { name: 'Actualizar' })
+    const release = await bar('release@acme')
+    const ajeno = await bar('ajeno@acme')
+    expect(within(ajeno).queryByRole('button', { name: 'Actualizar' })).toBeNull()
+    expect(within(ajeno).queryByRole('button', { name: 'Quitar' })).toBeNull()
+    expect(ajeno.textContent).toContain('Instalado en otro ámbito: se gestiona fuera de Atril.')
+    expect(within(within(s).getByRole('group', { name: 'Atril' })).queryByRole('button', { name: /Actualizar|Quitar/ })).toBeNull()
+
+    // «Actualizar» acts on the install the screen can see: user, or local for this repo.
+    await user.click(within(estilo).getByRole('button', { name: 'Actualizar' }))
+    expect(plugin).toHaveBeenLastCalledWith({ action: 'update', plugin: 'estilo@acme', scope: 'user', repoId: 'shop-web' })
+    expect(await screen.findByText('Hecho.')).toBeTruthy()
+    await user.click(within(release).getByRole('button', { name: 'Actualizar' }))
+    expect(plugin).toHaveBeenLastCalledWith({ action: 'update', plugin: 'release@acme', scope: 'local', repoId: 'shop-web' })
+
+    // «Quitar» asks first; «Cancelar» runs nothing.
+    plugin.mockClear()
+    await user.click(within(estilo).getByRole('button', { name: 'Quitar' }))
+    const dlg = screen.getByRole('dialog', { name: 'Quitar plugin' })
+    expect(dlg.textContent).toContain('¿Quitar estilo@acme? Sus skills dejan de cargarse.')
+    await user.click(within(dlg).getByRole('button', { name: 'Cancelar' }))
+    expect(screen.queryByRole('dialog')).toBeNull()
+    expect(plugin).not.toHaveBeenCalled()
+    await user.click(within(release).getByRole('button', { name: 'Quitar' }))
+    await user.click(within(screen.getByRole('dialog', { name: 'Quitar plugin' })).getByRole('button', { name: 'Quitar' }))
+    expect(plugin).toHaveBeenCalledTimes(1)
+    expect(plugin).toHaveBeenCalledWith({ action: 'uninstall', plugin: 'release@acme', scope: 'local', repoId: 'shop-web' })
+    expect(screen.queryByRole('dialog')).toBeNull()
+    expect(await screen.findByText('Hecho.')).toBeTruthy()
+  })
+
+  it('a failed plugin action offers terminal', async () => {
+    const user = userEvent.setup()
+    const items = [item('formatear', 'plugin', { plugin: 'estilo@acme', description: 'Formatea' })]
+    const catalog = { installed: [{ pluginId: 'estilo@acme', scope: 'user' }], available: [{ pluginId: 'otro@acme', name: 'otro', marketplace: 'acme' }] }
+    const plugin = vi.fn()
+    const marketplace = vi.fn()
+    const cat = vi.fn(async () => ({ catalog }))
+    const pluginTerminal = vi.fn(async () => ({ ok: true as const }))
+    mockApi({ repos: [repo('shop-web')], skills: { 'shop-web': list(items) } }, undefined, { skills: { catalog: cat, plugin, marketplace, pluginTerminal } })
+    const install = vi.spyOn(window.atril, 'installTool')
+    render(createElement(App))
+    const s = await open()
+    const bar = await within(s).findByRole('group', { name: 'estilo@acme' })
+    await within(bar).findByRole('button', { name: 'Actualizar' })
+
+    // A failure: what happened, the CLI's message folded, and the same command in Terminal.
+    plugin.mockResolvedValueOnce({ error: 'Este plugin pide aceptar un comando', code: 'failed' })
+    await user.click(within(bar).getByRole('button', { name: 'Actualizar' }))
+    const problem = await within(s).findByRole('alert')
+    expect(problem.textContent).toContain('No he podido completar la operación del plugin.')
+    expect(problem.textContent).toContain('Este plugin pide aceptar un comando')
+    await user.click(within(problem).getByRole('button', { name: 'Hacerlo en Terminal' }))
+    expect(pluginTerminal).toHaveBeenCalledWith({ action: 'update', plugin: 'estilo@acme', scope: 'user', repoId: 'shop-web' })
+
+    // `missing`: the doctor's fix for claude, no Terminal button.
+    plugin.mockResolvedValueOnce({ error: 'x', code: 'missing' })
+    await user.click(within(bar).getByRole('button', { name: 'Actualizar' }))
+    const missing = await within(s).findByRole('alert')
+    expect(missing.textContent).toContain('No encuentro Claude Code en este Mac.')
+    expect(within(missing).queryByRole('button', { name: 'Hacerlo en Terminal' })).toBeNull()
+    await user.click(within(missing).getByRole('button', { name: 'Instalar Claude Code' }))
+    expect(install).toHaveBeenCalledWith('claude')
+
+    // A marketplace that fails to add shows the problem on the screen, without Terminal.
+    marketplace.mockResolvedValueOnce({ error: 'No es un marketplace', code: 'failed' })
+    await user.click(within(s).getByRole('button', { name: 'Añadir plugin' }))
+    const dlg = await screen.findByRole('dialog', { name: 'Añadir plugin' })
+    await user.type(within(dlg).getByRole('textbox', { name: 'owner/repo o URL' }), 'acme/mal')
+    await user.click(within(dlg).getByRole('button', { name: 'Añadir' }))
+    const added = await within(s).findByRole('alert')
+    expect(added.textContent).toContain('No he podido completar la operación del plugin.')
+    expect(added.textContent).toContain('No es un marketplace')
+    expect(within(added).queryByRole('button', { name: 'Hacerlo en Terminal' })).toBeNull()
+    expect(screen.queryByRole('dialog')).toBeNull()
+
+    // A catalog that cannot be read: its own problem in the dialog, «Volver a intentar» loads it again.
+    cat.mockResolvedValueOnce({ error: 'boom', code: 'failed' } as never)
+    await user.click(within(s).getByRole('button', { name: 'Añadir plugin' }))
+    const dlg2 = await screen.findByRole('dialog', { name: 'Añadir plugin' })
+    const bad = await within(dlg2).findByRole('alert')
+    expect(bad.textContent).toContain('No he podido leer los marketplaces.')
+    await user.click(within(bad).getByRole('button', { name: 'Volver a intentar' }))
+    expect(await within(dlg2).findByText('otro')).toBeTruthy()
+    expect(within(dlg2).queryByRole('alert')).toBeNull()
+    await user.keyboard('{Escape}')
+
+    // …or Claude Code missing there.
+    cat.mockResolvedValueOnce({ error: 'x', code: 'missing' } as never)
+    await user.click(within(s).getByRole('button', { name: 'Añadir plugin' }))
+    const dlg3 = await screen.findByRole('dialog', { name: 'Añadir plugin' })
+    expect((await within(dlg3).findByRole('alert')).textContent).toContain('No encuentro Claude Code en este Mac.')
+  })
 })
 

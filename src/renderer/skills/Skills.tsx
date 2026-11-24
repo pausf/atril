@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { PluginCatalogResult, PluginFailure, SkillItem, SkillRef, SkillSet, SkillsList, SkillState } from '../../preload/api'
+import type { PluginCatalog, PluginCatalogResult, PluginFailure, PluginRequest, SkillItem, SkillRef, SkillSet, SkillsList, SkillState } from '../../preload/api'
 import { Problem } from '../components/Problem'
 import { useT } from '../ui'
 import { PluginAddDialog } from './PluginAddDialog'
+import { PluginProblem } from './PluginProblem'
+import { PluginRemoveDialog } from './PluginRemoveDialog'
 import { SkillCard } from './SkillCard'
 import { dropDraft, SkillDetail } from './SkillDetail'
 import { SkillLeaveDialog } from './SkillLeaveDialog'
@@ -37,7 +39,11 @@ export function Skills() {
   const [pluginBusy, setPluginBusy] = useState(false)
   const [adding, setAdding] = useState(false)
   const [pluginNote, setPluginNote] = useState<string | null>(null)
-  const [pluginFail, setPluginFail] = useState<PluginFailure | null>(null)
+  const [pluginFail, setPluginFail] = useState<(PluginFailure & { req?: PluginRequest }) | null>(null)
+  const [paths, setPaths] = useState<Record<string, string>>({})
+  // K33: what the CLI says is installed; null until it answers.
+  const [installed, setInstalled] = useState<PluginCatalog['installed'] | null>(null)
+  const [removing, setRemoving] = useState<{ plugin: string; scope: 'user' | 'local' } | null>(null)
   const [consent, setConsent] = useState(false)
   const [saving, setSaving] = useState(false)
   // K24: set by the detail while its editor holds unsaved text; `leave` is the exit waiting for an answer.
@@ -57,11 +63,25 @@ export function Skills() {
       (l) => {
         const ids = Array.isArray(l) ? l.map((r) => r.id) : null
         setRepos(ids)
+        if (Array.isArray(l)) setPaths(Object.fromEntries(l.map((r) => [r.id, r.path])))
         setRepo(ids?.[0])
       },
       () => setRepos(null)
     )
   }, [])
+
+  const loadCatalog = useCallback(() => {
+    if (repos === undefined) return
+    const forRepo = repo
+    void window.atril.skills.catalog(repo).then(
+      (r) => forRepo === repoNow.current && 'catalog' in r && setInstalled(r.catalog.installed),
+      () => undefined
+    )
+  }, [repos, repo])
+  useEffect(() => {
+    setInstalled(null)
+    loadCatalog()
+  }, [loadCatalog])
 
   const load = useCallback(() => {
     if (repos === undefined) return
@@ -105,7 +125,7 @@ export function Skills() {
   const repoId = repo || undefined
 
   /** K32: one plugin operation at a time; a reply for a repo no longer picked is dropped (K11/K18). */
-  const pluginOp = async <T extends { list: SkillsList } | PluginCatalogResult>(work: () => Promise<T | PluginFailure>): Promise<T | undefined> => {
+  const pluginOp = async <T extends { list: SkillsList } | PluginCatalogResult>(work: () => Promise<T | PluginFailure>, req?: PluginRequest): Promise<T | undefined> => {
     const forRepo = repoNow.current
     setPluginBusy(true)
     setPluginFail(null)
@@ -114,7 +134,7 @@ export function Skills() {
       const r = await work()
       if (forRepo !== repoNow.current) return undefined
       if ('error' in r) {
-        setPluginFail(r)
+        setPluginFail({ ...r, req })
         setAdding(false)
         return undefined
       }
@@ -123,12 +143,24 @@ export function Skills() {
       setPluginBusy(false)
     }
   }
-  const installPlugin = async (plugin: string, scope: 'user' | 'local'): Promise<void> => {
-    const r = await pluginOp(() => window.atril.skills.plugin({ action: 'install', plugin, scope, repoId }))
+  const runPlugin = async (action: PluginRequest['action'], plugin: string, scope: 'user' | 'local'): Promise<void> => {
+    const req = { action, plugin, scope, repoId }
+    const r = await pluginOp(() => window.atril.skills.plugin(req), req)
     if (!r) return
     setData(r.list)
     setAdding(false)
-    setPluginNote(t('Instalado. Las sesiones nuevas de Claude Code ya lo cargan.'))
+    setPluginNote(action === 'install' ? t('Instalado. Las sesiones nuevas de Claude Code ya lo cargan.') : t('Hecho.'))
+    loadCatalog()
+  }
+  const inTerminal = async (req: PluginRequest): Promise<void> => {
+    const r = await window.atril.skills.pluginTerminal(req)
+    if ('error' in r) setPluginFail({ error: r.error, code: 'failed' })
+  }
+  /** K33: the install a bar can act on: the user one, or the local one of the picked repo. */
+  const scopeOf = (plugin: string): 'user' | 'local' | null => {
+    const mine = (installed ?? []).filter((i) => i.pluginId === plugin)
+    if (mine.some((i) => i.scope === 'user')) return 'user'
+    return mine.some((i) => i.scope === 'local' && i.projectPath === paths[repo ?? '']) ? 'local' : null
   }
   // K16: the first write of all asks; `consent` comes from Atril's state.
   const ask = (req: SkillSet, ref: SkillRef, file: string | undefined, key: string, value: string): void => {
@@ -140,11 +172,12 @@ export function Skills() {
   const setPlugin = (plugin: string, enabled: boolean, file?: string): void =>
     ask({ plugin, enabled, repoId }, { origin: 'plugin', name: '', plugin, repoId }, file, `enabledPlugins.${plugin}`, String(enabled))
 
-  // ponytail: dev-only, ATRIL_SNAPSHOT_VIEW=skills-estado opens the first personal skill's detail, skills-editor the same in «Editar», for a photo.
+  // ponytail: dev-only, ATRIL_SNAPSHOT_VIEW=skills-estado opens the first personal skill's detail, skills-editor the same in «Editar», skills-plugins opens «Añadir plugin», for a photo.
   useEffect(() => {
     if (!data) return
     void window.atril.snapshotView().then((v) => {
       if (v === 'skills-estado') setOpen((prev) => prev ?? data.items.find((i) => i.origin === 'personal' && !i.lockedBy) ?? null)
+      if (v === 'skills-plugins') setAdding(true)
       if (v === 'skills-editor') {
         setAutoEdit(true)
         setOpen((prev) => prev ?? data.items.find((i) => i.origin === 'personal') ?? null)
@@ -336,7 +369,13 @@ export function Skills() {
                 </p>
               )}
               {pluginFail && (
-                <Problem what={t('No he podido completar la operación del plugin.')} onClose={() => setPluginFail(null)} detail={pluginFail.error} />
+                <PluginProblem
+                  what={t('No he podido completar la operación del plugin.')}
+                  failure={pluginFail}
+                  fix={pluginFail.req ? t('Hacerlo en Terminal') : undefined}
+                  onFix={() => pluginFail.req && void inTerminal(pluginFail.req)}
+                  onClose={() => setPluginFail(null)}
+                />
               )}
               <button type="button" className="btn" disabled={pluginBusy} onClick={() => setAdding(true)}>
                 {t('Añadir plugin')}
@@ -347,12 +386,26 @@ export function Skills() {
                 if (narrowed && vis.length === 0) return null
                 const on = all[0]?.enabled !== false
                 const lock = all[0]?.lockedBy
+                const scope = scopeOf(p)
                 return (
-                  <div key={p} className="skp">
+                  <div key={p} className="skp" role="group" aria-label={p}>
                     <p className="skp-bar">
                       <b>{p.split('@')[0]}</b> {t('{plugin} · {n} skills · {state}', { plugin: p, n: all.length, state: on ? t('activo') : t('apagado entero') })}
                       <button type="button" role="switch" className="sw" aria-checked={on} aria-label={t('Activo')} aria-busy={busy} disabled={busy || pluginBusy || lock !== undefined} onClick={() => setPlugin(p, !on, all[0]?.writesTo)} />
                       {lock && <span className="where">{t('Lo fija {file}', { file: lock })}</span>}
+                    {installed !== null &&
+                      (scope ? (
+                        <>
+                          <button type="button" className="btn" disabled={pluginBusy} onClick={() => void runPlugin('update', p, scope)}>
+                            {t('Actualizar')}
+                          </button>
+                          <button type="button" className="btn" disabled={pluginBusy} onClick={() => setRemoving({ plugin: p, scope })}>
+                            {t('Quitar')}
+                          </button>
+                        </>
+                      ) : (
+                        <span className="where">{t('Instalado en otro ámbito: se gestiona fuera de Atril.')}</span>
+                      ))}
                     </p>
                     {cardsOf(vis, `g-${p}`)}
                   </div>
@@ -404,9 +457,20 @@ export function Skills() {
         <PluginAddDialog
           repo={repoId}
           busy={pluginBusy}
-          install={(p, scope) => void installPlugin(p, scope)}
+          install={(p, scope) => void runPlugin('install', p, scope)}
           addMarketplace={(source) => pluginOp(() => window.atril.skills.marketplace({ source, repoId }))}
           onNo={() => setAdding(false)}
+        />
+      )}
+      {removing && (
+        <PluginRemoveDialog
+          plugin={removing.plugin}
+          onNo={() => setRemoving(null)}
+          onYes={() => {
+            const r = removing
+            setRemoving(null)
+            void runPlugin('uninstall', r.plugin, r.scope)
+          }}
         />
       )}
       {leave && (

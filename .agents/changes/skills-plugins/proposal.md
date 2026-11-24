@@ -24,6 +24,8 @@ Durable decisions: the three in Prior decisions below
 - Q: (spec-reviewer) ¿Cómo distingue la pantalla los fallos? → A: main no rechaza: contesta `{ list }`/`{ catalog }` o `{ error, code }` con `code` `invalid`, `missing`, `timeout`, `busy` o `failed`; con `missing`, el `Problem` es «No encuentro Claude Code en este Mac.» con el arreglo del doctor para `claude` (`atril:doctor:install`) y sin «Hacerlo en Terminal» (assumed).
 - Q: (spec-reviewer) ¿Terminal con ámbito `user` y sin repo? → A: sin `cd`; con repo, con `cd`; contesta `{ ok: true }` o `{ error }`, como `inTerminal` (assumed).
 - Q: (spec-reviewer) ¿Dos operaciones a la vez en main? → A: main también lo impide: una segunda K28/K29 mientras corre otra contesta `{ error, code: 'busy' }` sin ejecutar nada (assumed: como `refine.ts`).
+- Q: (builder) ¿Archivos fuera del Scope? → A: `bocetos/qa-final.html` (el paso «Plugins desde Atril contra la CLI real», pedido por el encargo) y `src/renderer/App.tsx` (una línea: la vista de foto `skills-plugins`); entran en Scope (assumed).
+- Q: (builder) ¿K27 bloquea con `busy`? → A: solo mientras corre una K28/K29; una lectura de catálogo no bloquea a otra, porque la pantalla y el diálogo lo piden a la vez (la foto lo destapó); un test lo cubre (assumed).
 
 ## Outcomes
 
@@ -31,7 +33,7 @@ Desde Skills la persona ve qué plugins ofrecen sus marketplaces, instala uno pa
 
 ## Scope
 
-**In:** `src/main/skills/plugins.ts` nuevo (catálogo y operaciones por `Runner`), los IPC `atril:skills:catalog`, `atril:skills:plugin`, `atril:skills:marketplace` y `atril:skills:plugin-terminal` en `src/main/index.ts` y `src/preload/{api,index}.ts`, `src/renderer/mockApi.ts`, `src/renderer/skills/` (diálogo «Añadir plugin», botones de la barra de plugin), `src/preload/i18n-en.ts`, estilos con tokens, los tests, `bocetos/novedades.html`, `bocetos/fase1-nucleo.html`, la foto.
+**In:** `src/main/skills/plugins.ts` nuevo (catálogo y operaciones por `Runner`), los IPC `atril:skills:catalog`, `atril:skills:plugin`, `atril:skills:marketplace` y `atril:skills:plugin-terminal` en `src/main/index.ts` y `src/preload/{api,index}.ts`, `src/renderer/mockApi.ts`, `src/renderer/skills/` (diálogo «Añadir plugin», botones de la barra de plugin), `src/preload/i18n-en.ts`, estilos con tokens, los tests, `bocetos/novedades.html`, `bocetos/fase1-nucleo.html`, `bocetos/qa-final.html`, `src/renderer/App.tsx` (solo la vista de foto `skills-plugins`), la foto.
 **Out (nombrado):** lo de «¿Qué queda fuera?» del Decision log; escribir archivos de plugins a mano; leer `known_marketplaces.json`.
 
 ## Constraints
@@ -112,4 +114,4 @@ K27–K31 con `Runner` falso; forzar rojo K28 añadiendo `-y` a los argumentos. 
 
 - [x] Main: catálogo, acciones, marketplace, terminal, con sus guardas, IPC y preload · Closes: K27, K28, K29, K30, K31
 - [x] «Añadir plugin» con catálogo, búsqueda, ámbito y «Añadir marketplace» · waits on box 1 · Closes: K32
-- [ ] «Actualizar» y «Quitar» en la barra, errores con «Hacerlo en Terminal», textos, foto, bocetos y `qa-final.html` · waits on box 2 · Closes: K33, K34
+- [x] «Actualizar» y «Quitar» en la barra, errores con «Hacerlo en Terminal», textos, foto, bocetos y `qa-final.html` · waits on box 2 · Closes: K33, K34

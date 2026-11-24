@@ -67,15 +67,16 @@ export function createPlugins({ run, repos, libretto }: { run: Runner; repos: ()
     return cwd ? { cwd } : { bad: true }
   }
 
-  async function exclusive<T>(work: () => Promise<T>): Promise<T | PluginFailure> {
+  /** `hold` false: a read waits for no one but does not stop others, so two catalog reads can overlap. */
+  async function exclusive<T>(work: () => Promise<T>, hold = true): Promise<T | PluginFailure> {
     if (busy) return { error: t('Ya hay una operación de plugins en marcha.'), code: 'busy' }
-    busy = true
+    if (hold) busy = true
     try {
       return await work()
     } catch {
       return { error: t('Claude Code ha fallado.'), code: 'failed' }
     } finally {
-      busy = false
+      if (hold) busy = false
     }
   }
 
@@ -101,7 +102,7 @@ export function createPlugins({ run, repos, libretto }: { run: Runner; repos: ()
       exclusive(async () => {
         const { cwd, bad } = await cwdOf(repoId)
         return bad ? invalid() : readCatalog(cwd)
-      }),
+      }, false),
 
     action: (req: PluginRequest): Promise<PluginActionResult> =>
       exclusive(async () => {

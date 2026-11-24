@@ -65,8 +65,9 @@ describe('plugins', () => {
         ]
       }
     })
-    const none = await setup(() => ok(CATALOG)).plugins.catalog()
-    expect('catalog' in none).toBe(true)
+    // Two reads at once (the screen's and the dialog's) both answer.
+    const both = await Promise.all([plugins.catalog(), plugins.catalog('shop-web')])
+    expect(both.every((x) => 'catalog' in x)).toBe(true)
   })
 
   it('plugin actions run the cli with fixed arguments', async () => {

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
-import type { PluginCatalog, PluginCatalogResult } from '../../preload/api'
+import type { PluginCatalog, PluginCatalogResult, PluginFailure } from '../../preload/api'
 import { useT } from '../ui'
+import { PluginProblem } from './PluginProblem'
 
 type Available = PluginCatalog['available'][number]
 
@@ -15,16 +16,23 @@ export function PluginAddDialog({ repo, busy, install, addMarketplace, onNo }: {
   const t = useT()
   const search = useRef<HTMLInputElement>(null)
   const [catalog, setCatalog] = useState<PluginCatalog | null>(null)
+  const [failure, setFailure] = useState<PluginFailure | null>(null)
   const [q, setQ] = useState('')
   const [picked, setPicked] = useState<string | null>(null)
   const [source, setSource] = useState('')
+  const [attempt, setAttempt] = useState(0)
   useEffect(() => {
     let live = true
-    void window.atril.skills.catalog(repo).then((r) => live && 'catalog' in r && setCatalog(r.catalog))
+    setFailure(null)
+    void window.atril.skills.catalog(repo).then((r) => {
+      if (!live) return
+      if ('catalog' in r) setCatalog(r.catalog)
+      else setFailure(r)
+    })
     return () => {
       live = false
     }
-  }, [repo])
+  }, [repo, attempt])
   useEffect(() => search.current?.focus(), [])
   useEffect(() => {
     const key = (e: KeyboardEvent): void => {
@@ -66,6 +74,7 @@ export function PluginAddDialog({ repo, busy, install, addMarketplace, onNo }: {
       <div className="skw skpa" role="dialog" aria-modal="true" aria-label={title}>
         <h2>{title}</h2>
         <input ref={search} type="search" placeholder={t('Buscar plugin')} aria-label={t('Buscar plugin')} value={q} onChange={(e) => setQ(e.target.value)} />
+        {failure && <PluginProblem what={t('No he podido leer los marketplaces.')} failure={failure} fix={t('Volver a intentar')} onFix={() => setAttempt((n) => n + 1)} />}
         {marketplaces.map((m) => (
           <div key={m} role="group" aria-label={m} className="skpa-mk">
             <h3>{m}</h3>
