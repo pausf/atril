@@ -15,6 +15,10 @@ La pantalla Skills, en el raíl, enseña todas las skills y comandos que Claude 
 
 Desde la pantalla Skills la persona apaga, enciende o deja «solo el nombre» de una skill o comando, y apaga o enciende un plugin entero, sin abrir un JSON. Atril escribe solo la clave que cambia, en el archivo personal que de verdad decide, avisa la primera vez, nunca pisa un archivo que no entiende y nunca toca el `settings.json` que se sube al repo.
 
+### Skills: editor (skills-editor, 24 nov 2026)
+
+Desde Skills la persona cambia el texto de una skill o comando suyos, o crea una nueva, sin salir de Atril y sin perder lo que había: lo que cambió fuera no se pisa sin preguntar, una cabecera rota se avisa, y salir con cambios pregunta.
+
 ## Scope boundaries
 
 ## Constraints
@@ -31,6 +35,13 @@ Desde la pantalla Skills la persona apaga, enciende o deja «solo el nombre» de
 - Nunca se reescribe el archivo entero desde la mezcla: se lee ese archivo, se cambia una clave y se guarda; el resto de claves y su orden siguen igual; 2 espacios y salto de línea final.
 - Escritura atómica: `<archivo>.tmp` y `rename`. Carpeta `.claude/` creada si no existe.
 - Ninguna llamada a Claude. Los tests usan `ATRIL_CLAUDE_DIR` y repos temporales; nunca el `~/.claude` real.
+- Textos por `t()` con entrada inglesa; colores por tokens; errores con `Problem`.
+
+### Skills: editor (skills-editor, 24 nov 2026)
+
+- Escritura atómica (`.tmp` + `rename`) a través de `realpath` cuando existe; carpeta creada al crear.
+- Tope de 256 KB al guardar (K9); por encima, no se guarda y se dice.
+- Ninguna llamada a Claude. Tests con `ATRIL_CLAUDE_DIR` y repos temporales.
 - Textos por `t()` con entrada inglesa; colores por tokens; errores con `Problem`.
 
 ## Prior decisions
@@ -100,6 +111,38 @@ Desde la pantalla Skills la persona apaga, enciende o deja «solo el nombre» de
 
 - Q: (builder) ¿Cómo se fotografía el detalle? → A: vista dev-only `ATRIL_SNAPSHOT_VIEW=skills-estado` que abre la primera skill personal; nombrada en Scope (assumed).
 
+### Skills: editor (skills-editor, 24 nov 2026)
+
+- (2026-11-24, skills-editor) Solo se editan skills y comandos personales y de proyecto; los de plugin y Atril son de solo lectura.
+- (2026-11-24, skills-editor) Atril no pisa un archivo que cambió fuera desde que se abrió sin que la persona elija «Guardar el mío encima».
+- (2026-11-24, skills-editor) Main solo lee o escribe la `path` de un elemento personal o de proyecto que él mismo lista, dentro de `claudeDir()` o del `.claude` del repo.
+
+#### Alternatives that lost
+
+| Considered | Why it lost |
+|---|---|
+| Abrir el archivo en el editor del sistema | sale de Atril y no se sabe cuándo termina; Pau quiere todo dentro |
+| CodeMirror/Monaco | dependencia grande para markdown con una cabecera |
+| Comparar por fecha de modificación | un `touch` o un checkout dan falso conflicto; el contenido es exacto |
+| Rechazar una cabecera rota | es el archivo de la persona; puede querer guardarlo a medias |
+
+#### Decision log, answers as given (2026-11-24)
+- Q: ¿Qué se puede editar? → A: el archivo entero (cabecera y cuerpo) de las skills y comandos `personal` y `project`; los de plugin y Atril siguen de solo lectura (assumed: los de plugin los pisa la siguiente actualización del plugin; los de Atril vienen con la app).
+- Q: ¿Cómo? → A: «Editar» en el detalle (K7) cambia el texto por un área de texto monoespaciada con el archivo tal cual; «Guardar» y «Descartar»; ⌘S guarda (assumed: un editor de código con resaltado es una dependencia nueva para un archivo markdown).
+- Q: ¿Y si el archivo cambió en disco desde que se abrió? → A: no se guarda: «Este archivo ha cambiado fuera de Atril.» con «Cargar el de disco» (pierde lo escrito) y «Guardar el mío encima» (assumed: lo compara por contenido, no por fecha).
+- Q: ¿Y una cabecera rota? → A: se guarda igual, porque es el archivo de la persona, pero antes se avisa «La cabecera no se entiende: Claude Code puede ignorar esta skill.» con «Guardar igual» y «Seguir editando» (assumed).
+- Q: ¿Salir con cambios sin guardar? → A: Escape, «Cerrar», abrir otra tarjeta o cambiar de repo preguntan «Tienes cambios sin guardar. ¿Descartarlos?» (assumed: como M43).
+- Q: ¿Crear una nueva? → A: «Nueva skill» en los grupos Personal y Proyecto: un nombre (minúsculas, dígitos y guiones, 1–64, empieza por letra) y «Crear», que escribe `<carpeta>/skills/<nombre>/SKILL.md` con `name` y `description` vacía, y la abre en «Editar»; si ya existe una skill con ese nombre en ese origen, no se crea (assumed).
+- Q: ¿Borrar? → A: fuera de este cambio (assumed: un borrado pide papelera y deshacer; va aparte).
+- Q: (spec-reviewer) ¿Un enlace simbólico que sale fuera? → A: se escribe a través, como en skills-toggle; lo que se comprueba es que la ruta listada (sin resolver) cae dentro de `claudeDir()` o del `.claude` del repo (assumed).
+- Q: (spec-reviewer) ¿Qué es una cabecera rota para avisar? → A: la decide main con el mismo parser de K2: rota, o sin cabecera (`---` en la primera línea); el renderer no parsea (assumed: así no hay dos parsers que se separen y no se mueve `frontmatter.ts`).
+- Q: (spec-reviewer) ¿Salir de la pantalla con cambios? → A: el borrador se guarda en memoria por archivo; al volver y abrir esa skill, el editor sale con él y «Tienes cambios sin guardar de antes.» (assumed: no hace falta frenar el raíl ni ⌘K).
+- Q: (spec-reviewer) ¿De dónde sale el archivo entero? → A: un IPC `atril:skills:read` lo da; un archivo de más de 256 KB no se abre («Es demasiado grande para editarla aquí.») (assumed).
+- Q: (spec-reviewer) ¿Y si cambio `name:` en la cabecera? → A: el elemento se identifica por su `path` (que main comprueba contra la lista), no por el nombre, así que el panel sigue en el mismo archivo con el nombre nuevo (assumed).
+- Q: (spec-reviewer) ¿Bloquear el repo mientras guarda? → A: sí, como K18 (assumed).
+- Q: (builder) ¿La foto del editor? → A: una vista de foto `skills-editor` en `App.tsx` y `Skills.tsx`, como `skills-estado` (assumed: App.tsx cae fuera del Scope escrito, se añade).
+- Q: ¿Cómo sabe main qué archivo? → A: la petición lleva la `path` de un elemento y el `repoId`; main relee la lista y solo acepta una `path` que sea exactamente la de un elemento `personal` o `project` listado (assumed).
+
 ## Task breakdown
 
 ## Verification criteria
@@ -145,3 +188,22 @@ Desde la pantalla Skills la persona apaga, enciende o deja «solo el nombre» de
   Proof: src/renderer/skills/skills.test.tsx the first write asks and can be told not to again
 - **K17** If `atril:skills:set` rejects, then the screen shall show the `Problem` «No he podido cambiar tus ajustes de Claude Code.» with «Ver en Finder» (calls `atril:skills:reveal` with the item, which shows `writesTo` in Finder, or its folder when the file does not exist) and the error in its detail, and the control shall show the state it had. One test holds every clause.
   Proof: src/renderer/skills/skills.test.tsx a failed write says why and keeps the old state
+
+### Skills: editor (skills-editor, 24 nov 2026)
+
+- **K19** When `atril:skills:save` is called with `{ path, repoId?, base, text, force?, allowBroken? }` where `path` is a listed `personal` or `project` item's `path`, main shall answer in this order — if the file no longer equals `base` and `force` is not set, answer `{ conflict: true, disk }` (the file's current text) and write nothing; else if `text`'s header is broken by K2 or missing (first line not `---`) and `allowBroken` is not set, answer `{ brokenHeader: true }` and write nothing; else write `text` to that file (through `realpath`, via `.tmp` and `rename`) and answer `{ list }` with the new list. One test holds every clause.
+  Proof: src/main/skills/skills.test.ts save writes the item's file unless it changed underneath
+- **K20** If `atril:skills:save` or `atril:skills:read` gets a `path` that is not exactly a listed `personal` or `project` item's `path`, or one not under `claudeDir()` or the repo's `.claude` as listed, or (save) a `text` over 256 KB, or (read) a file over 256 KB, then main shall reject saying why and leave every file byte-identical.
+  Proof: src/main/skills/skills.test.ts save refuses outside its folders and leaves files alone
+- **K26** When `atril:skills:read` is called with a listed `personal` or `project` item's `path` and `repoId?`, main shall answer the whole file's text, header included.
+  Proof: src/main/skills/skills.test.ts read gives the whole file of a listed item
+- **K21** When `atril:skills:create` is called with `origin` (`personal` or `project`), `repoId?` and a `name` matching `^[a-z][a-z0-9-]{0,63}$`, main shall create `claudeDir()/skills/<name>/SKILL.md` (personal) or `<repo>/.claude/skills/<name>/SKILL.md` (project) holding `---\nname: <name>\ndescription: \n---\n\n` (`wx`, folders created) and answer the new list; if the name does not match, a skill with that name already exists in that origin or its folder exists, or a `project` create has no known repo, it shall reject and create nothing. One test holds every clause.
+  Proof: src/main/skills/skills.test.ts create makes a new skill and refuses a bad or taken name
+- **K22** When the person opens a `personal` or `project` item's detail, the panel shall offer «Editar», which reads the file (K26) and shows it in a monospaced text area labelled «Texto de {name}» with «Guardar» (also ⌘S) and «Descartar»; «Guardar» shall call `atril:skills:save` and, on `{ list }`, show the item at the same `path` (with its new name if the header changed it) read-only and «Guardado.»; while saving, the repo selector shall be disabled; a `plugin` or `atril` item shall offer no «Editar»; a read rejection shall show «Es demasiado grande para editarla aquí.» or the error and keep the panel read-only. One test holds every clause.
+  Proof: src/renderer/skills/skills.test.tsx edit and save a skill from its detail
+- **K23** When the save answers `{ conflict: true, disk }`, the panel shall say «Este archivo ha cambiado fuera de Atril.» with «Cargar el de disco» (text and `base` become `disk`) and «Guardar el mío encima» (saves again with `force`); when it answers `{ brokenHeader: true }`, it shall ask «La cabecera no se entiende: Claude Code puede ignorar esta skill.» with «Guardar igual» (saves again with `allowBroken`, keeping any `force`) and «Seguir editando»; any rejection shall show the `Problem` «No he podido guardar la skill.» with the error in its detail and keep the text. One test holds every clause.
+  Proof: src/renderer/skills/skills.test.tsx a save that conflicts or has a broken header asks first
+- **K24** While the editor holds text different from `base`, when the person presses Escape, «Cerrar», «Descartar», activates another card or changes repo, the screen shall ask «Tienes cambios sin guardar. ¿Descartarlos?» with «Descartar cambios» and «Seguir editando», and leave the editor only on «Descartar cambios»; with no changes it shall leave without asking; when the person leaves the Skills screen instead, the text shall be kept in memory per `path` and, on opening that item's «Editar» again in the same run, come back with «Tienes cambios sin guardar de antes.». One test holds every clause.
+  Proof: src/renderer/skills/skills.test.tsx leaving with unsaved changes asks first
+- **K25** When the person activates «Nueva skill» in Personal or Proyecto, a dialog shall ask «Nombre» (with the rule «Minúsculas, números y guiones.» shown) and «Crear»; «Crear» shall be disabled while the name does not match K21; on success the new skill's detail shall open in «Editar»; a rejection shall show its reason in the dialog. One test holds every clause.
+  Proof: src/renderer/skills/skills.test.tsx new skill creates and opens it in the editor
