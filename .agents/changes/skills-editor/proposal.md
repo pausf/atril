@@ -50,7 +50,7 @@ Desde Skills la persona cambia el texto de una skill o comando suyos, o crea una
 
 ## Verification criteria
 
-- **K19** When `atril:skills:save` is called with an item (`origin` `personal` or `project`, `kind`, `name`, `repoId?`), the text the editor started from (`base`) and the new `text`, and the file on disk still equals `base`, main shall write `text` to that item's `path` (through `realpath`, via `.tmp` and `rename`) and answer the new list; when the file no longer equals `base` and `force` is not set, it shall reject with `{ conflict: true }` and write nothing; with `force` it shall write. One test holds every clause.
+- **K19** When `atril:skills:save` is called with an item (`origin` `personal` or `project`, `kind`, `name`, `repoId?`), the text the editor started from (`base`) and the new `text`, and the file on disk still equals `base`, main shall write `text` to that item's `path` (through `realpath`, via `.tmp` and `rename`) and answer the new list; when the file no longer equals `base` and `force` is not set, it shall answer `{ conflict: true }` (not reject) and write nothing; with `force` it shall write. One test holds every clause.
   Proof: src/main/skills/skills.test.ts save writes the item's file unless it changed underneath
 - **K20** If the save names a `plugin` or `atril` item, an item not in the list, a `text` over 256 KB, or the item's real path falls outside `claudeDir()` and the repo's `.claude`, then main shall reject saying why and leave every file byte-identical.
   Proof: src/main/skills/skills.test.ts save refuses outside its folders and leaves files alone
@@ -75,7 +75,7 @@ Electron + TS + React 19, vitest (node con carpetas temporales y `ATRIL_CLAUDE_D
 
 ### The approach
 - **Localizar:** `listSkills(repoId)` → el elemento con mismo `origin`, `kind` y `name`; si no hay, rechazo. `real = await realpath(item.path)`; `roots = [realpath(claudeDir())]` más `realpath(<repo>/.claude)` si hay repo; `real` debe empezar por una raíz + separador, salvo que `item.path` (sin resolver) esté dentro y `real` sea un archivo existente (enlace de dotfiles), igual que skills-toggle.
-- **Guardar:** `readFile(real)`; si `!== base` y no `force` → `throw Object.assign(new Error(...), { conflict: true })`; por IPC el renderer recibe el mensaje, así que main rechaza con un mensaje que empieza por `CONFLICT:` y el preload lo traduce a `{ conflict: true }` (o el handler devuelve `{ ok: false, conflict: true }` en lugar de lanzar: se elige devolver, que no depende del texto del error). `Buffer.byteLength(text) > 256 KB` → rechazo.
+- **Guardar:** `readFile(real)`; si `!== base` y no `force` → devuelve `{ conflict: true }` (devolver, no lanzar: un error por IPC llega solo como mensaje); si no, escribe y devuelve la lista. `Buffer.byteLength(text) > 256 KB` → rechazo.
 - **Crear:** regex; carpeta `claudeDir()/skills/<name>` o `<repo>/.claude/skills/<name>`; si existe la carpeta o un elemento con ese nombre en ese origen → rechazo; `mkdir` y `writeFile` con `flag: 'wx'`.
 - **Pantalla:** `editing: { base, text } | null` en `SkillDetail`; `dirty = text !== base`; `guard(next)` pregunta si `dirty` y si no ejecuta `next`, usado por Escape, «Cerrar», «Descartar», otra tarjeta y el selector de repo (este último vive en `Skills.tsx`: el detalle avisa hacia arriba con `onDirty`).
 
