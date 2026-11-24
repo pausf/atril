@@ -452,3 +452,15 @@ Creating a skill was refused when only a command had that name, though K21 names
 
 ## 2026-11-24 · skills-editor · 8
 Second time a test name with `\'` broke its spec-drift citation (also in skills-list). Prettier keeps single quotes with an escaped apostrophe, and spec-drift reads the literal text. Builders write such names in double quotes; landing runs spec-drift before committing, not after.
+
+## 2026-11-24 · skills-plugins · 6→7
+The plugin-name regex allowed a leading `-`, so `-y@x` passed validation and reached the CLI as a positional that could read as a flag; the "bad input" test only failed because of a trailing space. A regex guarding a CLI positional starts with an alphanumeric, and each bad case in the test fails for the reason it names. Fixed in contract and code.
+
+## 2026-11-24 · skills-plugins · 6→7
+Success was "not failed" instead of "`outcome` is `ok`", so exit 0 with `{}` showed «Instalado». A success check names the success value. Fixed with tests.
+
+## 2026-11-24 · skills-plugins · 6→7
+A decision log line said a test covered the catalog read during an action; none did. Fixed: asserted.
+
+## 2026-11-24 · skills-plugins · 6→7
+`undefined === undefined` matched a `local` install without `projectPath` when no repo was picked, offering buttons main would refuse. Comparisons against an optional lookup guard the lookup first. Fixed, forced red.

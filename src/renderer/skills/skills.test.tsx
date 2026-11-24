@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { createElement } from 'react'
-import { act, cleanup, render, screen, within } from '@testing-library/react'
+import { act, cleanup, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { RepoView, SkillItem, SkillsList } from '../../preload/api'
@@ -738,6 +738,17 @@ describe('skills editor', () => {
     expect(plugin).toHaveBeenCalledWith({ action: 'uninstall', plugin: 'release@acme', scope: 'local', repoId: 'shop-web' })
     expect(screen.queryByRole('dialog')).toBeNull()
     expect(await screen.findByText('Hecho.')).toBeTruthy()
+
+    // Without a repo, a `local` install the CLI reports without `projectPath` is not this screen's to manage.
+    cleanup()
+    const suelto = [item('x', 'plugin', { plugin: 'suelto@acme', writesTo: '/h/.claude/settings.json' })]
+    const lone = { installed: [{ pluginId: 'suelto@acme', scope: 'local' }], available: [] }
+    mockApi({ repos: [], skills: { '': list(suelto) } }, undefined, { skills: { catalog: vi.fn(async () => ({ catalog: lone })), plugin } })
+    render(createElement(App))
+    const s3 = await open()
+    const bar3 = await within(s3).findByRole('group', { name: 'suelto@acme' })
+    await waitFor(() => expect(bar3.textContent).toContain('Instalado en otro ámbito: se gestiona fuera de Atril.'))
+    expect(within(bar3).queryByRole('button', { name: 'Quitar' })).toBeNull()
   })
 
   it('a failed plugin action offers terminal', async () => {

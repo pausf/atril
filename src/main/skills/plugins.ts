@@ -6,7 +6,8 @@ import { listSkills, repoDirOf, type RepoList } from './read'
 
 const CLI_MS = 120_000
 const ACTIONS: readonly string[] = ['install', 'uninstall', 'update']
-const PLUGIN = /^[A-Za-z0-9._-]+@[A-Za-z0-9._-]+$/
+// First character alphanumeric: nothing shaped like a flag (`-y@x`) reaches the CLI.
+const PLUGIN = /^[A-Za-z0-9][A-Za-z0-9._-]*@[A-Za-z0-9][A-Za-z0-9._-]*$/
 const invalid = (): PluginFailure => ({ error: t('Petición no válida.'), code: 'invalid' })
 const str = (v: unknown): string | undefined => (typeof v === 'string' && v ? v : undefined)
 const obj = (v: unknown): Record<string, unknown> => (typeof v === 'object' && v !== null && !Array.isArray(v) ? (v as Record<string, unknown>) : {})
@@ -22,12 +23,12 @@ function lastJson(stdout: string): Record<string, unknown> | undefined {
 }
 
 /** K30: the failure a result stands for, or the parsed JSON when the CLI succeeded. */
-function outcome(r: RunResult): PluginFailure | { json: Record<string, unknown> } {
+function outcome(r: RunResult, needOk = true): PluginFailure | { json: Record<string, unknown> } {
   if (r.code === 127) return { error: t('No encuentro Claude Code en este Mac.'), code: 'missing' }
   if (r.code === 124) return { error: t('Claude Code no ha contestado a tiempo.'), code: 'timeout' }
   const json = lastJson(r.stdout)
   const message = str(json?.['message'])
-  if (r.code !== 0 || !json || json['outcome'] === 'failed') return { error: message ?? r.stderr.trim().slice(-300), code: 'failed' }
+  if (r.code !== 0 || !json || json['outcome'] === 'failed' || (needOk && json['outcome'] !== 'ok')) return { error: message ?? r.stderr.trim().slice(-300), code: 'failed' }
   return { json }
 }
 
@@ -81,7 +82,7 @@ export function createPlugins({ run, repos, libretto }: { run: Runner; repos: ()
   }
 
   async function readCatalog(cwd: string | undefined): Promise<PluginCatalogResult> {
-    const o = outcome(await run('claude', ['plugin', 'list', '--available', '--json'], { cwd, timeoutMs: CLI_MS }))
+    const o = outcome(await run('claude', ['plugin', 'list', '--available', '--json'], { cwd, timeoutMs: CLI_MS }), false)
     return 'json' in o ? { catalog: toCatalog(o.json) } : o
   }
 

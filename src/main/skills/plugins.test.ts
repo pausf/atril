@@ -114,13 +114,18 @@ describe('plugins', () => {
     expect(await code({ code: 0, stdout: 'not json\n', stderr: 'boom' })).toEqual({ error: 'boom', code: 'failed' })
     expect(await code(ok({ outcome: 'failed', message: 'Plugin no encontrado' }))).toEqual({ error: 'Plugin no encontrado', code: 'failed' })
     expect(await code({ code: 1, stdout: JSON.stringify({ outcome: 'failed', message: 'pide aceptar' }), stderr: 'x' })).toEqual({ error: 'pide aceptar', code: 'failed' })
+    // Exit 0 is not success unless `outcome` says ok.
+    expect(await code(ok({}))).toMatchObject({ code: 'failed' })
+    expect(await code(ok({ outcome: 'pending' }))).toMatchObject({ code: 'failed' })
 
     // Validation: nothing runs.
     const v = setup(() => ok({ outcome: 'ok' }))
     const bad = [
       { ...req, action: 'configure' },
       { ...req, plugin: 'a b@mk' },
-      { ...req, plugin: '--scope@mk' + ' ' },
+      { ...req, plugin: '--scope@mk' },
+      { ...req, plugin: '-y@x' },
+      { ...req, plugin: 'a@-y' },
       { ...req, plugin: 'sin-marketplace' },
       { ...req, plugin: 'a@mk;rm' },
       { ...req, scope: 'project' },
@@ -137,10 +142,11 @@ describe('plugins', () => {
 
     // One at a time: a second request while one runs answers busy and runs nothing.
     let release: (r: RunResult) => void = () => undefined
-    const b = setup((c) => (c.args[1] === 'install' ? new Promise<RunResult>((res) => (release = res)) : ok(CATALOG)))
+    const b = setup((c) => (c.args[1] === 'install' ? new Promise<RunResult>((res) => (release = res)) : c.args[1] === 'list' ? ok(CATALOG) : ok({ outcome: 'ok' })))
     const first = b.plugins.action(req)
     expect(await b.plugins.action(req)).toMatchObject({ code: 'busy' })
     expect(await b.plugins.marketplace({ source: 'acme/tools' })).toMatchObject({ code: 'busy' })
+    expect(await b.plugins.catalog()).toMatchObject({ code: 'busy' })
     expect(b.calls).toHaveLength(1)
     release(ok({ outcome: 'ok' }))
     expect('list' in (await first)).toBe(true)

@@ -160,7 +160,8 @@ export function Skills() {
   const scopeOf = (plugin: string): 'user' | 'local' | null => {
     const mine = (installed ?? []).filter((i) => i.pluginId === plugin)
     if (mine.some((i) => i.scope === 'user')) return 'user'
-    return mine.some((i) => i.scope === 'local' && i.projectPath === paths[repo ?? '']) ? 'local' : null
+    const here = repo ? paths[repo] : undefined
+    return here && mine.some((i) => i.scope === 'local' && i.projectPath === here) ? 'local' : null
   }
   // K16: the first write of all asks; `consent` comes from Atril's state.
   const ask = (req: SkillSet, ref: SkillRef, file: string | undefined, key: string, value: string): void => {
