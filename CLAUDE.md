@@ -7,6 +7,7 @@ con agentes de Claude Code en tmux, y gestiona MRs de GitHub/GitLab. Remoto PRIV
 ## Dónde lo dejamos (10 nov 2026) — empieza por aquí
 
 Las ramas van apiladas: cada una sale de la anterior y `main` no se ha movido. La última es
+**`skills-plugins`** (24 nov: en Skills, «Añadir plugin» con el catálogo de tus marketplaces, búsqueda e «Instalar» para ti o solo en un repo; «Actualizar» y «Quitar» en cada plugin; «Añadir marketplace»; todo por `claude plugin … --json`, sin `-y` nunca: lo que pida aceptar un comando va a «Hacerlo en Terminal»; sin probar con la CLI real). Antes,
 **`skills-editor`** (24 nov: en Skills, «Editar» en el detalle de las personales y de proyecto —archivo entero, ⌘S, conflicto si cambió fuera, aviso de cabecera rota, salir con cambios pregunta, borrador en memoria— y «Nueva skill»; main solo toca rutas que él lista). Antes,
 **`skills-toggle`** (23 nov: en Skills, «Estado» en el detalle y un interruptor «Activo» por plugin; escribe una sola clave en el archivo personal que decide —`~/.claude/settings.json` o el `settings.local.json` del repo—, nunca el `settings.json` del repo; «Lo fija …» si otro archivo manda; pregunta la primera vez; respeta enlaces simbólicos). Antes,
 **`skills-list`** (20 nov: pantalla «Skills» en el rail y ⌘K: skills, comandos y plugins de Claude Code por origen —Personal, Proyecto, Plugins, Atril— con estado, choques, ~tokens, búsqueda, filtros y detalle; solo lectura, sin gastar cuota). Antes,
