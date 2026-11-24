@@ -3,7 +3,8 @@ import type { SkillItem, SkillRef, SkillSet, SkillsList, SkillState } from '../.
 import { Problem } from '../components/Problem'
 import { useT } from '../ui'
 import { SkillCard } from './SkillCard'
-import { SkillDetail } from './SkillDetail'
+import { dropDraft, SkillDetail } from './SkillDetail'
+import { SkillLeaveDialog } from './SkillLeaveDialog'
 import { SkillWriteDialog } from './SkillWriteDialog'
 
 type Filter = 'all' | 'on' | 'off'
@@ -32,6 +33,12 @@ export function Skills() {
   const [note, setNote] = useState<string | null>(null)
   const [fail, setFail] = useState<{ error: string; ref: SkillRef } | null>(null)
   const [consent, setConsent] = useState(false)
+  const [saving, setSaving] = useState(false)
+  // K24: set by the detail while its editor holds unsaved text; `leave` is the exit waiting for an answer.
+  const dirty = useRef(false)
+  const [leave, setLeave] = useState<(() => void) | null>(null)
+  const repoNow = useRef<string | undefined>(undefined)
+  repoNow.current = repo
   const [pending, setPending] = useState<{ req: SkillSet; ref: SkillRef; file: string; key: string; value: string } | null>(null)
   const opener = useRef<HTMLButtonElement | null>(null)
   const search = useRef<HTMLInputElement>(null)
@@ -106,6 +113,19 @@ export function Skills() {
     })
   }, [data])
 
+  const guard = useCallback((next: () => void): void => {
+    if (dirty.current) setLeave(() => next)
+    else next()
+  }, [])
+  const onDirty = useCallback((d: boolean): void => {
+    dirty.current = d
+  }, [])
+  /** K22: the save's answer, unless the repo moved on meanwhile (K11/K18). */
+  const onSaved = (d: SkillsList, forRepo: string | undefined): void => {
+    if (forRepo !== repoNow.current) return
+    setData(d)
+    setOpen((prev) => (prev && d.items.find((i) => (i.origin === 'personal' || i.origin === 'project') && i.path === prev.path)) || prev)
+  }
   const close = (): void => {
     setNote(null)
     setOpen(null)
@@ -131,7 +151,7 @@ export function Skills() {
             repo={repoName}
             onOpen={(el) => {
               opener.current = el
-              setOpen(i)
+              if (i !== open) guard(() => setOpen(i))
             }}
           />
         )
@@ -184,7 +204,13 @@ export function Skills() {
           ))}
         </div>
         {repos && repos.length > 0 && (
-          <select aria-label={t('Repo del proyecto')} value={repoName} disabled={busy} onChange={(e) => setRepo(e.target.value)}>
+          <select aria-label={t('Repo del proyecto')} value={repoName} disabled={busy || saving} onChange={(e) => {
+              const v = e.target.value
+              guard(() => {
+                setOpen(null)
+                setRepo(v)
+              })
+            }}>
             {repos.map((r) => (
               <option key={r}>{r}</option>
             ))}
@@ -282,7 +308,33 @@ export function Skills() {
           </>
         )
       )}
-      {open && <SkillDetail item={open} repo={repoName} busy={busy} note={note} onSet={(st) => setState(open, st)} onClose={pending ? () => undefined : close} />}
+      {open && (
+        <SkillDetail
+          key={open.path}
+          item={open}
+          repo={repoName}
+          busy={busy}
+          note={note}
+          onSet={(st) => setState(open, st)}
+          onClose={pending || leave ? () => undefined : () => guard(close)}
+          guard={guard}
+          onDirty={onDirty}
+          onSaving={setSaving}
+          onSaved={onSaved}
+        />
+      )}
+      {leave && (
+        <SkillLeaveDialog
+          onNo={() => setLeave(null)}
+          onYes={() => {
+            const next = leave
+            setLeave(null)
+            if (open) dropDraft(open.path)
+            dirty.current = false
+            next()
+          }}
+        />
+      )}
       {pending && (
         <SkillWriteDialog
           file={pending.file}

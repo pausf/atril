@@ -5190,6 +5190,35 @@ button.fx-bt {
   background: var(--chip);
   color: var(--text);
 }
+.skd-edit {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 260px;
+  resize: vertical;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--chip);
+  color: var(--text);
+  font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+.skd-ask {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin: 8px 0;
+  font-size: 13px;
+}
+.skd-ask p {
+  flex-basis: 100%;
+  margin: 0;
+}
+.skd-act {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
 .skd-path code {
   font-size: 11.5px;
   color: var(--sub);

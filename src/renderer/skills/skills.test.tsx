@@ -385,3 +385,176 @@ describe('skills screen', () => {
     expect(set).toHaveBeenLastCalledWith({ plugin: 'estilo@acme', enabled: false, repoId: 'shop-web' })
   })
 })
+
+describe('skills editor', () => {
+  const FILE = '---\nname: revisar-cambios\ndescription: Revisa\n---\nLee el diff.\n'
+  const panel = (name: string): HTMLElement => screen.getByRole('complementary', { name })
+  const box = (name: string): HTMLTextAreaElement => screen.getByRole('textbox', { name: `Texto de ${name}` }) as HTMLTextAreaElement
+  const mine = (path: string, name = 'revisar-cambios'): SkillItem => item(name, 'personal', { path, description: 'Revisa' })
+  /** One personal item at `path` open in its detail; save and read are the given doubles. */
+  const setup = async (path: string, over: { read?: () => Promise<string>; save?: (r: unknown) => Promise<unknown> }, extra: SkillItem[] = []) => {
+    const items = [mine(path), ...extra]
+    mockApi({ repos: [repo('shop-web'), repo('cms')], skills: { 'shop-web': list(items), cms: list([]) } }, undefined, { skills: over as never })
+    render(createElement(App))
+    const s = await open()
+    const user = userEvent.setup()
+    await user.click(await within(s).findByRole('button', { name: /^\/revisar-cambios/ }))
+    return { s, user }
+  }
+
+  it('edit and save a skill from its detail', async () => {
+    const P = '/x/edit1/revisar-cambios/SKILL.md'
+    let done: (v: unknown) => void = () => undefined
+    const save = vi.fn(() => new Promise((r) => (done = r)))
+    const read = vi.fn(async () => FILE)
+    const { s, user } = await setup(P, { read, save }, [
+      item('formatear', 'plugin', { plugin: 'estilo@acme', path: '/x/edit1/formatear/SKILL.md' }),
+      item('evidence', 'atril', { plugin: 'libretto', path: '/x/edit1/evidence/SKILL.md' }),
+      item('grande', 'personal', { path: '/x/edit1/grande/SKILL.md' })
+    ])
+    // Plugin and Atril items are read-only.
+    await user.click(within(s).getByRole('button', { name: /^\/estilo:formatear/ }))
+    expect(within(panel('/estilo:formatear')).queryByRole('button', { name: 'Editar' })).toBeNull()
+    await user.click(within(s).getByRole('button', { name: /^\/libretto:evidence/ }))
+    expect(within(panel('/libretto:evidence')).queryByRole('button', { name: 'Editar' })).toBeNull()
+
+    // A read that refuses keeps the panel read-only and says why.
+    read.mockRejectedValueOnce(new Error('Es demasiado grande para editarla aquí.'))
+    await user.click(within(s).getByRole('button', { name: /^\/grande/ }))
+    await user.click(within(panel('/grande')).getByRole('button', { name: 'Editar' }))
+    expect(panel('/grande').textContent).toContain('Es demasiado grande para editarla aquí.')
+    expect(screen.queryByRole('textbox')).toBeNull()
+
+    await user.click(within(s).getByRole('button', { name: /^\/revisar-cambios/ }))
+    await user.click(within(panel('/revisar-cambios')).getByRole('button', { name: 'Editar' }))
+    expect(read).toHaveBeenLastCalledWith({ path: P, repoId: 'shop-web' })
+    expect(box('revisar-cambios').value).toBe(FILE)
+    expect(box('revisar-cambios').className).toContain('skd-edit')
+    await user.type(box('revisar-cambios'), 'Más.')
+    const text = FILE + 'Más.'
+    // ⌘S saves; while it does the repo cannot change.
+    await user.keyboard('{Meta>}s{/Meta}')
+    expect(save).toHaveBeenCalledWith({ path: P, repoId: 'shop-web', base: FILE, text })
+    expect((within(s).getByRole('combobox', { name: 'Repo del proyecto' }) as HTMLSelectElement).disabled).toBe(true)
+    const renamed = item('renombrada', 'personal', { path: P, description: 'Nueva' })
+    await act(async () => done({ list: list([renamed]) }))
+    expect((within(s).getByRole('combobox', { name: 'Repo del proyecto' }) as HTMLSelectElement).disabled).toBe(false)
+    expect(screen.queryByRole('textbox')).toBeNull()
+    expect(panel('/renombrada').textContent).toContain('Guardado.')
+    expect(within(s).getByRole('button', { name: /^\/renombrada/ })).toBeTruthy()
+
+    // «Guardar» with the button does the same, and «Descartar» with no changes leaves without asking.
+    read.mockResolvedValueOnce(text)
+    await user.click(within(panel('/renombrada')).getByRole('button', { name: 'Editar' }))
+    await user.click(within(panel('/renombrada')).getByRole('button', { name: 'Descartar' }))
+    expect(screen.queryByRole('textbox')).toBeNull()
+    expect(screen.queryByRole('dialog')).toBeNull()
+    read.mockResolvedValueOnce(text)
+    await user.click(within(panel('/renombrada')).getByRole('button', { name: 'Editar' }))
+    await user.type(box('renombrada'), '!')
+    await user.click(within(panel('/renombrada')).getByRole('button', { name: 'Guardar' }))
+    expect(save).toHaveBeenLastCalledWith({ path: P, repoId: 'shop-web', base: text, text: text + '!' })
+  })
+
+  it('a save that conflicts or has a broken header asks first', async () => {
+    const P = '/x/edit2/revisar-cambios/SKILL.md'
+    const save = vi.fn()
+    const { user } = await setup(P, { read: async () => FILE, save: async (r) => save(r) })
+    const d = (): HTMLElement => panel('/revisar-cambios')
+    const btn = (n: string): HTMLElement => within(d()).getByRole('button', { name: n })
+    await user.click(btn('Editar'))
+    await user.type(box('revisar-cambios'), 'A')
+
+    // Changed outside: nothing is overwritten until the person chooses.
+    save.mockResolvedValueOnce({ conflict: true, disk: 'DISCO' })
+    await user.click(btn('Guardar'))
+    expect(d().textContent).toContain('Este archivo ha cambiado fuera de Atril.')
+    expect(box('revisar-cambios').value).toBe(FILE + 'A')
+    await user.click(btn('Cargar el de disco'))
+    expect(box('revisar-cambios').value).toBe('DISCO')
+    expect(d().textContent).not.toContain('Este archivo ha cambiado')
+    await user.type(box('revisar-cambios'), 'B')
+    save.mockResolvedValueOnce({ conflict: true, disk: 'DISCO2' })
+    await user.click(btn('Guardar'))
+    expect(save).toHaveBeenLastCalledWith({ path: P, repoId: 'shop-web', base: 'DISCO', text: 'DISCOB' })
+    // «Guardar el mío encima» saves again with force; a broken header then asks too.
+    save.mockResolvedValueOnce({ brokenHeader: true })
+    await user.click(btn('Guardar el mío encima'))
+    expect(save).toHaveBeenLastCalledWith({ path: P, repoId: 'shop-web', base: 'DISCO', text: 'DISCOB', force: true })
+    expect(d().textContent).toContain('La cabecera no se entiende: Claude Code puede ignorar esta skill.')
+    await user.click(btn('Seguir editando'))
+    expect(d().textContent).not.toContain('La cabecera no se entiende')
+    expect(box('revisar-cambios').value).toBe('DISCOB')
+    // «Guardar igual» keeps the force and adds allowBroken.
+    save.mockResolvedValueOnce({ brokenHeader: true })
+    await user.click(btn('Guardar'))
+    expect(save).toHaveBeenLastCalledWith({ path: P, repoId: 'shop-web', base: 'DISCO', text: 'DISCOB' })
+    save.mockResolvedValueOnce({ brokenHeader: true })
+    await user.click(btn('Guardar igual'))
+    expect(save).toHaveBeenLastCalledWith({ path: P, repoId: 'shop-web', base: 'DISCO', text: 'DISCOB', allowBroken: true })
+
+    // Any rejection is a Problem; the text stays.
+    save.mockRejectedValueOnce(new Error('disco lleno'))
+    await user.click(btn('Guardar igual'))
+    expect(d().textContent).toContain('No he podido guardar la skill.')
+    expect(d().textContent).toContain('disco lleno')
+    expect(box('revisar-cambios').value).toBe('DISCOB')
+  })
+
+  it('leaving with unsaved changes asks first', async () => {
+    const P = '/x/edit3/revisar-cambios/SKILL.md'
+    const read = vi.fn(async () => FILE)
+    const { s, user } = await setup(P, { read }, [mine('/x/edit3/otra/SKILL.md', 'otra')])
+    const d = (): HTMLElement => panel('/revisar-cambios')
+    const dialog = (): HTMLElement => screen.getByRole('dialog')
+    const ask = 'Tienes cambios sin guardar. ¿Descartarlos?'
+    const edit = async (): Promise<void> => {
+      await user.click(within(d()).getByRole('button', { name: 'Editar' }))
+      await user.type(box('revisar-cambios'), 'x')
+    }
+    const stay = async (): Promise<void> => {
+      expect(dialog().textContent).toContain(ask)
+      await user.click(within(dialog()).getByRole('button', { name: 'Seguir editando' }))
+      expect(screen.queryByRole('dialog')).toBeNull()
+      expect(box('revisar-cambios').value).toBe(FILE + 'x')
+    }
+
+    // No changes: it leaves without asking.
+    await user.click(within(d()).getByRole('button', { name: 'Editar' }))
+    await user.keyboard('{Escape}')
+    expect(screen.queryByRole('dialog')).toBeNull()
+    expect(screen.queryByRole('complementary')).toBeNull()
+
+    // Escape, «Cerrar», «Descartar», another card and another repo all ask.
+    await user.click(within(s).getByRole('button', { name: /^\/revisar-cambios/ }))
+    await edit()
+    await user.keyboard('{Escape}')
+    await stay()
+    await user.click(within(d()).getByRole('button', { name: 'Cerrar' }))
+    await stay()
+    await user.click(within(d()).getByRole('button', { name: 'Descartar' }))
+    await stay()
+    await user.click(within(s).getByRole('button', { name: /^\/otra/ }))
+    await stay()
+    await user.selectOptions(within(s).getByRole('combobox', { name: 'Repo del proyecto' }), 'cms')
+    await stay()
+    expect((within(s).getByRole('combobox', { name: 'Repo del proyecto' }) as HTMLSelectElement).value).toBe('shop-web')
+    // Only «Descartar cambios» leaves, and the text is gone for good.
+    await user.click(within(d()).getByRole('button', { name: 'Descartar' }))
+    await user.click(within(dialog()).getByRole('button', { name: 'Descartar cambios' }))
+    expect(screen.queryByRole('textbox')).toBeNull()
+    await user.click(within(d()).getByRole('button', { name: 'Editar' }))
+    expect(box('revisar-cambios').value).toBe(FILE)
+    expect(d().textContent).not.toContain('Tienes cambios sin guardar de antes.')
+
+    // Leaving the screen keeps the text in memory; the editor brings it back.
+    await user.type(box('revisar-cambios'), 'y')
+    await user.click(within(rail()).getByRole('button', { name: /Avisos/ }))
+    await user.click(within(rail()).getByRole('button', { name: /Skills/ }))
+    const s2 = await screen.findByRole('region', { name: 'Skills' })
+    await user.click(await within(s2).findByRole('button', { name: /^\/revisar-cambios/ }))
+    await user.click(within(d()).getByRole('button', { name: 'Editar' }))
+    expect(box('revisar-cambios').value).toBe(FILE + 'y')
+    expect(d().textContent).toContain('Tienes cambios sin guardar de antes.')
+  })
+})
