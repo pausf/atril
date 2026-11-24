@@ -449,3 +449,6 @@ A guard that clears the dirty flag must also end the state that was dirty: «Nue
 
 ## 2026-11-24 · skills-editor · 6→7
 Creating a skill was refused when only a command had that name, though K21 names skills; a check over a list keyed by name filters by every field the criterion names (`kind`). Fixed.
+
+## 2026-11-24 · skills-editor · 8
+Second time a test name with `\'` broke its spec-drift citation (also in skills-list). Prettier keeps single quotes with an escaped apostrophe, and spec-drift reads the literal text. Builders write such names in double quotes; landing runs spec-drift before committing, not after.

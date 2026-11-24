@@ -361,7 +361,7 @@ describe('skills edit', () => {
     expect(await readSkillFile({ path: cmd, repoId: R }, r, libretto)).toBe('Sin cabecera: ejecuta los tests.')
   })
 
-  it('save writes the item\'s file unless it changed underneath', async () => {
+  it("save writes the item's file unless it changed underneath", async () => {
     const { claude, repo, libretto } = seed()
     const r = repos(repo)
     const file = join(claude, 'skills/revisar-cambios/SKILL.md')
