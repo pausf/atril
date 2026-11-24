@@ -1108,7 +1108,32 @@ export interface SkillCreate {
   name: string
 }
 
+/** K27: what `claude plugin list --available --json` says, reduced to the fields Atril reads. */
+export interface PluginCatalog {
+  installed: { pluginId: string; scope: string; projectPath?: string }[]
+  available: { pluginId: string; name: string; marketplace: string; description?: string; version?: string }[]
+}
+/** K28/K31 */
+export interface PluginRequest {
+  action: 'install' | 'uninstall' | 'update'
+  plugin: string
+  scope: 'user' | 'local'
+  repoId?: string
+}
+/** K30: main never rejects for these; `code` says which clause. */
+export type PluginFailure = { error: string; code: 'invalid' | 'busy' | 'missing' | 'timeout' | 'failed' }
+export type PluginCatalogResult = { catalog: PluginCatalog } | PluginFailure
+export type PluginActionResult = { list: SkillsList } | PluginFailure
+
 export interface SkillsApi {
+  /** K27: the plugins the added marketplaces offer and what is installed, from the Claude Code CLI. */
+  catalog(repoId?: string): Promise<PluginCatalogResult>
+  /** K28: installs, updates or removes one plugin through the CLI; answers the new list. */
+  plugin(req: PluginRequest): Promise<PluginActionResult>
+  /** K29: adds a marketplace by its source; answers the new catalog. */
+  marketplace(req: { source: string; repoId?: string }): Promise<PluginCatalogResult>
+  /** K31: the same action, typed in Terminal where the person can read and accept it. */
+  pluginTerminal(req: PluginRequest): Promise<{ ok: true } | { error: string }>
   /** Read-only: folders and settings, never Claude (K1). */
   list(repoId?: string): Promise<SkillsList>
   /** K13/K14: writes one key in one settings file and answers the new list; rejects naming the file or the reason. */

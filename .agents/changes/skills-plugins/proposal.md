@@ -110,6 +110,6 @@ K27–K31 con `Runner` falso; forzar rojo K28 añadiendo `-y` a los argumentos. 
 
 ## Checklist
 
-- [ ] Main: catálogo, acciones, marketplace, terminal, con sus guardas, IPC y preload · Closes: K27, K28, K29, K30, K31
+- [x] Main: catálogo, acciones, marketplace, terminal, con sus guardas, IPC y preload · Closes: K27, K28, K29, K30, K31
 - [ ] «Añadir plugin» con catálogo, búsqueda, ámbito y «Añadir marketplace» · waits on box 1 · Closes: K32
 - [ ] «Actualizar» y «Quitar» en la barra, errores con «Hacerlo en Terminal», textos, foto, bocetos y `qa-final.html` · waits on box 2 · Closes: K33, K34

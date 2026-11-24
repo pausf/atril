@@ -489,7 +489,11 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
       reveal: vi.fn(async () => undefined),
       read: vi.fn(async () => ''),
       save: vi.fn(async () => ({ list: { items: [], warnings: [] } })),
-      create: vi.fn(async () => ({ items: [], warnings: [] }))
+      create: vi.fn(async () => ({ items: [], warnings: [] })),
+      catalog: vi.fn(async () => ({ catalog: { installed: [], available: [] } })),
+      plugin: vi.fn(async () => ({ list: { items: [], warnings: [] } })),
+      marketplace: vi.fn(async () => ({ catalog: { installed: [], available: [] } })),
+      pluginTerminal: vi.fn(async () => ({ ok: true as const }))
     },
     revealState: vi.fn(async () => true),
     snapshotView: async () => null,
