@@ -26,7 +26,8 @@ export function SkillDetail({
   guard,
   onDirty,
   onSaving,
-  onSaved
+  onSaved,
+  autoEdit
 }: {
   item: SkillItem
   repo: string
@@ -39,6 +40,8 @@ export function SkillDetail({
   onDirty: (dirty: boolean) => void
   onSaving: (saving: boolean) => void
   onSaved: (list: SkillsList, repoId: string | undefined) => void
+  /** K25: a skill just created opens straight in «Editar». */
+  autoEdit?: boolean
 }) {
   const t = useT()
   const repoId = repo || undefined
@@ -81,6 +84,9 @@ export function SkillDetail({
       if (live.current) setReadFail(msg(e))
     }
   }
+  useEffect(() => {
+    if (autoEdit) void startEdit()
+  }, [])
   const leaveEdit = (): void => {
     dropDraft(item.path)
     setEdit(null)

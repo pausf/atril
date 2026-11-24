@@ -24,6 +24,7 @@ Durable decisions: the three in Prior decisions below
 - Q: (spec-reviewer) ¿De dónde sale el archivo entero? → A: un IPC `atril:skills:read` lo da; un archivo de más de 256 KB no se abre («Es demasiado grande para editarla aquí.») (assumed).
 - Q: (spec-reviewer) ¿Y si cambio `name:` en la cabecera? → A: el elemento se identifica por su `path` (que main comprueba contra la lista), no por el nombre, así que el panel sigue en el mismo archivo con el nombre nuevo (assumed).
 - Q: (spec-reviewer) ¿Bloquear el repo mientras guarda? → A: sí, como K18 (assumed).
+- Q: (builder) ¿La foto del editor? → A: una vista de foto `skills-editor` en `App.tsx` y `Skills.tsx`, como `skills-estado` (assumed: App.tsx cae fuera del Scope escrito, se añade).
 - Q: ¿Cómo sabe main qué archivo? → A: la petición lleva la `path` de un elemento y el `repoId`; main relee la lista y solo acepta una `path` que sea exactamente la de un elemento `personal` o `project` listado (assumed).
 
 ## Outcomes
@@ -32,7 +33,7 @@ Desde Skills la persona cambia el texto de una skill o comando suyos, o crea una
 
 ## Scope
 
-**In:** `src/main/skills/` (`edit.ts` nuevo: leer, guardar, crear), los IPC `atril:skills:read`, `atril:skills:save` y `atril:skills:create` en `src/main/index.ts` y `src/preload/{api,index}.ts`, `src/renderer/mockApi.ts`, `src/renderer/skills/` (editor en el detalle, diálogo de crear), `src/preload/i18n-en.ts`, estilos con tokens, los tests, `bocetos/novedades.html`, `bocetos/fase1-nucleo.html`, la foto.
+**In:** `src/main/skills/` (`edit.ts` nuevo: leer, guardar, crear), los IPC `atril:skills:read`, `atril:skills:save` y `atril:skills:create` en `src/main/index.ts` y `src/preload/{api,index}.ts`, `src/renderer/mockApi.ts`, `src/renderer/skills/` (editor en el detalle, diálogos de crear y de salir), `src/renderer/App.tsx` (solo la vista de foto `skills-editor`), `src/preload/i18n-en.ts`, estilos con tokens, los tests, `bocetos/novedades.html`, `bocetos/fase1-nucleo.html`, la foto.
 **Out (nombrado):** borrar; renombrar; editar archivos de apoyo de una skill (otros archivos en su carpeta); plugins y Atril; resaltado de sintaxis; vista previa del markdown; crear comandos (solo skills).
 
 ## Constraints
@@ -113,4 +114,4 @@ K19–K21 con archivos reales; forzar rojo K19 quitando la comparación con `bas
 
 - [x] Main: `readSkillFile`, `saveSkill` y `createSkill` con sus guardas, IPC y preload · Closes: K19, K20, K21, K26
 - [x] «Editar» en el detalle, guardar, conflicto, cabecera rota y salir con cambios · waits on box 1 · Closes: K22, K23, K24
-- [ ] «Nueva skill», textos en inglés, foto y bocetos · waits on box 2 · Closes: K25
+- [x] «Nueva skill», textos en inglés, foto y bocetos · waits on box 2 · Closes: K25

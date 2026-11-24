@@ -5,6 +5,7 @@ import { useT } from '../ui'
 import { SkillCard } from './SkillCard'
 import { dropDraft, SkillDetail } from './SkillDetail'
 import { SkillLeaveDialog } from './SkillLeaveDialog'
+import { SkillNewDialog } from './SkillNewDialog'
 import { SkillWriteDialog } from './SkillWriteDialog'
 
 type Filter = 'all' | 'on' | 'off'
@@ -36,6 +37,8 @@ export function Skills() {
   const [saving, setSaving] = useState(false)
   // K24: set by the detail while its editor holds unsaved text; `leave` is the exit waiting for an answer.
   const dirty = useRef(false)
+  const [creating, setCreating] = useState<'personal' | 'project' | null>(null)
+  const [autoEdit, setAutoEdit] = useState(false)
   const [leave, setLeave] = useState<(() => void) | null>(null)
   const repoNow = useRef<string | undefined>(undefined)
   repoNow.current = repo
@@ -105,11 +108,15 @@ export function Skills() {
   const setPlugin = (plugin: string, enabled: boolean, file?: string): void =>
     ask({ plugin, enabled, repoId }, { origin: 'plugin', name: '', plugin, repoId }, file, `enabledPlugins.${plugin}`, String(enabled))
 
-  // ponytail: dev-only, ATRIL_SNAPSHOT_VIEW=skills-estado opens the first personal skill's detail for a photo.
+  // ponytail: dev-only, ATRIL_SNAPSHOT_VIEW=skills-estado opens the first personal skill's detail, skills-editor the same in «Editar», for a photo.
   useEffect(() => {
     if (!data) return
     void window.atril.snapshotView().then((v) => {
       if (v === 'skills-estado') setOpen((prev) => prev ?? data.items.find((i) => i.origin === 'personal' && !i.lockedBy) ?? null)
+      if (v === 'skills-editor') {
+        setAutoEdit(true)
+        setOpen((prev) => prev ?? data.items.find((i) => i.origin === 'personal') ?? null)
+      }
     })
   }, [data])
 
@@ -151,12 +158,22 @@ export function Skills() {
             repo={repoName}
             onOpen={(el) => {
               opener.current = el
-              if (i !== open) guard(() => setOpen(i))
+              if (i !== open) {
+                guard(() => {
+                  setAutoEdit(false)
+                  setOpen(i)
+                })
+              }
             }}
           />
         )
       })}
     </ul>
+  )
+  const newButton = (origin: 'personal' | 'project') => (
+    <button type="button" className="btn" onClick={() => guard(() => setCreating(origin))}>
+      {t('Nueva skill')}
+    </button>
   )
   const of = (origin: SkillItem['origin']): SkillItem[] => shown.filter((i) => i.origin === origin)
   const plugins = [...new Set(items.filter((i) => i.origin === 'plugin').map((i) => i.plugin ?? ''))]
@@ -262,11 +279,13 @@ export function Skills() {
             <details className="skg" open aria-label={t('Personal')}>
               <summary>{t('Personal')}</summary>
               {cardsOf(of('personal'), 'p')}
+              {newButton('personal')}
             </details>
             {repos && repos.length > 0 && (
               <details className="skg" open aria-label={t('Proyecto ({repo})', { repo: repoName })}>
                 <summary>{t('Proyecto ({repo})', { repo: repoName })}</summary>
                 {projectTotal === 0 ? <p className="empty">{t('{repo} aún no tiene skills propias.', { repo: repoName })}</p> : cardsOf(of('project'), 'j')}
+                {newButton('project')}
               </details>
             )}
             {repos === null && (
@@ -311,6 +330,7 @@ export function Skills() {
       {open && (
         <SkillDetail
           key={open.path}
+          autoEdit={autoEdit}
           item={open}
           repo={repoName}
           busy={busy}
@@ -321,6 +341,22 @@ export function Skills() {
           onDirty={onDirty}
           onSaving={setSaving}
           onSaved={onSaved}
+        />
+      )}
+      {creating && (
+        <SkillNewDialog
+          origin={creating}
+          onNo={() => setCreating(null)}
+          create={async (name) => {
+            const d = await window.atril.skills.create({ origin: creating, repoId, name })
+            if (repoId !== repoNow.current) return
+            const made = d.items.find((i) => i.origin === creating && i.name === name && i.kind === 'skill')
+            setData(d)
+            setCreating(null)
+            setNote(null)
+            setAutoEdit(true)
+            if (made) setOpen(made)
+          }}
         />
       )}
       {leave && (

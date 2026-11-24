@@ -557,4 +557,46 @@ describe('skills editor', () => {
     expect(box('revisar-cambios').value).toBe(FILE + 'y')
     expect(d().textContent).toContain('Tienes cambios sin guardar de antes.')
   })
+
+  it('new skill creates and opens it in the editor', async () => {
+    const NEW = '---\nname: nueva-1\ndescription: \n---\n\n'
+    const made = item('nueva-1', 'personal', { path: '/x/new1/nueva-1/SKILL.md' })
+    const create = vi.fn(async () => list([mine('/x/new1/revisar-cambios/SKILL.md'), made]))
+    const read = vi.fn(async () => NEW)
+    const { s, user } = await setup('/x/new1/revisar-cambios/SKILL.md', { create, read } as never)
+    const group = (n: RegExp): HTMLElement => within(s).getByRole('group', { name: n })
+    const dialog = (): HTMLElement => screen.getByRole('dialog')
+    const crear = (): HTMLButtonElement => within(dialog()).getByRole('button', { name: 'Crear' }) as HTMLButtonElement
+
+    await user.click(within(group(/^Personal/)).getByRole('button', { name: 'Nueva skill' }))
+    expect(dialog().textContent).toContain('Minúsculas, números y guiones.')
+    const name = within(dialog()).getByRole('textbox', { name: 'Nombre' })
+    expect(crear().disabled).toBe(true)
+    for (const bad of ['Mala', '1x', 'a_b', 'a'.repeat(65)]) {
+      await user.clear(name)
+      await user.type(name, bad)
+      expect(crear().disabled).toBe(true)
+    }
+    await user.clear(name)
+    await user.type(name, 'nueva-1')
+    expect(crear().disabled).toBe(false)
+
+    // A refusal shows its reason and keeps the dialog.
+    create.mockRejectedValueOnce(new Error('Ya hay una skill con ese nombre.'))
+    await user.click(crear())
+    expect(dialog().textContent).toContain('Ya hay una skill con ese nombre.')
+    await user.click(crear())
+    expect(create).toHaveBeenLastCalledWith({ origin: 'personal', repoId: 'shop-web', name: 'nueva-1' })
+    expect(screen.queryByRole('dialog')).toBeNull()
+    expect(((await screen.findByRole('textbox', { name: 'Texto de nueva-1' })) as HTMLTextAreaElement).value).toBe(NEW)
+    expect(read).toHaveBeenLastCalledWith({ path: '/x/new1/nueva-1/SKILL.md', repoId: 'shop-web' })
+
+    // Escape in the editor with the new, unchanged text leaves; the Project group asks for its own origin.
+    await user.keyboard('{Escape}')
+    await user.click(within(group(/^Proyecto/)).getByRole('button', { name: 'Nueva skill' }))
+    await user.type(within(dialog()).getByRole('textbox', { name: 'Nombre' }), 'del-repo')
+    await user.click(crear())
+    expect(create).toHaveBeenLastCalledWith({ origin: 'project', repoId: 'shop-web', name: 'del-repo' })
+  })
 })
+
