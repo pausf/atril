@@ -3,7 +3,7 @@ import { createElement } from 'react'
 import { act, cleanup, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { RepoView, SkillItem, SkillsList } from '../../preload/api'
+import type { RepoView, SkillItem, SkillsList, SkillsUsage, SkillUse } from '../../preload/api'
 import { App } from '../App'
 import { mockApi, mockSystemTheme } from '../mockApi'
 
@@ -225,6 +225,143 @@ describe('skills screen', () => {
     await user.click(within(d2).getByRole('button', { name: 'Cerrar' }))
     expect(screen.queryByRole('complementary')).toBeNull()
     expect(document.activeElement).toBe(within(s).getByRole('button', { name: /^\/otra/ }))
+  })
+
+  it("shows when each skill was last used and filters the unused ones", async () => {
+    const use = (pairs: [number, number][]): SkillUse => {
+      const days = Array<number>(30).fill(0)
+      for (const [k, n] of pairs) days[k] = n
+      return { last: '2026-11-25T10:00:00.000Z', days }
+    }
+    let answer: (u: SkillsUsage) => void = () => undefined
+    mockApi({
+      repos: [repo('shop-web'), repo('cms')],
+      skills: { 'shop-web': list(ITEMS), cms: list(ITEMS) },
+      skillsUsage: () => new Promise((r) => (answer = r))
+    })
+    render(createElement(App))
+    const s = await open()
+    await within(s).findByRole('button', { name: /^\/revisar-cambios/ })
+    const text = (name: string, i = 0): string => screen.getAllByRole('button', { name: new RegExp(`^${name}( |$)`) })[i]!.textContent ?? ''
+    // Not answered yet: the list shows, nothing about use.
+    expect(within(s).queryByRole('button', { name: 'Sin usar en 30 días' })).toBeNull()
+    expect(s.textContent).not.toMatch(/usada|sin usar/)
+
+    await act(async () =>
+      answer({
+        usage: {
+          'revisar-cambios': use([[0, 2]]),
+          deploy: use([[1, 1]]),
+          'release:changelog': use([[5, 1], [9, 2]]),
+          'escribir-docs': use([[0, 1]])
+        }
+      })
+    )
+    expect(text('/revisar-cambios')).toContain('usada hoy')
+    expect(text('/deploy', 1)).toContain('usada hace 1 día')
+    expect(text('/release:changelog')).toContain('usada hace 5 días')
+    expect(text('/sembrar')).toContain('sin usar en 30 días')
+    // Shadowed cards say nothing, used or not.
+    expect(text('/deploy', 0)).not.toMatch(/usada|sin usar/)
+    expect(text('/escribir-docs')).not.toMatch(/usada|sin usar/)
+
+    // Idle: not off, not shadowed, not enabled:false, no use → manual, sembrar, mal, evidence.
+    const tile = within(s).getByRole('button', { name: 'Sin usar en 30 días' })
+    expect(tile.textContent).toBe('4Sin usar en 30 díascandidatas a apagar')
+    const user = userEvent.setup()
+    await user.click(tile)
+    expect(tile.getAttribute('aria-pressed')).toBe('true')
+    expect(cards().sort()).toEqual(['/libretto:evidence', '/mal', '/manual', '/sembrar'])
+    expect(text('/libretto:evidence')).toContain('sin usar en 30 días')
+    await user.click(tile)
+    expect(tile.getAttribute('aria-pressed')).toBe('false')
+    expect(cards()).toHaveLength(ITEMS.length)
+    await user.click(tile)
+    await user.click(within(s).getByRole('button', { name: 'Todas' }))
+    expect(tile.getAttribute('aria-pressed')).toBe('false')
+    expect(cards()).toHaveLength(ITEMS.length)
+    await user.click(tile)
+    await user.click(within(s).getByRole('button', { name: 'Activas' }))
+    expect(tile.getAttribute('aria-pressed')).toBe('false')
+    expect(cards()).toHaveLength(6)
+
+    // Once per visit: picking another repo does not ask again.
+    await user.selectOptions(within(s).getByRole('combobox', { name: 'Repo del proyecto' }), 'cms')
+    await waitFor(() => expect(window.atril.skills.list).toHaveBeenCalledWith('cms'))
+    expect(window.atril.skills.usage).toHaveBeenCalledTimes(1)
+
+    // Everything used: «todas en uso», and the filter says none.
+    cleanup()
+    const used = [item('a', 'personal'), item('b', 'project', { state: 'off' })]
+    mockApi({ repos: [repo('shop-web')], skills: { 'shop-web': list(used) }, skillsUsage: { usage: { a: use([[2, 1]]) } } })
+    render(createElement(App))
+    const s2 = await open()
+    const t2 = await within(s2).findByRole('button', { name: 'Sin usar en 30 días' })
+    expect(t2.textContent).toBe('0Sin usar en 30 díastodas en uso')
+    await user.click(t2)
+    expect(within(s2).getByText('No tienes ninguna sin usar.')).toBeTruthy()
+
+    // An error: no tile, cards say nothing.
+    cleanup()
+    mockApi({ repos: [repo('shop-web')], skills: { 'shop-web': list(ITEMS) }, skillsUsage: { error: 'EACCES' } })
+    render(createElement(App))
+    const s3 = await open()
+    await within(s3).findByRole('button', { name: /^\/revisar-cambios/ })
+    await act(async () => undefined)
+    expect(within(s3).queryByRole('button', { name: 'Sin usar en 30 días' })).toBeNull()
+    expect(s3.textContent).not.toMatch(/usada|sin usar/)
+  })
+
+  it("the detail shows the last 14 days of use", async () => {
+    const days = Array<number>(30).fill(0)
+    days[0] = 3
+    days[2] = 1
+    days[13] = 2
+    days[20] = 4
+    mockApi({
+      repos: [repo('shop-web')],
+      skills: { 'shop-web': list([item('revisar-cambios', 'personal'), item('otra', 'personal')]) },
+      skillsUsage: { usage: { 'revisar-cambios': { last: '2026-11-25T10:00:00.000Z', days } } }
+    })
+    render(createElement(App))
+    const s = await open()
+    const user = userEvent.setup()
+    await within(s).findByRole('button', { name: 'Sin usar en 30 días' })
+    await user.click(within(s).getByRole('button', { name: /^\/revisar-cambios/ }))
+    const d = screen.getByRole('complementary', { name: '/revisar-cambios' })
+    const chart = within(d).getByRole('group', { name: 'Uso · últimos 14 días' })
+    expect(d.textContent).toContain('Uso · últimos 14 días')
+    const bars = within(chart).getAllByRole('img')
+    expect(bars).toHaveLength(14)
+    const day = (k: number): string => {
+      const now = new Date()
+      return new Date(now.getFullYear(), now.getMonth(), now.getDate() - k).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })
+    }
+    // Oldest left: the first bar is 13 days ago, the last is today.
+    expect(bars.map((b) => b.getAttribute('aria-label'))).toEqual(Array.from({ length: 14 }, (_, i) => `${day(13 - i)}: ${days[13 - i]}`))
+    expect(bars[13]!.getAttribute('aria-label')).toMatch(/^\d{1,2} \S+: 3$/)
+    // Proportional to the 14-day maximum (3), 2 px when 0; day 20 (4 uses) is outside the chart.
+    expect(bars[13]!.style.height).toBe('32px')
+    expect(bars[0]!.style.height).toBe(`${Math.round((2 / 3) * 32)}px`)
+    expect(bars[11]!.style.height).toBe(`${Math.round((1 / 3) * 32)}px`)
+    expect(bars[1]!.style.height).toBe('2px')
+    expect(d.textContent).toContain('10 veces en 30 días')
+    expect(d.textContent).toContain('Según las sesiones de Claude Code en este Mac.')
+
+    await user.click(within(s).getByRole('button', { name: /^\/otra/ }))
+    const d2 = screen.getByRole('complementary', { name: '/otra' })
+    expect(d2.textContent).toContain('Sin usar en 30 días.')
+    expect(within(within(d2).getByRole('group', { name: 'Uso · últimos 14 días' })).getAllByRole('img').map((b) => b.style.height)).toEqual(Array(14).fill('2px'))
+
+    cleanup()
+    mockApi({ repos: [repo('shop-web')], skills: { 'shop-web': list([item('revisar-cambios', 'personal')]) }, skillsUsage: { error: 'EACCES' } })
+    render(createElement(App))
+    const s2 = await open()
+    await user.click(await within(s2).findByRole('button', { name: /^\/revisar-cambios/ }))
+    await act(async () => undefined)
+    const d3 = screen.getByRole('complementary', { name: '/revisar-cambios' })
+    expect(within(d3).queryByRole('group', { name: 'Uso · últimos 14 días' })).toBeNull()
+    for (const v of ['Uso · últimos 14 días', 'veces en 30 días', 'Sin usar en 30 días.', 'Según las sesiones de Claude Code en este Mac.']) expect(d3.textContent).not.toContain(v)
   })
 
   it('the repo cannot change while a write is pending', async () => {

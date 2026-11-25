@@ -104,5 +104,5 @@ La caché por archivo: sin ella cada apertura de Skills relee cientos de MB.
 ## Checklist
 
 - [x] Main: `usage.ts` con caché, IPC y preload · Closes: K35, K36, K39
-- [ ] Tarjeta, recuadro y filtro, detalle con barras · waits on box 1 · Closes: K37, K38
+- [x] Tarjeta, recuadro y filtro, detalle con barras · waits on box 1 · Closes: K37, K38
 - [ ] Textos en inglés, foto (vista `skills-uso`) y bocetos · waits on box 2 · Closes: K37, K38

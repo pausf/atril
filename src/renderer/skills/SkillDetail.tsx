@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
-import type { SkillItem, SkillsList, SkillState } from '../../preload/api'
+import type { SkillItem, SkillsList, SkillState, SkillUse } from '../../preload/api'
 import { Problem } from '../components/Problem'
-import { useT } from '../ui'
+import { useLocale, useT } from '../ui'
 import { fullName, originLabel, stateLabel } from './SkillCard'
 
 const STATES: SkillState[] = ['on', 'name-only', 'user-invocable-only', 'off']
@@ -14,10 +14,36 @@ type Edit = { base: string; text: string; before: boolean }
 type Ask = { kind: 'conflict'; disk: string } | { kind: 'broken'; force?: true }
 type Opts = { force?: boolean; allowBroken?: boolean }
 const msg = (e: unknown): string => (e instanceof Error ? e.message : String(e))
+const BAR_PX = 32
+
+/** K38: the last 14 days, oldest left, each bar against the busiest of them; 2 px when 0. */
+function UseBars({ use }: { use: SkillUse | null }) {
+  const t = useT()
+  const locale = useLocale()
+  const days = use?.days ?? Array<number>(30).fill(0)
+  const recent = days.slice(0, 14).reverse()
+  const max = Math.max(...recent)
+  const now = new Date()
+  const total = days.reduce((a, n) => a + n, 0)
+  return (
+    <div className="skd-use">
+      <p className="skd-use-h">{t('Uso · últimos 14 días')}</p>
+      <div className="skd-bars" role="group" aria-label={t('Uso · últimos 14 días')}>
+        {recent.map((n, i) => {
+          const day = new Date(now.getFullYear(), now.getMonth(), now.getDate() - (13 - i)).toLocaleDateString(locale, { day: 'numeric', month: 'short' })
+          return <span key={i} role="img" aria-label={`${day}: ${n}`} title={`${day}: ${n}`} style={{ height: `${n === 0 ? 2 : Math.max(2, Math.round((n / max) * BAR_PX))}px` }} />
+        })}
+      </div>
+      <p>{total > 0 ? t('{n} veces en 30 días', { n: total }) : t('Sin usar en 30 días.')}</p>
+      <p className="where">{t('Según las sesiones de Claude Code en este Mac.')}</p>
+    </div>
+  )
+}
 
 /** K7: a side panel, not a modal; the instructions are plain text, never markup. K15: «Estado» for personal and project items. */
 export function SkillDetail({
   item,
+  use,
   repo,
   busy,
   note,
@@ -30,6 +56,8 @@ export function SkillDetail({
   autoEdit
 }: {
   item: SkillItem
+  /** K38: undefined while the usage has not answered or failed. */
+  use?: SkillUse | null
   repo: string
   busy: boolean
   note: string | null
@@ -175,6 +203,7 @@ export function SkillDetail({
             </div>
           ))}
       </dl>
+      {use !== undefined && <UseBars use={use} />}
       {editable && !edit && (
         <p>
           <button type="button" className="btn" onClick={() => void startEdit()}>

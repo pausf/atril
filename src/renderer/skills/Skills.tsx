@@ -1,17 +1,17 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { PluginCatalog, PluginCatalogResult, PluginFailure, PluginRequest, SkillItem, SkillRef, SkillSet, SkillsList, SkillState } from '../../preload/api'
+import type { PluginCatalog, PluginCatalogResult, PluginFailure, PluginRequest, SkillItem, SkillRef, SkillSet, SkillsList, SkillState, SkillUse } from '../../preload/api'
 import { Problem } from '../components/Problem'
 import { useT } from '../ui'
 import { PluginAddDialog } from './PluginAddDialog'
 import { PluginProblem } from './PluginProblem'
 import { PluginRemoveDialog } from './PluginRemoveDialog'
-import { SkillCard } from './SkillCard'
+import { fullName, SkillCard } from './SkillCard'
 import { dropDraft, SkillDetail } from './SkillDetail'
 import { SkillLeaveDialog } from './SkillLeaveDialog'
 import { SkillNewDialog } from './SkillNewDialog'
 import { SkillWriteDialog } from './SkillWriteDialog'
 
-type Filter = 'all' | 'on' | 'off'
+type Filter = 'all' | 'on' | 'off' | 'idle'
 
 /** K5: what counts as loaded and what as off; `user-invocable-only` is neither. */
 export const isActive = (i: SkillItem): boolean => (i.state === 'on' || i.state === 'name-only') && !i.shadowedBy && i.enabled !== false
@@ -33,6 +33,8 @@ export function Skills() {
   const [q, setQ] = useState('')
   const [filter, setFilter] = useState<Filter>('all')
   const [open, setOpen] = useState<SkillItem | null>(null)
+  // K37: null until it answers, and when it fails: then nothing is said about use.
+  const [usage, setUsage] = useState<Record<string, SkillUse> | null>(null)
   const [busy, setBusy] = useState(false)
   const [note, setNote] = useState<string | null>(null)
   const [fail, setFail] = useState<{ error: string; ref: SkillRef } | null>(null)
@@ -68,6 +70,18 @@ export function Skills() {
       },
       () => setRepos(null)
     )
+  }, [])
+
+  // K37: once per visit; the use does not depend on the repo, and the list never waits for it.
+  useEffect(() => {
+    let live = true
+    void window.atril.skills.usage().then(
+      (r) => live && 'usage' in r && setUsage(r.usage),
+      () => undefined
+    )
+    return () => {
+      live = false
+    }
   }, [])
 
   const loadCatalog = useCallback(() => {
@@ -206,7 +220,12 @@ export function Skills() {
   }
 
   const items = data?.items ?? []
-  const shown = items.filter((i) => matches(i, q) && (filter === 'all' || (filter === 'on' ? isActive(i) : isOff(i))))
+  const useOf = (i: SkillItem): SkillUse | null | undefined => (usage ? (usage[fullName(i).slice(1)] ?? null) : undefined)
+  // K37: what Claude could use and nobody used; «Solo si la llamas tú» counts.
+  const isIdle = (i: SkillItem): boolean => !isOff(i) && !i.shadowedBy && useOf(i) === null
+  const pass: Record<Filter, (i: SkillItem) => boolean> = { all: () => true, on: isActive, off: isOff, idle: isIdle }
+  const shown = items.filter((i) => matches(i, q) && pass[filter](i))
+  const idle = items.filter(isIdle).length
   const active = items.filter(isActive)
   const tokens = Math.round(active.reduce((n, i) => n + i.name.length + (i.description ?? '').length + (i.whenToUse ?? '').length, 0) / 3.2)
   const repoName = repo ?? ''
@@ -222,6 +241,7 @@ export function Skills() {
             id={`sk-${key}`}
             item={i}
             repo={repoName}
+            use={useOf(i)}
             onOpen={(el) => {
               opener.current = el
               if (i !== open) {
@@ -315,6 +335,13 @@ export function Skills() {
           <b>{items.filter((i) => i.shadowedBy).length}</b>
           <span>{t('Choques')}</span>
         </div>
+        {usage && (
+          <button type="button" className="skct" aria-label={t('Sin usar en 30 días')} aria-pressed={filter === 'idle'} onClick={() => setFilter((f) => (f === 'idle' ? 'all' : 'idle'))}>
+            <b>{idle}</b>
+            <span>{t('Sin usar en 30 días')}</span>
+            <small>{idle === 0 ? t('todas en uso') : t('candidatas a apagar')}</small>
+          </button>
+        )}
       </div>
 
       {data && narrowed && shown.length === 0 ? (
@@ -335,6 +362,8 @@ export function Skills() {
             </>
           ) : filter === 'on' ? (
             t('No tienes ninguna activa.')
+          ) : filter === 'idle' ? (
+            t('No tienes ninguna sin usar.')
           ) : (
             t('No tienes ninguna apagada.')
           )}
@@ -427,6 +456,7 @@ export function Skills() {
           key={open.path}
           autoEdit={autoEdit}
           item={open}
+          use={useOf(open)}
           repo={repoName}
           busy={busy}
           note={note}

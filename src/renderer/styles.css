@@ -4925,7 +4925,8 @@ button.fx-bt {
 }
 .sksum {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
   gap: 10px;
   margin-bottom: 16px;
 }
@@ -5272,4 +5273,34 @@ button.fx-bt {
   font-size: 11.5px;
   color: var(--sub);
   overflow-wrap: anywhere;
+}
+button.skct {
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+button.skct[aria-pressed='true'] {
+  border-color: var(--text);
+}
+.skd-use {
+  margin: 12px 0;
+}
+.skd-use p {
+  margin: 4px 0;
+  font-size: 12.5px;
+}
+.skd-use-h {
+  color: var(--sub);
+}
+.skd-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 32px;
+}
+.skd-bars span {
+  flex: 1;
+  border-radius: 2px;
+  background: var(--run);
 }
