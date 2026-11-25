@@ -464,3 +464,7 @@ A decision log line said a test covered the catalog read during an action; none 
 
 ## 2026-11-24 · skills-plugins · 6→7
 `undefined === undefined` matched a `local` install without `projectPath` when no repo was picked, offering buttons main would refuse. Comparisons against an optional lookup guard the lookup first. Fixed, forced red.
+
+## 2026-11-25 · skills-usage · 6→7
+- El revisor en frío no encontró nada. Mirando la foto salieron dos fallos que los tests daban por buenos porque el contrato los permitía: las skills de Atril contaban como «candidatas a apagar» (no se apagan una a una) y un solo uso decía «1 veces». Regla: mirar la foto contra lo que la persona leerá, no solo contra el criterio; el singular y lo que no se puede tocar van en el contrato desde el principio.
+- El filtro de texto antes de `JSON.parse` busca `"name":"Skill"` sin espacios: comprobado contra una sesión real de este proyecto (Claude Code escribe JSON compacto). Si un día cuenta 0, mirar esto primero.

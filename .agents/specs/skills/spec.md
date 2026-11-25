@@ -23,6 +23,10 @@ Desde Skills la persona cambia el texto de una skill o comando suyos, o crea una
 
 Desde Skills la persona ve qué plugins ofrecen sus marketplaces, instala uno para ella en todos los repos o solo en uno, lo actualiza o lo quita, y añade un marketplace nuevo, sin abrir la terminal ni gastar cuota; lo que pida aceptar un comando de terceros se hace en Terminal, a la vista.
 
+### Skills: uso (skills-usage, 25 nov 2026)
+
+En Skills la persona ve qué skills y comandos usa de verdad y cuáles llevan 30 días sin usarse, para decidir cuáles apagar, sin gastar cuota: Atril lo cuenta leyendo las sesiones que Claude Code ya guarda en el Mac.
+
 ## Scope boundaries
 
 ## Constraints
@@ -54,6 +58,13 @@ Desde Skills la persona ve qué plugins ofrecen sus marketplaces, instala uno pa
 - Tope de 120 s por operación; al pasarlo, error «Claude Code no ha contestado a tiempo.».
 - Ninguna llamada al modelo. Tests con un `Runner` falso que anota los argumentos; nunca el `claude` real.
 - Textos por `t()` con entrada inglesa; colores por tokens; errores con `Problem`.
+
+### Skills: uso (skills-usage, 25 nov 2026)
+
+- Ninguna llamada a Claude; nunca `~/.claude.json`. Solo lectura de `claudeDir()/projects`.
+- Lectura por líneas en streaming; una línea se mira con `JSON.parse` solo si contiene `"name":"Skill"` o `<command-name>`.
+- Textos por `t()` con entrada inglesa; colores por tokens.
+- Tests con `ATRIL_CLAUDE_DIR` temporal y sesiones sembradas.
 
 ## Prior decisions
 
@@ -185,6 +196,36 @@ Desde Skills la persona ve qué plugins ofrecen sus marketplaces, instala uno pa
 - Q: (builder) ¿Archivos fuera del Scope? → A: `bocetos/qa-final.html` (el paso «Plugins desde Atril contra la CLI real», pedido por el encargo) y `src/renderer/App.tsx` (una línea: la vista de foto `skills-plugins`); entran en Scope (assumed).
 - Q: (builder) ¿K27 bloquea con `busy`? → A: solo mientras corre una K28/K29; una lectura de catálogo no bloquea a otra, porque la pantalla y el diálogo lo piden a la vez (la foto lo destapó); un test lo cubre (assumed).
 
+### Skills: uso (skills-usage, 25 nov 2026)
+
+- (2026-11-25, skills-usage) El uso sale de las sesiones de Claude Code en `claudeDir()/projects`, nunca de `~/.claude.json` ni de una llamada a Claude; una línea que no se entiende se salta.
+- (2026-11-25, skills-usage) Solo se miran 30 días y solo los archivos modificados en ellos; lo contado se guarda en memoria por archivo (`mtime` + tamaño) — ponytail: en memoria, persistir si la primera apertura es lenta.
+- (2026-11-25, skills-usage) Una invocación casa con la tarjeta por el nombre que esta enseña sin barra (`name` o `{plugin antes de @}:name`).
+
+#### Alternatives that lost
+
+| Considered | Why it lost |
+|---|---|
+| Leer `~/.claude.json` | prohibido tocarlo; y no sabemos que guarde fechas |
+| Hooks de Claude Code que apunten cada uso | escribe en los ajustes de la persona y solo cuenta desde hoy |
+| Persistir el recuento en `ATRIL_HOME` | más código y una caché que invalidar; en memoria basta hasta medir |
+| Releer todo cada vez | ~3,5 GB; aun con el filtro de 30 días, la caché ahorra casi todo |
+
+#### Decision log, answers as given (2026-11-25)
+- Q: ¿De dónde sale el uso? → A: de las sesiones que Claude Code guarda en `claudeDir()/projects/*/*.jsonl` (y sus `*/<sesión>/subagents/*.jsonl`): una línea con un `tool_use` `"name":"Skill"` cuenta `input.skill`; una línea de la persona con `<command-name>/x</command-name>` cuenta `x` (assumed: Claude Code no documenta otro registro de uso; `~/.claude.json` no se toca; el formato no está documentado, así que una línea que no se entiende se salta y nunca rompe la pantalla).
+- Q: ¿Cuánto hacia atrás? → A: 30 días, y solo se abren archivos modificados en esos 30 días (assumed: hay ~3,5 GB de sesiones; leer todo cada vez es inviable).
+- Q: ¿Cada vez que se abre Skills relee todo? → A: no: main guarda en memoria lo contado por archivo junto a su `mtime` y tamaño y solo relee los que cambiaron; una lectura a la vez (assumed: persistirlo en disco si la primera apertura resulta lenta).
+- Q: ¿Cómo se casa una invocación con una tarjeta? → A: por el nombre que la tarjeta enseña sin la barra: `name` para personal y proyecto, `{plugin antes de @}:name` para plugin y Atril (assumed: es lo que se teclea y lo que el `Skill` recibe).
+- Q: ¿Qué enseña? → A: en cada tarjeta, «usada hace {n} días» / «usada hoy» / «sin usar en 30 días»; un recuadro «Sin usar en 30 días» junto a Activas, Apagadas y Choques, que filtra; en el detalle, «Uso · últimos 14 días» con 14 barras, «{n} veces en 30 días» y «Según las sesiones de Claude Code en este Mac.» (assumed: como el boceto, sin el donut).
+- Q: ¿«Apagar todas» las sin usar? → A: fuera (assumed: son N escrituras de golpe y merecen su propio cambio con deshacer).
+- Q: (spec-reviewer) ¿Qué tarjetas dicen el uso y cuáles cuentan como «sin usar»? → A: dicen el uso todas menos las que no se cargan (`shadowedBy`), que no dicen nada; un nombre sin entrada es «sin usar en 30 días»; el recuadro y el filtro cuentan las que Claude puede usar: no `off`, no `shadowedBy` y `enabled` distinto de `false` (incluye «Solo si la llamas tú», que es justo la que solo cuenta si la tecleas) (assumed).
+- Q: (spec-reviewer) ¿Dos tarjetas con el mismo nombre en repos distintos? → A: comparten el recuento: las sesiones no dicen de qué repo venía una skill con ese nombre; uso por repo está fuera (assumed).
+- Q: (spec-reviewer) ¿Se vuelve a pedir el uso al cambiar de repo? → A: no: una vez por visita a la pantalla; el uso no depende del repo (assumed).
+- Q: (spec-reviewer) ¿Escala y fecha de las barras? → A: proporcionales al máximo de esos 14 días; con todo a 0, todas al mínimo (2 px); la etiqueta con día y mes cortos de la configuración regional, p. ej. «25 nov: 3» (assumed).
+- Q: (spec-reviewer) ¿Filtro «sin usar» vacío? → A: «No tienes ninguna sin usar.» (assumed).
+- Q: (foto) ¿Las de Atril cuentan como candidatas a apagar? → A: no: vienen con la app y no se apagan una a una; su tarjeta sí dice el uso (assumed).
+- Q: ¿Y si leer el uso falla o tarda? → A: la lista nunca espera al uso; si falla, las tarjetas no dicen nada del uso y no hay recuadro (assumed: el uso es un añadido, no la pantalla).
+
 ## Task breakdown
 
 ## Verification criteria
@@ -268,3 +309,16 @@ Desde Skills la persona ve qué plugins ofrecen sus marketplaces, instala uno pa
   Proof: src/renderer/skills/skills.test.tsx update and remove a plugin from its bar
 - **K34** If a plugin action or marketplace add answers `{ error, code }`, then the screen shall show the `Problem` «No he podido completar la operación del plugin.» with `error` in its detail and «Hacerlo en Terminal» (K31, plugin actions only), except with `code` `missing`, where it shall show «No encuentro Claude Code en este Mac.» with the doctor's fix for `claude` and no Terminal button; if the catalog answers an error, the dialog shall show «No he podido leer los marketplaces.» with «Volver a intentar» (or the `missing` problem). One test holds every clause.
   Proof: src/renderer/skills/skills.test.tsx a failed plugin action offers terminal
+
+### Skills: uso (skills-usage, 25 nov 2026)
+
+- **K35** When `atril:skills:usage` is called, main shall read every `*.jsonl` under `claudeDir()/projects/<dir>/` and `claudeDir()/projects/<dir>/<session>/subagents/` whose `mtime` is within the last 30 days, and answer `{ usage }` mapping each name to `{ last, days }` — `last` the newest ISO `timestamp` seen for it, `days` a 30-number array (index 0 today, local time) of uses per day — counting once per line an assistant line holding a `tool_use` named `Skill` (its `input.skill`) and once per line a user line whose content holds `<command-name>/x</command-name>` (as `x`); lines older than 30 days, unparsable lines and lines without `timestamp` shall count nothing; a file whose `mtime` is older than 30 days shall count nothing even when its lines carry recent timestamps (it is not opened). Day `k` is the number of local calendar days between today and the line's `timestamp`. One test holds every clause.
+  Proof: src/main/skills/usage.test.ts "counts Skill tool uses and typed commands per day within 30 days"
+- **K36** If a file's `mtime` and size are unchanged since the last `atril:skills:usage`, then main shall not read it again and shall reuse what it counted; a file that changed shall be read again whole and a file that disappeared shall stop counting. One test holds every clause.
+  Proof: src/main/skills/usage.test.ts "reuses an unchanged file and rereads a changed one"
+- **K39** While one `atril:skills:usage` read runs, a second call shall get the same answer without starting another read; if `claudeDir()/projects` cannot be listed for a reason other than not existing, main shall answer `{ error }` and not reject, and with no `projects` folder it shall answer `{ usage: {} }`. One test holds every clause.
+  Proof: src/main/skills/usage.test.ts "shares a running read and answers an error instead of rejecting"
+- **K37** When the Skills screen shows and the usage answers, each card not shadowed shall show «usada hoy», «usada hace 1 día», «usada hace {n} días» or (no entry for its name) «sin usar en 30 días», matching the card's name without the slash (K5), and a shadowed card shall say nothing about usage; a fourth tile «Sin usar en 30 días» shall count the items that are not `atril`, not `off`, not shadowed, not `enabled: false` and have no use, with «candidatas a apagar» (or «todas en uso» at 0), and activating it shall filter to those items as a pressed toggle that a second press, «Todas» or another filter undoes, showing «No tienes ninguna sin usar.» when none; the usage shall be asked once per visit to the screen, not again on a repo pick; while it has not answered, or it answered `{ error }`, cards shall say nothing about usage and the tile shall not show. One test holds every clause.
+  Proof: src/renderer/skills/skills.test.tsx "shows when each skill was last used and filters the unused ones"
+- **K38** When the detail (K7) opens and the usage has answered, it shall show «Uso · últimos 14 días» with 14 bars (oldest left, height proportional to that day's uses over the 14-day maximum, 2 px when 0, each with an accessible label «{día mes corto}: {n}», e.g. «25 nov: 3»), «{n} veces en 30 días» («1 vez en 30 días» for one, «Sin usar en 30 días.» for none) and «Según las sesiones de Claude Code en este Mac.»; without usage it shall show none of these. One test holds every clause.
+  Proof: src/renderer/skills/skills.test.tsx "the detail shows the last 14 days of use"
