@@ -149,7 +149,7 @@ function Shell() {
   useEffect(() => {
     void window.atril.snapshotView().then((v) => {
       if (v === 'settings' || v === 'tasks' || v === 'work' || v === 'mr' || v === 'avisos' || v === 'libretto' || v === 'qa' || v === 'skills') setScreen(v)
-      if (v === 'skills-estado' || v === 'skills-editor' || v === 'skills-plugins') setScreen('skills')
+      if (v === 'skills-estado' || v === 'skills-editor' || v === 'skills-plugins' || v === 'skills-uso') setScreen('skills')
       if (v === 'mr-score' || v === 'mr-thread' || v === 'mr-lens') setScreen('mr')
       if (v === 'tasks-board') setScreen('tasks')
       if (v === 'settings-board' || v === 'create-repo') setScreen('settings')

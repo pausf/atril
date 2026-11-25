@@ -187,18 +187,22 @@ export function Skills() {
   const setPlugin = (plugin: string, enabled: boolean, file?: string): void =>
     ask({ plugin, enabled, repoId }, { origin: 'plugin', name: '', plugin, repoId }, file, `enabledPlugins.${plugin}`, String(enabled))
 
-  // ponytail: dev-only, ATRIL_SNAPSHOT_VIEW=skills-estado opens the first personal skill's detail, skills-editor the same in «Editar», skills-plugins opens «Añadir plugin», for a photo.
+  // ponytail: dev-only, ATRIL_SNAPSHOT_VIEW=skills-estado opens the first personal skill's detail, skills-editor the same in «Editar», skills-plugins opens «Añadir plugin», skills-uso the most used personal skill, for a photo.
   useEffect(() => {
     if (!data) return
     void window.atril.snapshotView().then((v) => {
       if (v === 'skills-estado') setOpen((prev) => prev ?? data.items.find((i) => i.origin === 'personal' && !i.lockedBy) ?? null)
+      if (v === 'skills-uso' && usage) {
+        const uses = (i: SkillItem): number => usage[i.name]?.days.reduce((a, n) => a + n, 0) ?? 0
+        setOpen((prev) => prev ?? data.items.filter((i) => i.origin === 'personal').sort((a, b) => uses(b) - uses(a))[0] ?? null)
+      }
       if (v === 'skills-plugins') setAdding(true)
       if (v === 'skills-editor') {
         setAutoEdit(true)
         setOpen((prev) => prev ?? data.items.find((i) => i.origin === 'personal') ?? null)
       }
     })
-  }, [data])
+  }, [data, usage])
 
   const guard = useCallback((next: () => void): void => {
     if (dirty.current) setLeave(() => next)
