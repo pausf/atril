@@ -1125,7 +1125,17 @@ export type PluginFailure = { error: string; code: 'invalid' | 'busy' | 'missing
 export type PluginCatalogResult = { catalog: PluginCatalog } | PluginFailure
 export type PluginActionResult = { list: SkillsList } | PluginFailure
 
+/** K35: one name's uses in the last 30 days: the newest `timestamp` and uses per local day, index 0 today. */
+export interface SkillUse {
+  last: string
+  days: number[]
+}
+/** K39: main never rejects; with no sessions folder the answer is `{ usage: {} }`. */
+export type SkillsUsage = { usage: Record<string, SkillUse> } | { error: string }
+
 export interface SkillsApi {
+  /** K35: what was invoked, read from Claude Code's sessions on this Mac; never Claude. */
+  usage(): Promise<SkillsUsage>
   /** K27: the plugins the added marketplaces offer and what is installed, from the Claude Code CLI. */
   catalog(repoId?: string): Promise<PluginCatalogResult>
   /** K28: installs, updates or removes one plugin through the CLI; answers the new list. */

@@ -46,6 +46,7 @@ import type { Effort, InboxGroup, InboxResult, JiraIssue, Model, NextItem, QaBug
 import { createSkill, readSkillFile, saveSkill } from './skills/edit'
 import { createPlugins } from './skills/plugins'
 import { listSkills } from './skills/read'
+import { createUsage as createSkillUsage } from './skills/usage'
 import { revealFile, setSkill } from './skills/write'
 import { listRepos, readRepos, registerRepo, relocateRepo, removeRepo, setOverride } from './repos'
 import { createRefiner } from './refine'
@@ -516,6 +517,8 @@ app.whenReady().then(async () => {
   ipcMain.handle('atril:skills:list', (_e, repoId: unknown) =>
     listSkills(typeof repoId === 'string' ? repoId : undefined, readRepos, librettoDir())
   )
+  const skillUsage = createSkillUsage()
+  ipcMain.handle('atril:skills:usage', () => skillUsage.read())
   ipcMain.handle('atril:skills:set', (_e, req: unknown) => setSkill(req as SkillSet, readRepos, librettoDir()))
   ipcMain.handle('atril:skills:read', (_e, req: unknown) => readSkillFile(req as SkillFileRef, readRepos, librettoDir()))
   ipcMain.handle('atril:skills:save', (_e, req: unknown) => saveSkill(req as SkillSave, readRepos, librettoDir()))

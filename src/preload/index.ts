@@ -229,6 +229,7 @@ const api: AtrilApi = {
   refine: { ask: (text) => ipcRenderer.invoke('atril:refine:ask', text) },
   skills: {
     list: (repoId) => ipcRenderer.invoke('atril:skills:list', repoId),
+    usage: () => ipcRenderer.invoke('atril:skills:usage'),
     set: (req) => ipcRenderer.invoke('atril:skills:set', req),
     reveal: (ref) => ipcRenderer.invoke('atril:skills:reveal', ref),
     read: (ref) => ipcRenderer.invoke('atril:skills:read', ref),

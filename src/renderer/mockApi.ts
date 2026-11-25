@@ -1,5 +1,5 @@
 import { vi } from 'vitest'
-import type { ActivityLine, SubagentEntry, SubagentLine, AddRepoResult, Aviso, FileChange, FlowBoxes, FlowDocs, ForgeId, ForgeStatus, Mode, MrDraft, MrDrafts, MrDraftsResult, MrFixCiResult, MrLists, MrMergeResult, MrPage, MrReply, MrScoreState, MrThreads, MrWork, NotifyPatch, RefineResult, NotifyPermission, SkillsList, NotifySettings, AgentState, StateProblem, QaBugResult, QaLaunchResult, QaManualRequest, QaMr, QaPublishResult, QaReport, QaResult, QaStatus, QaTargets, AtrilApi, RemoveResult, QuickAnswer, AgentWait, RadarHit, FlowStage, HistoryEntry, IdeaJiraResult, IdeaResult, LibrettoCounts, LibrettoState, JiraIssue, JiraSettingsStatus, MenuAction, NextItem, StartProposalResult, StartRequest, StartResult, RepoResult, RepoView, ToolReport, UiState, WorkCost, WorkspaceResult, WorkspaceView } from '../preload/api'
+import type { ActivityLine, SubagentEntry, SubagentLine, AddRepoResult, Aviso, FileChange, FlowBoxes, FlowDocs, ForgeId, ForgeStatus, Mode, MrDraft, MrDrafts, MrDraftsResult, MrFixCiResult, MrLists, MrMergeResult, MrPage, MrReply, MrScoreState, MrThreads, MrWork, NotifyPatch, RefineResult, NotifyPermission, SkillsList, SkillsUsage, NotifySettings, AgentState, StateProblem, QaBugResult, QaLaunchResult, QaManualRequest, QaMr, QaPublishResult, QaReport, QaResult, QaStatus, QaTargets, AtrilApi, RemoveResult, QuickAnswer, AgentWait, RadarHit, FlowStage, HistoryEntry, IdeaJiraResult, IdeaResult, LibrettoCounts, LibrettoState, JiraIssue, JiraSettingsStatus, MenuAction, NextItem, StartProposalResult, StartRequest, StartResult, RepoResult, RepoView, ToolReport, UiState, WorkCost, WorkspaceResult, WorkspaceView } from '../preload/api'
 
 export const workspace = (id: string, branch: string, alive = true): WorkspaceView => ({
   id,
@@ -132,6 +132,8 @@ interface Options {
   removeRepo?: Record<string, RepoResult>
   /** What skills.list answers per repo id ('' without one), or a function of the repo id; missing means none. */
   skills?: Record<string, SkillsList> | ((repoId?: string) => Promise<SkillsList>)
+  /** What skills.usage answers, or a function; missing means nothing used. */
+  skillsUsage?: SkillsUsage | (() => Promise<SkillsUsage>)
   /** What repos.relocate answers per id; missing means found again (health turns ok). */
   relocateRepo?: Record<string, RepoResult | null>
 }
@@ -486,6 +488,7 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
       set: vi.fn(async (req: { repoId?: string }): Promise<SkillsList> =>
         typeof o.skills === 'function' ? o.skills(req.repoId) : (o.skills?.[req.repoId ?? ''] ?? { items: [], warnings: [] })
       ),
+      usage: vi.fn(async (): Promise<SkillsUsage> => (typeof o.skillsUsage === 'function' ? o.skillsUsage() : (o.skillsUsage ?? { usage: {} }))),
       reveal: vi.fn(async () => undefined),
       read: vi.fn(async () => ''),
       save: vi.fn(async () => ({ list: { items: [], warnings: [] } })),
