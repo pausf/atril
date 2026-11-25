@@ -265,14 +265,13 @@ describe('skills screen', () => {
     expect(text('/deploy', 0)).not.toMatch(/usada|sin usar/)
     expect(text('/escribir-docs')).not.toMatch(/usada|sin usar/)
 
-    // Idle: not off, not shadowed, not enabled:false, no use → manual, sembrar, mal, evidence.
+    // Idle: not atril, not off, not shadowed, not enabled:false, no use → manual, sembrar, mal.
     const tile = within(s).getByRole('button', { name: 'Sin usar en 30 días' })
-    expect(tile.textContent).toBe('4Sin usar en 30 díascandidatas a apagar')
+    expect(tile.textContent).toBe('3Sin usar en 30 díascandidatas a apagar')
     const user = userEvent.setup()
     await user.click(tile)
     expect(tile.getAttribute('aria-pressed')).toBe('true')
-    expect(cards().sort()).toEqual(['/libretto:evidence', '/mal', '/manual', '/sembrar'])
-    expect(text('/libretto:evidence')).toContain('sin usar en 30 días')
+    expect(cards().sort()).toEqual(['/mal', '/manual', '/sembrar'])
     await user.click(tile)
     expect(tile.getAttribute('aria-pressed')).toBe('false')
     expect(cards()).toHaveLength(ITEMS.length)
@@ -320,8 +319,8 @@ describe('skills screen', () => {
     days[20] = 4
     mockApi({
       repos: [repo('shop-web')],
-      skills: { 'shop-web': list([item('revisar-cambios', 'personal'), item('otra', 'personal')]) },
-      skillsUsage: { usage: { 'revisar-cambios': { last: '2026-11-25T10:00:00.000Z', days } } }
+      skills: { 'shop-web': list([item('revisar-cambios', 'personal'), item('otra', 'personal'), item('una', 'personal')]) },
+      skillsUsage: { usage: { 'revisar-cambios': { last: '2026-11-25T10:00:00.000Z', days }, una: { last: '2026-11-25T10:00:00.000Z', days: [1, ...Array<number>(29).fill(0)] } } }
     })
     render(createElement(App))
     const s = await open()
@@ -352,6 +351,8 @@ describe('skills screen', () => {
     const d2 = screen.getByRole('complementary', { name: '/otra' })
     expect(d2.textContent).toContain('Sin usar en 30 días.')
     expect(within(within(d2).getByRole('group', { name: 'Uso · últimos 14 días' })).getAllByRole('img').map((b) => b.style.height)).toEqual(Array(14).fill('2px'))
+    await user.click(within(s).getByRole('button', { name: /^\/una/ }))
+    expect(screen.getByRole('complementary', { name: '/una' }).textContent).toContain('1 vez en 30 días')
 
     cleanup()
     mockApi({ repos: [repo('shop-web')], skills: { 'shop-web': list([item('revisar-cambios', 'personal')]) }, skillsUsage: { error: 'EACCES' } })

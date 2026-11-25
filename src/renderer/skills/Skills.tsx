@@ -226,7 +226,7 @@ export function Skills() {
   const items = data?.items ?? []
   const useOf = (i: SkillItem): SkillUse | null | undefined => (usage ? (usage[fullName(i).slice(1)] ?? null) : undefined)
   // K37: what Claude could use and nobody used; «Solo si la llamas tú» counts.
-  const isIdle = (i: SkillItem): boolean => !isOff(i) && !i.shadowedBy && useOf(i) === null
+  const isIdle = (i: SkillItem): boolean => i.origin !== 'atril' && !isOff(i) && !i.shadowedBy && useOf(i) === null
   const pass: Record<Filter, (i: SkillItem) => boolean> = { all: () => true, on: isActive, off: isOff, idle: isIdle }
   const shown = items.filter((i) => matches(i, q) && pass[filter](i))
   const idle = items.filter(isIdle).length

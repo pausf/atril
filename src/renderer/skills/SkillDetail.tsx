@@ -34,7 +34,7 @@ function UseBars({ use }: { use: SkillUse | null }) {
           return <span key={i} role="img" aria-label={`${day}: ${n}`} title={`${day}: ${n}`} style={{ height: `${n === 0 ? 2 : Math.max(2, Math.round((n / max) * BAR_PX))}px` }} />
         })}
       </div>
-      <p>{total > 0 ? t('{n} veces en 30 días', { n: total }) : t('Sin usar en 30 días.')}</p>
+      <p>{total === 1 ? t('1 vez en 30 días') : total > 0 ? t('{n} veces en 30 días', { n: total }) : t('Sin usar en 30 días.')}</p>
       <p className="where">{t('Según las sesiones de Claude Code en este Mac.')}</p>
     </div>
   )

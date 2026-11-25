@@ -1082,6 +1082,7 @@ export const EN: Record<string, string> = {
   'No tienes ninguna sin usar.': 'You have none unused.',
   'Uso · últimos 14 días': 'Use · last 14 days',
   '{n} veces en 30 días': '{n} times in 30 days',
+  '1 vez en 30 días': 'Once in 30 days',
   'Sin usar en 30 días.': 'Unused in 30 days.',
   'Según las sesiones de Claude Code en este Mac.': 'From the Claude Code sessions on this Mac.',
   'Proyecto ({repo})': 'Project ({repo})',
