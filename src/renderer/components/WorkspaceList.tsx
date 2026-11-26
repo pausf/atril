@@ -27,7 +27,7 @@ function RadarLine({ hits = [] }: { hits?: RadarHit[] }) {
       )}
       {ids && (
         <span className="ws-radar ids" title={hits.flatMap((h) => (h.ids ?? []).map((i) => `${h.branch}: ${i}`)).join('\n')}>
-          {ids.n > 0 ? t('Same criterion ids as {branch}: {id} and {n} more', ids) : t('Same criterion ids as {branch}: {id}', ids)}
+          {ids.n > 0 ? t('Criterion ids {id} and {n} more also in {branch}', ids) : t('Criterion id {id} also in {branch}', ids)}
         </span>
       )}
     </>

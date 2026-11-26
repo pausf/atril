@@ -81,13 +81,13 @@ describe('the collision radar', () => {
     await screen.findByText('PF-3')
     const ids = (branch: string): HTMLElement | null => row(branch).querySelector('.ws-radar.ids')
     await waitFor(() => expect(ids('PF-1')).not.toBeNull())
-    expect(ids('PF-1')!.textContent).toBe('Mismos ids de criterio que PF-2: W217 y 2 más')
+    expect(ids('PF-1')!.textContent).toBe('Ids de criterio W217 y 2 más también en PF-2')
     expect(ids('PF-1')!.title).toBe('PF-2: W217\nPF-2: W218\nPF-2: W219\nPF-3: W217')
     // The file line comes from the first hit with files, above the ids line.
     const files = row('PF-1').querySelector('.ws-radar:not(.ids)')!
     expect(files.textContent).toBe('Choca con PF-3 en src/cart.ts')
     expect(files.compareDocumentPosition(ids('PF-1')!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
-    expect(ids('PF-2')!.textContent).toBe('Mismos ids de criterio que PF-1: W217')
+    expect(ids('PF-2')!.textContent).toBe('Id de criterio W217 también en PF-1')
     expect(row('PF-2').querySelector('.ws-radar:not(.ids)')).toBeNull()
     expect(ids('PF-3')).toBeNull()
   })

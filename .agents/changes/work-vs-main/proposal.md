@@ -35,7 +35,7 @@ Owner: `workspaces` (`src/main/workspaces.ts`, `src/main/radar.ts`, `src/main/in
 - Q: What is the size measured against? → A: `git merge-base HEAD <baseRef>` while the record has `baseRef`, else `baseCommit`; the same base for the hook's size, the panel's total and boxes, and the radar. `stageOf`, history and QA keep `baseCommit` (assumed; they count or show commits, not a size).
 - Q: How does Atril learn a PR is merged? → A: two signals, either one: a `merged` notice matched to a work by W187's rule, and, after a new work's fetch, a sibling branch with commits of its own that are all in the default ref. The mark is sticky (`merged: true` in the record) (assumed; squash merges are seen only through the notice).
 - Q: What does a merged work look like? → A: «Merged» in place of its state, no agent card, counted as done; «Remove» stays as it is (assumed).
-- Q: #8, warn or renumber? → A: warn, in the radar, like files: «Same criterion ids as {branch}: W217 and 7 more». `scripts/land.py` renumbering is out: it is this repo's script, not Atril (assumed).
+- Q: #8, warn or renumber? → A: warn, in the radar, like files: «Criterion ids W217 and 7 more also in {branch}» (wording from the real-app drive: the id comes first so the sidebar's cut never hides it). `scripts/land.py` renumbering is out: it is this repo's script, not Atril (assumed).
 
 - Q: (phase 5) How is it built? → A: resolve the base in workspaces (one `defaultRef` + `workBase` in `workspaces.ts`) and pass the resolved base into the unchanged flow functions; merged is a record field; ids ride the radar (assumed; rejected: a `base` argument threaded through `src/main/flow/**`, and a separate «merged» poll of the forge).
 
@@ -120,7 +120,7 @@ Owner: `workspaces` (`src/main/workspaces.ts`, `src/main/radar.ts`, `src/main/in
   Proof: src/renderer/agents.test.ts a merged work counts as done
 - **W310** Each radar hit shall carry `ids`: the ids both works own, where a work owns an id defined by a line starting `- **<capital letters><digits>**` without `(amended` in one of its `.agents/changes/*/*.md`, and that no such line anywhere under `.agents/` defines in the work's base commit (W303); sorted by `localeCompare` with `numeric: true`; files are read with `lstat`, links are not followed and files over 1 MB are skipped.
   Proof: src/main/radar.test.ts two works defining the same new criterion ids clash on those ids
-- **W311** When a row's hits share ids, the row shall show, under the file line, «Same criterion ids as {branch}: {id}» for the first hit with ids and its first id, followed by « and {n} more» where n is that hit's ids minus one, with every «{branch}: {id}» of every hit as the line's title.
+- **W311** When a row's hits share ids, the row shall show, under the file line, «Criterion id {id} also in {branch}» for the first hit with ids and its first id, or «Criterion ids {id} and {n} more also in {branch}» where n is that hit's ids minus one, the id before the branch so a cut line keeps it, with every «{branch}: {id}» of every hit as the line's title.
   Proof: src/renderer/radar.test.ts a row with shared criterion ids says which and with whom
 - **W166** (amended) Main shall answer, for every workspace record that is neither a review nor `merged` (W308), the other such records of the same repo that change at least one of the same files against W303's base (committed or not) or own at least one of the same criterion ids (W310), as `{ id, branch, files, ids }` with repo-relative files sorted; records of different repos never collide, and a record sharing no file and no id gets an empty list.
   Proof: src/main/radar.test.ts two works on one file collide and nothing else does
@@ -219,4 +219,4 @@ moves origin after the clone); W305 (a fixture with no merge of main passes triv
 - [x] `workBase` and its use in the hook's size, the panel's boxes and the radar · waits on box 1 · Closes: W303, W304, W305, W312
 - [x] Merged marks from notices and from ancestry after a fetch, merged works out of the radar, the row reads Merged · waits on box 1 · Closes: W306, W307, W308, W309, W313
 - [x] Shared criterion ids in the radar and on the row · waits on box 2 · Closes: W310, W311, W166, W168
-- [ ] Drive it in the real app on its own CDP port with a temp ATRIL_HOME (a merged work, a clash on ids) · waits on boxes 3 and 4
+- [x] Drive it in the real app on its own CDP port with a temp ATRIL_HOME (a merged work, a clash on ids) · waits on boxes 3 and 4
