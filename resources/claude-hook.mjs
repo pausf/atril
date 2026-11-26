@@ -9,6 +9,7 @@ import process from 'node:process'
 import { Buffer } from 'node:buffer'
 import { summarise } from './summarise.mjs'
 import { claimSize } from './branchsize.mjs'
+import { decideStop, openBoxes, reason } from './keepgoing.mjs'
 
 // W59: pushes and request creation in an automatic workspace need the person.
 // ponytail: any git … push in one command segment; a `push` word in a commit message only adds a question.
@@ -183,8 +184,6 @@ try {
   } catch {
     /* no stdin or not JSON: the state still counts */
   }
-  // W44: Claude's question tool is a stop (Libretto's before code is one): it waits for the person.
-  const state = event === 'PreToolUse' && payload?.tool_name === 'AskUserQuestion' ? 'needs-you' : STATES[event]
 
   const { name, lastTool } = session(event === 'PreToolUse' ? toolOf(payload) : undefined)
   if (!name) process.exit(0)
@@ -218,20 +217,35 @@ try {
     replace(file, [...kept, JSON.stringify({ at, ...line })].join('\n') + '\n')
   }
 
+  const dir = join(home, 'state')
+  mkdirSync(dir, { recursive: true })
+  const stateFile = join(dir, `${name}.json`)
+  const prev = readState(stateFile)
+
+  // W217, W218, W225: a stop with open boxes is answered here and the agent keeps going.
+  let blocks = event === 'UserPromptSubmit' ? 0 : Number.isInteger(prev.blocks) ? prev.blocks : 0
+  // W44: Claude's question tool is a stop (Libretto's before code is one): it waits for the person.
+  let state = event === 'PreToolUse' && payload?.tool_name === 'AskUserQuestion' ? 'needs-you' : STATES[event]
+  if (event === 'Stop') {
+    const open = openBoxes(payload?.cwd)
+    const stop = decideStop({ open, active: payload?.stop_hook_active, blocks, paused: existsSync(join(home, 'paused', name)) })
+    blocks = stop.blocks
+    if (stop.outcome === 'block') {
+      state = 'working'
+      process.stdout.write(JSON.stringify({ decision: 'block', reason: reason(open) }))
+    }
+  }
+
   // W87: Atril's pause mark goes when the person types or the agent waits; a late tool event keeps it.
   // Claude Code's idle reminder after a minute at the prompt is not a question: a pause survives it (W87).
   const idle = event === 'Notification' && (payload?.notification_type === 'idle_prompt' || /waiting for your input/i.test(text(payload?.message)))
   if (event === 'UserPromptSubmit' || (state === 'needs-you' && !idle)) rmSync(join(home, 'paused', name), { force: true })
 
-  const dir = join(home, 'state')
-  mkdirSync(dir, { recursive: true })
-  const stateFile = join(dir, `${name}.json`)
-  const prev = readState(stateFile)
   // W195: the idle reminder is no new question; a waiting state keeps everything and only says it has been a while.
   if (idle && prev.state === 'needs-you') replace(stateFile, JSON.stringify({ ...prev, idle: true }) + '\n')
   else {
     const body = state === 'needs-you' && line ? { text: line.text } : {}
-    replace(stateFile, JSON.stringify({ state, at, ...body, ...details(event, state, payload, prev, lastTool), ...(idle && { idle: true }) }) + '\n')
+    replace(stateFile, JSON.stringify({ state, at, ...body, ...details(event, state, payload, prev, lastTool), ...(idle && { idle: true }), blocks }) + '\n')
   }
 
   try {

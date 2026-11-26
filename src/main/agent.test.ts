@@ -321,17 +321,17 @@ describe('subagents hook', () => {
 
   interface Entry { id: string; type: string; description?: string; transcript?: string; startedAt: number; endedAt?: number }
   interface Pending { type: string; description: string; at: number }
-  interface Seed { entries?: Entry[]; pending?: Pending[]; state?: object }
+  interface Seed { entries?: Entry[]; pending?: Pending[]; state?: object; paused?: true }
   const NOW = (): number => Math.floor(Date.now() / 1000)
   const agent = (type: string, extra: object = {}, tool = 'Agent'): [string, object] => ['PreToolUse', { tool_name: tool, tool_input: { subagent_type: type, description: `d-${type}`, prompt: 'SECRET-PROMPT', ...extra } }]
 
   /** Runs the real hook for each event in a fresh workspace; the optional seed is on disk before the first one. */
-  async function fireIn(events: [string, object][], seed?: Seed): Promise<{ session: string; file: Seed | undefined }> {
+  async function fireIn(events: [string, object][], seed?: Seed): Promise<{ session: string; file: Seed | undefined; outs: string[] }> {
     const dir = tmp()
     const gate = join(dir, 'go')
     const steps = events.map(([event, payload], i) => {
       writeFileSync(join(dir, `in-${i}.json`), JSON.stringify(payload))
-      return `${hooksSettings().hooks[event]?.[0]?.hooks[0]?.command ?? ''} <'${join(dir, `in-${i}.json`)}'`
+      return `${hooksSettings().hooks[event]?.[0]?.hooks[0]?.command ?? ''} <'${join(dir, `in-${i}.json`)}' >'${join(dir, `out-${i}`)}'`
     })
     const r = await openWorktree({
       repoId: 'demo',
@@ -345,7 +345,11 @@ describe('subagents hook', () => {
       mkdirSync(join(home, 'state'), { recursive: true })
       writeFileSync(join(home, 'state', `${session}.json`), JSON.stringify(seed.state))
     }
-    if (seed && !seed.state) {
+    if (seed?.paused) {
+      mkdirSync(join(home, 'paused'), { recursive: true })
+      writeFileSync(join(home, 'paused', session), '1')
+    }
+    if (seed && !seed.state && !seed.paused) {
       mkdirSync(join(home, 'subagents'), { recursive: true })
       writeFileSync(join(home, 'subagents', `${session}.json`), JSON.stringify({ entries: seed.entries ?? [], pending: seed.pending ?? [] }))
     }
@@ -353,7 +357,8 @@ describe('subagents hook', () => {
     const end = Date.now() + 15000
     while (!existsSync(join(dir, 'done')) && Date.now() < end) await new Promise((ok) => setTimeout(ok, 100))
     const path = join(home, 'subagents', `${session}.json`)
-    return { session, file: existsSync(path) ? JSON.parse(readFileSync(path, 'utf8')) : undefined }
+    const outs = events.map((_, i) => (existsSync(join(dir, `out-${i}`)) ? readFileSync(join(dir, `out-${i}`), 'utf8') : ''))
+    return { session, file: existsSync(path) ? JSON.parse(readFileSync(path, 'utf8')) : undefined, outs }
   }
   const start = (id: string, type: string, extra: object = {}): [string, object] => ['SubagentStart', { agent_id: id, agent_type: type, prompt: 'SECRET-PROMPT', ...extra }]
   const stop = (id: string, type: string): [string, object] => ['SubagentStop', { agent_id: id, agent_type: type, agent_transcript_path: '/SECRET-PATH.jsonl', last_assistant_message: 'SECRET-LAST', stop_hook_active: false }]
@@ -422,6 +427,79 @@ describe('subagents hook', () => {
   const bash = (command: string): [string, object] => ['PreToolUse', { tool_name: 'Bash', tool_input: { command } }]
   const permit = (extra: object = { notification_type: 'permission_prompt' }): [string, object] => ['Notification', { message: 'Claude needs your permission to use Bash', ...extra }]
   const idle: [string, object] = ['Notification', { notification_type: 'idle_prompt', message: 'Claude is waiting for your input' }]
+
+  /** A repo folder with one change whose checklist has `open` open boxes; returns a folder inside it. */
+  function repoWithBoxes(open: number, name = 'demo-change'): string {
+    const root = tmp()
+    mkdirSync(join(root, '.git'))
+    mkdirSync(join(root, '.agents', 'changes', name), { recursive: true })
+    const boxes = [...Array.from({ length: open }, (_, i) => `- [ ] box ${i}`), '- [x] done one'].join('\n')
+    writeFileSync(join(root, '.agents', 'changes', name, 'proposal.md'), `# ${name}\n\n## Checklist\n\n${boxes}\n`)
+    mkdirSync(join(root, 'src'))
+    return join(root, 'src')
+  }
+  const stopIn = (cwd: string, active?: boolean): [string, object] => ['Stop', { cwd, ...(active !== undefined && { stop_hook_active: active }) }]
+
+  it('a stop with open boxes keeps the agent going', async () => {
+    const cwd = repoWithBoxes(2)
+    const { session, outs } = await fireIn([stopIn(cwd, false)])
+    const out = JSON.parse(outs[0] ?? '')
+    expect(out.decision).toBe('block')
+    expect(out.reason).toContain('demo-change')
+    expect(out.reason).toContain('2 open')
+    const state = stateOf(session)
+    expect(state).toMatchObject({ state: 'working', blocks: 1 })
+    expect(state).not.toHaveProperty('kind')
+  }, 30000)
+
+  it('only open boxes under the checklist of the repo count', async () => {
+    const { openBoxes } = await import('../../resources/keepgoing.mjs')
+    const root = tmp()
+    mkdirSync(join(root, '.git'))
+    const change = (name: string, body: string): void => {
+      mkdirSync(join(root, '.agents', 'changes', name), { recursive: true })
+      writeFileSync(join(root, '.agents', 'changes', name, 'proposal.md'), body)
+    }
+    change('a', ['# a', '- [ ] above the checklist', '## Checklist', '- [ ] one', '  * [ ] two', '```', '- [ ] fenced', '```', '- [x] closed', '## After', '- [ ] after'].join('\n'))
+    change('b', '# b\n\n## Checklist\n\n- [x] all done\n')
+    change('c', '# c, a capture with no checklist\n- [ ] not a task\n')
+    expect(openBoxes(join(root, '.agents'))).toEqual([{ change: 'a', open: 2 }])
+    // A parent folder's changes are not this repo's.
+    const inner = join(root, 'nested')
+    mkdirSync(join(inner, '.git'), { recursive: true })
+    expect(openBoxes(inner)).toEqual([])
+    // A worktree's .git is a file.
+    const wt = tmp()
+    writeFileSync(join(wt, '.git'), 'gitdir: /elsewhere')
+    expect(openBoxes(wt)).toEqual([])
+    expect(openBoxes('/')).toEqual([])
+    expect(openBoxes(undefined)).toEqual([])
+  })
+
+  it('a fresh stop or a prompt restarts the count', async () => {
+    const cwd = repoWithBoxes(1)
+    expect(stateOf((await fireIn([stopIn(cwd, false), stopIn(cwd, true), stopIn(cwd, true)])).session)).toMatchObject({ blocks: 3 })
+    expect(stateOf((await fireIn([stopIn(cwd, false), stopIn(cwd, true), stopIn(cwd, false)])).session)).toMatchObject({ blocks: 1 })
+    // An absent field carries the count.
+    expect(stateOf((await fireIn([stopIn(cwd, false), stopIn(cwd)])).session)).toMatchObject({ blocks: 2 })
+    expect(stateOf((await fireIn([stopIn(cwd, false), stopIn(cwd, true), ['UserPromptSubmit', { prompt: 'x' }], bash('ls')])).session)).toMatchObject({ state: 'working', blocks: 0 })
+  }, 90000)
+
+  it('keeping going stops after five blocks in a row', async () => {
+    const cwd = repoWithBoxes(1)
+    for (const active of [true, undefined]) {
+      const { session, outs } = await fireIn([stopIn(cwd, false), ...Array.from({ length: 5 }, () => stopIn(cwd, active))])
+      expect(outs.slice(0, 5).every((o) => JSON.parse(o).decision === 'block')).toBe(true)
+      expect(outs[5]).toBe('')
+      expect(stateOf(session)).toMatchObject({ state: 'needs-you', kind: 'turn-end' })
+    }
+  }, 60000)
+
+  it('a paused agent is never kept going', async () => {
+    const { session, outs } = await fireIn([stopIn(repoWithBoxes(3), false)], { paused: true })
+    expect(outs[0]).toBe('')
+    expect(stateOf(session)).toMatchObject({ state: 'needs-you', kind: 'turn-end' })
+  }, 30000)
 
   it('the hook says what kind of wait it is', async () => {
     const q = { question: '¿Sigo?', header: 'Seguir', options: [{ label: 'Sí' }, { label: 'No' }] }

@@ -169,7 +169,7 @@ New tests (red first): the four hook cases in `agent.test.ts`, three in `status.
 
 ## Checklist
 
-- [ ] Keep going on its own: `keepgoing.mjs` (`openBoxes`, `decideStop`, reason), the hook blocks a `Stop` with open boxes, carries `blocks` and `turn`, stops blocking after 5 or under a pause mark (today's turn-end otherwise) · Closes: W217, W218, W225
+- [x] Keep going on its own: `keepgoing.mjs` (`openBoxes`, `decideStop`, reason), the hook blocks a `Stop` with open boxes, carries `blocks` and `turn`, stops blocking after 5 or under a pause mark (today's turn-end otherwise) · Closes: W217, W218, W225
 - [ ] A question in prose: `summarise.mjs` `lastText`, `proseQuestion`, the hook writes a question wait with one option-less question; the card shows it without buttons; Automático leaves it · waits on box 1 · Closes: W219, W223, W226
 - [ ] Done: the hook writes `state: done` when nothing is open and nothing is asked; `AgentState` `done` through main (state, `done` notice, no V11 expiry, Automático ignores it, out of «Siguiente») and the renderer («terminado», icon, «Todos» order) · waits on box 2 · Closes: W220, W227, W199, W197, W15, W27, W222, W224, V11, F51
 - [ ] One notice per turn end: main remembers the last notified `turn|kind|text` per workspace and skips an identical entry · waits on box 3 · Closes: W221
