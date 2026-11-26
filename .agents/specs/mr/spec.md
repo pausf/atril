@@ -152,7 +152,7 @@ on an existing branch, «Ir al trabajo», the errors in the view.
 
 ### MR page (mr-page, 19 nov 2026)
 
-**In:** `src/renderer/mr/**` (the page, the inbox as a column, the «Revisar ▾» menu, the cards, the «Fusionar» confirmation, the conflict tag; `MrView.tsx` stops being a modal and so does `ScoreView.tsx`); `src/main/forge/mrs.ts` (merge state, conflict and target branch on the row); `src/main/forge/threads.ts` (the side of each thread); `src/main/forge/lenses.ts` (the request before the diff); new `src/main/forge/page.ts` (diff into files and lines, reviewers, contract) and `src/main/forge/merge.ts` (merging); the IPC wiring in `src/main/index.ts` and `src/preload/{api,index}.ts` (with `NetFix` gaining `'forge'` and its button in `src/renderer/components/Problem.tsx`); the texts of the tutorial's `mr` and `mr-tools` steps (`src/renderer/tour/Tour.tsx`); `src/preload/i18n-en.ts`; the styles with tokens; `bocetos/novedades.html` and `bocetos/fase1-nucleo.html`.
+**In:** `src/renderer/mr/**` (the page, the inbox as a column, the «Revisar ▾» menu, the cards, the «Fusionar» confirmation, the conflict tag; `MrView.tsx` stops being a modal and so does `ScoreView.tsx`); `src/main/forge/mrs.ts` (merge state, conflict and target branch on the row); `src/main/forge/threads.ts` (the side of each thread); `src/main/forge/lenses.ts` (the request before the diff); new `src/main/forge/page.ts` (diff into files and lines, reviewers, contract) and `src/main/forge/merge.ts` (merging); the IPC wiring in `src/main/index.ts` and `src/preload/{api,index}.ts` (with `NetFix` gaining `'forge'` and its button in `src/renderer/components/Problem.tsx`); the texts of the tutorial's `mr` and `mr-tools` steps (`src/renderer/tour/Tour.tsx`); `src/preload/i18n-es.ts`; the styles with tokens; `bocetos/novedades.html` and `bocetos/fase1-nucleo.html`.
 
 **Out (named):**
 - The inbox's E2 sections and the main action on each row: they need reviewers and approvals per MR that the listing does not bring.
@@ -204,7 +204,7 @@ on an existing branch, «Ir al trabajo», the errors in the view.
 
 - **Quota:** no automatic call to Claude. Opening the page asks the forge for the diff, the threads and the reviewers; nothing else.
 - **Forge:** REST with the stored tokens, `redirect: 'error'`, 10 s per request (`forgeGet`, `src/main/forge/scores.ts:171`); errors with W150's sentence (`statusText`/`networkText`, M38), never the forge's message nor a number in the sentence. No new dependency.
-- **Texts:** Spain Spanish through `t()`/`useT()`, each with its entry in `src/preload/i18n-en.ts`; S16/S19 green. The text for Claude (the request header) carries `// i18n-ignore` with its reason (lesson lessons-first).
+- **Texts:** Spain Spanish through `t()`/`useT()`, the key is the English text and each has its Spanish entry in `src/preload/i18n-es.ts`; S16/S19 green. The text for Claude (the request header) carries `// i18n-ignore` with its reason (lesson lessons-first).
 - **Colours:** only tokens from `:root` and `[data-theme='dark']`; those for added/deleted lines reuse the ones from the Trabajo diff. Before touching a token, `rg "var(--token)"` (lesson grafito-you).
 - **Errors:** `Problem` with what happened, what you cannot do, a button that fixes it and the folded detail.
 - **Untrusted files:** reading a job's `proposal.md` does an `lstat` of each segment (`.agents`, `changes`, the folder, the file) and does not follow links (lessons qa-screen and qa-targets).
