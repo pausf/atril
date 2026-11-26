@@ -762,6 +762,8 @@ export interface QaStep {
   /** A bare file name in the workspace's QA folder, with its mtime in `shotAt`. */
   shot?: string
   shotAt?: number
+  /** W240: the screen this step shows, as a slug the QA agent names. */
+  view?: string
 }
 
 export interface QaEntry {

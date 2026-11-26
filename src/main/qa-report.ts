@@ -17,6 +17,7 @@ const MAX_TEXT = 400
 const MAX_STEPS = 30
 const MAX_FILE = 1024 * 1024
 const STATUSES = ['pass', 'fail', 'untested'] as const
+const VIEW = /^[a-z0-9][a-z0-9-]{0,39}$/
 
 const cut = (v: unknown): string => (typeof v === 'string' ? v.slice(0, MAX_TEXT) : '')
 const isObject = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v)
@@ -30,10 +31,11 @@ async function shotOf(dir: string, name: unknown): Promise<{ shot: string; shotA
 
 async function validStep(dir: string, raw: unknown): Promise<QaStep | null> {
   if (!isObject(raw) || typeof raw['text'] !== 'string') return null
-  const ms = raw['ms']
+  const { ms, view } = raw
   return {
     text: cut(raw['text']),
     ...(typeof ms === 'number' && Number.isFinite(ms) && ms >= 0 && { ms }),
+    ...(typeof view === 'string' && VIEW.test(view) && { view }),
     ...(await shotOf(dir, raw['shot']))
   }
 }

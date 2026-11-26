@@ -190,7 +190,7 @@ function mcpConfig(platform: QaPlatform, shots: string): object {
 
 export const PLATFORM_LABEL: Record<QaPlatform, string> = { chrome: 'Chrome', safari: 'Safari', android: 'Android', ios: 'iOS' }
 
-const REPORT_SHAPE = '{"criteria":[{"id":"W1","status":"pass","note":"one sentence","steps":[{"text":"what you did","ms":1200,"shot":"captura.png"}]}]}'
+const REPORT_SHAPE = '{"criteria":[{"id":"W1","status":"pass","note":"one sentence","steps":[{"text":"what you did","ms":1200,"shot":"captura.png","view":"login"}]}]}'
 
 /** W84, W119: the prompt names the platform, the device, the change, and asks for a report.json per criterion; `request` goes last (W116). */
 export async function qaPrompt(target: QaTarget, device: QaDevice | null, path: string, branch: string, base: string, shots: string, id: string, request?: string): Promise<string> {
@@ -210,7 +210,7 @@ export async function qaPrompt(target: QaTarget, device: QaDevice | null, path: 
   const parts = [intro]
   if (criteria.length > 0) {
     parts.push(
-      t('Al terminar cada criterio, escribe el informe en {report} y reescríbelo entero cada vez, con esta forma: {shape}. «status» es pass, fail o untested; «shot» es el nombre de una captura de {shots}, sin ruta. Los criterios:', {
+      t('Al terminar cada criterio, escribe el informe en {report} y reescríbelo entero cada vez, con esta forma: {shape}. «status» es pass, fail o untested; «shot» es el nombre de una captura de {shots}, sin ruta; «view» nombra la pantalla que muestra la captura con minúsculas, cifras y guiones, y la misma pantalla se llama igual siempre. Los criterios:', {
         report: reportFile(id),
         shape: REPORT_SHAPE,
         shots

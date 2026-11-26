@@ -1,9 +1,9 @@
 import { mkdirSync, rmSync, symlinkSync, utimesSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { WorkspaceView } from '../preload/api'
+import type { QaTarget, WorkspaceView } from '../preload/api'
 import { readCriteria } from './qa-criteria'
-import { launchQa } from './qa'
+import { launchQa, qaPrompt } from './qa'
 import { createQaDone, qaBug, qaReport, qaRetest } from './qa-report'
 import type { Runner } from './run'
 import { cleanTmp, killTmux, makeRegisteredRepo, tmp, tmuxOut, tmuxSock } from './test-helpers'
@@ -137,6 +137,20 @@ describe('the report', () => {
     const r = await qaReport('qrep0001', none)
     expect(r!.at).toBeGreaterThan(0)
     expect(r!.branch).toBe('feat/qrep0001')
+  })
+
+  it('a step keeps only a slug view', async () => {
+    const path = web()
+    seed(rec('qrep0001', path))
+    const views = ['login', 'cart-2', 'Login', '-x', 'a b', 'x'.repeat(41), 'x'.repeat(40), 7, '../a']
+    write({ criteria: [{ id: 'W1', status: 'pass', note: '', steps: views.map((view, i) => ({ text: `s${i}`, view })) }] })
+    const [entry] = (await qaReport('qrep0001', none))!.entries
+    expect(entry!.steps.map((s) => s.view ?? null)).toEqual(['login', 'cart-2', null, null, null, null, 'x'.repeat(40), null, null])
+    expect(entry!.steps[2]).toEqual({ text: 's2' })
+
+    const prompt = await qaPrompt({ key: 'web', platform: 'chrome', dir: '', command: 'pnpm dev' } as QaTarget, null, path, 'feat/x', 'abc', '/shots', 'qrep0001')
+    expect(prompt).toContain('"view"')
+    expect(prompt).toContain('«view»')
   })
 
   it('a finished QA run is one notice', async () => {
