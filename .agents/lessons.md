@@ -472,3 +472,10 @@ A decision log line said a test covered the catalog read during an action; none 
 ## 2026-11-26 · crash-reports · 6→7
 - The work reviewer fed the scrubber real-looking input and found what the per-pattern test missed: quoted text survived in the stack (V8 repeats the message on its first line), bare hostnames (`jira.acme.corp`) and paths with spaces leaked, short `password=` values stayed, a damaged `crash-sent.json` silently stopped all sending, and the e-mail regex took ~300 ms on 16 KB. Rule: a scrubber is proven by adversarial inputs and a timing case, not by one example per pattern; anything whose output leaves the machine is cut before it is scanned.
 - Pau changed the delivery three times (PR from a branch → fork → issue turned into a PR by a repo workflow) once the repo was going public. Rule: settle visibility and who has write access before designing anything that writes to a forge.
+
+## 2026-11-26 · add-pr-qa-pictures · 6→7
+- Box 4 still said «Before by ancestry» after the stop moved «Antes» to «a recorded MR the forge reports merged» (squash merges break ancestry). A fix at the stop rewrites every line that named the old mechanism, checklist included. Fixed.
+- The reviewer could not see that a 15 s OCR timeout ends «unreadable», nor that «Publicar sin imágenes» with every picture blocked posts the comment: both were proven (a runner answering 124 in W243's test; `publish(ID, token)` with all rows blocked in W250's), but only inside longer tests. A clause proven deep in a test is a clause a reader misses: name it in a comment above the assertion. Already true; nothing to change in code.
+
+## 2026-11-26 · add-pr-qa-pictures · 6
+- The drive script connected over CDP to port 9333, which another Atril instance with the person's real workspaces was already using; it clicked «QA» there before the mistake showed. Before driving the real app, check that the CDP port is free (`lsof -iTCP:<port> -sTCP:LISTEN`) and pick another; never assume the port Atril's docs use is yours.
