@@ -62,6 +62,7 @@ as an English issue `Crash <sig>:` in pausf/atril with the person's GitHub token
 - Never a folder called `secrets` (a global deny rule); never read `~/.atril/secrets.bin`. Tokens live only in main.
 - Don't touch Pau's real repos, his default tmux sessions or `~/.claude.json`. Tests use their own tmux socket and a temp `ATRIL_HOME`.
 - **Quota:** no automatic Claude calls, on demand only. Subagents scoped, Sonnet for mechanical work, never Fable.
+- **Evals (by hand only):** `node evals/run.mjs --model <m>` runs the Libretto flow headless on 3 fixed tasks and scores each run (spec: `.agents/specs/evals/spec.md`). It spends real quota: never start it from a hook, a test or CI, and never without Pau's go-ahead.
 - **Each function that lands** is driven in the real app (Playwright) first, then updates `bocetos/novedades.html`
   (section, real photo in `bocetos/novedades/*.png`, history) and `bocetos/fase1-nucleo.html`.
 - **Photos:** `ATRIL_HOME=$(mktemp -d) ATRIL_SNAPSHOT=$PWD/bocetos/novedades/x.png ATRIL_SNAPSHOT_VIEW=<view>

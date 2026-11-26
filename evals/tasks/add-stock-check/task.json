@@ -1,0 +1,9 @@
+{
+  "prompt": "Add a stock check. Create src/stock.js exporting reserve(stock, sku, qty), where stock is a plain object from sku to count. It returns a new stock object with qty taken off sku and never changes the one it was given. It throws an Error with the message \"out of stock: <sku>\" when the sku is unknown or has fewer than qty left, and a RangeError with the message \"qty must be a positive integer\" when qty is not a positive integer. Keep the existing tests passing.",
+  "expect": {
+    "files": [
+      "src/stock.js",
+      "test/stock.test.js"
+    ]
+  }
+}

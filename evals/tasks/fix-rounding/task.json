@@ -1,0 +1,9 @@
+{
+  "prompt": "Bug report: withTax in src/pricing.js drops the half cent. withTax(1005, 10) returns 1105 and should return 1106, because the tax must be rounded half up to whole cents; withTax(999, 10) returns 1098 and should return 1099. Fix it and keep the existing tests passing.",
+  "expect": {
+    "files": [
+      "src/pricing.js",
+      "test/pricing.test.js"
+    ]
+  }
+}
