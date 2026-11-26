@@ -2,13 +2,12 @@ import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { forgeApi, networkCode } from '../credentials/forge'
 import type { SecretStore } from '../credentials/store'
-import { t } from '../lang'
 import { atrilHome } from '../paths'
 import { patchUi, readUi } from '../ui'
 import { buildReport, type RawCrash, type Versions } from './report'
 
 export const OFFICIAL_REPO = 'pausf/atril'
-const OWNER = OFFICIAL_REPO.split('/')[0]
+const NAME = OFFICIAL_REPO.split('/')[1]
 const DAY = 86_400_000
 const CAP = 5
 
@@ -20,6 +19,8 @@ export interface CrashDeps {
   versions: Versions
   /** Per request; 20 s unless a test makes it short. */
   timeoutMs?: number
+  /** Between reads of a fork that is not ready yet; a test makes it instant. */
+  sleep?: (ms: number) => Promise<void>
 }
 
 /** What has been sent, what failed when, and every attempt; failures and attempts older than a day are dropped. */
@@ -60,6 +61,7 @@ class Refused extends Error {
 export function createCrash(d: CrashDeps) {
   let busy = false
   const timeout = d.timeoutMs ?? 20_000
+  const sleep = d.sleep ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms)))
 
   async function send(raw: Omit<RawCrash, 'at'>): Promise<void> {
     if ((await readUi()).crashReports !== 'on') return
@@ -76,7 +78,7 @@ export function createCrash(d: CrashDeps) {
     const { base, headers } = forgeApi('github', '', token)
     /** `skip` is the one non-2xx that means «already there» for this call. */
     const call = async (method: string, path: string, body?: object, skip?: number): Promise<{ status: number; data: Record<string, unknown> | unknown[] | null }> => {
-      const res = await d.fetch(new URL(`${base}/repos/${OFFICIAL_REPO}${path}`), {
+      const res = await d.fetch(new URL(`${base}${path}`), {
         method,
         headers: body ? { ...headers, 'Content-Type': 'application/json' } : headers,
         ...(body ? { body: JSON.stringify(body) } : {}),
@@ -94,26 +96,51 @@ export function createCrash(d: CrashDeps) {
     const field = (data: unknown, key: string): unknown => (data && typeof data === 'object' && !Array.isArray(data) ? (data as Record<string, unknown>)[key] : undefined)
 
     const branch = `atril-fallo/${sig}`
-    const path = `fallos/${sig}.md`
+    const file = `fallos/${sig}.md`
+    const up = `/repos/${OFFICIAL_REPO}`
     try {
-      const repo = (await call('GET', '')).data
-      if (field(repo, 'private') !== true) {
-        await patchUi({ crashLast: { at, error: t('pausf/atril no es privado: no envío fallos ahí.') } })
-        return
-      }
+      const repo = (await call('GET', up)).data
       const main = String(field(repo, 'default_branch') ?? 'main')
-      const prs = (await call('GET', `/pulls?head=${encodeURIComponent(`${OWNER}:${branch}`)}&state=all`)).data
-      const prior = Array.isArray(prs) ? field(prs[0], 'html_url') : undefined
+      // The signature rides in every title, so a PR from anyone's fork is found too.
+      const q = new URLSearchParams({ q: `repo:${OFFICIAL_REPO} is:pr in:title ${sig}` })
+      const found = field((await call('GET', `/search/issues?${q}`)).data, 'items')
+      const prior = Array.isArray(found) ? field(found[0], 'html_url') : undefined
       if (typeof prior === 'string') {
         ledger.sent[sig] = prior
         await writeLedger(ledger)
         return
       }
-      const sha = field(field((await call('GET', `/git/ref/heads/${main}`)).data, 'object'), 'sha')
-      if ((await call('GET', `/git/ref/heads/${branch}`, undefined, 404)).status === 404) await call('POST', '/git/refs', { ref: `refs/heads/${branch}`, sha })
-      if ((await call('GET', `/contents/${path}?ref=${encodeURIComponent(branch)}`, undefined, 404)).status === 404)
-        await call('PUT', `/contents/${path}`, { message: `docs(fallos): ${sig}`, content: Buffer.from(report.markdown).toString('base64'), branch })
-      const pr = await call('POST', '/pulls', { title: report.title, head: branch, base: main, body: report.markdown })
+
+      // Without push, the branch lives in the person's fork, as any outside contribution does.
+      let target = up
+      let head = branch
+      let base = main
+      let tries = 1
+      if (field(field(repo, 'permissions'), 'push') !== true) {
+        const login = String(field((await call('GET', '/user')).data, 'login') ?? '')
+        target = `/repos/${login}/${NAME}`
+        head = `${login}:${branch}`
+        const mine = await call('GET', target, undefined, 404)
+        const forked = mine.status === 404 ? (await call('POST', `${up}/forks`, {})).data : mine.data
+        base = String(field(forked, 'default_branch') ?? main)
+        tries = 5
+      }
+      let sha: unknown
+      for (let i = 1; ; i++) {
+        try {
+          sha = field(field((await call('GET', `${target}/git/ref/heads/${base}`)).data, 'object'), 'sha')
+          break
+        } catch (err) {
+          // A new fork answers 404 or 409 until GitHub has copied it.
+          if (i >= tries || !(err instanceof Refused)) throw err
+          await sleep(2000)
+        }
+      }
+      if ((await call('GET', `${target}/git/ref/heads/${branch}`, undefined, 404)).status === 404) await call('POST', `${target}/git/refs`, { ref: `refs/heads/${branch}`, sha })
+      if ((await call('GET', `${target}/contents/${file}?ref=${encodeURIComponent(branch)}`, undefined, 404)).status === 404)
+        await call('PUT', `${target}/contents/${file}`, { message: `docs(fallos): ${sig}`, content: Buffer.from(report.markdown).toString('base64'), branch })
+      const title = `Fallo ${sig}: ${report.title.replace(/^Fallo: /, '')}`
+      const pr = await call('POST', `${up}/pulls`, { title, head, base: main, body: report.markdown })
       const url = String(field(pr.data, 'html_url') ?? '')
       ledger.sent[sig] = url
       await writeLedger(ledger)

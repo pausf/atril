@@ -19,7 +19,7 @@ function ConsentDialog({ onYes, onNo }: { onYes: () => void; onNo: () => void })
     <div className="skw-back">
       <div className="skw" role="dialog" aria-modal="true" aria-label={t('¿Enviar los fallos a GitHub?')}>
         <h2>{t('¿Enviar los fallos a GitHub?')}</h2>
-        <p>{t('Se envía: el error, su traza, la versión de Atril y de macOS. Se quitan tus rutas, tokens, correos, direcciones de servidores, claves de Jira y lo que va entre comillas; la limpieza es automática y puede dejarse algo. Va con tu cuenta de GitHub a pausf/atril, que es privado.')}</p>
+        <p>{t('Se envía: el error, su traza, la versión de Atril y de macOS. Se quitan tus rutas, tokens, correos, direcciones de servidores, claves de Jira y lo que va entre comillas; la limpieza es automática y puede dejarse algo. Va con tu cuenta de GitHub a pausf/atril, que es público: cualquiera puede leer el PR.')}</p>
         <div className="skw-act">
           <button type="button" className="btn" onClick={onNo}>
             {t('Cancelar')}
