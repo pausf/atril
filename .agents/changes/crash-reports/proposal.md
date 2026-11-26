@@ -99,7 +99,7 @@ Electron 45 + Node 24 + TS, React 19; vitest (node con `ATRIL_HOME` temporal y `
 
 ### The approach
 - **Limpieza:** una lista ordenada de `[RegExp, sustituto]`; primero tokens, luego correos, URLs, rutas (la ruta absoluta se corta en `app.asar/` u `out/` si aparece y se conserva desde ahí), luego claves; `os.homedir()` se pasa entero.
-- **Envío:** `GET /repos/pausf/atril` → `default_branch`; `GET /repos/pausf/atril/git/ref/heads/<b>` → `object.sha`; `POST /repos/pausf/atril/git/refs`; `PUT /repos/pausf/atril/contents/fallos/<sig>.md` con `content` en base64, `message` `docs(fallos): <sig>` y `branch`; `POST /repos/pausf/atril/pulls`. Una rama ya existente (422) cuenta como fallo de envío.
+- **Envío:** `GET /search/issues?q=repo:pausf/atril+in:title+<sig>`; si no hay nada, `POST /repos/pausf/atril/issues` con título `Crash <sig>: …` y el informe más `<!-- atril-crash <sig> -->`. El workflow `crash-report.yml` (con `actions/github-script` fijado por SHA) hace la rama, el archivo y el PR con `GITHUB_TOKEN`.
 - **Puertas:** `busy` booleano soltado en `finally`; `crash-sent.json` = `{ sent: { [sig]: url }, failed: { [sig]: at }, times: number[] }` con `times` (intentos) y `failed` podados a 24 h.
 - **Ganchos:** `installCrashHooks({ proc, app, ipc, window, crash })` en `src/main/crash/hooks.ts`, para probarlos con dobles; `index.ts` solo lo llama.
 - **Reentrada:** `report()` atrapa todo; los ganchos de `process` llaman `void crash.report(...)` y el envío no pasa nunca por esos ganchos (`try/catch` en todo el camino).
