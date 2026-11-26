@@ -3757,6 +3757,39 @@ button.fx-bt {
   font-size: 13px;
   color: var(--sub);
 }
+/* W251: the pictures as they would leave for the MR. */
+.qa-sheet {
+  list-style: none;
+  margin: 0 0 14px;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+}
+.qa-sheet li {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: grid;
+  gap: 8px;
+}
+.qa-sheet img {
+  max-width: 100%;
+  max-height: 260px;
+  object-fit: contain;
+  justify-self: start;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+}
+.qa-sheet-t {
+  font-size: 13px;
+}
+.qa-sheet-v {
+  font-size: 12.5px;
+  color: var(--sub);
+}
+.qa-sheet li.off .qa-sheet-v {
+  color: var(--bad-text);
+}
 .qa-film {
   display: flex;
   gap: 6px;
@@ -5338,4 +5371,44 @@ button.skct[aria-pressed='true'] {
   flex: 1;
   border-radius: 2px;
   background: var(--run);
+}
+
+.repo-rows .harness {
+  flex-basis: 100%;
+  font-size: 13px;
+}
+.harness h4 {
+  margin: 10px 0 4px;
+  font-size: 12px;
+  color: var(--sub);
+}
+.harness ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.harness li {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 4px 0;
+  border: 0;
+}
+.hz-mark {
+  width: 1.2em;
+  text-align: center;
+}
+.hz-body {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.hz-state,
+.hz-detail,
+.hz-why {
+  font-size: 12px;
+  color: var(--sub);
+}
+.hz-gap .hz-state {
+  color: var(--text);
+  font-weight: 600;
 }

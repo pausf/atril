@@ -476,6 +476,13 @@ A decision log line said a test covered the catalog read during an action; none 
 ## 2026-11-26 · add-agent-harness-evals · 6→7
 - The work reviewer found the contract's last outcome unmet: the one real proof run (add-coupon × 2 on haiku) scored 0 of 2 with no skill called, so the `/libretto:libretto-attacca` prefix is unconfirmed in `-p`. The fake claude proved every path except the one the whole eval depends on. Rule: when the premise of a tool is "a real X does Y", the first real run must check that premise before anything is scored, and the report must show it (`skills called`); a green suite against a fake proves the plumbing, not the premise. Reported as not fixed: the prefix is Pau's call.
 - The reviewer asked whether the empty `.agents/specs/evals/spec.md` skeleton is intended. It is: `land.py` fills it at landing. Rule: a new capability's skeleton is created with its `Governs:` line in phase 2 and says so in the change document, so a cold reader does not read it as a missing spec.
+## 2026-11-26 · add-pr-qa-pictures · 6→7
+- Box 4 still said «Before by ancestry» after the stop moved «Antes» to «a recorded MR the forge reports merged» (squash merges break ancestry). A fix at the stop rewrites every line that named the old mechanism, checklist included. Fixed.
+- The reviewer could not see that a 15 s OCR timeout ends «unreadable», nor that «Publicar sin imágenes» with every picture blocked posts the comment: both were proven (a runner answering 124 in W243's test; `publish(ID, token)` with all rows blocked in W250's), but only inside longer tests. A clause proven deep in a test is a clause a reader misses: name it in a comment above the assertion. Already true; nothing to change in code.
+
+## 2026-11-26 · add-pr-qa-pictures · 6
+- The drive script connected over CDP to port 9333, which another Atril instance with the person's real workspaces was already using; it clicked «QA» there before the mistake showed. Before driving the real app, check that the CDP port is free (`lsof -iTCP:<port> -sTCP:LISTEN`) and pick another; never assume the port Atril's docs use is yours.
+
 ## 2026-11-26 · enforce-written-rules · arnés
 Two written rules moved from CLAUDE.md to hooks (W230–W234). The work-identifier scan before a push is `.githooks/pre-push`; it scans the tip tree of each pushed ref, drops blank lines from the private list (a blank pattern matches every line), ignores only `pnpm-lock.yaml` lines that contain `integrity:`, and refuses the push when the scan itself fails. «Never `pnpm build`» is a PreToolUse guard in `.claude/settings.json` (`.claude/hooks/no-build.sh`, exit 2 with one line). This replaces the prose rule in CLAUDE.md «Puertas» and the «Antes de cada push» scan (including the note that a lock `integrity` hash can match by chance). CLAUDE.md lost its per-branch history and went from 14474 to about 5300 bytes, with a test (W235) that keeps it under 7000. Known ceilings: an identifier added and removed inside one push passes; `pnpm -C dir build`, `sh -c "pnpm build"` and other build entry points pass the guard; `git push --no-verify` is the person's own choice.
 
@@ -509,3 +516,16 @@ The first drive connected over CDP to another session's Atril on the same port a
 
 ## 2026-11-26 · skills-dense · 1
 I told Pau his brief was wrong («there is no `i18n-es.ts`») after checking only this branch, which was 46 commits behind `origin/main`, where English had become the source language. The brief was right. Before contradicting a claim about the repo, `git fetch` and check `origin/main`, not the worktree.
+
+## 2026-11-26 · repo-harness · 6→7
+- `skills` counted at most 300 entries (a guard against a huge folder) but the contract said «the number of skills», so a repo with 301 showed 300 with no word about it. Fixed: the cap is in W280 and a 301-skill case asserts 300 (forced red by removing the slice). A guard the builder adds against hostile input goes into the criterion in the same edit.
+- The 1 MB cap was checked on `stat` and then the whole file was read, so a file that grew in between slipped past it. Fixed: read at most cap+1 bytes through the open handle and refuse when more came back. A size cap is on the bytes read, not on an earlier metadata call. Not provable by a test (a race): the oversize cases still cover the path.
+- A `CLAUDE.md` that exists but cannot be read made `memory` fall through to `AGENTS.md` or a gap, against «`CLAUDE.md` wins when both are files». Fixed: it is found with its name and no count (W280, test with a mode 000 file, forced red).
+
+## 2026-11-26 · repo-harness · real app
+- Port 9333 for `ATRIL_CDP_PORT` was already taken by another Electron (the person's own Atril, being driven by another session), so my dev app could not open its debugger and `connectOverCDP` attached to THAT window instead. I only read its text, but the next step would have been clicks. Before attaching, check `lsof -iTCP:<port> -sTCP:LISTEN` belongs to a process under this worktree's `node_modules`, pick an unlikely port, and confirm the page (`Sin conectar`, the sample repo ids) is yours. Stop your own app by `pkill -f '<this worktree>/node_modules'`, never a global `pkill -f "electron-vite dev"`: other worktrees run theirs too.
+
+## 2026-11-26 · repo-harness · 6
+- `spec-drift --anchors` read `Proof: file "name"` with the quotes as part of the name and called every citation broken; the working form is `Proof: file name` with no quotes (the form the older criteria use).
+- Main speaks Spanish by default (`lang.ts`), so a detail like «142 lines» built in main would have shown English-keyed text untranslated in tests and Spanish in the app. Items now carry names and numbers only and the window writes the sentences through `t()`.
+- A criterion that said «one test holds every clause» grew to five clauses once the card was built, and the tests followed the clauses rather than the criterion. Cut the criterion when the tests split (W286 → W286, W288, W289, W295) instead of citing a test that no longer holds them.

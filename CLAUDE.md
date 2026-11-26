@@ -8,7 +8,13 @@ below point at files on Pau's disk, not in the repo.
 
 ## Last landed
 
-`fewer-go-on-cards` (26 Nov, issues #7 and #5): the Stop hook keeps an agent going while its checklist has
+`pr-photos` (26 Nov, W240–W252): QA → "Publish on the MR" first shows a sheet with every capture exactly as it
+will leave and the blocked ones with why (on-device Vision OCR plus the crash scrubber, PNG metadata stripped, hash
+names, no Claude), then writes a block into the MR description with each criterion, its picture and Before/After
+from a merged MR of the same view. GitHub pictures go on orphan branch `atril-qa`, GitLab's to project uploads;
+untested against real forges.
+
+Before it, `fewer-go-on-cards` (26 Nov, issues #7 and #5): the Stop hook keeps an agent going while its checklist has
 open boxes (5 in a row at most); a question in prose is a question card; nothing left reads "done"; one
 notice per turn end; a stop behind its own background shell stays working; a "Go on" card says why.
 

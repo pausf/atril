@@ -23,6 +23,25 @@ export interface RepoView {
   health: RepoHealth
 }
 
+/** W280–W285: one thing a repo's agent harness can have. Language-free: the window writes the sentences. */
+export type HarnessId = 'memory' | 'skills' | 'lint' | 'typecheck' | 'test' | 'precommit' | 'ci' | 'hooks' | 'permissions' | 'prepush'
+export interface HarnessItem {
+  id: HarnessId
+  group: 'context' | 'verification' | 'guardrails'
+  ok: boolean
+  /** A file, script or folder name; `unreadable` for a settings file that is damaged or too large. */
+  detail?: string
+  /** Lines of the memory file, or how many skills. */
+  n?: number
+  /** The memory file is over 1 MB and was not read. */
+  big?: true
+  /** Main has a docs page for this item. */
+  doc?: true
+}
+
+/** W285: what `harness.get` answers. */
+export type HarnessResult = { items: HarnessItem[] } | { error: 'unknown' | 'missing' }
+
 /** W144/W148: Atril's two state files; the window names one to reveal, never a path. */
 export type StateFile = 'workspaces' | 'repos'
 /** A state file that exists but cannot be used: nothing is written over it until the person fixes it. */
@@ -40,6 +59,12 @@ export type AddRepoResult =
   | { error: 'not-a-git-repo' }
   | { error: 'invalid-id' }
   | { error: 'id-taken'; suggested: string }
+
+/** W285 */
+export interface HarnessApi {
+  get(repoId: string): Promise<HarnessResult>
+  doc(id: string): Promise<boolean>
+}
 
 export interface ReposApi {
   list(): Promise<Listed<RepoView>>
@@ -767,6 +792,8 @@ export interface QaStep {
   /** A bare file name in the workspace's QA folder, with its mtime in `shotAt`. */
   shot?: string
   shotAt?: number
+  /** W240: the screen this step shows, as a slug the QA agent names. */
+  view?: string
 }
 
 export interface QaEntry {
@@ -802,8 +829,24 @@ export type QaBugResult = { key: string } | { ok: true } | { error: string }
 /** W174: the work's own MR, null when it has none. */
 export type QaMr = { url: string } | null
 
+/** W242/W243: why a picture does not go to the MR. */
+export type QaPictureReason = 'not-png' | 'too-big' | 'too-many' | 'unreadable' | 'token' | 'email' | 'host' | 'path' | 'machine'
+
+/** W241: one criterion's picture as main would send it; `src` is the cleaned PNG, only on a `send` row. */
+export interface QaPictureRow {
+  id: string
+  status: QaEntry['status']
+  view?: string
+  verdict: 'send' | 'blocked'
+  reason?: QaPictureReason
+  src?: string
+}
+
 /** W170/W171: the MR it reached, or W150's sentence with its fix and folded code. */
-export type QaPublishResult = { url: string } | { error: string; detail?: string; fix?: NetFix }
+export type QaPublishResult = { url: string } | { error: string; detail?: string; fix?: NetFix | 'recheck' }
+
+/** W241: no rows and no token when no criterion has a shot. */
+export type QaPrepared = { rows: QaPictureRow[]; token: string | null } | { error: string; detail?: string; fix?: NetFix | 'recheck' }
 
 export interface QaApi {
   /** null: no such workspace. */
@@ -826,7 +869,10 @@ export interface QaApi {
   /** W174: the work's MR among the person's own (Mías), by repo and branch. */
   mrFor(workspaceId: string): Promise<QaMr>
   /** W170: one general comment with the QA's result on that MR. */
-  publish(workspaceId: string): Promise<QaPublishResult>
+  /** W241: the pictures that would go, checked on this Mac; nothing is written anywhere. */
+  preparePublish(workspaceId: string): Promise<QaPrepared>
+  /** W170 without a token; W245–W249 with the token preparePublish gave. */
+  publish(workspaceId: string, token?: string): Promise<QaPublishResult>
 }
 
 export type StageName = 'sin-libretto' | 'entrada' | 'spec' | 'plan' | 'construir' | 'terminado' | 'aterrizado'
@@ -1200,6 +1246,7 @@ export interface AtrilApi {
   doctor(): Promise<DoctorReport>
   installTool(tool: string): Promise<{ ok: true } | { error: string }>
   repos: ReposApi
+  harness: HarnessApi
   workspaces: WorkspacesApi
   /** W147: shows that state file in Finder (Atril's folder if it is missing); any other name shows nothing. */
   revealState(file: StateFile): Promise<boolean>
