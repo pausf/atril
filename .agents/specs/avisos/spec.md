@@ -180,8 +180,9 @@ MR's title as `{detail}`, shown as text; the screen is keyboard-operable.
   Proof: src/main/avisos.test.ts a muted type is neither stored nor shown
 - **V10** Atril shall route each new notice with the pure `route(type, settings, { now, focusOn, windowFocused })`: `mute` → `mute`; `list` → `list`; `mac` → `list` while `settings.focus` and `focusOn` and `windowFocused`, `list` while W190's quiet hours hold at `now`, otherwise `mac`. A notice held by W189 is routed again when released. The eight focus combinations are W78's proof; this one holds `mute`, `list` and quiet hours.
   Proof: src/main/avisos.test.ts route honours the type, focus and quiet hours
-- **V11** When a workspace leaves `needs-you` (to working, paused or stopped) or leaves the workspace list, Atril shall mark read every unread `ask`, `done`, `idle` and legacy `agent` notice of that workspace, and leave its other notices as they were. (Bug 1.)
+- **V11** When a workspace leaves `needs-you` or `done` (to any state but those two) or leaves the workspace list, Atril shall mark read every unread `ask`, `done`, `idle` and legacy `agent` notice of that workspace, and leave its other notices as they were; entering `done` marks nothing read. (Bug 1.)
   Proof: src/main/avisos.test.ts answered questions stop counting as unread
+  Proof: src/main/status.test.ts entering done adds one done notice
 - **V12** When the person clicks a Mac notification that came from a stored notice, Atril shall mark that notice read; a grouped notification, or W179's, shall mark read every stored notice id it carries. (Bug 2.)
   Proof: src/main/avisos.test.ts clicking the Mac notice marks its notice read
 

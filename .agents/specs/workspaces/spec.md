@@ -347,6 +347,14 @@ textos, en «Pasos» abajo. Los que tienen elemento en pantalla lo iluminan; los
 
 Cuatro errores que ya se pagaron dejan de poder repetirse sin que `pnpm lint` o el commit lo paren, con un mensaje que dice qué usar en su lugar; las lecciones que los cubrían dicen qué regla las sustituye.
 
+### Fewer go-on cards (fewer-go-on-cards, 26 nov 2026)
+
+- An agent whose change still has open boxes and that stops without asking anything keeps going by itself: no card, no notice, the row stays «trabajando». After 5 stops in a row blocked this way, it shows today's «Ha terminado su turno · Sigue» card.
+- An agent that ends its turn with a question in prose shows a question card with that question and no buttons (the composer answers), notifies as `ask`, and Automático leaves it to the person.
+- An agent that stops with no open boxes and no question reads «terminado»: no card, not in «Siguiente», one `done` notice; Automático presses nothing.
+- One turn end gives at most one notice.
+- An agent that stops while one of its own background shells still runs reads «trabajando» with the activity «Esperando a una shell en segundo plano»: no card, no notice, no block (issue #5).
+
 ## Scope boundaries
 
 **In:** the three columns and footer of `bocetos/fase1-nucleo.html` (boceto 8), the
@@ -694,6 +702,18 @@ Nunca fuera: validar `.atril/qa.json` (lo escribe el repo, no Atril); la ventana
 
 **Never scoped out:** la tarjeta y el compositor se manejan con teclado (números 1–4 contestan con la tarjeta enfocada, ⌘↩ envía el compositor); el texto del agente se pinta como texto, nunca como HTML; un fallo al mandar sigue la regla de errores; nada llama a Claude por su cuenta.
 
+### Fewer go-on cards (fewer-go-on-cards, 26 nov 2026)
+
+**In:** `resources/claude-hook.mjs` and a new `resources/keepgoing.mjs` (box count, prose question, block decision); `src/main/status.ts` (`done` state, dedupe); `src/main/index.ts` (V11 expiry skips `done`); `src/preload/api.ts` (`AgentState` gains `done`); renderer pieces keyed by `AgentState` (`StateLabel`, `Icon`, `agents.ts` order, `styles.css`, `AgentCard` for a question without options); `src/renderer/flow/DocModal.tsx` (F51, in `spec-flow-status.md`); V11 amended in `spec-avisos.md`; read and left as they are: `src/main/flow/document.ts` (`done` is not `working`, so saving is allowed) and `AgentsOverview.tsx` (no card or pause button for `done`); `src/preload/i18n-en.ts` («terminado»); tests; `bocetos/` per CLAUDE.md.
+
+**Out:**
+- A background shell started before the transcript tail the hook reads (64 KB), or one stopped without a `<task-notification>`: read as not running / still running respectively (Prior decisions).
+- Automático's 3-press limit (W206) — unchanged; it now only meets turn ends from W218's fallback.
+- A phrase list for «I am done» (decision log).
+- Checklists in `tasks.md`/`plan.md`.
+- Any Claude call to classify a stop: rules only.
+- The hook command line in `src/main/agent.ts`: unchanged.
+
 ## Constraints
 
 - Electron (current stable) + TypeScript in strict mode, pnpm, Node 24 (installed:
@@ -912,6 +932,14 @@ Textos por `t()`.
 
 - `pnpm lint` tiene que salir limpio al final de cada casilla.
 - Cada regla trae un `message` que dice qué usar en su lugar.
+
+### Fewer go-on cards (fewer-go-on-cards, 26 nov 2026)
+
+- No Claude calls from Atril; the hook decides from its payload, the transcript tail it already reads, and files in the repo.
+- The hook command stays `ELECTRON_RUN_AS_NODE=1 <execPath> claude-hook.mjs <Event>`; it must never throw at Claude (existing outer `try`).
+- Claude Code's Stop hook contract: stdout `{"decision":"block","reason":"…"}` with exit 0 makes Claude continue with `reason` as its instruction; the payload carries `stop_hook_active: true` when the stop follows a continuation caused by a stop hook, and `cwd`.
+- The state file is rewritten whole on every event (atomic rename); any field that must survive (`turn`, `blocks`) is carried from `prev` by the hook.
+- Text for Claude (the block reason) is English and never shown; `// i18n-ignore` is not needed in `resources/*.mjs` (not scanned), but «terminado» goes through `t()`.
 
 ## Prior decisions
 
@@ -2360,6 +2388,38 @@ Textos por `t()`.
 - Q: (builder) ¿Qué tipo tiene `over`? → A: parcial profundo laxo: una hoja función acepta cualquier función y cada nivel admite miembros de más, porque los tests guardan sus stubs tal cual (respuestas parciales y `term.input`, que la API ya no tiene y `components/terminal.test.tsx` stub-ea para probar que nadie lo llama) (assumed).
 - Q: (builder) ¿Con qué fecha van las entradas de lecciones? → A: `## 2026-11-20 · harness-ladder · arnés`, el día en que se construyen, no el 19 que dice la entrada de arriba (assumed).
 
+### Fewer go-on cards (fewer-go-on-cards, 26 nov 2026)
+
+- 2026-11-26 (assumed, decision log): `done` is a fourth agent state, not a `needs-you` kind.
+- 2026-11-26 (assumed): no «I'm done» phrase list; open boxes decide.
+- 2026-11-26 (assumed): dedupe key is (turn, kind, text) per workspace.
+- 2026-11-26 (assumed): keep-going in every mode.
+- Ponytail: the prose-question rule looks only at the end of the last assistant text; a rhetorical question at the end reads as a question (it costs one card, never a wrong push). Ceiling: if it misfires often, require the question in the last paragraph outside code fences.
+- Ponytail (issue #5): the shell signal reads only the 64 KB tail. Ceiling: a shell started earlier in a long turn is missed and the stop is classified as before (a card, never a lost one); a shell that ends with no `<task-notification>` (Claude Code killed) leaves the row «trabajando» until the next hook event. Upgrade: track starts in the hook's own state.
+- Ponytail: the cap is a count of blocks in a row (5), not a progress check; an agent that loops without closing boxes costs 5 extra turns before the card. Upgrade: compare the open-box count between blocks.
+
+#### Alternatives that lost
+
+| Considered | Why it lost |
+|---|---|
+| Main classifies `done` from the workspace's folder | Two readers of the boxes; the block must live in the hook (synchronous), so main would duplicate the parser in TS. |
+| `done` as a `needs-you` kind | Phase 2 decision: the row would still ask for attention (issue #7). |
+| Count blocks in a separate file or tmux option | The state file is already rewritten per event; carrying two fields costs less than a new store. |
+| Honour only `stop_hook_active` (never block when true) | Caps at one block per stop chain, so the agent stops again after one extra turn; the ask wants up to 5. |
+
+#### Decision log, answers as given (2026-11-26)
+- Q: A finished change (no open boxes, no question): a new agent state «terminado», or still `needs-you` with a card without «Sigue»? → A: «No más preguntas» — taken: a new state `done` (assumed: the row stops asking for attention, which is the issue; if wrong, `done` becomes a `needs-you` kind and the renderer pieces go).
+- Q: «or the agent says it is done» with boxes still open? → A: (assumed) no phrase list: open boxes keep the agent going (W217) and the cap (W218) brings back the card; a deterministic phrase list would misread «done with phase 2». If wrong: add a phrase rule before W217.
+- Q: What is «the same turn end» for item 4? → A: (assumed) the same prompt turn (no `UserPromptSubmit` in between), same kind and same text. The dev log that showed it was not kept, so the cause is unknown; the rule guards the symptom whatever its source. If wrong: narrow to the same hook `at`.
+- Q: Does keep-going apply in Manual too? → A: (assumed) yes, in every mode: the ask names no mode and the cards it removes are Manual's.
+- Q: (phase 5) Where is a stop classified? → A: (assumed, «No más preguntas») all in the hook, in a new pure `resources/keepgoing.mjs`; main only reads `state`/`kind`. Lost: main classifying `done` from the workspace path (two readers of the same boxes, and the block must be in the hook anyway); the block in `branchsize.mjs`'s style of side claims (a claim file main acts on cannot block a Stop, which is synchronous).
+- Q: Which changes count? → A: (assumed) every `.agents/changes/*/proposal.md` of the agent's repo whose `## Checklist` has an open box; the old `tasks.md`/`plan.md` layouts do not (none in flight here).
+- Q: (issue #5, Pau) What signal says a background shell still runs? → A: (assumed, read off this session's own transcript) in the transcript tail, a `tool_result` block whose content starts «Command running in background with ID: <id>» with no later user entry whose content starts «<task-notification>» and holds `<task-id><id></task-id>`. Parsed entries only, never raw text: a transcript quoting those strings (this one does) must not count. Lost: the hook tracking `run_in_background` from PreToolUse/PostToolUse into its own file (a second store, and the end of a shell fires no hook event).
+- Q: (why-card) Which box is «the box it is on»? → A: (assumed) the first open box of the first change W217 lists, the next one the agent would take; its text after `[ ]`, clipped to 120.
+- Q: (why-card) Does a «Sigue» pressed between two stops break a loop? → A: (assumed) no: the count carries across prompts, because pressing «Sigue» on the same answer again is exactly the loop to show.
+- Q: (why-card) «Pausar» on a turn end: Escape too? → A: (assumed) no: the agent is already stopped; only the mark is written, so it reads «en pausa» and Automático leaves it.
+- Q: (spec-reviewer) V11, W27, W199, W217's bounds, joined proofs, W223's head, W222's rank, other `AgentState` readers? → A: Pau: «Arreglar y construir». V11 amended in `spec-avisos.md` (entering `done` marks nothing read; leaving `done` for any other state does); W27 bounded by W221 and a missing `turn` never matches; W199 covers `done`; the search stops at the repo root (`.git`), every change of the worktree counts (an Atril workspace is one branch), and the reason drops «mark it»; one proof per clause (W225–W227 split out); W223 asserts q exactly; W224 ranks `done` with `working`; F51 for `DocModal`. Accepted: the double notice is not reproduced, so W221 guards the symptom only.
+
 ## Task breakdown
 
 - App shell: Electron main, preload bridge, renderer with sidebar / centre / right panel /
@@ -2419,8 +2479,9 @@ Textos por `t()`.
 - **W14** When a Claude hook reports a `Notification` event for a session, Atril shall set
   its agent state to `needs-you`.
   Proof: src/main/status.test.ts claude notification marks needs-you
-- **W15** When a session enters `needs-you`, Atril shall add one `ask` or `done` notice (V3) and show it on the Mac only when `route()` (V10) answers `mac`; no other `ask` or `done` notice for that session until it leaves the state, except W176; W180's `idle` is a different kind and is allowed.
+- **W15** When a session enters `needs-you` or `done`, Atril shall add one `ask` or `done` notice (V3) — `done` always for `done` — and show it on the Mac only when `route()` (V10) answers `mac`; no other `ask` or `done` notice for that session until it leaves the state, except W176 and W221; W180's `idle` is a different kind and is allowed.
   Proof: src/main/status.test.ts notifies once per needs-you transition
+  Proof: src/main/status.test.ts entering done adds one done notice
 - **W16** If the agent's pane (by its recorded pane id) is dead or missing, Atril shall set
   the agent state to `stopped`; other panes of the session do not count.
   Proof: src/main/status.test.ts exited agent marks stopped
@@ -2497,12 +2558,10 @@ Textos por `t()`.
 - **W38** When the person clicks a needs-you notification, Atril shall show the Trabajo screen
   with that workspace selected, whatever screen was open.
   Proof: src/renderer/a11y.test.ts notification click opens the workspace from any screen
-- **W26** When a Claude hook reports `Stop` for a session, Atril shall set its agent state to
-  `needs-you`; when it reports `UserPromptSubmit`, to `working`.
-  Proof: src/main/status.test.ts stop marks needs-you and prompt submit marks working
-- **W27** When a session leaves `needs-you` and enters it again, Atril shall notify again.
+- **W26** When a Claude hook reports `Stop` for a session, Atril shall set its agent state as W217–W220 and W228 decide (`working`, `needs-you` or `done`; with no checklist and no question, `done`); when it reports `UserPromptSubmit`, to `working`.
+  Proof: src/main/status.test.ts stop marks done and prompt submit marks working
+- **W27** When a session leaves `needs-you` or `done` and enters either again, Atril shall notify again, except under W221.
   Proof: src/main/status.test.ts re-entering needs-you notifies again
-
 ### Agent activity (add-agent-activity, 9 nov 2026)
 
 - **A1** When a Claude hook fires, Atril shall append one line `{at, kind, text}` of at most
@@ -2838,12 +2897,7 @@ Textos por `t()`.
   PreToolUse or PostToolUse shall not clear it; pausing shall be refused unless the state is working. One
   test holds a case per clause.
   Proof: src/main/pause.test.ts pausing interrupts only that agent
-- **W87** When the person resumes a paused workspace, main shall type «Sigue donde lo dejaste.» then Enter into
-  its agent pane and remove the mark; a UserPromptSubmit or a needs-you state shall also remove it, except
-  Claude Code's idle reminder (a Notification with `notification_type` idle_prompt or «waiting for your
-  input»), which keeps it; resuming
-  a workspace that is not paused shall answer «Ese agente no está en pausa.» and a gone one N3's message. One
-  test holds a case per clause.
+- **W87** When the person resumes a paused workspace, main shall type «Sigue donde lo dejaste.» then Enter into its agent pane and remove the mark; a UserPromptSubmit or a needs-you or done state shall also remove it, except Claude Code's idle reminder (a Notification with `notification_type` idle_prompt or «waiting for your input»), which keeps it; resuming a workspace that is not paused shall answer «Ese agente no está en pausa.» and a gone one N3's message. One test holds a case per clause.
   Proof: src/main/pause.test.ts resuming asks the agent to go on
 - **W88** While a workspace is paused, its row and its card shall read «en pausa», the Trabajo menu item shall
   read «Reanudar» (⌘⇧P) instead of «Pausar», and «Pausar» shall be disabled unless the selected workspace is
@@ -3250,17 +3304,18 @@ Textos por `t()`.
 - **W196** The Trabajo terminal shall attach to the agent's tmux session as a read-only client (`tmux attach -r`) and send no keystroke, paste or mouse input to it, including the shell panes an earlier ⌘D left in the session; selecting text and ⌘C still copy. Main shall ignore `atril:term:input`, and ⌘D / ⌘⇧D shall do nothing.
   Proof: src/main/pty.test.ts the terminal client is read only
   Proof: src/renderer/components/terminal.test.tsx typing in the terminal sends nothing
-- **W197** When the hook writes `needs-you`, it shall also write `kind`: `question` for a `PreToolUse` of `AskUserQuestion`, `permission` for a `Notification` with `notification_type` `permission_prompt` or a message starting «Claude needs your permission», and `turn-end` for `Stop`; an idle reminder (`idle_prompt` or «waiting for your input») shall leave `kind` as it was and set `idle: true` (W195 amended below).
+- **W197** When the hook writes `needs-you`, it shall also write `kind`: `question` for a `PreToolUse` of `AskUserQuestion` or a `Stop` under W219, `permission` for a `Notification` with `notification_type` `permission_prompt` or a message starting «Claude needs your permission», and `turn-end` for a `Stop` under W218's fallback; a `Stop` otherwise follows W217 or W220; an idle reminder (`idle_prompt` or «waiting for your input») shall leave `kind` as it was and set `idle: true` (W195). Ceiling: one test walks every event kind, as before this change; the new `Stop` branches have their own proofs below.
   Proof: src/main/agent.test.ts the hook says what kind of wait it is
 - **W198** On every PreToolUse the hook shall remember, per session, the tool name and a one-line summary of its input (the command for `Bash`, the path for `Edit`/`Write`/`MultiEdit`, else nothing); when it writes a `permission` wait it shall store that pair as `{ tool, summary }`.
   Proof: src/main/agent.test.ts a permission names the tool it waits for
-- **W199** While a session is in `needs-you` with `kind` `turn-end` and its subagents file holds an entry without `endedAt`, Atril shall show it as `working` with the activity «Esperando a un subagente» and add no notice; on the first poll after the last entry ends, the state counts as entering `needs-you` (W15). Background shells are out of this change (Scope).
+- **W199** While a session is in `needs-you` with `kind` `turn-end`, or in `done`, and its subagents file holds an entry without `endedAt`, Atril shall show it as `working` with the activity «Esperando a un subagente» and add no notice; on the first poll after the last entry ends, the state counts as entering `needs-you` or `done` (W15). Background shells: W229, W230.
   Proof: src/main/status.test.ts a turn end with a subagent still running is working
+  Proof: src/main/status.test.ts a done agent waits for its subagents too
 - **W200** For a `question`, the card shall show the next unanswered question, its header and each option as a button with its number, label and description, the option whose label ends «(Recommended)» or «(Recomendado)» marked «Recomendada» without that suffix; for `multiSelect` it shows the options without buttons and «Contesta por escrito abajo».
   Proof: src/renderer/components/agentcard.test.tsx a question card answers with its options
 - **W201** For a `permission`, the card shall read «Quiere ejecutar {summary}» (or «Quiere usar {tool}», or «Quiere permiso para seguir» with no tool) with «Permitir» and «Denegar».
   Proof: src/renderer/components/agentcard.test.tsx a permission card allows or denies
-- **W202** For a `turn-end`, the card shall show «Ha terminado: {last text}» with «Sigue» (`{ continue: true }`) and focus the composer; while `idle` is true it adds «Lleva un rato esperándote».
+- **W202** For a `turn-end` without a W233 reason, the card shall show «Ha terminado: {last text}» with «Sigue» (`{ continue: true }`) and focus the composer; while `idle` is true it adds «Lleva un rato esperándote».
   Proof: src/renderer/components/agentcard.test.tsx a turn end offers to continue
 - **W203** No row, card, notification or Avisos text shall contain the hook's English messages «Claude needs your permission» or «Claude is waiting for your input».
   Proof: src/main/status.test.ts claude's english wait messages never reach the person
@@ -3302,3 +3357,46 @@ Textos por `t()`.
 
 - **W216** `crashReports` in `ui.json` shall survive a restart when it is `'on'` (anything else reads as off), and `crashLast` when it is `{ at: number, url: string }` or `{ at: number, error: string }`; any other value of either shall be dropped.
   Proof: src/main/ui.test.ts "remembers crash report consent and the last send"
+
+### Fewer go-on cards (fewer-go-on-cards, 26 nov 2026)
+
+- **W217** When the hook gets `Stop`, W228, W229 and W219 do not hold, the session has no pause mark (W86), fewer than 5 blocks are in a row (W218), and at least one `.agents/changes/*/proposal.md` under the repo root has an open box, then the hook shall print `{"decision":"block","reason":…}` whose reason names every change with open boxes and its count, and write `state: working` with no `kind`. The repo root is the nearest folder at or above the payload's `cwd` that holds `.git` (a file or a folder); without one, nothing is open. An open box is a line matching `^\s*[-*]\s+\[ \]`, outside a ``` fence, between the `## Checklist` heading and the next `## ` heading.
+  Proof: src/main/agent.test.ts a stop with open boxes keeps the agent going
+  Proof: src/main/agent.test.ts only open boxes under the checklist of the repo count
+- **W218** The hook shall keep `blocks` in the state file, carried across events: `UserPromptSubmit` sets it to 0, a `Stop` whose payload has `stop_hook_active: false` counts from 0 (an absent field carries the count), and each block under W217 adds 1.
+  Proof: src/main/agent.test.ts a fresh stop or a prompt restarts the count
+- **W225** If a `Stop` would block under W217 but 5 blocks are already in a row, or the session has a pause mark, then the hook shall print nothing and write `needs-you` with `kind: turn-end`, as before this change.
+  Proof: src/main/agent.test.ts keeping going stops after five blocks in a row
+  Proof: src/main/agent.test.ts a paused agent is never kept going
+- **W219** When the hook gets `Stop`, W228 and W229 do not hold, and the newest assistant text in the transcript tail, after removing trailing whitespace and the characters `` *_`"'»”) ``, ends with `?`, the hook shall write `needs-you` with `kind: question`, `text` «Te pregunta: <q>» and `questions: [{ question: q, header: '', options: [], multiSelect: false }]`, where q is that text's last non-empty line with whitespace collapsed, the same characters and a leading `*_` trimmed from both ends, and clipped to 200 characters; it shall not block, whatever boxes are open.
+  Proof: src/main/agent.test.ts a question in prose is a question wait
+- **W223** While a question wait's due question has no options, the card shall show q exactly as its head, no header and no buttons.
+  Proof: src/renderer/components/agentcard.test.tsx a question in prose shows without buttons
+- **W226** While a workspace is in Automático, a question wait whose due question has no options shall not be answered by Atril, and Atril shall add one `ask` notice for it (W15).
+  Proof: src/main/status.test.ts automatic leaves a question in prose to the person
+- **W228** If the hook gets `Stop` while its state file says `needs-you` with `kind` `question` or `permission`, then it shall write `needs-you` with `kind: turn-end`, keeping the stored questions, as before this change: no block, no W219, no `done`.
+  Proof: src/main/agent.test.ts the hook keeps every question and what a permission is for
+- **W229** When the hook gets `Stop`, W228 does not hold, and the transcript tail holds a `tool_result` whose content starts «Command running in background with ID: <id>» with no later user entry whose content starts «<task-notification>» and contains `<task-id><id></task-id>`, then the hook shall print nothing and write `state: working` with `waiting: 'shell'`, before W219, W217, W225 and W220 are considered; text that merely quotes those strings (an assistant text, a tool's output) shall not count.
+  Proof: src/main/agent.test.ts a stop while a background shell runs is working
+- **W230** While a session's state file says `working` with `waiting: 'shell'`, Atril shall show the activity «Esperando a una shell en segundo plano» on top, as W199 does for a subagent, and add no notice.
+  Proof: src/main/status.test.ts a stop behind a background shell shows what it waits for
+- **W231** When the hook writes W225's fallback because 5 blocks are already in a row (not because of the pause mark), it shall also write `why: 'cap'` and `box`: the text after `[ ]` of the first open box of the first change W217 lists, whitespace collapsed and clipped to 120 characters.
+  Proof: src/main/agent.test.ts the keep-going cap names the box it is on
+- **W232** On every `Stop` the hook shall write `said`, the last sentence of the newest assistant text (its last non-empty line, whitespace collapsed, split after `.`, `!`, `?` or `…`, the last non-empty piece, clipped to 200), and keep, carried across every event, `fail` (the text of the newest failed-`Bash` line since the previous `Stop`, A-fail), `lastStop: { said, fail }` and `repeat`: the previous `repeat` plus 1 when this stop's `said` is non-empty and equals `lastStop.said`, or its `fail` is non-empty and equals `lastStop.fail`, else 0; each `Stop` then sets `lastStop` to its own pair and clears `fail`.
+  Proof: src/main/agent.test.ts stops that repeat themselves are counted
+- **W233** For a `turn-end` wait, main shall pass `why` (`loop` when `repeat` ≥ 1, else `cap` when the file says so, with its `box`) and `said` to the card, and the card shall head, first match: `loop` → «Se repite: parece un bucle» with «Pausar» after «Sigue»; `cap` → «Ha parado 5 veces con casillas abiertas: puede estar atascado» and, with a box, «Va por: {box}»; `said` → «Para porque: “{said}”»; otherwise W202's.
+  Proof: src/main/status.test.ts the wait carries why the agent stopped
+  Proof: src/renderer/components/agentcard.test.tsx a go-on card says why the agent stopped
+- **W234** When the person presses «Pausar» on a `turn-end` card, main shall write the pause mark (W86) without sending Escape, so the state reads `paused`; pausing shall still be refused in any other state but `working`.
+  Proof: src/main/pause.test.ts a looping turn end pauses without a key
+- **W220** When the hook gets `Stop` and none of W228, W229, W217, W225 or W219 applies, it shall write `state: done` with the turn's text as today and no `kind`, and remove the pause mark as for `needs-you`.
+  Proof: src/main/agent.test.ts a stop with nothing left is done
+- **W227** Atril shall report a session whose state file says `done` as `done`, with no wait (`waitOf` null) and outside «Siguiente» (N1), and Automático shall send nothing to it.
+  Proof: src/main/status.test.ts a done agent is done, not a wait
+- **W221** The hook shall keep `turn` in the state file, set to the event's time on `UserPromptSubmit` and carried across every other event. If a session enters `needs-you` or `done` with a `turn` present and equal to, and the same wait kind (or `done`) and text as, the last entry Atril notified for that workspace, then Atril shall add no notice for it; a state without `turn` never matches.
+  Proof: src/main/agent.test.ts a prompt starts a turn that every event carries
+  Proof: src/main/status.test.ts the same turn end notifies once
+- **W222** Wherever an agent's state is shown with `StateLabel`, `done` shall read «terminado» with the `done` icon.
+  Proof: src/renderer/components/statelabel.test.tsx a done agent reads terminado
+- **W224** «Todos» shall rank `done` equal to `working`, ties by latest activity as for `working` (W81).
+  Proof: src/renderer/agents.test.ts done sorts with working

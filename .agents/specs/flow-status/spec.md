@@ -736,3 +736,8 @@ Aterrizado**.
   Proof: src/renderer/flow/flowempty.test.ts the panel says it is reading
 - **F50** While the stage is `entrada`, `spec` or `plan`, or it is `construir` with no boxes, the Libretto tab shall show, under the change line, «Aún no hay casillas: salen cuando el plan tenga su checklist.»; at `entrada` with no change it shall say «Este trabajo aún no tiene cambio de Libretto: lo crea el primer paso.»; and when main answers no flow at all (a review session) and there are no subagents, «Este trabajo no sigue el flujo de Libretto.».
   Proof: src/renderer/flow/flowempty.test.ts before the checklist the panel says why there are no boxes
+
+### Fewer go-on cards (fewer-go-on-cards, 26 nov 2026)
+
+- **F51** While the agent's state is `done`, the document editor's status bar shall say «✎ editable · Claude ha terminado».
+  Proof: src/renderer/flow/documents.test.ts a done agent's document is editable
