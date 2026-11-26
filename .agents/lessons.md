@@ -468,3 +468,7 @@ A decision log line said a test covered the catalog read during an action; none 
 ## 2026-11-25 · skills-usage · 6→7
 - El revisor en frío no encontró nada. Mirando la foto salieron dos fallos que los tests daban por buenos porque el contrato los permitía: las skills de Atril contaban como «candidatas a apagar» (no se apagan una a una) y un solo uso decía «1 veces». Regla: mirar la foto contra lo que la persona leerá, no solo contra el criterio; el singular y lo que no se puede tocar van en el contrato desde el principio.
 - El filtro de texto antes de `JSON.parse` busca `"name":"Skill"` sin espacios: comprobado contra una sesión real de este proyecto (Claude Code escribe JSON compacto). Si un día cuenta 0, mirar esto primero.
+
+## 2026-11-26 · crash-reports · 6→7
+- The work reviewer fed the scrubber real-looking input and found what the per-pattern test missed: quoted text survived in the stack (V8 repeats the message on its first line), bare hostnames (`jira.acme.corp`) and paths with spaces leaked, short `password=` values stayed, a damaged `crash-sent.json` silently stopped all sending, and the e-mail regex took ~300 ms on 16 KB. Rule: a scrubber is proven by adversarial inputs and a timing case, not by one example per pattern; anything whose output leaves the machine is cut before it is scanned.
+- Pau changed the delivery three times (PR from a branch → fork → issue turned into a PR by a repo workflow) once the repo was going public. Rule: settle visibility and who has write access before designing anything that writes to a forge.

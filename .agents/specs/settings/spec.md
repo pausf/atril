@@ -589,3 +589,8 @@ errores visibles junto al campo.
   Proof: src/renderer/settings/notifications.test.ts a blocked Mac shows the problem with its fix
 - **S46** If saving a change fails, then the card shall show «No he podido guardar tus avisos: el cambio se perderá al cerrar Atril.» with «Volver a intentar», which resends the same patch, and main's reason folded under «Ver detalle».
   Proof: src/renderer/settings/notifications.test.ts a failed save says so and retries
+
+### Crash reports (crash-reports, 26 nov 2026)
+
+- **S47** Ajustes shall show the «Fallos» card (crash R6) in the first column, after «Repos».
+  Proof: src/renderer/crash/crash.test.tsx "the Fallos card asks before sending and shows the last send"
