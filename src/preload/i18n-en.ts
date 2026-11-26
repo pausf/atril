@@ -1103,4 +1103,14 @@ export const EN: Record<string, string> = {
   'pausf/atril no es privado: no envío fallos ahí.': 'pausf/atril is not private: no failures are sent there.',
   'Algo ha fallado en esta pantalla.': 'Something failed on this screen.',
   'Volver a cargar': 'Reload',
+  '¿Enviar los fallos a GitHub?': 'Send failures to GitHub?',
+  'Se envía: el error, su traza, la versión de Atril y de macOS. Se quitan tus rutas, tokens, correos, direcciones de servidores, claves de Jira y lo que va entre comillas; la limpieza es automática y puede dejarse algo. Va con tu cuenta de GitHub a pausf/atril, que es privado.':
+    'What is sent: the error, its stack trace, the Atril and macOS versions. Your paths, tokens, e-mails, server addresses, Jira keys and anything in quotes are removed; the cleaning is automatic and may miss something. It goes with your GitHub account to pausf/atril, which is private.',
+  'Activar': 'Turn on',
+  'Fallos': 'Failures',
+  'Si Atril falla de una forma que no esperaba, puede abrir un PR en el proyecto con el error, sin tus datos.': 'If Atril fails in a way it did not expect, it can open a PR on the project with the error, without your data.',
+  'Enviar los fallos a GitHub como PR': 'Send failures to GitHub as a PR',
+  'Conecta GitHub en Conexiones para enviarlos.': 'Connect GitHub in Connections to send them.',
+  'Último fallo enviado: {hace}': 'Last failure sent: {hace}',
+  'No he podido enviar el último fallo: {error}.': 'I could not send the last failure: {error}.',
 }

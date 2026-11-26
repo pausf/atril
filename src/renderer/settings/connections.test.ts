@@ -172,7 +172,7 @@ describe('connections', () => {
     const names = (col: Element) => Array.from(col.querySelectorAll(':scope > section')).map((s) => s.querySelector('h3')?.textContent)
     const cols = main.querySelectorAll(':scope > .ajustes-col')
     expect(cols).toHaveLength(2)
-    expect(names(cols[0]!)).toEqual(['Conexiones', 'Repos'])
+    expect(names(cols[0]!)).toEqual(['Conexiones', 'Repos', 'Fallos'])
     expect(names(cols[1]!)).toEqual(['Apariencia', 'Idioma', 'Notificaciones', 'Cuándo'])
 
     // One column, left first, by default; side by side from 1100 px of window width.

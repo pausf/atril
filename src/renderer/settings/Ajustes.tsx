@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import { useT } from '../ui'
 import { Repos } from './Repos'
+import { Fallos } from '../crash/Fallos'
 import { Appearance } from '../components/Appearance'
 import { ForgeCard } from './Forges'
 import { ConnectSteps, ConnectionRow, Field, Manage, useConnectionState } from './Connection'
@@ -221,6 +222,7 @@ export function Ajustes({ children }: { children?: ReactNode }) {
           <ForgeCard forge="gitlab" />
         </section>
         <Repos />
+        <Fallos />
       </div>
       <div className="ajustes-col">
         <Appearance />
