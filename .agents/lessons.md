@@ -472,3 +472,18 @@ A decision log line said a test covered the catalog read during an action; none 
 ## 2026-11-26 · crash-reports · 6→7
 - The work reviewer fed the scrubber real-looking input and found what the per-pattern test missed: quoted text survived in the stack (V8 repeats the message on its first line), bare hostnames (`jira.acme.corp`) and paths with spaces leaked, short `password=` values stayed, a damaged `crash-sent.json` silently stopped all sending, and the e-mail regex took ~300 ms on 16 KB. Rule: a scrubber is proven by adversarial inputs and a timing case, not by one example per pattern; anything whose output leaves the machine is cut before it is scanned.
 - Pau changed the delivery three times (PR from a branch → fork → issue turned into a PR by a repo workflow) once the repo was going public. Rule: settle visibility and who has write access before designing anything that writes to a forge.
+
+## 2026-11-26 · skills-dense · 6→7
+The box claiming «at least 20 whole rows on the photo» was ticked on a photo of the top of the screen, which shows 15. The drive script had counted 23 on a scrolled view that was never kept. The photo that proves a number is the one the count was taken on. Fixed: a second photo, scrolled, 21 rows counted by the same script.
+
+## 2026-11-26 · skills-dense · 6→7
+Replacing the whole groups block with the «Nada se llama» message also removed the «Plugins» line, which K40 says always shows. An empty state that swaps out a container takes along everything in it that is not a result. Fixed: the message sits above the groups; a test searches «zzz» and finds «Añadir plugin» (seen red first).
+
+## 2026-11-26 · skills-dense · 6→7
+The docs said 203 example items while the contract and seed say 171: the heading adds Atril's own 32. A number in a doc names what it counts. Fixed in novedades and the decision log.
+
+## 2026-11-26 · skills-dense · 6→7
+The «Resumen» label on the tile group arrived without a criterion; it exists because the tiles and the filter buttons share names. Kept and logged in the decision log.
+
+## 2026-11-26 · skills-dense · real app
+The first drive connected over CDP to another session's Atril on the same port and read Pau's real skills (heading 169). Its photo was deleted unseen-into-git. Every drive now uses its own port, checks the port is free first, and stops unless a seeded example row is on screen. And the bottom quota bar shows the real account's numbers: photos are cropped above it.

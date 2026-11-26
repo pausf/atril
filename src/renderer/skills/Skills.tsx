@@ -417,7 +417,7 @@ export function Skills() {
         ))}
       </div>
 
-      {data && narrowed && shown.length === 0 ? (
+      {data && narrowed && shown.length === 0 && (
         <div className="empty" role="status">
           {q.trim() ? (
             <>
@@ -443,8 +443,8 @@ export function Skills() {
             t('No tienes ninguna apagada.')
           )}
         </div>
-      ) : (
-        data && (
+      )}
+      {data && (
           <div ref={list} onKeyDown={onArrows}>
             {fold('personal', of('personal'), { label: t('Personal'), footer: newButton('personal') })}
             {repos &&
@@ -513,7 +513,6 @@ export function Skills() {
             })}
             {fold('atril', of('atril'), { label: t('Atril'), controls: <span className="where">{t('solo lectura')}</span> })}
           </div>
-        )
       )}
       {open && (
         <SkillDetail

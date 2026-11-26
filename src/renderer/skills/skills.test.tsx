@@ -1018,6 +1018,11 @@ describe('skills dense list', () => {
     expect(within(s).queryByRole('group', { name: 'release@acme' })).toBeNull()
     expect(within(s).queryByRole('button', { name: 'Nueva skill' })).toBeNull()
     expect(within(group(s, 'Plugins')).getByRole('button', { name: 'Añadir plugin' })).toBeTruthy()
+    // With no match at all the «Plugins» line still shows.
+    await user.clear(search)
+    await user.type(search, 'zzz')
+    expect(within(s).getByText('Nada se llama «zzz».')).toBeTruthy()
+    expect(within(group(s, 'Plugins')).getByRole('button', { name: 'Añadir plugin' })).toBeTruthy()
 
     // A folded group with matches opens while narrowed by a filter too.
     await user.clear(search)
