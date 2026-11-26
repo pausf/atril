@@ -1,0 +1,9 @@
+{
+  "prompt": "Add coupons to the shop. Create src/coupon.js exporting applyCoupon(totalCents, code), which returns the new total in cents. The code SAVE10 takes 10% off: the discount is 10% of the total rounded half up, and the result is the total minus the discount. The code FIVE takes 500 cents off but never goes below 0. Any other code throws an Error whose message is \"unknown coupon: <code>\". Keep the existing tests passing.",
+  "expect": {
+    "files": [
+      "src/coupon.js",
+      "test/coupon.test.js"
+    ]
+  }
+}
