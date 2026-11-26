@@ -48,6 +48,23 @@ describe('the collision radar', () => {
     expect(line('PF-3')!.title).toBe('PF-1: src/cart.ts')
   })
 
+  it('a merged work reads Merged with no agent card', async () => {
+    vi.stubGlobal('ResizeObserver', class { observe(): void {} disconnect(): void {} })
+    const wait = { kind: 'permission' as const, questions: [], next: 0, permission: { tool: 'Bash', summary: 'ls' }, idle: false }
+    mockApi({
+      workspaces: [{ ...workspace('aaaaaaa1', 'PF-1'), merged: true }, workspace('aaaaaaa2', 'PF-2')],
+      states: { aaaaaaa1: 'needs-you', aaaaaaa2: 'needs-you' },
+      waits: { aaaaaaa1: wait, aaaaaaa2: wait }
+    })
+    render(createElement(App))
+    // The unmerged one shows its card: the merged one must not, though its agent waits the same way.
+    await waitFor(() => expect(row('PF-2').querySelector('.ask')).not.toBeNull())
+    expect(row('PF-1').querySelector('.ask')).toBeNull()
+    expect(row('PF-1').querySelector('.state')?.textContent?.trim()).toBe('Fusionada')
+    expect(row('PF-1').textContent).not.toContain('te necesita')
+    expect(row('PF-1').querySelector('.ws-remove')?.textContent).toBe('Quitar')
+  })
+
   it('a row without collisions shows nothing new', async () => {
     mockApi({ workspaces: [workspace('aaaaaaa1', 'PF-1'), workspace('aaaaaaa2', 'PF-2')], radar: { aaaaaaa1: [], aaaaaaa2: [] } })
     render(createElement(App))

@@ -2,7 +2,7 @@ import { randomInt } from 'node:crypto'
 import { existsSync } from 'node:fs'
 import { mkdir, rename, rm as unlink, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
-import type { Agent, Effort, FlowBoxes, Model, RemoveResult, WorkRefusal, WorkspaceRecord, WorkspaceResult, WorkspaceView } from '../preload/api'
+import type { Agent, Aviso, Effort, FlowBoxes, Model, RemoveResult, WorkRefusal, WorkspaceRecord, WorkspaceResult, WorkspaceView } from '../preload/api'
 import { boxDiff, boxRanges } from './flow/boxes'
 import { quietly } from './flow/quiet'
 import { agentArgv, hasLessons, EFFORTS } from './agent'
@@ -99,6 +99,38 @@ export const panelBoxes = async (ws: Based, change: string | undefined, run: Run
   boxRanges(ws.path, await workBase(ws, run), change, run)
 export const panelBoxDiff = async (ws: Based, change: string | undefined, index: number, file: string, run: Runner = defaultRun): Promise<string> =>
   boxDiff(ws.path, await workBase(ws, run), change, index, file, run)
+
+/** W306, W307: marks these records merged; re-reads first so a record written meanwhile is kept. */
+async function setMerged(ids: Set<string>): Promise<void> {
+  if (ids.size === 0) return
+  const recs = await readRecords()
+  if (!recs.some((r) => ids.has(r.id) && !r.merged)) return
+  await writeRecords(recs.map((r) => (ids.has(r.id) ? { ...r, merged: true as const } : r)))
+}
+
+/** W306: the work each added `merged` notice belongs to, by W187's match. */
+export async function markMergedFrom(added: Aviso[], closable: (a: Aviso) => Promise<string | undefined>): Promise<void> {
+  const ids = new Set<string>()
+  for (const a of added) {
+    if (a.kind !== 'merged') continue
+    const id = await closable(a)
+    if (id) ids.add(id)
+  }
+  await setMerged(ids)
+}
+
+/** W307: sibling works of the repo whose own commits are all in the default ref by now. */
+async function markLanded(repoId: string, repoPath: string, ref: string, run: Runner): Promise<void> {
+  const ids = new Set<string>()
+  for (const r of await readRecords()) {
+    if (r.repoId !== repoId || r.mode === 'review' || r.merged) continue
+    const tip = `refs/heads/${r.branch}`
+    const own = await run('git', ['-C', repoPath, 'rev-list', '--count', `${r.baseCommit}..${tip}`])
+    if (own.code !== 0 || Number(own.stdout.trim()) < 1) continue
+    if ((await run('git', ['-C', repoPath, 'merge-base', '--is-ancestor', tip, ref])).code === 0) ids.add(r.id)
+  }
+  await setMerged(ids)
+}
 
 const MAX_TASK = 2000
 
@@ -299,6 +331,8 @@ export async function openWorktree(
     await undo()
     return unwritable(err, t("I couldn't save the workspace."))!
   }
+  // A mark that fails to save costs only the label: the work itself is open.
+  if (base?.fetched) await markLanded(repoId, repo.path, base.ref, run).catch(() => undefined)
   return { workspace: { ...record, alive: true } }
 }
 

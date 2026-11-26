@@ -245,6 +245,7 @@ export const ES: Record<string, string> = {
   'Subagents': 'Subagentes',
   '1 subagent': '1 subagente',
   'Clashes with {branch} in {file}': 'Choca con {branch} en {file}',
+  Merged: 'Fusionada',
   'Clashes with {branch} in {file} and {n} more': 'Choca con {branch} en {file} y {n} más',
   '{n} subagents': '{n} subagentes',
   'working · {d}': 'trabajando · {d}',

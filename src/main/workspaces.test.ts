@@ -6,7 +6,7 @@ import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { agentSpy, cleanTmp, git, killTmux, makeRegisteredRepo, tmp, tmuxOut, tmuxSock, workThatMergedMain } from './test-helpers'
 import { closeQuiet, openWatchers } from './flow/quiet'
-import { flowWorkspace, forgetWorkspace, listWorkspaces, openWorktree, panelBoxes, readRecords, removeWorkspace, reopenWorkspace, terminalAt, workBase, writeRecords } from './workspaces'
+import { flowWorkspace, forgetWorkspace, listWorkspaces, markMergedFrom, openWorktree, panelBoxes, readRecords, removeWorkspace, reopenWorkspace, terminalAt, workBase, writeRecords } from './workspaces'
 import { qaStatus } from './qa'
 import { run, type Runner } from './run'
 
@@ -838,4 +838,73 @@ describe('the base a work is measured from', () => {
     expect((await panelBoxes(rec, undefined)).total).toBe(100)
     expect(branchSize(w.path, await workBase(rec))).toBe(100)
   }, 30_000)
+})
+
+describe('a merged work', () => {
+  const record = (id: string, branch: string, baseCommit: string, extra: object = {}) => ({
+    id,
+    repoId: 'demo',
+    branch,
+    mode: 'worktree',
+    path: join(home, 'wt', 'demo', branch),
+    baseCommit,
+    agent: 'claude',
+    session: `atril-${id}`,
+    paneId: '%1',
+    ...extra
+  })
+
+  it('a merged notice marks its work merged and nothing else', async () => {
+    const head = git(repo, 'rev-parse', 'HEAD').trim()
+    await writeRecords([record('w1', 'feat/one', head), record('w2', 'feat/two', head), record('w3', 'feat/three', head)] as never)
+    const notice = (kind: 'merged' | 'closed', branch: string) => ({ id: `n-${kind}-${branch}`, kind, at: 1, read: false, title: 't', branch, project: 'acme/shop', url: 'https://example.test/pr/1' })
+    // W187's match, stubbed: feat/one and feat/two have a work; the unknown branch does not.
+    const closable = vi.fn(async (a: { branch?: string }) => ({ 'feat/one': 'w1', 'feat/two': 'w2' })[a.branch ?? ''] as string | undefined)
+    await markMergedFrom([notice('merged', 'feat/one'), notice('closed', 'feat/two'), notice('merged', 'feat/nowhere')] as never, closable)
+
+    const merged = Object.fromEntries((await readRecords()).map((r) => [r.id, r.merged === true]))
+    expect(merged).toEqual({ w1: true, w2: false, w3: false })
+    // A closed notice is never even matched.
+    expect(closable.mock.calls.map(([a]) => a.branch)).toEqual(['feat/one', 'feat/nowhere'])
+  })
+
+  it("a new work's fetch marks siblings whose branch already landed", async () => {
+    const bare = tmp()
+    git(bare, 'init', '--bare', '-q', '-b', 'main')
+    git(repo, 'branch', '-M', 'main')
+    git(repo, 'remote', 'add', 'origin', bare)
+    git(repo, 'push', '-q', 'origin', 'main')
+    const base = git(repo, 'rev-parse', 'HEAD').trim()
+    const branchWith = (name: string): void => {
+      git(repo, 'switch', '-q', '-c', name, base)
+      writeFileSync(join(repo, `${name.replace('/', '-')}.txt`), name)
+      git(repo, 'add', '.')
+      git(repo, 'commit', '-q', '-m', name)
+      git(repo, 'switch', '-q', 'main')
+    }
+    branchWith('feat/landed')
+    branchWith('feat/open')
+    git(repo, 'branch', 'feat/empty', base)
+    // feat/landed reaches origin's main through a merge made elsewhere.
+    git(repo, 'push', '-q', 'origin', 'feat/landed:main')
+    await writeRecords([
+      record('w1', 'feat/landed', base),
+      record('w2', 'feat/open', base),
+      record('w3', 'feat/empty', base),
+      record('w4', 'feat/missing', base),
+      record('w5', 'feat/landed', base, { mode: 'review' })
+    ] as never)
+
+    const r = await openWorktree({ repoId: 'demo', branch: 'feat/next', agent: 'claude', argv: SLEEP })
+    if (!('workspace' in r)) throw new Error(r.error)
+    const merged = Object.fromEntries((await readRecords()).map((x) => [x.id, x.merged === true]))
+    expect(merged).toEqual({ w1: true, w2: false, w3: false, w4: false, w5: false, [r.workspace.id]: false })
+
+    // A fetch that fails marks nothing.
+    await writeRecords((await readRecords()).map((x) => ({ ...x, merged: undefined })))
+    const offline: Runner = (cmd, args, opts) => (args.includes('fetch') ? Promise.resolve({ code: 128, stdout: '', stderr: 'unreachable' }) : run(cmd, args, opts))
+    const again = await openWorktree({ repoId: 'demo', branch: 'feat/later', agent: 'claude', argv: SLEEP }, offline)
+    if (!('workspace' in again)) throw new Error(again.error)
+    expect((await readRecords()).some((x) => x.merged)).toBe(false)
+  }, 40_000)
 })

@@ -1,4 +1,4 @@
-import { mkdirSync, writeFileSync } from 'node:fs'
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { run, type Runner } from './run'
@@ -127,6 +127,18 @@ describe('the radar', () => {
     expect(hits['w1']?.map((h) => [h.id, h.files])).toEqual([['b1', ['own.txt']]])
     expect(hits['b1']?.map((h) => [h.id, h.files])).toEqual([['w1', ['own.txt']]])
   }, 30_000)
+
+  it('a merged work is out of the clash check', async () => {
+    three()
+    const file = join(home, 'workspaces.json')
+    const all = JSON.parse(readFileSync(file, 'utf8')) as { workspaces: Array<Record<string, unknown>> }
+    // a and b share src/cart.ts; once a is merged neither side sees it.
+    all.workspaces[0]!['merged'] = true
+    writeFileSync(file, JSON.stringify(all))
+    const hits = await radar(run)
+    expect(hits['aaaa0001']).toBeUndefined()
+    expect(hits['aaaa0002']?.map((h) => h.id)).toEqual([])
+  })
 
   it('the radar costs nothing while nothing changes', async () => {
     three()

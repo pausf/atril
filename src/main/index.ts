@@ -63,7 +63,7 @@ import { loginPath } from './login-path'
 import { run } from './run'
 import { createMrPoll } from './mrpoll'
 import { createQuotaWatch, createUsage } from './usage'
-import { listWorkspaces, listWorkspacesOrNone, readRecordsOrNone, openWorktree, removeWorkspace, flowWorkspace, forgetWorkspace, reopenWorkspace, terminalAt, panelBoxDiff, panelBoxes } from './workspaces'
+import { listWorkspaces, listWorkspacesOrNone, readRecordsOrNone, openWorktree, removeWorkspace, flowWorkspace, forgetWorkspace, reopenWorkspace, terminalAt, markMergedFrom, panelBoxDiff, panelBoxes } from './workspaces'
 import { createFlowHub } from './flow/watch'
 import { installMenu } from './menu'
 import { createNotifier, parseNcprefs } from './notify'
@@ -522,7 +522,14 @@ app.whenReady().then(async () => {
     },
     closable
   })
-  const tell = (p: Promise<Aviso[]>): void => void p.then((added) => notifier.notify(added)).catch(() => undefined)
+  const tell = (p: Promise<Aviso[]>): void =>
+    void p
+      .then((added) => {
+        // W306: whatever the notice's own route, a merged MR marks its work.
+        void markMergedFrom(added, closable).catch(() => undefined)
+        return notifier.notify(added)
+      })
+      .catch(() => undefined)
   // W192: what macOS says of Atril's notifications; any doubt is «no lo sé».
   const permission = async (): Promise<NotifyPermission> => {
     const r = await run('defaults', ['export', 'com.apple.ncprefs', '-'], { timeoutMs: 5000 })
