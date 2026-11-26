@@ -114,6 +114,16 @@ describe('agent card', () => {
     expect(within(strip).getByText('Quiere ejecutar ls')).toBeTruthy()
   })
 
+  it('a question in prose shows without buttons', async () => {
+    wait = { kind: 'question', text: 'Te pregunta: ¿Hago push?', questions: [{ question: '¿Hago push?', header: '', options: [], multiSelect: false }], next: 0, idle: false }
+    render(createElement(AgentCard, { workspaceId: 'w1', activityAt: 1 }))
+    await screen.findByText('¿Hago push?')
+    expect(card().querySelector('.ask-q')?.textContent).toBe('¿Hago push?')
+    expect(card().querySelector('.ask-head')).toBeNull()
+    expect(within(card()).queryAllByRole('button')).toEqual([])
+    cleanup()
+  })
+
   it('a question card answers with its options', async () => {
     const user = userEvent.setup()
     wait = {
@@ -188,6 +198,35 @@ describe('agent card', () => {
     render(createElement(AgentCard, { workspaceId: 'w1', activityAt: 1 }))
     expect(await screen.findByText('Quiere permiso para seguir')).toBeTruthy()
     expect(buttons()).toEqual(['Permitir', 'Denegar'])
+  })
+
+  it('a go-on card says why the agent stopped', async () => {
+    const user = userEvent.setup()
+    const pause = vi.fn(async () => ({ ok: true as const }))
+    mockApi({}, undefined, { status: { wait: vi.fn(async () => wait), answer, pause } })
+    const base = { kind: 'turn-end' as const, text: 'Claude dice: Espero la suite.', questions: [], next: 0, idle: false }
+    const head = (): string | null | undefined => card().querySelector('.ask-q')?.textContent
+    // A loop: says so and offers to pause next to «Sigue».
+    wait = { ...base, why: 'loop', said: 'Espero la suite.' }
+    render(createElement(AgentCard, { workspaceId: 'w1', activityAt: 1 }))
+    await screen.findByText('Se repite: parece un bucle')
+    expect(buttons()).toEqual(['Sigue', 'Pausar'])
+    await user.click(screen.getByRole('button', { name: 'Pausar' }))
+    expect(pause).toHaveBeenCalledWith('w1')
+    cleanup()
+    // The cap, with the box it is on.
+    wait = { ...base, why: 'cap', box: 'Apply the coupon', said: 'Sigo.' }
+    render(createElement(AgentCard, { workspaceId: 'w1', activityAt: 1 }))
+    await screen.findByText('Ha parado 5 veces con casillas abiertas: puede estar atascado')
+    expect(screen.getByText('Va por: Apply the coupon')).toBeTruthy()
+    expect(buttons()).toEqual(['Sigue'])
+    cleanup()
+    // Otherwise its own last sentence, quoted.
+    wait = { ...base, said: 'Espero la suite.' }
+    render(createElement(AgentCard, { workspaceId: 'w1', activityAt: 1 }))
+    await waitFor(() => expect(head()).toBe('Para porque: “Espero la suite.”'))
+    expect(buttons()).toEqual(['Sigue'])
+    cleanup()
   })
 
   it('a turn end offers to continue', async () => {

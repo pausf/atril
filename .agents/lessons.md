@@ -484,6 +484,11 @@ A «forced red» went by green because `sd` with `^` matched nothing and the fil
 
 ## 2026-11-26 · english-source · 6
 Three tests read Spanish through an identity `t` (`(es) => es`) and a production export `STEPS` did the same. Flipping the keys broke them, not the catalog. When the source language of a text changes, grep for identity `t` helpers, not only for `t('…')` calls.
+## 2026-11-26 · fewer-go-on-cards · 6→7
+Reviewer found nothing against the contract (27 proofs re-run, all green). Before the review the build caught two gaps itself: a Stop with an unanswered question would have become `done` (W228 added, the ask said «no pending question or permission»), and four older proofs assumed every Stop is `needs-you` (W26 and W87 amended in the change, the tests updated, not weakened).
+
+## 2026-11-26 · fewer-go-on-cards · 6→7
+Second, bounded review of the why-card box (25a000f...HEAD): nothing found, 6 proofs re-run green. Worth keeping: after this change a «Sigue» card only shows at the keep-going cap or after a pending wait, so the loop wording mostly arrives together with the cap; a loop in Automático is still pressed up to 3 times before its card.
 
 ## 2026-11-26 · repo-harness · 6→7
 - `skills` counted at most 300 entries (a guard against a huge folder) but the contract said «the number of skills», so a repo with 301 showed 300 with no word about it. Fixed: the cap is in W280 and a 301-skill case asserts 300 (forced red by removing the slice). A guard the builder adds against hostile input goes into the criterion in the same edit.
@@ -496,4 +501,4 @@ Three tests read Spanish through an identity `t` (`(es) => es`) and a production
 ## 2026-11-26 · repo-harness · 6
 - `spec-drift --anchors` read `Proof: file "name"` with the quotes as part of the name and called every citation broken; the working form is `Proof: file name` with no quotes (the form the older criteria use).
 - Main speaks Spanish by default (`lang.ts`), so a detail like «142 lines» built in main would have shown English-keyed text untranslated in tests and Spanish in the app. Items now carry names and numbers only and the window writes the sentences through `t()`.
-- A criterion that said «one test holds every clause» grew to five clauses once the card was built, and the tests followed the clauses rather than the criterion. Cut the criterion when the tests split (W286 → W286, W288, W289, W290) instead of citing a test that no longer holds them.
+- A criterion that said «one test holds every clause» grew to five clauses once the card was built, and the tests followed the clauses rather than the criterion. Cut the criterion when the tests split (W286 → W286, W288, W289, W295) instead of citing a test that no longer holds them.

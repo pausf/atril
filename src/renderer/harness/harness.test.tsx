@@ -101,7 +101,7 @@ describe('the Harness card', () => {
     expect(within(repos).getByText('No se pudo leer el archivo')).toBeTruthy()
   })
 
-  // W290
+  // W295
   it('the Harness card shows a Problem when the read fails or answers an error', async () => {
     let n = 0
     mockApi({

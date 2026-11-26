@@ -8,7 +8,11 @@ below point at files on Pau's disk, not in the repo.
 
 ## Last landed
 
-`crash-reports` (26 Nov): opt-in in Settings → "Failures". An unexpected failure is scrubbed and opened
+`fewer-go-on-cards` (26 Nov, issues #7 and #5): the Stop hook keeps an agent going while its checklist has
+open boxes (5 in a row at most); a question in prose is a question card; nothing left reads "done"; one
+notice per turn end; a stop behind its own background shell stays working; a "Go on" card says why.
+
+Before it, `crash-reports` (26 Nov): opt-in in Settings → "Failures". An unexpected failure is scrubbed and opened
 as an English issue `Crash <sig>:` in pausf/atril with the person's GitHub token;
 `.github/workflows/crash-report.yml` turns it into branch `atril-crash/<sig>`, file
 `crash-reports/<sig>.md` and a PR.
@@ -31,6 +35,8 @@ as an English issue `Crash <sig>:` in pausf/atril with the person's GitHub token
   cleanly; "Pick up where you left off." read as a new message; a lens review reading the request as context.
 - Live QA with a real agent, browser and emulator (only doubles so far); "Start" sending
   `/libretto:write-spec <name>`; "Pass to Jira"; the Jira board; auto mode asking before a push; replying from a Mac notice.
+- Fewer go-on cards: real Claude Code honouring `{"decision":"block"}` on Stop and sending `stop_hook_active` and
+  `cwd`; the cap of 5 cutting for real; the last transcript text written before Stop arrives.
 - `pnpm dist` and the installed `.dmg` (`bocetos/instalar.html` §4).
 - `openmr.test.ts` and `pause.test.ts` sometimes fail in the full suite under git load: look in the QA round.
 
