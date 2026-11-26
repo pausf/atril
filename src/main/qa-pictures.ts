@@ -58,7 +58,7 @@ export function leakOf(text: string, m: Machine): QaPictureReason | null {
   const found = new Set<QaPictureReason>()
   for (const raw of variants) {
     // The scrubber blanks quoted text; without the quotes it judges the words inside.
-    const x = raw.replace(/["'«»“”‘’]/g, ' ')
+    const x = raw.replace(/["'«»“”‘’]/g, ' ') // i18n-ignore
     const out = scrub(x, m.home)
     for (const [mark, reason] of PLACEHOLDER) if (out.includes(mark) && !x.includes(mark)) found.add(reason)
     if (m.home.length > 1 && x.includes(m.home)) found.add('path')

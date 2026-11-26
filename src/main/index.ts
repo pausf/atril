@@ -26,13 +26,13 @@ import { createPage, parseDiff } from './forge/page'
 import { createMerge } from './forge/merge'
 import { createQaPublish } from './qa-publish'
 import { ocrText } from './qa-pictures'
-import { createQaHosting } from './forge/qa-hosting'
+import { createQaHosting, splice } from './forge/qa-hosting'
 import { boxDiff, boxRanges, forgetPlans } from './flow/boxes'
 import { closeQuiet } from './flow/quiet'
 import { createClashWatch, radar } from './radar'
 import { changeFolders } from './flow/stage'
 import { nextUp } from './nextup'
-import { writeFile } from 'node:fs/promises'
+import { readFile, writeFile } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import { hostname } from 'node:os'
 import { basename, dirname, join } from 'node:path'
@@ -43,7 +43,7 @@ import { jiraSettings } from './credentials/jira'
 import { searchBoards } from './credentials/boards'
 import type { JiraCreds } from './credentials/check'
 import { doctor, inTerminal, installTool } from './doctor'
-import type { Aviso, NotifyPatch, NotifyPermission, NotifyType, CreateRepoRequest, Mode, MrDrafts, MrDraftsResult, MrItem, MrLists, MrPage, MrScoreState, MrThreads, SubagentEntry, SubagentLine, UiState, SkillRef, SkillSet, SkillFileRef, SkillSave, SkillCreate, PluginRequest } from '../preload/api'
+import type { Aviso, NotifyPatch, NotifyPermission, NotifyType, CreateRepoRequest, Mode, MrDrafts, MrDraftsResult, MrItem, MrLists, MrPage, MrReply, MrScoreState, MrThreads, SubagentEntry, SubagentLine, UiState, SkillRef, SkillSet, SkillFileRef, SkillSave, SkillCreate, PluginRequest } from '../preload/api'
 import { readInbox } from './jira/inbox'
 import { inboxGroups } from './jira/board'
 import { proposeStart, start } from './jira/start'
@@ -67,7 +67,7 @@ import { createFlowHub } from './flow/watch'
 import { installMenu } from './menu'
 import { createNotifier, parseNcprefs } from './notify'
 import { patchUi, readUi } from './ui'
-import { userHome } from './paths'
+import { atrilHome, userHome } from './paths'
 import type { Agent, AgentState, QuickAnswer, QuickChoice } from '../preload/api'
 
 // Dev-only evidence hooks (screenshots for review). A packaged app ignores them all, so no
@@ -87,6 +87,35 @@ function fakeMrs(): MrLists {
     following: [gh(12, 'Quitar el flag antiguo del carrusel', 'acme/shop-web', 'laia', 'none', 18, 64, 3, 70)], // i18n-ignore
     more: { mine: [], review: [], following: [] },
     errors: []
+  }
+}
+
+// ponytail: dev-only, ATRIL_FAKE_QA_FORGE=1 drives «Publicar en la MR» in the real app against an in-memory forge:
+// every work has MR 41, and what would reach the forge is written to $ATRIL_HOME/fake-mr.md. OCR and the checks stay real.
+const FAKE_QA_FORGE = !app.isPackaged && process.env['ATRIL_FAKE_QA_FORGE'] === '1'
+function fakeQaForge() {
+  const url = 'https://github.com/acme/shop-web/pull/41'
+  const mr = { forge: 'github' as const, ref: '/repos/acme/shop-web/pulls/41' }
+  const file = (): string => join(atrilHome(), 'fake-mr.md')
+  const read = async (): Promise<string> => readFile(file(), 'utf8').catch(() => 'Adds the province holiday calendar.')
+  const lists = async (): Promise<MrLists> => ({
+    connected: ['github'],
+    mine: (await readRecordsOrNone()).map((r) => ({ forge: 'github' as const, url, title: 'Holiday calendar', project: 'acme/shop-web', author: 'you', updatedAt: '2026-11-26T10:00:00Z', branch: r.branch })),
+    review: [],
+    following: [],
+    more: { mine: [], review: [], following: [] },
+    errors: []
+  })
+  return {
+    last: () => null,
+    list: lists,
+    target: (u: string) => (u === url ? mr : undefined),
+    post: async (_u: string, body: string) => (await writeFile(file(), `${await read()}\n\n---\nCOMMENT\n${body}`), { comment: { id: '1', author: 'you', body, at: '', mine: true } }) as unknown as MrReply,
+    hosting: {
+      readMr: async () => ({ description: await read(), target: 'main', merged: false }),
+      host: async (_m: unknown, pics: Array<{ name: string }>) => Object.fromEntries(pics.map((p) => [p.name, `https://github.com/acme/shop-web/blob/fake/qa/${p.name}?raw=true`])),
+      replaceBlock: async (_m: unknown, _e: string | null, block: string) => (await writeFile(file(), splice(await read(), block)), { ok: true as const })
+    }
   }
 }
 
@@ -580,7 +609,8 @@ app.whenReady().then(async () => {
     user: basename(userHome()),
     hosting: createQaHosting({ store: secretStore }),
     target: guards.threadTarget,
-    home: userHome()
+    home: userHome(),
+    ...(FAKE_QA_FORGE && fakeQaForge())
   })
   ipcMain.handle('atril:qa:mrFor', (_e, id: unknown) => qaPublish.mrFor(String(id)))
   ipcMain.handle('atril:qa:preparePublish', (_e, id: unknown) => qaPublish.preparePublish(String(id)))

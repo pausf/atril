@@ -43,7 +43,7 @@ export function qaLines(report: QaReport, t: T): Array<{ id: string; word: strin
 }
 
 // Private-use stand-ins keep quotes out of the scrubber's quoted-text rule, so «Pagar» stays readable.
-const QUOTES = ['«', '»', '"', '“', '”']
+const QUOTES = ['«', '»', '"', '“', '”'] // i18n-ignore
 const shield = (s: string): string => QUOTES.reduce((x, q, i) => x.split(q).join(String.fromCharCode(0xe000 + i)), s)
 const unshield = (s: string): string => QUOTES.reduce((x, q, i) => x.split(String.fromCharCode(0xe000 + i)).join(q), s)
 

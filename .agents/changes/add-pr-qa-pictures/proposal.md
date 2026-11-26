@@ -46,6 +46,7 @@ In:
 - `src/main/index.ts`, `src/preload/api.ts`, `src/preload/index.ts`, `src/renderer/mockApi.ts`: the `qa.preparePublish` / `qa.publish(id, token)` channels.
 - `src/renderer/qa/QaScreen.tsx` and its CSS: the preview sheet (W251).
 - `src/preload/i18n-en.ts`: every new string.
+- `src/main/index.ts`: the dev-only `ATRIL_FAKE_QA_FORGE=1` in-memory forge (MR 41 for every work, writes to `$ATRIL_HOME/fake-mr.md`) for the real-app drive; OCR and the checks stay real.
 - `bocetos/novedades.html`, `bocetos/fase1-nucleo.html` and a photo (outside git since 26 Nov).
 
 Out (named so nobody adds them):
