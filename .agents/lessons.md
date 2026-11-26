@@ -489,3 +489,20 @@ Reviewer found nothing against the contract (27 proofs re-run, all green). Befor
 
 ## 2026-11-26 · fewer-go-on-cards · 6→7
 Second, bounded review of the why-card box (25a000f...HEAD): nothing found, 6 proofs re-run green. Worth keeping: after this change a «Sigue» card only shows at the keep-going cap or after a pending wait, so the loop wording mostly arrives together with the cap; a loop in Automático is still pressed up to 3 times before its card.
+## 2026-11-26 · skills-dense · 6→7
+The box claiming «at least 20 whole rows on the photo» was ticked on a photo of the top of the screen, which shows 15. The drive script had counted 23 on a scrolled view that was never kept. The photo that proves a number is the one the count was taken on. Fixed: a second photo, scrolled, 21 rows counted by the same script (local `bocetos/`, out of git since 26 Nov).
+
+## 2026-11-26 · skills-dense · 6→7
+Replacing the whole groups block with the «Nada se llama» message also removed the «Plugins» line, which K40 says always shows. An empty state that swaps out a container takes along everything in it that is not a result. Fixed: the message sits above the groups; a test searches «zzz» and finds «Añadir plugin» (seen red first).
+
+## 2026-11-26 · skills-dense · 6→7
+The docs said 203 example items while the contract and seed say 171: the heading adds Atril's own 32. A number in a doc names what it counts. Fixed in novedades and the decision log.
+
+## 2026-11-26 · skills-dense · 6→7
+The «Resumen» label on the tile group arrived without a criterion; it exists because the tiles and the filter buttons share names. Kept and logged in the decision log.
+
+## 2026-11-26 · skills-dense · real app
+The first drive connected over CDP to another session's Atril on the same port and read Pau's real skills (heading 169). Its photo was deleted before anything was committed. Every drive now uses its own port, checks the port is free first, and stops unless a seeded example row is on screen. And the bottom quota bar shows the real account's numbers: photos are cropped above it.
+
+## 2026-11-26 · skills-dense · 1
+I told Pau his brief was wrong («there is no `i18n-es.ts`») after checking only this branch, which was 46 commits behind `origin/main`, where English had become the source language. The brief was right. Before contradicting a claim about the repo, `git fetch` and check `origin/main`, not the worktree.

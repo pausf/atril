@@ -1,21 +1,39 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
 import type { PluginCatalog, PluginCatalogResult, PluginFailure, PluginRequest, SkillItem, SkillRef, SkillSet, SkillsList, SkillState, SkillUse } from '../../preload/api'
 import { Problem } from '../components/Problem'
 import { useT } from '../ui'
 import { PluginAddDialog } from './PluginAddDialog'
 import { PluginProblem } from './PluginProblem'
 import { PluginRemoveDialog } from './PluginRemoveDialog'
-import { fullName, SkillCard } from './SkillCard'
+import { fullName, SkillRow } from './SkillRow'
 import { dropDraft, SkillDetail } from './SkillDetail'
 import { SkillLeaveDialog } from './SkillLeaveDialog'
 import { SkillNewDialog } from './SkillNewDialog'
 import { SkillWriteDialog } from './SkillWriteDialog'
 
-type Filter = 'all' | 'on' | 'off' | 'idle'
+type Filter = 'all' | 'on' | 'off' | 'idle' | 'clash'
 
 /** K5: what counts as loaded and what as off; `user-invocable-only` is neither. */
 export const isActive = (i: SkillItem): boolean => (i.state === 'on' || i.state === 'name-only') && !i.shadowedBy && i.enabled !== false
 export const isOff = (i: SkillItem): boolean => i.state === 'off' || i.enabled === false
+
+const byName = (a: SkillItem, b: SkillItem): number => fullName(a).localeCompare(fullName(b), undefined, { sensitivity: 'base' })
+
+/** K40: a group's header folds it; while the list is narrowed it is forced open and the header is disabled. */
+function SkillGroup({ label, title, count, open, narrowed, onFold, controls, children }: { label: string; title?: string; count: number; open: boolean; narrowed: boolean; onFold: () => void; controls?: ReactNode; children: ReactNode }) {
+  return (
+    <section className="skg" role="group" aria-label={label}>
+      <div className="skgh">
+        <button type="button" className="skg-fold" aria-expanded={open} disabled={narrowed} onClick={onFold}>
+          {title ?? label}
+          <span className="n">{count}</span>
+        </button>
+        {controls}
+      </div>
+      {open && children}
+    </section>
+  )
+}
 
 const matches = (i: SkillItem, q: string): boolean => {
   const needle = q.trim().toLowerCase()
@@ -32,6 +50,10 @@ export function Skills() {
   const [error, setError] = useState<string | null>(null)
   const [q, setQ] = useState('')
   const [filter, setFilter] = useState<Filter>('all')
+  const [sort, setSort] = useState<'recent' | 'name'>('recent')
+  // K40: per visit; plugins and Atril start folded. Not reset on a repo pick.
+  const [folded, setFolded] = useState<Record<string, boolean>>({})
+  const list = useRef<HTMLDivElement>(null)
   const [open, setOpen] = useState<SkillItem | null>(null)
   // K37: null until it answers, and when it fails: then nothing is said about use.
   const [usage, setUsage] = useState<Record<string, SkillUse> | null>(null)
@@ -82,6 +104,19 @@ export function Skills() {
     return () => {
       live = false
     }
+  }, [])
+
+  // K43: «/» goes to search unless a field, a select or a dialog has the keys.
+  useEffect(() => {
+    const onKey = (e: globalThis.KeyboardEvent): void => {
+      if (e.key !== '/' || e.metaKey || e.ctrlKey || e.altKey) return
+      const el = e.target instanceof Element ? e.target : null
+      if (el?.closest('input, textarea, select, [contenteditable="true"], [role="dialog"]') || document.querySelector('[role="dialog"][aria-modal="true"]')) return
+      e.preventDefault()
+      search.current?.focus()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
   }, [])
 
   const loadCatalog = useCallback(() => {
@@ -227,24 +262,26 @@ export function Skills() {
   const useOf = (i: SkillItem): SkillUse | null | undefined => (usage ? (usage[fullName(i).slice(1)] ?? null) : undefined)
   // K37: what Claude could use and nobody used; «Solo si la llamas tú» counts.
   const isIdle = (i: SkillItem): boolean => i.origin !== 'atril' && !isOff(i) && !i.shadowedBy && useOf(i) === null
-  const pass: Record<Filter, (i: SkillItem) => boolean> = { all: () => true, on: isActive, off: isOff, idle: isIdle }
-  const shown = items.filter((i) => matches(i, q) && pass[filter](i))
+  const pass: Record<Filter, (i: SkillItem) => boolean> = { all: () => true, on: isActive, off: isOff, idle: isIdle, clash: (i) => i.shadowedBy !== undefined }
+  // K41: newest use first, then unused (shadowed counts as unused) by name; by name until the usage answers.
+  const lastOf = (i: SkillItem): string => (i.shadowedBy ? '' : (useOf(i)?.last ?? ''))
+  const order = (a: SkillItem, b: SkillItem): number => (sort === 'recent' && usage ? lastOf(b).localeCompare(lastOf(a)) : 0) || byName(a, b)
+  const shown = items.filter((i) => matches(i, q) && pass[filter](i)).sort(order)
   const idle = items.filter(isIdle).length
   const active = items.filter(isActive)
   const tokens = Math.round(active.reduce((n, i) => n + i.name.length + (i.description ?? '').length + (i.whenToUse ?? '').length, 0) / 3.2)
   const repoName = repo ?? ''
   const narrowed = q.trim() !== '' || filter !== 'all'
 
-  const cardsOf = (list: SkillItem[], group: string) => (
-    <ul className="skcards">
-      {list.map((i, n) => {
+  const rowsOf = (rows: SkillItem[], group: string) => (
+    <ul className="skrows">
+      {rows.map((i, n) => {
         const key = `${group}-${n}-${i.kind}-${i.name}`
         return (
-          <SkillCard
+          <SkillRow
             key={key}
             id={`sk-${key}`}
             item={i}
-            repo={repoName}
             use={useOf(i)}
             onOpen={(el) => {
               opener.current = el
@@ -260,6 +297,32 @@ export function Skills() {
       })}
     </ul>
   )
+  /** K40: forced open while narrowed (when it has rows), else its own fold; plugins and Atril start folded. */
+  const fold = (key: string, rows: SkillItem[], extra: { label: string; title?: string; controls?: ReactNode; footer?: ReactNode; empty?: ReactNode }) => {
+    if (narrowed && rows.length === 0) return null
+    const isOpen = narrowed || !(folded[key] ?? (key.startsWith('plugin:') || key === 'atril'))
+    return (
+      <SkillGroup key={key} label={extra.label} title={extra.title} count={rows.length} open={isOpen} narrowed={narrowed} controls={extra.controls} onFold={() => setFolded((f) => ({ ...f, [key]: isOpen }))}>
+        {rows.length === 0 && !narrowed ? extra.empty : rowsOf(rows, key)}
+        {!narrowed && extra.footer}
+      </SkillGroup>
+    )
+  }
+  /** K43: ↑/↓ walk the visible rows in order; from the search box ↓ enters the list. */
+  const onArrows = (e: KeyboardEvent<HTMLElement>): void => {
+    if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return
+    const rows = [...(list.current?.querySelectorAll<HTMLButtonElement>('button.skr') ?? [])]
+    const at = rows.indexOf(e.target as HTMLButtonElement)
+    if (e.target === search.current) {
+      if (e.key !== 'ArrowDown' || rows.length === 0) return
+      e.preventDefault()
+      rows[0]!.focus()
+      return
+    }
+    if (at < 0) return
+    e.preventDefault()
+    rows[Math.max(0, Math.min(rows.length - 1, at + (e.key === 'ArrowDown' ? 1 : -1)))]!.focus()
+  }
   const newButton = (origin: 'personal' | 'project') => (
     <button type="button" className="btn" onClick={() => guard(() => { setOpen(null); setCreating(origin) })}>
       {t('New skill')}
@@ -296,7 +359,7 @@ export function Skills() {
       )}
 
       <div className="sk-bar">
-        <input ref={search} type="search" placeholder={t('Search by name or description…')} aria-label={t('Search by name or description…')} value={q} onChange={(e) => setQ(e.target.value)} />
+        <input ref={search} type="search" placeholder={t('Search by name or description…')} aria-label={t('Search by name or description…')} value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={onArrows} />
         <div className="seg" role="group" aria-label={t('Filter')}>
           {(
             [
@@ -306,6 +369,18 @@ export function Skills() {
             ] as const
           ).map(([f, label]) => (
             <button key={f} type="button" aria-pressed={filter === f} onClick={() => setFilter(f)}>
+              {label}
+            </button>
+          ))}
+        </div>
+        <div className="seg" role="group" aria-label={t('Order')}>
+          {(
+            [
+              ['recent', t('Recent')],
+              ['name', t('Name')]
+            ] as const
+          ).map(([o, label]) => (
+            <button key={o} type="button" aria-pressed={sort === o} onClick={() => setSort(o)}>
               {label}
             </button>
           ))}
@@ -325,30 +400,24 @@ export function Skills() {
         )}
       </div>
 
-      <div className="sksum">
-        <div className="skct" role="group" aria-label={t('On@@femPl')}>
-          <b>{active.length}</b>
-          <span>{t('On@@femPl')}</span>
-          <small>{t('~{n} context tokens', { n: tokens })}</small>
-        </div>
-        <div className="skct" role="group" aria-label={t('Off@@pl')}>
-          <b>{items.filter(isOff).length}</b>
-          <span>{t('Off@@pl')}</span>
-        </div>
-        <div className="skct" role="group" aria-label={t('Clashes')}>
-          <b>{items.filter((i) => i.shadowedBy).length}</b>
-          <span>{t('Clashes')}</span>
-        </div>
-        {usage && (
-          <button type="button" className="skct" aria-label={t('Unused in 30 days')} aria-pressed={filter === 'idle'} onClick={() => setFilter((f) => (f === 'idle' ? 'all' : 'idle'))}>
-            <b>{idle}</b>
-            <span>{t('Unused in 30 days')}</span>
-            <small>{idle === 0 ? t('all in use') : t('candidates to turn off')}</small>
+      <div className="sksum" role="group" aria-label={t('Summary')}>
+        {(
+          [
+            ['on', t('On@@femPl'), active.length, <small key="s">{t('~{n} context tokens', { n: tokens })}</small>],
+            ['off', t('Off@@pl'), items.filter(isOff).length, null],
+            ['clash', t('Clashes'), items.filter((i) => i.shadowedBy).length, null],
+            ...(usage ? ([['idle', t('Unused in 30 days'), idle, <small key="s">{idle === 0 ? t('all in use') : t('candidates to turn off')}</small>]] as const) : [])
+          ] as const
+        ).map(([f, label, n, small]) => (
+          <button key={f} type="button" className="skct" aria-label={label} aria-pressed={filter === f} onClick={() => setFilter((now) => (now === f ? 'all' : f))}>
+            <b>{n}</b>
+            <span>{label}</span>
+            {small}
           </button>
-        )}
+        ))}
       </div>
 
-      {data && narrowed && shown.length === 0 ? (
+      {data && narrowed && shown.length === 0 && (
         <div className="empty" role="status">
           {q.trim() ? (
             <>
@@ -368,35 +437,35 @@ export function Skills() {
             t('You have none on.')
           ) : filter === 'idle' ? (
             t('You have none unused.')
+          ) : filter === 'clash' ? (
+            t('You have no clashes.')
           ) : (
             t('You have none off.')
           )}
         </div>
-      ) : (
-        data && (
-          <>
-            <details className="skg" open aria-label={t('Personal')}>
-              <summary>{t('Personal')}</summary>
-              {cardsOf(of('personal'), 'p')}
-              {newButton('personal')}
-            </details>
-            {repos && repos.length > 0 && (
-              <details className="skg" open aria-label={t('Project ({repo})', { repo: repoName })}>
-                <summary>{t('Project ({repo})', { repo: repoName })}</summary>
-                {projectTotal === 0 ? <p className="empty">{t('{repo} has no skills of its own yet.', { repo: repoName })}</p> : cardsOf(of('project'), 'j')}
-                {newButton('project')}
-              </details>
-            )}
+      )}
+      {data && (
+          <div ref={list} onKeyDown={onArrows}>
+            {fold('personal', of('personal'), { label: t('Personal'), footer: newButton('personal') })}
+            {repos &&
+              repos.length > 0 &&
+              fold('project', of('project'), {
+                label: t('Project ({repo})', { repo: repoName }),
+                empty: projectTotal === 0 ? <p className="empty">{t('{repo} has no skills of its own yet.', { repo: repoName })}</p> : null,
+                footer: newButton('project')
+              })}
             {repos === null && (
-              <details className="skg" open aria-label={t('Project')}>
-                <summary>{t('Project')}</summary>
+              <section className="skg" role="group" aria-label={t('Project')}>
                 <p className="notice" role="note">
                   {t('I could not read your repo list: the project skills are not shown.')}
                 </p>
-              </details>
+              </section>
             )}
-            <details className="skg" open aria-label={t('Plugins')}>
-              <summary>{t('Plugins')}</summary>
+            <div className="skpl" role="group" aria-label={t('Plugins')}>
+              <b>{t('Plugins')}</b>
+              <button type="button" className="btn" disabled={pluginBusy} onClick={() => setAdding(true)}>
+                {t('Add plugin')}
+              </button>
               {pluginNote && (
                 <p className="notice" role="status">
                   {pluginNote}
@@ -411,22 +480,20 @@ export function Skills() {
                   onClose={() => setPluginFail(null)}
                 />
               )}
-              <button type="button" className="btn" disabled={pluginBusy} onClick={() => setAdding(true)}>
-                {t('Add plugin')}
-              </button>
-              {plugins.map((p) => {
-                const all = items.filter((i) => i.plugin === p)
-                const vis = of('plugin').filter((i) => i.plugin === p)
-                if (narrowed && vis.length === 0) return null
-                const on = all[0]?.enabled !== false
-                const lock = all[0]?.lockedBy
-                const scope = scopeOf(p)
-                return (
-                  <div key={p} className="skp" role="group" aria-label={p}>
-                    <p className="skp-bar">
-                      <b>{p.split('@')[0]}</b> {t('{plugin} · {n} skills · {state}', { plugin: p, n: all.length, state: on ? t('on') : t('off entirely') })}
-                      <button type="button" role="switch" className="sw" aria-checked={on} aria-label={t('On')} aria-busy={busy} disabled={busy || pluginBusy || lock !== undefined} onClick={() => setPlugin(p, !on, all[0]?.writesTo)} />
-                      {lock && <span className="where">{t('Fixed by {file}', { file: lock })}</span>}
+            </div>
+            {plugins.map((p) => {
+              const all = items.filter((i) => i.plugin === p)
+              const on = all[0]?.enabled !== false
+              const lock = all[0]?.lockedBy
+              const scope = scopeOf(p)
+              return fold(`plugin:${p}`, of('plugin').filter((i) => i.plugin === p), {
+                label: p,
+                title: p.split('@')[0],
+                controls: (
+                  <span className="skp-bar">
+                    {t('{plugin} · {n} skills · {state}', { plugin: p, n: all.length, state: on ? t('on') : t('off entirely') })}
+                    <button type="button" role="switch" className="sw" aria-checked={on} aria-label={t('On')} aria-busy={busy} disabled={busy || pluginBusy || lock !== undefined} onClick={() => setPlugin(p, !on, all[0]?.writesTo)} />
+                    {lock && <span className="where">{t('Fixed by {file}', { file: lock })}</span>}
                     {installed !== null &&
                       (scope ? (
                         <>
@@ -440,20 +507,12 @@ export function Skills() {
                       ) : (
                         <span className="where">{t('Installed in another scope: managed outside Atril.')}</span>
                       ))}
-                    </p>
-                    {cardsOf(vis, `g-${p}`)}
-                  </div>
+                  </span>
                 )
-              })}
-            </details>
-            <details className="skg" open={narrowed} aria-label={t('Atril')}>
-              <summary>
-                {t('Atril')} <span className="where">{t('read-only')}</span>
-              </summary>
-              {cardsOf(of('atril'), 'a')}
-            </details>
-          </>
-        )
+              })
+            })}
+            {fold('atril', of('atril'), { label: t('Atril'), controls: <span className="where">{t('read-only')}</span> })}
+          </div>
       )}
       {open && (
         <SkillDetail
