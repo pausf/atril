@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { SkillItem, SkillsList, SkillState, SkillUse } from '../../preload/api'
 import { Problem } from '../components/Problem'
 import { useLocale, useT } from '../ui'
-import { fullName, originLabel, stateLabel } from './SkillCard'
+import { fullName, originLabel, stateLabel } from './SkillRow'
 
 const STATES: SkillState[] = ['on', 'name-only', 'user-invocable-only', 'off']
 
