@@ -799,6 +799,19 @@ export type QaBugResult = { key: string } | { ok: true } | { error: string }
 /** W174: the work's own MR, null when it has none. */
 export type QaMr = { url: string } | null
 
+/** W242/W243: why a picture does not go to the MR. */
+export type QaPictureReason = 'not-png' | 'too-big' | 'too-many' | 'unreadable' | 'token' | 'email' | 'host' | 'path' | 'machine'
+
+/** W241: one criterion's picture as main would send it; `src` is the cleaned PNG, only on a `send` row. */
+export interface QaPictureRow {
+  id: string
+  status: QaEntry['status']
+  view?: string
+  verdict: 'send' | 'blocked'
+  reason?: QaPictureReason
+  src?: string
+}
+
 /** W170/W171: the MR it reached, or W150's sentence with its fix and folded code. */
 export type QaPublishResult = { url: string } | { error: string; detail?: string; fix?: NetFix }
 

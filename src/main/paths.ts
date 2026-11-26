@@ -10,6 +10,8 @@ export function envPath(name: string, fallback: () => string): string {
   return fallback()
 }
 
+/** The person's home, for the checks that must never let it leave (W243). */
+export const userHome = (): string => homedir()
 export const atrilHome = (): string => envPath('ATRIL_HOME', () => join(homedir(), '.atril'))
 /** Claude Code's own folder (skills, commands, plugins, settings); Atril only reads it. */
 export const claudeDir = (): string => envPath('ATRIL_CLAUDE_DIR', () => join(homedir(), '.claude'))
