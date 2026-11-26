@@ -12,13 +12,13 @@ export function MergeConfirm({ title, target, busy, onYes, onNo }: { title: stri
   return (
     <div className="modal" onKeyDown={(e: KeyboardEvent) => void keys(e)}>
       <div className="dlg mr-confirm" role="dialog" aria-modal="true" aria-labelledby="mr-confirm-title" ref={dialog} tabIndex={-1}>
-        <h3 id="mr-confirm-title">{t('¿Fusionar «{title}» en {target}?', { title, target })}</h3>
+        <h3 id="mr-confirm-title">{t('Merge «{title}» into {target}?', { title, target })}</h3>
         <div className="mr-confirm-actions">
           <button ref={cancel} type="button" className="btn" onClick={onNo}>
-            {t('Cancelar')}
+            {t('Cancel')}
           </button>
           <button type="button" className="btn p" disabled={busy} onClick={onYes}>
-            {t('Fusionar')}
+            {t('Merge')}
           </button>
         </div>
       </div>

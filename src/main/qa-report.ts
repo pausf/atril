@@ -86,16 +86,16 @@ export async function qaReport(id: string, run: Runner): Promise<QaReport | null
 /** W116: types the request into the live QA pane, or launches QA with it at the end of its prompt. */
 export async function qaRetest(id: string, criterion: string | null, run: Runner): Promise<QaResult> {
   const ws = await recordOf(id)
-  if (!ws) return { error: t('Ese trabajo ya no existe') }
+  if (!ws) return { error: t('That work no longer exists') }
   const { criteria } = await readCriteria(ws.path)
   const found = criterion === null ? null : criteria.find((c) => c.id === criterion)
-  if (criterion !== null && !found) return { error: t('Ese criterio ya no está en el cambio') }
+  if (criterion !== null && !found) return { error: t('That criterion is no longer in the change') }
   const request = found
-    ? t('Prueba solo el criterio {id}: {text}. Actualiza report.json.', { id: found.id, text: found.text.replace(/\.+$/, '') })
-    : t('Prueba otra vez todos los criterios y actualiza report.json.')
+    ? t('Test only criterion {id}: {text}. Update report.json.', { id: found.id, text: found.text.replace(/\.+$/, '') })
+    : t('Test all the criteria again and update report.json.')
   const pane = await qaPane(id, run)
   if (!pane) return launchQa(id, run, request)
-  return (await sendText(pane, request, run)) ? { ok: true } : { error: t('No se pudo escribir en el QA') }
+  return (await sendText(pane, request, run)) ? { ok: true } : { error: t('Could not write to the QA pane') }
 }
 
 interface BugDeps {
@@ -108,10 +108,10 @@ interface BugDeps {
 /** W118: one issue in Jira, or one bracketed paste into the workspace's agent pane. */
 export async function qaBug(id: string, req: QaBugRequest, deps: BugDeps): Promise<QaBugResult> {
   const { title, body } = (isObject(req) ? req : {}) as Partial<QaBugRequest>
-  if (typeof title !== 'string' || typeof body !== 'string' || title.trim() === '' || (req.to !== 'jira' && req.to !== 'agent')) return { error: t('El bug no tiene título') }
-  if (!(await recordOf(id))) return { error: t('Ese trabajo ya no existe') }
+  if (typeof title !== 'string' || typeof body !== 'string' || title.trim() === '' || (req.to !== 'jira' && req.to !== 'agent')) return { error: t('The bug has no title') }
+  if (!(await recordOf(id))) return { error: t('That work no longer exists') }
   if (req.to === 'jira') {
-    if (!deps.creds || !deps.board) return { error: t('Conecta Jira y elige un tablero en Ajustes.') }
+    if (!deps.creds || !deps.board) return { error: t('Connect Jira and pick a board in Settings.') }
     return createIssue(deps.creds, deps.board, title.trim(), body, deps.fetchImpl)
   }
   const ws = await liveWorkspace(id, deps.run)

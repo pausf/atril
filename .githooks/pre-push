@@ -1,0 +1,35 @@
+#!/bin/sh
+# Refuses a push whose commits carry a work identifier. The list lives outside the repo on
+# purpose: where it is missing (any other contributor) the hook does nothing.
+list="$HOME/.config/atril/work-identifiers.txt"
+[ -f "$list" ] || exit 0
+
+fail() {
+  echo "pre-push: the work-identifier scan failed" >&2
+  exit 1
+}
+
+patterns=$(mktemp) || fail
+trap 'rm -f "$patterns"' EXIT
+# A blank pattern matches every line, so blank lines go.
+sed '/^[[:space:]]*$/d' "$list" > "$patterns" || fail
+[ -s "$patterns" ] || exit 0
+
+found=0
+while read -r _ sha _ _ || [ -n "$sha" ]; do
+  case "$sha" in *[!0]*) ;; *) continue ;; esac # all zeros: a deleted ref
+  out=$(git grep -niE -f "$patterns" "$sha" </dev/null 2>/dev/null)
+  case $? in 0) ;; 1) continue ;; *) fail ;; esac
+  # Lock-file integrity hashes match by chance; every other lock line still counts.
+  rest=$(printf '%s\n' "$out" | grep -v "^$sha:pnpm-lock.yaml:[0-9]*:.*integrity:")
+  if [ -n "$rest" ]; then
+    printf '%s\n' "$rest"
+    found=1
+  fi
+done
+
+if [ "$found" = 1 ]; then
+  echo "pre-push: a work identifier is in what you are pushing; push refused" >&2
+  exit 1
+fi
+exit 0

@@ -3,25 +3,41 @@ import { globSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { localiseActivity } from './activity-i18n'
 import { translate } from './i18n'
-import { EN } from './i18n-en'
+import { ES } from './i18n-es'
 
 // Atril's own source: tests, the catalog and the test mock are not shown to anyone.
-const files = globSync('src/**/*.{ts,tsx}').filter((f) => !/\.test\.tsx?$|i18n-en\.ts$|mockApi\.ts$|test-helpers\.ts$/.test(f))
+const files = globSync('src/**/*.{ts,tsx}').filter((f) => !/\.test\.tsx?$|i18n-es\.ts$|mockApi\.ts$|test-helpers\.ts$/.test(f))
 const source = files.map((f) => [f, readFileSync(f, 'utf8')] as const)
 const KEY = /\b(?:t|translate)\(\s*(?:\w+,\s*)?(['"])((?:\\.|(?!\1).)*)\1/g
 const unescape = (s: string): string => s.replace(/\\(.)/g, '$1')
 
 describe('i18n catalog', () => {
-  it('every text has its english', () => {
+  it('every text has its spanish', () => {
     const used = new Set<string>()
+    const templated: string[] = []
     for (const [file, text] of source) {
-      expect(/\bt\(\s*`/.test(text), `${file}: a template literal as a t() key`).toBe(false)
+      if (/\bt\(\s*`/.test(text)) templated.push(file)
       for (const m of text.matchAll(KEY)) used.add(unescape(m[2]!))
     }
-    const missing = [...used].filter((k) => !(k in EN))
-    const unused = Object.keys(EN).filter((k) => !used.has(k))
-    expect(missing, 'texts with no English entry').toEqual([])
-    expect(unused, 'catalog entries nothing uses').toEqual([])
+    const holes = (s: string): string => [...s.matchAll(/\{(\w+)\}/g)].map((m) => m[1]).sort().join()
+    expect(templated, 'a template literal as a t() key').toEqual([])
+    expect([...used].filter((k) => !(k in ES)), 'texts with no Spanish entry').toEqual([])
+    expect(Object.keys(ES).filter((k) => !used.has(k)), 'catalog entries nothing uses').toEqual([])
+    expect(Object.entries(ES).filter(([k, v]) => holes(k) !== holes(v)).map(([k]) => k), 'placeholders that differ').toEqual([])
+  })
+
+  it('english is the key and spanish is the catalog', () => {
+    expect(translate('es', 'Back to {branch}', { branch: 'main' })).toBe('Volver a main')
+    expect(translate('en', 'Back to {branch}', { branch: 'main' })).toBe('Back to main')
+    expect(translate('es', 'A text nobody translated')).toBe('A text nobody translated')
+    expect(translate('es', 'Not yet translated@@nav')).toBe('Not yet translated')
+  })
+
+  it('same english two spanish', () => {
+    expect(translate('es', 'Back')).toBe('Volver')
+    expect(translate('es', 'Back@@nav')).toBe('Atrás')
+    expect(translate('en', 'Back')).toBe('Back')
+    expect(translate('en', 'Back@@nav')).toBe('Back')
   })
 
   it('no spanish text skips t', () => {

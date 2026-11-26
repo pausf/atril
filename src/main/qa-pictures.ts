@@ -116,7 +116,7 @@ interface Deps extends Machine {
 /** W241–W245: pick, clean and check the pictures, and keep exactly the previewed bytes under a token. */
 export function createPictures<E = unknown>({ ocr, now = Date.now, ...machine }: Deps) {
   const prepared = new Map<string, Prepared<E>>()
-  const changed = (): Taken<E> => ({ error: t('Las capturas han cambiado: revísalas otra vez'), fix: 'recheck' })
+  const changed = (): Taken<E> => ({ error: t('The screenshots have changed: check them again'), fix: 'recheck' })
 
   async function check(file: string): Promise<{ reason: QaPictureReason } | { bytes: Buffer; source: string }> {
     const st = await lstat(file).catch(() => null)

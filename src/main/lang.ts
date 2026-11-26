@@ -7,4 +7,4 @@ export const setLang = (lang: Lang): void => {
   current = lang
 }
 export const getLang = (): Lang => current
-export const t = (es: string, vars?: Record<string, string | number>): string => translate(current, es, vars)
+export const t = (text: string, vars?: Record<string, string | number>): string => translate(current, text, vars)

@@ -108,13 +108,13 @@ export function StartDialog({ issue, onClose, onStarted, onOpenWorkspace }: Prop
   return (
     <div className="modal" onKeyDown={onKeyDown}>
       <div className="dlg" role="dialog" aria-modal="true" aria-labelledby="start-title" ref={dialog}>
-        <h3 id="start-title">{t('Empezar {key}', { key: issue.key })}</h3>
+        <h3 id="start-title">{t('Start {key}', { key: issue.key })}</h3>
         <p>{issue.summary}</p>
 
         <div className="f">
           <label htmlFor="start-repo">{t('Repo')}</label>
           <select id="start-repo" value={repoId} onChange={(e) => setRepoId(e.target.value)} disabled={!repos?.length || !!warning}>
-            {repoId === '' && <option value="">{repos?.length === 0 ? t('No hay repos registrados') : t('Elige un repo…')}</option>}
+            {repoId === '' && <option value="">{repos?.length === 0 ? t('No repos registered') : t('Pick a repo…')}</option>}
             {(repos ?? []).map((r) => (
               <option key={r.id} value={r.id}>
                 {r.id}
@@ -122,19 +122,19 @@ export function StartDialog({ issue, onClose, onStarted, onOpenWorkspace }: Prop
             ))}
           </select>
         </div>
-        {repos?.length === 0 && <div className="f-note">{t('Registra un repo con «Añadir repo…» en Trabajo y vuelve a empezar.')}</div>}
+        {repos?.length === 0 && <div className="f-note">{t('Register a repo with “Add repo…” in Work and start again.')}</div>}
         {repos && repos.length > 0 && !proposal?.repoId && repoId === '' && (
-          <div className="f-note">{t('Es la primera tarea de {project}: elige repo y Atril lo recordará.', { project: `${issue.key.slice(0, issue.key.lastIndexOf('-'))}${issue.components[0] ? ` / ${issue.components[0]}` : ''}` })}</div>
+          <div className="f-note">{t('This is the first task for {project}: pick a repo and Atril will remember it.', { project: `${issue.key.slice(0, issue.key.lastIndexOf('-'))}${issue.components[0] ? ` / ${issue.components[0]}` : ''}` })}</div>
         )}
 
         <div className="f">
-          <label htmlFor="start-branch">{t('Rama')}</label>
+          <label htmlFor="start-branch">{t('Branch')}</label>
           <input id="start-branch" value={branch} onChange={(e) => setBranch(e.target.value)} disabled={!!warning} spellCheck={false} />
         </div>
         {proposal?.note && <div className="f-note">{proposal.note}</div>}
 
         <div className="f">
-          <span className="lbl">{t('Dónde')}</span>
+          <span className="lbl">{t('Where')}</span>
           <span>
             {proposal?.mode ? (
               <>
@@ -144,13 +144,13 @@ export function StartDialog({ issue, onClose, onStarted, onOpenWorkspace }: Prop
                 <span className="why-inline">{proposal.reason}</span>
               </>
             ) : (
-              <span className="why-inline">{t('Depende del repo')}</span>
+              <span className="why-inline">{t('Depends on the repo')}</span>
             )}
           </span>
         </div>
 
         <div className="f">
-          <label htmlFor="start-model">{t('Modelo')}</label>
+          <label htmlFor="start-model">{t('Model')}</label>
           <select id="start-model" value={model} onChange={(e) => setModel(e.target.value as Model)} disabled={!!warning}>
             {modelOptions(t).map((m) => (
               <option key={m.value} value={m.value}>
@@ -161,7 +161,7 @@ export function StartDialog({ issue, onClose, onStarted, onOpenWorkspace }: Prop
         </div>
 
         <div className="f">
-          <label htmlFor="start-effort">{t('Esfuerzo')}</label>
+          <label htmlFor="start-effort">{t('Effort')}</label>
           <select id="start-effort" value={effort} onChange={(e) => setEffort(e.target.value as Effort)} disabled={!!warning}>
             {effortOptions(t).map((o) => (
               <option key={o.value} value={o.value}>
@@ -175,18 +175,18 @@ export function StartDialog({ issue, onClose, onStarted, onOpenWorkspace }: Prop
         <ModePicker auto={auto} onChange={setAuto} disabled={!!warning} />
 
         <div className="f">
-          <span className="lbl">{t('Lanza')}</span>
-          <code aria-label={t('Comando que se ejecutará')}>{proposal?.command ?? '…'}</code>
+          <span className="lbl">{t('Runs')}</span>
+          <code aria-label={t('Command that will run')}>{proposal?.command ?? '…'}</code>
         </div>
         <div className="f">
           <span className="lbl">Jira</span>
-          <span className="why-inline">{issue.group === 'doing' ? t('ya está en curso') : t('pasará a In Progress')}</span>
+          <span className="why-inline">{issue.group === 'doing' ? t('already in progress') : t('will move to In Progress')}</span>
         </div>
 
         {problem && (
           <Problem
             what={problem.error}
-            cant={t('No he creado el trabajo.')}
+            cant={t("I haven't created the work.")}
             fix={fixLabel(t, problem.fix)}
             busy={busy}
             onFix={() => sharedFix(problem.fix, openSettings) || void (problem.fix === 'worktree' ? submit(true) : problem.fix === 'reveal' ? window.atril.revealState(problem.file ?? 'repos') : openTerminal())}
@@ -200,22 +200,22 @@ export function StartDialog({ issue, onClose, onStarted, onOpenWorkspace }: Prop
         )}
         {warning && (
           <div className="bad" role="alert">
-            {t('El trabajo está en marcha, pero {detail}', { detail: warning.text.charAt(0).toLowerCase() + warning.text.slice(1) })}
+            {t('It is running, but {detail}', { detail: warning.text.charAt(0).toLowerCase() + warning.text.slice(1) })}
           </div>
         )}
 
         <div className="btns">
           {warning ? (
             <button type="button" className="btn p" onClick={() => onOpenWorkspace(warning.ws.id)}>
-              {t('Ir al trabajo')}
+              {t('Go to the work')}
             </button>
           ) : (
             <>
               <button type="button" className="btn" onClick={onClose}>
-                {t('Cancelar')}
+                {t('Cancel')}
               </button>
               <button type="button" className="btn p" disabled={!ready} onClick={() => void submit()}>
-                {busy ? t('Empezando…') : t('Empezar')}
+                {busy ? t('Starting…') : t('Start')}
               </button>
             </>
           )}

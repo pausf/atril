@@ -1,4 +1,6 @@
 // @vitest-environment jsdom
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { createElement } from 'react'
 import { act, cleanup, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
@@ -43,6 +45,14 @@ const open = async (): Promise<HTMLElement> => {
   return screen.findByRole('region', { name: 'Skills' })
 }
 const cards = (): string[] => screen.queryAllByRole('button', { name: /^\// }).map((b) => b.getAttribute('aria-label') ?? '')
+/** The Todas/Activas/Apagadas buttons, apart from the tiles that share their names. */
+const seg = (s: HTMLElement, name: string): HTMLElement => within(within(s).getByRole('group', { name: 'Filtro' })).getByRole('button', { name })
+const tileOf = (s: HTMLElement, name: string): HTMLElement => within(within(s).getByRole('group', { name: 'Resumen' })).getByRole('button', { name })
+/** Unfolds a folded group by its header (K40). */
+const unfold = async (s: HTMLElement, name: string): Promise<void> => {
+  const g = within(s).getByRole('group', { name })
+  await userEvent.setup().click(within(g).getByRole('button', { expanded: false }))
+}
 
 describe('skills screen', () => {
   it('the screen groups every skill by where it comes from', async () => {
@@ -58,7 +68,7 @@ describe('skills screen', () => {
     expect((within(s).getByRole('combobox', { name: 'Repo del proyecto' }) as HTMLSelectElement).value).toBe('shop-web')
 
     // Activas: on or name-only, not shadowed, plugin on → revisar-cambios, deploy (skill), sembrar, mal, changelog, evidence.
-    const tile = (label: string): string => within(s).getByRole('group', { name: label }).textContent ?? ''
+    const tile = (label: string): string => tileOf(s, label).textContent ?? ''
     const activeChars = ['revisar-cambios' + 'Revisa el diff antes del commit' + 'Al acabar', 'deploy' + 'Skill de deploy', 'sembrar' + 'Carga datos de ejemplo', 'mal', 'changelog' + 'Escribe el changelog', 'evidence' + 'Nada es cierto hasta verlo']
     const tokens = Math.round(activeChars.join('').length / 3.2)
     expect(tile('Activas')).toBe(`6Activas~${tokens} tokens de contexto`)
@@ -68,28 +78,37 @@ describe('skills screen', () => {
     const group = (name: string): HTMLElement => within(s).getByRole('group', { name: new RegExp(`^${name.replace(/[()]/g, (c) => `\\${c}`)}`) })
     expect(within(group('Personal')).getAllByRole('button', { name: /^\// })).toHaveLength(5)
     expect(within(group('Proyecto (shop-web)')).getAllByRole('button', { name: /^\// })).toHaveLength(3)
-    const plugins = group('Plugins')
-    expect(plugins.textContent).toContain('estilo@acme · 1 skills · apagado entero')
-    expect(plugins.textContent).toContain('release@acme · 1 skills · activo')
+    // Each group's header names it and counts its rows.
+    const header = (name: string): HTMLElement => within(group(name)).getByRole('button', { expanded: true })
+    expect(header('Personal').textContent).toMatch(/^Personal.*5$/)
+    expect(header('Proyecto (shop-web)').textContent).toMatch(/3$/)
+    expect(within(group('Plugins')).getByRole('button', { name: 'Añadir plugin' })).toBeTruthy()
+    expect(group('estilo@acme').textContent).toContain('estilo@acme · 1 skills · apagado entero')
+    expect(group('release@acme').textContent).toContain('release@acme · 1 skills · activo')
     const atril = group('Atril')
     expect(atril.textContent).toContain('solo lectura')
-    expect((atril as HTMLDetailsElement).open).toBe(false)
+    expect(within(atril).getByRole('button', { expanded: false })).toBeTruthy()
+    await unfold(s, 'estilo@acme')
+    await unfold(s, 'Atril')
 
     const text = (name: string, i = 0): string => screen.getAllByRole('button', { name: new RegExp(`^${name}( |$)`) })[i]!.textContent ?? ''
-    expect(text('/revisar-cambios')).toContain('Personal')
-    expect(text('/revisar-cambios')).toContain('Activa')
+    const dim = (name: string): boolean => screen.getAllByRole('button', { name: new RegExp(`^${name}( |$)`) })[0]!.closest('li')!.classList.contains('off')
+    // No origin and no «Activa»: the group and the filter already say so.
+    expect(text('/revisar-cambios')).not.toContain('Personal')
+    expect(text('/revisar-cambios')).not.toContain('Activa')
     expect(text('/revisar-cambios')).toContain('Revisa el diff antes del commit')
+    expect(text('/escribir-docs')).not.toContain('shop-web')
+    expect(text('/libretto:evidence')).not.toContain('Atril')
+    expect(text('/estilo:formatear')).not.toMatch(/Apagada|Activa/)
+    expect([dim('/estilo:formatear'), dim('/explicar-sql'), dim('/escribir-docs'), dim('/revisar-cambios')]).toEqual([true, true, true, false])
     const cmd = screen.getAllByRole('button', { name: /^\/deploy/ }).map((b) => b.textContent ?? '')
     expect(cmd.find((c) => c.includes('comando'))).toContain('No se carga: gana la skill')
     expect(cmd.find((c) => !c.includes('comando'))).toContain('Solo el nombre')
     expect(text('/explicar-sql')).toContain('Apagada')
     expect(text('/manual')).toContain('Solo si la llamas tú')
     expect(text('/escribir-docs')).toContain('No se carga: gana la personal')
-    expect(text('/escribir-docs')).toContain('shop-web')
     expect(text('/sembrar')).toContain('Claude no la usa sola')
     expect(text('/mal')).toContain('Cabecera ilegible')
-    expect(text('/estilo:formatear')).toContain('estilo')
-    expect(text('/libretto:evidence')).toContain('Atril')
 
     // Another repo reloads; its empty project says so.
     await userEvent.setup().selectOptions(within(s).getByRole('combobox', { name: 'Repo del proyecto' }), 'cms')
@@ -125,9 +144,9 @@ describe('skills screen', () => {
     expect(cards()).toEqual(['/revisar-cambios'])
 
     await user.clear(search)
-    await user.click(within(s).getByRole('button', { name: 'Apagadas' }))
+    await user.click(seg(s, 'Apagadas'))
     expect(cards().sort()).toEqual(['/estilo:formatear', '/explicar-sql'])
-    await user.click(within(s).getByRole('button', { name: 'Activas' }))
+    await user.click(seg(s, 'Activas'))
     expect(cards().sort()).toEqual(['/release:changelog', '/deploy', '/libretto:evidence', '/mal', '/revisar-cambios', '/sembrar'].sort())
 
     await user.type(search, 'zzz')
@@ -136,8 +155,9 @@ describe('skills screen', () => {
     await user.click(within(s).getByRole('button', { name: 'Borrar la búsqueda' }))
     expect((search as HTMLInputElement).value).toBe('')
     expect(cards()).toHaveLength(6)
-    await user.click(within(s).getByRole('button', { name: 'Todas' }))
-    expect(cards()).toHaveLength(ITEMS.length)
+    await user.click(seg(s, 'Todas'))
+    // Not narrowed: the two plugin groups and Atril are folded again (K40).
+    expect(cards()).toHaveLength(ITEMS.length - 3)
 
     cleanup()
     mockApi({ repos: [repo('shop-web')], skills: { 'shop-web': list([item('apagada', 'personal', { state: 'off' })]) } })
@@ -145,14 +165,14 @@ describe('skills screen', () => {
     const e = await open()
     await within(e).findByRole('button', { name: /^\/apagada/ })
     expect(within(e).getByText('shop-web aún no tiene skills propias.')).toBeTruthy()
-    await user.click(within(e).getByRole('button', { name: 'Activas' }))
+    await user.click(seg(e, 'Activas'))
     expect(within(e).getByText('No tienes ninguna activa.')).toBeTruthy()
     cleanup()
     mockApi({ repos: [repo('shop-web')], skills: { 'shop-web': list([item('encendida', 'personal')]) } })
     render(createElement(App))
     const s2 = await open()
     await within(s2).findByRole('button', { name: /^\/encendida/ })
-    await user.click(within(s2).getByRole('button', { name: 'Apagadas' }))
+    await user.click(seg(s2, 'Apagadas'))
     expect(within(s2).getByText('No tienes ninguna apagada.')).toBeTruthy()
   })
 
@@ -257,12 +277,14 @@ describe('skills screen', () => {
         }
       })
     )
+    await unfold(s, 'release@acme')
+    const deploy = screen.getAllByRole('button', { name: /^\/deploy$/ }).map((b) => b.textContent ?? '')
     expect(text('/revisar-cambios')).toContain('usada hoy')
-    expect(text('/deploy', 1)).toContain('usada hace 1 día')
+    expect(deploy.find((c) => !c.includes('comando'))).toContain('usada hace 1 día')
     expect(text('/release:changelog')).toContain('usada hace 5 días')
     expect(text('/sembrar')).toContain('sin usar en 30 días')
     // Shadowed cards say nothing, used or not.
-    expect(text('/deploy', 0)).not.toMatch(/usada|sin usar/)
+    expect(deploy.find((c) => c.includes('comando'))).not.toMatch(/usada|sin usar/)
     expect(text('/escribir-docs')).not.toMatch(/usada|sin usar/)
 
     // Idle: not atril, not off, not shadowed, not enabled:false, no use → manual, sembrar, mal.
@@ -274,13 +296,14 @@ describe('skills screen', () => {
     expect(cards().sort()).toEqual(['/mal', '/manual', '/sembrar'])
     await user.click(tile)
     expect(tile.getAttribute('aria-pressed')).toBe('false')
-    expect(cards()).toHaveLength(ITEMS.length)
+    // estilo and Atril stay folded; release was unfolded above.
+    expect(cards()).toHaveLength(ITEMS.length - 2)
     await user.click(tile)
-    await user.click(within(s).getByRole('button', { name: 'Todas' }))
+    await user.click(seg(s, 'Todas'))
     expect(tile.getAttribute('aria-pressed')).toBe('false')
-    expect(cards()).toHaveLength(ITEMS.length)
+    expect(cards()).toHaveLength(ITEMS.length - 2)
     await user.click(tile)
-    await user.click(within(s).getByRole('button', { name: 'Activas' }))
+    await user.click(seg(s, 'Activas'))
     expect(tile.getAttribute('aria-pressed')).toBe('false')
     expect(cards()).toHaveLength(6)
 
@@ -425,6 +448,8 @@ describe('skills screen', () => {
     expect(d.textContent).toContain('Lo fija .claude/settings.local.json')
     await user.keyboard('{Escape}')
     // An Atril item has no control at all.
+    await unfold(s, 'Atril')
+    await unfold(s, 'estilo@acme')
     await user.click(within(s).getByRole('button', { name: /^\/libretto:evidence/ }))
     expect(within(screen.getByRole('complementary', { name: '/libretto:evidence' })).queryByRole('radiogroup')).toBeNull()
     await user.keyboard('{Escape}')
@@ -551,6 +576,8 @@ describe('skills editor', () => {
       item('grande', 'personal', { path: '/x/edit1/grande/SKILL.md' })
     ])
     // Plugin and Atril items are read-only.
+    await unfold(s, 'estilo@acme')
+    await unfold(s, 'Atril')
     await user.click(within(s).getByRole('button', { name: /^\/estilo:formatear/ }))
     expect(within(panel('/estilo:formatear')).queryByRole('button', { name: 'Editar' })).toBeNull()
     await user.click(within(s).getByRole('button', { name: /^\/libretto:evidence/ }))
@@ -805,7 +832,8 @@ describe('skills editor', () => {
     // On success the dialog closes, the list updates and the note shows.
     expect(await screen.findByText('Instalado. Las sesiones nuevas de Claude Code ya lo cargan.')).toBeTruthy()
     expect(screen.queryByRole('dialog')).toBeNull()
-    expect(within(s).getAllByRole('button', { name: /^\// })).toHaveLength(1)
+    // The new plugin's group arrives folded (K40), counting its one skill.
+    expect(within(within(s).getByRole('group', { name: 'release@acme' })).getByRole('button', { expanded: false }).textContent).toMatch(/1$/)
     expect((within(s).getByRole('combobox', { name: 'Repo del proyecto' }) as HTMLSelectElement).disabled).toBe(false)
 
     // The local scope names the repo; «Añadir marketplace» reloads the catalog.
@@ -953,3 +981,207 @@ describe('skills editor', () => {
   })
 })
 
+
+describe('skills dense list', () => {
+  const group = (s: HTMLElement, name: string): HTMLElement => within(s).getByRole('group', { name })
+  const head = (s: HTMLElement, name: string): HTMLElement => within(group(s, name)).getAllByRole('button').find((b) => b.hasAttribute('aria-expanded'))!
+  const expanded = (s: HTMLElement, name: string): string | null => head(s, name).getAttribute('aria-expanded')
+
+  it("groups fold, plugins start folded, a search opens what matches", async () => {
+    mockApi({ repos: [repo('shop-web'), repo('cms')], skills: { 'shop-web': list(ITEMS), cms: list(ITEMS) } })
+    render(createElement(App))
+    const s = await open()
+    const user = userEvent.setup()
+    await within(s).findByRole('button', { name: /^\/revisar-cambios/ })
+    expect(['Personal', 'Proyecto (shop-web)', 'estilo@acme', 'release@acme', 'Atril'].map((g) => expanded(s, g))).toEqual(['true', 'true', 'false', 'false', 'false'])
+    expect(cards()).not.toContain('/release:changelog')
+
+    // A header folds and unfolds its group; the fold holds across a repo pick.
+    await user.click(head(s, 'Personal'))
+    expect(expanded(s, 'Personal')).toBe('false')
+    expect(cards()).not.toContain('/revisar-cambios')
+    await user.click(head(s, 'release@acme'))
+    expect(cards()).toContain('/release:changelog')
+    await user.selectOptions(within(s).getByRole('combobox', { name: 'Repo del proyecto' }), 'cms')
+    await waitFor(() => expect(window.atril.skills.list).toHaveBeenLastCalledWith('cms'))
+    expect(expanded(s, 'Personal')).toBe('false')
+    expect(expanded(s, 'release@acme')).toBe('true')
+
+    // Narrowed by a search: groups with a match open, the rest go, headers are disabled.
+    const search = within(s).getByRole('searchbox', { name: 'Buscar por nombre o descripción…' })
+    await user.type(search, 'formatea')
+    expect(cards()).toEqual(['/estilo:formatear'])
+    expect(expanded(s, 'estilo@acme')).toBe('true')
+    expect(head(s, 'estilo@acme').textContent).toMatch(/1$/)
+    expect((head(s, 'estilo@acme') as HTMLButtonElement).disabled).toBe(true)
+    expect(within(s).queryByRole('group', { name: 'Personal' })).toBeNull()
+    expect(within(s).queryByRole('group', { name: 'release@acme' })).toBeNull()
+    expect(within(s).queryByRole('button', { name: 'Nueva skill' })).toBeNull()
+    expect(within(group(s, 'Plugins')).getByRole('button', { name: 'Añadir plugin' })).toBeTruthy()
+    // With no match at all the «Plugins» line still shows.
+    await user.clear(search)
+    await user.type(search, 'zzz')
+    expect(within(s).getByText('Nada se llama «zzz».')).toBeTruthy()
+    expect(within(group(s, 'Plugins')).getByRole('button', { name: 'Añadir plugin' })).toBeTruthy()
+
+    // A folded group with matches opens while narrowed by a filter too.
+    await user.clear(search)
+    await user.click(seg(s, 'Apagadas'))
+    expect(cards().sort()).toEqual(['/estilo:formatear', '/explicar-sql'])
+    expect(expanded(s, 'Personal')).toBe('true')
+    expect(within(s).queryByRole('button', { name: 'Nueva skill' })).toBeNull()
+
+    // Cleared: each group gets back the fold it had.
+    await user.click(seg(s, 'Todas'))
+    expect(['Personal', 'estilo@acme', 'release@acme', 'Atril'].map((g) => expanded(s, g))).toEqual(['false', 'false', 'true', 'false'])
+    expect(within(s).getAllByRole('button', { name: 'Nueva skill' })).toHaveLength(1)
+  })
+
+  it("rows go by most recent use, or by name", async () => {
+    const at = (last: string): SkillUse => ({ last, days: Array<number>(30).fill(0) })
+    const mine = [
+      item('beta', 'personal'),
+      item('Alfa', 'personal'),
+      item('gamma', 'personal'),
+      item('epsilon', 'personal'),
+      item('delta', 'personal', { kind: 'command', shadowedBy: 'skill' })
+    ]
+    let answer: (u: SkillsUsage) => void = () => undefined
+    mockApi({ repos: [], skills: { '': list(mine) }, skillsUsage: () => new Promise((r) => (answer = r)) })
+    render(createElement(App))
+    const s = await open()
+    const user = userEvent.setup()
+    await within(s).findByRole('button', { name: '/beta' })
+    const order = (): string[] => within(group(s, 'Personal')).getAllByRole('button', { name: /^\// }).map((b) => b.getAttribute('aria-label') ?? '')
+    expect(within(within(s).getByRole('group', { name: 'Orden' })).getByRole('button', { name: 'Recientes' }).getAttribute('aria-pressed')).toBe('true')
+    // Before the usage answers: by name, case-insensitive.
+    expect(order()).toEqual(['/Alfa', '/beta', '/delta', '/epsilon', '/gamma'])
+    await act(async () =>
+      answer({
+        usage: { gamma: at('2026-11-25T10:00:00.000Z'), epsilon: at('2026-11-25T10:00:00.000Z'), beta: at('2026-11-20T10:00:00.000Z'), delta: at('2026-11-26T10:00:00.000Z') }
+      })
+    )
+    // Newest first, equal by name; a shadowed row counts as unused.
+    expect(order()).toEqual(['/epsilon', '/gamma', '/beta', '/Alfa', '/delta'])
+    await user.click(within(within(s).getByRole('group', { name: 'Orden' })).getByRole('button', { name: 'Nombre' }))
+    expect(order()).toEqual(['/Alfa', '/beta', '/delta', '/epsilon', '/gamma'])
+
+    // A usage that failed sorts by name.
+    cleanup()
+    mockApi({ repos: [], skills: { '': list(mine) }, skillsUsage: { error: 'EACCES' } })
+    render(createElement(App))
+    const s2 = await open()
+    await within(s2).findByRole('button', { name: '/beta' })
+    await act(async () => undefined)
+    expect(within(group(s2, 'Personal')).getAllByRole('button', { name: /^\// }).map((b) => b.getAttribute('aria-label'))).toEqual(['/Alfa', '/beta', '/delta', '/epsilon', '/gamma'])
+  })
+
+  it("the tiles filter and a second press clears", async () => {
+    mockApi({ repos: [repo('shop-web')], skills: { 'shop-web': list(ITEMS) } })
+    render(createElement(App))
+    const s = await open()
+    const user = userEvent.setup()
+    await within(s).findByRole('button', { name: /^\/revisar-cambios/ })
+    const pressed = (el: HTMLElement): string | null => el.getAttribute('aria-pressed')
+    const segs = (): (string | null)[] => ['Todas', 'Activas', 'Apagadas'].map((n) => pressed(seg(s, n)))
+
+    await user.click(tileOf(s, 'Activas'))
+    expect(pressed(tileOf(s, 'Activas'))).toBe('true')
+    expect(segs()).toEqual(['false', 'true', 'false'])
+    expect(cards()).toHaveLength(6)
+    await user.click(tileOf(s, 'Activas'))
+    expect(pressed(tileOf(s, 'Activas'))).toBe('false')
+    expect(segs()).toEqual(['true', 'false', 'false'])
+    expect(cards()).toHaveLength(ITEMS.length - 3)
+
+    await user.click(seg(s, 'Apagadas'))
+    expect(pressed(tileOf(s, 'Apagadas'))).toBe('true')
+    await user.click(tileOf(s, 'Apagadas'))
+    expect(segs()).toEqual(['true', 'false', 'false'])
+
+    await user.click(tileOf(s, 'Choques'))
+    expect(pressed(tileOf(s, 'Choques'))).toBe('true')
+    expect(segs()).toEqual(['false', 'false', 'false'])
+    expect(cards().sort()).toEqual(['/deploy', '/escribir-docs'])
+    await user.click(seg(s, 'Todas'))
+    expect(pressed(tileOf(s, 'Choques'))).toBe('false')
+    await user.click(tileOf(s, 'Sin usar en 30 días'))
+    expect(segs()).toEqual(['false', 'false', 'false'])
+
+    cleanup()
+    mockApi({ repos: [repo('shop-web')], skills: { 'shop-web': list([item('sola', 'personal')]) } })
+    render(createElement(App))
+    const s2 = await open()
+    await within(s2).findByRole('button', { name: '/sola' })
+    await user.click(tileOf(s2, 'Choques'))
+    expect(within(s2).getByText('No tienes ningún choque.')).toBeTruthy()
+  })
+
+  it("arrows move between rows and slash goes to search", async () => {
+    const read = vi.fn(async () => '---\nname: uno\ndescription: x\n---\n')
+    mockApi({ repos: [repo('shop-web')], skills: { 'shop-web': list([item('uno', 'personal'), item('dos', 'personal'), item('tres', 'project')]) } }, undefined, { skills: { read } as never })
+    render(createElement(App))
+    const s = await open()
+    const user = userEvent.setup()
+    const row = async (n: string): Promise<HTMLElement> => within(s).findByRole('button', { name: n })
+    const search = within(s).getByRole('searchbox', { name: 'Buscar por nombre o descripción…' })
+
+    // From the search box, ↓ goes to the first row; then across groups, stopping at both ends.
+    search.focus()
+    await user.keyboard('{ArrowDown}')
+    expect(document.activeElement).toBe(await row('/dos'))
+    await user.keyboard('{ArrowUp}')
+    expect(document.activeElement).toBe(await row('/dos'))
+    await user.keyboard('{ArrowDown}')
+    expect(document.activeElement).toBe(await row('/uno'))
+    await user.keyboard('{ArrowDown}')
+    expect(document.activeElement).toBe(await row('/tres'))
+    await user.keyboard('{ArrowDown}')
+    expect(document.activeElement).toBe(await row('/tres'))
+
+    // Enter opens the detail.
+    await user.keyboard('{Enter}')
+    expect(screen.getByRole('complementary', { name: '/tres' })).toBeTruthy()
+    await user.keyboard('{Escape}')
+
+    // «/» outside a field goes to search without typing.
+    expect(document.activeElement).toBe(await row('/tres'))
+    await user.keyboard('/')
+    expect(document.activeElement).toBe(search)
+    expect((search as HTMLInputElement).value).toBe('')
+    // Inside a field it types.
+    await user.keyboard('a/b')
+    expect((search as HTMLInputElement).value).toBe('a/b')
+    await user.clear(search)
+
+    // In the editor's textarea it types too.
+    await user.click(await row('/uno'))
+    await user.click(within(screen.getByRole('complementary', { name: '/uno' })).getByRole('button', { name: 'Editar' }))
+    const box = await screen.findByRole('textbox', { name: 'Texto de uno' })
+    await user.type(box, '/')
+    expect(document.activeElement).toBe(box)
+    expect((box as HTMLTextAreaElement).value.endsWith('/')).toBe(true)
+
+    // With a dialog open, «/» stays out of the list.
+    await user.click(within(screen.getByRole('complementary', { name: '/uno' })).getByRole('button', { name: 'Descartar' }))
+    await user.click(within(screen.getByRole('dialog', { name: 'Tienes cambios sin guardar. ¿Descartarlos?' })).getByRole('button', { name: 'Seguir editando' }))
+    await user.click(within(s).getAllByRole('button', { name: 'Nueva skill' })[0]!)
+    const dlg = screen.getByRole('dialog')
+    within(dlg).getAllByRole('button')[0]!.focus()
+    await user.keyboard('/')
+    expect(document.activeElement).not.toBe(search)
+  })
+
+  it("a row is one 36 px line", () => {
+    const css = readFileSync(join(__dirname, '../styles.css'), 'utf8')
+    const rules = [...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)].map((m) => ({ sel: m[1]!.trim(), body: m[2]! }))
+    const row = rules.filter((r) => r.sel === '.skr')
+    expect(row).toHaveLength(1)
+    expect(row[0]!.body).toMatch(/(^|;|\s)height:\s*36px/)
+    const others = rules.filter((r) => r.sel !== '.skr' && r.sel.split(',').some((x) => /\.skr(?![\w-])/.test(x)))
+    expect(others.filter((r) => /(^|;|\s)(min-|max-)?height:/.test(r.body)).map((r) => r.sel)).toEqual([])
+    const desc = rules.find((r) => r.sel === '.skr-d')
+    expect(desc?.body).toMatch(/white-space:\s*nowrap/)
+    expect(desc?.body).toMatch(/text-overflow:\s*ellipsis/)
+  })
+})

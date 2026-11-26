@@ -57,7 +57,7 @@ export function createSecretStore(enc: Encryptor) {
       meta: Omit<Entry, 'cipher'> = {}
     ): Promise<SaveResult> {
       if (!enc.isAvailable())
-        return { error: t('El Llavero de macOS no está disponible: Atril no guarda tokens sin cifrarlos.') }
+        return { error: t('The macOS Keychain is not available: Atril does not store tokens unencrypted.') }
       const all = await readAll()
       all[service] = { cipher: enc.encrypt(JSON.stringify(fields)).toString('base64'), ...meta }
       await writeAll(all)

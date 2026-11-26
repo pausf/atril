@@ -28,7 +28,7 @@ const PLATFORM = { chrome: 'Chrome', safari: 'Safari', android: 'Android', ios: 
 export function qaTitle(report: QaReport, t: T): string {
   const x = report.target
   const target = x ? (x.dir ? `${PLATFORM[x.platform]} · ${x.dir}` : PLATFORM[x.platform]) : null
-  return target ? t('Pruebas en vivo con Atril · {target}', { target }) : t('Pruebas en vivo con Atril')
+  return target ? t('Live tests with Atril · {target}', { target }) : t('Live tests with Atril')
 }
 
 /** W170's per-criterion word, text and, for a failing one, its note or else its last step. */
@@ -36,7 +36,7 @@ export function qaLines(report: QaReport, t: T): Array<{ id: string; word: strin
   return report.criteria.map((c) => {
     const e = report.entries.find((x) => x.id === c.id)
     const status = e?.status ?? 'untested'
-    const word = status === 'pass' ? t('Pasa') : status === 'fail' ? t('Falla') : t('Sin probar')
+    const word = status === 'pass' ? t('Passing') : status === 'fail' ? t('Failing') : t('Untested')
     const why = status === 'fail' ? (e!.note || e!.steps.at(-1)?.text || '').replace(/\s+/g, ' ').trim() : ''
     return { id: c.id, word, text: c.text, why }
   })
@@ -57,8 +57,8 @@ export function qaBlock(report: QaReport, pictures: Record<string, { after: stri
     out.push('', `**${l.word}** · ${clean(l.text, home)}`)
     if (l.why) out.push(`> ${clean(l.why, home)}`)
     const p = pictures[l.id]
-    if (p?.before) out.push('', `| ${t('Antes')} | ${t('Después')} |`, '|---|---|', `| ![${t('Antes')}](${p.before}) | ![${t('Después')}](${p.after}) |`)
-    else if (p) out.push('', `![${t('Después')}](${p.after})`)
+    if (p?.before) out.push('', `| ${t('Before')} | ${t('After')} |`, '|---|---|', `| ![${t('Before')}](${p.before}) | ![${t('After')}](${p.after}) |`)
+    else if (p) out.push('', `![${t('After')}](${p.after})`)
   }
   out.push(CLOSE)
   return out.join('\n')
@@ -89,7 +89,7 @@ interface Deps {
 export function createQaHosting({ store, fetchImpl = fetch }: Deps) {
   async function session(forge: ForgeId) {
     const secret = await store.readSecret(forge).catch(() => null)
-    if (!secret?.['token']) throw new Failure({ error: t('Conecta GitHub o GitLab en Ajustes'), fix: 'settings' })
+    if (!secret?.['token']) throw new Failure({ error: t('Connect GitHub or GitLab in Settings'), fix: 'settings' })
     const name = FORGE_NAME[forge]
     const site = secret['site'] ?? 'https://gitlab.com'
     const { base, headers } = forgeApi(forge, site, secret['token'])
@@ -172,7 +172,7 @@ export function createQaHosting({ store, fetchImpl = fetch }: Deps) {
     replaceBlock: (mr: MrRef, expected: string | null, block: string): Promise<{ ok: true } | Problem> =>
       guard(async () => {
         const now = await read(mr)
-        if ((now.description ?? '') !== (expected ?? '')) return { error: t('La descripción de la MR ha cambiado: publica otra vez'), fix: 'recheck' as const }
+        if ((now.description ?? '') !== (expected ?? '')) return { error: t('The MR description has changed: publish again'), fix: 'recheck' as const }
         const { call } = await session(mr.forge)
         const next = splice(now.description, block)
         // ponytail: no forge offers a conditional write on the PR body; an edit in the second between read and write is lost.

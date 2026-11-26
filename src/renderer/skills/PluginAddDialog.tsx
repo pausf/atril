@@ -53,28 +53,28 @@ export function PluginAddDialog({ repo, busy, install, addMarketplace, onNo }: {
       {picked === p.pluginId ? (
         <span className="skpa-scope">
           <button type="button" className="btn" disabled={busy} onClick={() => install(p.pluginId, 'user')}>
-            {t('Para mí, en todos los repos')}
+            {t('For me, in every repo')}
           </button>
           {repo && (
             <button type="button" className="btn" disabled={busy} onClick={() => install(p.pluginId, 'local')}>
-              {t('Solo para mí en {repo}', { repo })}
+              {t('Only for me in {repo}', { repo })}
             </button>
           )}
         </span>
       ) : (
         <button type="button" className="btn" disabled={busy} onClick={() => setPicked(p.pluginId)}>
-          {t('Instalar')}
+          {t('Install')}
         </button>
       )}
     </li>
   )
-  const title = t('Añadir plugin')
+  const title = t('Add plugin')
   return (
     <div className="skw-back">
       <div className="skw skpa" role="dialog" aria-modal="true" aria-label={title}>
         <h2>{title}</h2>
-        <input ref={search} type="search" placeholder={t('Buscar plugin')} aria-label={t('Buscar plugin')} value={q} onChange={(e) => setQ(e.target.value)} />
-        {failure && <PluginProblem what={t('No he podido leer los marketplaces.')} failure={failure} fix={t('Volver a intentar')} onFix={() => setAttempt((n) => n + 1)} />}
+        <input ref={search} type="search" placeholder={t('Search plugin')} aria-label={t('Search plugin')} value={q} onChange={(e) => setQ(e.target.value)} />
+        {failure && <PluginProblem what={t('I could not read the marketplaces.')} failure={failure} fix={t('Try again')} onFix={() => setAttempt((n) => n + 1)} />}
         {marketplaces.map((m) => (
           <div key={m} role="group" aria-label={m} className="skpa-mk">
             <h3>{m}</h3>
@@ -89,15 +89,15 @@ export function PluginAddDialog({ repo, busy, install, addMarketplace, onNo }: {
             void addMarketplace(source.trim()).then((r) => r && 'catalog' in r && setCatalog(r.catalog))
           }}
         >
-          <h3>{t('Añadir marketplace')}</h3>
-          <input type="text" aria-label={t('owner/repo o URL')} placeholder={t('owner/repo o URL')} value={source} onChange={(e) => setSource(e.target.value)} autoComplete="off" spellCheck={false} />
+          <h3>{t('Add marketplace')}</h3>
+          <input type="text" aria-label={t('owner/repo or URL')} placeholder={t('owner/repo or URL')} value={source} onChange={(e) => setSource(e.target.value)} autoComplete="off" spellCheck={false} />
           <button type="submit" className="btn" disabled={busy || !source.trim()}>
-            {t('Añadir')}
+            {t('Add')}
           </button>
         </form>
         <div className="skw-act">
           <button type="button" className="btn" disabled={busy} onClick={onNo}>
-            {t('Cancelar')}
+            {t('Cancel')}
           </button>
         </div>
       </div>

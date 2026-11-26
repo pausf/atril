@@ -92,7 +92,7 @@ export function MrPage({ m, list, pos, score, onScore, onLeave, onMerged, onReli
   // M42: once, confirmed; a refusal or a failure stays on the page with its own button.
   const merge = async (): Promise<void> => {
     setMerging(true)
-    const r = await window.atril.mr.merge(m.url, true).catch((): MrMergeResult => ({ error: t('Atril no ha podido fusionar esta MR.'), fix: 'retry' }))
+    const r = await window.atril.mr.merge(m.url, true).catch((): MrMergeResult => ({ error: t('Atril could not merge this MR.'), fix: 'retry' }))
     setMerging(false)
     setAsking(false)
     if ('merged' in r) return onMerged(r)
@@ -113,28 +113,28 @@ export function MrPage({ m, list, pos, score, onScore, onLeave, onMerged, onReli
   const levels: Level[] = [
     ...(list !== 'following'
       ? [
-          { label: t('Puntuar'), sub: t('nota y riesgo con sus razones'), run: onScore },
+          { label: t('Score'), sub: t('score and risk with their reasons'), run: onScore },
           {
-            label: lens.data?.stale ? t('Comentar de nuevo') : t('Comentar'),
-            sub: t('borradores por lente, en su línea'),
-            ...(reviewed && !lens.data?.stale && { disabled: t('Ya comentada en este commit') }),
+            label: lens.data?.stale ? t('Comment again') : t('Comment'),
+            sub: t('drafts per lens, on their line'),
+            ...(reviewed && !lens.data?.stale && { disabled: t('Already commented on this commit') }),
             run: () => void lens.review()
           }
         ]
       : []),
-    ...(work?.kind === 'review' ? [{ label: t('A fondo'), sub: t('en tu repo, con sus tests'), run: () => void openWork() }] : []),
-    ...(work?.kind === 'existing' && !mine ? [{ label: t('Ir a la revisión'), sub: t('en tu repo, con sus tests'), run: () => openWorkspace?.(work.workspaceId) }] : [])
+    ...(work?.kind === 'review' ? [{ label: t('In depth'), sub: t('in your repo, with its tests'), run: () => void openWork() }] : []),
+    ...(work?.kind === 'existing' && !mine ? [{ label: t('Go to the review'), sub: t('in your repo, with its tests'), run: () => openWorkspace?.(work.workspaceId) }] : [])
   ]
   // M45: with a score and a review both pending, the review's.
-  const status = lens.reviewing ? t('Revisando…') : score.state === 'queued' ? t('En cola') : score.state === 'running' ? t('Puntuando…') : ''
-  const failed = data && ('rejected' in data ? { error: t('Atril no ha podido abrir esta MR.'), detail: '', fix: 'retry' as const } : 'error' in data ? data : null)
+  const status = lens.reviewing ? t('Reviewing…') : score.state === 'queued' ? t('Queued') : score.state === 'running' ? t('Scoring…') : ''
+  const failed = data && ('rejected' in data ? { error: t('Atril could not open this MR.'), detail: '', fix: 'retry' as const } : 'error' in data ? data : null)
   const files = data && 'files' in data ? data.files : []
   const all = threads && 'threads' in threads ? threads.threads : []
   const placed = place(files, all, lens.data?.drafts ?? [])
   const inCode = all.filter((th) => !placed.talk.some((x) => x.th === th))
   const label = (name: string, shown: MrThread[]): string => {
     const yours = shown.filter((x) => x.yourTurn).length
-    return `${name} ${shown.length}${yours > 0 ? ` · ${t('te toca {n}', { n: yours })}` : ''}`
+    return `${name} ${shown.length}${yours > 0 ? ` · ${t('your turn {n}', { n: yours })}` : ''}`
   }
   const thread = (th: MrThread, note?: string, onLine?: boolean) => <Thread key={th.id} th={th} {...(note && { note })} onLine={onLine} reply={reply(th.id)} onType={(text) => patch(th.id, { text })} onSend={() => void send(th)} />
   const draft = (d: MrDraft) => (
@@ -142,7 +142,7 @@ export function MrPage({ m, list, pos, score, onScore, onLeave, onMerged, onReli
       <Draft d={d} s={lens} />
     </div>
   )
-  const whose = list === 'mine' ? t('Tuya') : t('De {author}', { author: m.author })
+  const whose = list === 'mine' ? t('Yours') : t('By {author}', { author: m.author })
   const branch = m.branch ? ` · ${m.branch}${m.target ? ` → ${m.target}` : ''}` : ''
 
   return (
@@ -150,9 +150,9 @@ export function MrPage({ m, list, pos, score, onScore, onLeave, onMerged, onReli
       <section className="mr-page" aria-labelledby="mr-page-title">
         <div className="mr-crumb">
           <button type="button" className="back" onClick={onLeave}>
-            {t('‹ Tus MR')}
+            {t('‹ Your MRs')}
           </button>
-          {pos && <span className="mr-pos">{t('{i} de {n} · J/K', pos)}</span>}
+          {pos && <span className="mr-pos">{t('{i} of {n} · J/K', pos)}</span>}
         </div>
         <div className="sub">{`${NAME[m.forge]} · ${m.project} · ${whose}${branch}`}</div>
         <div className="mr-page-title">
@@ -160,38 +160,38 @@ export function MrPage({ m, list, pos, score, onScore, onLeave, onMerged, onReli
           <div className="mr-page-head">
             {work?.kind === 'continue' && (
               <button type="button" className="btn" disabled={opening} onClick={() => void openWork()}>
-                {t('Seguir en Atril')}
+                {t('Continue in Atril')}
               </button>
             )}
             {work?.kind === 'existing' && mine && (
               <button type="button" className="btn" onClick={() => openWorkspace?.(work.workspaceId)}>
-                {t('Ir al trabajo')}
+                {t('Go to the work')}
               </button>
             )}
             <RevisarMenu levels={levels} status={status} open={menu} setOpen={setMenu} close={closeMenu} />
             {mine && m.mergeable && !m.conflict && (
               <button type="button" className="btn" onClick={() => setAsking(true)}>
-                {t('Fusionar')}
+                {t('Merge')}
               </button>
             )}
             <button type="button" className="btn" onClick={() => void window.atril.mr.open(m.url)}>
-              {t('Abrir en {forge} ↗', { forge: NAME[m.forge] })}
+              {t('Open in {forge} ↗', { forge: NAME[m.forge] })}
             </button>
           </div>
         </div>
-        {m.conflict && m.target && <div className="sub mr-conflict">{t('En conflicto con {target}', { target: m.target })}</div>}
+        {m.conflict && m.target && <div className="sub mr-conflict">{t('In conflict with {target}', { target: m.target })}</div>}
         {work?.kind === 'none' && (
           <p className="f-note mr-none">
             {work.reason}{' '}
             <button type="button" className="linklike" onClick={openSettings}>
-              {t('Ajustes → Repos')}
+              {t('Settings → Repos')}
             </button>
           </p>
         )}
         {mergeError && (
           <Problem
             what={mergeError.error}
-            cant={t('La MR sigue sin fusionar.')}
+            cant={t('The MR is still not merged.')}
             fix={fixLabel(t, mergeError.fix, NAME[m.forge])}
             onFix={mergeError.fix === 'forge' ? () => void window.atril.mr.open(m.url) : mergeError.fix === 'settings' ? openSettings : onRelist}
             detail={mergeError.detail ?? ''}
@@ -204,27 +204,27 @@ export function MrPage({ m, list, pos, score, onScore, onLeave, onMerged, onReli
         )}
         <div className="mr-tabs" role="tablist">
           <button type="button" role="tab" aria-selected={tab === 'code'} className={tab === 'code' ? 'on' : ''} onClick={() => setTab('code')}>
-            {label(t('Código'), inCode)}
+            {label(t('Code'), inCode)}
           </button>
           <button type="button" role="tab" aria-selected={tab === 'talk'} className={tab === 'talk' ? 'on' : ''} onClick={() => setTab('talk')}>
-            {label(t('Conversación'), placed.talk.map((x) => x.th))}
+            {label(t('Conversation'), placed.talk.map((x) => x.th))}
           </button>
         </div>
         {tab === 'code' ? (
           <div role="tabpanel" className="mr-pane">
             <LensDrafts s={lens} drafts={placed.top} />
-            {data === null && <div className="empty">{t('Cargando el código…')}</div>}
+            {data === null && <div className="empty">{t('Loading the code…')}</div>}
             {failed && (
               <Problem
                 what={failed.error}
-                cant={t('No puedo enseñarte el código de esta MR.')}
+                cant={t("I cannot show you this MR's code.")}
                 fix={fixLabel(t, failed.fix ?? 'retry')}
                 onFix={failed.fix === 'settings' ? openSettings : retry}
-                {...(failed.fix && failed.fix !== 'retry' && { alt: t('Volver a comprobar'), onAlt: retry })}
+                {...(failed.fix && failed.fix !== 'retry' && { alt: t('Check again'), onAlt: retry })}
                 detail={failed.detail ?? ''}
               />
             )}
-            {data && 'cut' in data && data.cut && <p className="f-note">{t('Demasiado grande para enseñarlo aquí: ábrela en {forge}', { forge: NAME[m.forge] })}</p>}
+            {data && 'cut' in data && data.cut && <p className="f-note">{t('Too large to show here: open it in {forge}', { forge: NAME[m.forge] })}</p>}
             <CodeView forge={m.forge} files={files} placed={placed} thread={(th) => thread(th, undefined, th.line !== undefined)} draft={draft} />
           </div>
         ) : (
@@ -234,9 +234,9 @@ export function MrPage({ m, list, pos, score, onScore, onLeave, onMerged, onReli
                 {threads.error}
               </p>
             )}
-            {threads && 'threads' in threads && threads.more && <p className="f-note">{t('Hay más en {forge}: “Te toca responder” puede estar incompleto', { forge: NAME[m.forge] })}</p>}
-            {threads && 'threads' in threads && placed.talk.length === 0 && placed.talkDrafts.length === 0 && <div className="empty">{t('Sin comentarios.')}</div>}
-            {placed.talk.map(({ th, gone }) => thread(th, gone ? t('Esa línea ya no está en el diff') : undefined))}
+            {threads && 'threads' in threads && threads.more && <p className="f-note">{t('There are more on {forge}: “Your turn to reply” may be incomplete', { forge: NAME[m.forge] })}</p>}
+            {threads && 'threads' in threads && placed.talk.length === 0 && placed.talkDrafts.length === 0 && <div className="empty">{t('No comments.')}</div>}
+            {placed.talk.map(({ th, gone }) => thread(th, gone ? t('That line is no longer in the diff') : undefined))}
             {placed.talkDrafts.map(draft)}
           </div>
         )}

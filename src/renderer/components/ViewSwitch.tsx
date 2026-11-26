@@ -4,12 +4,12 @@ import { useT } from '../ui'
 export function ViewSwitch({ all, onChange }: { all: boolean; onChange: (all: boolean) => void }) {
   const t = useT()
   return (
-    <div className="seg view-switch" role="group" aria-label={t('Vista de trabajo')} title={t('Todos los agentes (⌘⇧A)')}>
+    <div className="seg view-switch" role="group" aria-label={t('Work view')} title={t('All agents (⌘⇧A)')}>
       <button type="button" aria-pressed={!all} onClick={() => onChange(false)}>
-        {t('Uno')}
+        {t('One')}
       </button>
       <button type="button" aria-pressed={all} onClick={() => onChange(true)}>
-        {t('Todos')}
+        {t('All')}
       </button>
     </div>
   )

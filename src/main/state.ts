@@ -50,8 +50,8 @@ export async function readState(file: StateFile): Promise<Record<string, unknown
 export const stateProblem = (err: StateError): StateProblem => ({
   error:
     err.file === 'workspaces'
-      ? t('No puedo leer workspaces.json: está dañado. No abro ni cierro trabajos hasta que se arregle.')
-      : t('No puedo leer repos.json: está dañado. No puedo usar ni cambiar tus repos hasta que se arregle.'),
+      ? t("I can't read workspaces.json: it is damaged. I won't open or close workspaces until it is fixed.")
+      : t("I can't read repos.json: it is damaged. I can't use or change your repos until it is fixed."),
   detail: err.detail,
   fix: 'reveal',
   file: err.file

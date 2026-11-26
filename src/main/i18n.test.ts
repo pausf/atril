@@ -39,7 +39,7 @@ describe('main language', () => {
     expect(replyGone()).toBe('Could not send: that workspace is gone')
     expect(replyPlaceholder()).toBe('Reply to Claude…')
     // Foreign text rides in {detail} untouched.
-    expect(translate('en', 'No se pudo enviar: ese trabajo ya no está', { detail: 'fatal: ruta inválida' })).toBe('Could not send: that workspace is gone')
+    expect(translate('en', 'Could not send: that workspace is gone', { detail: 'fatal: ruta inválida' })).toBe('Could not send: that workspace is gone')
 
     setLang('es')
     expect(labels()).toEqual(expect.arrayContaining(['Edición', 'Trabajo', 'Pausar']))

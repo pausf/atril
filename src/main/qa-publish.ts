@@ -20,7 +20,7 @@ const LEDGER_ROWS = 500
 /** W170: the comment, in the language `t` speaks; blank lines keep a quote from swallowing the next line. */
 export function qaSummary(report: QaReport, t: T): string {
   const lines = [qaTitle(report, t), ...qaLines(report, t).map((l) => `${l.word} · ${l.text}${l.why ? `\n> ${l.why}` : ''}`)]
-  lines.push(t('Las capturas están en Atril.'))
+  lines.push(t('The screenshots are in Atril.'))
   return lines.join('\n\n')
 }
 
@@ -98,7 +98,7 @@ export function createQaPublish({ run, last, list, post, now = Date.now, ocr, ho
     return null
   }
 
-  const noMr = (): Problem => ({ error: t('Abre la MR para poder publicar aquí la QA.') })
+  const noMr = (): Problem => ({ error: t('Open the MR to publish the QA here.') })
 
   async function comment(id: string): Promise<QaPublishResult> {
     const mr = await mrFor(id)

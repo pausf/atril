@@ -34,20 +34,20 @@ export function Composer({ workspaceId, stopped }: { workspaceId: string; stoppe
 
   return (
     <form className="composer" onSubmit={submit}>
-      {problem && <Problem what={problem} cant={t('Tu mensaje sigue en la caja.')} fix={t('Volver a intentar')} onFix={send} detail="" busy={busy} />}
+      {problem && <Problem what={problem} cant={t('Your message is still in the box.')} fix={t('Try again')} onFix={send} detail="" busy={busy} />}
       <div className="composer-row">
         <textarea
           id={composerId(workspaceId)}
           rows={2}
-          aria-label={t('Escribe al agente')}
-          placeholder={stopped ? t('El agente está parado.') : t('Escribe al agente…  ⌘↩ envía')}
+          aria-label={t('Write to the agent')}
+          placeholder={stopped ? t('The agent is stopped.') : t('Write to the agent…  ⌘↩ sends')}
           value={text}
           disabled={stopped}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={onKey}
         />
         <button type="submit" className="btn p" disabled={stopped || busy || text.trim() === ''}>
-          {t('Enviar')}
+          {t('Send')}
         </button>
       </div>
     </form>

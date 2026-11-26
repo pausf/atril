@@ -25,7 +25,7 @@ export function MrScreen({ mrs, openUrl }: { mrs: MrsState; openUrl?: string | n
   // M43: leaving the page, for the inbox or another row, asks first while a reply waits unsent.
   const go = (url: string | null): void => {
     if (url === opened) return
-    if (dirty.current && !window.confirm(t('Tienes una respuesta sin enviar. ¿Salir y descartarla?'))) return
+    if (dirty.current && !window.confirm(t('You have an unsent reply. Leave and discard it?'))) return
     dirty.current = false
     if (url) setMerged(null)
     setLast(url ? null : opened)
@@ -74,7 +74,7 @@ export function MrScreen({ mrs, openUrl }: { mrs: MrsState; openUrl?: string | n
     setLast(null)
     setOpened(m.url)
   }, [result, openUrl])
-  const titles: Record<MrListName, string> = { mine: t('Mías'), review: t('Me toca revisar'), following: t('Sigo') }
+  const titles: Record<MrListName, string> = { mine: t('Mine'), review: t('To review'), following: t('Following') }
   const listOf = (url: string): MrListName | undefined => (['mine', 'review', 'following'] as const).find((l) => result?.[l].some((r) => r.url === url))
   const openList = opened ? listOf(opened) : undefined
   const openRow = opened && openList ? result![openList].find((r) => r.url === opened) : undefined
@@ -87,23 +87,23 @@ export function MrScreen({ mrs, openUrl }: { mrs: MrsState; openUrl?: string | n
       <h1>
         {t('MR')}
         <button className="refresh" onClick={() => void refresh()} disabled={loading}>
-          {loading ? t('Actualizando…') : t('Actualizar')}
+          {loading ? t('Updating…') : t('Refresh')}
         </button>
       </h1>
       {merged && (
         <p className="f-note mr-merged" role="status">
-          {t('Fusionada: {title}', { title: merged.title })}
+          {t('Merged: {title}', { title: merged.title })}
         </p>
       )}
       {merged?.list && (
-        <Problem what={merged.list.error} cant={t('No puedo enseñarte tus MR al día.')} fix={fixLabel(t, merged.list.fix)} onFix={merged.list.fix === 'settings' ? openSettings : () => void refresh()} detail={merged.list.detail} />
+        <Problem what={merged.list.error} cant={t('I cannot show you your MRs up to date.')} fix={fixLabel(t, merged.list.fix)} onFix={merged.list.fix === 'settings' ? openSettings : () => void refresh()} detail={merged.list.detail} />
       )}
-      {!opened && <p className="lead">{t('Tus MR abiertas, las que te toca revisar y las de los proyectos que sigues en GitHub y GitLab.')}</p>}
+      {!opened && <p className="lead">{t('Your open MRs, the ones you have to review and those in the projects you follow on GitHub and GitLab.')}</p>}
       {result?.errors.map((e) => (
         <Problem
           key={e.forge}
           what={e.error}
-          cant={t('No puedo enseñarte tus MRs de {forge}.', { forge: NAME[e.forge] })}
+          cant={t("I can't show you your {forge} MRs.", { forge: NAME[e.forge] })}
           fix={fixLabel(t, e.fix)}
           onFix={e.fix === 'settings' ? openSettings : () => void refresh()}
           detail={e.detail}
@@ -111,19 +111,19 @@ export function MrScreen({ mrs, openUrl }: { mrs: MrsState; openUrl?: string | n
       ))}
       <div className={opened ? 'mr-layout' : undefined}>
       {opened ? null : !result ? (
-        <div className="empty">{t('Cargando tus MR…')}</div>
+        <div className="empty">{t('Loading your MRs…')}</div>
       ) : result.connected.length === 0 ? (
         <div className="empty">
-          <p>{t('Conecta GitHub o GitLab en Ajustes')}</p>
+          <p>{t('Connect GitHub or GitLab in Settings')}</p>
           <button className="linklike" onClick={openSettings}>
-            {t('Abrir Ajustes')}
+            {t('Open Settings')}
           </button>
         </div>
       ) : (
         (['mine', 'review', 'following'] as const).map((l) => (
           <FoldSection key={l} id={`mr-${l}`} title={titles[l]} count={result[l].length} className="tgroup">
             {/* M6: while a forge failed, an empty section may just be the missing part. */}
-            {result[l].length === 0 && result.errors.length === 0 && <p className="f-note">{t('Ninguna MR.')}</p>}
+            {result[l].length === 0 && result.errors.length === 0 && <p className="f-note">{t('No MRs.')}</p>}
             {result[l].map((m) => (
               <div key={m.url} className="mr-line">
                 <Row m={m} current={last === m.url} onOpen={() => go(m.url)} />
@@ -135,7 +135,7 @@ export function MrScreen({ mrs, openUrl }: { mrs: MrsState; openUrl?: string | n
             ))}
             {result.more[l].map((f) => (
               <p key={f} className="f-note">
-                {t('Hay más: ábrelas en {forge}', { forge: NAME[f] })}
+                {t('There are more: open them on {forge}', { forge: NAME[f] })}
               </p>
             ))}
           </FoldSection>
@@ -160,10 +160,10 @@ export function MrScreen({ mrs, openUrl }: { mrs: MrsState; openUrl?: string | n
           result && (
             <section className="mr-page" aria-label={t('MR')}>
               <button type="button" className="back" onClick={() => go(null)}>
-                {t('‹ Tus MR')}
+                {t('‹ Your MRs')}
               </button>
               {/* M51, W52: main only opens what its latest listing holds. */}
-              <Problem what={t('Esta MR ya no está en la lista')} cant={t('No puedo enseñarte el código de esta MR.')} fix={t('Volver a comprobar')} onFix={() => void refresh()} detail="" />
+              <Problem what={t('This MR is no longer in the list')} cant={t("I cannot show you this MR's code.")} fix={t('Check again')} onFix={() => void refresh()} detail="" />
             </section>
           )
         ))}
@@ -176,21 +176,21 @@ export function MrScreen({ mrs, openUrl }: { mrs: MrsState; openUrl?: string | n
 /** `tour`: the rows carry the «Puntuar y revisar» step while no page (and its «Revisar ▾») is open. */
 function ScoreCell({ m, state, onScore, onView, tour }: { m: MrItem; state: MrScoreState; onScore: () => void; onView: () => void; tour: boolean }) {
   const t = useT()
-  if (state.state === 'queued') return <span className="mr-score f-note">{t('En cola')}</span>
-  if (state.state === 'running') return <span className="mr-score f-note">{t('Puntuando…')}</span>
+  if (state.state === 'queued') return <span className="mr-score f-note">{t('Queued')}</span>
+  if (state.state === 'running') return <span className="mr-score f-note">{t('Scoring…')}</span>
   if (state.state === 'done') {
     const { metrics, ai } = state.score
     const stale = isStale(m, state.score)
     return (
       <span className="mr-score">
-        <button type="button" className="tag mr-chips" title={t('Ver la puntuación')} onClick={onView}>
+        <button type="button" className="tag mr-chips" title={t('View the score')} onClick={onView}>
           {`${metrics.size} · D${ai.difficulty} · R${ai.risk}`}
         </button>
         {stale && (
           <>
-            <span className="f-note">{t('De un commit anterior')}</span>
+            <span className="f-note">{t('From an earlier commit')}</span>
             <button type="button" className="linklike" onClick={onScore}>
-              {t('Puntuar de nuevo')}
+              {t('Score again')}
             </button>
           </>
         )}
@@ -201,7 +201,7 @@ function ScoreCell({ m, state, onScore, onView, tour }: { m: MrItem; state: MrSc
     <span className="mr-score" data-tour={tour ? 'mr-tools' : undefined}>
       {state.state === 'error' && <span className="mr-score-error">{state.text}</span>}
       <button type="button" className="linklike" onClick={onScore}>
-        {t('Puntuar')}
+        {t('Score')}
       </button>
     </span>
   )
@@ -209,15 +209,15 @@ function ScoreCell({ m, state, onScore, onView, tour }: { m: MrItem; state: MrSc
 
 function Row({ m, current, onOpen }: { m: MrItem; current?: boolean; onOpen: () => void }) {
   const t = useT()
-  const ci: Record<CiState, string> = { pass: t('Pasa'), fail: t('Falla'), running: t('En curso'), none: t('Sin CI') }
-  const files = m.files === undefined ? '—' : t('{n} archivos', { n: m.files })
+  const ci: Record<CiState, string> = { pass: t('Passing'), fail: t('Failing'), running: t('In progress'), none: t('No CI') }
+  const files = m.files === undefined ? '—' : t('{n} files', { n: m.files })
   const size = m.added !== undefined && m.removed !== undefined ? `+${m.added} −${m.removed} · ${files}` : files
   return (
     <button className="mr-row" aria-current={current ? 'true' : undefined} onClick={onOpen}>
       <span className="s" title={m.title}>
         {m.title}
       </span>
-      {m.conflict && <span className="tag conflict">{t('En conflicto')}</span>}
+      {m.conflict && <span className="tag conflict">{t('In conflict')}</span>}
       <span className="k">{m.project}</span>
       <span className="who">{m.author}</span>
       <span className={`tag ci-${m.ci ?? 'unknown'}`}>{m.ci ? ci[m.ci] : '—'}</span>

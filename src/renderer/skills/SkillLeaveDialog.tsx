@@ -15,14 +15,14 @@ export function SkillLeaveDialog({ onYes, onNo }: { onYes: () => void; onNo: () 
   }, [onNo])
   return (
     <div className="skw-back">
-      <div className="skw" role="dialog" aria-modal="true" aria-label={t('Tienes cambios sin guardar. ¿Descartarlos?')}>
-        <h2>{t('Tienes cambios sin guardar. ¿Descartarlos?')}</h2>
+      <div className="skw" role="dialog" aria-modal="true" aria-label={t('You have unsaved changes. Discard them?')}>
+        <h2>{t('You have unsaved changes. Discard them?')}</h2>
         <div className="skw-act">
           <button type="button" className="btn" onClick={onYes}>
-            {t('Descartar cambios')}
+            {t('Discard changes')}
           </button>
           <button ref={no} type="button" className="btn primary" onClick={onNo}>
-            {t('Seguir editando')}
+            {t('Keep editing')}
           </button>
         </div>
       </div>

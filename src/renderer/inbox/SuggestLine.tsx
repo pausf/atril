@@ -12,9 +12,9 @@ export function SuggestLine({ suggestion, model, effort, onUse }: { suggestion: 
   const level = effortOptions(t).find((o) => o.value === suggestion.effort)?.label ?? suggestion.effort
   return (
     <div className="f-note">
-      {t('Sugerido: {model} · {effort}', { model: NAMES[suggestion.model], effort: level })}. {suggestion.why}{' '}
+      {t('Suggested: {model} · {effort}', { model: NAMES[suggestion.model], effort: level })}. {suggestion.why}{' '}
       <button type="button" className="linklike" onClick={() => onUse(suggestion)}>
-        {t('Usar')}
+        {t('Use')}
       </button>
     </div>
   )

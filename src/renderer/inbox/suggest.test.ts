@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
+import { translate } from '../../preload/i18n'
 import { suggest } from './suggest'
 
-const t = (es: string): string => es
+const t = (k: string): string => translate('es', k)
 const FIX = { model: 'sonnet', effort: 'medium', why: 'Un arreglo acotado: Sonnet lo hace bien a mitad de precio que Opus.' }
 const BIG = { model: 'opus', effort: 'high', why: 'Un cambio grande: mejor Opus con más esfuerzo.' }
 

@@ -41,11 +41,11 @@ function reason(body: unknown, status: number, forge: string): string {
 /** W50: a personal repo with a README, private unless confirmed public. */
 export async function createRepo(store: SecretStore, req: CreateRequest, fetchImpl: typeof fetch = fetch): Promise<Created | { error: string }> {
   const name = req.name
-  if (!validRepoName(name)) return { error: t('Nombre de repo no válido') }
-  if (req.public && req.confirmPublic !== true) return { error: t('Un repo público necesita tu confirmación.') }
+  if (!validRepoName(name)) return { error: t('Invalid repo name') }
+  if (req.public && req.confirmPublic !== true) return { error: t('A public repo needs your confirmation.') }
   const forgeName = FORGE_NAME[req.forge]
   const secret = await store.readSecret(req.forge)
-  if (!secret?.['token']) return { error: t('Conecta {forge} en Ajustes antes de crear un repo.', { forge: forgeName }) }
+  if (!secret?.['token']) return { error: t('Connect {forge} in Settings before creating a repo.', { forge: forgeName }) }
   const { base, headers } = forgeApi(req.forge, secret['site'] ?? 'https://gitlab.com', secret['token'])
   const body =
     req.forge === 'github'
@@ -61,7 +61,7 @@ export async function createRepo(store: SecretStore, req: CreateRequest, fetchIm
       signal: AbortSignal.timeout(20_000)
     })
     const data = (await res.json().catch(() => ({}))) as Record<string, unknown>
-    if (!res.ok) return { error: t('{forge} no ha creado el repo: {detail}', { forge: forgeName, detail: reason(data, res.status, forgeName) }) }
+    if (!res.ok) return { error: t('{forge} did not create the repo: {detail}', { forge: forgeName, detail: reason(data, res.status, forgeName) }) }
     const url = String(data['html_url'] ?? data['web_url'] ?? '')
     const sshUrl = String(data['ssh_url'] ?? data['ssh_url_to_repo'] ?? '')
     const path = String(data['name'] && req.forge === 'github' ? data['name'] : (data['path'] ?? name))
@@ -81,18 +81,18 @@ export type CloneResult = { registered: string } | { cloneError: string; cloneCo
 export async function cloneAndRegister(created: Created, folder: string, run: Runner): Promise<CloneResult> {
   const dest = join(folder, created.path)
   const cloneCommand = `git clone ${created.sshUrl} ${dest}`
-  if (existsSync(dest)) return { cloneError: t('La carpeta {detail} ya existe: no se ha clonado.', { detail: dest }), cloneCommand }
+  if (existsSync(dest)) return { cloneError: t('The folder {detail} already exists: nothing was cloned.', { detail: dest }), cloneCommand }
   // Only what git and ssh need: no credential-like variable from the person's shell rides along.
   const env: NodeJS.ProcessEnv = { GIT_TERMINAL_PROMPT: '0', GIT_SSH_COMMAND: 'ssh -o BatchMode=yes' }
   for (const k of ['PATH', 'HOME', 'USER', 'LANG', 'SSH_AUTH_SOCK', 'TMPDIR']) if (process.env[k]) env[k] = process.env[k]
   const r = await run('git', ['clone', '--', created.sshUrl, dest], { env })
   if (r.code !== 0) {
     const detail = r.stderr.trim().split('\n').at(-1)?.slice(0, 160) ?? ''
-    return { cloneError: t('No se ha podido clonar por SSH ({detail}). Hazlo a mano:', { detail }), cloneCommand }
+    return { cloneError: t('Could not clone over SSH ({detail}). Do it by hand:', { detail }), cloneCommand }
   }
   let reg = await registerRepo(dest, run)
   if ('error' in reg && reg.error === 'invalid-id') reg = await registerRepo(dest, run, { id: 'repo' })
   if ('suggested' in reg) reg = await registerRepo(dest, run, { id: reg.suggested })
-  if ('error' in reg) return { cloneError: t('Clonado en {detail}, pero no se ha podido añadir a Atril.', { detail: dest }), cloneCommand }
+  if ('error' in reg) return { cloneError: t('Cloned into {detail}, but it could not be added to Atril.', { detail: dest }), cloneCommand }
   return { registered: reg.repo.id }
 }

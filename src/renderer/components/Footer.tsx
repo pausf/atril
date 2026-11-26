@@ -23,9 +23,9 @@ function resetLabel(t: T, locale: string, iso: string | null, now = new Date()):
   at.setTime(Math.round(at.getTime() / 60_000) * 60_000)
   const time = at.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })
   const days = Math.round((new Date(at).setHours(0, 0, 0, 0) - new Date(now).setHours(0, 0, 0, 0)) / 86_400_000)
-  if (days === 0) return t('hoy {time}', { time })
-  if (days === 1) return t('mañana {time}', { time })
-  return t('el {day} {time}', { day: at.toLocaleDateString(locale, { weekday: 'long' }), time })
+  if (days === 0) return t('today {time}', { time })
+  if (days === 1) return t('tomorrow {time}', { time })
+  return t('on {day} {time}', { day: at.toLocaleDateString(locale, { weekday: 'long' }), time })
 }
 
 export function Footer() {
@@ -58,22 +58,22 @@ export function Footer() {
                   : window.atril.usage.get().then(setUsage))
               }
             >
-              {usage.fix === 'claude' ? t('Abrir Claude Code') : t('Volver a comprobar')}
+              {usage.fix === 'claude' ? t('Open Claude Code') : t('Check again')}
             </button>
             <details>
-              <summary>{t('Ver detalle')}</summary>
+              <summary>{t('Show detail')}</summary>
               <code>{usage.detail}</code>
             </details>
           </span>
         ) : (
           <>
-            {t('5 h')} <Bar pct={usage.fiveHour.pct} /> {usage.fiveHour.pct} % · {t('7 días')} <Bar pct={usage.sevenDay.pct} />{' '}
+            {t('5 h')} <Bar pct={usage.fiveHour.pct} /> {usage.fiveHour.pct} % · {t('7 days')} <Bar pct={usage.sevenDay.pct} />{' '}
             {usage.sevenDay.pct} %
-            {reset && <> · {t('se reinicia {when}', { when: reset })}</>}
+            {reset && <> · {t('resets {when}', { when: reset })}</>}
             {usage.stale && (
-              <span className="stale" title={t('La API de uso no responde ahora mismo; Atril reintentará más tarde')}>
+              <span className="stale" title={t('The usage API is not responding right now; Atril will try again later')}>
                 {' '}
-                {t('· dato de hace {n} min', { n: Math.max(1, Math.round((Date.now() - usage.stale.since) / 60_000)) })}
+                {t('· data from {n} min ago', { n: Math.max(1, Math.round((Date.now() - usage.stale.since) / 60_000)) })}
               </span>
             )}
           </>
