@@ -127,4 +127,4 @@ The `@@word` suffix is the one non-obvious piece: it looks like noise next to `t
 ## Checklist
 
 - [x] The flip, end to end: script run, every `t()`/`translate()` key in `src/` English, `i18n-es.ts` written, `translate` reading `ES`, `activity-i18n.ts` returning English keys, `i18n-en.ts` deleted, the two i18n test files on English keys with the new missing-from-Spanish and same-english-two-spanish cases, equivalence report clean, typecheck and lint green · Closes: S48, S49, S16
-- [ ] Spanish window unchanged and the gates: the S50 case in `language.test.ts`, the two forced-red checks (delete one `ES` entry; put one Spanish key back in code), `CLAUDE.md` «Textos» line pointing at `i18n-es.ts`, full suite green · waits on box 1 · Closes: S50
+- [x] Spanish window unchanged and the gates: the S50 case in `language.test.ts`, the two forced-red checks (delete one `ES` entry; put one Spanish key back in code), `CLAUDE.md` «Textos» line pointing at `i18n-es.ts`, full suite green · waits on box 1 · Closes: S50

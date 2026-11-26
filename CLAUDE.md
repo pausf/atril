@@ -93,7 +93,7 @@ Sin probar con datos reales (necesita a Pau):
 - **Pruebas con un `claude` falso (11 nov):** desde `login-path`, Atril pone el PATH de tu shell de login *delante*: un `claude` falso solo en `PATH` pierde y arranca el real (gasta cuota). Lanza la app con `SHELL` apuntando a un shell falso que, con `-ilc`, antepone la carpeta de los dobles al PATH.
 - **Capturas (11 nov):** nunca `screencapture` de la pantalla entera (salen las ventanas personales de Pau). Solo la ventana de Atril: `page.screenshot` por CDP, o `screencapture -l <windowid>`.
 - **Errores (Pau, 11 nov):** ningún error suelto («error 500», «algo fue mal»). Cada fallo dice qué pasó, qué no puedes hacer por eso y trae un botón que lo arregla (Terminal con el comando, página del token, Ajustes, «Volver a comprobar»); el código técnico solo en «Ver detalle», plegado. Catálogo en `bocetos/errores.html`.
-- **Textos:** todos pasan por `t()`/`useT()` y llevan su entrada en inglés en `src/preload/i18n-en.ts`. Los escaneos S16/S19 lo comprueban.
+- **Textos:** todos pasan por `t()`/`useT()`; su clave es el texto en inglés y su entrada en castellano va en `src/preload/i18n-es.ts`. Los escaneos S16/S19 lo comprueban.
 - **Colores** solo como tokens en `:root` y `[data-theme='dark']`.
 - **Aterrizar:** `python3 scripts/land.py <cambio> "<Etiqueta>"`. Aplica `proposal.md` sobre su
   capacidad `Targets:` y cada `spec-<cap>.md` sobre `<cap>`. Los criterios `(amended)` sustituyen al
