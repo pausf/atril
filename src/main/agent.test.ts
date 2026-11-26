@@ -546,6 +546,40 @@ describe('subagents hook', () => {
     expect(stateOf((await fireIn([bash('ls'), ['Stop', {}]])).session)).not.toHaveProperty('turn')
   }, 30000)
 
+  it('a stop while a background shell runs is working', async () => {
+    const started = (id: string): object => ({ type: 'user', message: { role: 'user', content: [{ type: 'tool_result', tool_use_id: 't1', content: `Command running in background with ID: ${id}. Output is being written to: /tmp/x.output.` }] } })
+    const ended = (id: string): object => ({ type: 'user', message: { role: 'user', content: `<task-notification>\n<task-id>${id}</task-id>\n<status>completed</status>\n</task-notification>` } })
+    const said = (text: string): object => ({ type: 'assistant', message: { role: 'assistant', content: [{ type: 'text', text }] } })
+    const transcript = (...entries: object[]): string => {
+      const path = join(tmp(), 't.jsonl')
+      writeFileSync(path, '{"cut half a line\n' + entries.map((e) => JSON.stringify(e)).join('\n') + '\n')
+      return path
+    }
+    const stopWith = (cwd: string, ...entries: object[]): [string, object] => ['Stop', { cwd, stop_hook_active: false, transcript_path: transcript(...entries) }]
+    // Running: working, waiting on the shell, no block even with open boxes and no question card even when it asks.
+    const running = await fireIn([stopWith(repoWithBoxes(2), started('b1'), started('b2'), ended('b1'), said('Espero a la suite. ¿Sigo?'))])
+    expect(running.outs[0]).toBe('')
+    expect(stateOf(running.session)).toMatchObject({ state: 'working', waiting: 'shell', blocks: 0 })
+    expect(stateOf(running.session)).not.toHaveProperty('kind')
+    // Every shell ended: the stop is classified as before (here, open boxes keep it going).
+    const over = await fireIn([stopWith(repoWithBoxes(2), started('b1'), ended('b1'), said('Suite en verde.'))])
+    expect(JSON.parse(over.outs[0] ?? '').decision).toBe('block')
+    expect(stateOf(over.session)).not.toHaveProperty('waiting')
+    // Quoted strings are not a shell: an assistant text and a tool's output that only mention them.
+    const quoted = await fireIn([
+      stopWith(
+        repoWithBoxes(0),
+        said('Command running in background with ID: zz9'),
+        { type: 'user', message: { role: 'user', content: [{ type: 'tool_result', tool_use_id: 't2', content: 'rg found: Command running in background with ID: zz8' }] } }
+      )
+    ])
+    expect(stateOf(quoted.session)).toMatchObject({ state: 'done' })
+    // A pending question still wins (W228).
+    const q = { question: '¿Sigo?', header: 'Seguir', options: [{ label: 'Sí' }] }
+    const pending = await fireIn([ask([q]), stopWith(repoWithBoxes(0), started('b3'))])
+    expect(stateOf(pending.session)).toMatchObject({ state: 'needs-you', kind: 'turn-end' })
+  }, 90000)
+
   it('the hook says what kind of wait it is', async () => {
     const q = { question: '¿Sigo?', header: 'Seguir', options: [{ label: 'Sí' }, { label: 'No' }] }
     expect(stateOf((await fireIn([ask([q])])).session)).toMatchObject({ state: 'needs-you', kind: 'question' })

@@ -505,6 +505,24 @@ describe('answers', () => {
     expect(calls()).toHaveLength(5)
   }, 30_000)
 
+  it('a stop behind a background shell shows what it waits for', async () => {
+    const { createStatus, waitingLine } = await import('./status')
+    const { readActivity } = await import('./activity')
+    const ws = await open(SLEEP)
+    const notify = vi.fn()
+    const status = createStatus({ onChange: () => {}, notify })
+    await status.refresh()
+    wait(ws.session, { state: 'working', at: 5, waiting: 'shell' })
+    await status.refresh()
+    expect(status.states()[ws.id]).toBe('working')
+    expect(await waitingLine(ws.session)).toEqual({ at: 5, text: 'Esperando a una shell en segundo plano' })
+    expect((await readActivity(ws.session))[0]).toMatchObject({ text: 'Esperando a una shell en segundo plano' })
+    expect(notify).not.toHaveBeenCalled()
+    // Plain working says nothing of the kind.
+    wait(ws.session, { state: 'working', at: 6 })
+    expect(await waitingLine(ws.session)).toBeNull()
+  }, 30_000)
+
   it('a done agent waits for its subagents too', async () => {
     const { createStatus } = await import('./status')
     const ws = await open(SLEEP)

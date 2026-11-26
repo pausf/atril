@@ -34,6 +34,7 @@ interface HookFile {
   permission?: unknown
   idle?: unknown
   turn?: unknown
+  waiting?: unknown
   /** Before W197: the first question's labels. */
   options?: unknown
   multiSelect?: unknown
@@ -112,6 +113,8 @@ export async function decidedLine(session: string, newest: { at: number; text: s
 /** W199: the line the row shows instead of the turn's last words while a subagent runs. */
 export async function waitingLine(session: string): Promise<{ at: number; text: string } | null> {
   const file = await hookFile(session)
+  // W230: a stop behind its own background shell, written as working by the hook.
+  if (file.state === 'working' && file.waiting === 'shell') return { at: file.at ?? 0, text: 'Esperando a una shell en segundo plano' } // i18n-ignore: an activity line, localised when shown
   return (await behindSubagent(session, file)) ? { at: file.at ?? 0, text: 'Esperando a un subagente' } : null // i18n-ignore: an activity line, localised when shown
 }
 

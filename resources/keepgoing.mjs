@@ -76,6 +76,36 @@ export function proseQuestion(text) {
   return q.length > 200 ? `${q.slice(0, 199)}…` : q
 }
 
+const STARTED = 'Command running in background with ID: '
+const ENDED = /<task-id>([^<\s]+)<\/task-id>/
+
+/** W229: whether a background shell started in this tail has not ended yet; quoted text never counts. */
+export function shellsRunning(tail) {
+  const open = new Set()
+  for (const line of typeof tail === 'string' ? tail.split('\n') : []) {
+    let entry
+    try {
+      entry = JSON.parse(line)
+    } catch {
+      continue
+    }
+    const msg = entry?.message
+    if ((msg?.role ?? entry?.type) !== 'user') continue
+    const content = msg?.content
+    if (typeof content === 'string') {
+      const id = content.startsWith('<task-notification>') ? ENDED.exec(content)?.[1] : undefined
+      if (id) open.delete(id)
+      continue
+    }
+    if (!Array.isArray(content)) continue
+    for (const b of content) {
+      const text = b?.type === 'tool_result' && typeof b.content === 'string' ? b.content : ''
+      if (text.startsWith(STARTED)) open.add(text.slice(STARTED.length).split(/[.\s]/)[0])
+    }
+  }
+  return open.size > 0
+}
+
 /** W217: the instruction Claude continues with; English, never shown to the person. */
 export const reason = (open) =>
   `Not done yet: ${open.map((c) => `.agents/changes/${c.change}/proposal.md has ${c.open} open box${c.open === 1 ? '' : 'es'} under ## Checklist`).join('; ')}. ` +

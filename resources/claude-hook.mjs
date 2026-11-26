@@ -9,7 +9,7 @@ import process from 'node:process'
 import { Buffer } from 'node:buffer'
 import { lastText, summarise } from './summarise.mjs'
 import { claimSize } from './branchsize.mjs'
-import { decideStop, openBoxes, proseQuestion, reason } from './keepgoing.mjs'
+import { decideStop, openBoxes, proseQuestion, reason, shellsRunning } from './keepgoing.mjs'
 
 // W59: pushes and request creation in an automatic workspace need the person.
 // ponytail: any git … push in one command segment; a `push` word in a commit message only adds a question.
@@ -231,15 +231,19 @@ try {
   // W219: a question to the person in prose is a wait, whatever is left to do.
   // W228: a stop while a question or permission still waits stays that wait's turn end, as before.
   const pending = prev.state === 'needs-you' && (prev.kind === 'question' || prev.kind === 'permission')
-  let asked = ''
+  let tail = ''
   if (event === 'Stop' && !pending && typeof payload?.transcript_path === 'string') {
     try {
-      asked = proseQuestion(lastText(readTail(payload.transcript_path)))
+      tail = readTail(payload.transcript_path)
     } catch {
-      /* unreadable transcript: no question */
+      /* unreadable transcript: no shell, no question */
     }
   }
-  if (event === 'Stop' && !asked && !pending) {
+  // W229: Claude Code resumes by itself when its background shell ends; that stop is no wait.
+  const shell = event === 'Stop' && !pending && shellsRunning(tail)
+  if (shell) state = 'working'
+  const asked = shell ? '' : proseQuestion(lastText(tail))
+  if (event === 'Stop' && !asked && !pending && !shell) {
     const open = openBoxes(payload?.cwd)
     const stop = decideStop({ open, active: payload?.stop_hook_active, blocks, paused: existsSync(join(home, 'paused', name)) })
     blocks = stop.blocks
@@ -260,7 +264,7 @@ try {
   else {
     const body = asked ? { text: `Te pregunta: ${asked}` } : (state === 'needs-you' || state === 'done') && line ? { text: line.text } : {}
     const kind = asked ? { kind: 'question', questions: [{ question: asked, header: '', options: [], multiSelect: false }] } : details(event, state, payload, prev, lastTool)
-    replace(stateFile, JSON.stringify({ state, at, ...body, ...kind, ...(idle && { idle: true }), blocks, ...(turn !== undefined && { turn }) }) + '\n')
+    replace(stateFile, JSON.stringify({ state, at, ...body, ...kind, ...(idle && { idle: true }), ...(shell && { waiting: 'shell' }), blocks, ...(turn !== undefined && { turn }) }) + '\n')
   }
 
   try {
