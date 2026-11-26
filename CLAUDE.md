@@ -95,7 +95,7 @@ Untested with real data (needs Pau):
 - **Tests with a fake `claude` (11 Nov):** since `login-path`, Atril puts your login shell's PATH *in front*: a fake `claude` only in `PATH` loses and the real one starts (spends quota). Launch the app with `SHELL` pointing to a fake shell that, with `-ilc`, prepends the folder of the doubles to the PATH.
 - **Screenshots (11 Nov):** never `screencapture` of the whole screen (Pau's personal windows show up). Only Atril's window: `page.screenshot` through CDP, or `screencapture -l <windowid>`.
 - **Errors (Pau, 11 Nov):** no loose errors ("error 500", "something went wrong"). Every failure says what happened, what you cannot do because of it, and brings a button that fixes it (Terminal with the command, the token page, Settings, "Check again"); the technical code only in "See detail", folded. Catalog in `bocetos/errores.html`.
-- **Texts:** all of them go through `t()`/`useT()` and carry their English entry in `src/preload/i18n-en.ts`. The S16/S19 scans check it.
+- **Texts:** all of them go through `t()`/`useT()`; the key is the English text and its Spanish entry lives in `src/preload/i18n-es.ts`. The S16/S19 scans check it.
 - **Colours** only as tokens in `:root` and `[data-theme='dark']`.
 - **Landing:** `python3 scripts/land.py <change> "<Label>"`. It applies `proposal.md` onto its
   `Targets:` capability and each `spec-<cap>.md` onto `<cap>`. `(amended)` criteria replace the

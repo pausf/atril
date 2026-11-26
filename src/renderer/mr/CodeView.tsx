@@ -83,8 +83,8 @@ export function CodeView({ forge, files, placed, thread, draft }: { forge: Forge
             <span className="mr-file-n">{`+${f.added} −${f.removed}`}</span>
           </h3>
           {(placed.onFile.get(f.path) ?? []).map(thread)}
-          {f.cut && <p className="f-note mr-file-note">{t('Demasiado grande para enseñarlo aquí: ábrela en {forge}', { forge: NAME[forge] })}</p>}
-          {f.tooLarge && <p className="f-note mr-file-note">{t('GitLab no manda este archivo: es demasiado grande')}</p>}
+          {f.cut && <p className="f-note mr-file-note">{t('Too large to show here: open it in {forge}', { forge: NAME[forge] })}</p>}
+          {f.tooLarge && <p className="f-note mr-file-note">{t('GitLab does not send this file: it is too large')}</p>}
           {f.lines.length > 0 && (
             <div className="mr-lines">
               {f.lines.map((l, i) => {

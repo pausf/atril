@@ -29,15 +29,15 @@ const AGENT_KINDS = new Set(['ask', 'done', 'agent', 'idle'])
 /** W177: an MR notice is titled by what happened to it. */
 const mrTitle = (kind: Aviso['kind']): string =>
   ({
-    review: t('Te piden revisión'),
-    comment: t('Comentario nuevo en tu MR'),
-    ci: t('La CI falla en tu MR'),
-    cipass: t('La CI vuelve a pasar'),
-    merged: t('MR fusionada'),
-    closed: t('MR cerrada'),
-    following: t('MR nueva en lo que sigues'),
-    opened: t('Has abierto una MR')
-  })[kind as string] ?? t('Ya no está abierta')
+    review: t('Review requested'),
+    comment: t('New comment on your MR'),
+    ci: t('CI fails on your MR'),
+    cipass: t('CI passes again'),
+    merged: t('MR merged'),
+    closed: t('MR closed'),
+    following: t('New MR in what you follow'),
+    opened: t('You opened an MR')
+  })[kind as string] ?? t('No longer open')
 
 const num = (v: unknown): number => (typeof v === 'number' ? v : Number(v) || 0)
 const str = (v: unknown): string => (typeof v === 'string' ? v : '')
@@ -46,13 +46,13 @@ const str = (v: unknown): string => (typeof v === 'string' ? v : '')
 export function joinNames(names: string[]): string {
   const first = names.slice(0, 3)
   const more = names.length - first.length
-  if (more > 0) return t('{list} y {k} más', { list: first.join(', '), k: more })
+  if (more > 0) return t('{list} and {k} more', { list: first.join(', '), k: more })
   if (first.length < 2) return first[0] ?? ''
-  return t('{list} y {last}', { list: first.slice(0, -1).join(', '), last: first.at(-1)! })
+  return t('{list} and {last}', { list: first.slice(0, -1).join(', '), last: first.at(-1)! })
 }
 
 export function qaCounts(p: number, f: number): string {
-  return `${p === 1 ? t('1 pasa') : t('{p} pasan', { p })}, ${f === 1 ? t('1 falla') : t('{f} fallan', { f })}.`
+  return `${p === 1 ? t('1 passes') : t('{p} pass', { p })}, ${f === 1 ? t('1 fails') : t('{f} fail', { f })}.`
 }
 
 export function quotaBody(vars: Record<string, unknown>): string {
@@ -60,10 +60,10 @@ export function quotaBody(vars: Record<string, unknown>): string {
   const at = new Date(str(vars['resetsAt']))
   if (vars['window'] === 'sevenDay') {
     const day = Number.isNaN(at.getTime()) ? '' : at.toLocaleDateString(getLang(), { weekday: 'long' })
-    return t('7 días al {pct} % · se reinicia el {day}', { pct, day })
+    return t('7 days at {pct} % · resets on {day}', { pct, day })
   }
   const time = Number.isNaN(at.getTime()) ? '' : at.toLocaleTimeString(getLang(), { hour: '2-digit', minute: '2-digit', hour12: false })
-  return t('5 h al {pct} % · se reinicia a las {time}', { pct, time })
+  return t('5 h at {pct} % · resets at {time}', { pct, time })
 }
 
 /** W177: one stored notice as the Mac shows it, in the language of this moment (W48). */
@@ -73,32 +73,32 @@ export function present(n: Aviso, extra: { options?: number; closeWork?: boolean
   const sub = n.repo ? { subtitle: n.repo } : {}
   const reply = (): Pick<Shown, 'hasReply' | 'replyPlaceholder'> => ({
     hasReply: true,
-    replyPlaceholder: extra.options ? t('Responde con 1–{n}', { n: extra.options }) : t('Responde a Claude…')
+    replyPlaceholder: extra.options ? t('Reply with 1–{n}', { n: extra.options }) : t('Reply to Claude…')
   })
   switch (n.kind) {
     case 'ask':
     case 'agent': {
       const q = n.detail?.startsWith('Te pregunta: ') ? n.detail.slice('Te pregunta: '.length) : ''
-      return { title: t('{work} te pregunta', { work }), ...sub, body: q || t('Claude te necesita'), ...reply() }
+      return { title: t('{work} asks you', { work }), ...sub, body: q || t('Claude needs you'), ...reply() }
     }
     case 'done':
-      return { title: t('{work} ha terminado su turno', { work }), ...sub, body: localiseActivity(n.detail || 'Claude ha terminado', t), ...reply() }
+      return { title: t('{work} finished its turn', { work }), ...sub, body: localiseActivity(n.detail || 'Claude ha terminado', t), ...reply() }
     case 'idle':
-      return { title: t('{work} te espera', { work }), ...sub, body: t('Desde hace {m} min. Solo te lo recuerdo una vez.', { m: num(v['m']) }), ...reply() }
+      return { title: t('{work} is waiting for you', { work }), ...sub, body: t('For {m} min. I only remind you once.', { m: num(v['m']) }), ...reply() }
     case 'stopped':
-      return { title: t('{work} se ha parado', { work }), ...sub, body: t('Su terminal se ha cerrado.'), actions: [{ type: 'button', text: t('Reabrir') }] }
+      return { title: t('{work} has stopped', { work }), ...sub, body: t('Its terminal has closed.'), actions: [{ type: 'button', text: t('Reopen@@again') }] }
     case 'qa':
-      return { title: t('QA terminada en {work}', { work }), ...sub, body: qaCounts(num(v['p']), num(v['f'])) }
+      return { title: t('QA finished in {work}', { work }), ...sub, body: qaCounts(num(v['p']), num(v['f'])) }
     case 'radar': {
-      const body = t('{a} y {b} tocan {file}', { a: work, b: str(v['b']), file: str(v['file']) })
+      const body = t('{a} and {b} touch {file}', { a: work, b: str(v['b']), file: str(v['file']) })
       const more = num(v['more'])
-      return { title: t('Dos trabajos tocan lo mismo'), ...sub, body: more ? t('{text} y {n} más', { text: body, n: more }) : body }
+      return { title: t('Two works touch the same file'), ...sub, body: more ? t('{text} and {n} more', { text: body, n: more }) : body }
     }
     case 'quota':
-      return { title: t('Cuota de Claude al 80 %'), body: quotaBody(v) }
+      return { title: t('Claude quota at 80 %'), body: quotaBody(v) }
     default: {
       const actions =
-        n.kind === 'ci' ? [{ type: 'button' as const, text: t('Arreglar con Claude') }] : (n.kind === 'merged' || n.kind === 'closed') && extra.closeWork ? [{ type: 'button' as const, text: t('Cerrar su trabajo') }] : []
+        n.kind === 'ci' ? [{ type: 'button' as const, text: t('Fix with Claude') }] : (n.kind === 'merged' || n.kind === 'closed') && extra.closeWork ? [{ type: 'button' as const, text: t('Close its work') }] : []
       return { title: mrTitle(n.kind), body: n.title, ...(actions.length && { actions }) }
     }
   }
@@ -200,7 +200,7 @@ export function createNotifier(d: NotifierDeps) {
     if (opts.hasReply)
       on.reply = (text) =>
         void d.reply(a, text).then((r) => {
-          if (r === 'gone') say(t('{work}: no se pudo enviar, ese trabajo ya no está', { work: a.title }), '')
+          if (r === 'gone') say(t('{work}: could not send, that work is gone', { work: a.title }), '')
           else if (typeof r === 'object') say(t('{work}: {why}', { work: a.title, why: r.error }), '')
         })
     if (type === 'ci' && a.url) {
@@ -212,7 +212,7 @@ export function createNotifier(d: NotifierDeps) {
       const id = a.workspaceId
       on.action = () =>
         void d.reopen(id).then((r) => {
-          if (r.error) say(t('{work} no se ha podido reabrir', { work: a.title }), r.error)
+          if (r.error) say(t('{work} could not be reopened', { work: a.title }), r.error)
         })
     }
     display(opts, [a.id], clickTarget(a), on)
@@ -220,7 +220,7 @@ export function createNotifier(d: NotifierDeps) {
 
   async function showSlot(slot: Slot): Promise<void> {
     if (slot.length === 1) return showOne(slot[0]!)
-    display({ title: t('{n} trabajos se han parado', { n: slot.length }), body: joinNames(slot.map((a) => a.title)) }, slot.map((a) => a.id), { kind: 'avisos' })
+    display({ title: t('{n} works have stopped', { n: slot.length }), body: joinNames(slot.map((a) => a.title)) }, slot.map((a) => a.id), { kind: 'avisos' })
   }
 
   // W189: at most one notification per window while «Agrupar» is on.
@@ -241,7 +241,7 @@ export function createNotifier(d: NotifierDeps) {
     if (still.length === 1) return showOne(still[0]!)
     const agents = still.every((a) => a.workspaceId)
     display(
-      { title: agents ? t('{n} agentes te necesitan', { n: still.length }) : t('{n} avisos nuevos', { n: still.length }), body: joinNames(still.map((a) => a.title || present(a).title)) },
+      { title: agents ? t('{n} agents need you', { n: still.length }) : t('{n} new notices', { n: still.length }), body: joinNames(still.map((a) => a.title || present(a).title)) },
       still.map((a) => a.id),
       { kind: 'avisos' }
     )
@@ -284,9 +284,9 @@ export function example(type: NotifyType): Aviso {
   const mr = (kind: Aviso['kind'], title: string): Aviso => ({ ...base, kind, title, url: 'https://example.com' })
   switch (type) {
     case 'ask':
-      return { ...base, kind: 'ask', title: 'WEB-3535', detail: `Te pregunta: ${t('¿Uso la tabla del BOE o la de la API?')}` }
+      return { ...base, kind: 'ask', title: 'WEB-3535', detail: `Te pregunta: ${t("Do I use the BOE table or the API's?")}` }
     case 'done':
-      return { ...base, kind: 'done', title: 'SHOP-2630', detail: `Claude dice: ${t('Plan listo, 9 tareas.')}` }
+      return { ...base, kind: 'done', title: 'SHOP-2630', detail: `Claude dice: ${t('Plan ready, 9 tasks.')}` }
     case 'stopped':
       return { ...base, kind: 'stopped', title: 'OPS-4131' }
     case 'idle':
@@ -298,18 +298,18 @@ export function example(type: NotifyType): Aviso {
     case 'quota':
       return { ...base, kind: 'quota', title: '', vars: { window: 'fiveHour', pct: 82, resetsAt: new Date(new Date().setHours(14, 0, 0, 0)).toISOString() } }
     case 'review':
-      return mr('review', t('Filtros persistentes en el listado del vendedor'))
+      return mr('review', t('Persistent filters in the seller list'))
     case 'comment':
-      return mr('comment', t('Festivos por provincia en la fecha prometida'))
+      return mr('comment', t('Regional holidays in the promised date'))
     case 'ci':
-      return mr('ci', t('Festivos por provincia en la fecha prometida'))
+      return mr('ci', t('Regional holidays in the promised date'))
     case 'cipass':
-      return mr('cipass', t('Festivos por provincia en la fecha prometida'))
+      return mr('cipass', t('Regional holidays in the promised date'))
     case 'merged':
-      return mr('merged', t('Migrar el cron de stock a colas'))
+      return mr('merged', t('Move the stock cron to queues'))
     case 'following':
-      return mr('following', t('Quitar el flag antiguo del carrusel'))
+      return mr('following', t('Remove the old carousel flag'))
     case 'opened':
-      return mr('opened', t('Índices para el listado de ofertas'))
+      return mr('opened', t('Indexes for the offers list'))
   }
 }

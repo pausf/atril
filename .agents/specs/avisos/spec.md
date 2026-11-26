@@ -52,7 +52,7 @@ MR's title as `{detail}`, shown as text; the screen is keyboard-operable.
 ### Notifications (main) (notify-core, 12 nov 2026)
 
 - **No automatic call to Claude.** «Arreglar con Claude» and «Reabrir» only run when the person presses. The quota comes from the existing `usage.ts` poll; none is added.
-- **Texts:** Spanish from Spain, through `t()` in main and `useT()` in the window, with their entry in `src/preload/i18n-en.ts`; the S16/S19 scans must stay green. The language is the one at the moment of showing (W48).
+- **Texts:** Spanish from Spain, through `t()` in main and `useT()` in the window, the key is the English text and each has its Spanish entry in `src/preload/i18n-es.ts`; the S16/S19 scans must stay green. The language is the one at the moment of showing (W48).
 - **Colours:** only tokens from `:root` and `[data-theme='dark']`; the card uses grey + the accent (`--run`), as in the sketch.
 - **Errors:** a sentence saying what happened and what you cannot do, a button that fixes it and the technical detail folded in «Ver detalle» (`Problem` component).
 - **Titles:** a job's Mac notice carries its name in the title — `jiraKey`, or the branch if it has none — and the repo in the subtitle; MR ones carry the kind's phrase in the title and the MR title in the body.

@@ -16,32 +16,32 @@ export function SkillWriteDialog({ file, keyName, value, onYes, onNo }: { file: 
   }, [onNo])
   return (
     <div className="skw-back">
-      <div className="skw" role="dialog" aria-modal="true" aria-label={t('Atril va a cambiar tus ajustes de Claude Code')}>
-        <h2>{t('Atril va a cambiar tus ajustes de Claude Code')}</h2>
+      <div className="skw" role="dialog" aria-modal="true" aria-label={t('Atril is going to change your Claude Code settings')}>
+        <h2>{t('Atril is going to change your Claude Code settings')}</h2>
         <dl>
-          <dt>{t('Archivo')}</dt>
+          <dt>{t('File')}</dt>
           <dd>
             <code>{file}</code>
           </dd>
-          <dt>{t('Clave')}</dt>
+          <dt>{t('Key')}</dt>
           <dd>
             <code>{keyName}</code>
           </dd>
-          <dt>{t('Valor')}</dt>
+          <dt>{t('Value')}</dt>
           <dd>
             <code>{value}</code>
           </dd>
         </dl>
         <label>
           <input type="checkbox" checked={never} onChange={(e) => setNever(e.target.checked)} />
-          {t('No volver a preguntar')}
+          {t('Do not ask again')}
         </label>
         <div className="skw-act">
           <button type="button" className="btn" onClick={onNo}>
-            {t('Cancelar')}
+            {t('Cancel')}
           </button>
           <button ref={yes} type="button" className="btn primary" onClick={() => onYes(never)}>
-            {t('Cambiar')}
+            {t('Change')}
           </button>
         </div>
       </div>

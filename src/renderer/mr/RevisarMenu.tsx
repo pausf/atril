@@ -57,13 +57,13 @@ export function RevisarMenu({ levels, status, open, setOpen, close }: { levels: 
   return (
     <span className="rvw">
       <button ref={button} type="button" className="btn p" aria-haspopup="menu" aria-expanded={open} data-tour="mr-tools" onClick={() => setOpen(!open)} onKeyDown={onButtonKey}>
-        {t('Revisar ▾')}
+        {t('Review ▾')}
       </button>
       <span className="rvst" role="status">
         {status}
       </span>
       {open && (
-        <div className="rvch" role="menu" aria-label={t('Revisar')} ref={menu} onKeyDown={onMenuKey}>
+        <div className="rvch" role="menu" aria-label={t('Review')} ref={menu} onKeyDown={onMenuKey}>
           {levels.map((l) => (
             <button
               key={l.label}

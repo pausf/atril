@@ -128,8 +128,8 @@ export function Skills() {
       const now = open && d.items.find((i) => same(i, open))
       if (now) setOpen(now)
       const sharing = now ? d.items.filter((i) => i.name === now.name && !same(i, now) && i.writesTo === now.writesTo && (i.origin === 'personal' || i.origin === 'project')).length : 0
-      const done = t('Hecho. Las sesiones nuevas de Claude Code ya lo cargan así.')
-      setNote(sharing > 0 ? `${done} ${t('También cambia {n} más con el mismo nombre.', { n: sharing })}` : done)
+      const done = t('Done. New Claude Code sessions already load it this way.')
+      setNote(sharing > 0 ? `${done} ${t('{n} more with the same name also change.', { n: sharing })}` : done)
     } catch (e) {
       setFail({ error: e instanceof Error ? e.message : String(e), ref })
     } finally {
@@ -163,7 +163,7 @@ export function Skills() {
     if (!r) return
     setData(r.list)
     setAdding(false)
-    setPluginNote(action === 'install' ? t('Instalado. Las sesiones nuevas de Claude Code ya lo cargan.') : t('Hecho.'))
+    setPluginNote(action === 'install' ? t('Installed. New Claude Code sessions already load it.') : t('Done.'))
     loadCatalog()
   }
   const inTerminal = async (req: PluginRequest): Promise<void> => {
@@ -262,7 +262,7 @@ export function Skills() {
   )
   const newButton = (origin: 'personal' | 'project') => (
     <button type="button" className="btn" onClick={() => guard(() => { setOpen(null); setCreating(origin) })}>
-      {t('Nueva skill')}
+      {t('New skill')}
     </button>
   )
   const of = (origin: SkillItem['origin']): SkillItem[] => shown.filter((i) => i.origin === origin)
@@ -275,20 +275,20 @@ export function Skills() {
         {t('Skills')}
         <span className="n">{items.length}</span>
       </h1>
-      <p className="lead">{t('Las skills y los comandos / que tu Claude Code tiene a mano en cada trabajo. Los lee de sus carpetas, sin gastar cuota.')}</p>
+      <p className="lead">{t('The skills and / commands your Claude Code has at hand in every workspace. Read from their folders, without spending quota.')}</p>
       {data?.warnings.map((w) => (
         <p key={w} className="notice" role="note">
           {w}
         </p>
       ))}
-      {repos?.length === 0 && <p className="notice">{t('Añade un repo en Ajustes → Repos para ver sus skills.')}</p>}
-      {error !== null && <Problem what={t('No he podido leer tus skills.')} cant={t('No puedo enseñarte qué tiene a mano tu Claude Code.')} fix={t('Volver a intentar')} onFix={load} detail={error} />}
+      {repos?.length === 0 && <p className="notice">{t('Add a repo in Settings → Repos to see its skills.')}</p>}
+      {error !== null && <Problem what={t('I could not read your skills.')} cant={t('I cannot show you what your Claude Code has at hand.')} fix={t('Try again')} onFix={load} detail={error} />}
 
       {fail && (
         <Problem
-          what={t('No he podido cambiar tus ajustes de Claude Code.')}
-          cant={t('El cambio no se ha guardado: sigue como estaba.')}
-          fix={t('Ver en Finder')}
+          what={t('I could not change your Claude Code settings.')}
+          cant={t('The change was not saved: it stays as it was.')}
+          fix={t('Show in Finder@@view')}
           onFix={() => void window.atril.skills.reveal(fail.ref)}
           onClose={() => setFail(null)}
           detail={fail.error}
@@ -296,13 +296,13 @@ export function Skills() {
       )}
 
       <div className="sk-bar">
-        <input ref={search} type="search" placeholder={t('Buscar por nombre o descripción…')} aria-label={t('Buscar por nombre o descripción…')} value={q} onChange={(e) => setQ(e.target.value)} />
-        <div className="seg" role="group" aria-label={t('Filtro')}>
+        <input ref={search} type="search" placeholder={t('Search by name or description…')} aria-label={t('Search by name or description…')} value={q} onChange={(e) => setQ(e.target.value)} />
+        <div className="seg" role="group" aria-label={t('Filter')}>
           {(
             [
-              ['all', t('Todas')],
-              ['on', t('Activas')],
-              ['off', t('Apagadas')]
+              ['all', t('All@@fem')],
+              ['on', t('On@@femPl')],
+              ['off', t('Off@@pl')]
             ] as const
           ).map(([f, label]) => (
             <button key={f} type="button" aria-pressed={filter === f} onClick={() => setFilter(f)}>
@@ -311,7 +311,7 @@ export function Skills() {
           ))}
         </div>
         {repos && repos.length > 0 && (
-          <select aria-label={t('Repo del proyecto')} value={repoName} disabled={busy || saving || pluginBusy} onChange={(e) => {
+          <select aria-label={t('Project repo')} value={repoName} disabled={busy || saving || pluginBusy} onChange={(e) => {
               const v = e.target.value
               guard(() => {
                 setOpen(null)
@@ -326,24 +326,24 @@ export function Skills() {
       </div>
 
       <div className="sksum">
-        <div className="skct" role="group" aria-label={t('Activas')}>
+        <div className="skct" role="group" aria-label={t('On@@femPl')}>
           <b>{active.length}</b>
-          <span>{t('Activas')}</span>
-          <small>{t('~{n} tokens de contexto', { n: tokens })}</small>
+          <span>{t('On@@femPl')}</span>
+          <small>{t('~{n} context tokens', { n: tokens })}</small>
         </div>
-        <div className="skct" role="group" aria-label={t('Apagadas')}>
+        <div className="skct" role="group" aria-label={t('Off@@pl')}>
           <b>{items.filter(isOff).length}</b>
-          <span>{t('Apagadas')}</span>
+          <span>{t('Off@@pl')}</span>
         </div>
-        <div className="skct" role="group" aria-label={t('Choques')}>
+        <div className="skct" role="group" aria-label={t('Clashes')}>
           <b>{items.filter((i) => i.shadowedBy).length}</b>
-          <span>{t('Choques')}</span>
+          <span>{t('Clashes')}</span>
         </div>
         {usage && (
-          <button type="button" className="skct" aria-label={t('Sin usar en 30 días')} aria-pressed={filter === 'idle'} onClick={() => setFilter((f) => (f === 'idle' ? 'all' : 'idle'))}>
+          <button type="button" className="skct" aria-label={t('Unused in 30 days')} aria-pressed={filter === 'idle'} onClick={() => setFilter((f) => (f === 'idle' ? 'all' : 'idle'))}>
             <b>{idle}</b>
-            <span>{t('Sin usar en 30 días')}</span>
-            <small>{idle === 0 ? t('todas en uso') : t('candidatas a apagar')}</small>
+            <span>{t('Unused in 30 days')}</span>
+            <small>{idle === 0 ? t('all in use') : t('candidates to turn off')}</small>
           </button>
         )}
       </div>
@@ -352,7 +352,7 @@ export function Skills() {
         <div className="empty" role="status">
           {q.trim() ? (
             <>
-              {t('Nada se llama «{q}».', { q: q.trim() })}{' '}
+              {t('Nothing is called “{q}”.', { q: q.trim() })}{' '}
               <button
                 type="button"
                 className="btn"
@@ -361,15 +361,15 @@ export function Skills() {
                   search.current?.focus()
                 }}
               >
-                {t('Borrar la búsqueda')}
+                {t('Clear the search')}
               </button>
             </>
           ) : filter === 'on' ? (
-            t('No tienes ninguna activa.')
+            t('You have none on.')
           ) : filter === 'idle' ? (
-            t('No tienes ninguna sin usar.')
+            t('You have none unused.')
           ) : (
-            t('No tienes ninguna apagada.')
+            t('You have none off.')
           )}
         </div>
       ) : (
@@ -381,17 +381,17 @@ export function Skills() {
               {newButton('personal')}
             </details>
             {repos && repos.length > 0 && (
-              <details className="skg" open aria-label={t('Proyecto ({repo})', { repo: repoName })}>
-                <summary>{t('Proyecto ({repo})', { repo: repoName })}</summary>
-                {projectTotal === 0 ? <p className="empty">{t('{repo} aún no tiene skills propias.', { repo: repoName })}</p> : cardsOf(of('project'), 'j')}
+              <details className="skg" open aria-label={t('Project ({repo})', { repo: repoName })}>
+                <summary>{t('Project ({repo})', { repo: repoName })}</summary>
+                {projectTotal === 0 ? <p className="empty">{t('{repo} has no skills of its own yet.', { repo: repoName })}</p> : cardsOf(of('project'), 'j')}
                 {newButton('project')}
               </details>
             )}
             {repos === null && (
-              <details className="skg" open aria-label={t('Proyecto')}>
-                <summary>{t('Proyecto')}</summary>
+              <details className="skg" open aria-label={t('Project')}>
+                <summary>{t('Project')}</summary>
                 <p className="notice" role="note">
-                  {t('No he podido leer tu lista de repos: no salen las skills del proyecto.')}
+                  {t('I could not read your repo list: the project skills are not shown.')}
                 </p>
               </details>
             )}
@@ -404,15 +404,15 @@ export function Skills() {
               )}
               {pluginFail && (
                 <PluginProblem
-                  what={t('No he podido completar la operación del plugin.')}
+                  what={t('I could not complete the plugin operation.')}
                   failure={pluginFail}
-                  fix={pluginFail.req ? t('Hacerlo en Terminal') : undefined}
+                  fix={pluginFail.req ? t('Do it in Terminal') : undefined}
                   onFix={() => pluginFail.req && void inTerminal(pluginFail.req)}
                   onClose={() => setPluginFail(null)}
                 />
               )}
               <button type="button" className="btn" disabled={pluginBusy} onClick={() => setAdding(true)}>
-                {t('Añadir plugin')}
+                {t('Add plugin')}
               </button>
               {plugins.map((p) => {
                 const all = items.filter((i) => i.plugin === p)
@@ -424,21 +424,21 @@ export function Skills() {
                 return (
                   <div key={p} className="skp" role="group" aria-label={p}>
                     <p className="skp-bar">
-                      <b>{p.split('@')[0]}</b> {t('{plugin} · {n} skills · {state}', { plugin: p, n: all.length, state: on ? t('activo') : t('apagado entero') })}
-                      <button type="button" role="switch" className="sw" aria-checked={on} aria-label={t('Activo')} aria-busy={busy} disabled={busy || pluginBusy || lock !== undefined} onClick={() => setPlugin(p, !on, all[0]?.writesTo)} />
-                      {lock && <span className="where">{t('Lo fija {file}', { file: lock })}</span>}
+                      <b>{p.split('@')[0]}</b> {t('{plugin} · {n} skills · {state}', { plugin: p, n: all.length, state: on ? t('on') : t('off entirely') })}
+                      <button type="button" role="switch" className="sw" aria-checked={on} aria-label={t('On')} aria-busy={busy} disabled={busy || pluginBusy || lock !== undefined} onClick={() => setPlugin(p, !on, all[0]?.writesTo)} />
+                      {lock && <span className="where">{t('Fixed by {file}', { file: lock })}</span>}
                     {installed !== null &&
                       (scope ? (
                         <>
                           <button type="button" className="btn" disabled={pluginBusy} onClick={() => void runPlugin('update', p, scope)}>
-                            {t('Actualizar')}
+                            {t('Refresh')}
                           </button>
                           <button type="button" className="btn" disabled={pluginBusy} onClick={() => setRemoving({ plugin: p, scope })}>
-                            {t('Quitar')}
+                            {t('Remove')}
                           </button>
                         </>
                       ) : (
-                        <span className="where">{t('Instalado en otro ámbito: se gestiona fuera de Atril.')}</span>
+                        <span className="where">{t('Installed in another scope: managed outside Atril.')}</span>
                       ))}
                     </p>
                     {cardsOf(vis, `g-${p}`)}
@@ -448,7 +448,7 @@ export function Skills() {
             </details>
             <details className="skg" open={narrowed} aria-label={t('Atril')}>
               <summary>
-                {t('Atril')} <span className="where">{t('solo lectura')}</span>
+                {t('Atril')} <span className="where">{t('read-only')}</span>
               </summary>
               {cardsOf(of('atril'), 'a')}
             </details>

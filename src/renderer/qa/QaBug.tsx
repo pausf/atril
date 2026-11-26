@@ -29,7 +29,7 @@ export function QaBug({ workspaceId, report, criterion, entry, onClose }: { work
   const send = async (to: 'jira' | 'agent'): Promise<void> => {
     setBusy(true)
     setError(null)
-    const body = `${t('Criterio')}: ${crit}\n\n${t('Pasos')}:\n${steps}\n\n${t('Entorno')}: ${env}`
+    const body = `${t('Criterion')}: ${crit}\n\n${t('Steps')}:\n${steps}\n\n${t('Environment')}: ${env}`
     const r = await window.atril.qa.bug(workspaceId, { to, title, body })
     setBusy(false)
     if ('error' in r) setError(r.error)
@@ -42,26 +42,26 @@ export function QaBug({ workspaceId, report, criterion, entry, onClose }: { work
     <div className="modal" onKeyDown={(e) => void keys(e)}>
       <div className="dlg qa-dlg" role="dialog" aria-modal="true" aria-labelledby="qa-bug-title" ref={dialog} tabIndex={-1}>
         <div className="qa-dhead">
-          <h3 id="qa-bug-title">{t('Marcar como bug')}</h3>
+          <h3 id="qa-bug-title">{t('Mark as bug')}</h3>
           <button type="button" className="btn" onClick={onClose}>
-            {t('Cerrar')}
+            {t('Close')}
           </button>
         </div>
-        <p className="qa-sub">{t('Prellenado con lo que vio el agente.')}</p>
+        <p className="qa-sub">{t('Prefilled with what the agent saw.')}</p>
         <div className="f stack">
-          <label htmlFor="qa-b-title">{t('Título')}</label>
+          <label htmlFor="qa-b-title">{t('Title')}</label>
           <input id="qa-b-title" value={title} spellCheck={false} onChange={(e) => setTitle(e.target.value)} />
         </div>
         <div className="f stack">
-          <label htmlFor="qa-b-steps">{t('Pasos')}</label>
+          <label htmlFor="qa-b-steps">{t('Steps')}</label>
           <textarea id="qa-b-steps" rows={4} value={steps} onChange={(e) => setSteps(e.target.value)} />
         </div>
         <div className="f stack">
-          <label htmlFor="qa-b-env">{t('Entorno')}</label>
+          <label htmlFor="qa-b-env">{t('Environment')}</label>
           <input id="qa-b-env" value={env} spellCheck={false} onChange={(e) => setEnv(e.target.value)} />
         </div>
         <div className="f stack">
-          <label htmlFor="qa-b-crit">{t('Criterio')}</label>
+          <label htmlFor="qa-b-crit">{t('Criterion')}</label>
           <textarea id="qa-b-crit" rows={2} value={crit} onChange={(e) => setCrit(e.target.value)} />
         </div>
         {error && (
@@ -71,19 +71,19 @@ export function QaBug({ workspaceId, report, criterion, entry, onClose }: { work
         )}
         {sent && (
           <div className="saved" role="status">
-            {done.jira !== null ? t('Creada {key}', { key: done.jira }) : t('Enviado al agente')}
+            {done.jira !== null ? t('Created {key}', { key: done.jira }) : t('Sent to the agent')}
           </div>
         )}
         <div className="btns">
           <button type="button" className="btn" onClick={onClose}>
-            {t('Cancelar')}
+            {t('Cancel')}
           </button>
           <button type="button" className="btn" disabled={busy || done.agent || title.trim() === ''} onClick={() => void send('agent')}>
-            {t('Pasar al agente del trabajo')}
+            {t("Pass to the work's agent")}
           </button>
           {board && (
             <button type="button" className="btn p" disabled={busy || done.jira !== null || title.trim() === ''} onClick={() => void send('jira')}>
-              {t('Crear en Jira')}
+              {t('Create in Jira')}
             </button>
           )}
         </div>

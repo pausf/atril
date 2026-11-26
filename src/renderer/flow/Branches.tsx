@@ -39,7 +39,7 @@ export function Branches({ view }: { view: SubView }) {
     void window.atril.subagents.log(view.workspaceId, id).then((log) => {
       if (asked.current !== n) return
       const line = lastLine(log)
-      setPeek(line ? { id, text: line === 'thinking' ? t('Pensando…') : line } : null)
+      setPeek(line ? { id, text: line === 'thinking' ? t('Thinking…') : line } : null)
     })
   }
   const leave = (): void => {
@@ -49,7 +49,7 @@ export function Branches({ view }: { view: SubView }) {
   }
 
   return (
-    <ul className="sbr-list" aria-label={t('Subagentes')} data-tour="flow-subagents">
+    <ul className="sbr-list" aria-label={t('Subagents')} data-tour="flow-subagents">
       {[...view.entries]
         .sort((a, b) => b.startedAt - a.startedAt)
         .map((e) => {

@@ -472,3 +472,9 @@ A decision log line said a test covered the catalog read during an action; none 
 ## 2026-11-26 · crash-reports · 6→7
 - The work reviewer fed the scrubber real-looking input and found what the per-pattern test missed: quoted text survived in the stack (V8 repeats the message on its first line), bare hostnames (`jira.acme.corp`) and paths with spaces leaked, short `password=` values stayed, a damaged `crash-sent.json` silently stopped all sending, and the e-mail regex took ~300 ms on 16 KB. Rule: a scrubber is proven by adversarial inputs and a timing case, not by one example per pattern; anything whose output leaves the machine is cut before it is scanned.
 - Pau changed the delivery three times (PR from a branch → fork → issue turned into a PR by a repo workflow) once the repo was going public. Rule: settle visibility and who has write access before designing anything that writes to a forge.
+
+## 2026-11-26 · english-source · 6
+A «forced red» went by green because `sd` with `^` matched nothing and the file never changed. Check the diff of the sabotage (`git diff --stat`) before reading the test's verdict; a red you did not see happen is not a red.
+
+## 2026-11-26 · english-source · 6
+Three tests read Spanish through an identity `t` (`(es) => es`) and a production export `STEPS` did the same. Flipping the keys broke them, not the catalog. When the source language of a text changes, grep for identity `t` helpers, not only for `t('…')` calls.

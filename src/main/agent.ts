@@ -32,7 +32,7 @@ export const EFFORTS: readonly Effort[] = ['low', 'medium', 'high', 'xhigh']
 
 /** W137: null for no effort, 'default' or a level from the list; the refusal otherwise. */
 export const effortError = (effort: unknown): string | null =>
-  effort === undefined || effort === 'default' || EFFORTS.includes(effort as Effort) ? null : t('«{effort}» no es un esfuerzo disponible', { effort: String(effort) })
+  effort === undefined || effort === 'default' || EFFORTS.includes(effort as Effort) ? null : t('«{effort}» is not an available effort', { effort: String(effort) })
 
 /**
  * `prompt` goes last: claude takes it as its positional argument. 'default' adds no flag.

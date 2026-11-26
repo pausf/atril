@@ -9,13 +9,13 @@ export function Language() {
   const choices: ReadonlyArray<{ value: LangChoice; label: string }> = [
     { value: 'es', label: 'Español' }, // i18n-ignore
     { value: 'en', label: 'English' },
-    { value: 'system', label: t('Sistema') }
+    { value: 'system', label: t('System') }
   ]
   return (
     <section className="scard" aria-labelledby="language-h">
-      <h3 id="language-h">{t('Idioma')}</h3>
-      <p className="hint2">{t('Sistema sigue el idioma de tu Mac.')}</p>
-      <div className="seg" role="group" aria-label={t('Idioma')}>
+      <h3 id="language-h">{t('Language')}</h3>
+      <p className="hint2">{t("System follows your Mac's language.")}</p>
+      <div className="seg" role="group" aria-label={t('Language')}>
         {choices.map((c) => (
           <button key={c.value} type="button" aria-pressed={current === c.value} onClick={() => setLanguage(c.value)}>
             {c.label}

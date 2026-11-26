@@ -499,7 +499,7 @@ keyboard and readable state (`aria-pressed`).
 **In:** the 24 steps, their texts and shortcuts, the missing `data-tour`s, the welcome.
 **Out:** changing how the tutorial works (focus, positions, keyboard); videos or animations; a tutorial
 per screen.
-**Never scoped out:** Spain Spanish and its English in `i18n-en.ts`; keyboard-operable (W25).
+**Never scoped out:** English as the key and its Spain-Spanish entry in `i18n-es.ts`; keyboard-operable (W25).
 
 ### Quick replies (quick-replies, 10 nov 2026)
 
@@ -783,14 +783,14 @@ Never outside: validating `.atril/qa.json` (the repo writes it, not Atril); the 
 - The format of the transcript and the meta is internal to Claude Code, undocumented: every field is
   checked by type and what does not fit is skipped, without breaking.
 - No new dependencies; the modal reuses `useModalKeys` and the `modal`/`dlg` classes.
-- Texts through `t()` with their English in `src/preload/i18n-en.ts`; colours only as tokens.
+- Texts through `t()`, the key being the English text, with their Spanish in `src/preload/i18n-es.ts`; colours only as tokens.
 - The hook still reads the payload once and takes from it only the listed fields.
 
 ### Install from the doctor (add-doctor-install-terminal, 10 nov 2026)
 
 - No new dependencies; `osascript` ships with macOS.
 - The command goes inside an AppleScript string: quotes and backslashes escaped.
-- Texts through `t()` with their English in `src/preload/i18n-en.ts`.
+- Texts through `t()`, the key being the English text, with their Spanish in `src/preload/i18n-es.ts`.
 
 ### Grafito palette (adopt-grafito, 10 nov 2026)
 
@@ -806,7 +806,7 @@ Texts through `t()`.
 ### QA: where it is tested (qa-targets, 11 nov 2026)
 
 - The platforms are exactly `chrome | safari | android | ios`. W83 still classifies a folder; this calls it for each folder.
-- Texts through `t()` with their entry in `i18n-en.ts`; colours only tokens.
+- Texts through `t()`, the key being the English text, with their Spanish entry in `i18n-es.ts`; colours only tokens.
 - `QaResult` of `retest`/`stop` does not change; that of `launch` adds `problem`.
 - Tests with a temporary `ATRIL_HOME` and `Runner` doubles; never a real emulator in the tests.
 
@@ -904,7 +904,7 @@ Texts through `t()`.
 ### Read-only terminal (terminal-read-only, 14 nov 2026)
 
 - No change in `resources/libretto/**`.
-- Texts through `t()`/`useT()` with their entry in `src/preload/i18n-en.ts`; colours only as tokens.
+- Texts through `t()`/`useT()`, the key being the English text, with their Spanish entry in `src/preload/i18n-es.ts`; colours only as tokens.
 - Today's states without `kind` still hold (read as today, by prefix).
 - After `notify-core`: this change is built on its branch, because both touch the hook and `status.ts`.
 

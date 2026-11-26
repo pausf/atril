@@ -7,7 +7,7 @@ function Fallback({ detail, onReload }: { detail: string; onReload: () => void }
   const t = useT()
   return (
     <main className="ajustes">
-      <Problem what={t('Algo ha fallado en esta pantalla.')} fix={t('Volver a cargar')} onFix={onReload} detail={detail} />
+      <Problem what={t('Something failed on this screen.')} fix={t('Reload')} onFix={onReload} detail={detail} />
     </main>
   )
 }

@@ -26,28 +26,28 @@ export interface MenuDeps {
 export function menuTemplate(d: MenuDeps): MenuItemConstructorOptions[] {
   return [
     { role: 'appMenu' },
-    { label: t('Edición'), submenu: [{ role: 'undo' }, { role: 'redo' }, { type: 'separator' }, { role: 'cut' }, { role: 'copy' }, { role: 'paste' }, { role: 'selectAll' }] },
+    { label: t('Edit'), submenu: [{ role: 'undo' }, { role: 'redo' }, { type: 'separator' }, { role: 'cut' }, { role: 'copy' }, { role: 'paste' }, { role: 'selectAll' }] },
     {
-      label: t('Trabajo'),
+      label: t('Work'),
       submenu: [
         {
-          label: d.selectedState === 'paused' ? t('Reanudar') : t('Pausar'),
+          label: d.selectedState === 'paused' ? t('Resume') : t('Pause'),
           accelerator: 'CmdOrCtrl+Shift+P',
           enabled: d.selectedState === 'paused' || d.selectedState === 'working',
           click: () => d.togglePause?.()
         },
-        { label: t('Siguiente'), accelerator: 'CmdOrCtrl+Return', enabled: d.nextEnabled, click: () => d.send({ kind: 'next' }) },
-        { label: t('Modo foco'), accelerator: 'CmdOrCtrl+Shift+F', type: 'checkbox', checked: d.focusOn, enabled: d.focusOn || d.focusAvailable, click: () => d.send({ kind: 'focusMode' }) },
-        { label: t('Ampliar código'), accelerator: 'CmdOrCtrl+Shift+E', enabled: d.bigAvailable === true, click: () => d.send({ kind: 'bigCode' }) },
-        { label: t('Todos los agentes'), accelerator: 'CmdOrCtrl+Shift+A', enabled: d.overviewAvailable, click: () => d.send({ kind: 'overview' }) },
-        { label: t('Volver'), accelerator: 'CmdOrCtrl+Alt+Left', enabled: d.focusOn, click: () => d.send({ kind: 'back' }) },
-        { label: t('Buscar…'), accelerator: 'CmdOrCtrl+K', click: () => d.send({ kind: 'palette' }) },
+        { label: t('Next'), accelerator: 'CmdOrCtrl+Return', enabled: d.nextEnabled, click: () => d.send({ kind: 'next' }) },
+        { label: t('Focus mode'), accelerator: 'CmdOrCtrl+Shift+F', type: 'checkbox', checked: d.focusOn, enabled: d.focusOn || d.focusAvailable, click: () => d.send({ kind: 'focusMode' }) },
+        { label: t('Enlarge code'), accelerator: 'CmdOrCtrl+Shift+E', enabled: d.bigAvailable === true, click: () => d.send({ kind: 'bigCode' }) },
+        { label: t('All agents'), accelerator: 'CmdOrCtrl+Shift+A', enabled: d.overviewAvailable, click: () => d.send({ kind: 'overview' }) },
+        { label: t('Back'), accelerator: 'CmdOrCtrl+Alt+Left', enabled: d.focusOn, click: () => d.send({ kind: 'back' }) },
+        { label: t('Search…'), accelerator: 'CmdOrCtrl+K', click: () => d.send({ kind: 'palette' }) },
         { type: 'separator' },
-        { label: t('Ir a la barra lateral'), accelerator: 'CmdOrCtrl+L', click: () => d.send({ kind: 'focus', target: 'sidebar' }) },
-        { label: t('Ir al panel de Libretto'), accelerator: 'CmdOrCtrl+J', click: () => d.send({ kind: 'focus', target: 'flow' }) },
+        { label: t('Go to the sidebar'), accelerator: 'CmdOrCtrl+L', click: () => d.send({ kind: 'focus', target: 'sidebar' }) },
+        { label: t('Go to the Libretto panel'), accelerator: 'CmdOrCtrl+J', click: () => d.send({ kind: 'focus', target: 'flow' }) },
         { type: 'separator' },
         ...Array.from({ length: 9 }, (_, i): MenuItemConstructorOptions => ({
-          label: t('Trabajo {n}', { n: i + 1 }),
+          label: t('Work {n}', { n: i + 1 }),
           accelerator: `CmdOrCtrl+${i + 1}`,
           enabled: i < d.count,
           click: () => d.send({ kind: 'select', index: i })

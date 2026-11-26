@@ -27,7 +27,7 @@ function short(t: T, seconds: number): string {
 
 const STEPS: (keyof HistorySteps)[] = ['spec', 'plan', 'construir', 'cierre']
 const stepLabel = (t: T, k: keyof HistorySteps): string =>
-  ({ spec: t('Spec'), plan: t('Plan'), construir: t('Construir'), cierre: t('Cierre') })[k]
+  ({ spec: t('Spec'), plan: t('Plan'), construir: t('Build'), cierre: t('Wrap-up') })[k]
 
 function median(values: number[]): number {
   const v = [...values].sort((a, b) => a - b)
@@ -54,7 +54,7 @@ const day = (ms: number): number => new Date(ms).setHours(0, 0, 0, 0)
 function age(t: T, closedAt: number): string {
   // Round, not floor: a day with a clock change is 23 or 25 hours long.
   const n = Math.round((day(Date.now()) - day(closedAt * 1000)) / 86_400_000)
-  return n <= 0 ? t('hoy') : t('hace {n} d', { n })
+  return n <= 0 ? t('today') : t('{n} d ago', { n })
 }
 
 /** W96: what was removed from Trabajo, newest first; absent until there is something. */
@@ -80,14 +80,14 @@ export function History() {
 
   const stages = stagesOf(t)
   const stageLabel = (e: HistoryEntry): string | undefined =>
-    e.stage === 'sin-libretto' ? t('sin Libretto') : stages.find((s) => s.name === e.stage)?.label
+    e.stage === 'sin-libretto' ? t('no Libretto') : stages.find((s) => s.name === e.stage)?.label
   const shown = entries.slice(0, SHOWN)
   const top = slowest(shown)
   return (
-    <FoldSection id="history" title={t('Terminados')} count={entries.length} defaultFolded>
+    <FoldSection id="history" title={t('Finished')} count={entries.length} defaultFolded>
       {top && (
         <p className="hist-slowest">
-          {t('Donde más tiempo se va: {step} (mediana {d})', { step: stepLabel(t, top.step), d: short(t, top.median) })}
+          {t('Where most time goes: {step} (median {d})', { step: stepLabel(t, top.step), d: short(t, top.median) })}
         </p>
       )}
       <ul className="hist-list">
@@ -98,7 +98,7 @@ export function History() {
               {[
                 e.repoId,
                 stageLabel(e),
-                e.createdAt !== undefined && t('duró {d}', { d: lasted(t, e.closedAt - e.createdAt) }),
+                e.createdAt !== undefined && t('took {d}', { d: lasted(t, e.closedAt - e.createdAt) }),
                 age(t, e.closedAt)
               ]
                 .filter(Boolean)

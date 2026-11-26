@@ -68,7 +68,7 @@ function Shell() {
       .doctor()
       .then(setReport)
       .catch((err: unknown) =>
-        setReport([{ tool: 'doctor', ok: false, problem: t('no se pudo comprobar: {detail}', { detail: String(err) }), install: '' }])
+        setReport([{ tool: 'doctor', ok: false, problem: t('could not check: {detail}', { detail: String(err) }), install: '' }])
       )
   }
   useEffect(check, [])
@@ -288,7 +288,7 @@ function Shell() {
       return null
     }
     if (to.kind !== 'mr') {
-      if (!workspaces.some((w) => w.id === to.id)) return t('Ese trabajo ya no está')
+      if (!workspaces.some((w) => w.id === to.id)) return t('That workspace is gone')
       if (to.kind === 'qa') {
         setSelected(to.id)
         setScreen('qa')
@@ -299,7 +299,7 @@ function Shell() {
       return null
     }
     const r = mrs.result
-    if (!r || ![...r.mine, ...r.review, ...r.following].some((m) => m.url === to.url)) return t('Esta MR ya no está en la lista')
+    if (!r || ![...r.mine, ...r.review, ...r.following].some((m) => m.url === to.url)) return t('This MR is no longer in the list')
     setOpenUrl(to.url)
     setScreen('mr')
     return null
@@ -373,7 +373,7 @@ function Shell() {
       if (r.kind === 'error') return setStartError(r.error)
       await started(r.workspace)
       void inbox.refresh()
-      if (r.transitionError) setStartError(t('El trabajo está en marcha, pero {detail}', { detail: `${r.transitionError.charAt(0).toLowerCase()}${r.transitionError.slice(1)}` }))
+      if (r.transitionError) setStartError(t('It is running, but {detail}', { detail: `${r.transitionError.charAt(0).toLowerCase()}${r.transitionError.slice(1)}` }))
       else openWorkspace(r.workspace.id)
     } catch (e) {
       setStartError(String(e))

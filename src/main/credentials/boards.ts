@@ -29,6 +29,6 @@ export async function searchBoards(creds: JiraCreds, query: string, fetchImpl: t
     )
   } catch (err) {
     // Network errors can echo the request; never pass err.message through.
-    return { error: err instanceof Error && err.name === 'TimeoutError' ? t('Jira no ha respondido en 10 s.') : t('No se ha podido conectar con Jira.') }
+    return { error: err instanceof Error && err.name === 'TimeoutError' ? t('Jira did not answer in 10 s.') : t('Could not connect to Jira.') }
   }
 }

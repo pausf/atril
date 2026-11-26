@@ -12,7 +12,7 @@ interface Props {
 
 export function Palette({ items, onClose, initialQuery = '' }: Props) {
   const t = useT()
-  const kinds: Record<ItemKind, string> = { screen: t('Pantalla'), action: t('Acción'), workspace: t('Trabajo'), mr: t('MR'), task: t('Tarea') }
+  const kinds: Record<ItemKind, string> = { screen: t('Screen'), action: t('Action'), workspace: t('Work'), mr: t('MR'), task: t('Task') }
   const dialog = useRef<HTMLDivElement>(null)
   const input = useRef<HTMLInputElement>(null)
   const listRef = useRef<HTMLDivElement>(null)
@@ -52,17 +52,17 @@ export function Palette({ items, onClose, initialQuery = '' }: Props) {
   const active = current ? optionId(current) : undefined
   return (
     <div className="modal palette-scrim" onKeyDown={onKeyDown} onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="dlg palette" role="dialog" aria-modal="true" aria-label={t('Buscar')} ref={dialog} tabIndex={-1}>
+      <div className="dlg palette" role="dialog" aria-modal="true" aria-label={t('Search')} ref={dialog} tabIndex={-1}>
         <input
           ref={input}
           type="text"
           role="combobox"
-          aria-label={t('Buscar en Atril')}
+          aria-label={t('Search Atril')}
           aria-controls="pl-list"
           aria-expanded="true"
           aria-autocomplete="list"
           aria-activedescendant={active}
-          placeholder={t('Pantallas, trabajos, MR, tareas o acciones')}
+          placeholder={t('Screens, workspaces, MRs, tasks or actions')}
           value={query}
           spellCheck={false}
           onChange={(e) => {
@@ -70,7 +70,7 @@ export function Palette({ items, onClose, initialQuery = '' }: Props) {
             setAt(0)
           }}
         />
-        <div id="pl-list" className="pl-list" role="listbox" aria-label={t('Resultados')} aria-activedescendant={active} ref={listRef}>
+        <div id="pl-list" className="pl-list" role="listbox" aria-label={t('Results')} aria-activedescendant={active} ref={listRef}>
           {shown.map((i) => (
             <div
               key={i.id}
@@ -86,7 +86,7 @@ export function Palette({ items, onClose, initialQuery = '' }: Props) {
             </div>
           ))}
         </div>
-        {shown.length === 0 && <p className="pl-empty">{t('Nada coincide con «{query}»', { query })}</p>}
+        {shown.length === 0 && <p className="pl-empty">{t('Nothing matches “{query}”', { query })}</p>}
       </div>
     </div>
   )

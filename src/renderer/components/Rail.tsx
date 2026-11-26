@@ -7,21 +7,21 @@ export type Screen = 'work' | 'tasks' | 'mr' | 'libretto' | 'qa' | 'avisos' | 's
 export function Rail({ screen, onChange, reviews = 0, unread = 0 }: { screen: Screen; onChange: (s: Screen) => void; reviews?: number; unread?: number }) {
   const t = useT()
   const ITEMS: { id: Screen; icon: IconName; label: string }[] = [
-    { id: 'work', icon: 'work', label: t('Trabajo') },
-    { id: 'tasks', icon: 'tasks', label: t('Tareas') },
+    { id: 'work', icon: 'work', label: t('Work') },
+    { id: 'tasks', icon: 'tasks', label: t('Tasks') },
     { id: 'mr', icon: 'mr', label: t('MR') },
     { id: 'libretto', icon: 'libretto', label: t('Libretto') },
     { id: 'qa', icon: 'qa', label: t('QA') },
-    { id: 'avisos', icon: 'avisos', label: t('Avisos') },
+    { id: 'avisos', icon: 'avisos', label: t('Notices') },
     { id: 'skills', icon: 'skills', label: t('Skills') },
-    { id: 'settings', icon: 'settings', label: t('Ajustes') }
+    { id: 'settings', icon: 'settings', label: t('Settings') }
   ]
   const badge: Partial<Record<Screen, { n: number; name: string }>> = {
-    mr: { n: reviews, name: t('MR: {n} por revisar', { n: reviews }) },
-    avisos: { n: unread, name: t('Avisos: {n} sin leer', { n: unread }) }
+    mr: { n: reviews, name: t('MR: {n} to review', { n: reviews }) },
+    avisos: { n: unread, name: t('Notices: {n} unread', { n: unread }) }
   }
   return (
-    <nav className="rail" aria-label={t('Pantallas')} data-tour="rail">
+    <nav className="rail" aria-label={t('Screens')} data-tour="rail">
       {ITEMS.map((i) => {
         const b = badge[i.id]
         return (
