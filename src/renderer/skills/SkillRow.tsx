@@ -16,16 +16,14 @@ export const lastUsed = (t: T, use: SkillUse | null): string => {
   return k < 0 ? t('sin usar en 30 días') : k === 0 ? t('usada hoy') : k === 1 ? t('usada hace 1 día') : t('usada hace {n} días', { n: k })
 }
 
-/** One skill or command; activating it opens its detail (K7). */
-export function SkillCard({
+/** One skill or command as one line: only the marks the group and the filter do not already say (K5); activating it opens its detail (K7). */
+export function SkillRow({
   item,
-  repo,
   id,
   use,
   onOpen
 }: {
   item: SkillItem
-  repo: string
   id: string
   use?: SkillUse | null
   onOpen: (el: HTMLButtonElement) => void
@@ -34,24 +32,19 @@ export function SkillCard({
   const name = fullName(item)
   const off = item.state === 'off' || item.enabled === false || item.shadowedBy !== undefined
   return (
-    <li className={`skc${off ? ' off' : ''}`}>
-      <button type="button" className="skc-open" aria-label={name} aria-describedby={id} onClick={(e) => onOpen(e.currentTarget)}>
-        <span className="skc-h">
-          <b>{name}</b>
-          <span id={id} className="skc-chips">
-            <span className="tag">{originLabel(t, item, repo)}</span>
-            {item.kind === 'command' && <span className="tag">{t('comando')}</span>}
-            <span className={`tag st-${item.state}`}>{stateLabel(t, item.state)}</span>
-          </span>
-        </span>
-        <span className="skc-d" title={item.description}>
+    <li className={off ? 'off' : undefined}>
+      <button type="button" className="skr" aria-label={name} aria-describedby={id} onClick={(e) => onOpen(e.currentTarget)}>
+        <b>{name}</b>
+        <span className="skr-d" title={item.description}>
           {item.description ?? ''}
         </span>
-        <span className="skc-m">
-          {item.shadowedBy && <span className="skmark lose">{item.shadowedBy === 'personal' ? t('No se carga: gana la personal') : t('No se carga: gana la skill')}</span>}
-          {item.disableModelInvocation && <span className="skmark">{t('Claude no la usa sola')}</span>}
-          {item.broken && <span className="skmark lose">{t('Cabecera ilegible')}</span>}
-          {use !== undefined && !item.shadowedBy && <span className="skmark">{lastUsed(t, use)}</span>}
+        <span id={id} className="skr-m">
+          {item.kind === 'command' && <span className="tag">{t('comando')}</span>}
+          {item.state !== 'on' && <span className="tag">{stateLabel(t, item.state)}</span>}
+          {item.shadowedBy && <span className="tag lose">{item.shadowedBy === 'personal' ? t('No se carga: gana la personal') : t('No se carga: gana la skill')}</span>}
+          {item.disableModelInvocation && <span className="tag">{t('Claude no la usa sola')}</span>}
+          {item.broken && <span className="tag lose">{t('Cabecera ilegible')}</span>}
+          {use !== undefined && !item.shadowedBy && <span className="skr-u">{lastUsed(t, use)}</span>}
         </span>
       </button>
     </li>
