@@ -1,6 +1,6 @@
 # Workspaces
 
-Governs: src/main/** src/preload/** src/renderer/** resources/** electron-builder.config.cjs build/** eslint.config.mjs .githooks/** !src/main/jira/** !src/renderer/inbox/** !src/main/flow/** !src/renderer/flow/** !src/main/credentials/** !src/renderer/settings/** !src/main/forge/mrs.ts !src/main/forge/page.ts !src/main/forge/merge.ts !src/renderer/mr/** !src/main/forge/scores.ts !src/main/forge/threads.ts !src/main/forge/lenses.ts !src/main/forge/openmr.ts !src/main/forge/linecomments.ts !src/main/avisos.ts !src/renderer/avisos/** !src/main/skills/** !src/renderer/skills/** !src/main/crash/** !src/renderer/crash/**
+Governs: src/main/** src/preload/** src/renderer/** resources/** electron-builder.config.cjs build/** eslint.config.mjs .githooks/** .claude/** CLAUDE.md !src/main/jira/** !src/renderer/inbox/** !src/main/flow/** !src/renderer/flow/** !src/main/credentials/** !src/renderer/settings/** !src/main/forge/mrs.ts !src/main/forge/page.ts !src/main/forge/merge.ts !src/renderer/mr/** !src/main/forge/scores.ts !src/main/forge/threads.ts !src/main/forge/lenses.ts !src/main/forge/openmr.ts !src/main/forge/linecomments.ts !src/main/avisos.ts !src/renderer/avisos/** !src/main/skills/** !src/renderer/skills/** !src/main/crash/** !src/renderer/crash/**
 
 ## Vocabulary
 
@@ -346,6 +346,12 @@ texts are under «Pasos» below. Those with an on-screen element highlight it; t
 ### Correction ladder (harness-ladder, 20 nov 2026)
 
 Four mistakes that were already paid for can no longer repeat without `pnpm lint` or the commit stopping them, with a message that says what to use instead; the lessons that covered them say which rule replaces them.
+
+### Enforced rules (enforce-written-rules, 26 nov 2026)
+
+- A push whose commits carry a work identifier is refused by `.githooks/pre-push` on the contributor's machine that has the list; on any other machine the hook does nothing.
+- A Claude Code session in this repo cannot run `pnpm build`: the tool call is denied with one line saying why.
+- `CLAUDE.md` is a short brief: what landed last, what comes next, what is untested with real data, and the working rules that no hook enforces; the two enforced rules are one-line pointers.
 
 ## Scope boundaries
 
@@ -694,6 +700,21 @@ Never outside: validating `.atril/qa.json` (the repo writes it, not Atril); the 
 
 **Never scoped out:** the card and the composer are keyboard-operable (numbers 1–4 answer with the card focused, ⌘↩ sends the composer); the agent's text is painted as text, never as HTML; a failure to send follows the errors rule; nothing calls Claude on its own.
 
+### Enforced rules (enforce-written-rules, 26 nov 2026)
+
+**In:** `.githooks/pre-push` (new); `.claude/settings.json` and its guard script under `.claude/` (new); `CLAUDE.md` rewritten in English; `src/main/harness.test.ts` (new cases); `.agents/lessons.md` (one entry naming the written rules these hooks replace); the `Governs:` line of `workspaces` gains `.claude/** CLAUDE.md` (edited in the landing commit, since `land.py` does not touch it).
+
+**Out (named):**
+- Scanning the diff of every commit in a push: only the tip tree of each pushed ref is scanned. Brought back by an identifier that was added and removed inside one push.
+- Other ways to build (`pnpm dist`, `pnpm exec electron-vite build`, `npx …`): the ask names `pnpm build` and `pnpm run build`. Brought back by a session that runs one.
+- Preventing `git push --no-verify`: that is the person's own escape hatch.
+- A CI copy of the scan (the list must not leave the machine).
+- Guard false negatives: `pnpm -C dir build`, `pnpm --filter x build`, `(pnpm build)`, `$(pnpm build)`, `env X=1 pnpm build`, `sh -c "pnpm build"`. Brought back by a session that gets one through; this repo is not a monorepo.
+- Guard false denies: `echo "a; pnpm build"` and a multi-line commit message with a line starting `pnpm build`. Costs one rephrased command.
+- Evals, changes to Libretto skills, any change to `pre-commit`.
+
+**Never scoped out here:** the list is read, never copied, logged or written anywhere by the hook; a scan error refuses the push; the guard's reason is one line a person can act on.
+
 ## Constraints
 
 - Electron (current stable) + TypeScript in strict mode, pnpm, Node 24 (installed:
@@ -912,6 +933,14 @@ Texts through `t()`.
 
 - `pnpm lint` has to come out clean at the end of every box.
 - Each rule carries a `message` saying what to use instead.
+
+### Enforced rules (enforce-written-rules, 26 nov 2026)
+
+- POSIX `sh`, git as the only dependency of the pre-push hook; no dependency added to the repo.
+- The list lives at `$HOME/.config/atril/work-identifiers.txt`. Tests point `HOME` at a temp folder and never read the real list.
+- `pnpm run prepare` already sets `core.hooksPath` to `.githooks` (W213); the new hook must be executable in git.
+- The existing `pre-commit` and its test stay as they are.
+- The guard is a `.sh` file with its JavaScript inline (`node -e`), so `eslint .` has nothing new to lint; `node` is already a requirement of the repo.
 
 ## Prior decisions
 
@@ -2360,6 +2389,44 @@ Texts through `t()`.
 - Q: (builder) What type does `over` have? → A: a loose deep partial: a function leaf accepts any function and each level admits extra members, because the tests keep their stubs as they are (partial answers and `term.input`, which the API no longer has and `components/terminal.test.tsx` stubs to prove nobody calls it) (assumed).
 - Q: (builder) What date do the lessons entries carry? → A: `## 2026-11-20 · harness-ladder · arnés`, the day they are built, not the 19th that the entry above says (assumed).
 
+### Enforced rules (enforce-written-rules, 26 nov 2026)
+
+- (2026-11-26, enforce-written-rules) A rule moves from prose to the highest rung that holds it (harness-ladder, 2026-11-19): the work-identifier scan becomes a pre-push hook, the `pnpm build` ban a PreToolUse guard; CLAUDE.md keeps a one-line pointer to each and never the command.
+- (2026-11-26, enforce-written-rules) The tip tree of each pushed ref is what is scanned, not the history: ceiling named in Scope, upgrade is `git log -p`.
+- (2026-11-26, enforce-written-rules) Fail closed on a failed scan, fail open on an unreadable guard payload.
+- (2026-11-26, enforce-written-rules) The per-branch history in CLAUDE.md goes: git log and `.agents/specs` already hold it. The lesson «a pnpm-lock `integrity` hash can match by chance» is kept as the filter in the hook, not as prose.
+
+#### Alternatives that lost
+
+| Considered | Why it lost |
+|---|---|
+| Guard as a `.mjs` file | one more JS file under `eslint .`; the globals block `.cjs` needed in package-and-sign would repeat |
+| `permissions.deny` rules | generic reason, cannot be run without a live Claude Code, and the ask names a hook |
+| Scan every commit's diff (`git log -p remote..local`) | the rule today is a tree scan; the diff scan needs the remote sha to exist locally and handles new branches badly. Comes back if an identifier added and removed inside one push is ever seen |
+| Exclude `pnpm-lock.yaml` from the scan altogether | would let a real name in a lock line through; only the `integrity:` lines are noise |
+| husky / lefthook for the hook | `harness-ladder` already decided: a dependency for a few lines of shell |
+| Parse the Bash command with a full shell parser | the guard's cost would exceed the rule's; the regex names its ceiling |
+
+#### Decision log, answers as given (2026-11-26)
+- Q: What does the pre-push scan read: the tree of each pushed commit, or the diff of every commit in the push? → A: the tree of each pushed commit, as CLAUDE.md's `git grep … HEAD` does today (assumed). If wrong: an identifier added and removed again inside one push goes through; scan `git log -p remote..local` as well.
+- Q: What does "ignoring the integrity line" cover? → A: only `pnpm-lock.yaml` lines that contain `integrity:`; any other line of the lock file is scanned (assumed). If wrong: a work package name in the lock file would slip through if the whole file were excluded.
+- Q: A blank line in the list file: `git grep -f` treats it as an empty pattern that matches every line. → A: blank lines are dropped before scanning; a list with no pattern left behaves like a missing list (assumed).
+- Q: The scan itself fails (an invalid pattern in the list). → A: the hook fails closed: refuse the push and say the scan failed (assumed). A guard that says nothing on error is a guard that is off.
+- Q: How does the Claude Code guard deny? → A: exit 2 with one line on stderr (assumed): it needs no JSON output and a test asserts it directly.
+- Q: Which commands does the guard deny? → A: `pnpm` running the script `build`: `pnpm build`, `pnpm run build`, option flags in between (`pnpm -s build`), at the start of the command or after `;`, `&&`, `||`, `|` or a newline (assumed). Not denied: a command that only mentions it (`git commit -m "never pnpm build"`), `pnpm builder`, other build entry points. If wrong in the first direction a rephrased command costs one retry; the second is named in Scope.
+- Q: A payload the guard cannot parse, or a tool that is not Bash. → A: the guard lets it through (assumed): Claude Code always sends JSON, and a guard that breaks the session on a surprise teaches people to remove it.
+- Q: How big may CLAUDE.md be after the trim? → A: at most 7000 bytes, tested (assumed; it is 14474 today). Without a number the history grows back one landing at a time.
+- Q: Language of CLAUDE.md? → A: English, all of it (the ask says all in English; the repo is public).
+- Q: How is the guard written? (fork, phase 5) → A: a `.sh` file that reads the payload with `node -e` (assumed). Rejected: a `.mjs` file (one more JS file inside `eslint .`'s scope, which needs its globals declared as `package-and-sign` found for `.cjs`); `permissions.deny` rules in settings.json (native and zero code, but the reason shown is generic, the ask names a hook, and a deny rule cannot be run without a live Claude Code). If wrong: the guard moves into a `.mjs` with an eslint block, nothing else changes.
+- Q: (spec-reviewer) Which `pnpm … build` shapes does the guard deny, exactly? → A: `pnpm` at a command position, then flags that take no argument, optionally `run` and more such flags, then `build` (assumed). `pnpm -C dir build`, `pnpm --filter x build`, `(pnpm build)`, `$(pnpm build)`, `env X=1 pnpm build` and `sh -c "pnpm build"` pass: named in Scope Out. `echo "a; pnpm build"` and a multi-line commit message with a line that starts `pnpm build` are denied: a false deny, also named. If wrong: widen the regex; nothing else changes.
+- Q: (spec-reviewer) Is the registration proved? → A: yes, the test asserts the entry under `hooks.PreToolUse` has `matcher: "Bash"` and a hook of `type: "command"`, not only the command text (assumed).
+- Q: (spec-reviewer) Does the hook print `path:line` or git's own output? → A: git's own output, `<sha>:path:line:text` (assumed), so the person sees what matched.
+- Q: (spec-reviewer) One test or several per criterion? → A: one `it` per criterion holding every clause (assumed).
+- Q: (spec-reviewer) A tag object, a sha the clone cannot resolve, a list that exists but cannot be read. → A: each is a failed scan and refuses the push (assumed): W232.
+- Q: (spec-reviewer) What makes CLAUDE.md's size test strong enough? → A: it also asserts the three state sections (`## Last landed`, `## Next`, `## Untested with real data`), and that neither `Where we left off` nor the old Spanish title `Dónde lo dejamos` is left (assumed).
+- Q: (spec-reviewer) Where do the lessons entry and the `Governs:` line belong? → A: in box 3 and its commit; they close no criterion (assumed). The reason the guard prints says this repo is never built in a session.
+- Q: (user, 2026-11-26) The parallel change `fewer-go-on-cards` already takes W217–W224 in `workspaces`. → A: renumber mine to W230 and up.
+
 ## Task breakdown
 
 - App shell: Electron main, preload bridge, renderer with sidebar / centre / right panel /
@@ -3302,3 +3369,18 @@ Texts through `t()`.
 
 - **W216** `crashReports` in `ui.json` shall survive a restart when it is `'on'` (anything else reads as off), and `crashLast` when it is `{ at: number, url: string }` or `{ at: number, error: string }`; any other value of either shall be dropped.
   Proof: src/main/ui.test.ts "remembers crash report consent and the last send"
+
+### Enforced rules (enforce-written-rules, 26 nov 2026)
+
+- **W230** If a commit being pushed has, in its tree, a line that matches (case-insensitively) a pattern of `$HOME/.config/atril/work-identifiers.txt`, then `.githooks/pre-push` shall exit non-zero and print git's own matching lines (`<sha>:path:line:text`), and a real `git push` with `core.hooksPath` set to `.githooks` shall fail. This covers any pushed ref, not only the checked-out one, and a line of `pnpm-lock.yaml` that does not contain `integrity:`.
+  Proof: src/main/harness.test.ts the pre-push hook refuses a work identifier
+- **W231** While `$HOME/.config/atril/work-identifiers.txt` is missing or has no non-blank line, or when no pushed tree matches it, or when the push only deletes a ref, or when the only matches are `pnpm-lock.yaml` lines that contain `integrity:`, `.githooks/pre-push` shall exit 0.
+  Proof: src/main/harness.test.ts the pre-push hook lets clean pushes through
+- **W232** If the scan fails (a pattern in the list that is not a valid regular expression, a list that exists but cannot be read, or a pushed sha git cannot scan), then `.githooks/pre-push` shall exit non-zero and say, on one line, that the work-identifier scan failed.
+  Proof: src/main/harness.test.ts the pre-push hook refuses when the scan itself fails
+- **W233** When Claude Code is about to run a Bash command that runs the pnpm script `build` (`pnpm build`, `pnpm run build`, flags that take no argument between the words such as `pnpm -s build`, at the start of the command or after `;`, `&&`, `||`, `|` or a newline), the PreToolUse hook that `.claude/settings.json` registers (under `hooks.PreToolUse`, matcher `Bash`, type `command`), run as that file names it, shall exit 2 with a one-line reason on stderr that says this repo is never built in a session.
+  Proof: src/main/harness.test.ts the build guard denies pnpm build
+- **W234** While the Bash command has no `pnpm` at a command position followed by `build` as W233 reads it (`pnpm -s typecheck`, `pnpm test`, `pnpm builder`, `git commit -m "never pnpm build"`), or the tool is not Bash, or the payload is not JSON, the guard shall exit 0 and print nothing.
+  Proof: src/main/harness.test.ts the build guard lets everything else through
+- **W235** `CLAUDE.md` shall be at most 7000 bytes, shall name `.githooks/pre-push` and `.claude/settings.json`, shall have the sections `## Last landed`, `## Next` and `## Untested with real data`, and shall not contain the scan command (`git grep -niE`), `Where we left off` nor `Dónde lo dejamos`.
+  Proof: src/main/harness.test.ts CLAUDE.md stays a short brief that points at the hooks
