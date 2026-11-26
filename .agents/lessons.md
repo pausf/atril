@@ -526,3 +526,12 @@ I told Pau his brief was wrong («there is no `i18n-es.ts`») after checking onl
 - `spec-drift --anchors` read `Proof: file "name"` with the quotes as part of the name and called every citation broken; the working form is `Proof: file name` with no quotes (the form the older criteria use).
 - Main speaks Spanish by default (`lang.ts`), so a detail like «142 lines» built in main would have shown English-keyed text untranslated in tests and Spanish in the app. Items now carry names and numbers only and the window writes the sentences through `t()`.
 - A criterion that said «one test holds every clause» grew to five clauses once the card was built, and the tests followed the clauses rather than the criterion. Cut the criterion when the tests split (W286 → W286, W288, W289, W295) instead of citing a test that no longer holds them.
+
+## 2026-11-26 · work-vs-main · 6→7
+Reviewer found nothing against the contract (17 proofs re-run, typecheck and lint green); it read the main-side diffs, not the renderer ones. Before it, the cold spec review caught that W310's «ids both works define» would have made every pair clash on change documents already on main: a work's ids are only those its base does not define. A rule that compares two branches compares what each added, never what they share by ancestry.
+
+## 2026-11-26 · work-vs-main · real app
+The shared-ids line passed its test and, at the sidebar's width, cut the id itself («…que feat/b: W30…»). Text that ends in the one value it exists to show gets that value first, so an ellipsis eats the context and not the point. Seen only in the real window.
+
+## 2026-11-26 · work-vs-main · 1
+This work was itself created from a stale local checkout (the bug it fixes, #11): reset onto origin/main before anything else. Until this change lands, a work started from «New work» should `git fetch` and check `git log origin/main..HEAD` before building.

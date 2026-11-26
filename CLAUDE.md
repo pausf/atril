@@ -8,7 +8,11 @@ below point at files on Pau's disk, not in the repo.
 
 ## Last landed
 
-`pr-photos` (26 Nov, W240–W252): QA → "Publish on the MR" first shows a sheet with every capture exactly as it
+`work-vs-main` (26 Nov, issues #11, #10, #8, W300–W313): a new work fetches and branches from origin's default branch
+(`--no-track`); size, panel and radar count from the merge-base with it; a merged PR (notice or ancestry) reads "Merged"
+and leaves the clash check; rows say when two works take the same new criterion ids.
+
+Before it, `pr-photos` (26 Nov, W240–W252): QA → "Publish on the MR" first shows a sheet with every capture exactly as it
 will leave and the blocked ones with why (on-device Vision OCR plus the crash scrubber, PNG metadata stripped, hash
 names, no Claude), then writes a block into the MR description with each criterion, its picture and Before/After
 from a merged MR of the same view. GitHub pictures go on orphan branch `atril-qa`, GitLab's to project uploads;
@@ -18,10 +22,6 @@ Before it, `fewer-go-on-cards` (26 Nov, issues #7 and #5): the Stop hook keeps a
 open boxes (5 in a row at most); a question in prose is a question card; nothing left reads "done"; one
 notice per turn end; a stop behind its own background shell stays working; a "Go on" card says why.
 
-Before it, `crash-reports` (26 Nov): opt-in in Settings → "Failures". An unexpected failure is scrubbed and opened
-as an English issue `Crash <sig>:` in pausf/atril with the person's GitHub token;
-`.github/workflows/crash-report.yml` turns it into branch `atril-crash/<sig>`, file
-`crash-reports/<sig>.md` and a PR.
 
 ## Next
 
