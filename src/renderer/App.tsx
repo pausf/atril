@@ -152,7 +152,7 @@ function Shell() {
       if (v === 'skills-estado' || v === 'skills-editor' || v === 'skills-plugins' || v === 'skills-uso') setScreen('skills')
       if (v === 'mr-score' || v === 'mr-thread' || v === 'mr-lens') setScreen('mr')
       if (v === 'tasks-board') setScreen('tasks')
-      if (v === 'settings-board' || v === 'create-repo' || v === 'ajustes-fallos') setScreen('settings')
+      if (v === 'settings-board' || v === 'create-repo' || v === 'ajustes-fallos' || v === 'ajustes-harness') setScreen('settings')
       if (v === 'tasks-own' || v === 'tasks-refine') {
         setScreen('tasks')
         setDialog('task')

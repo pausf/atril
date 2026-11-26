@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { CreateRepoDialog } from './CreateRepo'
 import type { AddRepoResult, Listed, Mode, RepoResult, RepoView, StateProblem } from '../../preload/api'
 import { fixLabel, Problem } from '../components/Problem'
+import { HarnessCard } from '../harness/HarnessCard'
 import { useT } from '../ui'
 
 const ID_RE = /^[a-z0-9-]+$/
@@ -19,6 +20,14 @@ export function Repos() {
   const [pending, setPending] = useState<Pending | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [creating, setCreating] = useState(false)
+  // W286: each row owns its card; the ids whose card is open.
+  const [harness, setHarness] = useState<ReadonlySet<string>>(new Set())
+  const flip = (id: string): void =>
+    setHarness((open) => {
+      const next = new Set(open)
+      if (!next.delete(id)) next.add(id)
+      return next
+    })
   // S33: repos.json is damaged; nothing here may write it, so only the way to the file is offered.
   const [problem, setProblem] = useState<StateProblem | null>(null)
   // S35: a refused remove or relocate, shown under its row.
@@ -30,6 +39,14 @@ export function Repos() {
   }
   // ponytail: dev-only, ATRIL_SNAPSHOT_VIEW=create-repo opens the dialog for a photo.
   useEffect(() => void window.atril.snapshotView().then((v) => v === 'create-repo' && setCreating(true)), [])
+  // ponytail: dev-only, ATRIL_SNAPSHOT_VIEW=ajustes-harness opens every healthy repo's Harness card for a photo.
+  useEffect(() => {
+    void window.atril.snapshotView().then(async (v) => {
+      if (v !== 'ajustes-harness') return
+      const all = await window.atril.repos.list()
+      if (Array.isArray(all)) setHarness(new Set(all.filter((r) => r.health === 'ok').map((r) => r.id)))
+    })
+  }, [])
 
   useEffect(() => {
     window.atril.repos
@@ -125,9 +142,15 @@ export function Repos() {
             <button type="button" className="pill" onClick={() => void window.atril.repos.remove(repo.id).then((r) => settleRow(repo.id, r))}>
               {t('Remove the repo')}
             </button>
+            {repo.health === 'ok' && (
+              <button type="button" className="pill" aria-expanded={harness.has(repo.id)} aria-label={t('Harness of {id}', { id: repo.id })} onClick={() => flip(repo.id)}>
+                {t('Harness')}
+              </button>
+            )}
             {refusal?.id === repo.id && (
               <Problem what={refusal.error} cant={t('{id} stays as it was.', { id: repo.id })} detail="" onClose={() => setRefusal(null)} />
             )}
+            {repo.health === 'ok' && harness.has(repo.id) && <HarnessCard repoId={repo.id} />}
           </li>
         ))}
       </ul>

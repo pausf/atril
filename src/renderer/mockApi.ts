@@ -1,5 +1,5 @@
 import { vi } from 'vitest'
-import type { ActivityLine, SubagentEntry, SubagentLine, AddRepoResult, Aviso, FileChange, FlowBoxes, FlowDocs, ForgeId, ForgeStatus, Mode, MrDraft, MrDrafts, MrDraftsResult, MrFixCiResult, MrLists, MrMergeResult, MrPage, MrReply, MrScoreState, MrThreads, MrWork, NotifyPatch, RefineResult, NotifyPermission, SkillsList, SkillsUsage, NotifySettings, AgentState, StateProblem, QaBugResult, QaLaunchResult, QaManualRequest, QaMr, QaPrepared, QaPublishResult, QaReport, QaResult, QaStatus, QaTargets, AtrilApi, RemoveResult, QuickAnswer, AgentWait, RadarHit, FlowStage, HistoryEntry, IdeaJiraResult, IdeaResult, LibrettoCounts, LibrettoState, JiraIssue, JiraSettingsStatus, MenuAction, NextItem, StartProposalResult, StartRequest, StartResult, RepoResult, RepoView, ToolReport, UiState, WorkCost, WorkspaceResult, WorkspaceView } from '../preload/api'
+import type { ActivityLine, SubagentEntry, SubagentLine, AddRepoResult, Aviso, FileChange, FlowBoxes, FlowDocs, ForgeId, ForgeStatus, Mode, MrDraft, MrDrafts, MrDraftsResult, MrFixCiResult, MrLists, MrMergeResult, MrPage, MrReply, MrScoreState, MrThreads, MrWork, NotifyPatch, RefineResult, NotifyPermission, SkillsList, SkillsUsage, NotifySettings, AgentState, StateProblem, QaBugResult, QaLaunchResult, QaManualRequest, QaMr, QaPrepared, QaPublishResult, QaReport, QaResult, QaStatus, QaTargets, AtrilApi, RemoveResult, QuickAnswer, AgentWait, RadarHit, FlowStage, HistoryEntry, IdeaJiraResult, IdeaResult, LibrettoCounts, LibrettoState, JiraIssue, JiraSettingsStatus, MenuAction, NextItem, StartProposalResult, StartRequest, StartResult, RepoResult, RepoView, ToolReport, UiState, WorkCost, WorkspaceResult, WorkspaceView, HarnessResult } from '../preload/api'
 
 export const workspace = (id: string, branch: string, alive = true): WorkspaceView => ({
   id,
@@ -45,6 +45,8 @@ interface Options {
   /** What the folder picker answers when the person adds a repo. */
   addRepo?: (AddRepoResult & { path: string }) | null
   repos?: RepoView[]
+  /** What harness.get answers per repo id; a function lets a test hold a reply back. Missing means unknown. */
+  harness?: Record<string, HarnessResult> | ((repoId: string) => Promise<HarnessResult>)
   nextup?: NextItem[]
   /** What proposeStart answers; start answers with a workspace named after the key. */
   proposal?: StartProposalResult
@@ -244,6 +246,12 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
         return r
       }),
       terminal: vi.fn(async () => ({ ok: true as const }))
+    },
+    harness: {
+      get: vi.fn(async (repoId: string): Promise<HarnessResult> =>
+        typeof o.harness === 'function' ? o.harness(repoId) : (o.harness?.[repoId] ?? { error: 'unknown' })
+      ),
+      doc: vi.fn(async () => true)
     },
     repos: {
       list: async () =>
