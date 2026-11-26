@@ -199,4 +199,51 @@ describe('harness', () => {
       unknown.clean()
     }
   })
+
+  /** Runs the command that .claude/settings.json registers for Bash, the way Claude Code would. */
+  function guard(stdin: string): { status: number | null; stdout: string; stderr: string } {
+    const settings = JSON.parse(readFileSync(join(repoRoot, '.claude/settings.json'), 'utf8'))
+    const entry = settings.hooks.PreToolUse.find((e: { matcher: string }) => e.matcher === 'Bash')
+    expect(entry.hooks[0].type).toBe('command')
+    return spawnSync('sh', ['-c', entry.hooks[0].command], { input: stdin, encoding: 'utf8', env: { ...process.env, CLAUDE_PROJECT_DIR: repoRoot } })
+  }
+  const bash = (command: string): string => JSON.stringify({ tool_name: 'Bash', tool_input: { command } })
+
+  it('the build guard denies pnpm build', () => {
+    for (const command of [
+      'pnpm build',
+      'pnpm run build',
+      'pnpm -s build',
+      'pnpm  build',
+      'pnpm run -s build',
+      'pnpm build --mode x',
+      'cd x && pnpm build',
+      'pnpm test; pnpm build',
+      'false || pnpm build',
+      'cat f | pnpm build',
+      'echo hi\npnpm build'
+    ]) {
+      const r = guard(bash(command))
+      expect(r.status, command).toBe(2)
+      expect(r.stderr.trim(), command).toMatch(/^[^\n]*never built[^\n]*$/)
+    }
+  })
+
+  it('the build guard lets everything else through', () => {
+    const payloads = [
+      bash('pnpm -s typecheck'),
+      bash('pnpm test'),
+      bash('pnpm builder'),
+      bash('git commit -m "never pnpm build"'),
+      bash('rg "pnpm build" CLAUDE.md'),
+      JSON.stringify({ tool_name: 'Edit', tool_input: { command: 'pnpm build' } }),
+      'not json',
+      '{}',
+      ''
+    ]
+    for (const p of payloads) {
+      const r = guard(p)
+      expect([r.status, r.stdout, r.stderr], p).toEqual([0, '', ''])
+    }
+  })
 })
