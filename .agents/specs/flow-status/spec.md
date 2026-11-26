@@ -33,53 +33,53 @@ Governs: src/main/flow/** src/renderer/flow/**
 
 - «Cambios» shows the total as a warning past 400 lines, saying Atril asked Claude to propose a split.
 
-### Detalle del subagente (add-subagent-detail, 10 nov 2026)
+### Subagent detail (add-subagent-detail, 10 nov 2026)
 
-Cada subagente del panel se pulsa y abre su registro como una terminal de solo lectura, en vivo
-mientras trabaja.
+Each subagent in the panel can be pressed and opens its log as a read-only terminal, live
+while it works.
 
-### Panel sin scroll (fit-flow-panel, 10 nov 2026)
+### Panel without scroll (fit-flow-panel, 10 nov 2026)
 
-- Las seis etapas ocupan una sola fila: iconos unidos por una línea; la actual lleva su nombre debajo;
-  las demás lo dicen al pasar el ratón y a un lector de pantalla. Spec, Plan y Construir siguen
-  abriendo lo suyo como hoy (F13, F20).
-- Checklist, Cambios, Otros cambios y Subagentes se pliegan pulsando su título, con su cuenta a la
-  vista; Atril recuerda cómo los dejaste; Otros cambios empieza plegado.
-- Cambios enseña como mucho 8 archivos; con más, «+N más» abre el diff del noveno.
-- Un trabajo normal (3/7, 12 archivos, 3 subagentes) cabe en el panel sin scroll en una ventana de
-  900 px de alto, la de Pau (sus capturas: 2880×1768 a 2x).
+- The six stages take a single row: icons joined by a line; the current one carries its name beneath;
+  the others say it on hover and to a screen reader. Spec, Plan and Construir still
+  open what they open today (F13, F20).
+- Checklist, Cambios, Otros cambios and Subagentes fold when their title is pressed, with their count
+  in view; Atril remembers how you left them; Otros cambios starts folded.
+- Cambios shows at most 8 files; with more, «+N más» opens the diff of the ninth.
+- A normal work (3/7, 12 files, 3 subagents) fits in the panel without scroll in a window 900 px tall,
+  Pau's (his screenshots: 2880×1768 at 2x).
 
-### Código por casilla (panel-c, 11 nov 2026)
+### Code per box (panel-c, 11 nov 2026)
 
-- Mientras el agente construye, el panel enseña en qué paso va, qué casillas cerró con qué código y el código que está
-  escribiendo ahora, y ese código se puede ver en grande en el centro.
+- While the agent builds, the panel shows which step it is at, which boxes it closed with which code, and the code it is
+  writing now, and that code can be seen large in the centre.
 
-### Subagentes como ramas (subagent-branches, 11 nov 2026)
+### Subagents as branches (subagent-branches, 11 nov 2026)
 
-- Se ve qué subagentes trabajan para la casilla que se está construyendo, qué hace cada uno y cuánto llevan, sin una
-  sección aparte.
+- It shows which subagents work for the box being built, what each does and for how long, without a separate
+  section.
 
-### Panel más rápido (fast-panel, 11 nov 2026)
+### Faster panel (fast-panel, 11 nov 2026)
 
-- Elegir un trabajo enseña sus casillas, y abrir el código de una casilla, sin rehacer todo el trabajo de git cada vez.
-- El estado de los agentes cuesta un proceso por vuelta, no dos por trabajo.
-- En reposo, Atril lanza muchos menos procesos.
+- Choosing a work shows its boxes, and opening a box's code, without redoing all the git work each time.
+- The agents' state costs one process per round, not two per work.
+- At rest, Atril launches far fewer processes.
 
-### Diff sin cabecera (diff-header, 11 nov 2026)
+### Diff without header (diff-header, 11 nov 2026)
 
-- El código de una casilla empieza en su primer `@@`: todas las líneas visibles son código.
+- A box's code starts at its first `@@`: every visible line is code.
 
-### Panel en silencio (quiet-panel, 11 nov 2026)
+### Quiet panel (quiet-panel, 11 nov 2026)
 
-- Con un trabajo elegido y nada cambiando, el panel no lanza ningún proceso; al tocar un archivo o hacer un commit, la siguiente vuelta lo enseña.
+- With a work chosen and nothing changing, the panel launches no process; when a file is touched or a commit is made, the next round shows it.
 
-### Panel nunca en blanco (flow-empty, 11 nov 2026)
+### Panel never blank (flow-empty, 11 nov 2026)
 
-- El panel nunca está en blanco: o dice que está leyendo, o enseña las casillas, o dice por qué aún no hay.
+- The panel is never blank: it either says it is reading, or shows the boxes, or says why there are none yet.
 
-### Radar de choques (radar, 11 nov 2026)
+### Collision radar (radar, 11 nov 2026)
 
-- Caben 12 vigilantes a la vez: el radar y el panel no se expulsan con varios trabajos.
+- Twelve watchers fit at once: the radar and the panel do not evict each other with several works.
 
 ## Scope boundaries
 
@@ -87,7 +87,7 @@ mientras trabaja.
 
 **Out:** writing any Libretto file; running `libretto`; stages the files cannot show.
 `review-work` and `present-work` leave nothing on disk that tells them apart from building,
-so they are **not** shown as their own stages in this phase — the boceto's eight dots
+so they are **not** shown as their own stages in this phase — the sketch's eight dots
 become the six below. Showing them needs a signal from the agent session (phase 3).
 
 ### Flow documents (add-flow-documents, 9 nov 2026)
@@ -116,56 +116,56 @@ text is rendered as text, never markup; the modal holds the keyboard like the do
 
 **In:** the warning. **Out:** anything else in the panel.
 
-### Detalle del subagente (add-subagent-detail, 10 nov 2026)
+### Subagent detail (add-subagent-detail, 10 nov 2026)
 
-**In:** la fila como botón, el modal, el refresco, el estilo terminal. **Out:** escribir al
-subagente, pararlo, buscar en el registro, colores por herramienta.
+**In:** the row as a button, the modal, the refresh, the terminal style. **Out:** writing to the
+subagent, stopping it, searching the log, colours per tool.
 
-**Never scoped out:** teclado (foco, Tab dentro, Esc), el contenido como texto.
+**Never scoped out:** keyboard (focus, Tab inside, Esc), the content as text.
 
-### Panel sin scroll (fit-flow-panel, 10 nov 2026)
+### Panel without scroll (fit-flow-panel, 10 nov 2026)
 
-**In:** la fila de etapas, las cuatro secciones plegables, el tope de Cambios, quitar la frase de cabecera.
+**In:** the stages row, the four foldable sections, Cambios' cap, removing the header sentence.
 
-**Out:** los diseños Zen, Partitura, Río, Programa y Esfera (quedan en `bocetos/fase2-nucleo.html`); un
-ajuste para elegir diseño; la pestaña Actividad; el modal del subagente.
+**Out:** the Zen, Partitura, Río, Programa and Esfera designs (they stay in `bocetos/fase2-nucleo.html`); a
+setting to pick the design; the Actividad tab; the subagent modal.
 
-**Never scoped out:** cada etapa conserva su nombre y su estado como texto accesible (W22); las secciones
-se pliegan con teclado; nada que hoy se pueda abrir deja de poderse abrir: como mucho queda a un clic
-(desplegar su sección).
+**Never scoped out:** each stage keeps its name and its state as accessible text (W22); the sections
+fold with the keyboard; nothing that can be opened today stops being openable: at most it is one click away
+(unfolding its section).
 
-### Código por casilla (panel-c, 11 nov 2026)
+### Code per box (panel-c, 11 nov 2026)
 
-**In:** pasos como seis tramos con nombre encima del título, línea de tiempo de casillas con su código, el tramo en vivo, «Ampliar» al centro y ⌘⇧E.
-**Out:** subagentes como ramas (`panel-c-subagents`); QA como pantalla propia (`qa-screen`); el globo de preguntas (`ask-balloon`); editar código; comentar líneas.
-**Never scoped out:** el diff como texto (nunca HTML); rutas literales a git (F24); el corte de 1 MB (F23); teclado y
-nombres accesibles; tokens de color.
+**In:** steps as six segments with a name above the title, timeline of boxes with their code, the live segment, «Ampliar» to the centre and ⌘⇧E.
+**Out:** subagents as branches (`panel-c-subagents`); QA as its own screen (`qa-screen`); the question balloon (`ask-balloon`); editing code; commenting on lines.
+**Never scoped out:** the diff as text (never HTML); literal paths to git (F24); the 1 MB cut (F23); keyboard and
+accessible names; colour tokens.
 
-### Subagentes como ramas (subagent-branches, 11 nov 2026)
+### Subagents as branches (subagent-branches, 11 nov 2026)
 
-**In:** las ramas bajo la casilla, la última acción al pasar el ratón, quitar la sección.
-**Out:** asignar subagentes a casillas concretas (todos cuelgan de la en curso); cambiar el modal de F28.
-**Never scoped out:** teclado (cada rama es un botón); textos por `t()`; tokens; el registro como texto.
+**In:** the branches under the box, the last action on hover, removing the section.
+**Out:** assigning subagents to specific boxes (all hang from the current one); changing F28's modal.
+**Never scoped out:** keyboard (each branch is a button); texts through `t()`; tokens; the log as text.
 
-### Panel más rápido (fast-panel, 11 nov 2026)
+### Faster panel (fast-panel, 11 nov 2026)
 
-**In:** `src/main/flow/boxes.ts`, `src/main/flow/changes.ts`, `src/main/flow/watch.ts` (si hace falta la clave), `src/main/status.ts`, `src/main/tmux.ts`, `src/main/activity.ts`, `src/main/workspaces.ts` (`listWorkspaces` con la foto de tmux). **Out:** cambiar el antivirus o el git del Mac; reescribir el panel; los sondeos de MR y Jira.
+**In:** `src/main/flow/boxes.ts`, `src/main/flow/changes.ts`, `src/main/flow/watch.ts` (if the key is needed), `src/main/status.ts`, `src/main/tmux.ts`, `src/main/activity.ts`, `src/main/workspaces.ts` (`listWorkspaces` with the tmux snapshot). **Out:** changing the Mac's antivirus or git; rewriting the panel; MR and Jira polling.
 
-### Diff sin cabecera (diff-header, 11 nov 2026)
+### Diff without header (diff-header, 11 nov 2026)
 
-**In:** `src/renderer/flow/DiffText.tsx`. **Out:** resaltado de sintaxis; ajustar líneas largas.
+**In:** `src/renderer/flow/DiffText.tsx`. **Out:** syntax highlighting; wrapping long lines.
 
-### Panel en silencio (quiet-panel, 11 nov 2026)
+### Quiet panel (quiet-panel, 11 nov 2026)
 
-**In:** `src/main/flow/boxes.ts` (la respuesta guardada), un vigilante por trabajo en `src/main/flow/` (al lado de `watch.ts`), su cierre con `flow.forget`. **Out:** el estado de los agentes (W163 ya lo dejó en una llamada); MR, Jira, actividad.
+**In:** `src/main/flow/boxes.ts` (the saved answer), one watcher per work in `src/main/flow/` (next to `watch.ts`), closed with `flow.forget`. **Out:** the agents' state (W163 already left it at one call); MR, Jira, activity.
 
-### Panel nunca en blanco (flow-empty, 11 nov 2026)
+### Panel never blank (flow-empty, 11 nov 2026)
 
-**In:** `src/renderer/flow/FlowPanel.tsx`, i18n. **Out:** abrir la spec desde aquí (ya lo hacen los botones de documento).
+**In:** `src/renderer/flow/FlowPanel.tsx`, i18n. **Out:** opening the spec from here (the document buttons already do).
 
-### Radar de choques (radar, 11 nov 2026)
+### Collision radar (radar, 11 nov 2026)
 
-**In:** `src/main/flow/quiet.ts`. **Out:** el resto del vigilante.
+**In:** `src/main/flow/quiet.ts`. **Out:** the rest of the watcher.
 
 ## Constraints
 
@@ -196,37 +196,37 @@ nombres accesibles; tokens de color.
 
 - Uses the total F20 already shows.
 
-### Detalle del subagente (add-subagent-detail, 10 nov 2026)
+### Subagent detail (add-subagent-detail, 10 nov 2026)
 
-Reutiliza `useModalKeys` y las clases `modal`/`dlg edmodal`; monoespaciado con los tokens de la terminal.
+Reuses `useModalKeys` and the `modal`/`dlg edmodal` classes; monospace with the terminal's tokens.
 
-### Panel sin scroll (fit-flow-panel, 10 nov 2026)
+### Panel without scroll (fit-flow-panel, 10 nov 2026)
 
-- `FoldSection` y `useFolded` existentes; ids de sección estables para recordar el estado.
-- Textos por `t()` con su inglés; colores solo como tokens.
-- `a11y.test.ts` ya exige que cada `.stg` lleve hecho/ahora/pendiente como texto.
+- Existing `FoldSection` and `useFolded`; stable section ids to remember the state.
+- Texts through `t()` with their English; colours only as tokens.
+- `a11y.test.ts` already requires each `.stg` to carry done/current/pending as text.
 
-### Panel más rápido (fast-panel, 11 nov 2026)
+### Faster panel (fast-panel, 11 nov 2026)
 
-- Nada se enseña viejo: un commit nuevo, un cambio del checklist o un archivo tocado en el tramo abierto se ven en la siguiente vuelta.
-- Las cachés viven en memoria de main y se vacían al cerrar un trabajo.
+- Nothing is shown stale: a new commit, a checklist change or a file touched in the open segment shows on the next round.
+- Caches live in main's memory and are emptied when a work is closed.
 
-### Diff sin cabecera (diff-header, 11 nov 2026)
+### Diff without header (diff-header, 11 nov 2026)
 
-- El diff sigue siendo texto, nunca marcado (F37).
+- The diff stays text, never markup (F37).
 
-### Panel en silencio (quiet-panel, 11 nov 2026)
+### Quiet panel (quiet-panel, 11 nov 2026)
 
-- Nada se enseña más de 30 s viejo aunque el vigilante falle; con el vigilante bien, nada se enseña viejo.
-- `.git/objects`, `node_modules` y similares no despiertan nada que no hiciera falta: los avisos se filtran por ruta.
+- Nothing is shown more than 30 s stale even if the watcher fails; with the watcher fine, nothing is shown stale.
+- `.git/objects`, `node_modules` and the like wake nothing that did not need waking: notices are filtered by path.
 
-### Panel nunca en blanco (flow-empty, 11 nov 2026)
+### Panel never blank (flow-empty, 11 nov 2026)
 
-- Textos por `t()`.
+- Texts through `t()`.
 
-### Radar de choques (radar, 11 nov 2026)
+### Collision radar (radar, 11 nov 2026)
 
-- Nada más cambia en F46–F47.
+- Nothing else changes in F46–F47.
 
 ## Prior decisions
 
@@ -256,25 +256,25 @@ Reutiliza `useModalKeys` y las clases `modal`/`dlg edmodal`; monoespaciado con l
 | Edit any time, last writer wins | the agent's next write silently erases the person's correction |
 
 #### Decision log, answers as given (2026-11-09)
-- Q: (propuesta) ver y editar spec y plan desde el panel; editar solo mientras el agente espera → A: «dale».
+- Q: (proposal) see and edit spec and plan from the panel; edit only while the agent waits → A: «dale».
 - Q: «No le preguntes, tú sigue» stands → the rest taken with the recommended option, marked (assumed).
-- Q: ¿Qué se ve al pulsar cada etapa? → A: Spec = `proposal.md` desde arriba hasta `## Approach` más cada `spec-*.md`; Plan = `## Approach`; Checklist = `## Checklist`; una etapa sin nada escrito no se puede pulsar (assumed).
-- Q: ¿Qué se edita? → A: el archivo entero de la pestaña que miras (`proposal.md` o un `spec-*.md`), como texto; leer es por secciones, editar es el archivo (assumed).
-- Q: ¿Cuándo se puede editar? → A: con el agente en «te necesita» o parado; trabajando, no. Lo comprueba main al guardar, no solo la ventana (assumed).
-- Q: ¿Y si Claude cambia el archivo mientras lo editas? → A: no se guarda nada y se avisa «Claude ha cambiado el archivo mientras editabas: vuelve a abrirlo» (assumed).
-- Q: ¿Markdown con librería? → A: no: un lector mínimo (títulos, listas, casillas, bloques de código, negrita) que solo produce texto de React, nunca HTML (assumed).
+- Q: What is seen when each stage is pressed? → A: Spec = `proposal.md` from the top to `## Approach` plus each `spec-*.md`; Plan = `## Approach`; Checklist = `## Checklist`; a stage with nothing written cannot be pressed (assumed).
+- Q: What is edited? → A: the whole file of the tab you are looking at (`proposal.md` or a `spec-*.md`), as text; reading is by sections, editing is the file (assumed).
+- Q: When can it be edited? → A: with the agent in «te necesita» or stopped; not while working. Main checks it on save, not only the window (assumed).
+- Q: And if Claude changes the file while you edit it? → A: nothing is saved and it warns «Claude ha cambiado el archivo mientras editabas: vuelve a abrirlo» (assumed).
+- Q: Markdown with a library? → A: no: a minimal reader (headings, lists, boxes, code blocks, bold) that only produces React text, never HTML (assumed).
 
-- Q: (spec-reviewer) el aviso en vivo solo salta si cambia la etapa → A: la clave del watcher suma la última modificación de la carpeta del cambio, así cualquier escritura avisa; mismo límite de 1 s que F8 (assumed).
-- Q: (spec-reviewer) ¿Qué estado decide si se puede guardar? → A: uno recién leído en main al guardar (`agentState`), no el último sondeo; en la ventana, Editar solo se desactiva si el estado conocido es «trabajando» (assumed).
-- Q: (spec-reviewer) ¿Y un «te necesita» por un permiso a mitad de turno? → A: se acepta: se puede editar; lo que Claude escriba después lo protege la comprobación de mtime, y el agente relee el archivo cuando Libretto lo necesita o cuando se lo pides en la terminal (assumed).
-- Q: (spec-reviewer) ¿Qué decide si una etapa es botón? → A: la etapa de F1–F5: Spec desde que la etapa es Spec o posterior, Plan desde Plan, Checklist cuando hay checklist; las secciones se cortan con las mismas reglas que `stage.ts` (títulos `^##\s+…\b`, sin contar los de dentro de un bloque de código) (assumed).
-- Q: (spec-reviewer) ¿Qué dice cada rechazo y qué pasa con tu texto? → A: «Claude está escribiendo: no se ha guardado», «Ese archivo no se puede editar desde Atril», «Claude ha cambiado el archivo mientras editabas: copia tu texto y vuelve a abrirlo»; tu texto se queda en el editor (assumed).
-- Q: (spec-reviewer) ¿En qué cambio se guarda? → A: en el que se leyó: el guardado lleva el nombre del cambio, validado (`^[a-z0-9-]+$`, carpeta existente) (assumed).
+- Q: (spec-reviewer) the live notice only fires if the stage changes → A: the watcher's key adds the last modification of the change folder, so any write notifies; same 1 s limit as F8 (assumed).
+- Q: (spec-reviewer) Which state decides whether it can be saved? → A: one freshly read in main at save time (`agentState`), not the last poll; in the window, Editar is only disabled if the known state is «trabajando» (assumed).
+- Q: (spec-reviewer) And a «te necesita» for a permission mid-turn? → A: accepted: it can be edited; what Claude writes afterwards is protected by the mtime check, and the agent rereads the file when Libretto needs it or when you ask in the terminal (assumed).
+- Q: (spec-reviewer) What decides whether a stage is a button? → A: the stage of F1–F5: Spec from when the stage is Spec or later, Plan from Plan, Checklist when there is a checklist; sections are cut with the same rules as `stage.ts` (headings `^##\s+…\b`, not counting those inside a code block) (assumed).
+- Q: (spec-reviewer) What does each refusal say and what happens to your text? → A: «Claude está escribiendo: no se ha guardado», «Ese archivo no se puede editar desde Atril», «Claude ha cambiado el archivo mientras editabas: copia tu texto y vuelve a abrirlo»; your text stays in the editor (assumed).
+- Q: (spec-reviewer) Which change is it saved to? → A: the one that was read: the save carries the change name, validated (`^[a-z0-9-]+$`, existing folder) (assumed).
 
-- Q: (Pau, tras el boceto) «lo de espec y plan que sea visualmente mas omo un editor para poder editar etc...» → A: pestañas en la zona central junto a la terminal, un editor con números de línea, colores de markdown y esquema de secciones; se escribe directamente (sin botón Editar), solo lectura mientras Claude trabaja, ⌘S guarda, punto en la pestaña con cambios sin guardar; boceto en `fase1-nucleo.html?doc=plan`.
-- Q: (Pau) «que se vea mas grande ahora mismo todo se ve minuculo lo de spec y plan» → A: al abrir un documento el editor ocupa todo el ancho (se ocultan la barra lateral y el panel de Libretto; «⤡ Salir de pantalla completa» o Esc vuelven), letra de 15 px.
-- Q: (Pau) «si la spec y plan no nos gusta como lo hacemos ya que pasa directamente a construir» → A: no pasa directo: Libretto se para antes de código con una pregunta; pero el hook marcaba esa pregunta como «trabajando» y Atril la escondía; se arregla en `spec-workspaces.md` (W44).
-- Q: (Pau) «no me sterminal de convencer no cabe todo en el la parte de la terminal, yo pensaba mas como un modal» → A: un modal grande (94 % del ancho, 88 % del alto), oscuro, por encima de la app: título de la etapa, el cambio, pestañas por archivo y Cerrar; dentro el mismo editor (esquema, números de línea, colores, barra de estado, ⌘S); Esc o Cerrar salen y, con cambios sin guardar, preguntan antes. La terminal no se toca.
+- Q: (Pau, after the sketch) «lo de espec y plan que sea visualmente mas omo un editor para poder editar etc...» → A: tabs in the central area next to the terminal, an editor with line numbers, markdown colours and a section outline; typed into directly (no Editar button), read-only while Claude works, ⌘S saves, a dot on the tab with unsaved changes; sketch in `fase1-nucleo.html?doc=plan`.
+- Q: (Pau) «que se vea mas grande ahora mismo todo se ve minuculo lo de spec y plan» → A: opening a document makes the editor take the full width (the sidebar and the Libretto panel are hidden; «⤡ Salir de pantalla completa» or Esc bring them back), 15 px font.
+- Q: (Pau) «si la spec y plan no nos gusta como lo hacemos ya que pasa directamente a construir» → A: it does not go straight: Libretto stops before code with a question; but the hook marked that question as «trabajando» and Atril hid it; fixed in `spec-workspaces.md` (W44).
+- Q: (Pau) «no me sterminal de convencer no cabe todo en el la parte de la terminal, yo pensaba mas como un modal» → A: a large modal (94 % of the width, 88 % of the height), dark, over the app: stage title, the change, tabs per file and Cerrar; inside, the same editor (outline, line numbers, colours, status bar, ⌘S); Esc or Cerrar leave and, with unsaved changes, ask first. The terminal is untouched.
 
 ### File changes (add-file-changes, 9 nov 2026)
 
@@ -293,219 +293,219 @@ Reutiliza `useModalKeys` y las clases `modal`/`dlg edmodal`; monoespaciado con l
 | A side-by-side diff | needs twice the width; unified is what `git diff` and review tools show |
 
 #### Decision log, answers as given (2026-11-09)
-- Q: (Pau) «los cambios se deberia ver en el momento de contruir no? y que se pueda abrir en modal y ver los cambios» → A: la lista sale desde Construir; «Construir» es un botón que abre el modal de cambios; boceto en `fase1-nucleo.html?diff=`.
+- Q: (Pau) «los cambios se deberia ver en el momento de contruir no? y que se pueda abrir en modal y ver los cambios» → A: the list appears from Construir; «Construir» is a button that opens the changes modal; sketch in `fase1-nucleo.html?diff=`.
 - Q: «tu desarrollo todo sin parar … te dejo solo» stands → the rest taken with the recommended option, marked (assumed).
-- Q: ¿Contra qué se comparan los cambios? → A: contra el commit base del trabajo (el de W5), incluyendo lo commiteado, lo no commiteado y los archivos nuevos sin seguimiento que git no ignora (assumed).
-- Q: ¿Cómo se actualiza en vivo? → A: la ventana vuelve a pedir la lista cada 3 s mientras el panel muestra Construir o después, y al cambiar la etapa; `git diff --numstat` es barato (assumed).
-- Q: ¿Se puede pedir el diff de cualquier ruta? → A: no: main solo da el diff de un archivo que está en la lista de cambios de ese trabajo (assumed).
-- Q: ¿Y un diff enorme o binario? → A: se corta en 1 MB con un aviso; un binario dice «Archivo binario» (assumed).
+- Q: What are the changes compared against? → A: against the work's base commit (W5's), including committed, uncommitted and new untracked files that git does not ignore (assumed).
+- Q: How does it update live? → A: the window asks for the list again every 3 s while the panel shows Construir or later, and when the stage changes; `git diff --numstat` is cheap (assumed).
+- Q: Can the diff of any path be requested? → A: no: main only gives the diff of a file that is in that work's change list (assumed).
+- Q: And a huge or binary diff? → A: cut at 1 MB with a notice; a binary says «Archivo binario» (assumed).
 
-- Q: (spec-reviewer) ¿Renombrados, T y U? → A: `--no-renames`: un renombrado es D + A; T y U cuentan como M; rutas leídas con `-z` (assumed).
-- Q: (spec-reviewer) ¿«Total» es líneas o archivos? → A: líneas añadidas + borradas («512 líneas»); el botón dice «ver N archivos» (assumed).
-- Q: (spec-reviewer) ¿Desde qué etapa? → A: Construir, Terminado y Aterrizado; antes, Construir no es botón y no hay sección (assumed).
-- Q: (spec-reviewer) ¿El modal se actualiza solo? → A: no: es una instantánea con su hora y un botón «Actualizar»; la lista del panel sí se refresca cada 3 s, sin pedir otra vez mientras una petición sigue en marcha (assumed).
-- Q: (spec-reviewer) ¿Binario sin seguimiento? → A: un byte cero en los primeros 8000 bytes, la regla de git; cuenta 0 y 0 (assumed).
+- Q: (spec-reviewer) Renames, T and U? → A: `--no-renames`: a rename is D + A; T and U count as M; paths read with `-z` (assumed).
+- Q: (spec-reviewer) Is «Total» lines or files? → A: lines added + deleted («512 líneas»); the button says «ver N archivos» (assumed).
+- Q: (spec-reviewer) From which stage? → A: Construir, Terminado and Aterrizado; before that, Construir is not a button and there is no section (assumed).
+- Q: (spec-reviewer) Does the modal update by itself? → A: no: it is a snapshot with its time and an «Actualizar» button; the panel's list does refresh every 3 s, without asking again while a request is still in flight (assumed).
+- Q: (spec-reviewer) Untracked binary? → A: a zero byte in the first 8000 bytes, git's rule; counts 0 and 0 (assumed).
 
 ### Large branches (add-split-large-branch, 9 nov 2026)
 
 - **400 lines** (proposal.md).
 
-### Detalle del subagente (add-subagent-detail, 10 nov 2026)
+### Subagent detail (add-subagent-detail, 10 nov 2026)
 
-- F27 cambia solo en que cada fila es un botón: va como `(amended)` (assumed).
-- Al llegar `endedAt` se pide el registro una última vez; si la entrada desaparece (W64), el modal se cierra; un subagente sin archivo todavía dice «Sin registro de este subagente» igual que uno sin ruta (assumed).
-- Sondeo de 1 s solo con el modal abierto y el subagente sin `endedAt` (assumed).
+- F27 changes only in that each row is a button: it goes as `(amended)` (assumed).
+- When `endedAt` arrives the log is requested one last time; if the entry disappears (W64), the modal closes; a subagent with no file yet says «Sin registro de este subagente» just like one with no path (assumed).
+- 1 s polling only with the modal open and the subagent without `endedAt` (assumed).
 
-### Panel sin scroll (fit-flow-panel, 10 nov 2026)
+### Panel without scroll (fit-flow-panel, 10 nov 2026)
 
-- Diseño 0 elegido por Pau entre seis en `bocetos/fase2-nucleo.html` (10 nov).
-- Una sola vista, sin ajuste para cambiarla: Pau, «probar en el boceto», y luego eligió el 0 (10 nov).
-- 8 archivos como tope de Cambios (assumed, 10 nov): con más, el diff modal ya lista todos.
+- Design 0 chosen by Pau among six in `bocetos/fase2-nucleo.html` (10 nov).
+- A single view, no setting to change it: Pau, «probar en el boceto», and then he chose 0 (10 nov).
+- 8 files as Cambios' cap (assumed, 10 nov): with more, the diff modal already lists all.
 
 #### Alternatives that lost
 
 | Considered | Why it lost |
 |---|---|
-| Diseños 1–5 de `fase2-nucleo.html` | Pau eligió el 0. |
-| Un componente `Stepper` aparte | Lo usaría una sola vista; es CSS sobre lo que ya hay. |
-| Scroll interno solo en Cambios | Sigue escondiendo cosas; el tope con «+N más» lo dice. |
+| Designs 1–5 of `fase2-nucleo.html` | Pau chose 0. |
+| A separate `Stepper` component | Only one view would use it; it is CSS over what exists. |
+| Internal scroll only in Cambios | It still hides things; the cap with «+N más» says so. |
 
 #### Decision log, answers as given (2026-11-10)
-- Q: ¿Qué diseño? → A: «nada queda con el 0 · Acordado es el que me gusta … implementa con ese».
-- Q: ¿La frase «Dónde va cada trabajo, leído de sus archivos.»? → A: se va: el panel lo dice por sí
-  mismo y son dos líneas (assumed).
-- Q: ¿Cuenta de cada sección plegada? → A: Checklist «3/7», Cambios y Otros cambios su número,
-  Subagentes su número de entradas (assumed).
-- Q: ¿Qué abre «+N más»? → A: el modal del diff en el noveno archivo, con todos en su lista (assumed).
-- Q: (fase 5) ¿Cómo? → A: reutilizar `FoldSection` (ya recuerda su estado) y CSS para la fila de
-  etapas; sin componentes nuevos salvo los que salgan solos (assumed). Perdió: un componente de
-  «stepper» genérico (una sola vista lo usa).
+- Q: Which design? → A: «nada queda con el 0 · Acordado es el que me gusta … implementa con ese».
+- Q: The sentence «Dónde va cada trabajo, leído de sus archivos.»? → A: it goes: the panel says it by itself
+  and it is two lines (assumed).
+- Q: Count of each folded section? → A: Checklist «3/7», Cambios and Otros cambios their number,
+  Subagentes its number of entries (assumed).
+- Q: What does «+N más» open? → A: the diff modal at the ninth file, with all of them in its list (assumed).
+- Q: (phase 5) How? → A: reuse `FoldSection` (it already remembers its state) and CSS for the stages
+  row; no new components except those that come out on their own (assumed). Lost: a generic
+  «stepper» component (a single view uses it).
 
-- Q: (revisor de spec) Holguras → A, todas (assumed):
-  - F20 se enmienda: Cambios lista según F31 y el total suma todos los archivos.
-  - Construir hecho botón lleva como texto «Construir · ver N archivos», en lugar de su estado.
-  - La cuenta del Checklist es una cadena nueva, «{closed}/{total}», y `FoldSection.count` acepta texto.
-  - Checklist, Cambios y Subagentes empiezan abiertos.
-  - «Recordado» se prueba desmontando y volviendo a montar.
-  - Lo plegado queda a un clic: abrir la sección.
-  - La frase de cabecera desaparece (F29).
-  - Que no haga falta scroll no lo puede probar jsdom: se ve en la foto, y está nombrado como techo.
+- Q: (spec reviewer) Gaps → A, all (assumed):
+  - F20 is amended: Cambios lists per F31 and the total adds up all the files.
+  - Construir made a button carries as text «Construir · ver N archivos», instead of its state.
+  - The Checklist count is a new string, «{closed}/{total}», and `FoldSection.count` accepts text.
+  - Checklist, Cambios and Subagentes start open.
+  - «Recordado» is tested by unmounting and mounting again.
+  - What is folded stays one click away: open the section.
+  - The header sentence disappears (F29).
+  - That no scroll is needed cannot be proved by jsdom: it is seen in the photo, and is named as a ceiling.
 
-- Q: (foto) A 900 px Subagentes quedaba cortado → A: filas de Cambios en una línea, «Leído de» al
-  `title` de «Ver checklist», que pasa a enlace junto a Siguiente; objetivo 900 px, no 1080 (assumed).
+- Q: (photo) At 900 px Subagentes was cut off → A: Cambios rows on one line, «Leído de» to the
+  `title` of «Ver checklist», which becomes a link next to Siguiente; target 900 px, not 1080 (assumed).
 
-### Código por casilla (panel-c, 11 nov 2026)
+### Code per box (panel-c, 11 nov 2026)
 
-- Tramos por commits que marcan casillas (assumed, 11 nov).
-- Ampliar sustituye al terminal en el centro, no abre ventana (assumed, 11 nov).
-- Mismo sondeo de 3 s (assumed, 11 nov).
+- Segments by commits that mark boxes (assumed, 11 nov).
+- Ampliar replaces the terminal in the centre, it does not open a window (assumed, 11 nov).
+- Same 3 s poll (assumed, 11 nov).
 
 #### Alternatives that lost
 
 | Considered | Why it lost |
 |---|---|
-| un tramo por commit (como T3 Code por turno) | no dice qué casilla cierra cada código: lo que Libretto aporta |
-| leer qué archivos toca cada casilla del texto del plan | el plan no lo dice siempre; los commits sí |
-| ventana aparte para el código grande | otra ventana que gestionar; el centro ya está ahí |
+| one segment per commit (like T3 Code per turn) | it does not say which box each code closes: what Libretto brings |
+| read which files each box touches from the plan text | the plan does not always say; commits do |
+| a separate window for the large code | another window to manage; the centre is already there |
 
 #### Decision log, answers as given (2026-11-11)
-- Q: ¿Qué código es de qué casilla? → A: los commits que marcan casillas (`- [ ]` → `- [x]` en el checklist del
-  `proposal.md`) cortan la rama en tramos: el código de una casilla cerrada es el diff entre el commit que cerró la
-  anterior (o la base) y el suyo; el de la casilla en curso, el diff entre el último commit que cerró una casilla (o
-  la base) y el árbol de trabajo, con lo no commiteado. Nunca `.agents/` (assumed).
-- Q: ¿Varias casillas en un commit? → A: comparten tramo; cada una enseña el mismo código (assumed).
-- Q: ¿Vivo cómo? → A: el mismo sondeo de 3 s que hoy usa «Cambios» (F22) para el tramo en curso (assumed).
-- Q: ¿Pasos? → A: seis círculos unidos; hechos con ✓, el actual un anillo que se llena con casillas cerradas/total,
-  pendientes con su número; nombre al pasar el ratón; Spec y Plan son botones (F13); debajo «{Etapa} · {c} de {t}
-  casillas» (o solo la etapa sin checklist) y los botones «Spec» y «Plan» de F32 (assumed).
-- Q: ¿Qué se quita? → A: la fila de etapas de F29, las secciones Checklist y Cambios (F20, F30, F31) y el modal de F21
-  como entrada principal: «ver archivos» pasa a ser «Ampliar». El aviso de rama grande (F25) queda como una línea bajo
-  los pasos (assumed).
-- Q: ¿Cuántas casillas a la vista? → A: todas las cerradas plegadas en su línea (pulsar abre su código), la en curso
-  abierta con su código, y de las pendientes las 3 primeras y «+{n} más» (assumed).
-- Q: ¿Ampliar? → A: «⤢ Ampliar» encima de cada código y ⌘⇧D (menú Trabajo → Ampliar código) ponen ese código en el
-  centro, en lugar del terminal, con sus archivos arriba (como el modal de F21: lista, diff, solo texto) y «Volver al
-  terminal ⌘⇧D»; el panel sigue con los pasos. Escape también vuelve (assumed).
+- Q: Which code belongs to which box? → A: the commits that mark boxes (`- [ ]` → `- [x]` in the checklist of
+  `proposal.md`) cut the branch into segments: the code of a closed box is the diff between the commit that closed the
+  previous one (or the base) and its own; that of the current box, the diff between the last commit that closed a box (or
+  the base) and the working tree, uncommitted included. Never `.agents/` (assumed).
+- Q: Several boxes in one commit? → A: they share a segment; each shows the same code (assumed).
+- Q: Live how? → A: the same 3 s poll that «Cambios» (F22) uses today, for the current segment (assumed).
+- Q: Steps? → A: six joined circles; done ones with ✓, the current one a ring that fills with closed boxes/total,
+  pending ones with their number; name on hover; Spec and Plan are buttons (F13); below «{Etapa} · {c} de {t}
+  casillas» (or only the stage without a checklist) and the «Spec» and «Plan» buttons of F32 (assumed).
+- Q: What is removed? → A: the stages row of F29, the Checklist and Cambios sections (F20, F30, F31) and the modal of F21
+  as main entry: «ver archivos» becomes «Ampliar». The large-branch warning (F25) stays as a line under
+  the steps (assumed).
+- Q: How many boxes in view? → A: all closed ones folded on their line (pressing opens its code), the current one
+  open with its code, and of the pending ones the first 3 and «+{n} más» (assumed).
+- Q: Ampliar? → A: «⤢ Ampliar» above each code and ⌘⇧D (menu Trabajo → Ampliar código) put that code in the
+  centre, in place of the terminal, with its files on top (like F21's modal: list, diff, text only) and «Volver al
+  terminal ⌘⇧D»; the panel keeps the steps. Escape also goes back (assumed).
 
-- Q: ¿Dónde van los pasos? → A: Pau: «me quedo con lo 6 tramos con nombre», encima de «WEB-3535 ◌ trabajando», en el
-  centro (la C de `bocetos/pasos-arriba.html`); el panel empieza por las casillas. Sustituye a los círculos con anillo.
-- Q: ¿⌘⇧D? → A: ya es «Dividir abajo»; ampliar es ⌘⇧E (Trabajo → Ampliar código), libre (assumed).
-- Q: ¿Ampliar en Todos, en foco o fuera de Trabajo? → A: solo en Trabajo con «Uno» y un trabajo elegido; en foco
-  también (assumed).
-- Q: ¿Qué identifica una casilla entre commits? → A: su texto; el índice es el orden en el checklist actual. Una
-  casilla que cambia de texto cuenta como nueva desde ese commit (assumed).
-- Q: ¿Casilla marcada sin commit? → A: se ve cerrada y comparte el tramo en curso (lo no commiteado) (assumed).
-- Q: ¿Sin commits, sin checklist, `tasks.md` o Aterrizado? → A: sin checklist no hay línea de tiempo (los tramos sí,
-  con su etapa); `tasks.md` se lee igual que el proposal (`readChecklist`); en Aterrizado no hay carpeta: no hay línea
-  de tiempo (assumed).
-- Q: ¿Archivo fuera del tramo? → A: cadena vacía, como `fileDiff` (assumed).
-- Q: ¿F21, F22, F26, F31? → A: F21: su modal pasa a ser la vista ampliada (enmendado en F39); F22: el latido de 3 s
-  pide la línea de tiempo (enmendado en F38); F26: «Checklist» deja de ser algo que se abre (se queda Spec y Plan); F31:
-  sin sección «Cambios», se retira con F20 (assumed).
-- Q: ¿El total de F25? → A: la línea de tiempo devuelve también el total de líneas de la rama (como hoy `listChanges`)
+- Q: Where do the steps go? → A: Pau: «me quedo con lo 6 tramos con nombre», above «WEB-3535 ◌ trabajando», in the
+  centre (the C of `bocetos/pasos-arriba.html`); the panel starts with the boxes. Replaces the circles with a ring.
+- Q: ⌘⇧D? → A: it is already «Dividir abajo»; expanding is ⌘⇧E (Trabajo → Ampliar código), free (assumed).
+- Q: Ampliar in Todos, in focus or outside Trabajo? → A: only in Trabajo with «Uno» and a work selected; in focus
+  too (assumed).
+- Q: What identifies a box across commits? → A: its text; the index is the order in the current checklist. A
+  box whose text changes counts as new from that commit (assumed).
+- Q: A box marked without a commit? → A: it shows closed and shares the current segment (the uncommitted) (assumed).
+- Q: No commits, no checklist, `tasks.md` or Aterrizado? → A: with no checklist there is no timeline (the segments
+  are there, with their stage); `tasks.md` is read like the proposal (`readChecklist`); at Aterrizado there is no folder:
+  no timeline (assumed).
+- Q: A file outside the segment? → A: empty string, like `fileDiff` (assumed).
+- Q: F21, F22, F26, F31? → A: F21: its modal becomes the large view (amended in F39); F22: the 3 s heartbeat
+  asks for the timeline (amended in F38); F26: «Checklist» stops being something that opens (Spec and Plan remain); F31:
+  with no «Cambios» section, it is withdrawn with F20 (assumed).
+- Q: F25's total? → A: the timeline also returns the branch's total lines (as `listChanges` does today)
   (assumed).
-- Q: ¿Terminal al ampliar? → A: se oculta, no se desmonta; al volver, el foco vuelve al terminal; Escape en la vista
-  ampliada no llega a xterm (assumed).
+- Q: Terminal on expand? → A: it is hidden, not unmounted; on return, focus goes back to the terminal; Escape in the
+  large view does not reach xterm (assumed).
 
-### Subagentes como ramas (subagent-branches, 11 nov 2026)
+### Subagents as branches (subagent-branches, 11 nov 2026)
 
-- Todos los subagentes vivos cuelgan de la casilla en curso (assumed, 11 nov).
-- Última acción solo al pasar el ratón o con el foco (assumed, 11 nov).
-
-#### Alternatives that lost
-
-| Considered | Why it lost |
-|---|---|
-| asignar cada subagente a su casilla | el hook no sabe para qué casilla trabaja |
-| última acción siempre visible | sondear el registro de cada subagente cada segundo, para nada |
-
-#### Decision log, answers as given (2026-11-11)
-- Q: ¿Dónde? → A: bajo la casilla en curso de la línea de tiempo (F38), antes de su código; una rama por subagente
-  con su descripción (o su tipo), su tipo, un punto que late mientras trabaja o «✓» al terminar, y su duración; la
-  sección «Subagentes» desaparece (assumed).
-- Q: ¿Lo último que hizo? → A: al pasar el ratón o al llegar con el teclado, la descripción se cambia por la última
-  línea de su registro (F28), pedida en ese momento; sin registro, se queda la descripción (assumed).
-- Q: ¿Pulsar? → A: abre el modal de F28, igual que hoy (assumed).
-- Q: ¿Sin casilla en curso (sin checklist o todo cerrado)? → A: las ramas cuelgan de la línea «Cambio: …» (assumed).
-
-- Q: ¿Y QA, que también se pliega? → A: QA sigue plegable hasta que tenga su pantalla (`qa-screen`); F30 habla solo
-  de QA (assumed).
-- Q: ¿Sin cambio de Libretto? → A: las ramas cuelgan de una línea «Subagentes» arriba del panel (assumed).
-- Q: ¿Accesible? → A: cada rama lleva en su nombre accesible «trabajando · {d}» o «terminado · {d}» (assumed).
-- Q: ¿«Una vez»? → A: una petición por cada vez que entra el ratón o el foco; si llega después de salir, se ignora
-  (assumed).
-- Q: ¿Qué línea? → A: la última línea no vacía del registro de F28 sin su prefijo (`⏺ `, `⎿ `, `> `); si es de
-  pensar, «Pensando…»; si el registro está vacío, la descripción (assumed).
-- Q: ¿Quién lleva qué? → A: `FlowPanel` sigue dueño de las entradas, del reloj de 1 s y del modal; se los pasa a
-  `Boxes`, que pinta `Branches` dentro de la casilla en curso; `Subagents.tsx` se queda con el modal y `duration()`
-  y deja de pintar la sección; el test «subagents show in the panel» se reescribe como el de F27 (assumed).
-
-### Panel más rápido (fast-panel, 11 nov 2026)
-
-- Spawning es caro en el Mac de la persona (~125 ms): Atril cuenta procesos; lo que no cambia se guarda en memoria con una clave que cambia cuando debe.
+- All live subagents hang from the current box (assumed, 11 nov).
+- Last action only on hover or focus (assumed, 11 nov).
 
 #### Alternatives that lost
 
 | Considered | Why it lost |
 |---|---|
-| Un proceso git largo (`git cat-file --batch`) | más código y estado; la caché quita la mayoría sin eso |
-| Sondear menos a menudo | lo nuevo tardaría más en verse; la caché no lo retrasa |
+| assign each subagent to its box | the hook does not know which box it works for |
+| last action always visible | polling each subagent's log every second, for nothing |
 
 #### Decision log, answers as given (2026-11-11)
-- Q: (revisión en frío) ¿Qué tramos se guardan? → A: solo los cerrados por un commit (con `to`); el tramo abierto y los marcados solo en el árbol de trabajo se listan siempre, con sus cambios sin commitear (assumed).
-- Q: (revisión en frío) ¿Qué clave exacta? → A: carpeta, cambio, `baseCommit`, `HEAD`, y del archivo del checklist que se lea (`proposal.md`, `tasks.md` o `plan.md`) su ruta, `mtimeMs` y tamaño; dos ediciones en el mismo milisegundo con el mismo tamaño quedan como riesgo aceptado (assumed).
-- Q: (revisión en frío) ¿Cuándo se vacía? → A: al cerrar u olvidar el trabajo (`flow.forget`), y la caché nunca guarda más que los trabajos abiertos (assumed).
-- Q: (revisión en frío) `useFlow.ts` → A: fuera: el ahorro está en main (assumed).
-- Q: ¿Qué se arregla? → A: las tres causas medidas: el plan de casillas en caché, una sola llamada a tmux por vuelta, y menos sondeo en reposo (assumed).
-- Q: ¿Con qué clave la caché del plan? → A: carpeta, `HEAD`, nombre del cambio y fecha de modificación del documento del checklist; los tramos ya cerrados por un commit no cambian nunca (assumed).
-- Q: ¿Cuánto se espera para juntar avisos de archivos? → A: 200 ms (assumed).
+- Q: Where? → A: under the current box of the timeline (F38), before its code; one branch per subagent
+  with its description (or its type), its type, a dot that pulses while it works or «✓» when done, and its duration; the
+  «Subagentes» section disappears (assumed).
+- Q: Its last action? → A: on hover or on arriving by keyboard, the description is swapped for the last
+  line of its log (F28), requested at that moment; with no log, the description stays (assumed).
+- Q: Pressing? → A: opens F28's modal, as today (assumed).
+- Q: No current box (no checklist or all closed)? → A: the branches hang from the «Cambio: …» line (assumed).
 
-### Diff sin cabecera (diff-header, 11 nov 2026)
+- Q: And QA, which also folds? → A: QA stays foldable until it has its screen (`qa-screen`); F30 speaks only
+  of QA (assumed).
+- Q: No Libretto change? → A: the branches hang from a «Subagentes» line at the top of the panel (assumed).
+- Q: Accessible? → A: each branch carries in its accessible name «trabajando · {d}» or «terminado · {d}» (assumed).
+- Q: «Once»? → A: one request each time the pointer or focus enters; if it arrives after leaving, it is
+  ignored (assumed).
+- Q: Which line? → A: the last non-empty line of F28's log without its prefix (`⏺ `, `⎿ `, `> `); if it is a
+  thinking one, «Pensando…»; if the log is empty, the description (assumed).
+- Q: Who owns what? → A: `FlowPanel` stays owner of the entries, the 1 s clock and the modal; it passes them to
+  `Boxes`, which paints `Branches` inside the current box; `Subagents.tsx` keeps the modal and `duration()`
+  and stops painting the section; the test «subagents show in the panel» is rewritten like F27's (assumed).
 
-- Ninguna nueva.
+### Faster panel (fast-panel, 11 nov 2026)
+
+- Spawning is expensive on the person's Mac (~125 ms): Atril counts processes; what does not change is kept in memory with a key that changes when it should.
 
 #### Alternatives that lost
 
 | Considered | Why it lost |
 |---|---|
-| Quitarlas en main | el mismo texto lo usan otros (borradores, copia); es una decisión de cómo se ve |
+| One long git process (`git cat-file --batch`) | more code and state; the cache removes most without it |
+| Polling less often | new things would take longer to show; the cache does not delay them |
 
 #### Decision log, answers as given (2026-11-11)
-- Q: ¿También en «Ampliar»? → A: sí: allí el archivo también se nombra encima (assumed).
-- Q: ¿Y el corte por la derecha? → A: ya hay desplazamiento horizontal (`overflow: auto`); macOS oculta la barra hasta usarla. No se toca (assumed).
+- Q: (cold review) Which segments are saved? → A: only those closed by a commit (with `to`); the open segment and those marked only in the working tree are always listed, with their uncommitted changes (assumed).
+- Q: (cold review) Exactly which key? → A: folder, change, `baseCommit`, `HEAD`, and of the checklist file that is read (`proposal.md`, `tasks.md` or `plan.md`) its path, `mtimeMs` and size; two edits in the same millisecond with the same size remain an accepted risk (assumed).
+- Q: (cold review) When is it emptied? → A: on closing or forgetting the work (`flow.forget`), and the cache never holds more than the open works (assumed).
+- Q: (cold review) `useFlow.ts` → A: out: the saving is in main (assumed).
+- Q: What is fixed? → A: the three measured causes: the box plan cached, a single tmux call per round, and less polling at rest (assumed).
+- Q: With which key the plan cache? → A: folder, `HEAD`, change name and the checklist document's modification date; segments already closed by a commit never change (assumed).
+- Q: How long to wait to batch file notices? → A: 200 ms (assumed).
 
-### Panel en silencio (quiet-panel, 11 nov 2026)
+### Diff without header (diff-header, 11 nov 2026)
 
-- En el Mac de la persona cada proceso cuesta caro: el panel solo pregunta a git cuando un archivo o una ref cambiaron, o han pasado 30 s.
+- None new.
 
 #### Alternatives that lost
 
 | Considered | Why it lost |
 |---|---|
-| Comparar `git status --porcelain` cada vuelta | es un proceso por vuelta: justo lo que se quiere quitar |
-| Sondear menos (cada 10 s) | lo nuevo tardaría más en verse; el vigilante lo ve al momento |
+| Removing them in main | the same text is used by others (drafts, copy); it is a decision about how it looks |
 
 #### Decision log, answers as given (2026-11-11)
-- Q: (revisión en frío) ¿Qué avisos cuentan? → A: una sola regla para todo trabajo: cuenta cualquier ruta del trabajo salvo las que contienen `/node_modules/` o están dentro de una carpeta git; dentro de una carpeta git solo cuentan `HEAD`, `index`, `packed-refs`, `refs/**` y `logs/**`. Para un worktree se vigilan su carpeta, su carpeta git (`worktrees/<nombre>`) y la común; en tu copia, la carpeta y su `.git` ya dentro (assumed).
-- Q: (revisión en frío) ¿Y si el propio `git diff` reescribe `index`? → A: la versión se lee antes de calcular y se guarda con la respuesta: una reescritura propia cuesta como mucho un cálculo más, después git deja `index` quieto (assumed).
-- Q: (revisión en frío) ¿Cuántos vigilantes? → A: se abren al pedir casillas de un trabajo, como mucho 4 a la vez; el quinto cierra el que lleva más sin usarse. Se cierran al cerrar u olvidar el trabajo (assumed).
-- Q: (revisión en frío) ¿La salida de un build (`dist/`, `.next/`)? → A: cuenta como cambio; riesgo aceptado: en ese rato el panel calcula como hoy (assumed).
-- Q: ¿Cómo se sabe que nada cambió sin lanzar git? → A: un vigilante de archivos (FSEvents, `fs.watch` recursivo) sobre la carpeta del trabajo y sobre la carpeta git de su rama (`HEAD`, `refs`, `logs`); cualquier aviso marca el trabajo como cambiado (assumed).
-- Q: ¿Y si el vigilante se pierde un aviso? → A: como mucho 30 s después se vuelve a calcular igualmente (assumed).
+- Q: Also in «Ampliar»? → A: yes: there the file is also named above (assumed).
+- Q: And the cut on the right? → A: there is already horizontal scroll (`overflow: auto`); macOS hides the bar until used. Not touched (assumed).
 
-### Panel nunca en blanco (flow-empty, 11 nov 2026)
+### Quiet panel (quiet-panel, 11 nov 2026)
 
-- Ninguna nueva.
+- On the person's Mac each process is expensive: the panel only asks git when a file or a ref changed, or 30 s have passed.
 
 #### Alternatives that lost
 
 | Considered | Why it lost |
 |---|---|
-| Un esqueleto animado | más código para lo mismo: una frase basta |
+| Compare `git status --porcelain` every round | it is one process per round: exactly what is to be removed |
+| Polling less (every 10 s) | new things would take longer to show; the watcher sees it at once |
 
 #### Decision log, answers as given (2026-11-11)
-- Q: (al construir) `null` del flujo es también una respuesta (trabajo de revisión) → A: `useFlow` da `undefined` mientras espera; solo eso enseña «Leyendo…» (assumed).
-- Q: ¿Qué dice el panel sin casillas? → A: en qué paso está y cuándo salen las casillas; sin botón, porque no hay nada que arreglar (assumed).
+- Q: (cold review) Which notices count? → A: a single rule for every work: any path of the work counts except those containing `/node_modules/` or inside a git folder; inside a git folder only `HEAD`, `index`, `packed-refs`, `refs/**` and `logs/**` count. For a worktree its folder, its git folder (`worktrees/<nombre>`) and the common one are watched; in your copy, the folder and its `.git` already inside (assumed).
+- Q: (cold review) And if `git diff` itself rewrites `index`? → A: the version is read before computing and saved with the answer: its own rewrite costs at most one more computation, after which git leaves `index` alone (assumed).
+- Q: (cold review) How many watchers? → A: they open when a work's boxes are requested, at most 4 at once; the fifth closes the one unused for longest. They close on closing or forgetting the work (assumed).
+- Q: (cold review) The output of a build (`dist/`, `.next/`)? → A: it counts as a change; accepted risk: during that time the panel computes as today (assumed).
+- Q: How is it known that nothing changed without launching git? → A: a file watcher (FSEvents, recursive `fs.watch`) over the work's folder and over the git folder of its branch (`HEAD`, `refs`, `logs`); any notice marks the work as changed (assumed).
+- Q: And if the watcher misses a notice? → A: at most 30 s later it is computed again anyway (assumed).
+
+### Panel never blank (flow-empty, 11 nov 2026)
+
+- None new.
+
+#### Alternatives that lost
+
+| Considered | Why it lost |
+|---|---|
+| An animated skeleton | more code for the same thing: one sentence is enough |
+
+#### Decision log, answers as given (2026-11-11)
+- Q: (while building) the flow's `null` is also an answer (review work) → A: `useFlow` gives `undefined` while waiting; only that shows «Leyendo…» (assumed).
+- Q: What does the panel say with no boxes? → A: which step it is at and when the boxes appear; without a button, because there is nothing to fix (assumed).
 
 ## Task breakdown
 
@@ -617,7 +617,7 @@ Aterrizado**.
   exception to F15; the large code view already is), with the status bar «solo lectura · modo automático» in place
   of F15's.
   Proof: src/renderer/flow/documents.test.ts automatic documents are read-only
-### Subagentes (add-subagents-view, 10 nov 2026)
+### Subagents (add-subagents-view, 10 nov 2026)
 
 - **F27** While the selected workspace has subagent entries, the panel shall show them as branches under
   the current box of the timeline (F38) — or under the «Cambio» line when there is no current box, or under a «Subagentes» line at the top of the panel when there is no change — newest
@@ -625,7 +625,7 @@ Aterrizado**.
   shown, a live dot while it runs or «✓» when it ended, and «{d}» (F27's durations, refreshed every second while
   any runs), its accessible name ending in «trabajando · {d}» or «terminado · {d}»; no «Subagentes» section shall show. One test holds a case per clause.
   Proof: src/renderer/flow/subagents.test.ts subagents hang from the current box
-### Detalle del subagente (add-subagent-detail, 10 nov 2026)
+### Subagent detail (add-subagent-detail, 10 nov 2026)
 
 - **F28** When a subagent branch (F27) is pressed, the panel shall open a modal titled with its
   description (or its type), showing its type and «trabajando · {d}» or «terminado · {d}», and its log
@@ -636,7 +636,7 @@ Aterrizado**.
   close; Escape or «Cerrar» shall close it and return focus to the branch. The proof drives the polling with
   fake timers.
   Proof: src/renderer/flow/subagents.test.ts a subagent opens as a terminal
-### Panel sin scroll (fit-flow-panel, 10 nov 2026)
+### Panel without scroll (fit-flow-panel, 10 nov 2026)
 
 - **F29** While the selected workspace has a Libretto change, the centre of Trabajo shall show, above the
   workspace's repo and title, six segments named Entrada, Spec, Plan, Construir, Revisar and Aterrizar — done ones
@@ -648,28 +648,28 @@ Aterrizado**.
   Proof: src/renderer/flow/subagents.test.ts the panel has no foldable sections
 - **F31** The Libretto panel shall show no list of the branch's files and no «+{n} más» files button.
   Proof: src/renderer/flow/changes.test.ts the panel shows no list of changes
-### Documentos a la vista (show-doc-buttons, 10 nov 2026)
+### Documents in view (show-doc-buttons, 10 nov 2026)
 
 - **F32** The Spec and Plan steps (F29) shall be buttons named «Spec» and «Plan» with a document icon, each
   only from the stage F13 makes it a button on, opening the same document; the panel's «Cambio» line shall carry no
   document buttons.
   Proof: src/renderer/flow/panel.test.ts the documents read as buttons next to the change
-### QA en vivo (add-qa-lab, 10 nov 2026)
+### Live QA (add-qa-lab, 10 nov 2026)
 
 - **F33** The Libretto panel shall show no QA section; QA lives in its own screen (W113).
   Proof: src/renderer/flow/qa.test.ts the panel shows no qa section
-### Coste por trabajo (cost-per-work, 10 nov 2026)
+### Cost per work (cost-per-work, 10 nov 2026)
 
 - **F34** The Libretto panel shall show no text with «$», «≈» or «tokens» for the selected workspace.
   Proof: src/renderer/flow/cost.test.ts the panel shows no cost
-### Tarjeta de pregunta (ask-card, 10 nov 2026)
+### Question card (ask-card, 10 nov 2026)
 
 - **F35** While the flow state's `others` is not empty, the panel shall show «{n} cambios más en este repo» (n its
   length; «1 cambio más en este repo» for one) with a button «Ver en Libretto» that stores that workspace's repo as the Libretto repo (W104) and opens the
   Libretto screen, and no list of their names; with `others` empty, it shall show neither.
   Proof: src/renderer/flow/panel.test.ts other changes lead to Libretto
 
-### Código por casilla (panel-c, 11 nov 2026)
+### Code per box (panel-c, 11 nov 2026)
 
 - **F36** Main shall split a workspace's commits since its base by the commits that turn checklist boxes of its
   current change (proposal or `tasks.md`, as `readChecklist` finds it) from `[ ]` to `[x]`, returning per box its
@@ -698,7 +698,7 @@ Aterrizado**.
   shows «Uno» with a workspace selected.
   Proof: src/renderer/flow/boxes.test.ts the large code opens and closes from the menu and the keyboard
 
-### Subagentes como ramas (subagent-branches, 11 nov 2026)
+### Subagents as branches (subagent-branches, 11 nov 2026)
 
 - **F41** Each time the pointer enters a branch or the branch takes focus (both together counting as one entry), the panel shall ask that subagent's log
   once and show its last non-empty line without its F28 prefix (`⏺ `, `⎿ `, `> `), or «Pensando…» for a thinking
@@ -706,7 +706,7 @@ Aterrizado**.
   ignored; an empty log keeps the description.
   Proof: src/renderer/flow/subagents.test.ts a branch shows what its subagent did last
 
-### Panel más rápido (fast-panel, 11 nov 2026)
+### Faster panel (fast-panel, 11 nov 2026)
 
 - **F42** When `boxDiff` is asked for a file of a box closed by a commit and the plan key is unchanged since the last `boxRanges`, the flow shall run exactly two git commands: one reading `HEAD` and the file's diff over that range — no `log`, `show` or listing.
   Proof: src/main/flow/boxes.test.ts a closed box's diff costs two git commands once planned
@@ -716,12 +716,12 @@ Aterrizado**.
 - **F44** When `HEAD`, the base commit, or the checklist file's path, mtime or size changes, the next `boxRanges` or `boxDiff` shall plan again; closing or forgetting a workspace drops its cached plans.
   Proof: src/main/flow/boxes.test.ts a new commit or checklist edit plans again
 
-### Diff sin cabecera (diff-header, 11 nov 2026)
+### Diff without header (diff-header, 11 nov 2026)
 
 - **F45** The diff shown for a box's file, small or large, shall leave out git's header lines — `diff --git`, `index`, `new file mode`, `deleted file mode`, `similarity`, `rename from`/`rename to`, `---` and `+++` before the first `@@` — and keep every `@@`, added, removed and context line in order, coloured as added or removed even when it starts with `---` or `+++`; a diff with no hunk (a pure rename, a mode change, a binary file) keeps its informative lines.
   Proof: src/renderer/flow/difftext.test.ts a box diff starts at its first hunk
 
-### Panel en silencio (quiet-panel, 11 nov 2026)
+### Quiet panel (quiet-panel, 11 nov 2026)
 
 - **F46** While no counted path (see the Decision log's rule) of the workspace has changed since the version read at the start of the last `boxRanges` answer for the same folder, base and change, and that answer is under 30 s old by the module's clock, `boxRanges` shall return that answer running no process.
   Proof: src/main/flow/quiet.test.ts nothing changed costs no process
@@ -730,7 +730,7 @@ Aterrizado**.
   Proof: src/main/flow/quiet.test.ts an edit or a commit is seen on the next read
 - **F48** At most twelve workspaces shall have a watcher open; opening a thirteenth closes the least recently asked; closing or forgetting a workspace shall close its watcher and drop its saved answer.
   Proof: src/main/flow/quiet.test.ts watchers are bounded and close with their work
-### Panel nunca en blanco (flow-empty, 11 nov 2026)
+### Panel never blank (flow-empty, 11 nov 2026)
 
 - **F49** While a workspace is selected and its flow has not answered yet, the Libretto tab shall show «Leyendo el flujo de este trabajo…».
   Proof: src/renderer/flow/flowempty.test.ts the panel says it is reading

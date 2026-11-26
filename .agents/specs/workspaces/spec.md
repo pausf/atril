@@ -131,7 +131,7 @@ The `workspaces` capability, phase 1. Its siblings in this change: `.agents/spec
 - An automatic workspace shows «Auto» on its row; its Spec, Plan and Checklist open read-only.
 - Before an automatic agent pushes or opens a request, Claude Code asks the person.
 
-### Subagentes (add-subagents-view, 10 nov 2026)
+### Subagents (add-subagents-view, 10 nov 2026)
 
 - The flow panel shows the workspace's subagents: what each was asked (its description, or its type
   when none is known), its type, and «trabajando · 1 min 20 s» or «terminado · 45 s».
@@ -139,213 +139,213 @@ The `workspaces` capability, phase 1. Its siblings in this change: `.agents/spec
 - SubagentStart and SubagentStop never change the workspace's own state (working / needs-you); the
   Agent call itself and the subagent's tool calls still count as working, as today.
 
-### Detalle del subagente (add-subagent-detail, 10 nov 2026)
+### Subagent detail (add-subagent-detail, 10 nov 2026)
 
-- Pulsar un subagente del panel abre un modal que parece una terminal y enseña lo que ha hecho y está
-  haciendo ese Claude, leído de su archivo local, sin gastar cuota.
-- Mientras el subagente trabaja, el modal se actualiza solo cada segundo; al terminar se queda quieto.
-- La descripción de cada subagente sale de su `meta.json`, así que dos subagentes del mismo tipo
-  lanzados a la vez ya no pueden intercambiarse la etiqueta.
-- El hook ya no guarda la cola `pending` ni lee el PreToolUse de `Agent` para los subagentes.
+- Clicking a subagent in the panel opens a modal that looks like a terminal and shows what that Claude has done and is
+  doing, read from its local file, without spending quota.
+- While the subagent works, the modal refreshes itself every second; when it finishes, it stays still.
+- Each subagent's description comes from its `meta.json`, so two subagents of the same type
+  launched at once can no longer swap labels.
+- The hook no longer keeps the `pending` queue nor reads the `Agent` PreToolUse for subagents.
 
-### Instalar desde el doctor (add-doctor-install-terminal, 10 nov 2026)
+### Install from the doctor (add-doctor-install-terminal, 10 nov 2026)
 
-- En el aviso «N herramienta(s) por instalar», cada herramienta con comando tiene **Instalar** al lado
-  de Copiar. Al pulsarlo se abre Terminal.app con ese comando ya en marcha y el elemento dice
+- In the «N herramienta(s) por instalar» notice, each tool with a command has **Instalar** next to
+  Copiar. Pressing it opens Terminal.app with that command already running and the item says
   «Instalando en Terminal…».
-- Al volver a Atril, el doctor comprueba otra vez: lo instalado desaparece de la lista y, si ya no
-  falta nada, el aviso entero.
+- On returning to Atril, the doctor checks again: what was installed disappears from the list and, if nothing
+  is missing any more, the whole notice goes.
 
-### Paleta Grafito (adopt-grafito, 10 nov 2026)
+### Grafito palette (adopt-grafito, 10 nov 2026)
 
-- Ajustes → Apariencia tiene «Paleta: Original · Grafito» encima de «Claro · Oscuro · Automático».
-- Con Grafito, fondos, superficies, líneas y textos son la escala de grises fría de Grafito y el único
-  color de acción es su azul apagado (también «te necesita», foco, en marcha y modos); añadido y quitado
-  usan su verde y su rojo apagados. Con Original, nada cambia.
-- La elección se guarda y se aplica al abrir, como el tema.
-- El boceto `fase1-nucleo.html` ofrece la misma elección.
+- Ajustes → Apariencia has «Paleta: Original · Grafito» above «Claro · Oscuro · Automático».
+- With Grafito, backgrounds, surfaces, lines and text are Grafito's cool grey scale and the only
+  action colour is its muted blue (also «te necesita», focus, running and modes); added and removed
+  use its muted green and red. With Original, nothing changes.
+- The choice is saved and applied on launch, like the theme.
+- The `fase1-nucleo.html` sketch offers the same choice.
 
-### Tutorial de 24 pasos (expand-tour, 10 nov 2026)
+### 24-step tutorial (expand-tour, 10 nov 2026)
 
-El tutorial recorre 24 pasos que explican toda la app, sin dejar piezas sin contar: la lista y los
-textos, en «Pasos» abajo. Los que tienen elemento en pantalla lo iluminan; los que no, salen centrados.
+The tutorial walks through 24 steps that explain the whole app, leaving no piece unexplained: the list and the
+texts are under «Pasos» below. Those with an on-screen element highlight it; the rest appear centred.
 
-### Respuestas rápidas (quick-replies, 10 nov 2026)
+### Quick replies (quick-replies, 10 nov 2026)
 
-- Una fila «te necesita» enseña la pregunta y, debajo, sus respuestas como botones pequeños; pulsar una se
-  la manda al agente sin cambiar de trabajo, y la fila dice «Enviado».
-- Al volver el agente a trabajar, los botones desaparecen.
+- A «te necesita» row shows the question and, below it, its answers as small buttons; pressing one sends it
+  to the agent without switching work, and the row says «Enviado».
+- When the agent goes back to work, the buttons disappear.
 
-### Modo foco (focus-mode, 10 nov 2026)
+### Focus mode (focus-mode, 10 nov 2026)
 
-- ⌘⇧F deja a la vista solo el trabajo elegido: su terminal y su panel; ⌘⇧F otra vez, o «Salir del foco», lo
-  devuelve todo.
-- Mientras tanto, si otro agente te necesita y Atril está delante, una pastilla te lo dice sin moverte;
-  ⌘↩ te lleva y «Volver a …» te trae de vuelta, sin salir del foco.
+- ⌘⇧F leaves in view only the chosen work: its terminal and its panel; ⌘⇧F again, or «Salir del foco», brings
+  everything back.
+- Meanwhile, if another agent needs you and Atril is in front, a pill tells you without moving you;
+  ⌘↩ takes you there and «Volver a …» brings you back, without leaving focus.
 
-### Todos los agentes (agents-overview, 10 nov 2026)
+### All agents (agents-overview, 10 nov 2026)
 
-- ⌘⇧A (o «Todos») enseña todos los trabajos como tarjetas, ordenadas por quién te necesita; pulsar una
-  la abre. Se contesta a un agente desde su tarjeta sin abrirla.
+- ⌘⇧A (or «Todos») shows all the works as cards, ordered by who needs you; clicking one
+  opens it. You answer an agent from its card without opening it.
 
-### QA en vivo (add-qa-lab, 10 nov 2026)
+### Live QA (add-qa-lab, 10 nov 2026)
 
-- En un trabajo cuyo repo es una app web, Android o iOS, «Probar en vivo» abre un panel de tmux con un Claude de
-  QA que arranca la app, la recorre según la spec del cambio y guarda capturas.
-- La sección «QA» del panel de Libretto lista esas capturas (las más nuevas primero) y al pulsar una se ve grande.
-- «Detener QA» cierra ese panel; nada más se toca.
+- In a work whose repo is a web, Android or iOS app, «Probar en vivo» opens a tmux pane with a QA Claude that
+  starts the app, walks through it following the change's spec and saves screenshots.
+- The «QA» section of the Libretto panel lists those screenshots (newest first) and clicking one shows it large.
+- «Detener QA» closes that pane; nothing else is touched.
 
-### Pausar un agente (pause-agent, 10 nov 2026)
+### Pause an agent (pause-agent, 10 nov 2026)
 
-- Un agente que trabaja se puede pausar: deja de trabajar, su sesión sigue viva y la fila dice «en pausa».
-- «Reanudar» le pide que siga; la fila vuelve a «trabajando» cuando el agente se mueve.
+- A working agent can be paused: it stops working, its session stays alive and the row says «en pausa».
+- «Reanudar» asks it to continue; the row goes back to «trabajando» when the agent moves.
 
-### Coste por trabajo (cost-per-work, 10 nov 2026)
+### Cost per work (cost-per-work, 10 nov 2026)
 
-- Cada trabajo enseña cuántos tokens lleva gastados (con sus subagentes) y su coste estimado a precio de API.
+- Each work shows how many tokens it has spent (with its subagents) and its estimated cost at API prices.
 
-### Historial (work-history, 10 nov 2026)
+### History (work-history, 10 nov 2026)
 
-- Lo que terminaste queda a la vista con su etapa, cuánto duró y cuánto costó, aunque ya no esté en marcha.
+- What you finished stays in view with its stage, how long it took and how much it cost, even if it is no longer running.
 
-### Primeros pasos (first-run-setup, 10 nov 2026)
+### First steps (first-run-setup, 10 nov 2026)
 
-- Alguien que abre Atril por primera vez ve qué falta para empezar, cada cosa con su botón, y los pasos se marcan
-  solos según lo va haciendo.
+- Someone opening Atril for the first time sees what is missing to get started, each item with its button, and the steps tick
+  themselves off as they go.
 
-### Empaquetar (package-and-sign, 10 nov 2026)
+### Packaging (package-and-sign, 10 nov 2026)
 
-- `pnpm dist` deja en `dist/` un `.dmg` y un `.zip` arm64 firmados (propio o ad-hoc) con todo lo que la app necesita
-  dentro; una página explica cómo construirlo, firmarlo y abrirlo.
+- `pnpm dist` leaves in `dist/` a signed arm64 `.dmg` and `.zip` (own identity or ad-hoc) with everything the app needs
+  inside; a page explains how to build, sign and open it.
 
 ### Libretto (libretto-view, 10 nov 2026)
 
-- Desde Atril se encola una idea sin abrir una terminal, se ve la cola y lo que está en curso de cada repo, y una idea
-  encolada se empieza con un clic en su propio trabajo, siguiendo Libretto.
+- From Atril you queue an idea without opening a terminal, see the queue and what each repo has in progress, and a
+  queued idea is started with one click in its own work, following Libretto.
 
-### Tarjeta de pregunta (ask-card, 10 nov 2026)
+### Question card (ask-card, 10 nov 2026)
 
-- Cuando un agente pregunta, su fila crece en una tarjeta con la pregunta entera y las respuestas numeradas; no
-  choca con la fila de abajo. El panel ya no tiene «Otros cambios»: dice «{n} cambios más en este repo» y «Ver en Libretto».
+- When an agent asks, its row grows into a card with the whole question and numbered answers; it does not
+  collide with the row below. The panel no longer has «Otros cambios»: it says «{n} cambios más en este repo» and «Ver en Libretto».
 
-### Gestionar la cola (queue-manage, 10 nov 2026)
+### Manage the queue (queue-manage, 10 nov 2026)
 
-- Una idea en cola se puede corregir, quitar o mandar a Jira sin abrir archivos, y cada idea enseña de qué va.
+- A queued idea can be corrected, removed or sent to Jira without opening files, and each idea shows what it is about.
 
-### Cabecera tranquila (quiet-header, 11 nov 2026)
+### Quiet header (quiet-header, 11 nov 2026)
 
-- La cabecera de un trabajo se lee de un vistazo y Atril no enseña dinero ni tokens.
+- A work's header reads at a glance and Atril shows no money or tokens.
 
-### Pantalla de QA (qa-screen, 11 nov 2026)
+### QA screen (qa-screen, 11 nov 2026)
 
-- QA tiene su pantalla: eliges el trabajo y ves qué criterios de su cambio se han visto funcionar en la app, cómo los
-  probó el agente, y conviertes un fallo en tarea de Jira o en un encargo al agente con un clic.
+- QA has its own screen: you pick the work and see which criteria of its change were seen working in the app, how the
+  agent tested them, and you turn a failure into a Jira task or an assignment to the agent with one click.
 
-### QA: dónde se prueba (qa-targets, 11 nov 2026)
+### QA: where it is tested (qa-targets, 11 nov 2026)
 
-- La tarjeta de QA de un trabajo enseña una pestaña por plataforma que se puede probar (Chrome, Safari, Android, iOS), con el porqué en una línea («Hay un `package.json` con el script `dev`»). La pestaña elegida se recuerda por repo.
-- «Probar en vivo» lanza el QA de la pestaña elegida con su motor y, en móvil, con un emulador o simulador reservado para ese trabajo; un segundo trabajo coge otro.
-- Cuando algo falta, la tarjeta dice qué pasó, qué no puedes hacer y trae el botón que lo arregla.
-- Sin nada detectado: «No sé cómo abrir este proyecto» con «Elegir a mano».
+- A work's QA card shows one tab per platform that can be tested (Chrome, Safari, Android, iOS), with the reason in one line («Hay un `package.json` con el script `dev`»). The chosen tab is remembered per repo.
+- «Probar en vivo» launches the chosen tab's QA with its engine and, on mobile, with an emulator or simulator reserved for that work; a second work gets another.
+- When something is missing, the card says what happened, what you cannot do because of it, and brings the button that fixes it.
+- With nothing detected: «No sé cómo abrir este proyecto» with «Elegir a mano».
 
-### Errores claros (plain-errors, 11 nov 2026)
+### Clear errors (plain-errors, 11 nov 2026)
 
-- El pie nunca enseña un código HTTP ni un host como frase: dice qué pasa en castellano, trae su botón y el código va en «Ver detalle».
-- Una herramienta que no contesta a su `--version` sale como «no responde» a los 5 s, con su botón de instalar, en vez de «Comprobando…» para siempre.
-- Conectar Jira con una dirección que no responde dice qué falló (no encuentro la dirección, certificado, no responde) sin «TypeError», y el código va en «Ver detalle».
+- The footer never shows an HTTP code or a host as a sentence: it says what is happening in plain Spanish, brings its button and the code goes in «Ver detalle».
+- A tool that does not answer its `--version` shows as «no responde» after 5 s, with its install button, instead of «Comprobando…» forever.
+- Connecting Jira with an address that does not respond says what failed (address not found, certificate, no response) without «TypeError», and the code goes in «Ver detalle».
 
-### PATH del shell (login-path, 11 nov 2026)
+### Shell PATH (login-path, 11 nov 2026)
 
-- Abierta desde el Dock, Atril encuentra `claude`, `tmux`, `git` y `jira` donde los encuentra tu terminal; el doctor deja de decir que faltan.
+- Opened from the Dock, Atril finds `claude`, `tmux`, `git` and `jira` where your terminal finds them; the doctor stops saying they are missing.
 
-### Copia con cambios (dirty-copy, 11 nov 2026)
+### Copy with changes (dirty-copy, 11 nov 2026)
 
-- Al abrir un trabajo en un repo que trabaja en tu copia, si tiene cambios o ya tiene un trabajo, el diálogo dice qué pasa con cifras y ramas, que no se ha creado nada, y trae «Usar un worktree esta vez»; los ficheros van plegados.
+- When opening a work in a repo that works in your copy, if it has changes or already has a work, the dialog says what is happening with figures and branches, that nothing has been created, and brings «Usar un worktree esta vez»; the files are folded.
 
-### Abrir y cerrar sin errores crudos (ws-errors, 11 nov 2026)
+### Open and close without raw errors (ws-errors, 11 nov 2026)
 
-- Ningún fallo al abrir o cerrar un trabajo enseña stderr en la frase: dice qué paso falló, qué no se ha hecho y trae su botón; la salida de git o tmux va en «Ver detalle».
-- Cerrar un trabajo con el agente vivo pide confirmación en la fila.
-- El aviso de un cierre rechazado se puede cerrar.
+- No failure when opening or closing a work shows stderr in the sentence: it says which step failed, what has not been done and brings its button; git or tmux output goes in «Ver detalle».
+- Closing a work with a live agent asks for confirmation in the row.
+- The notice of a rejected close can be dismissed.
 
-### Modelo y esfuerzo (model-pick, 11 nov 2026)
+### Model and effort (model-pick, 11 nov 2026)
 
-- Al abrir un trabajo eliges también el esfuerzo; el agente arranca con `--effort` y el trabajo lo recuerda.
-- Si la tarea parece un arreglo acotado o un cambio grande, el diálogo sugiere modelo y esfuerzo con su porqué; «Usar» lo aplica.
-- El coste por trabajo cuenta la lectura de caché de Fable y el tramo largo de Haiku.
+- When opening a work you also choose the effort; the agent starts with `--effort` and the work remembers it.
+- If the task looks like a bounded fix or a big change, the dialog suggests model and effort with its reason; «Usar» applies it.
+- Cost per work counts Fable's cache read and Haiku's long tier.
 
-### Volver a abrir (reopen-work, 11 nov 2026)
+### Reopen (reopen-work, 11 nov 2026)
 
-- Un trabajo parado dice por qué está parado y trae «Volver a abrir»; al pulsarlo, la terminal vuelve con el agente siguiendo su conversación.
-- «Seguir con más esfuerzo» hace lo mismo un nivel por encima y lo recuerda.
-- Un trabajo parado no enseña «Escribe en la terminal como siempre».
+- A stopped work says why it is stopped and brings «Volver a abrir»; pressing it, the terminal comes back with the agent continuing its conversation.
+- «Seguir con más esfuerzo» does the same one level higher and remembers it.
+- A stopped work does not show «Escribe en la terminal como siempre».
 
-### Archivos de estado dañados (state-files, 11 nov 2026)
+### Damaged state files (state-files, 11 nov 2026)
 
-- Con un archivo de estado dañado, la barra lateral y Ajustes → Repos dicen cuál y qué no puedes hacer, con «Mostrar en Finder»; no salen los vacíos de «Aquí verás…» ni «Aún no hay ninguno».
-- Abrir, cerrar, olvidar y reabrir un trabajo no crean ni borran nada mientras uno de los dos archivos está dañado.
-- Sin permiso de escritura en la carpeta de Atril, abrir un trabajo lo dice con su botón y no deja nada a medias.
-- El sondeo y la lista de trabajos no sueltan rechazos sin capturar por estos archivos.
+- With a damaged state file, the sidebar and Ajustes → Repos say which one and what you cannot do, with «Mostrar en Finder»; the «Aquí verás…» and «Aún no hay ninguno» empty states do not appear.
+- Opening, closing, forgetting and reopening a work neither create nor delete anything while one of the two files is damaged.
+- Without write permission on Atril's folder, opening a work says so with its button and leaves nothing half-done.
+- The poll and the work list do not leak unhandled rejections over these files.
 
-### Jira, GitHub y GitLab (net-errors, 11 nov 2026)
+### Jira, GitHub and GitLab (net-errors, 11 nov 2026)
 
-- Una sola tabla en main traduce cada estado HTTP y cada causa de red de Jira, GitHub y GitLab a una frase con su arreglo.
+- A single table in main translates every HTTP status and every network cause of Jira, GitHub and GitLab into a sentence with its fix.
 
-### Modelos de Libretto (libretto-models, 11 nov 2026)
+### Libretto models (libretto-models, 11 nov 2026)
 
-- Las revisiones de Libretto que lanzan los agentes de Atril corren en Sonnet: la mitad de precio que Opus, como recomienda el artículo para tareas repetidas.
+- The Libretto reviews that Atril's agents launch run on Sonnet: half the price of Opus, as the article recommends for repeated tasks.
 
-### Repos rotos (repo-gone, 11 nov 2026)
+### Broken repos (repo-gone, 11 nov 2026)
 
-- Abrir un trabajo en un repo cuya carpeta no está o no es git lo dice con «Abrir Ajustes», sin texto de git.
-- Ajustes → Repos marca los repos rotos y deja buscar su carpeta o quitarlos; cualquier repo se puede quitar.
-- Con git roto, abrir o cerrar un trabajo dice «git no funciona en este Mac» con «Instalar herramientas de Xcode».
+- Opening a work in a repo whose folder is missing or is not git says so with «Abrir Ajustes», without git text.
+- Ajustes → Repos flags broken repos and lets you find their folder or remove them; any repo can be removed.
+- With git broken, opening or closing a work says «git no funciona en este Mac» with «Instalar herramientas de Xcode».
 
-### Terminal que no engancha (term-attach, 11 nov 2026)
+### Terminal that does not attach (term-attach, 11 nov 2026)
 
-- Si la terminal no engancha, el centro lo dice, dice que el agente sigue trabajando y trae «Volver a intentar»; nada queda sin capturar.
+- If the terminal does not attach, the centre says so, says the agent keeps working and brings «Volver a intentar»; nothing goes uncaught.
 
-### Panel más rápido (fast-panel, 11 nov 2026)
+### Faster panel (fast-panel, 11 nov 2026)
 
-- El estado de los agentes cuesta un proceso de tmux por vuelta y los observadores juntan ráfagas.
+- Agent state costs one tmux process per cycle and the watchers coalesce bursts.
 
-### Grafito: te necesita (grafito-you, 11 nov 2026)
+### Grafito: needs you (grafito-you, 11 nov 2026)
 
-- En Grafito, la fila que te necesita es la única en azul.
+- In Grafito, the row that needs you is the only one in blue.
 
-### Radar de choques (radar, 11 nov 2026)
+### Clash radar (radar, 11 nov 2026)
 
-- Con tres trabajos en el mismo repo, si dos tocan `src/cart.ts`, sus dos filas lo dicen antes de abrir ninguna MR.
+- With three works in the same repo, if two touch `src/cart.ts`, their two rows say so before any MR is opened.
 
-### Lecciones para cada agente (lessons-first, 11 nov 2026)
+### Lessons for every agent (lessons-first, 11 nov 2026)
 
-- En un repo con lecciones, cada agente que abre Atril (nuevo, reabierto o de QA no) empieza sabiendo que existen y leyéndolas.
+- In a repo with lessons, every agent that Atril opens (new, reopened or not QA) starts knowing they exist and reading them.
 
-### Dónde se atasca (stuck, 11 nov 2026)
+### Where it gets stuck (stuck, 11 nov 2026)
 
-- En Terminados ves cuánto tardó cada trabajo en cada tramo y en cuál se te va el tiempo normalmente.
+- In Terminados you see how long each work took in each stage and in which one your time usually goes.
 
-### QA en la MR (qa-to-mr, 11 nov 2026)
+### QA on the MR (qa-to-mr, 11 nov 2026)
 
-- Quien revisa la MR ve qué criterios se probaron en vivo y con qué resultado, sin salir de GitHub o GitLab.
+- Whoever reviews the MR sees which criteria were tested live and with what result, without leaving GitHub or GitLab.
 
-### Notificaciones (main) (notify-core, 12 nov 2026)
+### Notifications (main) (notify-core, 12 nov 2026)
 
 - Main tells you, by the work's name, when an agent asks, ends its turn, stops, keeps waiting, collides with another work, finishes QA; when CI breaks or comes back; when an MR is merged or closed; when Claude's quota reaches 80 %.
 - At most one Mac notification every 2 min when grouping is on; nothing on the Mac in quiet hours or, if you ask for it, in focus mode.
 - MR notices keep coming with the window closed.
 
-### Terminal de solo lectura (terminal-read-only, 14 nov 2026)
+### Read-only terminal (terminal-read-only, 14 nov 2026)
 
-- La terminal de cada trabajo se ve en vivo y se puede seleccionar y copiar, pero ninguna tecla llega al agente.
-- Cuando el agente espera, Atril dice qué espera, en castellano, con botones: una pregunta con sus opciones y su porqué; un permiso con lo que quiere ejecutar; un fin de turno con lo que ha dicho; nunca «Claude needs your permission» ni «Claude is waiting for your input».
-- Debajo de la terminal, una caja «Escribe al agente» manda cualquier mensaje.
-- En Automático no sale ninguna tarjeta: Atril elige la recomendada y dice «Sigue con el plan; no hagas nada que no esté en él.» solo, y en la fila queda «Decidió: {opción}»; solo se para en el push y la MR, en un fallo de verdad o en un permiso que Claude Code no concede solo.
-- Un agente que acaba su turno mientras sigue con subagentes o tareas en segundo plano sale como «trabajando», no como «te necesita».
+- Each work's terminal is shown live and can be selected and copied, but no key reaches the agent.
+- When the agent waits, Atril says what it waits for, in Spanish, with buttons: a question with its options and its reason; a permission with what it wants to run; an end of turn with what it said; never «Claude needs your permission» nor «Claude is waiting for your input».
+- Below the terminal, an «Escribe al agente» box sends any message.
+- In Automático no card appears: Atril picks the recommended one and says «Sigue con el plan; no hagas nada que no esté en él.» by itself, and the row keeps «Decidió: {opción}»; it stops only at the push and the MR, at a real failure or at a permission Claude Code does not grant by itself.
+- An agent that ends its turn while it continues with subagents or background tasks shows as «trabajando», not «te necesita».
 
-### Escalera de corrección (harness-ladder, 20 nov 2026)
+### Correction ladder (harness-ladder, 20 nov 2026)
 
-Cuatro errores que ya se pagaron dejan de poder repetirse sin que `pnpm lint` o el commit lo paren, con un mensaje que dice qué usar en su lugar; las lecciones que los cubrían dicen qué regla las sustituye.
+Four mistakes that were already paid for can no longer repeat without `pnpm lint` or the commit stopping them, with a message that says what to use instead; the lessons that covered them say which rule replaces them.
 
 ## Scope boundaries
 
@@ -453,7 +453,7 @@ the mode from task size automatically, a setting for the default mode.
 
 **Never scoped out:** the task text stays one argv element (W40); the push needs the person.
 
-### Subagentes (add-subagents-view, 10 nov 2026)
+### Subagents (add-subagents-view, 10 nov 2026)
 
 **In:** the two hook events, the description from the Agent tool, the list per workspace, the row
 count. **Out:** reading a subagent's transcript or output (superseded by add-subagent-detail), stopping a subagent from Atril, subagents of
@@ -461,238 +461,238 @@ subagents shown as a tree, history past the next prompt.
 
 **Never scoped out:** the hook payload is read once and only the listed fields leave it (as today).
 
-### Detalle del subagente (add-subagent-detail, 10 nov 2026)
+### Subagent detail (add-subagent-detail, 10 nov 2026)
 
-**In:** la ruta del archivo en la entrada (solo en main), la descripción desde el meta, el registro
-del subagente como líneas, el modal terminal y su refresco.
+**In:** the file path in the entry (main only), the description from the meta, the subagent's log
+as lines, the terminal modal and its refresh.
 
-**Out:** escribirle al subagente o pararlo; ver el razonamiento (`thinking`) por dentro; subagentes de
-subagentes; registros de subagentes de antes de este cambio (no tienen ruta: el modal dice que no
-hay registro); colores por herramienta; buscar dentro del registro.
+**Out:** writing to the subagent or stopping it; seeing the reasoning (`thinking`) inside; subagents of
+subagents; logs of subagents from before this change (they have no path: the modal says there is no
+log); colours per tool; searching inside the log.
 
-**Never scoped out:** la ventana nunca manda una ruta: pide por id de trabajo e id de subagente y main
-solo lee la ruta que guardó el hook; el contenido se pinta como texto, nunca como HTML; el modal
-se maneja con teclado (foco al abrir, Tab dentro, Esc cierra y devuelve el foco a la fila).
+**Never scoped out:** the window never sends a path: it asks by work id and subagent id and main
+only reads the path the hook saved; the content is painted as text, never as HTML; the modal
+is keyboard-operable (focus on open, Tab inside, Esc closes and returns focus to the row).
 
-### Instalar desde el doctor (add-doctor-install-terminal, 10 nov 2026)
+### Install from the doctor (add-doctor-install-terminal, 10 nov 2026)
 
-**In:** el botón, el handler en main, el texto de estado, volver a comprobar al recuperar el foco.
+**In:** the button, the handler in main, the status text, re-checking on regaining focus.
 
-**Out:** elegir otra terminal; ver la instalación dentro de Atril; detectar el final de la instalación;
-instalar varias a la vez con un botón; actualizar herramientas que ya están.
+**Out:** choosing another terminal; watching the install inside Atril; detecting the end of the install;
+installing several at once with one button; updating tools that are already there.
 
-**Never scoped out:** la ventana solo manda el nombre de la herramienta y main ejecuta únicamente el
-comando de su lista (W21); un fallo al abrir Terminal se dice en el elemento; el botón se alcanza y
-se pulsa con teclado.
+**Never scoped out:** the window only sends the tool's name and main runs only the
+command from its list (W21); a failure to open Terminal is said on the item; the button is reached and
+pressed by keyboard.
 
-### Paleta Grafito (adopt-grafito, 10 nov 2026)
+### Grafito palette (adopt-grafito, 10 nov 2026)
 
-**In:** el campo `palette` en el estado de la interfaz, el selector en Apariencia, los tokens de Grafito
-en claro y oscuro, el boceto.
-**Out:** tipografía, espaciado, radios e iconos de Grafito; las variantes Salvia, Arcilla y Ciruela;
-cambiar la paleta original.
-**Never scoped out:** contraste de texto ≥ 4,5:1 en las dos paletas y los dos temas; el selector con
-teclado y estado legible (`aria-pressed`).
+**In:** the `palette` field in the interface state, the selector in Apariencia, Grafito's tokens
+in light and dark, the sketch.
+**Out:** Grafito's typography, spacing, radii and icons; the Salvia, Arcilla and Ciruela variants;
+changing the original palette.
+**Never scoped out:** text contrast ≥ 4.5:1 in both palettes and both themes; the selector with
+keyboard and readable state (`aria-pressed`).
 
-### Tutorial de 24 pasos (expand-tour, 10 nov 2026)
+### 24-step tutorial (expand-tour, 10 nov 2026)
 
-**In:** los 24 pasos, sus textos y atajos, los `data-tour` que falten, la bienvenida.
-**Out:** cambiar cómo funciona el tutorial (foco, posiciones, teclado); vídeos o animaciones; un tutorial
-por pantalla.
-**Never scoped out:** castellano de España y su inglés en `i18n-en.ts`; manejable con teclado (W25).
+**In:** the 24 steps, their texts and shortcuts, the missing `data-tour`s, the welcome.
+**Out:** changing how the tutorial works (focus, positions, keyboard); videos or animations; a tutorial
+per screen.
+**Never scoped out:** Spain Spanish and its English in `i18n-en.ts`; keyboard-operable (W25).
 
-### Respuestas rápidas (quick-replies, 10 nov 2026)
+### Quick replies (quick-replies, 10 nov 2026)
 
-**In:** guardar las opciones de la primera pregunta en el estado, los botones de la fila, el envío.
-**Out:** respuestas configurables; varias preguntas; botones en el panel, en «Qué me toca» o en la
-notificación (ya tiene su campo, N3); modo foco (otro cambio).
-**Never scoped out:** el texto de las opciones se pinta como texto; se envía solo al pulsar y al panel de
-ese trabajo; teclado; si el trabajo ya no está, «No se pudo enviar: ese trabajo ya no está» (N3).
+**In:** saving the first question's options in the state, the row's buttons, the sending.
+**Out:** configurable answers; several questions; buttons in the panel, in «Qué me toca» or in the
+notification (it already has its field, N3); focus mode (another change).
+**Never scoped out:** the options' text is painted as text; it is sent only on press and to that
+work's panel; keyboard; if the work is gone, «No se pudo enviar: ese trabajo ya no está» (N3).
 
-### Modo foco (focus-mode, 10 nov 2026)
+### Focus mode (focus-mode, 10 nov 2026)
 
-**In:** el estado de foco, el menú y atajo, esconder barra y «Qué me toca», la pastilla, saltar y volver,
-suprimir el aviso del Mac con Atril delante.
-**Out:** foco por tiempo (pomodoro), silenciar sonidos del sistema, foco en Tareas o MR, recordar el foco.
-**Never scoped out:** ningún agente se pierde: la pastilla nombra a todos los que te necesitan (el primero y
-«+N»); con Atril detrás el aviso del Mac sigue; teclado para todo.
+**In:** the focus state, the menu and shortcut, hiding the bar and «Qué me toca», the pill, jumping and returning,
+suppressing the Mac notice with Atril in front.
+**Out:** timed focus (pomodoro), silencing system sounds, focus in Tareas or MR, remembering the focus.
+**Never scoped out:** no agent is lost: the pill names all who need you (the first one and
+«+N»); with Atril behind, the Mac notice still comes; keyboard for everything.
 
-### Todos los agentes (agents-overview, 10 nov 2026)
+### All agents (agents-overview, 10 nov 2026)
 
-**In:** el modo «Todos», las tarjetas, su orden, abrir una, respuestas rápidas en la tarjeta.
-**Out:** varias terminales a la vez, arrastrar para reordenar, acciones en lote, filtros.
-**Never scoped out:** estados con texto (W22); teclado: las tarjetas son botones y las flechas se mueven
-entre ellas; el modo foco (W77) sigue siendo de un trabajo.
+**In:** the «Todos» mode, the cards, their order, opening one, quick replies on the card.
+**Out:** several terminals at once, drag to reorder, batch actions, filters.
+**Never scoped out:** states with text (W22); keyboard: the cards are buttons and the arrows move
+between them; focus mode (W77) remains single-work.
 
-### QA en vivo (add-qa-lab, 10 nov 2026)
+### Live QA (add-qa-lab, 10 nov 2026)
 
-**In:** detectar el tipo, el botón, el archivo de MCP por sesión, el panel de QA, la lista de capturas.
-**Out:** grabar vídeo; ejecutar suites e2e propias del proyecto; elegir AVD o simulador en Ajustes (lo decide
-el Claude de QA); comparar capturas entre versiones; instalar Xcode o el SDK de Android.
-**Never scoped out:** nada se lanza sin pulsar; la configuración global de Claude no se toca; si falta `node`,
-`adb` o `xcrun` para ese tipo, se dice qué falta en vez de lanzar; las capturas se pintan como imagen local.
+**In:** detecting the type, the button, the per-session MCP file, the QA panel, the screenshot list.
+**Out:** recording video; running the project's own e2e suites; choosing AVD or simulator in Ajustes (the
+QA Claude decides); comparing screenshots across versions; installing Xcode or the Android SDK.
+**Never scoped out:** nothing launches without a press; Claude's global configuration is not touched; if `node`,
+`adb` or `xcrun` is missing for that type, what is missing is said instead of launching; screenshots are painted as a local image.
 
-### Pausar un agente (pause-agent, 10 nov 2026)
+### Pause an agent (pause-agent, 10 nov 2026)
 
-**In:** pausar y reanudar uno, el estado «en pausa», el menú, ⌘⇧P, la tarjeta.
-**Out:** pausar todos a la vez; pausas programadas; liberar la cuota (la sesión sigue abierta).
-**Never scoped out:** solo al pulsar; solo al panel de ese trabajo; teclado; el estado se escribe con texto (W22).
+**In:** pausing and resuming one, the «en pausa» state, the menu, ⌘⇧P, the card.
+**Out:** pausing all at once; scheduled pauses; freeing quota (the session stays open).
+**Never scoped out:** only on press; only to that work's panel; keyboard; the state is written as text (W22).
 
-### Coste por trabajo (cost-per-work, 10 nov 2026)
+### Cost per work (cost-per-work, 10 nov 2026)
 
-**In:** guardar la ruta del transcript, sumar usage sin duplicados con subagentes, la tabla de precios, mostrarlo.
-**Out:** coste real de la suscripción; presupuestos o avisos de gasto; histórico (va con el historial); la cuota
-de 5 h por trabajo.
-**Never scoped out:** nada sale del Mac; el contenido de los transcripts no se guarda ni se muestra; se lee
-como mucho cada 30 s y solo los bytes nuevos.
+**In:** saving the transcript path, summing usage without duplicates with subagents, the price table, showing it.
+**Out:** the subscription's real cost; budgets or spend alerts; history (goes with the history); the 5 h quota
+per work.
+**Never scoped out:** nothing leaves the Mac; transcript content is neither stored nor shown; it is read
+at most every 30 s and only the new bytes.
 
-### Historial (work-history, 10 nov 2026)
+### History (work-history, 10 nov 2026)
 
-**In:** `createdAt` en los registros nuevos, la línea al quitar, la sección «Terminados».
-**Out:** reabrir desde el historial; buscar o filtrar; el informe exportable (otra idea); MR enlazada (Atril no la
-guarda aún).
-**Never scoped out:** escritura atómica (W80); nada de contenido; teclado en la sección.
+**In:** `createdAt` in new records, the line on removal, the «Terminados» section.
+**Out:** reopening from history; searching or filtering; the exportable report (another idea); linked MR (Atril does not
+store it yet).
+**Never scoped out:** atomic write (W80); no content; keyboard in the section.
 
-### Primeros pasos (first-run-setup, 10 nov 2026)
+### First steps (first-run-setup, 10 nov 2026)
 
-**In:** la tarjeta, sus cinco pasos leídos del estado real, los botones, «Ya lo tengo» recordado.
-**Out:** instalar herramientas desde la tarjeta sin el doctor; crear el token por la persona; un asistente modal.
-**Never scoped out:** teclado; textos por `t()`; nada se hace sin pulsar.
+**In:** the card, its five steps read from real state, the buttons, «Ya lo tengo» remembered.
+**Out:** installing tools from the card without the doctor; creating the token for the person; a modal wizard.
+**Never scoped out:** keyboard; texts through `t()`; nothing is done without a press.
 
-### Empaquetar (package-and-sign, 10 nov 2026)
+### Packaging (package-and-sign, 10 nov 2026)
 
-**In:** la dependencia (con `electron-winstaller` sin scripts de instalación), la configuración (y sus globales `.cjs` en ESLint), los entitlements, el script, la página de instalación.
-**Out:** abrirlo en otro Mac como criterio, notarización, actualizaciones automáticas, x64, Windows/Linux, publicar el `.dmg`.
-**Never scoped out:** ningún secreto en el repo (la identidad llega por variable de entorno); los recursos del hook y
-Libretto dentro del paquete.
+**In:** the dependency (with `electron-winstaller` without install scripts), the configuration (and its `.cjs` globals in ESLint), the entitlements, the script, the install page.
+**Out:** opening it on another Mac as a criterion, notarisation, automatic updates, x64, Windows/Linux, publishing the `.dmg`.
+**Never scoped out:** no secret in the repo (the identity arrives through an environment variable); the hook's and
+Libretto's resources inside the package.
 
 ### Libretto (libretto-view, 10 nov 2026)
 
-**In:** la pantalla, el selector de repo, las dos listas, encolar, empezar, ⌘K.
-**Out:** `converge`, `retro` (siguiente cambio); editar o borrar ideas (son archivos); `libretto init`; reordenar la
-cola (la cola es FIFO y «Empezar» en cualquiera ya reordena).
-**Never scoped out:** el commit solo toca el `proposal.md` nuevo, nunca otros cambios del repo; nada se escribe sin
-pulsar; textos por `t()`; teclado; una petición vacía no se encola.
+**In:** the screen, the repo selector, the two lists, queueing, starting, ⌘K.
+**Out:** `converge`, `retro` (next change); editing or deleting ideas (they are files); `libretto init`; reordering the
+queue (the queue is FIFO and «Empezar» on any one already reorders).
+**Never scoped out:** the commit touches only the new `proposal.md`, never other changes in the repo; nothing is written without a
+press; texts through `t()`; keyboard; an empty request is not queued.
 
-### Tarjeta de pregunta (ask-card, 10 nov 2026)
+### Question card (ask-card, 10 nov 2026)
 
-**In:** la tarjeta en Trabajo y en «Todos», la línea a Libretto.
-**Out:** responder con la tecla del número; preguntas multiSelect (siguen sin botones, W76).
-**Never scoped out:** teclado; contraste del texto sobre el tinte; textos por `t()`; colores como tokens.
+**In:** the card in Trabajo and in «Todos», the line to Libretto.
+**Out:** answering with the number key; multiSelect questions (still without buttons, W76).
+**Never scoped out:** keyboard; text contrast over the tint; texts through `t()`; colours as tokens.
 
-### Gestionar la cola (queue-manage, 10 nov 2026)
+### Manage the queue (queue-manage, 10 nov 2026)
 
-**In:** editar, borrar con confirmación, pasar a Jira, la descripción de las ideas, el nuevo diseño de la pantalla.
-**Out:** que la IA proponga ideas (`agent-suggestions`); editar cambios en curso; elegir proyecto o tipo en Jira.
-**Never scoped out:** cada commit toca solo la ruta de esa idea; borrar pide confirmación; el token de Jira no sale de
-main; si Jira falla no se borra nada; teclado; textos por `t()`.
+**In:** editing, deleting with confirmation, sending to Jira, the ideas' description, the screen's new design.
+**Out:** AI proposing ideas (`agent-suggestions`); editing changes in progress; choosing project or type in Jira.
+**Never scoped out:** each commit touches only that idea's path; deleting asks for confirmation; the Jira token does not leave
+main; if Jira fails nothing is deleted; keyboard; texts through `t()`.
 
-### Cabecera tranquila (quiet-header, 11 nov 2026)
+### Quiet header (quiet-header, 11 nov 2026)
 
-**In:** la cabecera en Uno y en Todos, quitar el coste de las cuatro vistas.
-**Out:** borrar el cálculo de coste; cambiar el menú o el atajo del foco.
-**Never scoped out:** teclado y nombre accesible del botón de icono; textos por `t()`; tokens de color.
+**In:** the header in Uno and in Todos, removing cost from the four views.
+**Out:** deleting the cost calculation; changing the focus menu or shortcut.
+**Never scoped out:** keyboard and accessible name of the icon button; texts through `t()`; colour tokens.
 
-### Pantalla de QA (qa-screen, 11 nov 2026)
+### QA screen (qa-screen, 11 nov 2026)
 
-**In:** la pantalla y su entrada en la barra y ⌘K, el informe por criterio, «Ver cómo», «Probar este», «Reprobar
-todo», «Marcar como bug», quitar QA del panel.
-**Out:** elegir plataforma, MCP de Apple, emulador del SDK, Safari, la detección mejorada y los errores con su arreglo
-(`qa-targets`); vídeo; revisión antes/después.
-**Never scoped out:** el informe es texto no fiable (validado, nunca HTML); nada se manda a Jira ni al agente sin
-pulsar; el token de Jira no sale de main; teclado; textos por `t()`; estados con palabra, no solo color.
+**In:** the screen and its entry in the bar and ⌘K, the per-criterion report, «Ver cómo», «Probar este», «Reprobar
+todo», «Marcar como bug», removing QA from the panel.
+**Out:** choosing platform, Apple's MCP, SDK emulator, Safari, improved detection and errors with their fix
+(`qa-targets`); video; before/after review.
+**Never scoped out:** the report is untrusted text (validated, never HTML); nothing is sent to Jira or the agent without a
+press; the Jira token does not leave main; keyboard; texts through `t()`; states with a word, not only colour.
 
-### QA: dónde se prueba (qa-targets, 11 nov 2026)
+### QA: where it is tested (qa-targets, 11 nov 2026)
 
-Dentro: detección por carpeta raíz y subcarpetas a 2 niveles; `.atril/qa.json`; «Elegir a mano»; pestañas; motor por plataforma; reserva de dispositivo; errores con arreglo en el lanzamiento de QA.
+Inside: detection by root folder and subfolders 2 levels deep; `.atril/qa.json`; «Elegir a mano»; tabs; engine per platform; device reservation; errors with a fix at QA launch.
 
-Fuera: crear emuladores por nuestra cuenta (solo se abre la Terminal con el comando, la persona lo lanza); dispositivos físicos; descargar Xcode; el resto de errores de Atril (otro cambio); varios QA del mismo trabajo a la vez (sigue siendo uno, W84).
+Outside: creating emulators on our own (only Terminal is opened with the command, the person launches it); physical devices; downloading Xcode; the rest of Atril's errors (another change); several QAs of the same work at once (still one, W84).
 
-Nunca fuera: validar `.atril/qa.json` (lo escribe el repo, no Atril); la ventana nunca manda un comando, solo el nombre de un arreglo; escritura atómica del archivo de elecciones.
+Never outside: validating `.atril/qa.json` (the repo writes it, not Atril); the window never sends a command, only the name of a fix; atomic write of the choices file.
 
-### Errores claros (plain-errors, 11 nov 2026)
+### Clear errors (plain-errors, 11 nov 2026)
 
-**In:** `src/main/usage.ts`, `src/renderer/components/Footer.tsx`, `src/main/doctor.ts`, `src/main/credentials/check.ts` y donde Ajustes pinta su error (`Connection.tsx`, `Ajustes.tsx`), los tipos de `src/preload/api.ts`, la IPC `atril:usage:fix`.
+**In:** `src/main/usage.ts`, `src/renderer/components/Footer.tsx`, `src/main/doctor.ts`, `src/main/credentials/check.ts` and where Ajustes paints its error (`Connection.tsx`, `Ajustes.tsx`), the types in `src/preload/api.ts`, the IPC `atril:usage:fix`.
 
-**Out:** los errores de «Quitar», la terminal que no engancha y los trabajos parados (hallazgos 7, 8, 10, 11, 31): van en el siguiente cambio, con la fila del trabajo. Reintentos automáticos nuevos (W37 ya espacia los de la cuota). Los errores de Forges (GitHub/GitLab): ya dicen la causa.
+**Out:** the errors of «Quitar», the terminal that does not attach and stopped works (findings 7, 8, 10, 11, 31): they go in the next change, with the work's row. New automatic retries (W37 already spaces the quota's). Forge errors (GitHub/GitLab): they already say the cause.
 
-### PATH del shell (login-path, 11 nov 2026)
+### Shell PATH (login-path, 11 nov 2026)
 
-**In:** `src/main/login-path.ts` (nuevo), su llamada al arrancar en `src/main/index.ts`. **Out:** leer otras variables del shell (W51 limita el entorno de los comandos a PATH, HOME, USER, LANG, SSH_AUTH_SOCK y TMPDIR; aquí solo cambia PATH).
+**In:** `src/main/login-path.ts` (new), its call at startup in `src/main/index.ts`. **Out:** reading other shell variables (W51 limits the commands' environment to PATH, HOME, USER, LANG, SSH_AUTH_SOCK and TMPDIR; here only PATH changes).
 
-### Copia con cambios (dirty-copy, 11 nov 2026)
+### Copy with changes (dirty-copy, 11 nov 2026)
 
-**In:** `openWorktree` (errores de W7 y W8, opción `worktree`), IPC `atril:ws:open`, `OwnTaskDialog.tsx`, tipos. **Out:** el resto de errores de abrir y cerrar trabajos: van en el barrido de errores que sale de la auditoría y la prueba de romper la app.
+**In:** `openWorktree` (errors of W7 and W8, `worktree` option), IPC `atril:ws:open`, `OwnTaskDialog.tsx`, types. **Out:** the rest of the open and close errors: they go in the error sweep that comes out of the audit and the break-the-app test.
 
-### Abrir y cerrar sin errores crudos (ws-errors, 11 nov 2026)
+### Open and close without raw errors (ws-errors, 11 nov 2026)
 
-**In:** `openWorktree` y `removeWorkspace` (`src/main/workspaces.ts`), una función `forgetWorkspace`, IPC `atril:ws:terminal` y `atril:ws:forget`, `Problem.tsx` (botón de cerrar opcional), `WorkspaceList.tsx`, `OwnTaskDialog.tsx`, `StartDialog.tsx`, tipos e i18n.
+**In:** `openWorktree` and `removeWorkspace` (`src/main/workspaces.ts`), a `forgetWorkspace` function, IPC `atril:ws:terminal` and `atril:ws:forget`, `Problem.tsx` (optional close button), `WorkspaceList.tsx`, `OwnTaskDialog.tsx`, `StartDialog.tsx`, types and i18n.
 
-**Out:** «Volver a abrir» un trabajo parado (hallazgo 8, siguiente cambio); Jira, MR, Libretto y Ajustes (siguen en la auditoría); renombrar «Quitar».
+**Out:** «Volver a abrir» for a stopped work (finding 8, next change); Jira, MR, Libretto and Ajustes (still in the audit); renaming «Quitar».
 
-### Modelo y esfuerzo (model-pick, 11 nov 2026)
+### Model and effort (model-pick, 11 nov 2026)
 
-**In:** `agent.ts` (`--effort`), `workspaces.ts` (campo `effort` del registro), IPC de abrir y de Empezar (Jira), `OwnTaskDialog.tsx` y `StartDialog.tsx`, un `suggest.ts` en el renderer, `prices.ts` y `cost.ts`. **Out:** reintentar con más esfuerzo (va con «Volver a abrir», siguiente cambio); modelos de los subagentes de Libretto (cambio aparte); medir modelos con tareas reales.
+**In:** `agent.ts` (`--effort`), `workspaces.ts` (the record's `effort` field), IPC for open and for Empezar (Jira), `OwnTaskDialog.tsx` and `StartDialog.tsx`, a `suggest.ts` in the renderer, `prices.ts` and `cost.ts`. **Out:** retrying with more effort (goes with «Volver a abrir», next change); models of Libretto's subagents (separate change); measuring models with real tasks.
 
-### Volver a abrir (reopen-work, 11 nov 2026)
+### Reopen (reopen-work, 11 nov 2026)
 
-**In:** `src/main/pty.ts` (W149), `reopenWorkspace` en `src/main/workspaces.ts`, `agentArgv({ resume: true })` en `agent.ts`, IPC `atril:ws:reopen`, la vista parada de `Workspace.tsx`. **Out:** relanzar todos los parados de golpe; subagentes cortados (hallazgo 12); reiniciar un agente vivo.
+**In:** `src/main/pty.ts` (W149), `reopenWorkspace` in `src/main/workspaces.ts`, `agentArgv({ resume: true })` in `agent.ts`, IPC `atril:ws:reopen`, the stopped view of `Workspace.tsx`. **Out:** relaunching all stopped ones at once; cut-off subagents (finding 12); restarting a live agent.
 
-### Archivos de estado dañados (state-files, 11 nov 2026)
+### Damaged state files (state-files, 11 nov 2026)
 
-**In:** `src/main/state.ts` (nuevo), `readRecords` y la lectura de `repos.json` (`src/main/workspaces.ts`, `src/main/repos.ts`), el sondeo de `src/main/status.ts`, IPC `atril:state:reveal`, la barra lateral (`WorkspaceList`/`Sidebar`), Ajustes → Repos, el diálogo de nuevo trabajo. **Out:** `ui.json`, `qa-targets.json` (ya toleran basura), reparar el archivo automáticamente.
+**In:** `src/main/state.ts` (new), `readRecords` and the reading of `repos.json` (`src/main/workspaces.ts`, `src/main/repos.ts`), the poll in `src/main/status.ts`, IPC `atril:state:reveal`, the sidebar (`WorkspaceList`/`Sidebar`), Ajustes → Repos, the new-work dialog. **Out:** `ui.json`, `qa-targets.json` (they already tolerate garbage), repairing the file automatically.
 
-### Jira, GitHub y GitLab (net-errors, 11 nov 2026)
+### Jira, GitHub and GitLab (net-errors, 11 nov 2026)
 
-**In:** `src/main/net-problem.ts`. **Out:** quién la pinta (inbox, mr, settings).
+**In:** `src/main/net-problem.ts`. **Out:** who paints it (inbox, mr, settings).
 
-### Modelos de Libretto (libretto-models, 11 nov 2026)
+### Libretto models (libretto-models, 11 nov 2026)
 
-**In:** `scripts/bundle-libretto.mjs`, una función `pinModels` en `scripts/libretto-models.mjs` con su test, y la copia `resources/libretto/agents/*.md` reescrita con esa función. **Out:** cambiar Libretto en su propio repo; elegir modelo por tarea en tiempo de ejecución; medir modelos con tareas reales.
+**In:** `scripts/bundle-libretto.mjs`, a `pinModels` function in `scripts/libretto-models.mjs` with its test, and the `resources/libretto/agents/*.md` copy rewritten with that function. **Out:** changing Libretto in its own repo; choosing the model per task at run time; measuring models with real tasks.
 
-### Repos rotos (repo-gone, 11 nov 2026)
+### Broken repos (repo-gone, 11 nov 2026)
 
-**In:** `src/main/repos.ts` (salud del repo, quitar, cambiar carpeta), `src/main/workspaces.ts` (comprobaciones al abrir y cerrar), IPC nuevas, `src/renderer/settings/Repos.tsx`, `Problem.tsx` (`fixLabel`), i18n. **Out:** clonar de nuevo un repo perdido; detectar que una carpeta movida es la misma por su remoto.
+**In:** `src/main/repos.ts` (repo health, remove, change folder), `src/main/workspaces.ts` (checks on open and close), new IPC, `src/renderer/settings/Repos.tsx`, `Problem.tsx` (`fixLabel`), i18n. **Out:** cloning a lost repo again; detecting that a moved folder is the same one by its remote.
 
-### Terminal que no engancha (term-attach, 11 nov 2026)
+### Terminal that does not attach (term-attach, 11 nov 2026)
 
-**In:** `src/main/pty.ts` (`attach` devuelve el resultado), `src/main/index.ts` (`atril:term:attach`), `src/preload/{api,index}.ts`, `src/renderer/components/Terminal.tsx`, i18n. **Out:** abrir la sesión en Terminal.app; reparar node-pty.
+**In:** `src/main/pty.ts` (`attach` returns the result), `src/main/index.ts` (`atril:term:attach`), `src/preload/{api,index}.ts`, `src/renderer/components/Terminal.tsx`, i18n. **Out:** opening the session in Terminal.app; repairing node-pty.
 
-### Panel más rápido (fast-panel, 11 nov 2026)
+### Faster panel (fast-panel, 11 nov 2026)
 
-**In:** src/main/status.ts, src/main/tmux.ts, src/main/activity.ts, src/main/workspaces.ts. **Out:** sondeos de MR y Jira.
+**In:** src/main/status.ts, src/main/tmux.ts, src/main/activity.ts, src/main/workspaces.ts. **Out:** MR and Jira polls.
 
-### Grafito: te necesita (grafito-you, 11 nov 2026)
+### Grafito: needs you (grafito-you, 11 nov 2026)
 
-**In:** un token nuevo `--working` en las cuatro paletas de `src/renderer/styles.css`, usado solo por la etiqueta «trabajando». **Out:** la paleta Original.
+**In:** a new `--working` token in the four palettes of `src/renderer/styles.css`, used only by the «trabajando» label. **Out:** the Original palette.
 
-### Radar de choques (radar, 11 nov 2026)
+### Clash radar (radar, 11 nov 2026)
 
-**In:** `src/main/radar.ts` (nuevo), IPC `atril:radar:get`, `src/main/flow/quiet.ts` (tope a 12), `src/renderer/components/WorkspaceList.tsx`, un `useRadar` en la ventana, i18n. **Out:** resolver el choque; avisar entre repos distintos; cola de merge.
+**In:** `src/main/radar.ts` (new), IPC `atril:radar:get`, `src/main/flow/quiet.ts` (cap at 12), `src/renderer/components/WorkspaceList.tsx`, a `useRadar` in the window, i18n. **Out:** resolving the clash; warning across different repos; merge queue.
 
-### Lecciones para cada agente (lessons-first, 11 nov 2026)
+### Lessons for every agent (lessons-first, 11 nov 2026)
 
-**In:** `src/main/agent.ts` (`agentArgv({ lessons })`), `src/main/workspaces.ts` (abrir y reabrir), `src/main/jira/start.ts` (`proposeStart`). **Out:** el agente de QA; escribir lecciones; resumirlas.
+**In:** `src/main/agent.ts` (`agentArgv({ lessons })`), `src/main/workspaces.ts` (open and reopen), `src/main/jira/start.ts` (`proposeStart`). **Out:** the QA agent; writing lessons; summarising them.
 
-### Dónde se atasca (stuck, 11 nov 2026)
+### Where it gets stuck (stuck, 11 nov 2026)
 
-**In:** `src/main/history.ts` (`historyEntry` gana `steps`), una función pura que los calcula, la pantalla de Terminados, i18n. **Out:** tiempos de trabajos abiertos; tiempos de la MR en la forja; gráficas.
+**In:** `src/main/history.ts` (`historyEntry` gains `steps`), a pure function that computes them, the Terminados screen, i18n. **Out:** times of open works; MR times on the forge; charts.
 
-### QA en la MR (qa-to-mr, 11 nov 2026)
+### QA on the MR (qa-to-mr, 11 nov 2026)
 
-**In:** `atril:qa:mrFor(id)` y una función en main que arma el texto y lo publica por la API de la forja que ya usa Atril (`src/main/forge/threads.ts` o la que publique comentarios generales), IPC `atril:qa:publish(id)`, el botón en `src/renderer/qa/QaScreen.tsx`, i18n. **Out:** subir capturas; editar un comentario anterior; publicar sin pulsar.
+**In:** `atril:qa:mrFor(id)` and a function in main that builds the text and publishes it through the forge API Atril already uses (`src/main/forge/threads.ts` or whichever posts general comments), IPC `atril:qa:publish(id)`, the button in `src/renderer/qa/QaScreen.tsx`, i18n. **Out:** uploading screenshots; editing a previous comment; publishing without a press.
 
-### Notificaciones (main) (notify-core, 12 nov 2026)
+### Notifications (main) (notify-core, 12 nov 2026)
 
 **In:** `src/main/status.ts`, `src/main/avisos.ts`'s settings, `src/main/focus.ts`, new `src/main/notify.ts`, new `src/main/mrpoll.ts`, new `src/main/forge/outcome.ts`, `src/main/usage.ts`, `src/main/radar.ts`, `src/main/qa-report.ts`, `src/main/index.ts` wiring and IPC, `src/preload/**`, `resources/claude-hook.mjs`. **Out:** see `proposal.md` (summary on return, Dock badge, reviewer comments, 95 % quota, radar without a window).
 
-### Terminal de solo lectura (terminal-read-only, 14 nov 2026)
+### Read-only terminal (terminal-read-only, 14 nov 2026)
 
-**In:** `src/renderer/components/Terminal.tsx`, `src/main/pty.ts` (attach), `resources/claude-hook.mjs` y `resources/summarise.mjs` (el `kind`, permisos, preguntas completas), `src/main/status.ts` (estado y respuestas), la tarjeta que sustituye a `QuickReplies.tsx` en la fila, en el resumen de agentes y encima de la terminal, el compositor, IPC y preload, textos.
+**In:** `src/renderer/components/Terminal.tsx`, `src/main/pty.ts` (attach), `resources/claude-hook.mjs` and `resources/summarise.mjs` (the `kind`, permissions, full questions), `src/main/status.ts` (state and answers), the card that replaces `QuickReplies.tsx` in the row, in the agents summary and above the terminal, the composer, IPC and preload, texts.
 
-**Out (nombrado):** el Agent SDK (cambio siguiente); detectar tareas de shell en segundo plano (solo subagentes); ⌘D/⌘⇧D (se quitan); la selección múltiple contestada con botones; «Permitir siempre»; cambiar Libretto; las terminales de QA (siguen como hoy, también de solo lectura) más allá de no aceptar teclado.
+**Out (named):** the Agent SDK (next change); detecting background shell tasks (subagents only); ⌘D/⌘⇧D (removed); multi-select answered with buttons; «Permitir siempre»; changing Libretto; the QA terminals (stay as today, also read-only) beyond not accepting keyboard.
 
-**Never scoped out:** la tarjeta y el compositor se manejan con teclado (números 1–4 contestan con la tarjeta enfocada, ⌘↩ envía el compositor); el texto del agente se pinta como texto, nunca como HTML; un fallo al mandar sigue la regla de errores; nada llama a Claude por su cuenta.
+**Never scoped out:** the card and the composer are keyboard-operable (numbers 1–4 answer with the card focused, ⌘↩ sends the composer); the agent's text is painted as text, never as HTML; a failure to send follows the errors rule; nothing calls Claude on its own.
 
 ## Constraints
 
@@ -773,145 +773,145 @@ Nunca fuera: validar `.atril/qa.json` (lo escribe el repo, no Atril); la ventana
 - The mode only changes the slash command; W29/W31/W33/W34 apply unchanged.
 - The hook stays the only thing Claude Code runs from Atril; it reads a marker, never the record.
 
-### Subagentes (add-subagents-view, 10 nov 2026)
+### Subagents (add-subagents-view, 10 nov 2026)
 
 - The hook stays one script; the new events install alongside the existing ones in `agent.ts`' `HOOK_EVENTS`.
 - Descriptions are text from Claude: shown as text, cut at 120 characters.
 
-### Detalle del subagente (add-subagent-detail, 10 nov 2026)
+### Subagent detail (add-subagent-detail, 10 nov 2026)
 
-- El formato del transcript y del meta es interno de Claude Code, no documentado: todo campo se
-  comprueba por tipo y lo que no encaja se salta, sin romper.
-- Sin dependencias nuevas; el modal reutiliza `useModalKeys` y las clases `modal`/`dlg`.
-- Textos por `t()` con su inglés en `src/preload/i18n-en.ts`; colores solo como tokens.
-- El hook sigue leyendo el payload una vez y solo saca de él los campos listados.
+- The format of the transcript and the meta is internal to Claude Code, undocumented: every field is
+  checked by type and what does not fit is skipped, without breaking.
+- No new dependencies; the modal reuses `useModalKeys` and the `modal`/`dlg` classes.
+- Texts through `t()` with their English in `src/preload/i18n-en.ts`; colours only as tokens.
+- The hook still reads the payload once and takes from it only the listed fields.
 
-### Instalar desde el doctor (add-doctor-install-terminal, 10 nov 2026)
+### Install from the doctor (add-doctor-install-terminal, 10 nov 2026)
 
-- Sin dependencias nuevas; `osascript` viene con macOS.
-- El comando va dentro de una cadena AppleScript: comillas y barras invertidas escapadas.
-- Textos por `t()` con su inglés en `src/preload/i18n-en.ts`.
+- No new dependencies; `osascript` ships with macOS.
+- The command goes inside an AppleScript string: quotes and backslashes escaped.
+- Texts through `t()` with their English in `src/preload/i18n-en.ts`.
 
-### Paleta Grafito (adopt-grafito, 10 nov 2026)
+### Grafito palette (adopt-grafito, 10 nov 2026)
 
-- Tokens sobrescritos bajo `[data-palette='grafito']` y `[data-palette='grafito'][data-theme='dark']`,
-  con los mismos nombres; `--ed-*` y `--jira*` no se tocan.
-- El estado vive donde vive `theme` (`src/main/ui.ts`, `UiState`), con su validación.
+- Tokens overridden under `[data-palette='grafito']` and `[data-palette='grafito'][data-theme='dark']`,
+  with the same names; `--ed-*` and `--jira*` are not touched.
+- The state lives where `theme` lives (`src/main/ui.ts`, `UiState`), with its validation.
 
-### Tutorial de 24 pasos (expand-tour, 10 nov 2026)
+### 24-step tutorial (expand-tour, 10 nov 2026)
 
-Cada afirmación de un texto debe ser cierta en el código: atajo, nombre de botón, comportamiento.
-Textos por `t()`.
+Every claim in a text must be true in the code: shortcut, button name, behaviour.
+Texts through `t()`.
 
-### QA: dónde se prueba (qa-targets, 11 nov 2026)
+### QA: where it is tested (qa-targets, 11 nov 2026)
 
-- Las plataformas son exactamente `chrome | safari | android | ios`. W83 sigue clasificando una carpeta; esto la llama por cada carpeta.
-- Los textos por `t()` con su entrada en `i18n-en.ts`; colores solo tokens.
-- `QaResult` de `retest`/`stop` no cambia; el de `launch` añade `problem`.
-- Tests con `ATRIL_HOME` temporal y dobles del `Runner`; nunca un emulador real en los tests.
+- The platforms are exactly `chrome | safari | android | ios`. W83 still classifies a folder; this calls it for each folder.
+- Texts through `t()` with their entry in `i18n-en.ts`; colours only tokens.
+- `QaResult` of `retest`/`stop` does not change; that of `launch` adds `problem`.
+- Tests with a temporary `ATRIL_HOME` and `Runner` doubles; never a real emulator in the tests.
 
-### Errores claros (plain-errors, 11 nov 2026)
+### Clear errors (plain-errors, 11 nov 2026)
 
-- El token OAuth sigue sin salir de main (W18): la frase y el detalle son textos fijos o un número de estado.
-- `err.message` de la red nunca llega a la ventana (puede llevar la petición); solo códigos de una lista (`ENOTFOUND`…) y el nombre de la excepción, en el detalle.
-- Textos por `t()` con su entrada inglesa; colores por tokens.
+- The OAuth token still does not leave main (W18): the sentence and the detail are fixed texts or a status number.
+- The network's `err.message` never reaches the window (it may carry the request); only codes from a list (`ENOTFOUND`…) and the exception's name, in the detail.
+- Texts through `t()` with their English entry; colours through tokens.
 
-### PATH del shell (login-path, 11 nov 2026)
+### Shell PATH (login-path, 11 nov 2026)
 
-- Ningún texto del shell sale de main ni se registra; solo se queda el valor de PATH.
-- El arranque no espera más de 3 s por el shell.
+- No shell text leaves main or is logged; only the PATH value is kept.
+- Startup waits no more than 3 s for the shell.
 
-### Copia con cambios (dirty-copy, 11 nov 2026)
+### Copy with changes (dirty-copy, 11 nov 2026)
 
-- Nada cambia en la copia de la persona cuando se rechaza (W8 sigue).
-- Textos por `t()` con inglés; el aviso usa `Problem`.
+- Nothing changes in the person's copy when it is rejected (W8 still holds).
+- Texts through `t()` with English; the notice uses `Problem`.
 
-### Abrir y cerrar sin errores crudos (ws-errors, 11 nov 2026)
+### Opening and closing without raw errors (ws-errors, 11 nov 2026)
 
-- La ventana nunca manda una ruta ni un comando: solo ids que main busca en sus registros.
-- La ruta que main pasa a Terminal va entre comillas simples escapadas.
-- Nada cambia en disco cuando se rechaza un cierre (W9 y W10 siguen).
+- The window never sends a path or a command: only ids that main looks up in its registries.
+- The path main passes to Terminal goes inside escaped single quotes.
+- Nothing changes on disk when a close is rejected (W9 and W10 still hold).
 
-### Modelo y esfuerzo (model-pick, 11 nov 2026)
+### Model and effort (model-pick, 11 nov 2026)
 
-- Solo valores de una lista llegan a la línea de órdenes (W41: nada del texto como bandera).
-- Nada llama a Claude para sugerir.
+- Only values from a list reach the command line (W41: no text as a flag).
+- Nothing calls Claude to make suggestions.
 
-### Volver a abrir (reopen-work, 11 nov 2026)
+### Reopening (reopen-work, 11 nov 2026)
 
-- La ventana manda el id y, como mucho, `more: true`; main decide el comando.
-- Nunca dos sesiones para un trabajo: si la sesión existe, no se relanza.
+- The window sends the id and, at most, `more: true`; main decides the command.
+- Never two sessions for one work: if the session exists, it is not relaunched.
 
-### Archivos de estado dañados (state-files, 11 nov 2026)
+### Damaged state files (state-files, 11 nov 2026)
 
-- Nunca se escribe encima de un archivo de estado que no se ha podido leer.
-- La ventana pide «mostrar» por nombre (`workspaces` o `repos`), nunca una ruta.
+- A state file that could not be read is never written over.
+- The window asks to «show» by name (`workspaces` or `repos`), never a path.
 
-### Jira, GitHub y GitLab (net-errors, 11 nov 2026)
+### Jira, GitHub and GitLab (net-errors, 11 nov 2026)
 
-- Ni números de estado ni nombres de excepción en la frase.
+- Neither status numbers nor exception names in the sentence.
 
-### Modelos de Libretto (libretto-models, 11 nov 2026)
+### Libretto models (libretto-models, 11 nov 2026)
 
-- No se toca el contenido de los agentes salvo la línea `model:` del frontmatter.
-- La versión de Libretto copiada no cambia (no se re-empaqueta desde otra referencia).
+- The content of the agents is not touched except the `model:` line of the frontmatter.
+- The copied Libretto version does not change (it is not re-packaged from another reference).
 
-### Repos rotos (repo-gone, 11 nov 2026)
+### Broken repos (repo-gone, 11 nov 2026)
 
-- La ventana manda ids y, para «Buscar la carpeta…», nada: main abre el diálogo nativo.
-- Nada borra ni mueve carpetas de la persona.
-- Toda escritura de `repos.json` pasa por el lector estricto (W148).
+- The window sends ids and, for «Buscar la carpeta…», nothing: main opens the native dialog.
+- Nothing deletes or moves the person's folders.
+- Every write of `repos.json` goes through the strict reader (W148).
 
-### Terminal que no engancha (term-attach, 11 nov 2026)
+### Terminal that does not attach (term-attach, 11 nov 2026)
 
-- Un fallo deja el mapa de clientes como estaba: nada enganchado a medias.
+- A failure leaves the client map as it was: nothing half-attached.
 
-### Panel más rápido (fast-panel, 11 nov 2026)
+### Faster panel (fast-panel, 11 nov 2026)
 
-- Nada se enseña más de 1 s viejo respecto a hoy.
+- Nothing is shown more than 1 s stale relative to today.
 
-### Grafito: te necesita (grafito-you, 11 nov 2026)
+### Grafito: needs you (grafito-you, 11 nov 2026)
 
-- W72 sigue: el gris es neutro; contraste de texto ≥ 4,5:1.
+- W72 still holds: the grey is neutral; text contrast ≥ 4.5:1.
 
-### Radar de choques (radar, 11 nov 2026)
+### Clash radar (radar, 11 nov 2026)
 
-- En reposo, el radar no lanza procesos (usa `quietly`).
-- La ventana recibe ramas y rutas relativas al repo, nada más.
+- At rest, the radar launches no processes (it uses `quietly`).
+- The window receives branches and repo-relative paths, nothing else.
 
-### Lecciones para cada agente (lessons-first, 11 nov 2026)
+### Lessons for every agent (lessons-first, 11 nov 2026)
 
-- La frase es fija y sale de main (W41: nada de la persona como bandera).
-- Un enlace simbólico no cuenta (no se le pide leer algo de fuera del repo).
+- The sentence is fixed and comes from main (W41: nothing from the person as a flag).
+- A symbolic link does not count (the agent is not asked to read something outside the repo).
 
-### Dónde se atasca (stuck, 11 nov 2026)
+### Where it gets stuck (stuck, 11 nov 2026)
 
-- Se calcula una sola vez, al cerrar; ningún coste mientras el trabajo está abierto.
-- Un trabajo sin cambio de Libretto no tiene tramos: su fila no cambia.
+- Computed only once, on close; no cost while the work is open.
+- A work with no Libretto change has no segments: its row does not change.
 
-### QA en la MR (qa-to-mr, 11 nov 2026)
+### QA on the MR (qa-to-mr, 11 nov 2026)
 
-- El token no sale de main; la ventana manda solo el id del trabajo.
-- Textos del comentario por `t()` en el idioma de la app.
-- Los errores siguen W150 (frase por causa, botón, detalle plegado).
+- The token never leaves main; the window sends only the work's id.
+- Comment texts go through `t()` in the app's language.
+- Errors follow W150 (one sentence per cause, a button, folded detail).
 
-### Notificaciones (main) (notify-core, 12 nov 2026)
+### Notifications (main) (notify-core, 12 nov 2026)
 
 - No detector runs `claude` or calls Anthropic beyond `usage.ts`'s existing poll.
 - Every detector's first observation after Atril starts only sets its baseline (as V2 and the status first pass do).
 - Notification texts are built with main's `t()` at the moment of showing (W48).
 
-### Terminal de solo lectura (terminal-read-only, 14 nov 2026)
+### Read-only terminal (terminal-read-only, 14 nov 2026)
 
-- Ningún cambio en `resources/libretto/**`.
-- Textos por `t()`/`useT()` con su entrada en `src/preload/i18n-en.ts`; colores solo con tokens.
-- Los estados de hoy sin `kind` siguen valiendo (se lee como hoy, por prefijo).
-- Después de `notify-core`: este cambio se construye sobre su rama, porque los dos tocan el gancho y `status.ts`.
+- No change in `resources/libretto/**`.
+- Texts through `t()`/`useT()` with their entry in `src/preload/i18n-en.ts`; colours only as tokens.
+- Today's states without `kind` still hold (read as today, by prefix).
+- After `notify-core`: this change is built on its branch, because both touch the hook and `status.ts`.
 
-### Escalera de corrección (harness-ladder, 20 nov 2026)
+### Correction ladder (harness-ladder, 20 nov 2026)
 
-- `pnpm lint` tiene que salir limpio al final de cada casilla.
-- Cada regla trae un `message` que dice qué usar en su lugar.
+- `pnpm lint` has to come out clean at the end of every box.
+- Each rule carries a `message` saying what to use instead.
 
 ## Prior decisions
 
@@ -970,42 +970,42 @@ Textos por `t()`.
   that does not break when Claude Code redraws its UI.
 
 ### Decision log, answers as given (2026-11-09)
-- Q: Si cierras Atril (o se cuelga) con agentes trabajando, ¿qué pasa con ellos? → A: Siguen vivos (tmux)
-- Q: Para el medidor de cuota de Claude, ¿puede Atril leer tu token OAuth del Llavero y preguntarle a api.anthropic.com cuánto llevas? → A: Sí, como la statusline
-- Q: Un worktree nuevo no trae los archivos que git ignora; ¿qué hace Atril al crear uno? → A: «No más preguntas», y después: «worktree si pero en alguno proyecto es imposibole por que son muyc complejos de hacer asi que tiene que saber cuando puee o no»
-- Q: ¿Qué hace Atril cuando un repo no puede ir en worktree? → A: lo detecta con las tres señales de review-project (archivos sin versionar que la build necesita, dependencias demasiado pesadas, «el usuario lo dijo») y trabaja in-place cambiando de rama, con restauración garantizada; avisa del modo y el porqué (assumed, a partir de la respuesta anterior). Si es falso: cambia W1–W4 y W7–W9.
-- Q: ¿Dónde viven los worktrees? → A: `~/.atril/wt/<repo>/<branch>` (assumed). Si es falso: solo cambia la ruta.
-- Q: ¿Para quién es la app? → A: una persona, su Mac, sus CLIs ya configurados; sin servidor ni cuenta (assumed). Si es falso: toda la sincronización está por diseñar; la vista de equipo va después.
-- Q: ¿Cómo sabe Atril que un agente te necesita? → A: en Claude, con hooks que Atril pasa por `claude --settings` y que escriben el estado de la sesión; en Codex, en esta fase solo «trabajando/parado» (assumed). El `notify` de Codex no se pudo comprobar: el CLI está roto en esta máquina (`codex --help` → ENOENT).
-- Q: ¿Cómo se sabe el repo de un ticket de Jira? → A: se pregunta la primera vez por proyecto y componente y se recuerda (assumed). Si es falso: cambia I4.
-- Q: ¿Cómo debe verse? → A: «el diseño que sea mas abierto y mas visual, aparte añade tutorial al principio señalando cada elemento ye xplicando como funciona todo»
-- Q: ¿Cómo pintamos los paneles divididos (⌘D) de cada agente? → A: tmux los dibuja. Descartadas: «Tarjetas separadas (control mode)» — un parser del protocolo -CC, redimensionado y foco por panel, mucho más código; «Una sesión por panel» — tmux deja de saber que los paneles son del mismo trabajo y el layout pasa a Atril, cambiando el vocabulario de la spec.
-- Q: El revisor encontró huecos que romperían el código; ¿cómo seguimos? → A: Corregir y luego casilla 1
-- Q: (W10) ¿Qué pasa al quitar un worktree con trabajo sin commitear? → A: nunca se borra, ni confirmando; Atril dice que commitees o descartes antes (assumed, por la regla «nothing is deleted with uncommitted work»). Si es falso: cambia W10.
-- Q: (build, casilla 1) tmux y jira no aceptan `--version` → A: cada herramienta con su comando: `tmux -V`, `jira version`, `--version` el resto (corrección de la spec: el contrato estaba mal, observado al renderizar)
-- Q: (build, casilla 2) tus dos repos salían in-place por carpetas ignoradas (`out/`, `.atl/`, `.claude/`, `bin/`) → A: solo cuentan archivos ignorados, nunca carpetas (corrección de la spec, observada en los repos reales); el id del repo es el basename en minúsculas y con guiones
-- Q: ¿Libretto viene dentro de la app? → A: «Libreto estará puesto directamente en la aplicación, ¿no? Es decir, la gente no se tendrá que bajar el libreto oficial, sino que ya estará oficialmente metido dentro del sistema.»
-- Q: «Para que sea más usable y todo esto, ¿qué mejorarías?» → propuestas 1 (sin la pregunta de confianza de Claude en cada worktree) y 6 (el doctor como chip) a la fase 1, el resto a otra change → A: «si»
-- Q: ¿Codex? → A: «no pongas codex»
-- Q: «Pero Claude tiene que cargar las propias skills que se le vayan metiendo también, aparte del libreto. ¿Eso lo hace?» → A: sí, observado en la casilla 4 (`(user)` y `(libretto)` a la vez); queda como criterio W33 y se prohíbe saltarse las del usuario
-- Q: ¿Tokens propios en vez de gh/glab/jira? → A: «Pensaba poner los tokens, o sea, los tokens de GitLab, GitHub y de Jira, no utilizar los GH y cosas de estas» → propuesta híbrida → A: «Yo lo haría. Yo lo haría, vale, híbrido, pero si no encuentra nada de token ni nada, una sección de ajustes donde pongan el token … pero ocultos, ¿sabes? O sea, cuando una vez que lo ponen, que ya no se puede visualizar.» (sustituye la decisión «Jira solo por el CLI» para lo que lee Atril; el agente de Libretto sigue usando el `jira` CLI)
-- Q: ¿GitLab y GitHub en la fase 1? → A: «Y hacemos solo la fase 1 núcleo»
-- Q: «Cuando se crea una nueva tarea, que se pueda elegir qué modelo utilizar … Cuando haces empezar … utiliza este modelo» → A: selector Modelo en Empezar y Nuevo trabajo: Por defecto · Opus · Sonnet · Haiku (sin Fable, por gasto); el modelo se guarda en el workspace record
-- Q: la carpeta de código `src/main/secrets/` choca con tu regla global `Read/Edit(**/secrets/**)` → A: «si» a renombrarla `src/main/credentials/` (la regla queda intacta; el `mv` lo ejecutó Pau)
-- Q: nombre de la rama → A: «Las ramas del proyecto suelen ser el nombre de la tarea. Por ejemplo, pf-4870 … suele ser referenciado con la tarea del Jira» (en los repos: la clave en mayúsculas, y una letra B/C… para un segundo intento)
-- Q: ¿Otro nombre mejor que Atril? (propuestos Batuta, Podio, Concertino, Ensayo) → A: «atril»
-- Q: «Haría que cogiera el icono del Tira o del GitHub o del GitLab … para mostrar como arriba como una sesión … saber que soy yo el que está en esa sesión de atril» → A: chip de sesión arriba con el avatar y nombre de Jira en la fase 1; GitHub y GitLab se suman en la fase 2
-- Q: «no obtiene ninguna tarjeta de Jira» — 0 tareas en sprints abiertos, 24 abiertas asignadas (WEB, SHOP, APP) → A: «Todas, por estado»: Por empezar, En curso, y Code Review/Testing/Ready to Deploy plegadas
-- Q: «quiero también efecto oscuro y efecto plano y que uno sea automático del sistema» → A: tema Claro, Oscuro y Automático (sigue al sistema), elegible en Ajustes; Automático por defecto
-- Q: la lista de Jira tapa los trabajos en marcha → A: «Jira en su propia pantalla»
-- Q: ¿seguir preguntando? → A: «de crear tareas y hacer cosas para mejorar este proyecto, que no se apague el ordenador, y tú sigue trabajando, ¿vale? No le preguntes, tú sigue.» (a partir de aquí, las decisiones van marcadas `(assumed)`)
-- Q: ¿Qué hace Empezar con una tarea que ya está «En curso»? → A: no la mueve en Jira y lo dice («ya está en curso») (assumed, casilla 12). Si es falso: I8 intentaría la transición siempre.
-- Q: ¿Cuándo se recuerda el repo de un proyecto de Jira? → A: solo cuando el trabajo se abre bien (assumed, casilla 12). Si es falso: un fallo al abrir también lo recordaría.
-- Q: ¿El pie muestra el reinicio de las 5 h? → A: solo el de los 7 días, redondeado al minuto (assumed, casilla 8).
-- Q: ¿Cómo evita Atril la pregunta de confianza de Claude? → A: Claude Code 2.1.319 no tiene flag para eso; Atril escribe `projects[<ruta>].hasTrustDialogAccepted` en `~/.claude.json` de forma atómica, con reintento y copia por arranque, solo en carpetas que crea Atril (assumed, casilla 14). Comprobado: sin la clave sale la pregunta, con ella no.
-- Q: ¿El avatar de Jira lleva el token? → A: solo si la imagen está en el mismo dominio que Jira; el CDN de avatares de Atlassian es público (assumed, casilla 14).
-- Q: el pie mostraba «api.anthropic.com respondió 429» (bug observado 9 nov: Atril y la statusline consultan la misma API) → A: mantener el último valor bueno con su antigüedad y espaciar los reintentos (assumed, W37)
-- Q: ¿Se guarda copia de `~/.claude.json` antes de escribir la confianza? → A: no; puede contener otros secretos (claves de servidores MCP). Protege la escritura atómica con reintento y no escribir nunca un archivo ilegible (assumed, revisión en frío 9 nov). Si es falso: vuelve una copia, pero fuera de `~/.atril` y cifrada.
+- Q: If you close Atril (or it hangs) with agents working, what happens to them? → A: They stay alive (tmux)
+- Q: For the Claude quota meter, may Atril read your OAuth token from the Keychain and ask api.anthropic.com how much you have used? → A: Yes, like the statusline
+- Q: A new worktree does not bring the files git ignores; what does Atril do when creating one? → A: «No más preguntas», and afterwards: «worktree si pero en alguno proyecto es imposibole por que son muyc complejos de hacer asi que tiene que saber cuando puee o no»
+- Q: What does Atril do when a repo cannot go in a worktree? → A: it detects it with review-project's three signals (unversioned files the build needs, dependencies too heavy, «el usuario lo dijo») and works in-place switching branch, with guaranteed restore; it says the mode and why (assumed, from the previous answer). If false: changes W1–W4 and W7–W9.
+- Q: Where do the worktrees live? → A: `~/.atril/wt/<repo>/<branch>` (assumed). If false: only the path changes.
+- Q: Who is the app for? → A: one person, their Mac, their CLIs already configured; no server or account (assumed). If false: all synchronisation remains to be designed; the team view comes later.
+- Q: How does Atril know an agent needs you? → A: in Claude, with hooks Atril passes through `claude --settings` that write the session's state; in Codex, in this phase only «trabajando/parado» (assumed). Codex's `notify` could not be verified: the CLI is broken on this machine (`codex --help` → ENOENT).
+- Q: How is a Jira ticket's repo known? → A: it is asked the first time per project and component and remembered (assumed). If false: changes I4.
+- Q: How should it look? → A: «el diseño que sea mas abierto y mas visual, aparte añade tutorial al principio señalando cada elemento ye xplicando como funciona todo»
+- Q: How do we draw each agent's split panes (⌘D)? → A: tmux draws them. Discarded: «Tarjetas separadas (control mode)» — a parser for the -CC protocol, per-pane resize and focus, much more code; «Una sesión por panel» — tmux stops knowing the panes belong to the same work and the layout moves to Atril, changing the spec's vocabulary.
+- Q: The reviewer found gaps that would break the code; how do we proceed? → A: Fix them, then box 1
+- Q: (W10) What happens when removing a worktree with uncommitted work? → A: it is never deleted, even when confirmed; Atril says to commit or discard first (assumed, by the rule «nothing is deleted with uncommitted work»). If false: changes W10.
+- Q: (build, box 1) tmux and jira do not accept `--version` → A: each tool with its own command: `tmux -V`, `jira version`, `--version` for the rest (spec correction: the contract was wrong, observed when rendering)
+- Q: (build, box 2) your two repos came out in-place because of ignored folders (`out/`, `.atl/`, `.claude/`, `bin/`) → A: only ignored files count, never folders (spec correction, observed in the real repos); the repo id is the lowercase basename with hyphens
+- Q: Does Libretto come inside the app? → A: «Libreto estará puesto directamente en la aplicación, ¿no? Es decir, la gente no se tendrá que bajar el libreto oficial, sino que ya estará oficialmente metido dentro del sistema.»
+- Q: «Para que sea más usable y todo esto, ¿qué mejorarías?» → proposals 1 (without Claude's trust question in every worktree) and 6 (the doctor as a chip) to phase 1, the rest to another change → A: «si»
+- Q: Codex? → A: «no pongas codex»
+- Q: «Pero Claude tiene que cargar las propias skills que se le vayan metiendo también, aparte del libreto. ¿Eso lo hace?» → A: yes, observed in box 4 (`(user)` and `(libretto)` at once); it becomes criterion W33 and skipping the user's is forbidden
+- Q: Own tokens instead of gh/glab/jira? → A: «Pensaba poner los tokens, o sea, los tokens de GitLab, GitHub y de Jira, no utilizar los GH y cosas de estas» → hybrid proposal → A: «Yo lo haría. Yo lo haría, vale, híbrido, pero si no encuentra nada de token ni nada, una sección de ajustes donde pongan el token … pero ocultos, ¿sabes? O sea, cuando una vez que lo ponen, que ya no se puede visualizar.» (replaces the decision «Jira only through the CLI» for what Atril reads; Libretto's agent keeps using the `jira` CLI)
+- Q: GitLab and GitHub in phase 1? → A: «Y hacemos solo la fase 1 núcleo»
+- Q: «Cuando se crea una nueva tarea, que se pueda elegir qué modelo utilizar … Cuando haces empezar … utiliza este modelo» → A: Model selector in Start and New work: Default · Opus · Sonnet · Haiku (no Fable, because of cost); the model is saved in the workspace record
+- Q: the code folder `src/main/secrets/` clashes with your global rule `Read/Edit(**/secrets/**)` → A: «si» to renaming it `src/main/credentials/` (the rule stays intact; Pau ran the `mv`)
+- Q: branch name → A: «Las ramas del proyecto suelen ser el nombre de la tarea. Por ejemplo, pf-4870 … suele ser referenciado con la tarea del Jira» (in the repos: the key in capitals, and a letter B/C… for a second attempt)
+- Q: A better name than Atril? (proposed Batuta, Podio, Concertino, Ensayo) → A: «atril»
+- Q: «Haría que cogiera el icono del Tira o del GitHub o del GitLab … para mostrar como arriba como una sesión … saber que soy yo el que está en esa sesión de atril» → A: session chip at the top with the Jira avatar and name in phase 1; GitHub and GitLab are added in phase 2
+- Q: «no obtiene ninguna tarjeta de Jira» — 0 tasks in open sprints, 24 open assigned (WEB, SHOP, APP) → A: «Todas, por estado»: To start, In progress, and Code Review/Testing/Ready to Deploy folded
+- Q: «quiero también efecto oscuro y efecto plano y que uno sea automático del sistema» → A: Light, Dark and Automatic (follows the system) theme, selectable in Settings; Automatic by default
+- Q: the Jira list covers the works in progress → A: «Jira en su propia pantalla»
+- Q: keep asking? → A: «de crear tareas y hacer cosas para mejorar este proyecto, que no se apague el ordenador, y tú sigue trabajando, ¿vale? No le preguntes, tú sigue.» (from here on, decisions are marked `(assumed)`)
+- Q: What does Start do with a task that is already «En curso»? → A: it does not move it in Jira and says so («ya está en curso») (assumed, box 12). If false: I8 would always attempt the transition.
+- Q: When is a Jira project's repo remembered? → A: only when the work opens successfully (assumed, box 12). If false: a failure to open would also remember it.
+- Q: Does the footer show the 5 h reset? → A: only the 7-day one, rounded to the minute (assumed, box 8).
+- Q: How does Atril avoid Claude's trust question? → A: Claude Code 2.1.319 has no flag for that; Atril writes `projects[<path>].hasTrustDialogAccepted` into `~/.claude.json` atomically, with retry and a per-start copy, only in folders Atril creates (assumed, box 14). Verified: without the key the question appears, with it not.
+- Q: Does the Jira avatar carry the token? → A: only if the image is on the same domain as Jira; Atlassian's avatar CDN is public (assumed, box 14).
+- Q: the footer showed «api.anthropic.com respondió 429» (bug observed 9 nov: Atril and the statusline query the same API) → A: keep the last good value with its age and space out retries (assumed, W37)
+- Q: Is a copy of `~/.claude.json` kept before writing the trust? → A: no; it may contain other secrets (MCP server keys). The atomic write with retry protects it, and an unreadable file is never written (assumed, cold review 9 nov). If false: a copy returns, but outside `~/.atril` and encrypted.
 
 ### Agent activity (add-agent-activity, 9 nov 2026)
 
@@ -1025,15 +1025,15 @@ Textos por `t()`.
 
 #### Decision log, answers as given (2026-11-09)
 - Q: «No le preguntes, tú sigue» stands → decisions taken with the recommended option, marked (assumed).
-- Q: ¿Cómo lee el hook el JSON sin node ni jq en el PATH? → A: con el propio Electron de Atril como Node (`ELECTRON_RUN_AS_NODE=1 <execPath> claude-hook.mjs`), comprobado 9 nov (assumed).
-- Q: ¿Dónde se ve la actividad? → A: pestañas «Libretto | Actividad» en el panel derecho, y la última línea en la fila de cada trabajo (assumed).
-- Q: ¿Qué se guarda? → A: solo una línea de resumen por evento (≤ 200 caracteres), nunca el payload: de Edit/Write solo la ruta, del prompt solo los primeros 80 caracteres; las últimas 200 líneas por sesión (assumed).
-- Q: (spec-reviewer) ¿Qué lleva el cuerpo del aviso del Mac y de dónde sale? → A: con Notification, el mensaje del agente; con Stop, el «Claude dice: …»; el hook escribe ese texto en el mismo archivo de estado (`{state, at, text}`) que dispara el aviso, así no hay orden entre dos archivos (assumed).
-- Q: (spec-reviewer) ¿Los eventos de herramienta cambian el estado? → A: sí: PreToolUse y PostToolUse ponen `working` (aprobar un permiso hace que el agente vuelva a trabajar) (assumed). Amplía W26.
-- Q: (spec-reviewer) ¿Qué línea deja UserPromptSubmit? → A: «Le has escrito: <primeros 80 caracteres>» (assumed, A8).
-- Q: (spec-reviewer) ¿Qué es un Bash «fallido»? → A: código de salida distinto de 0, un error o una interrupción en la respuesta de la herramienta, el que venga (assumed).
-- Q: (work-reviewer) el `.gitignore` de esta rama (`.DS_Store`, `caso-*`, `flujo-mr*`) no lo cubre el contrato → A: viene de otra petición de Pau, hacer el repo privado («Cambian el nombre. Ponlo en privado y que se llame Atril»); los archivos del concepto viejo llevan datos del trabajo y no deben subirse nunca.
-- Q: (work-reviewer) ¿la descripción de un subagente puede llevar texto tipo prompt? → A: sí; mismo límite de 80 caracteres que el prompt (assumed).
+- Q: How does the hook read the JSON without node or jq on the PATH? → A: with Atril's own Electron as Node (`ELECTRON_RUN_AS_NODE=1 <execPath> claude-hook.mjs`), verified 9 nov (assumed).
+- Q: Where is the activity shown? → A: «Libretto | Actividad» tabs in the right panel, and the last line in each work's row (assumed).
+- Q: What is stored? → A: only one summary line per event (≤ 200 characters), never the payload: for Edit/Write only the path, for the prompt only the first 80 characters; the last 200 lines per session (assumed).
+- Q: (spec-reviewer) What does the body of the Mac notification carry and where does it come from? → A: with Notification, the agent's message; with Stop, the «Claude dice: …»; the hook writes that text into the same state file (`{state, at, text}`) that triggers the notification, so there is no ordering between two files (assumed).
+- Q: (spec-reviewer) Do tool events change the state? → A: yes: PreToolUse and PostToolUse set `working` (approving a permission makes the agent go back to working) (assumed). Extends W26.
+- Q: (spec-reviewer) What line does UserPromptSubmit leave? → A: «Le has escrito: <primeros 80 caracteres>» (assumed, A8).
+- Q: (spec-reviewer) What is a «failed» Bash? → A: an exit code other than 0, an error or an interruption in the tool's response, whichever comes (assumed).
+- Q: (work-reviewer) this branch's `.gitignore` (`.DS_Store`, `caso-*`, `flujo-mr*`) is not covered by the contract → A: it comes from another request from Pau, making the repo private («Cambian el nombre. Ponlo en privado y que se llame Atril»); the old concept's files carry work data and must never be pushed.
+- Q: (work-reviewer) can a subagent's description carry prompt-like text? → A: yes; same 80-character limit as the prompt (assumed).
 
 ### Next up (add-next-up, 9 nov 2026)
 
@@ -1051,13 +1051,13 @@ Textos por `t()`.
 | `send-keys` without `-l` | text like `C-c` or `Enter` would be interpreted as keys |
 
 #### Decision log, answers as given (2026-11-09)
-- Q: ¿Qué entra en «Qué me toca»? → A: agentes en «te necesita» (los más antiguos primero), después tareas de la primera columna del tablero (o «Por empezar» sin tablero); las MR llegan con la fase 2 (assumed).
-- Q: ¿Cómo se responde desde el aviso? → A: aviso de macOS con respuesta (`hasReply`); el texto se escribe en el panel del agente con `tmux send-keys -l` y Enter, solo en ese panel (assumed).
-- Q: (spec-reviewer) ¿Qué tareas entran en la lista? → A: solo las que no tienen ya un trabajo abierto; si el tablero no se puede leer (I18), las del grupo «Por empezar» (assumed).
-- Q: (spec-reviewer) ¿Dónde funciona ⌘↩? → A: solo con Trabajo o Tareas a la vista y con algo en la lista; si no, el elemento del menú está desactivado (assumed).
-- Q: (spec-reviewer) ¿Responder en el aviso cuenta como pulsarlo (W38)? → A: no: responder no trae Atril al frente ni cambia de pantalla; solo pulsar el aviso lo hace (assumed).
-- Q: (spec-reviewer) ¿Y si el trabajo ya no existe al responder? → A: no se envía nada y un aviso dice «No se pudo enviar: ese trabajo ya no está» (assumed).
-- Q: (work-reviewer) ⌘↩ sobre una tarea que la ventana aún no ha cargado no hacía nada → A: abre Tareas, que recarga Jira al montarse (assumed, N2).
+- Q: What goes into «Qué me toca»? → A: agents in «te necesita» (oldest first), then tasks from the board's first column (or «Por empezar» with no board); MRs arrive with phase 2 (assumed).
+- Q: How do you reply from the notification? → A: a macOS notification with reply (`hasReply`); the text is typed into the agent's panel with `tmux send-keys -l` and Enter, only in that panel (assumed).
+- Q: (spec-reviewer) Which tasks go into the list? → A: only those that do not already have an open work; if the board cannot be read (I18), those of the «Por empezar» group (assumed).
+- Q: (spec-reviewer) Where does ⌘↩ work? → A: only with Work or Tasks in view and with something in the list; otherwise the menu item is disabled (assumed).
+- Q: (spec-reviewer) Does replying in the notification count as clicking it (W38)? → A: no: replying does not bring Atril to the front or change screen; only clicking the notification does (assumed).
+- Q: (spec-reviewer) And if the work no longer exists when replying? → A: nothing is sent and a notification says «No se pudo enviar: ese trabajo ya no está» (assumed).
+- Q: (work-reviewer) ⌘↩ on a task the window had not yet loaded did nothing → A: it opens Tasks, which reloads Jira on mounting (assumed, N2).
 
 ### Own tasks (add-own-tasks, 9 nov 2026)
 
@@ -1085,16 +1085,16 @@ Textos por `t()`.
 
 #### Decision log, answers as given (2026-11-09)
 - Q: «tu desarrollo todo sin parar … te dejo solo» stands → decisions taken with the recommended option, marked (assumed).
-- Q: ¿Cuánto es «grande»? → A: más de 400 líneas cambiadas (añadidas + borradas) contra la base del trabajo, el umbral de `chained-pr`; y de nuevo a 800, 1200… (assumed).
-- Q: ¿Qué cuenta? → A: lo mismo que «Cambios» (F18): lo commiteado, lo no commiteado y lo nuevo sin seguimiento que git no ignora; un binario cuenta 0 (assumed).
-- Q: ¿Cuándo se mira? → A: después de cada Edit, Write, MultiEdit o Bash (PostToolUse); otras herramientas no cambian archivos (assumed).
-- Q: ¿Qué se le dice a Claude? → A: un `additionalContext` en español: el tamaño, el umbral, y que en su siguiente parada natural pregunte con AskUserQuestion si separar en MRs encadenadas (`chained-pr` si está) o seguir; que no separe sin preguntar (assumed).
-- Q: ¿Y si Atril no encuentra el trabajo? → A: el hook no dice nada; nunca molesta a Claude (assumed).
+- Q: How much is «large»? → A: more than 400 changed lines (added + deleted) against the work's base, `chained-pr`'s threshold; and again at 800, 1200… (assumed).
+- Q: What counts? → A: the same as «Cambios» (F18): committed, uncommitted and new untracked that git does not ignore; a binary counts 0 (assumed).
+- Q: When is it checked? → A: after every Edit, Write, MultiEdit or Bash (PostToolUse); other tools do not change files (assumed).
+- Q: What is Claude told? → A: an `additionalContext` in Spanish: the size, the threshold, and that at its next natural stop it should ask with AskUserQuestion whether to split into chained MRs (`chained-pr` if present) or carry on; that it must not split without asking (assumed).
+- Q: And if Atril cannot find the work? → A: the hook says nothing; it never bothers Claude (assumed).
 
-- Q: (spec-reviewer) ¿Un salto de 0 a 900? → A: una sola nota; quedan avisados los umbrales hasta el alcanzado; solo un umbral más alto vuelve a avisar (assumed).
-- Q: (spec-reviewer) ¿El número es exacto? → A: sí, el total de F18, sin cortar la cuenta (assumed).
-- Q: (spec-reviewer) ¿Dos hooks a la vez? → A: cada umbral se reclama creando un archivo en exclusiva (`wx`); como mucho una nota por umbral (assumed).
-- Q: (spec-reviewer) ¿El aviso promete una pregunta que ya no vendrá? → A: el texto dice lo que ya pasó: «Atril le ha pedido a Claude que te proponga separarla» (assumed).
+- Q: (spec-reviewer) A jump from 0 to 900? → A: a single note; the thresholds up to the one reached are marked as notified; only a higher threshold notifies again (assumed).
+- Q: (spec-reviewer) Is the number exact? → A: yes, F18's total, without cutting the count short (assumed).
+- Q: (spec-reviewer) Two hooks at once? → A: each threshold is claimed by creating a file exclusively (`wx`); at most one note per threshold (assumed).
+- Q: (spec-reviewer) Does the notice promise a question that will no longer come? → A: the text says what already happened: «Atril le ha pedido a Claude que te proponga separarla» (assumed).
 
 ### Language (add-language, 9 nov 2026)
 
@@ -1125,12 +1125,12 @@ Textos por `t()`.
 
 #### Decision log, answers as given (2026-11-09)
 - Q: «sigue con todo haz mejoras, nuevas features» — Pau → decisions taken with the recommended option, marked (assumed).
-- Q: ¿Qué sale en la paleta? → A: pantallas, trabajos (por rama y repo), MRs de la última carga (título y proyecto), tareas de Jira (clave y título) y acciones: Nuevo trabajo, Nueva tarea, Actualizar MR, Marcar avisos leídos, Tutorial (assumed).
-- Q: ¿Cómo filtra? → A: cada palabra escrita debe aparecer en el texto del elemento, sin distinguir mayúsculas ni tildes; como mucho 50 resultados (assumed).
-- Q: ¿Cómo se abre? → A: ⌘K como acelerador del menú, igual que ⌘↩, así la terminal no se lo come (assumed).
-- Q: (spec-reviewer) workspaces tiene ⌘K en «fuera de alcance» → A: este cambio lo saca de ahí al integrarse (assumed).
-- Q: (spec-reviewer) ¿⌘K con otro diálogo abierto? → A: no hace nada (assumed).
-- Q: (spec-reviewer) ¿Una tarea desde la paleta arranca sola si el repo está recordado? → A: hace lo mismo que pulsar Empezar en Tareas (I20/I21): es tu acción, como allí (assumed).
+- Q: What appears in the palette? → A: screens, works (by branch and repo), MRs from the last load (title and project), Jira tasks (key and title) and actions: New work, New task, Refresh MRs, Mark notifications read, Tutorial (assumed).
+- Q: How does it filter? → A: every word typed must appear in the item's text, ignoring case and accents; at most 50 results (assumed).
+- Q: How is it opened? → A: ⌘K as a menu accelerator, like ⌘↩, so the terminal does not swallow it (assumed).
+- Q: (spec-reviewer) workspaces lists ⌘K under «out of scope» → A: this change takes it out of there when integrated (assumed).
+- Q: (spec-reviewer) ⌘K with another dialog open? → A: it does nothing (assumed).
+- Q: (spec-reviewer) Does a task from the palette start by itself if the repo is remembered? → A: it does the same as pressing Start in Tasks (I20/I21): it is your action, as there (assumed).
 
 ### Automatic or manual mode (add-auto-mode, 9 nov 2026)
 
@@ -1150,14 +1150,14 @@ Textos por `t()`.
 
 #### Decision log, answers as given (2026-11-09)
 - Q: Pau, 9 nov: «cuando se crea la tarea te diga si lo quieres automático o manual en que se pare en la spec y plan; si una tarea es pequeña puede ser modo auto y sigue a construir solo con el spec y plan sin revisar, solo lectura».
-- Q: ¿Qué lanza el automático? → A: `/libretto:libretto-attacca`, el modo sin paradas de Libretto: mismas fases, nada que mantener en Atril (assumed).
-- Q: attacca hace push y abre la MR solo; ¿se deja? → A: no: en automático Atril pide confirmación antes de `git push`, `gh pr create` y `glab mr create`, con el permiso de Claude Code («ask» desde el hook); se lo dije a Pau al encolar (assumed).
-- Q: ¿Nuevo trabajo sin texto? → A: sin modo: es Claude a secas (assumed).
-- Q: ¿Por defecto? → A: Manual, como hoy (assumed).
-- Q: (revisor) ¿El clic directo de Empezar (I20)? → A: siempre Manual; ⌥-clic abre el diálogo con la elección (assumed).
-- Q: (revisor) ¿Campo `mode`? → A: ya existe (in-place/worktree): campo nuevo `auto` (assumed).
-- Q: (revisor de obra) La regex no veía `bash -c "git push"`, `/usr/bin/git push`, `--no-pager`… → A: cualquier `git … push` en un mismo segmento; un «push» en un mensaje de commit solo añade una pregunta (assumed).
-- Q: (revisor) ¿F15 frente a F26? → A: F26 es la excepción y su texto gana; solo el editor de documentos (assumed).
+- Q: What does automatic launch? → A: `/libretto:libretto-attacca`, Libretto's mode without stops: same phases, nothing to maintain in Atril (assumed).
+- Q: attacca pushes and opens the MR by itself; do we leave it? → A: no: in automatic Atril asks for confirmation before `git push`, `gh pr create` and `glab mr create`, with Claude Code's permission («ask» from the hook); I told Pau when queuing it (assumed).
+- Q: New work without text? → A: no mode: it is plain Claude (assumed).
+- Q: Default? → A: Manual, as today (assumed).
+- Q: (reviewer) Start's direct click (I20)? → A: always Manual; ⌥-click opens the dialog with the choice (assumed).
+- Q: (reviewer) The `mode` field? → A: it already exists (in-place/worktree): new field `auto` (assumed).
+- Q: (work reviewer) The regex did not see `bash -c "git push"`, `/usr/bin/git push`, `--no-pager`… → A: any `git … push` in one segment; a «push» in a commit message only adds a question (assumed).
+- Q: (reviewer) F15 versus F26? → A: F26 is the exception and its text wins; only the document editor (assumed).
 
 ### Subagentes (add-subagents-view, 10 nov 2026)
 
@@ -1175,1190 +1175,1190 @@ Textos por `t()`.
 
 #### Decision log, answers as given (2026-11-10)
 - Q: Pau, 9 nov: «si claude crea subagentes también estaría bien verlos».
-- Q: ¿De dónde salen? → A: de los hooks `SubagentStart`/`SubagentStop` de Claude Code (`agent_id`, `agent_type`) y del PreToolUse de la herramienta `Agent` (`description`, `subagent_type`); documentado en code.claude.com/docs/en/hooks (assumed).
-- Q: ¿Se lee el transcript del subagente? → A: no: ni cuota ni contenido, solo los eventos (assumed).
-- Q: ¿Cuánto se quedan los terminados? → A: hasta el siguiente mensaje de la persona (UserPromptSubmit), como mucho 20 (assumed).
-- Q: ¿Agentes internos de Claude Code (agent_type vacío)? → A: se ignoran (assumed).
-- Q: (revisor) ¿El PreToolUse de Agent deja de marcar «trabajando»? → A: no, sigue igual; solo SubagentStart/Stop no tocan el estado (assumed).
-- Q: (revisor) ¿Sin subagent_type? ¿Pendientes que nunca emparejan? → A: cuenta como general-purpose; los pendientes caducan a los 10 min (assumed).
-- Q: (revisor) ¿Unidades y formato? → A: segundos epoch; «45 s», «1 min 20 s»; terminado muestra la duración (assumed).
+- Q: Where do they come from? → A: from Claude Code's `SubagentStart`/`SubagentStop` hooks (`agent_id`, `agent_type`) and from the `Agent` tool's PreToolUse (`description`, `subagent_type`); documented at code.claude.com/docs/en/hooks (assumed).
+- Q: Is the subagent's transcript read? → A: no: neither quota nor content, only the events (assumed).
+- Q: How long do finished ones stay? → A: until the person's next message (UserPromptSubmit), at most 20 (assumed).
+- Q: Claude Code's internal agents (empty agent_type)? → A: ignored (assumed).
+- Q: (reviewer) Does Agent's PreToolUse stop marking «working»? → A: no, it stays the same; only SubagentStart/Stop do not touch the state (assumed).
+- Q: (reviewer) No subagent_type? Pending ones that never pair? → A: counts as general-purpose; pending ones expire after 10 min (assumed).
+- Q: (reviewer) Units and format? → A: epoch seconds; «45 s», «1 min 20 s»; a finished one shows the duration (assumed).
 
-### Detalle del subagente (add-subagent-detail, 10 nov 2026)
+### Subagent detail (add-subagent-detail, 10 nov 2026)
 
-- (add-subagents-view, 10 nov) «Events only» y «Pairing by order» quedan sustituidas: Pau pidió el
-  9 nov ver lo que hace el subagente como terminal y borrar el emparejamiento (assumed en el cómo).
-- La ruta vive en `$ATRIL_HOME/subagents/<session>.json` y no sale de main (assumed).
-- Refresco por sondeo de 1 s solo con el modal abierto (assumed); techo: relee el archivo entero,
-  pasar a leer la cola cuando un registro pese varios MB.
-- 500 líneas como mucho en el modal (assumed): un subagente largo enseña su final.
-
-#### Alternatives that lost
-
-| Considered | Why it lost |
-|---|---|
-| `fs.watch` por archivo de subagente y empujar líneas | Un vigilante por modal, que hay que cerrar bien, para ganar menos de 1 s de latencia. |
-| Localizar el archivo por `~/.claude/projects/<ruta codificada>/*/subagents/` | Una regla interna más (la codificación de la ruta) y un glob por sesiones. |
-| xterm.js en el modal | Sin entrada no aporta nada y añade otro terminal vivo con su tamaño. |
-| Mantener el emparejamiento por orden para la descripción | Se intercambia con dos del mismo tipo a la vez; el meta da la de verdad. |
-
-#### Decision log, answers as given (2026-11-10)
-- Q: ¿Dónde está el archivo del subagente? → A: el hook lo deriva en SubagentStart de `transcript_path` (campo documentado de todo hook): `<transcript_path sin .jsonl>/subagents/agent-<agent_id>.jsonl`, comprobado en disco con Claude Code de hoy; se guarda en main y nunca sale a la ventana (assumed). Si cambia el formato, el modal sale vacío y la lista sigue igual.
-- Q: ¿Se borra el emparejamiento por orden? → A: sí, como pide la propuesta: la descripción sale de `agent-<id>.meta.json`; sin meta, solo el tipo (assumed). Si el meta deja de existir, se pierden las descripciones, no la lista.
-- Q: ¿Terminal de verdad (xterm) o texto con aspecto de terminal? → A: texto monoespaciado de solo lectura con el estilo de Claude Code; xterm no aporta nada sin entrada (assumed).
-- Q: ¿En vivo cómo? → A: la ventana pide el registro cada segundo mientras el modal está abierto y el subagente trabaja; main relee el archivo (assumed). Techo: archivos de varios MB; leer solo la cola si pesa.
-- Q: ¿Qué se pinta? → A: el encargo (`> ` y sus 3 primeras líneas), texto del asistente con `⏺`, `⏺ Herramienta(arg)`, `⎿` con las 3 primeras líneas del resultado y «… +N líneas», y «✻ Pensando…» sin su contenido; como mucho las 500 últimas líneas (assumed).
-- Q: (fase 5) ¿Cómo se construye? → A: ruta guardada por el hook + lectura bajo demanda en main + sondeo desde el modal (assumed). Perdieron: un `fs.watch` por archivo de subagente (más estado y fugas por cada modal para ganar menos de 1 s) y buscar el archivo por la ruta del trabajo codificada en `~/.claude/projects` (depende de otra regla interna más y falla con trabajos en sitio).
-
-- Q: (revisor de spec) Varias holguras del contrato → A, todas (assumed):
-  - Una entrada antigua sin `transcript` conserva la `description` guardada.
-  - Un meta sin `description` de texto cuenta como meta ausente.
-  - Un meta que aún no existe se vuelve a leer en el siguiente cambio del archivo de entradas. Como muy tarde, en SubagentStop.
-  - El tope de 500 cuenta elementos `SubagentLine`, no filas pintadas.
-  - N es el número de líneas ocultas.
-  - El encargo es el primer `user` con contenido de texto (una cadena o su primer bloque `text`).
-  - Una herramienta sin argumento de texto se pinta `Name`.
-  - `is_error` no se distingue.
-  - Al llegar `endedAt` se pide el registro una última vez.
-  - Si la entrada desaparece, el modal se cierra.
-  - Un subagente recién lanzado sin archivo dice lo mismo que uno sin registro.
-  - Las líneas de continuación no llevan prefijo y van sangradas.
-
-### Instalar desde el doctor (add-doctor-install-terminal, 10 nov 2026)
-
-- Terminal.app vía `osascript` (assumed, 10 nov). Techo: una persona con otra terminal ve Terminal.app;
-  se añade un ajuste cuando alguien lo pida.
-- Solo nombres de la lista cruzan el IPC (assumed, 10 nov): la lista de W21 es la única fuente de
-  comandos.
-- Volver a comprobar al recuperar el foco, sin seguir la instalación (assumed, 10 nov).
+- (add-subagents-view, 10 nov) «Events only» and «Pairing by order» are superseded: Pau asked on
+  9 nov to see what the subagent does as a terminal and to delete the pairing (assumed in the how).
+- The path lives in `$ATRIL_HOME/subagents/<session>.json` and does not leave main (assumed).
+- 1 s polling refresh only with the modal open (assumed); ceiling: it rereads the whole file,
+  switch to reading the tail when a log weighs several MB.
+- At most 500 lines in the modal (assumed): a long subagent shows its end.
 
 #### Alternatives that lost
 
 | Considered | Why it lost |
 |---|---|
-| Terminal dentro de Atril con xterm y un pty | Sin pty fuera de tmux, que puede ser lo que falta; `sudo` y los diálogos de macOS van mejor fuera. |
-| La ventana manda el comando | Abriría la ejecución de cualquier texto desde el renderer. |
-| Sondear el doctor cada 5 s | Más estado para lo que el foco ya resuelve cuando vuelves. |
+| `fs.watch` per subagent file and pushing lines | One watcher per modal, which has to be closed properly, to gain less than 1 s of latency. |
+| Locating the file via `~/.claude/projects/<encoded path>/*/subagents/` | One more internal rule (the path encoding) and a glob over sessions. |
+| xterm.js in the modal | Without input it adds nothing and brings another live terminal with its own size. |
+| Keeping the pairing by order for the description | It gets swapped with two of the same type at once; the meta gives the real one. |
 
 #### Decision log, answers as given (2026-11-10)
-- Q: ¿Qué terminal? → A: Terminal.app vía `osascript` (`activate` + `do script`): viene con macOS y la persona ve y responde lo que pida el instalador (contraseña, licencia de Xcode) (assumed). Si Pau usa otra (iTerm, Ghostty), se añade un ajuste.
-- Q: ¿Una terminal dentro de Atril (xterm + pty)? → A: no: un instalador que pide `sudo` o abre un diálogo de macOS va mejor en una terminal de verdad, y Atril no tiene pty fuera de tmux, que puede ser justo lo que falta (assumed).
-- Q: ¿Cómo sabe Atril que terminó? → A: no lo sabe: al volver la ventana de Atril al frente (foco), el doctor comprueba otra vez y el aviso se actualiza o desaparece (assumed). Si eso no basta, un sondeo de 5 s mientras haya una instalación lanzada.
-- Q: (fase 5) ¿Cómo se construye? → A: un handler `atril:doctor:install(tool)` que solo acepta nombres de la lista y un listener de foco en la ventana (assumed). Perdió: pasar el comando desde la ventana (abriría una puerta para ejecutar cualquier cosa).
+- Q: Where is the subagent's file? → A: the hook derives it at SubagentStart from `transcript_path` (a documented field of every hook): `<transcript_path without .jsonl>/subagents/agent-<agent_id>.jsonl`, checked on disk with today's Claude Code; it is stored in main and never reaches the window (assumed). If the format changes, the modal comes out empty and the list stays the same.
+- Q: Is the pairing by order deleted? → A: yes, as the proposal asks: the description comes from `agent-<id>.meta.json`; without a meta, only the type (assumed). If the meta stops existing, the descriptions are lost, not the list.
+- Q: A real terminal (xterm) or text that looks like a terminal? → A: read-only monospaced text in Claude Code's style; xterm adds nothing without input (assumed).
+- Q: How live? → A: the window asks for the log every second while the modal is open and the subagent is working; main rereads the file (assumed). Ceiling: files of several MB; read only the tail if it weighs.
+- Q: What is drawn? → A: the assignment (`> ` and its first 3 lines), assistant text with `⏺`, `⏺ Tool(arg)`, `⎿` with the first 3 lines of the result and «… +N líneas», and «✻ Pensando…» without its content; at most the last 500 lines (assumed).
+- Q: (phase 5) How is it built? → A: path saved by the hook + on-demand read in main + polling from the modal (assumed). Lost: one `fs.watch` per subagent file (more state and leaks per modal to gain less than 1 s) and finding the file by the work's path encoded in `~/.claude/projects` (depends on one more internal rule and fails with in-place works).
 
-- Q: (revisor de spec) Holguras de W70/W71 → A, todas (assumed):
-  - Se vuelve a comprobar en cada foco mientras falte algo, se haya pulsado Instalar o no.
-  - Tras cada comprobación, la herramienta que sigue faltando vuelve a mostrar «Instalar» y su error se borra.
-  - Solo llevan botón las herramientas con comando.
-  - Con el pop abierto, la lista se actualiza en sitio y el pop se va con el aviso cuando ya no falta nada.
-  - El escapado se prueba con una función exportada, porque ningún comando de la lista lleva `"` ni `\`.
+- Q: (spec reviewer) Several slacks in the contract → A, all (assumed):
+  - An old entry without `transcript` keeps the stored `description`.
+  - A meta without a text `description` counts as an absent meta.
+  - A meta that does not exist yet is reread at the next change of the entries file. At the latest, at SubagentStop.
+  - The cap of 500 counts `SubagentLine` items, not drawn rows.
+  - N is the number of hidden lines.
+  - The assignment is the first `user` with text content (a string or its first `text` block).
+  - A tool without a text argument is drawn `Name`.
+  - `is_error` is not distinguished.
+  - When `endedAt` arrives, the log is requested one last time.
+  - If the entry disappears, the modal closes.
+  - A freshly launched subagent without a file says the same as one without a log.
+  - Continuation lines carry no prefix and are indented.
 
-### Paleta Grafito (adopt-grafito, 10 nov 2026)
+### Installing from the doctor (add-doctor-install-terminal, 10 nov 2026)
 
-- Grafito elegido por Pau entre cuatro variantes minimalistas, como paleta adicional (10 nov).
-- Original por defecto (assumed, 10 nov).
+- Terminal.app via `osascript` (assumed, 10 nov). Ceiling: a person with another terminal sees Terminal.app;
+  a setting is added when someone asks for it.
+- Only names from the list cross the IPC (assumed, 10 nov): W21's list is the only source of
+  commands.
+- Recheck on regaining focus, without following the installation (assumed, 10 nov).
 
 #### Alternatives that lost
 
 | Considered | Why it lost |
 |---|---|
-| Sustituir la paleta original | Pau la quiere como tema adicional. |
-| Una sola lista de cinco temas (Claro, Oscuro, Auto, Grafito claro, Grafito oscuro) | Mezcla dos ejes; Automático dejaría de valer para Grafito. |
+| Terminal inside Atril with xterm and a pty | No pty outside tmux, which may be what is missing; `sudo` and macOS dialogs work better outside. |
+| The window sends the command | It would open the execution of any text from the renderer. |
+| Polling the doctor every 5 s | More state for what focus already solves when you come back. |
 
 #### Decision log, answers as given (2026-11-10)
-- Q: ¿Sustituye a la original? → A: «ponlo como tema mas el original que ya tenemos».
-- Q: ¿Cómo se combina con Claro/Oscuro/Automático? → A: son dos elecciones independientes: Paleta
-  (Original · Grafito) y Tema (Claro · Oscuro · Automático); Grafito tiene claro y oscuro (assumed).
-- Q: ¿Por defecto? → A: Original, para no cambiarle la app a nadie sin pedirlo (assumed).
-- Q: ¿Solo color, o también tipografía, densidad y radios? → A: solo la paleta; lo demás, aparte si
-  Pau lo pide (assumed).
-- Q: ¿«te necesita» en Grafito? → A: en el acento, como en el boceto (assumed).
-- Q: ¿El editor (`--ed-*`) y Jira? → A: se quedan igual en las dos paletas (assumed).
+- Q: Which terminal? → A: Terminal.app via `osascript` (`activate` + `do script`): it ships with macOS and the person sees and answers whatever the installer asks (password, Xcode licence) (assumed). If Pau uses another (iTerm, Ghostty), a setting is added.
+- Q: A terminal inside Atril (xterm + pty)? → A: no: an installer that asks for `sudo` or opens a macOS dialog works better in a real terminal, and Atril has no pty outside tmux, which may be exactly what is missing (assumed).
+- Q: How does Atril know it finished? → A: it does not: when Atril's window comes back to the front (focus), the doctor checks again and the notice updates or disappears (assumed). If that is not enough, a 5 s poll while an installation is launched.
+- Q: (phase 5) How is it built? → A: an `atril:doctor:install(tool)` handler that only accepts names from the list and a focus listener on the window (assumed). Lost: passing the command from the window (it would open a door to run anything).
 
-- Q: (revisor de spec) Holguras → A, todas (assumed):
-  - W35 se enmienda: los colores solo viven en los cuatro bloques de tokens (dos de Original y dos de
-    Grafito), y los de Grafito sobrescriben claves que ya existen. El test no se debilita.
-  - El acento también tiene tope de croma, 0,13.
-  - Un token `rgba()` se clasifica por su color.
-  - «Al momento» significa en el mismo clic, sin esperar a main.
-  - Un valor desconocido lo normaliza main al leer `ui.json`.
-  - El boceto y la foto no tienen criterio: son dibujo y evidencia.
-  - «Paleta», «Original» y «Grafito» pasan por `t()`.
+- Q: (spec reviewer) Slacks in W70/W71 → A, all (assumed):
+  - It is rechecked on every focus while anything is missing, whether Install was pressed or not.
+  - After each check, the tool that is still missing shows «Instalar» again and its error is cleared.
+  - Only tools with a command carry a button.
+  - With the pop open, the list updates in place and the pop leaves with the notice when nothing is missing any more.
+  - The escaping is tested with an exported function, because no command in the list carries `"` or `\`.
 
-### Tutorial de 24 pasos (expand-tour, 10 nov 2026)
+### Grafito palette (adopt-grafito, 10 nov 2026)
 
-- Pau, 10 nov: «tiene que ser más extenso… dejas muchas cosas en el aire», en castellano de España.
+- Grafito chosen by Pau among four minimalist variants, as an additional palette (10 nov).
+- Original by default (assumed, 10 nov).
 
 #### Alternatives that lost
 
 | Considered | Why it lost |
 |---|---|
-| Un tutorial corto por pantalla | Pau pidió uno más extenso; partirlo deja piezas sin ver. |
-| Abrir diálogos de verdad durante el tutorial | Toca el motor y puede dejar estado a medias. |
+| Replacing the original palette | Pau wants it as an additional theme. |
+| A single list of five themes (Light, Dark, Auto, Light Grafito, Dark Grafito) | It mixes two axes; Automatic would stop making sense for Grafito. |
 
 #### Decision log, answers as given (2026-11-10)
-- Q: ¿Cuántos pasos? → A: 24, uno por pieza que se usa, en el orden en que se usa: Trabajo, su panel,
-  Tareas, MR, Avisos, lo de arriba y abajo, Ajustes (assumed).
-- Q: ¿Qué dice cada paso? → A: qué es, cómo se usa y qué pasa al usarlo, en 2–3 frases de castellano de
-  España, con sus atajos; cada frase tiene que ser verdad en el código de hoy (assumed).
-- Q: ¿Pasos de cosas que no siempre están (subagentes, herramientas, el diálogo de modo, ⌘K)? → A: se
-  explican igual: si no hay elemento, el paso sale centrado, como ya hace el tutorial (assumed).
-- Q: ¿La bienvenida? → A: «Enséñamelo · 3 min» (assumed).
+- Q: Does it replace the original? → A: «ponlo como tema mas el original que ya tenemos».
+- Q: How does it combine with Light/Dark/Automatic? → A: they are two independent choices: Palette
+  (Original · Grafito) and Theme (Light · Dark · Automatic); Grafito has light and dark (assumed).
+- Q: Default? → A: Original, so as not to change anyone's app without being asked (assumed).
+- Q: Colour only, or also typography, density and radii? → A: only the palette; the rest, separately if
+  Pau asks (assumed).
+- Q: «te necesita» in Grafito? → A: in the accent, as in the sketch (assumed).
+- Q: The editor (`--ed-*`) and Jira? → A: they stay the same in both palettes (assumed).
 
-- Q: (revisor de spec) Holguras → A, todas (assumed):
-  - Cada texto tiene **2 o 3 frases**; una frase acaba en «.», «?» o «!» seguido de espacio o del final.
-  - start-mode y palette nunca tienen elemento: el test comprueba que salen centrados, sin foco. Los
-    otros seis opcionales se dan en el mock cuando es práctico.
-  - El paso 11 ilumina la pestaña Actividad, que siempre está visible.
-  - El paso 18, «la nueva comprobación», es la que se hace al volver el foco a Atril.
-  - Los `data-tour` en rutas de otras capacidades son solo atributos al servicio del tutorial, que es de
-    workspaces; no se escribe spec en esas capacidades.
-  - La bienvenida dice «Enséñamelo · 3 min» y entra en W23.
-  - El «Out» de add-command-palette sobre un paso de tutorial para ⌘K queda superado por este cambio.
-  - Fotos: pasos 7 y 13, en `bocetos/novedades/tutorial-7.png` y `tutorial-13.png`.
+- Q: (spec reviewer) Slacks → A, all (assumed):
+  - W35 is amended: colours live only in the four token blocks (two for Original and two for
+    Grafito), and Grafito's override keys that already exist. The test is not weakened.
+  - The accent also has a chroma cap, 0.13.
+  - An `rgba()` token is classified by its colour.
+  - «Al momento» means on the same click, without waiting for main.
+  - An unknown value is normalised by main when reading `ui.json`.
+  - The sketch and the photo have no criterion: they are drawing and evidence.
+  - «Paleta», «Original» and «Grafito» go through `t()`.
 
-- Q: (constructor) Sin elemento, el paso salía en una esquina, no centrado como pide W23 → A: se añade
-  `.tip.centred` y una línea en `Tour.tsx`; único cambio al motor, a favor de W23 (assumed). Los textos se
-  corrigieron donde la tabla no era verdad: Nueva tarea abre un trabajo (no crea en Jira), el número del
-  rail sin color, el registro del subagente «como una terminal», el reinicio semanal de la cuota.
+### 24-step tutorial (expand-tour, 10 nov 2026)
 
-### Respuestas rápidas (quick-replies, 10 nov 2026)
-
-- Solo la primera pregunta (assumed, 10 nov); techo: las demás, en la terminal.
-- El número de la opción como tecla (assumed, 10 nov); techo: formato interno de Claude Code.
-- Respuestas fijas «Sí, sigue» / «No, espera» (assumed, 10 nov).
+- Pau, 10 nov: «tiene que ser más extenso… dejas muchas cosas en el aire», in Spain Spanish.
 
 #### Alternatives that lost
 
 | Considered | Why it lost |
 |---|---|
-| Escribir siempre el texto de la opción | En el selector de Claude Code no elige nada. |
-| Botones en la notificación del Mac | macOS solo deja un campo de respuesta; ya existe (N3). |
+| A short tutorial per screen | Pau asked for a longer one; splitting it leaves pieces unseen. |
+| Opening real dialogs during the tutorial | It touches the engine and may leave state half-done. |
 
 #### Decision log, answers as given (2026-11-10)
-- Q: ¿Para qué? → A: para llevar 3 trabajos a la vez sin perder el foco: contestar a un agente desde
-  su fila sin abrir su terminal (Pau, 10 nov) (assumed).
-- Q: ¿Qué respuestas? → A: si la pregunta es de `AskUserQuestion` (con opciones), sus opciones; si no,
-  dos fijas: «Sí, sigue» y «No, espera» (assumed).
-- Q: ¿Cómo se envía una opción? → A: tecleando su número (1, 2…) y Enter en el panel del agente, que es
-  como se elige en el selector de Claude Code (assumed; formato interno: si cambia, se escribe el texto de
-  la opción). Una respuesta fija se escribe literal, como N3.
-- Q: ¿Dónde? → A: en la fila del trabajo en «Trabajo en marcha», debajo de «Te pregunta: …»; nada en el
-  panel ni en otras pantallas en este cambio (assumed).
-- Q: ¿Varias preguntas a la vez (`questions` con más de una)? → A: solo la primera; las demás se contestan
-  en la terminal (assumed).
+- Q: How many steps? → A: 24, one per piece that is used, in the order it is used: Work, its panel,
+  Tasks, MR, Notifications, the top and bottom, Settings (assumed).
+- Q: What does each step say? → A: what it is, how it is used and what happens when used, in 2–3 sentences of
+  Spain Spanish, with its shortcuts; every sentence has to be true in today's code (assumed).
+- Q: Steps for things that are not always there (subagents, tools, the mode dialog, ⌘K)? → A: they are
+  explained all the same: if there is no element, the step comes out centred, as the tutorial already does (assumed).
+- Q: The welcome? → A: «Enséñamelo · 3 min» (assumed).
 
-- Q: (revisor de spec) Holguras → A, todas (assumed):
-  - **Qué manda la ventana.** Solo `{ option: n }` o `{ fixed: 'yes' | 'no' }`. Main traduce `yes` a «Sí,
-    sigue» y `no` a «No, espera». Nunca teclea texto que venga de la ventana.
-  - **Qué comprueba main al pulsar.** Relee el estado del trabajo. Si ya no está en needs-you, responde
-    «Ese agente ya no está esperando una respuesta.». Si la opción no está entre las guardadas, «Esa
+- Q: (spec reviewer) Slacks → A, all (assumed):
+  - Each text has **2 or 3 sentences**; a sentence ends in «.», «?» or «!» followed by a space or the end.
+  - start-mode and palette never have an element: the test checks they come out centred, without focus. The
+    other six optional ones are given in the mock when practical.
+  - Step 11 lights up the Activity tab, which is always visible.
+  - Step 18, «the new check», is the one done when focus returns to Atril.
+  - The `data-tour` attributes on routes of other capabilities are only attributes serving the tutorial, which belongs to
+    workspaces; no spec is written in those capabilities.
+  - The welcome says «Enséñamelo · 3 min» and goes into W23.
+  - The «Out» of add-command-palette about a tutorial step for ⌘K is superseded by this change.
+  - Photos: steps 7 and 13, in `bocetos/novedades/tutorial-7.png` and `tutorial-13.png`.
+
+- Q: (builder) Without an element the step came out in a corner, not centred as W23 asks → A: `.tip.centred` and a line in
+  `Tour.tsx` are added; the only change to the engine, in favour of W23 (assumed). The texts
+  were corrected where the table was not true: New task opens a work (it does not create in Jira), the number of the
+  rail without colour, the subagent log «como una terminal», the quota's weekly reset.
+
+### Quick replies (quick-replies, 10 nov 2026)
+
+- Only the first question (assumed, 10 nov); ceiling: the others, in the terminal.
+- The option's number as a key (assumed, 10 nov); ceiling: Claude Code's internal format.
+- Fixed replies «Sí, sigue» / «No, espera» (assumed, 10 nov).
+
+#### Alternatives that lost
+
+| Considered | Why it lost |
+|---|---|
+| Always typing the option's text | In Claude Code's selector it chooses nothing. |
+| Buttons in the Mac notification | macOS only allows a reply field; it already exists (N3). |
+
+#### Decision log, answers as given (2026-11-10)
+- Q: What for? → A: to run 3 works at once without losing focus: answer an agent from
+  its row without opening its terminal (Pau, 10 nov) (assumed).
+- Q: Which replies? → A: if the question is from `AskUserQuestion` (with options), its options; if not,
+  two fixed ones: «Sí, sigue» and «No, espera» (assumed).
+- Q: How is an option sent? → A: by typing its number (1, 2…) and Enter in the agent's panel, which is
+  how it is chosen in Claude Code's selector (assumed; internal format: if it changes, the text of
+  the option is typed). A fixed reply is typed literally, like N3.
+- Q: Where? → A: in the work's row in «Trabajo en marcha», under «Te pregunta: …»; nothing in the
+  panel or other screens in this change (assumed).
+- Q: Several questions at once (`questions` with more than one)? → A: only the first; the others are answered
+  in the terminal (assumed).
+
+- Q: (spec reviewer) Slacks → A, all (assumed):
+  - **What the window sends.** Only `{ option: n }` or `{ fixed: 'yes' | 'no' }`. Main translates `yes` to «Sí,
+    sigue» and `no` to «No, espera». It never types text that comes from the window.
+  - **What main checks on press.** It rereads the work's state. If it is no longer in needs-you, it answers
+    «Ese agente ya no está esperando una respuesta.». If the option is not among the stored ones, «Esa
     opción ya no existe.».
-  - **Preguntas multiSelect.** No llevan botones de opción ni respuestas fijas; se contestan en la
-    terminal. «Other» no se ofrece.
-  - **Cuánto duran las opciones.** Se guardan mientras el estado siga en needs-you, también si llega un
-    Notification o un Stop, y se borran en cuanto el estado pasa a otro.
-  - **Después de enviar.** La fila dice «Enviado» y los botones quedan desactivados hasta que el estado
-    cambie.
-  - **Dónde van los botones.** Solo en la fila. La línea del Reading que habla del panel y del aviso queda
-    superada.
-  - **Tutorial.** El paso 4 («Trabajo en marcha») nombra las respuestas rápidas sin pasar de 3 frases.
+  - **multiSelect questions.** They carry no option buttons or fixed replies; they are answered in the
+    terminal. «Other» is not offered.
+  - **How long the options last.** They are stored while the state stays needs-you, also if a
+    Notification or a Stop arrives, and are deleted as soon as the state changes to another.
+  - **After sending.** The row says «Enviado» and the buttons stay disabled until the state
+    changes.
+  - **Where the buttons go.** Only in the row. The Reading line that speaks of the panel and the notification is
+    superseded.
+  - **Tutorial.** Step 4 («Trabajo en marcha») names the quick replies without exceeding 3 sentences.
 
-### Modo foco (focus-mode, 10 nov 2026)
+### Focus mode (focus-mode, 10 nov 2026)
 
-- El foco no se recuerda al reiniciar (assumed, 10 nov).
-- Con Atril detrás, el aviso del Mac sale igual (assumed, 10 nov).
-- ⌘⇧F y ⌘⌥← como atajos (assumed, 10 nov; libres en el menú).
+- Focus is not remembered across restarts (assumed, 10 nov).
+- With Atril in the background, the Mac notification still appears (assumed, 10 nov).
+- ⌘⇧F and ⌘⌥← as shortcuts (assumed, 10 nov; free in the menu).
 
 #### Alternatives that lost
 
 | Considered | Why it lost |
 |---|---|
-| Ventana aparte por trabajo | Rompe la ventana única y duplica la terminal. |
-| Silenciar todos los avisos en foco | Con Atril detrás perderías al agente que te necesita. |
+| A separate window per work | It breaks the single window and duplicates the terminal. |
+| Silencing all notifications in focus | With Atril in the background you would lose the agent that needs you. |
 
 #### Decision log, answers as given (2026-11-10)
-- Q: ¿Qué es el modo foco? → A: estás en un trabajo y Atril quita lo demás de la vista: la barra lateral y
-  «Qué me toca» se esconden; la terminal y el panel de Libretto de ese trabajo se quedan (assumed).
-- Q: ¿Cómo se entra y sale? → A: menú Trabajo → Modo foco, ⌘⇧F, y un botón «Salir del foco» arriba; no se
-  recuerda al reiniciar (assumed: el foco es de un momento).
-- Q: ¿Y si otro agente te necesita? → A: con Atril delante, en vez del aviso del Mac sale una pastilla
-  discreta arriba, «{rama} te necesita», que no te cambia de trabajo; con Atril detrás, el aviso del Mac
-  sale como siempre (permite responder, N3) (assumed).
-- Q: ¿Cómo saltas y vuelves? → A: ⌘↩ (o pulsar la pastilla) va al que te necesita, sin salir del foco; allí
-  «Volver a {rama}» y ⌘⌥← te devuelven al trabajo donde estabas (assumed).
-- Q: (fase 5) ¿Cómo? → A: un estado `focus` en la ventana y un aviso a main de si suprimir notificaciones
-  (assumed). Perdió: una ventana aparte por trabajo (rompe el modelo de una sola ventana).
+- Q: What is focus mode? → A: you are in a work and Atril removes everything else from view: the sidebar and
+  «Qué me toca» are hidden; that work's terminal and Libretto panel stay (assumed).
+- Q: How do you enter and leave? → A: menu Work → Focus mode, ⌘⇧F, and a «Salir del foco» button at the top; it is not
+  remembered across restarts (assumed: focus is for a moment).
+- Q: And if another agent needs you? → A: with Atril in front, instead of the Mac notification a discreet
+  pill appears at the top, «{rama} te necesita», which does not switch your work; with Atril in the background, the Mac notification
+  appears as always (allows replying, N3) (assumed).
+- Q: How do you jump and come back? → A: ⌘↩ (or clicking the pill) goes to the one that needs you, without leaving focus; there
+  «Volver a {rama}» and ⌘⌥← take you back to the work where you were (assumed).
+- Q: (phase 5) How? → A: a `focus` state in the window and a notice to main about whether to suppress notifications
+  (assumed). Lost: a separate window per work (it breaks the single-window model).
 
-- Q: (revisor de spec) Holguras → A, todas (assumed):
-  - **⌘↩ en foco:** salta solo al agente que espera, el más antiguo según N1, sin contar el que tienes
-    abierto. En foco nunca abre una tarea; si no espera nadie, la opción del menú está desactivada. N2 se
-    enmienda para recogerlo.
+- Q: (spec reviewer) Slacks → A, all (assumed):
+  - **⌘↩ in focus:** jumps only to the agent that is waiting, the oldest by N1, not counting the one you have
+    open. In focus it never opens a task; if nobody is waiting, the menu option is disabled. N2 is
+    amended to cover it.
   - **«Volver a»:**
-    - Recuerda el trabajo en el que estabas al hacer el primer salto, y los saltos siguientes no lo
-      cambian.
-    - Se olvida al volver, al salir del foco o si ese trabajo se cierra.
-    - Cambiar de trabajo a mano (⌘1…9, ⌘K) sigue permitido y no cambia a dónde vuelves.
-  - **La pastilla:**
-    - Nombra a todos los que esperan ahora, menos el abierto, aunque ya esperaran antes de entrar en el
-      foco.
-    - Desaparece cuando no queda ninguno.
-    - Es parte de W79, en la ventana.
-  - **El aviso del Mac:**
-    - Un aviso que se calla por estar en el foco ya no sale después: la pastilla lo sustituye. W15 se
-      enmienda con esa excepción.
-    - Main mira `isFocused()` de la ventana en el momento de avisar. Minimizada, oculta o en otro
-      Escritorio cuenta como «no delante».
-    - La ventana le dice a main cada vez que el foco cambia y al cargar. Si recarga, el foco vuelve a
-      estar apagado.
-  - **Cuándo se puede activar:** «Modo foco» solo se activa en Trabajo con un trabajo elegido. Al cambiar
-    de trabajo, el foco sigue puesto, ahora sobre el nuevo.
-  - **Tutorial:** se nombra en el paso 4.
-  - **Textos:** «Modo foco» y «Volver» van por `t()`.
+    - It remembers the work you were in at the first jump, and later jumps do not
+      change it.
+    - It is forgotten on returning, on leaving focus or if that work is closed.
+    - Switching work by hand (⌘1…9, ⌘K) is still allowed and does not change where you return to.
+  - **The pill:**
+    - It names everyone who is waiting now, except the open one, even if they were already waiting before entering
+      focus.
+    - It disappears when none is left.
+    - It is part of W79, in the window.
+  - **The Mac notification:**
+    - A notification that is silenced because of focus no longer appears afterwards: the pill replaces it. W15 is
+      amended with that exception.
+    - Main looks at the window's `isFocused()` at the moment of notifying. Minimised, hidden or on another
+      Desktop counts as «not in front».
+    - The window tells main every time focus changes and on load. If it reloads, focus goes back to
+      off.
+  - **When it can be activated:** «Modo foco» is only active in Work with a work chosen. On switching
+    work, focus stays on, now over the new one.
+  - **Tutorial:** it is named in step 4.
+  - **Texts:** «Modo foco» and «Volver» go through `t()`.
 
-- Q: (revisor de obra) ¿Al ir a Tareas o Ajustes con el foco puesto, se olvida «Volver a»? → A: no: el foco
-  queda latente y al volver a Trabajo sigue con su destino; solo se aplica en Trabajo (assumed).
+- Q: (work reviewer) On going to Tasks or Settings with focus on, is «Volver a» forgotten? → A: no: focus
+  stays latent and on returning to Work it continues with its destination; it only applies in Work (assumed).
 
-### Todos los agentes (agents-overview, 10 nov 2026)
+### All agents (agents-overview, 10 nov 2026)
 
-- Tarjetas, no terminales múltiples (assumed, 10 nov).
-- El modo «Todos» no se recuerda al reiniciar (assumed, 10 nov).
+- Cards, not multiple terminals (assumed, 10 nov).
+- The «Todos» mode is not remembered across restarts (assumed, 10 nov).
 
 #### Alternatives that lost
 
 | Considered | Why it lost |
 |---|---|
-| Varias terminales xterm a la vez | Peso, tamaño y foco del teclado; para decidir basta la tarjeta. |
-| Una pantalla nueva en el rail | Las tarjetas son trabajos: viven en Trabajo. |
+| Several xterm terminals at once | Weight, size and keyboard focus; a card is enough to decide. |
+| A new screen in the rail | Cards are works: they live in Work. |
 
 #### Decision log, answers as given (2026-11-10)
-- Q: ¿Para qué? → A: ver los 3 (o más) agentes a la vez sin entrar en cada uno: qué hace cada uno, en qué
-  etapa va y quién te necesita (Pau, 10 nov: «3 tareas a la vez sin perder el foco») (assumed).
-- Q: ¿Dónde? → A: un segundo modo de Trabajo, «Todos», con ⌘⇧A y un conmutador «Uno · Todos» en la
-  cabecera; en «Todos» el hueco de la terminal muestra una tarjeta por trabajo (assumed). Perdió: varias
-  terminales a la vez (pesadas y frágiles con tmux; una tarjeta basta para decidir a cuál entrar).
-- Q: ¿Qué lleva cada tarjeta? → A: rama y repo, estado escrito, etapa de Libretto con su checklist «3/7»,
-  la última acción con «hace N min», los subagentes trabajando y, si te necesita, sus respuestas rápidas
+- Q: What for? → A: to see the 3 (or more) agents at once without entering each one: what each does, what
+  stage it is at and who needs you (Pau, 10 nov: «3 tareas a la vez sin perder el foco») (assumed).
+- Q: Where? → A: a second mode of Work, «Todos», with ⌘⇧A and a «Uno · Todos» switch in the
+  header; in «Todos» the terminal's slot shows one card per work (assumed). Lost: several
+  terminals at once (heavy and fragile with tmux; a card is enough to decide which to enter).
+- Q: What does each card carry? → A: branch and repo, written state, Libretto stage with its checklist «3/7»,
+  the last action with «hace N min», the subagents working and, if it needs you, its quick replies
   (W76) (assumed).
-- Q: ¿Orden? → A: primero los que te necesitan (más antiguo primero, como N1), luego trabajando, luego
-  parados (assumed).
-- Q: ¿Pulsar una tarjeta? → A: la abre en modo «Uno» (assumed).
+- Q: Order? → A: first those that need you (oldest first, like N1), then working, then
+  stopped (assumed).
+- Q: Clicking a card? → A: it opens it in «Uno» mode (assumed).
 
-- Q: ¿⌘⇧A? → A: libre en el menú; «Uno · Todos» en la cabecera de Trabajo; con el modo foco puesto, «Todos»
-  sale del foco (assumed: el foco es de un trabajo).
+- Q: ⌘⇧A? → A: free in the menu; «Uno · Todos» in Work's header; with focus mode on, «Todos»
+  leaves focus (assumed: focus belongs to one work).
 
-- Q: (revisor de spec) Holguras → A, todas (assumed):
-  - **Orden de las tarjetas:**
-    - primero los que te necesitan, del que más lleva esperando al que menos (N1);
-    - luego los que trabajan, con la actividad más reciente primero;
-    - por último los parados, por nombre de rama;
-    - si empatan, por id.
-  - **Edad de la actividad:**
-    - «ahora» si es de hace menos de un minuto;
-    - «hace {n} min» hasta la hora;
-    - «hace {n} h» hasta el día;
-    - «hace {n} d» a partir de ahí.
-    Se refresca cada 30 s, igual que la pestaña Actividad.
-  - **Cuando falta un dato:**
-    - sin actividad, la tarjeta dice «sin actividad»;
-    - sin Libretto, «sin Libretto»;
-    - mientras carga el flujo, no sale nada;
-    - sin subagentes, tampoco sale nada.
-  - **«Todos» y el modo foco.** Entrar en «Todos» quita el foco (W77 se enmienda). Al pulsar una tarjeta
-    vuelves a «Uno» sin foco.
-  - **Lo demás de Trabajo.** En «Todos» la barra lateral y «Qué me toca» siguen a la vista, y ⌘↩ funciona
-    como N2: si abre un trabajo, pasa a «Uno».
-  - **⌘⇧A** solo está activo en Trabajo y con al menos un trabajo abierto.
-  - **Las respuestas rápidas** van fuera del botón de la tarjeta, así que no hay botones metidos dentro de
-    otros botones, y contestar no abre la tarjeta. Con una pregunta multiSelect no hay botones (como W76).
-  - **Teclado.** Las flechas mueven el foco entre tarjetas.
-  - **Al reiniciar** «Todos» no se recuerda.
-  - **Tutorial.** Se cambia el texto del paso 4; siguen siendo 24 pasos.
+- Q: (spec reviewer) Slacks → A, all (assumed):
+  - **Card order:**
+    - first those that need you, from the one that has waited longest to the one that has waited least (N1);
+    - then those working, with the most recent activity first;
+    - lastly the stopped ones, by branch name;
+    - on a tie, by id.
+  - **Age of the activity:**
+    - «ahora» if it is less than a minute old;
+    - «hace {n} min» up to the hour;
+    - «hace {n} h» up to the day;
+    - «hace {n} d» from there on.
+    It refreshes every 30 s, like the Activity tab.
+  - **When a datum is missing:**
+    - without activity, the card says «sin actividad»;
+    - without Libretto, «sin Libretto»;
+    - while the flow loads, nothing appears;
+    - without subagents, nothing appears either.
+  - **«Todos» and focus mode.** Entering «Todos» removes focus (W77 is amended). On clicking a card
+    you return to «Uno» without focus.
+  - **The rest of Work.** In «Todos» the sidebar and «Qué me toca» stay in view, and ⌘↩ works
+    like N2: if it opens a work, it switches to «Uno».
+  - **⌘⇧A** is only active in Work and with at least one open work.
+  - **The quick replies** go outside the card's button, so there are no buttons nested inside
+    other buttons, and answering does not open the card. With a multiSelect question there are no buttons (as W76).
+  - **Keyboard.** The arrows move focus between cards.
+  - **On restart** «Todos» is not remembered.
+  - **Tutorial.** Step 4's text changes; there are still 24 steps.
 
-### QA en vivo (add-qa-lab, 10 nov 2026)
+### Live QA (add-qa-lab, 10 nov 2026)
 
-- Playwright MCP para web y mobile-mcp para móvil, versiones fijadas (assumed, 10 nov).
-- MCP solo por sesión con `--strict-mcp-config` (assumed, 10 nov).
-- Capturas fuera del repo, en ATRIL_HOME (assumed, 10 nov).
-- Un QA por trabajo y solo bajo demanda (assumed, 10 nov; CLAUDE.md: cuota bajo demanda).
+- Playwright MCP for web and mobile-mcp for mobile, versions pinned (assumed, 10 nov).
+- MCP only per session with `--strict-mcp-config` (assumed, 10 nov).
+- Screenshots outside the repo, in ATRIL_HOME (assumed, 10 nov).
+- One QA per work and only on demand (assumed, 10 nov; CLAUDE.md: quota on demand).
 
 #### Alternatives that lost
 
 | Considered | Why it lost |
 |---|---|
-| `claude mcp add` en la configuración de la persona | Toca su configuración global y afecta a todos sus agentes. |
-| Reiniciar el agente del trabajo con los MCP | Pierde su contexto; el QA es un segundo par de ojos. |
-| Chrome DevTools MCP para web | Bueno para depurar; Playwright deja las capturas en una carpeta fija sin depender del agente. |
+| `claude mcp add` in the person's configuration | It touches their global configuration and affects all their agents. |
+| Restarting the work's agent with the MCPs | It loses its context; QA is a second pair of eyes. |
+| Chrome DevTools MCP for web | Good for debugging; Playwright leaves the screenshots in a fixed folder without depending on the agent. |
 
 #### Decision log, answers as given (2026-11-10)
-- Q: ¿Qué es? → A: un botón «Probar en vivo» por trabajo que abre, al lado de su terminal, un Claude de QA con
-  las herramientas para manejar la app de verdad (navegador o emulador), que la arranca en esa rama, recorre lo
-  que promete la spec y deja capturas; Atril las enseña en una sección «QA» del panel (assumed).
-- Q: ¿Qué herramientas? → A: web: Playwright MCP (`@playwright/mcp`, capturas a `--output-dir`); Android e iOS:
-  `mobile-mcp` (`@mobilenext/mobile-mcp`), con el emulador o simulador ya en marcha; versiones fijadas
-  (assumed; investigación 10 nov, sin verificar contra los docs oficiales).
-- Q: ¿Cómo sin tocar la configuración de la persona? → A: `--mcp-config <archivo de Atril>` y
-  `--strict-mcp-config` en esa sesión; nunca `claude mcp add` ni `~/.claude.json` (assumed).
-- Q: ¿Qué tipo de proyecto? → A: por archivos, en este orden: Expo, React Native, Flutter, Android nativo, iOS
-  nativo, web (`package.json` con `dev`, `start` o `preview`); sin coincidencia, no hay botón (assumed).
-- Q: ¿Dónde van las capturas? → A: `$ATRIL_HOME/qa/<workspace>/`, fuera del repo, para no ensuciar git (assumed).
-- Q: ¿Cuota y recursos? → A: nada arranca solo; un solo QA por trabajo a la vez; «Detener QA» cierra ese panel;
-  arrancar emulador o simulador queda en manos del Claude de QA según su prompt (assumed).
+- Q: What is it? → A: a «Probar en vivo» button per work that opens, next to its terminal, a QA Claude with
+  the tools to drive the real app (browser or emulator), which starts it on that branch, goes through
+  what the spec promises and leaves screenshots; Atril shows them in a «QA» section of the panel (assumed).
+- Q: Which tools? → A: web: Playwright MCP (`@playwright/mcp`, screenshots to `--output-dir`); Android and iOS:
+  `mobile-mcp` (`@mobilenext/mobile-mcp`), with the emulator or simulator already running; versions pinned
+  (assumed; research 10 nov, not verified against the official docs).
+- Q: How without touching the person's configuration? → A: `--mcp-config <Atril file>` and
+  `--strict-mcp-config` in that session; never `claude mcp add` or `~/.claude.json` (assumed).
+- Q: What kind of project? → A: by files, in this order: Expo, React Native, Flutter, native Android, native iOS,
+  web (`package.json` with `dev`, `start` or `preview`); with no match, there is no button (assumed).
+- Q: Where do the screenshots go? → A: `$ATRIL_HOME/qa/<workspace>/`, outside the repo, so as not to dirty git (assumed).
+- Q: Quota and resources? → A: nothing starts by itself; only one QA per work at a time; «Detener QA» closes that panel;
+  starting the emulator or simulator is left to the QA Claude according to its prompt (assumed).
 
-- Q: (revisor de spec) Holguras → A, todas (assumed):
-  - **De quién es la sección «QA».** Del panel de Libretto: va en `spec-flow-status.md` como F33. W85 se
-    retira.
-  - **Comando de arranque por tipo:**
-    - web: el script `dev`, si no `start`, si no `preview`, con el gestor del repo (pnpm si hay
-      `pnpm-lock.yaml`, yarn si hay `yarn.lock`, si no npm);
+- Q: (spec reviewer) Slacks → A, all (assumed):
+  - **Whose the «QA» section is.** The Libretto panel's: it goes in `spec-flow-status.md` as F33. W85 is
+    withdrawn.
+  - **Start command by type:**
+    - web: the `dev` script, otherwise `start`, otherwise `preview`, with the repo's manager (pnpm if there is
+      `pnpm-lock.yaml`, yarn if there is `yarn.lock`, otherwise npm);
     - expo: `npx expo start`;
     - react-native: `npx react-native run-ios` / `run-android`;
     - flutter: `flutter run`;
     - android: `./gradlew installDebug`;
-    - ios: `xcodebuild` para el simulador, y el esquema lo elige el Claude de QA.
-  - **Herramientas que hacen falta:**
-    - siempre `node`;
-    - android: `adb` y `emulator`;
+    - ios: `xcodebuild` for the simulator, and the scheme is chosen by the QA Claude.
+  - **Tools that are needed:**
+    - always `node`;
+    - android: `adb` and `emulator`;
     - ios: `xcrun`;
-    - expo, react-native y flutter: al menos uno de los dos móviles.
-    Si falta algo, la respuesta las nombra todas.
-  - **El panel de QA.** Se abre con un comando, dividiendo el panel del trabajo. Su id de tmux se guarda en
-    `$ATRIL_HOME/qa/<id>.pane`. «Vive» mientras tmux tenga ese panel; si lo cierras a mano, se nota en la
-    siguiente consulta.
-  - **adb y emulator** también cuentan si están en la carpeta del SDK de Android (ANDROID_HOME, ANDROID_SDK_ROOT o ~/Library/Android/sdk), no solo en el PATH (añadido al construir).
-  - **El emulador o el simulador.** Si no hay ninguno en marcha, lo arranca el Claude de QA según su prompt.
-    La decisión 2 queda corregida.
-  - **Capturas en móvil.** El prompt pide guardarlas en la carpeta (con la herramienta de mobile-mcp,
-    `adb exec-out screencap` o `xcrun simctl io booted screenshot`). Techo: depende de que el agente lo
-    haga.
-  - **Sin cambio abierto.** El prompt nombra la rama y pide probar lo que cambia respecto a su base.
-  - **«Detener QA».** Cierra solo ese panel; el archivo MCP y las capturas se quedan.
-  - **Cómo llegan las capturas a la ventana.**
-    - La ventana pregunta `qa.status(id)` (tipo, si vive y capturas) cada 3 s mientras se ve la sección,
-      como F22.
-    - Las capturas llegan como data URL, las 12 más nuevas y de 2 MB como mucho cada una, así que no se
-      abre `file://` en la ventana.
-  - **Tutorial.** Se menciona sin criterio, cambiando el texto del paso del panel.
+    - expo, react-native and flutter: at least one of the two mobile ones.
+    If something is missing, the response names them all.
+  - **The QA panel.** It is opened with a command, splitting the work's panel. Its tmux id is saved in
+    `$ATRIL_HOME/qa/<id>.pane`. It «lives» as long as tmux has that panel; if you close it by hand, it is noticed on the
+    next query.
+  - **adb and emulator** also count if they are in the Android SDK folder (ANDROID_HOME, ANDROID_SDK_ROOT or ~/Library/Android/sdk), not only on the PATH (added when building).
+  - **The emulator or the simulator.** If none is running, the QA Claude starts it according to its prompt.
+    Decision 2 is corrected.
+  - **Screenshots on mobile.** The prompt asks to save them in the folder (with mobile-mcp's tool,
+    `adb exec-out screencap` or `xcrun simctl io booted screenshot`). Ceiling: it depends on the agent
+    doing it.
+  - **No open change.** The prompt names the branch and asks to test what changes with respect to its base.
+  - **«Detener QA».** It closes only that panel; the MCP file and the screenshots stay.
+  - **How screenshots reach the window.**
+    - The window asks `qa.status(id)` (type, whether it lives and screenshots) every 3 s while the section is visible,
+      like F22.
+    - Screenshots arrive as a data URL, the 12 newest and at most 2 MB each, so no
+      `file://` is opened in the window.
+  - **Tutorial.** It is mentioned without a criterion, by changing the text of the panel step.
 
-### Pausar un agente (pause-agent, 10 nov 2026)
+### Pausing an agent (pause-agent, 10 nov 2026)
 
-- Esc para pausar, texto literal para reanudar (assumed, 10 nov).
-- Solo se pausa lo que trabaja (assumed, 10 nov).
+- Esc to pause, literal text to resume (assumed, 10 nov).
+- Only what is working can be paused (assumed, 10 nov).
 
 #### Decision log, answers as given (2026-11-10)
-- Q: ¿Cómo se pausa? → A: Esc en el panel del agente, que es como Claude Code interrumpe su turno sin cerrar la
-  sesión; Atril apunta el trabajo como «en pausa» (assumed). Perdió: congelar el proceso (SIGSTOP), que puede
-  cortar su conexión con la API a medias y dejar herramientas colgadas.
-- Q: ¿Cómo se reanuda? → A: «Reanudar» escribe «Sigue donde lo dejaste.» y Enter, literal, como N3 (assumed).
-- Q: ¿Dónde? → A: en el menú del trabajo (clic derecho y menú Trabajo → Pausar / Reanudar, ⌘⇧P) y en su
-  tarjeta de «Todos»; la fila dice «en pausa» (assumed).
-- Q: ¿Y si el agente te necesitaba? → A: pausar no cambia una pregunta pendiente: solo se ofrece mientras está
-  trabajando (assumed).
+- Q: How is it paused? → A: Esc in the agent's panel, which is how Claude Code interrupts its turn without closing the
+  session; Atril marks the work as «en pausa» (assumed). Lost: freezing the process (SIGSTOP), which may
+  cut its connection to the API halfway and leave tools hanging.
+- Q: How is it resumed? → A: «Reanudar» types «Sigue donde lo dejaste.» and Enter, literally, like N3 (assumed).
+- Q: Where? → A: in the work's menu (right click and menu Work → Pause / Resume, ⌘⇧P) and in its
+  «Todos» card; the row says «en pausa» (assumed).
+- Q: And if the agent needed you? → A: pausing does not change a pending question: it is only offered while it is
+  working (assumed).
 
-- Q: (revisor de spec) Holguras → A, todas (assumed):
-  - **Qué es «en pausa».** Una marca aparte, no un cuarto estado. Vive en `$ATRIL_HOME/paused/<session>`
-    y sobrevive a un reinicio, porque el Claude de verdad sigue parado.
-    - Con la marca puesta, el estado efectivo de ese trabajo es «en pausa». Todo lo que lee el estado lo
-      trata como parado: el orden de W81, el editor de F15 y la pastilla del foco.
-    - El hook no la cambia: Claude Code no lanza Stop al interrumpirlo.
-  - **Qué la quita:** solo un UserPromptSubmit (lo que escribes tú o «Reanudar») o pasar a needs-you. Un
-    PreToolUse o PostToolUse que llega tarde no la quita.
-  - **A qué panel va el Esc:** al panel del agente cuyo id guarda el registro, nunca a un panel dividido
-    con ⌘D.
-  - **Si el Esc no sirve.** Techo nombrado: si Claude no se para (una herramienta que lo ignora), la
-    marca se quita en cuanto llegue otro estado que no sea `working`.
-  - **Errores al reanudar:** si no está en pausa, «Ese agente no está en pausa.»; si el trabajo ya no
-    está, el mensaje de N3.
-  - **El menú** alterna entre «Pausar» y «Reanudar» con ⌘⇧P, que está libre.
-  - **Prueba en la ventana:** fila, tarjeta y menú van en un criterio aparte, W88.
-  - **Textos:** «en pausa», «Pausar» y «Reanudar» van por `t()`.
+- Q: (spec reviewer) Slacks → A, all (assumed):
+  - **What «en pausa» is.** A separate mark, not a fourth state. It lives in `$ATRIL_HOME/paused/<session>`
+    and survives a restart, because the real Claude stays stopped.
+    - With the mark set, that work's effective state is «en pausa». Everything that reads the state
+      treats it as stopped: W81's order, F15's editor and the focus pill.
+    - The hook does not change it: Claude Code does not fire Stop when interrupted.
+  - **What removes it:** only a UserPromptSubmit (what you type or «Reanudar») or moving to needs-you. A
+    PreToolUse or PostToolUse that arrives late does not remove it.
+  - **Which panel Esc goes to:** the agent's panel whose id the record stores, never a panel split
+    with ⌘D.
+  - **If Esc does not work.** Named ceiling: if Claude does not stop (a tool that ignores it), the
+    mark is removed as soon as another state that is not `working` arrives.
+  - **Errors on resuming:** if it is not paused, «Ese agente no está en pausa.»; if the work is no longer
+    there, N3's message.
+  - **The menu** toggles between «Pausar» and «Reanudar» with ⌘⇧P, which is free.
+  - **Test in the window:** row, card and menu go in a separate criterion, W88.
+  - **Texts:** «en pausa», «Pausar» and «Reanudar» go through `t()`.
 
-### Coste por trabajo (cost-per-work, 10 nov 2026)
+### Cost per work (cost-per-work, 10 nov 2026)
 
-- Transcripts locales como fuente, sin llamadas (assumed, 10 nov).
-- Tabla de precios fechada en un archivo (assumed, 10 nov).
+- Local transcripts as the source, no calls (assumed, 10 nov).
+- Price table dated in a file (assumed, 10 nov).
 - «Estimado a precio de API» (assumed, 10 nov).
 
 #### Decision log, answers as given (2026-11-10)
-- Q: ¿De dónde salen los números? → A: de los transcripts locales de Claude Code, sin llamar a nada: cada
-  línea `assistant` trae `message.usage` (input, output, cache creation, cache read) y `message.model`. Se
-  suman el transcript principal del trabajo y los de sus subagentes (`<transcript sin .jsonl>/subagents/*.jsonl`)
+- Q: Where do the numbers come from? → A: from Claude Code's local transcripts, without calling anything: each
+  `assistant` line carries `message.usage` (input, output, cache creation, cache read) and `message.model`. The work's
+  main transcript and those of its subagents (`<transcript without .jsonl>/subagents/*.jsonl`) are added up
   (assumed).
-- Q: ¿Cómo sabe Atril qué transcript es de cada trabajo? → A: el hook guarda en cada evento la ruta de
-  `transcript_path` (campo documentado) en `$ATRIL_HOME/transcripts/<session>`; solo la ruta, nunca contenido
+- Q: How does Atril know which transcript belongs to each work? → A: the hook stores in each event the path of
+  `transcript_path` (documented field) in `$ATRIL_HOME/transcripts/<session>`; only the path, never content
   (assumed).
-- Q: ¿Duplicados? → A: Claude Code puede escribir varias líneas del mismo mensaje con el mismo `usage`: se
-  cuenta una vez por `message.id` (assumed).
-- Q: ¿Precio? → A: tabla oficial de la API cacheada el 2026-11-03 (claude-api): Fable 5.2 8/40, Opus 5.5 4/20 (caché
-  leída 0,20), Opus 5 5/25, Sonnet 5.5 2/10 (caché leída 0,10), Sonnet 5 2/10, Haiku 5.5 0,10/0,50 $ por millón;
-  escritura de caché 1,25× la entrada, lectura de caché la publicada o 0,1× la entrada; un modelo desconocido
-  cuenta tokens y no coste (assumed). Techo: los precios cambian; la tabla vive en un archivo con su fecha.
-- Q: ¿Qué se dice? → A: «≈ {coste} $ · {tokens} tokens» y la etiqueta «estimado a precio de API» (con
-  suscripción no se paga por token) (assumed).
-- Q: ¿Dónde? → A: en la tarjeta de «Todos», en el panel de Libretto (una línea bajo «Cambio») y en el título
-  de la fila al pasar el ratón (assumed).
+- Q: Duplicates? → A: Claude Code may write several lines of the same message with the same `usage`: it is
+  counted once per `message.id` (assumed).
+- Q: Price? → A: official API table cached on 2026-11-03 (claude-api): Fable 5.2 8/40, Opus 5.5 4/20 (cache
+  read 0.20), Opus 5 5/25, Sonnet 5.5 2/10 (cache read 0.10), Sonnet 5 2/10, Haiku 5.5 0.10/0.50 $ per million;
+  cache write 1.25× the input, cache read the published one or 0.1× the input; an unknown model
+  counts tokens and not cost (assumed). Ceiling: prices change; the table lives in a file with its date.
+- Q: What is said? → A: «≈ {coste} $ · {tokens} tokens» and the label «estimado a precio de API» (with a
+  subscription you do not pay per token) (assumed).
+- Q: Where? → A: in the «Todos» card, in the Libretto panel (a line under «Cambio») and in the row's
+  title on hover (assumed).
 
-- Q: (revisor de spec) Holguras → A, todas (assumed):
-  - **Varios transcripts por trabajo.** `transcripts/<session>` guarda una ruta por línea; se añade si es
-    nueva. El total suma todas las rutas y sus subagentes, así que lo de un transcript anterior no se pierde
-    al reanudar.
-  - **Qué toca el hook.** W92 escribe solo ese archivo, en cualquier evento. El «no cambia nada» de W63 se
-    refiere al archivo de subagentes. La frase de add-agent-activity «el payload crudo nunca va a disco» sigue
-    siendo cierta: solo se guarda una ruta.
-  - **`<session>`** es el mismo nombre que en W62.
-  - **Líneas sin `message.id`.** Cuentan una vez cada una, porque no hay con qué deduplicarlas.
-  - **El modelo.** Coincide si es el id exacto o el id seguido de una fecha (`-AAAAMMDD`).
-  - **Precio incompleto.** El coste solo suma los modelos con precio. Si queda alguno sin él, se añade «(sin
-    precio para {modelo})».
-  - **Formato.**
-    - Coste: «0,42 $», o «< 0,01 $» si no llega.
-    - Tokens: «850», «12,3 k» o «1,2 M».
-    - Si el total es 0 tokens, no se enseña nada.
-  - **Lectura.** Main guarda por archivo hasta dónde ha leído y los `message.id` ya vistos, y relee cada
-    30 s solo lo añadido. Empuja `atril:cost:changed` cuando el total cambia; la ventana pide
+- Q: (spec reviewer) Slacks → A, all (assumed):
+  - **Several transcripts per work.** `transcripts/<session>` stores one path per line; it is added if
+    new. The total adds all the paths and their subagents, so what belongs to an earlier transcript is not lost
+    on resuming.
+  - **What the hook touches.** W92 writes only that file, on any event. W63's «changes nothing» refers
+    to the subagents file. add-agent-activity's sentence «the raw payload never goes to disk» is still
+    true: only a path is stored.
+  - **`<session>`** is the same name as in W62.
+  - **Lines without `message.id`.** Each counts once, because there is nothing to deduplicate them with.
+  - **The model.** It matches if it is the exact id or the id followed by a date (`-AAAAMMDD`).
+  - **Incomplete price.** Cost only adds the models with a price. If any is left without one, «(sin
+    precio para {modelo})» is added.
+  - **Format.**
+    - Cost: «0,42 $», or «< 0,01 $» if it falls short.
+    - Tokens: «850», «12,3 k» or «1,2 M».
+    - If the total is 0 tokens, nothing is shown.
+  - **Reading.** Main stores per file how far it has read and the `message.id`s already seen, and rereads every
+    30 s only what was added. It pushes `atril:cost:changed` when the total changes; the window asks
     `atril:cost:get`.
-  - **La línea del panel de Libretto** es de flow-status: va en F34.
-  - **Decisiones superadas.** El «Out: token or cost per workspace» y «Read the whole transcript» de
-    add-agent-activity quedan superados por este cambio.
+  - **The Libretto panel's line** belongs to flow-status: it goes in F34.
+  - **Superseded decisions.** add-agent-activity's «Out: token or cost per workspace» and «Read the whole transcript»
+    are superseded by this change.
 
-### Historial (work-history, 10 nov 2026)
+### History (work-history, 10 nov 2026)
 
-- Al quitar, no al aterrizar (assumed, 10 nov).
-- 200 en disco, 20 a la vista (assumed, 10 nov).
-- Sección plegada en Trabajo (assumed, 10 nov).
+- On removal, not on landing (assumed, 10 nov).
+- 200 on disk, 20 in view (assumed, 10 nov).
+- Folded section in Work (assumed, 10 nov).
 
 #### Decision log, answers as given (2026-11-10)
-- Q: ¿Cuándo entra un trabajo en el historial? → A: al quitarlo con éxito (W10/W90): es cuando deja de estar «en
-  marcha» (assumed). Lo aterrizado y lo abandonado entran igual; la etapa a la que llegó lo distingue.
-- Q: ¿Qué se guarda? → A: una línea en `$ATRIL_HOME/history.jsonl`: rama, repo, clave de Jira si la tenía, modo,
-  cambio de Libretto y etapa a la que llegó, abierto (nuevo campo `createdAt` en el registro; los viejos no lo
-  tienen) y cerrado, y el coste (W93) en ese momento; nunca contenido de transcripts ni del repo (assumed).
-- Q: ¿Dónde se ve? → A: una sección plegable «Terminados» bajo «Trabajo en marcha», plegada por defecto, con los 20
-  últimos: rama, repo, etapa («Aterrizado», «Construir»…), «duró {d}» cuando hay `createdAt`, el coste y «hace
+- Q: When does a work enter the history? → A: on removing it successfully (W10/W90): it is when it stops being «en
+  marcha» (assumed). Landed and abandoned ones enter alike; the stage it reached tells them apart.
+- Q: What is stored? → A: one line in `$ATRIL_HOME/history.jsonl`: branch, repo, Jira key if it had one, mode,
+  Libretto change and stage reached, opened (new `createdAt` field in the record; old ones do not
+  have it) and closed, and the cost (W93) at that moment; never content from transcripts or the repo (assumed).
+- Q: Where is it seen? → A: a foldable section «Terminados» under «Trabajo en marcha», folded by default, with the last 20:
+  branch, repo, stage («Aterrizado», «Construir»…), «duró {d}» when there is `createdAt`, the cost and «hace
   {n} d» (assumed).
-- Q: ¿Tamaño? → A: el archivo guarda los 200 últimos; la vista enseña 20 (assumed).
+- Q: Size? → A: the file stores the last 200; the view shows 20 (assumed).
 
-- Q: (revisor de spec) Holguras → A, todas (assumed):
-  - **Etapa y cambio.** Main llama a `stageOf` (código de flow-status, solo lectura) **antes** de quitar el
-    trabajo. Las etapas son las de siempre: Entrada, Spec, Plan, Construir, Terminado, Aterrizado y «sin
+- Q: (spec reviewer) Slacks → A, all (assumed):
+  - **Stage and change.** Main calls `stageOf` (flow-status code, read-only) **before** removing the
+    work. The stages are the usual ones: Entrada, Spec, Plan, Construir, Terminado, Aterrizado and «sin
     Libretto».
-  - **Orden de las cosas.** Se capturan etapa y coste, se quita el trabajo y, solo si quitarlo sale bien, se
-    añade la línea. Si el historial no se puede escribir, el trabajo se quita igual.
-  - **Sesiones de revisión.** No entran.
-  - **Cuántas se guardan.** Las 200 últimas por orden de escritura, recortando tras añadir. Las escrituras van
-    en cola, una a una, con archivo temporal y renombrado como W80.
-  - **Formatos:**
-    - «duró»: «< 1 min», «{m} min», «{h} h {m} min» o «{d} d {h} h».
-    - Antigüedad: «hoy» si es el mismo día de calendario, si no «hace {n} d».
-    - Coste: la forma corta de W94, «≈ 0,42 $ · 850 tokens», sin la etiqueta y nada si son 0 tokens.
-  - **La sección.** La cabecera cuenta todas las líneas del archivo. Si no hay ninguna, la sección no sale. La
-    ventana lo pide al cargar (`atril:history:list`) y main avisa al añadir (`atril:history:changed`).
-  - **La MR y el informe** quedan fuera; la frase de la lectura que los nombraba está superada.
+  - **Order of things.** Stage and cost are captured, the work is removed and, only if removing it goes well, the line is
+    added. If the history cannot be written, the work is removed anyway.
+  - **Review sessions.** They do not enter.
+  - **How many are stored.** The last 200 by write order, trimming after adding. Writes are
+    queued, one by one, with a temp file and rename like W80.
+  - **Formats:**
+    - «duró»: «< 1 min», «{m} min», «{h} h {m} min» or «{d} d {h} h».
+    - Age: «hoy» if it is the same calendar day, otherwise «hace {n} d».
+    - Cost: W94's short form, «≈ 0,42 $ · 850 tokens», without the label and nothing if it is 0 tokens.
+  - **The section.** The header counts all the lines of the file. If there are none, the section does not appear. The
+    window asks for it on load (`atril:history:list`) and main notifies on adding (`atril:history:changed`).
+  - **The MR and the report** are out; the sentence of the reading that named them is superseded.
 
-### Primeros pasos (first-run-setup, 10 nov 2026)
+### First steps (first-run-setup, 10 nov 2026)
 
-- Tarjeta en el vacío de Trabajo, no un asistente modal (assumed, 10 nov).
-- Jira y forja opcionales (assumed, 10 nov).
-- Tutorial primero, tarjeta después (assumed, 10 nov).
+- A card in the empty Work view, not a modal wizard (assumed, 10 nov).
+- Jira and forge are optional (assumed, 10 nov).
+- Tutorial first, card afterwards (assumed, 10 nov).
 
 #### Decision log, answers as given (2026-11-10)
-- Q: ¿Qué ve alguien nuevo? → A: en Trabajo, mientras no haya trabajos, una tarjeta «Primeros pasos» en lugar del
-  vacío de hoy, con cinco pasos que se marcan solos leyendo el estado real (assumed):
-  1. «Herramientas listas» — el doctor sin problemas (W21); si no, «Instalar» abre su aviso (W70/W71).
-  2. «Añade un repo» — al menos un repo registrado; botón a Ajustes → Repos.
-  3. «Conecta Jira» (opcional) — token guardado (S5); botón a Ajustes → Conexiones.
-  4. «Conecta GitHub o GitLab» (opcional) — una forja guardada; mismo botón.
-  5. «Abre tu primer trabajo» — botón «Nuevo trabajo».
-- Q: ¿Cuándo desaparece? → A: cuando hay al menos un trabajo, o al pulsar «Ya lo tengo»; recordado en el estado de
-  la interfaz (`setupDismissed`) (assumed).
-- Q: ¿Y el tutorial? → A: sigue igual (W23): el tutorial explica; la tarjeta deja la app lista. El tutorial va
-  primero; la tarjeta aparece al cerrarlo (assumed).
-- Q: ¿Opcionales? → A: Jira y forja se marcan «opcional» y no impiden terminar (assumed).
+- Q: What does a newcomer see? → A: in Work, while there are no workspaces, a «Primeros pasos» card in place of the
+  current empty state, with five steps that tick themselves by reading the real state (assumed):
+  1. «Herramientas listas» — the doctor reports no problems (W21); otherwise «Instalar» opens its notice (W70/W71).
+  2. «Añade un repo» — at least one repo registered; button to Ajustes → Repos.
+  3. «Conecta Jira» (optional) — token saved (S5); button to Ajustes → Conexiones.
+  4. «Conecta GitHub o GitLab» (optional) — a forge saved; same button.
+  5. «Abre tu primer trabajo» — button «Nuevo trabajo».
+- Q: When does it go away? → A: when there is at least one workspace, or when «Ya lo tengo» is pressed; remembered in
+  the UI state (`setupDismissed`) (assumed).
+- Q: And the tutorial? → A: unchanged (W23): the tutorial explains; the card leaves the app ready. The tutorial goes
+  first; the card appears when it is closed (assumed).
+- Q: Optional steps? → A: Jira and forge are marked «opcional» and do not prevent finishing (assumed).
 
-- Q: (revisor de spec) Holguras → A, todas (assumed):
-  - **Cuándo sale.** Mientras no haya ningún trabajo en la lista (también los parados; corregido al construir), el historial (W96) esté vacío y no exista
-    `setupDismissed`. Quien ya trabajó no la vuelve a ver.
-  - **El paso 5** es solo su botón «Nuevo trabajo». Nunca sale marcado, porque la tarjeta se va en cuanto hay
-    un trabajo.
-  - **El paso 1** está hecho cuando git, tmux y claude no tienen problema; jira es del paso 3, que es opcional.
-    Mientras llega el informe del doctor, el paso dice «Comprobando…». Su botón abre la lista del aviso de
-    herramientas (W32), donde está «Instalar».
-  - **El paso 4** está hecho con cualquier forja guardada, GitHub o GitLab.
-  - **El tutorial.** Mientras está abierto, en el primer arranque o desde Ayuda, la tarjeta no se ve; sale al
-    cerrarlo. W23 y W24 no cambian.
-  - **«Ya lo tengo»** guarda `setupDismissed` en `ui.json`, validado como `tutorialSeen`, y se recuerda al
-    reiniciar.
-  - **El estado real** sale de llamadas que ya existen y no exponen tokens: `doctor()`, `repos.list()`,
-    `settings.jira.status()` y `settings.forge.status(forge)`, todas con su `saved`.
-  - **Los botones de Ajustes** usan la navegación que ya usa M35 («Ajustes → Repos»).
-  - **La foto** se saca con `ATRIL_SNAPSHOT_VIEW=work`, un `ATRIL_HOME` vacío y `tutorialSeen: true`.
+- Q: (spec reviewer) Gaps → A, all (assumed):
+  - **When it shows.** While there is no workspace in the list (stopped ones count too; corrected at build time), the history (W96) is empty and
+    `setupDismissed` does not exist. Someone who has already worked never sees it again.
+  - **Step 5** is just its «Nuevo trabajo» button. It is never shown ticked, because the card goes away as soon as there is
+    a workspace.
+  - **Step 1** is done when git, tmux and claude have no problem; jira belongs to step 3, which is optional.
+    While the doctor's report is on its way, the step says «Comprobando…». Its button opens the list of the tools
+    notice (W32), where «Instalar» is.
+  - **Step 4** is done with any saved forge, GitHub or GitLab.
+  - **The tutorial.** While it is open, on first launch or from Help, the card is not shown; it appears when the
+    tutorial is closed. W23 and W24 do not change.
+  - **«Ya lo tengo»** saves `setupDismissed` in `ui.json`, validated like `tutorialSeen`, and is remembered across
+    restarts.
+  - **The real state** comes from calls that already exist and expose no tokens: `doctor()`, `repos.list()`,
+    `settings.jira.status()` and `settings.forge.status(forge)`, all with their `saved`.
+  - **The Ajustes buttons** use the navigation M35 already uses («Ajustes → Repos»).
+  - **The photo** is taken with `ATRIL_SNAPSHOT_VIEW=work`, an empty `ATRIL_HOME` and `tutorialSeen: true`.
 
-### Empaquetar (package-and-sign, 10 nov 2026)
+### Packaging (package-and-sign, 10 nov 2026)
 
-- arm64 solo (assumed, 11 nov).
-- Identidad por `ATRIL_SIGN_IDENTITY`, si no ad-hoc (assumed, 11 nov).
-- Sin notarización ni auto-update (assumed, 11 nov; investigación del 10 nov).
-- La sesión no construye; Pau sí (assumed, 11 nov).
+- arm64 only (assumed, 11 nov).
+- Identity from `ATRIL_SIGN_IDENTITY`, otherwise ad-hoc (assumed, 11 nov).
+- No notarisation and no auto-update (assumed, 11 nov; research of 10 nov).
+- The session does not build; Pau does (assumed, 11 nov).
 
 #### Alternatives that lost
 
 | Considered | Why it lost |
 |---|---|
-| `electron-builder.yml` + `CSC_NAME` | no expresa «si no, ad-hoc» sin macros; un test no puede ver la caída |
-| electron-forge | más piezas (makers, plugins) para el mismo `.dmg` |
-| construir aquí para probarlo | CLAUDE.md lo prohíbe |
+| `electron-builder.yml` + `CSC_NAME` | cannot express «otherwise ad-hoc» without macros; a test cannot see the fallback |
+| electron-forge | more pieces (makers, plugins) for the same `.dmg` |
+| building here to test it | CLAUDE.md forbids it |
 
 #### Decision log, answers as given (2026-11-10)
-- Q: ¿Con qué? → A: `electron-builder` como dependencia de desarrollo (versión fijada), configuración en
-  `electron-builder.config.cjs` (JS, para que la identidad caiga a ad-hoc sin YAML con macros); hace falta una dependencia nueva porque no hay empaquetador (assumed).
-- Q: ¿Qué sale? → A: un `.dmg` y un `.zip` para Apple Silicon (arm64); x64 no (assumed).
-- Q: ¿Firma? → A: la investigación del 10 nov: certificado propio del Llavero si `ATRIL_SIGN_IDENTITY` está
-  definido (p. ej. «Atril Local»), si no firma ad-hoc (`"-"`); `hardenedRuntime: true` con `allow-jit`,
-  `allow-unsigned-executable-memory` y `disable-library-validation` en `build/entitlements.mac.plist`; sin
-  notarización (sin cuenta de Apple) (assumed).
-- Q: ¿Quién lo construye? → A: la persona, con `pnpm dist`; esta sesión no construye (CLAUDE.md: nunca `pnpm build`),
-  así que la prueba es la configuración, y la comprobación a mano va escrita (assumed).
-- Q: ¿Recursos? → A: `resources/` (Libretto, hook, resumen) va dentro del paquete como `extraResources`; `paths.ts`
-  ya distingue empaquetado (assumed; el constructor lo comprueba).
-- Q: ¿Instrucciones? → A: `bocetos/instalar.html`: construir, firmar con certificado propio, abrir la primera vez
-  («Abrir igualmente» en Privacidad y seguridad desde Sequoia), y la vía de 99 $/año si un día se comparte (assumed).
+- Q: With what? → A: `electron-builder` as a development dependency (pinned version), configuration in
+  `electron-builder.config.cjs` (JS, so that the identity falls back to ad-hoc without YAML macros); a new dependency is needed because there is no packager (assumed).
+- Q: What comes out? → A: a `.dmg` and a `.zip` for Apple Silicon (arm64); not x64 (assumed).
+- Q: Signing? → A: the research of 10 nov: the person's own Keychain certificate if `ATRIL_SIGN_IDENTITY` is
+  set (e.g. «Atril Local»), otherwise an ad-hoc signature (`"-"`); `hardenedRuntime: true` with `allow-jit`,
+  `allow-unsigned-executable-memory` and `disable-library-validation` in `build/entitlements.mac.plist`; no
+  notarisation (no Apple account) (assumed).
+- Q: Who builds it? → A: the person, with `pnpm dist`; this session does not build (CLAUDE.md: never `pnpm build`),
+  so the proof is the configuration, and the manual check is written down (assumed).
+- Q: Resources? → A: `resources/` (Libretto, hook, summary) goes inside the package as `extraResources`; `paths.ts`
+  already tells packaged from unpackaged (assumed; the builder checks it).
+- Q: Instructions? → A: `bocetos/instalar.html`: build, sign with your own certificate, open it the first time
+  («Abrir igualmente» in Privacidad y seguridad since Sequoia), and the 99 $/year route if it is ever shared (assumed).
 
 
-- Q: ¿Dónde vive la caída a ad-hoc? → A: en el propio `electron-builder.config.cjs`:
-  `identity: process.env.ATRIL_SIGN_IDENTITY || '-'`; el test lo carga con y sin la variable (assumed).
-- Q: ¿`resources/` plano o en carpeta? → A: plano, `{ from: 'resources', to: '.' }`, como espera `paths.ts`
+- Q: Where does the ad-hoc fallback live? → A: in `electron-builder.config.cjs` itself:
+  `identity: process.env.ATRIL_SIGN_IDENTITY || '-'`; the test loads it with and without the variable (assumed).
+- Q: `resources/` flat or in a folder? → A: flat, `{ from: 'resources', to: '.' }`, as `paths.ts` expects
   (`<resourcesPath>/claude-hook.mjs`, `<resourcesPath>/libretto/`) (assumed).
-- Q: ¿node-pty? → A: `asarUnpack` de `node_modules/node-pty/**`, `npmRebuild: true`, y `files` limitado a `out/**` y
+- Q: node-pty? → A: `asarUnpack` of `node_modules/node-pty/**`, `npmRebuild: true`, and `files` limited to `out/**` and
   `package.json`; `dist` = `electron-vite build && electron-builder --mac` (assumed).
-- Q: ¿Qué demuestra el test? → A: el texto de la configuración, nada más; que el `.dmg` arranque, abra terminales y
-  encuentre el hook lo comprueba Pau a mano (entrada «sin probar») (assumed).
-- Q: ¿Fijada? → A: versión exacta, sin `^` (`26.18.0`, del 20 oct) (assumed).
-- Q: ¿Dueño de los archivos nuevos? → A: workspaces; su `Governs:` añade `electron-builder.config.cjs` y `build/**`
+- Q: What does the test prove? → A: the text of the configuration, nothing more; that the `.dmg` starts, opens terminals and
+  finds the hook is checked by Pau by hand (a «sin probar» entry) (assumed).
+- Q: Pinned? → A: exact version, no `^` (`26.18.0`, from 20 Oct) (assumed).
+- Q: Owner of the new files? → A: workspaces; its `Governs:` adds `electron-builder.config.cjs` and `build/**`
   (assumed).
-- Q: ¿Foto y boceto? → A: no hay pantalla nueva: novedades lleva su sección sin foto y el boceto no cambia (assumed).
-- Q: ¿Otro Mac? → A: fuera; la página explica «Abrir igualmente» y el certificado propio, sin prometerlo (assumed).
+- Q: Photo and sketch? → A: there is no new screen: novedades gets its section without a photo and the sketch does not change (assumed).
+- Q: Another Mac? → A: out of scope; the page explains «Abrir igualmente» and the own certificate, without promising it (assumed).
 
 ### Libretto (libretto-view, 10 nov 2026)
 
-- Leer del disco, no preguntar a Claude (assumed, 11 nov).
-- Encolar sin modelo, con la plantilla de `/libretto-queue` (assumed, 11 nov).
-- Empezar = Atril hace el paso 3 de `/libretto-next` y entra en `write-spec` (assumed, 11 nov).
-- Pantalla propia «Libretto» (assumed, 11 nov).
+- Read from disk, do not ask Claude (assumed, 11 nov).
+- Queue without a model, with the `/libretto-queue` template (assumed, 11 nov).
+- Start = Atril does step 3 of `/libretto-next` and enters `write-spec` (assumed, 11 nov).
+- Its own «Libretto» screen (assumed, 11 nov).
 
 #### Alternatives that lost
 
 | Considered | Why it lost |
 |---|---|
-| lanzar `/libretto-queue` en un Claude | gasta cuota para escribir un archivo con plantilla fija |
-| la cola dentro de Trabajo | Trabajo es lo que está en marcha; la cola es por repo y aún no es trabajo |
+| launching `/libretto-queue` in a Claude | spends quota to write a file with a fixed template |
+| the queue inside Work | Work is what is running; the queue is per repo and is not work yet |
 
 #### Decision log, answers as given (2026-11-10)
-- Q: ¿Dónde? → A: una pantalla nueva «Libretto» en la barra lateral (y en ⌘K), con un selector de repo registrado,
-  recordado como el último usado (assumed).
-- Q: ¿`/libretto-status` y la cola llaman a Claude? → A: no: Atril lee `.agents/changes/*/proposal.md` del repo con lo
-  que ya existe (`changeFolders`, `readChecklist`); cero cuota (assumed).
-- Q: ¿Qué es «en cola»? → A: una carpeta cuyo `proposal.md` lleva una línea `Queued: <fecha ISO>`; más antigua
-  primero, con su nombre, fecha y la primera línea no vacía de `## Reading` (assumed).
-- Q: ¿Y «en curso»? → A: cualquier otra carpeta de cambio: su nombre y «{closed}/{total}» casillas con la primera
-  abierta, o «sin checklist» (assumed).
-- Q: ¿Encolar llama a Claude? → A: no: hace lo que `/libretto-queue` en su paso 2–3, sin modelo: nombre desde el texto
-  (minúsculas, sin acentos, guiones, máx. 40), `proposal.md` con la plantilla del comando y la petición literal como
-  cita, y `git commit` solo de ese archivo con `docs(queue): capture <name>` en la rama actual del repo (assumed).
-- Q: ¿Nombre repetido? → A: sufijo `-2`, `-3`… (assumed).
-- Q: ¿Repo sin `.agents/changes/`? → A: la pantalla dice «Este repo no usa Libretto» y no ofrece encolar, como
-  `/libretto-queue` se niega (assumed). «Iniciar Libretto» es otra idea ★.
-- Q: ¿«Empezar»? → A: abre un trabajo nuevo (`openWorktree`) en la rama `feat/<name>` con el primer mensaje
-  `/libretto:libretto-next <name>`; el comando quita `Queued:` y sigue el flujo (assumed). Si Libretto intenta otra
-  rama dentro del worktree, va a «sin probar».
-- Q: ¿Se refresca sola? (ver abajo) → A: al entrar, al cambiar de repo y tras encolar o empezar; botón «Actualizar» (assumed).
+- Q: Where? → A: a new «Libretto» screen in the sidebar (and in ⌘K), with a selector of registered repos,
+  remembered as the last one used (assumed).
+- Q: Do `/libretto-status` and the queue call Claude? → A: no: Atril reads the repo's `.agents/changes/*/proposal.md` with what
+  already exists (`changeFolders`, `readChecklist`); zero quota (assumed).
+- Q: What is «queued»? → A: a folder whose `proposal.md` carries a line `Queued: <ISO date>`; oldest
+  first, with its name, date and the first non-empty line of `## Reading` (assumed).
+- Q: And «in progress»? → A: any other change folder: its name and «{closed}/{total}» boxes with the first
+  open one, or «sin checklist» (assumed).
+- Q: Does queueing call Claude? → A: no: it does what `/libretto-queue` does in its steps 2–3, without a model: name from the text
+  (lower case, no accents, hyphens, max 40), `proposal.md` with the command's template and the literal request as a
+  quote, and a `git commit` of only that file with `docs(queue): capture <name>` on the repo's current branch (assumed).
+- Q: Repeated name? → A: suffix `-2`, `-3`… (assumed).
+- Q: Repo without `.agents/changes/`? → A: the screen says «Este repo no usa Libretto» and does not offer to queue, just as
+  `/libretto-queue` refuses (assumed). «Iniciar Libretto» is another ★ idea.
+- Q: «Empezar»? → A: opens a new workspace (`openWorktree`) on branch `feat/<name>` with the first message
+  `/libretto:libretto-next <name>`; the command removes `Queued:` and follows the flow (assumed). If Libretto tries another
+  branch inside the worktree, it goes to «sin probar».
+- Q: Does it refresh itself? (see below) → A: on entering, on changing repo and after queueing or starting; «Actualizar» button (assumed).
 
-- Q: `libretto-next` no acepta nombre, pregunta cuál y hace `checkout -b`: ¿cómo se empieza? → A: Atril hace el paso 3
-  del comando él mismo: abre el trabajo en `feat/<name>` (es la rama), quita la línea `Queued:` del `proposal.md` de
-  ese worktree y la commitea ahí (`docs(queue): start <name>`); y el primer mensaje es el paso 4,
-  `/libretto:write-spec <name>`. Igual que `/libretto-next`, sin su pregunta: el clic ya eligió (assumed).
-- Q: ¿Qué árbol se lee? → A: el checkout del repo; una idea en cola cuya rama `feat/<name>` ya existe se muestra
-  «Empezada · feat/<name>» sin «Empezar» (assumed).
-- Q: ¿Repos sin worktree (in-place)? → A: valen; si `openWorktree` devuelve error, sale bajo la idea y no se
-  commitea nada (assumed).
-- Q: ¿Nombre? → A: de la primera línea del texto: minúsculas, sin acentos, lo no alfanumérico a un guion, sin guiones
-  al borde, cortado a 40 contando el sufijo `-N`; si queda vacío, `idea` (assumed).
-- Q: ¿Si el commit falla? → A: se borra la carpeta escrita y se enseña el error (assumed).
-- Q: ¿Fecha? → A: local (assumed).
-- Q: ¿Qué es la línea `Queued:`? → A: `Queued: AAAA-MM-DD` sola en su línea, antes del primer `## `; empate por
-  nombre (assumed).
-- Q: ¿Qué sale en curso? → A: toda carpeta no en cola, con o sin `proposal.md`; las que tienen todas las casillas
-  cerradas dicen «Lista para aterrizar» (assumed).
+- Q: `libretto-next` does not accept a name, asks which one and does `checkout -b`: how is a start made? → A: Atril does step 3
+  of the command itself: it opens the workspace on `feat/<name>` (that is the branch), removes the `Queued:` line from the `proposal.md` of
+  that worktree and commits it there (`docs(queue): start <name>`); and the first message is step 4,
+  `/libretto:write-spec <name>`. Just like `/libretto-next`, without its question: the click already chose (assumed).
+- Q: Which tree is read? → A: the repo's checkout; a queued idea whose branch `feat/<name>` already exists is shown
+  «Empezada · feat/<name>» without «Empezar» (assumed).
+- Q: Repos without a worktree (in-place)? → A: they work; if `openWorktree` returns an error, it is shown under the idea and nothing is
+  committed (assumed).
+- Q: Name? → A: from the first line of the text: lower case, no accents, anything non-alphanumeric to a hyphen, no hyphens
+  at the edges, cut to 40 counting the `-N` suffix; if it ends up empty, `idea` (assumed).
+- Q: If the commit fails? → A: the written folder is deleted and the error is shown (assumed).
+- Q: Date? → A: local (assumed).
+- Q: What is the `Queued:` line? → A: `Queued: YYYY-MM-DD` alone on its line, before the first `## `; ties broken by
+  name (assumed).
+- Q: What shows as in progress? → A: every folder that is not queued, with or without `proposal.md`; those with all boxes
+  closed say «Lista para aterrizar» (assumed).
 
-### Tarjeta de pregunta (ask-card, 10 nov 2026)
+### Question card (ask-card, 10 nov 2026)
 
-- Pregunta y respuestas dentro de la tarjeta de la fila (assumed, 11 nov).
-- «Otros cambios» se sustituye por un enlace a Libretto (assumed, 11 nov).
+- Question and answers inside the row's card (assumed, 11 nov).
+- «Otros cambios» is replaced by a link to Libretto (assumed, 11 nov).
 
 #### Alternatives that lost
 
 | Considered | Why it lost |
 |---|---|
-| dejar los chips y separarlos con margen | sigue sin decir de qué fila son |
-| pregunta en un modal | rompe el «sin dejar lo que haces» de las respuestas rápidas |
-| explicar «Otros cambios» con un subtítulo | sigue sin acción; Libretto ya enseña esos cambios con sentido |
+| leave the chips and separate them with a margin | still does not say which row they belong to |
+| question in a modal | breaks the «without leaving what you are doing» of quick replies |
+| explain «Otros cambios» with a subtitle | still has no action; Libretto already shows those changes meaningfully |
 
 #### Decision log, answers as given (2026-11-10)
-- Q: ¿Cómo se ve? → A: la fila y la pregunta forman una sola tarjeta: la fila pierde las esquinas de abajo y
-  su borde toma el color «te necesita»; debajo, pegada, la pregunta entera (sin cortar) y una respuesta por fila
-  con su número (1, 2, 3…), como el selector de Claude Code; fondo tintado muy suave con `--you`. El boceto 10
-  ya lo enseña (assumed).
-- Q: ¿La línea de actividad cortada de la fila? → A: mientras está la tarjeta no se repite: la pregunta va entera
-  dentro (assumed).
-- Q: ¿En «Todos»? → A: igual, dentro de su tarjeta (assumed).
-- Q: ¿Teclado? → A: los números son solo dibujo; las respuestas siguen siendo botones con Tab/Enter (assumed).
-- Q: ¿«Otros cambios»? → A: es el resto de carpetas de `.agents/changes/` sin contexto y sin acción. Se quita la
-  sección; en su lugar una línea «{n} cambios más en este repo → Libretto» que abre la pantalla Libretto con ese
-  repo elegido (assumed).
+- Q: What does it look like? → A: the row and the question form a single card: the row loses its bottom corners and
+  its border takes the «needs you» colour; below it, attached, the whole question (uncut) and one answer per row
+  with its number (1, 2, 3…), like Claude Code's selector; very softly tinted background with `--you`. Sketch 10
+  already shows it (assumed).
+- Q: The row's truncated activity line? → A: while the card is there it is not repeated: the question goes whole
+  inside (assumed).
+- Q: In «Todos»? → A: the same, inside its card (assumed).
+- Q: Keyboard? → A: the numbers are drawing only; the answers remain buttons with Tab/Enter (assumed).
+- Q: «Otros cambios»? → A: it is the rest of the folders in `.agents/changes/`, without context and without action. The
+  section is removed; in its place a line «{n} cambios más en este repo → Libretto» that opens the Libretto screen with that
+  repo chosen (assumed).
 
-- Q: ¿«Entera» desde dónde? → A: la línea de actividad tal como la guarda el hook (ya cortada a 200 en
-  `summarise.mjs`); en la tarjeta solo se quita la elipsis de CSS. Nada cambia en main (assumed).
-- Q: ¿Dónde se prueba que la fila no repite la línea? → A: en `quickreplies.test.ts`, montando `WorkspaceList`, como
-  ya hace hoy ese test (el constructor lo comprueba); al dejar de estar needs-you vuelve la línea en el mismo render
+- Q: «Whole» from where? → A: the activity line as the hook stores it (already cut to 200 in
+  `summarise.mjs`); in the card only the CSS ellipsis is removed. Nothing changes in main (assumed).
+- Q: Where is it tested that the row does not repeat the line? → A: in `quickreplies.test.ts`, mounting `WorkspaceList`, as
+  that test already does today (the builder checks it); when it stops being needs-you the line returns in the same render
   (assumed).
-- Q: ¿Todos? → A: W82 se enmienda aquí: en «Todos» la tarjeta va pegada bajo el botón de la tarjeta, fuera de él, y
-  el botón no repite la línea cortada; su prueba sigue en `overview.test.ts` (assumed).
-- Q: ¿Contraste de qué? → A: texto de la pregunta y etiquetas activas sobre `--ask-bg`; los números (`aria-hidden`),
-  el borde y lo desactivado quedan fuera. El tinte es un token `--ask-bg` por tema y paleta (los cuatro: original
-  claro y oscuro, Grafito claro y oscuro), sin `color-mix`, para que el test lea lo mismo que se pinta (assumed).
-- Q: ¿Libretto con qué repo? → A: «Ver en Libretto» guarda ese repo como el elegido (W104) y cambia de pantalla; la
-  cuenta es `flow.others.length` (assumed).
-- Q: ¿Línea o botón? → A: texto «{n} cambios más en este repo» y un botón «Ver en Libretto» (assumed). El plegado
-  `flow-others` guardado se ignora (assumed).
+- Q: Todos? → A: W82 is amended here: in «Todos» the card sits right under the card's button, outside it, and
+  the button does not repeat the truncated line; its proof stays in `overview.test.ts` (assumed).
+- Q: Contrast of what? → A: the question text and active labels over `--ask-bg`; the numbers (`aria-hidden`),
+  the border and what is disabled are left out. The tint is a `--ask-bg` token per theme and palette (all four: original
+  light and dark, Grafito light and dark), without `color-mix`, so that the test reads the same thing that is painted (assumed).
+- Q: Libretto with which repo? → A: «Ver en Libretto» saves that repo as the chosen one (W104) and switches screen; the
+  count is `flow.others.length` (assumed).
+- Q: Line or button? → A: text «{n} cambios más en este repo» and a button «Ver en Libretto» (assumed). The saved
+  `flow-others` fold is ignored (assumed).
 
-### Gestionar la cola (queue-manage, 10 nov 2026)
+### Managing the queue (queue-manage, 10 nov 2026)
 
-- Solo ideas en cola, no empezadas (assumed, 11 nov).
-- Pasar a Jira = crear y borrar la idea; Jira manda (assumed, 11 nov).
-- Commits con pathspec, como W101 (assumed, 11 nov).
+- Only queued ideas, not started ones (assumed, 11 nov).
+- Moving to Jira = create and delete the idea; Jira rules (assumed, 11 nov).
+- Commits with pathspec, like W101 (assumed, 11 nov).
 
 #### Alternatives that lost
 
 | Considered | Why it lost |
 |---|---|
-| guardar la clave de Jira en el proposal y dejar la idea | `/libretto-queue`: con clave, el tracker es la fuente; dos copias se desvían |
-| borrar sin confirmar | perder una idea por un clic |
-| abrir el `proposal.md` en el editor | la idea es solo su petición; editar el archivo entero invita a romper la plantilla |
+| store the Jira key in the proposal and keep the idea | `/libretto-queue`: with a key, the tracker is the source; two copies drift apart |
+| delete without confirming | losing an idea with one click |
+| open `proposal.md` in the editor | the idea is only its request; editing the whole file invites breaking the template |
 
 #### Decision log, answers as given (2026-11-10)
-- Q: ¿Qué se edita? → A: la petición literal de una idea en cola: «Editar» cambia la fila por una caja con ese texto;
-  «Guardar» reescribe `## The ask, verbatim` (cita línea a línea) y commitea solo ese archivo como
-  `docs(queue): edit <name>`; el nombre no cambia (assumed).
-- Q: ¿Borrar? → A: «Borrar» pide confirmación en la propia fila («¿Borrar <name>?» Sí / No) y hace `git rm -r` de la
-  carpeta y un commit solo de esa ruta, `docs(queue): drop <name>` (assumed).
-- Q: ¿Solo en cola? → A: sí; una idea «Empezada» o un cambio en curso no se editan ni borran desde aquí (assumed).
-- Q: ¿Pasar a Jira? → A: «Pasar a Jira» crea una incidencia de tipo «Task» (o el primer tipo no subtarea del
-  proyecto) en el proyecto del tablero elegido en Ajustes (S-board), con resumen = primera línea de la petición
-  (máx. 255) y descripción = la petición entera; luego borra la idea como «Borrar», con
-  `docs(queue): <KEY> en Jira, <name>`, porque `/libretto-queue` dice que una clave hace del tracker la fuente de
-  verdad. La fila dice «Creada <KEY>» y la tarea aparece en Tareas (assumed).
-- Q: ¿Sin Jira conectado o sin tablero? → A: el botón no sale; si Jira falla, el error sale en la fila y la idea se
-  queda (assumed).
-- Q: ¿El texto vacío bajo la idea? → A: `queueIdea` escribe en `## Reading` la primera línea de la petición, y la
-  lectura usa la primera línea de la petición cuando `## Reading` está vacío (ideas ya escritas) (assumed).
+- Q: What is edited? → A: the literal request of a queued idea: «Editar» swaps the row for a box with that text;
+  «Guardar» rewrites `## The ask, verbatim` (quote line by line) and commits only that file as
+  `docs(queue): edit <name>`; the name does not change (assumed).
+- Q: Delete? → A: «Borrar» asks for confirmation in the row itself («¿Borrar <name>?» Sí / No) and does `git rm -r` of the
+  folder and a commit of only that path, `docs(queue): drop <name>` (assumed).
+- Q: Only queued? → A: yes; a «Empezada» idea or a change in progress cannot be edited or deleted from here (assumed).
+- Q: Move to Jira? → A: «Pasar a Jira» creates an issue of type «Task» (or the project's first non-subtask type) in the
+  project of the board chosen in Ajustes (S-board), with summary = first line of the request
+  (max 255) and description = the whole request; then it deletes the idea like «Borrar», with
+  `docs(queue): <KEY> en Jira, <name>`, because `/libretto-queue` says a key makes the tracker the source of
+  truth. The row says «Creada <KEY>» and the task shows up in Tareas (assumed).
+- Q: Without Jira connected or without a board? → A: the button does not show; if Jira fails, the error shows in the row and the idea
+  stays (assumed).
+- Q: The empty text under the idea? → A: `queueIdea` writes the first line of the request in `## Reading`, and the
+  reading uses the first line of the request when `## Reading` is empty (ideas already written) (assumed).
 
-- Q: ¿«En cola» para editar/borrar/Jira? → A: línea `Queued:` y sin rama `feat/<name>`; una idea empezada se rechaza
+- Q: «Queued» for edit/delete/Jira? → A: a `Queued:` line and no `feat/<name>` branch; a started idea is rejected
   (assumed).
-- Q: ¿«Primera línea»? → A: el texto sin el `> ` de la cita (assumed). W101 y W100 se enmiendan aquí, no hay W109.
-- Q: ¿Nombre que llega por IPC? → A: el mismo `SAFE_NAME` sin `..` que `startQueued`; si no vale, error y nada se toca
+- Q: «First line»? → A: the text without the quote's `> ` (assumed). W101 and W100 are amended here, there is no W109.
+- Q: A name arriving over IPC? → A: the same `SAFE_NAME` without `..` as `startQueued`; if it is not valid, error and nothing is touched
   (assumed).
-- Q: ¿Archivos sin seguir en la carpeta? → A: `git rm -r` y luego `rm -rf` de la carpeta; el commit sigue llevando solo
-  esa ruta (assumed).
-- Q: ¿Credenciales y tablero? → A: main pasa `savedJira()` y el tablero guardado (lo que da `JiraSettingsStatus.board`)
-  a `ideaToJira`; el renderer enseña «Pasar a Jira» si `atril:settings:jira` (o el IPC que ya da ese estado) devuelve
-  `saved` y `board` (assumed).
-- Q: ¿Jira crea y el borrado falla? → A: se devuelve `{ key, error }`; la fila dice «Creada {KEY}» y el error, y deja
-  de ofrecer «Pasar a Jira» mientras la pantalla siga abierta (assumed). Ceiling: al volver a la pantalla, el botón
-  vuelve; si molesta, escribir `Tracker: <KEY>` en la idea.
-- Q: ¿Mientras espera? → A: los botones de esa fila se desactivan hasta la respuesta (assumed).
-- Q: ¿Teclado? → A: todo son botones; al pedir confirmación el foco va a «No» (assumed).
-- Q: ¿Diseño de la pantalla (Pau: «más orgánico lo de ver los repos»)? → A: el del boceto 10: tarjetas de repo con
-  sus cuentas en lugar del desplegable, una línea «Apunta una idea…» que crece arriba, «En cola N» y «En curso N», la
-  fecha dentro de la línea de la idea y las acciones en gris siempre visibles; columna de 760 px como máximo
+- Q: Untracked files in the folder? → A: `git rm -r` and then `rm -rf` of the folder; the commit still carries only
+  that path (assumed).
+- Q: Credentials and board? → A: main passes `savedJira()` and the saved board (what `JiraSettingsStatus.board` gives)
+  to `ideaToJira`; the renderer shows «Pasar a Jira» if `atril:settings:jira` (or the IPC that already gives that state) returns
+  `saved` and `board` (assumed).
+- Q: Jira creates and the delete fails? → A: `{ key, error }` is returned; the row says «Creada {KEY}» and the error, and stops
+  offering «Pasar a Jira» while the screen stays open (assumed). Ceiling: on returning to the screen, the button
+  comes back; if it is annoying, write `Tracker: <KEY>` in the idea.
+- Q: While waiting? → A: that row's buttons are disabled until the answer (assumed).
+- Q: Keyboard? → A: everything is buttons; when asking for confirmation focus goes to «No» (assumed).
+- Q: Screen design (Pau: «more organic, seeing the repos»)? → A: that of sketch 10: repo cards with
+  their accounts instead of the dropdown, an «Apunta una idea…» line that grows at the top, «En cola N» and «En curso N», the
+  date inside the idea's line and the actions in grey always visible; column of 760 px at most
   (assumed).
 
-### Cabecera tranquila (quiet-header, 11 nov 2026)
+### Quiet header (quiet-header, 11 nov 2026)
 
-- Coste oculto, cálculo conservado (assumed, 11 nov).
-- Foco también como botón de icono en la cabecera (assumed, 11 nov).
+- Cost hidden, calculation kept (assumed, 11 nov).
+- Focus also as an icon button in the header (assumed, 11 nov).
 
 #### Alternatives that lost
 
 | Considered | Why it lost |
 |---|---|
-| un ajuste «enseñar coste» | Pau dijo que no le interesa; un ajuste para nadie es código para nadie |
-| borrar también el cálculo | más diff y W95 lo guarda; se borra si nadie lo echa de menos |
+| a «show cost» setting | Pau said he is not interested; a setting for nobody is code for nobody |
+| also delete the calculation | more diff and W95 keeps it; it gets deleted if nobody misses it |
 
 #### Decision log, answers as given (2026-11-11)
-- Q: ¿Cómo queda la cabecera? → A: la del boceto 10: arriba pequeño «{repo} · {agente}»; debajo la rama y, a su lado,
-  el estado como texto con su icono (el mismo de la fila, sin pastilla); a la derecha, juntos y centrados, «Uno |
-  Todos» y un botón redondo solo con icono «Modo foco» (título «Modo foco (⌘⇧F)») que hace lo mismo que el menú (assumed).
-- Q: ¿Coste? → A: fuera de la vista en todas partes: fila (título), tarjeta de «Todos», panel de Libretto y
-  «Terminados». El cálculo de main (W93) y el total en el historial (W95) se quedan: no se ven y no cuestan una
-  llamada (assumed). Ceiling: si nadie lo pide en un mes, borrar W93 y `cost.ts`.
+- Q: What does the header look like? → A: that of sketch 10: at the top a small «{repo} · {agente}»; below it the branch and, beside it,
+  the state as text with its icon (the same as the row's, no pill); on the right, together and centred, «Uno |
+  Todos» and a round icon-only button «Modo foco» (title «Modo foco (⌘⇧F)») that does the same as the menu (assumed).
+- Q: Cost? → A: out of sight everywhere: row (title), «Todos» card, Libretto panel and
+  «Terminados». main's calculation (W93) and the total in the history (W95) stay: they are not seen and do not cost
+  a call (assumed). Ceiling: if nobody asks for it within a month, delete W93 and `cost.ts`.
 
-- Q: ¿Qué estado y de dónde? → A: el mismo texto e icono que la fila de la lista (`LABEL[state]` de
-  `WorkspaceList`), solo en «Uno». En «Todos» la cabecera dice «Todos los agentes» y no hay estado único (assumed).
-- Q: ¿El botón en «Todos»? → A: no sale; en «Uno» sale siempre, y sin trabajo elegido está desactivado como el menú
+- Q: What state and from where? → A: the same text and icon as the list row (`LABEL[state]` of
+  `WorkspaceList`), only in «Uno». In «Todos» the header says «Todos los agentes» and there is no single state (assumed).
+- Q: The button in «Todos»? → A: it does not show; in «Uno» it always shows, and with no workspace chosen it is disabled like the menu
   (assumed).
-- Q: ¿Nombre al estar en foco? → A: siempre «Modo foco», con `aria-pressed` verdadero mientras está activo (assumed).
-- Q: ¿Tests de coste? → A: los casos se renombran a lo que prueban ahora y el `Proof:` los nombra; cada vista se
-  prueba aparte, buscando que no haya «$», «≈» ni «tokens» (assumed). `cost.ts` del renderer se borra si nada fuera de
-  sus tests lo usa (assumed).
-- Q: ¿El historial dice «Coste: la forma corta de W94»? → A: queda superado por W96 enmendado; el total sigue en el
-  archivo (W95) sin enseñarse (assumed).
+- Q: Name while in focus? → A: always «Modo foco», with `aria-pressed` true while it is active (assumed).
+- Q: Cost tests? → A: the cases are renamed to what they test now and the `Proof:` names them; each view is
+  tested separately, checking that there is no «$», «≈» or «tokens» (assumed). The renderer's `cost.ts` is deleted if nothing outside
+  its tests uses it (assumed).
+- Q: Does the history say «Coste: la forma corta de W94»? → A: superseded by amended W96; the total stays in the
+  file (W95) without being shown (assumed).
 
-### Pantalla de QA (qa-screen, 11 nov 2026)
+### QA screen (qa-screen, 11 nov 2026)
 
-- QA como pantalla propia (Pau, 11 nov).
-- Informe por criterio, la A de `bocetos/qa-propuestas.html` (Pau, 11 nov).
-- El agente de QA escribe `report.json`; main lo valida (assumed, 11 nov).
-- Bug a Jira o al agente, siempre al pulsar (assumed, 11 nov).
+- QA as its own screen (Pau, 11 nov).
+- Report per criterion, option A of `bocetos/qa-propuestas.html` (Pau, 11 nov).
+- The QA agent writes `report.json`; main validates it (assumed, 11 nov).
+- Bug to Jira or to the agent, always on press (assumed, 11 nov).
 
 #### Alternatives that lost
 
 | Considered | Why it lost |
 |---|---|
-| parsear lo que dice el agente en su terminal | frágil; un archivo con forma es comprobable |
-| un test runner propio (Playwright tests generados) | otro motor; el agente de QA ya maneja el navegador |
+| parse what the agent says in its terminal | fragile; a file with a shape is checkable |
+| our own test runner (generated Playwright tests) | another engine; the QA agent already drives the browser |
 
 #### Decision log, answers as given (2026-11-11)
-- Q: ¿Dónde? → A: una pantalla «QA» en la barra, entre Libretto y Avisos (y en ⌘K); arriba, tarjetas de los trabajos
-  vivos con lo que detectó W83 («App web», «Android», «sin detectar»); el panel de Libretto deja de tener la sección
-  QA (assumed).
-- Q: ¿De dónde salen los criterios? → A: del `## Verification criteria` del cambio en curso del trabajo (sus ids y
-  su texto, como F36 encuentra el cambio) (assumed).
-- Q: ¿De dónde salen los resultados? → A: el prompt del agente de QA (W84) le pide, además, escribir
-  `$ATRIL_HOME/qa/<id>/report.json` al terminar cada criterio: `{ "criteria": [{ "id", "status":
-  "pass"|"fail"|"untested", "note", "steps": [{ "text", "ms"?, "shot"? }] }] }`, `shot` el nombre de una captura de
-  su carpeta. Main lo lee cada 3 s mientras la pantalla está abierta, como F33 (assumed).
-- Q: ¿Fiarse del archivo? → A: es texto de un modelo: main lo valida (ids que existen en el cambio, estados de la
-  lista, textos cortados a 400, 30 pasos como mucho, `shot` solo nombres de su carpeta sin `/` ni `..`); lo que no
-  valga se ignora, nunca se ejecuta ni se pinta como HTML (assumed).
-- Q: ¿«Ver cómo»? → A: un modal con los pasos del criterio (texto y duración), sus capturas en una tira y la elegida
-  en grande; el paso que falló marcado (assumed).
-- Q: ¿«Probar este» y «Reprobar todo»? → A: si el panel de QA está vivo, Atril escribe en él «Prueba solo el criterio
-  {id}: {texto}. Actualiza report.json.» (o «Prueba otra vez todos los criterios…»); si no, lanza QA (W84) con esa
-  petición al final del prompt. El criterio pasa a «Probando…» hasta que el informe lo cambie (assumed).
-- Q: ¿«Marcar como bug»? → A: un formulario ya relleno (título «QA {rama}: {nota}», los pasos, el entorno: tipo,
-  rama y commit, y el criterio) con «Crear en Jira» (como W108, al proyecto del tablero de Ajustes; sale si Jira está
-  guardado con tablero) y «Pasar al agente del trabajo» (escribe el bug en el panel del agente del trabajo, W75-like);
-  lo editas antes de mandarlo (assumed).
+- Q: Where? → A: a «QA» screen in the bar, between Libretto and Avisos (and in ⌘K); at the top, cards of the live workspaces
+  with what W83 detected («App web», «Android», «sin detectar»); Libretto's panel no longer has the QA
+  section (assumed).
+- Q: Where do the criteria come from? → A: from the `## Verification criteria` of the workspace's change in progress (its ids and
+  text, the way F36 finds the change) (assumed).
+- Q: Where do the results come from? → A: the QA agent's prompt (W84) also asks it to write
+  `$ATRIL_HOME/qa/<id>/report.json` when it finishes each criterion: `{ "criteria": [{ "id", "status":
+  "pass"|"fail"|"untested", "note", "steps": [{ "text", "ms"?, "shot"? }] }] }`, `shot` being the name of a screenshot in
+  its folder. main reads it every 3 s while the screen is open, like F33 (assumed).
+- Q: Trust the file? → A: it is text from a model: main validates it (ids that exist in the change, statuses from the
+  list, texts cut to 400, 30 steps at most, `shot` only names from its folder with no `/` or `..`); anything that is not
+  valid is ignored, never executed or painted as HTML (assumed).
+- Q: «Ver cómo»? → A: a modal with the criterion's steps (text and duration), its screenshots in a strip and the selected one
+  large; the step that failed marked (assumed).
+- Q: «Probar este» and «Reprobar todo»? → A: if the QA panel is alive, Atril writes into it «Prueba solo el criterio
+  {id}: {texto}. Actualiza report.json.» (or «Prueba otra vez todos los criterios…»); if not, it launches QA (W84) with that
+  request at the end of the prompt. The criterion goes to «Probando…» until the report changes it (assumed).
+- Q: «Marcar como bug»? → A: a pre-filled form (title «QA {rama}: {nota}», the steps, the environment: target,
+  branch and commit, and the criterion) with «Crear en Jira» (like W108, into the Ajustes board's project; shows if Jira is
+  saved with a board) and «Pasar al agente del trabajo» (writes the bug into the workspace agent's panel, W75-like);
+  you edit it before sending (assumed).
 
-- Q: ¿Qué es un criterio? → A: cada línea bajo `## Verification criteria` que empieza por un id en negrita
-  (`- **W12**`); id y texto hasta su `Proof:`. Sin cambio, sin esa sección o sin ids: «Este trabajo no tiene criterios
+- Q: What is a criterion? → A: each line under `## Verification criteria` that starts with a bold id
+  (`- **W12**`); id and text up to its `Proof:`. No change, no such section or no ids: «Este trabajo no tiene criterios
   que probar» (assumed).
-- Q: ¿Ids repetidos o ausentes en el informe? → A: gana la última entrada; un criterio que no está, «Sin probar»
+- Q: Repeated or missing ids in the report? → A: the last entry wins; a criterion that is not there is «Sin probar»
   (assumed).
-- Q: ¿Las capturas sin criterio? → A: siguen visibles: «Todas las capturas», las 12 más nuevas, cada una de 2 MB como
-  mucho, como data URLs (los límites del F33 de hoy) (assumed).
-- Q: ¿Cuándo termina «Probando…»? → A: lo lleva el renderer; termina cuando el informe trae una entrada de ese id
-  escrita después de la petición (aunque repita el estado), cuando el panel de QA muere, o a los 5 min (vuelve al
-  estado anterior) (assumed).
-- Q: ¿Escribir en un panel que está trabajando? → A: Claude Code encola lo que se escribe mientras trabaja; se escribe
-  igual (assumed).
-- Q: ¿Si W84 se niega al lanzar? → A: el error sale bajo el botón y nadie pasa a «Probando…» (assumed).
-- Q: ¿Varias líneas al agente? → A: se pegan con `tmux load-buffer` + `paste-buffer -p` (pegado entre corchetes: los
-  saltos no envían) y luego Enter (assumed).
-- Q: ¿Jira? → A: se saca de `ideaToJira` una función `createIssue(creds, board, summary, description)`; `ideaToJira`
-  la usa y luego quita la idea (W108 igual); QA solo crea (assumed).
-- Q: ¿El prompt? → A: `qaPrompt` añade la ruta de `report.json`, su forma, la lista de criterios (id y texto) y que lo
-  reescriba entero tras cada criterio (assumed).
+- Q: Screenshots without a criterion? → A: still visible: «Todas las capturas», the 12 newest, each at most 2 MB,
+  as data URLs (today's F33 limits) (assumed).
+- Q: When does «Probando…» end? → A: the renderer keeps it; it ends when the report carries an entry for that id
+  written after the request (even if it repeats the status), when the QA panel dies, or after 5 min (it returns to the
+  previous state) (assumed).
+- Q: Writing into a panel that is working? → A: Claude Code queues what is typed while it works; it is written
+  anyway (assumed).
+- Q: If W84 refuses on launch? → A: the error shows under the button and nobody goes to «Probando…» (assumed).
+- Q: Several lines to the agent? → A: they are pasted with `tmux load-buffer` + `paste-buffer -p` (bracketed paste: line
+  breaks do not submit) and then Enter (assumed).
+- Q: Jira? → A: a function `createIssue(creds, board, summary, description)` is extracted from `ideaToJira`; `ideaToJira`
+  uses it and then removes the idea (W108 unchanged); QA only creates (assumed).
+- Q: The prompt? → A: `qaPrompt` adds the path of `report.json`, its shape, the list of criteria (id and text) and that it
+  rewrites it whole after each criterion (assumed).
 
-### QA: dónde se prueba (qa-targets, 11 nov 2026)
+### QA: where it is tested (qa-targets, 11 nov 2026)
 
-- (11 nov, Pau) Motores: iOS `xcrun mcpbridge` + mobile-mcp para tocar; Android mobile-mcp con el emulador de la persona; Chrome con Playwright; Safari con Playwright WebKit (assumed).
-- (11 nov, Pau) Un dispositivo por trabajo, reservado mientras su QA vive; la reserva caduca sola cuando su pane ya no está.
-- (11 nov, Pau) Errores: qué pasó, qué no puedes hacer, un botón con el arreglo; detalle plegado.
-- (11 nov) Los arreglos son nombres fijos que main traduce en una acción; la ventana nunca manda un comando ni una URL (como W21).
-- (11 nov) `.atril/qa.json` manda sobre lo detectado; «Elegir a mano» se suma como una pestaña más.
+- (11 nov, Pau) Engines: iOS `xcrun mcpbridge` + mobile-mcp for tapping; Android mobile-mcp with the person's emulator; Chrome with Playwright; Safari with Playwright WebKit (assumed).
+- (11 nov, Pau) One device per workspace, reserved while its QA is alive; the reservation expires by itself when its pane is gone.
+- (11 nov, Pau) Errors: what happened, what you cannot do, a button with the fix; detail folded.
+- (11 nov) Fixes are fixed names that main translates into an action; the window never sends a command or a URL (like W21).
+- (11 nov) `.atril/qa.json` rules over what was detected; «Elegir a mano» is added as one more tab.
 
 #### Decision log, answers as given (2026-11-11)
-- Q: ¿Motor por plataforma? → A: iOS con el MCP oficial de Apple `xcrun mcpbridge` (Xcode 26.3+), simctl o mobile-mcp si hace falta tocar; Android con el emulador del SDK de la persona por `emulator`/`adb`, vía mobile-mcp; web Chrome con Playwright y Safari con WebKit.
-- Q: ¿Detección? → A: dice por qué; varias plataformas como pestañas recordadas por repo; monorepos a 2 niveles; «Elegir a mano» guardado por repo y opcional `.atril/qa.json`; «No sé cómo abrir este proyecto» si no hay nada.
-- Q: ¿Errores? → A: ninguno suelto: qué pasó, qué no puedes hacer y un botón que lo arregla; lo técnico en «Ver detalle» (`bocetos/errores.html`).
-- Q: ¿Varias QA a la vez? → A: un simulador o emulador por trabajo, reservado hasta que se libera, como Simlock.
-- Q: ¿Safari con qué MCP? → A: Playwright MCP con `--browser webkit`, el motor de Safari; no hay un MCP oficial de Safari que se pueda instalar sin firmar nada (assumed: si aparece uno oficial, cambia solo `mcpConfig`).
-- Q: ¿Un proyecto RN/Expo/Flutter cuántas pestañas da? → A: Android e iOS, una por plataforma que tenga carpeta (`android/`, `ios/`) o, en Expo, ambas (assumed).
-- Q: ¿Qué emulador reserva? → A: el primero de la lista de la persona que no tenga otro trabajo con su QA vivo; nunca crea uno sin que lo pida (assumed).
+- Q: Engine per platform? → A: iOS with Apple's official MCP `xcrun mcpbridge` (Xcode 26.3+), simctl or mobile-mcp if tapping is needed; Android with the person's SDK emulator through `emulator`/`adb`, via mobile-mcp; web Chrome with Playwright and Safari with WebKit.
+- Q: Detection? → A: it says why; several platforms as tabs remembered per repo; monorepos at 2 levels; «Elegir a mano» saved per repo and optional `.atril/qa.json`; «No sé cómo abrir este proyecto» if there is nothing.
+- Q: Errors? → A: none loose: what happened, what you cannot do and a button that fixes it; technical detail in «Ver detalle» (`bocetos/errores.html`).
+- Q: Several QAs at once? → A: one simulator or emulator per workspace, reserved until it is released, like Simlock.
+- Q: Safari with which MCP? → A: Playwright MCP with `--browser webkit`, Safari's engine; there is no official Safari MCP that can be installed without signing anything (assumed: if an official one appears, only `mcpConfig` changes).
+- Q: How many tabs does an RN/Expo/Flutter project give? → A: Android and iOS, one per platform that has a folder (`android/`, `ios/`) or, in Expo, both (assumed).
+- Q: Which emulator does it reserve? → A: the first one in the person's list that has no other workspace with its QA alive; it never creates one without being asked (assumed).
 
-### Errores claros (plain-errors, 11 nov 2026)
+### Clear errors (plain-errors, 11 nov 2026)
 
-- Un error de lectura que el usuario no puede leer como frase es un error suelto (regla de Pau, 11 nov, `bocetos/errores.html`): qué pasó, qué no puedes hacer, un botón, y el código plegado en «Ver detalle». Aquí se aplica al pie, al doctor y a Ajustes.
+- A read error that the user cannot read as a sentence is a loose error (Pau's rule, 11 nov, `bocetos/errores.html`): what happened, what you cannot do, a button, and the code folded in «Ver detalle». Here it applies to the footer, the doctor and Ajustes.
 
 #### Alternatives that lost
 
 | Considered | Why it lost |
 |---|---|
-| La caja `Problem` en el pie | ocupa cuatro líneas en una barra de una; tapa la terminal |
-| Mapear el error en la ventana a partir de la frase | la frase ya viene traducida; main sabe la causa |
+| The `Problem` box in the footer | takes four lines in a one-line bar; covers the terminal |
+| Map the error in the window from the sentence | the sentence is already translated; main knows the cause |
 
 #### Decision log, answers as given (2026-11-11)
-- Q: (revisión del trabajo) `boxes.test.ts` cambió fuera del contrato → A: sí, a propósito: buscaba la lista de casillas sin esperarla y falló 1 de cada 2 veces en la suite; ahora la espera con `findByRole`, misma comprobación (assumed).
-- Q: (revisión en frío) ¿Y un 401 después de una lectura buena? → A: W37 manda: se quedan los últimos valores con su antigüedad (assumed).
-- Q: (revisión en frío) ¿Qué errores de Jira son «no responde»? → A: solo los que lanza `fetch`; los estados HTTP y la dirección mal escrita conservan su frase; el tiempo agotado dice «Jira no ha respondido en 10 s.» (assumed).
-- Q: ¿Cómo se ve un error en el pie, que es una sola línea? → A: la frase y un botón en la misma línea, y «Ver detalle» plegado al lado; sin la caja grande de `Problem` (assumed: si Pau quiere la caja, cabe encima del pie).
-- Q: ¿Qué arregla un fallo del llavero o del token? → A: «Abrir Claude Code», que abre Terminal con `claude` (la persona inicia sesión ahí); el resto, «Volver a comprobar» (assumed).
-- Q: ¿Cuánto espera el doctor? → A: 5 s por herramienta, como proponía el hallazgo 2 (assumed).
+- Q: (work review) `boxes.test.ts` changed outside the contract → A: yes, on purpose: it looked for the list of boxes without waiting for it and failed 1 time in 2 in the suite; now it waits with `findByRole`, same check (assumed).
+- Q: (cold review) And a 401 after a good read? → A: W37 rules: the last values stay with their age (assumed).
+- Q: (cold review) Which Jira errors are «does not respond»? → A: only those thrown by `fetch`; HTTP statuses and a mistyped address keep their sentence; the timeout says «Jira no ha respondido en 10 s.» (assumed).
+- Q: What does an error look like in the footer, which is a single line? → A: the sentence and a button on the same line, and «Ver detalle» folded beside it; no big `Problem` box (assumed: if Pau wants the box, it fits above the footer).
+- Q: What fixes a keychain or token failure? → A: «Abrir Claude Code», which opens Terminal with `claude` (the person logs in there); everything else, «Volver a comprobar» (assumed).
+- Q: How long does the doctor wait? → A: 5 s per tool, as finding 2 proposed (assumed).
 
-### PATH del shell (login-path, 11 nov 2026)
+### Shell PATH (login-path, 11 nov 2026)
 
-- Una app de Mac abierta desde el Finder no tiene el PATH del shell (ya decidido para el hook, que usa el Electron de Atril como Node): Atril lo pide al shell de login al arrancar, una vez, antes de comprobar herramientas.
+- A Mac app opened from the Finder does not have the shell's PATH (already decided for the hook, which uses Atril's Electron as Node): Atril asks the login shell for it at startup, once, before checking tools.
 
 #### Alternatives that lost
 
 | Considered | Why it lost |
 |---|---|
-| Solo carpetas fijas | quien instala con asdf, nvm o en otra carpeta se queda fuera |
-| El paquete `fix-path`/`shell-env` | una dependencia para diez líneas |
+| Fixed folders only | anyone who installs with asdf, nvm or in another folder is left out |
+| The `fix-path`/`shell-env` package | a dependency for ten lines |
 
 #### Decision log, answers as given (2026-11-11)
-- Q: ¿Por qué falta `claude` si está instalado? → A: (comprobado) está en `~/.local/bin`; una app abierta desde el Dock o el Finder hereda `/usr/bin:/bin:/usr/sbin:/sbin` y Atril nunca lo amplía.
-- Q: ¿De dónde sale el PATH bueno? → A: del shell de login e interactivo de la persona (`$SHELL -ilc`), que lee `.zprofile` y `.zshrc`, con 3 s de tope; detrás, `~/.local/bin`, `/opt/homebrew/bin` y `/usr/local/bin` por si el shell no contesta (assumed).
+- Q: Why is `claude` missing if it is installed? → A: (checked) it is in `~/.local/bin`; an app opened from the Dock or the Finder inherits `/usr/bin:/bin:/usr/sbin:/sbin` and Atril never extends it.
+- Q: Where does the good PATH come from? → A: from the person's interactive login shell (`$SHELL -ilc`), which reads `.zprofile` and `.zshrc`, with a 3 s cap; behind it, `~/.local/bin`, `/opt/homebrew/bin` and `/usr/local/bin` in case the shell does not answer (assumed).
 
-### Copia con cambios (dirty-copy, 11 nov 2026)
+### Copy with changes (dirty-copy, 11 nov 2026)
 
-- Un rechazo al abrir un trabajo trae su arreglo cuando existe uno que no toca lo de la persona: aquí, un worktree para esta vez.
+- A refusal when opening a workspace brings its fix when there is one that does not touch the person's work: here, a worktree for this time.
 
 #### Alternatives that lost
 
 | Considered | Why it lost |
 |---|---|
-| Hacer stash por la persona | toca sus cambios sin preguntar |
-| Cambiar el modo del repo a worktree | decide por ella para siempre; el repo trabaja en su copia por algo (p. ej. un .env sin versionar) |
+| Stash on the person's behalf | touches their changes without asking |
+| Change the repo's mode to worktree | decides for them forever; the repo works in its own copy for a reason (e.g. an unversioned .env) |
 
 #### Decision log, answers as given (2026-11-11)
-- Q: ¿Qué arreglo ofrece una copia sucia en un repo in-place? → A: «Usar un worktree esta vez»: abre el trabajo en una carpeta aparte y tu copia, con sus cambios, no se toca; el modo del repo no cambia (assumed).
-- Q: ¿Y el segundo trabajo en un repo in-place (W7)? → A: el mismo botón (assumed).
-- Q: ¿Qué va en «Ver detalle»? → A: las líneas de `git status --porcelain` (hasta 20) y por qué el repo trabaja en tu copia (assumed).
+- Q: What fix does a dirty copy in an in-place repo offer? → A: «Usar un worktree esta vez»: opens the workspace in a separate folder and your copy, with its changes, is not touched; the repo's mode does not change (assumed).
+- Q: And the second workspace in an in-place repo (W7)? → A: the same button (assumed).
+- Q: What goes in «Ver detalle»? → A: the lines of `git status --porcelain` (up to 20) and why the repo works in your copy (assumed).
 
-### Abrir y cerrar sin errores crudos (ws-errors, 11 nov 2026)
+### Opening and closing without raw errors (ws-errors, 11 nov 2026)
 
-- Un fallo de git o tmux nunca sale crudo en la frase: frase por paso, salida plegada y «Abrir en Terminal» en esa carpeta.
+- A git or tmux failure never shows raw in the sentence: a sentence per step, folded output and «Abrir en Terminal» in that folder.
 
 #### Alternatives that lost
 
 | Considered | Why it lost |
 |---|---|
-| Mandar la ruta desde la ventana | la ventana no es de fiar; main ya sabe la ruta por id |
-| `confirm()` nativo | un diálogo del sistema para una fila; la pregunta en la fila no tapa nada |
+| Send the path from the window | the window cannot be trusted; main already knows the path by id |
+| Native `confirm()` | a system dialog for one row; the question in the row covers nothing |
 
 #### Decision log, answers as given (2026-11-11)
-- Q: (constructor) ¿Cómo llega «Usar un worktree esta vez» desde «Empezar» de Jira? → A: `StartRequest.worktree`, que `jira/start.ts` pasa solo si es `true`; sin test propio del diálogo de Jira (assumed).
-- Q: (constructor) `Problem` sin arreglo → A: `fix`/`onFix` opcionales y «Ver detalle» solo con detalle; «No hay ningún repo» no trae botón (assumed).
-- Q: (revisión en frío) ¿Y si git falla después de parar al agente? → A: el registro se queda y la frase dice que el agente ya está parado; no se reordena (assumed: `git worktree remove` sobre una carpeta con el agente vivo sería peor).
-- Q: (revisión en frío) ¿Un `git status` que falla ofrece olvidar? → A: solo si la carpeta no existe; si existe, «Abrir en Terminal» (assumed).
-- Q: (romper la app, hallazgo 1) ¿Olvidar deja la rama bloqueada por el worktree? → A: `git worktree prune` en el repo, que solo borra entradas cuya carpeta ya no está (assumed).
-- Q: ¿Qué botón arregla un fallo de git al abrir o cerrar? → A: «Abrir en Terminal», que abre Terminal en la carpeta con `git status`; la ventana manda el id del repo o del trabajo, nunca una ruta (assumed).
-- Q: ¿Y si la carpeta del trabajo ya no es un repo o no existe? → A: «Quitar de la lista igualmente»: cierra su sesión de tmux, borra el registro y sus archivos, no ejecuta git y no escribe historial (assumed).
-- Q: ¿Cuándo se confirma «Quitar»? → A: solo con la sesión viva, en la propia fila; un trabajo parado se quita a la primera (assumed).
+- Q: (builder) How does «Usar un worktree esta vez» arrive from Jira's «Empezar»? → A: `StartRequest.worktree`, which `jira/start.ts` passes only if it is `true`; no test of its own for the Jira dialog (assumed).
+- Q: (builder) `Problem` without a fix → A: `fix`/`onFix` optional and «Ver detalle» only with detail; «No hay ningún repo» carries no button (assumed).
+- Q: (cold review) And if git fails after stopping the agent? → A: the record stays and the sentence says the agent is already stopped; it is not reordered (assumed: `git worktree remove` on a folder with the agent alive would be worse).
+- Q: (cold review) Does a failing `git status` offer to forget? → A: only if the folder does not exist; if it exists, «Abrir en Terminal» (assumed).
+- Q: (breaking the app, finding 1) Does forgetting leave the branch locked by the worktree? → A: `git worktree prune` in the repo, which only deletes entries whose folder is already gone (assumed).
+- Q: Which button fixes a git failure on open or close? → A: «Abrir en Terminal», which opens Terminal in the folder with `git status`; the window sends the repo's or workspace's id, never a path (assumed).
+- Q: And if the workspace's folder is no longer a repo or does not exist? → A: «Quitar de la lista igualmente»: closes its tmux session, deletes the record and its files, runs no git and writes no history (assumed).
+- Q: When is «Quitar» confirmed? → A: only with the session alive, in the row itself; a stopped workspace is removed on the first click (assumed).
 
-### Modelo y esfuerzo (model-pick, 11 nov 2026)
+### Model and effort (model-pick, 11 nov 2026)
 
-- Atril sugiere modelo y esfuerzo con reglas fijas y su porqué; nunca los cambia por la persona.
+- Atril suggests model and effort with fixed rules and their reason; it never changes them on the person's behalf.
 
 #### Alternatives that lost
 
 | Considered | Why it lost |
 |---|---|
-| Preguntar a Claude qué modelo usar | gasta cuota en cada trabajo, y la regla es nada de llamadas automáticas |
-| Aplicar la sugerencia sola | decide por la persona; el artículo dice medir antes de cambiar |
+| Ask Claude which model to use | spends quota on every workspace, and the rule is no automatic calls |
+| Apply the suggestion by itself | decides for the person; the article says measure before changing |
 
 #### Decision log, answers as given (2026-11-11)
-- Q: (constructor) `suggest.ts`, `SuggestLine.tsx` y los diálogos viven bajo el `Governs:` de work-inbox → A: los criterios se quedan en workspaces, que ya gobierna el modelo y el comando (W34); la línea compartida es una pieza de la ventana (assumed).
-- Q: (constructor) ¿Cómo se ve la sugerencia? → A: «Sugerido: Sonnet · Medio. {porqué} [Usar]», en una línea gris (assumed).
-- Q: (revisión en frío) ¿Qué texto mira la sugerencia en «Empezar»? → A: el resumen y el tipo de Jira (assumed).
-- Q: (revisión en frío) ¿Un esfuerzo raro por IPC? → A: se rechaza en main como un modelo raro (assumed).
-- Q: ¿La sugerencia se aplica sola? → A: no: sale debajo del modelo con su porqué y un botón «Usar»; la persona decide (assumed, como la nota de MR de 540: la persona decide).
-- Q: ¿De qué sale la sugerencia? → A: de reglas fijas sobre el texto y el tipo de Jira, sin llamar a Claude (CLAUDE.md: nada de llamadas automáticas) (assumed).
-- Q: ¿Qué niveles de esfuerzo? → A: Por defecto, bajo, medio, alto y muy alto (`xhigh`); `max` se queda fuera del selector (assumed: es caro y el artículo no lo recomienda para empezar).
+- Q: (builder) `suggest.ts`, `SuggestLine.tsx` and the dialogs live under work-inbox's `Governs:` → A: the criteria stay in workspaces, which already governs the model and the command (W34); the shared line is a window piece (assumed).
+- Q: (builder) What does the suggestion look like? → A: «Sugerido: Sonnet · Medio. {porqué} [Usar]», in a grey line (assumed).
+- Q: (cold review) What text does the suggestion look at in «Empezar»? → A: the summary and the Jira type (assumed).
+- Q: (cold review) An odd effort over IPC? → A: rejected in main like an odd model (assumed).
+- Q: Is the suggestion applied by itself? → A: no: it shows under the model with its reason and a «Usar» button; the person decides (assumed, like the MR score of 540: the person decides).
+- Q: What does the suggestion come from? → A: fixed rules over the text and the Jira type, without calling Claude (CLAUDE.md: no automatic calls) (assumed).
+- Q: Which effort levels? → A: Por defecto, bajo, medio, alto and muy alto (`xhigh`); `max` stays out of the selector (assumed: it is expensive and the article does not recommend it to start with).
 
-### Volver a abrir (reopen-work, 11 nov 2026)
+### Reopening (reopen-work, 11 nov 2026)
 
-- Un trabajo parado se retoma con `claude --continue` en su carpeta; más esfuerzo es un nivel más, nunca otro modelo.
+- A stopped workspace is resumed with `claude --continue` in its folder; more effort is one level up, never another model.
 
 #### Alternatives that lost
 
 | Considered | Why it lost |
 |---|---|
-| `claude --resume <id>` con el id de sesión guardado | Atril no guarda el id de la conversación; `--continue` toma la última de esa carpeta, que es la del trabajo |
-| Abrir un trabajo nuevo en la misma rama | pierde la conversación y choca con la rama que ya existe |
+| `claude --resume <id>` with the stored session id | Atril does not store the conversation id; `--continue` takes the latest one in that folder, which is the workspace's |
+| Open a new workspace on the same branch | loses the conversation and clashes with the branch that already exists |
 
 #### Decision log, answers as given (2026-11-11)
-- Q: (prueba en la app real) al matar tmux, `term:resize` llega a un cliente muerto, node-pty lanza EBADF y Electron bloquea la app con «A JavaScript error occurred in the main process» → A: se arregla aquí (W149): el cliente muerto se olvida y nada de la terminal lanza.
-- Q: (revisión en frío) ¿Y el modo auto? → A: su marca `auto/<sesión>` sobrevive a la sesión muerta (solo `dropFiles` la borra): reabrir no la toca.
-- Q: (revisión en frío) ¿Y los trabajos abiertos con un `argv` a medida? → A: `input.argv` solo lo usan los tests; todo trabajo real sale de `agentArgv`, y reabrir usa `agentArgv`.
-- Q: (revisión en frío) ¿`--continue` sin conversación? → A: solo se pone si Atril tiene apuntado un transcript del trabajo (`transcripts/<sesión>`); si no, arranca de cero (assumed).
-- Q: (revisión en frío) ¿Sesión viva con el agente muerto (W16)? → A: también se reabre: primero se cierra esa sesión (assumed).
-- Q: (revisión en frío) orden con `model-pick` → A: esta rama sale de `model-pick` aterrizado; `--continue` va tras `--plugin-dir`, antes de `--model` y `--effort`.
-- Q: ¿Cómo se relanza? → A: una sesión de tmux nueva con el mismo id, en la misma carpeta, con `claude --continue` (la última conversación de esa carpeta), el mismo modelo, esfuerzo y modo auto (assumed).
-- Q: ¿Qué es «más esfuerzo»? → A: un nivel más que el guardado: por defecto o medio → alto, bajo → medio, alto → muy alto; con muy alto no se ofrece (assumed, del artículo).
-- Q: ¿Se ofrece con el agente vivo? → A: no: reiniciar a un agente que trabaja corta lo que hace; solo con la sesión muerta (assumed).
+- Q: (test in the real app) when tmux is killed, `term:resize` reaches a dead client, node-pty throws EBADF and Electron blocks the app with «A JavaScript error occurred in the main process» → A: fixed here (W149): the dead client is forgotten and nothing in the terminal throws.
+- Q: (cold review) And auto mode? → A: its `auto/<session>` mark survives the dead session (only `dropFiles` deletes it): reopening does not touch it.
+- Q: (cold review) And workspaces opened with a custom `argv`? → A: `input.argv` is used only by tests; every real workspace comes from `agentArgv`, and reopening uses `agentArgv`.
+- Q: (cold review) `--continue` without a conversation? → A: only added if Atril has a transcript of the workspace noted (`transcripts/<session>`); otherwise it starts from scratch (assumed).
+- Q: (cold review) A live session with a dead agent (W16)? → A: it is reopened too: that session is closed first (assumed).
+- Q: (cold review) order with `model-pick` → A: this branch comes from landed `model-pick`; `--continue` goes after `--plugin-dir`, before `--model` and `--effort`.
+- Q: How is it relaunched? → A: a new tmux session with the same id, in the same folder, with `claude --continue` (the latest conversation in that folder), the same model, effort and auto mode (assumed).
+- Q: What is «more effort»? → A: one level above the stored one: default or medium → high, low → medium, high → very high; with very high it is not offered (assumed, from the article).
+- Q: Is it offered with the agent alive? → A: no: restarting an agent that is working cuts what it is doing; only with the session dead (assumed).
 
-### Archivos de estado dañados (state-files, 11 nov 2026)
+### Damaged state files (state-files, 11 nov 2026)
 
-- Un archivo de estado dañado bloquea los cambios de estado, no la app: se ve qué pasa y cómo llegar al archivo, y nada se sobrescribe.
+- A damaged state file blocks state changes, not the app: what is happening and how to reach the file is shown, and nothing is overwritten.
 
 #### Alternatives that lost
 
 | Considered | Why it lost |
 |---|---|
-| Copia `.bak` automática y «Restaurar copia» | Atril no tiene hoy copias; inventarlas es otra función con sus propios fallos |
-| Tratar el archivo dañado como vacío | es justo lo que pasa hoy: la siguiente escritura borra todos los trabajos |
+| Automatic `.bak` copy and «Restaurar copia» | Atril has no copies today; inventing them is another feature with its own failures |
+| Treat the damaged file as empty | it is exactly what happens today: the next write erases all the workspaces |
 
 #### Decision log, answers as given (2026-11-11)
-- Q: (revisión en frío) ¿Quién lee los archivos? → A: un módulo nuevo `src/main/state.ts` con un lector estricto para los dos; `workspaces.ts` y `repos.ts` dejan sus lectores propios. Toda escritura de cualquiera de los dos archivos lee antes con él, así que ninguna escribe encima de uno dañado (assumed).
-- Q: (revisión en frío) ¿Un archivo que existe pero no se puede leer (permisos, carpeta)? → A: cuenta como dañado, con su código en el detalle (assumed).
-- Q: (revisión en frío) orden con `reopen-work` → A: esta rama sale de `reopen-work` aterrizado; `reopenWorkspace` pasa por el mismo lector.
-- Q: ¿Qué arreglo se ofrece para un archivo dañado? → A: «Mostrar en Finder» (el archivo seleccionado); Atril no lo reescribe ni lo borra por su cuenta, y no inventa una copia que no tiene (assumed).
-- Q: ¿Qué cuenta como «forma equivocada»? → A: `workspaces` o `repos` que no sea una lista, o una entrada sin `id`, `path` (y `branch`, `session` para trabajos) de texto (assumed).
-- Q: ¿Y `ui.json` dañado (hallazgo 14)? → A: fuera: solo repite el tutorial, nada se pierde (assumed).
+- Q: (cold review) Who reads the files? → A: a new module `src/main/state.ts` with a strict reader for both; `workspaces.ts` and `repos.ts` drop their own readers. Every write to either file reads first with it, so none writes over a damaged one (assumed).
+- Q: (cold review) A file that exists but cannot be read (permissions, a folder)? → A: counts as damaged, with its code in the detail (assumed).
+- Q: (cold review) order with `reopen-work` → A: this branch comes from landed `reopen-work`; `reopenWorkspace` goes through the same reader.
+- Q: What fix is offered for a damaged file? → A: «Mostrar en Finder» (the file selected); Atril does not rewrite or delete it on its own, and does not invent a copy it does not have (assumed).
+- Q: What counts as «wrong shape»? → A: `workspaces` or `repos` that is not a list, or an entry without a text `id`, `path` (and `branch`, `session` for workspaces) (assumed).
+- Q: And a damaged `ui.json` (finding 14)? → A: out of scope: it only repeats the tutorial, nothing is lost (assumed).
 
-### Modelos de Libretto (libretto-models, 11 nov 2026)
+### Libretto models (libretto-models, 11 nov 2026)
 
-- Atril fija el modelo de los subagentes de Libretto que solo leen y opinan; un modelo que trae Libretto manda. La copia en `resources/libretto/` es Libretto `171db90` más esas líneas `model:`; nada más difiere.
+- Atril pins the model of the Libretto subagents that only read and give opinions; a model that Libretto brings rules. The copy in `resources/libretto/` is Libretto `171db90` plus those `model:` lines; nothing else differs.
 
 #### Alternatives that lost
 
 | Considered | Why it lost |
 |---|---|
-| Editar `resources/libretto` a mano | el siguiente empaquetado lo borra |
-| `CLAUDE_CODE_SUBAGENT_MODEL=sonnet` al lanzar el agente | también movería subagentes que editan código |
-| Haiku para todos los revisores | el artículo reserva Haiku para lo que se comprueba barato (buscar, leer logs); revisar es juicio |
+| Edit `resources/libretto` by hand | the next packaging erases it |
+| `CLAUDE_CODE_SUBAGENT_MODEL=sonnet` when launching the agent | would also move subagents that edit code |
+| Haiku for all reviewers | the article reserves Haiku for what is checked cheaply (searching, reading logs); reviewing is judgement |
 
 #### Decision log, answers as given (2026-11-11)
-- Q: (revisión en frío) ¿Qué es «ya tiene modelo»? → A: una línea del frontmatter que empieza por `model:`; un agente de la lista sin frontmatter (`---` al principio) se deja igual (assumed).
-- Q: (revisión en frío) ¿Cómo se reescribe la copia actual? → A: aplicando `pinModels` a `resources/libretto/agents/*.md` tal como están, sin re-empaquetar desde el repo de Libretto: la versión copiada sigue siendo `171db90`.
-- Q: (revisión en frío) ¿Y la spec que dice que la copia es `171db90`? → A: pasa a decir «`171db90` más las líneas `model:` de Atril».
-- Q: ¿Dónde se fija el modelo de los subagentes de Libretto? → A: al empaquetar Libretto dentro de Atril (`scripts/bundle-libretto.mjs`), no en la copia a mano: la copia se regenera y perdería el cambio (assumed).
-- Q: ¿Cuáles? → A: los que leen y opinan sin editar código — `converge-reader`, `review-lens-reliability`, `review-lens-security`, `spec-reviewer`, `work-reviewer` — pasan a `sonnet`; los que ya traen modelo de Libretto lo conservan (`review-lens-design: sonnet`, `review-lens-intent` y `review-lens-tests: haiku`); `spec-writer` escribe el contrato y se queda en el modelo de la sesión (assumed).
+- Q: (cold review) What is «already has a model»? → A: a frontmatter line that starts with `model:`; an agent in the list with no frontmatter (`---` at the start) is left as is (assumed).
+- Q: (cold review) How is the current copy rewritten? → A: by applying `pinModels` to `resources/libretto/agents/*.md` as they are, without re-packaging from the Libretto repo: the copied version remains `171db90`.
+- Q: (cold review) And the spec that says the copy is `171db90`? → A: it now says «`171db90` plus Atril's `model:` lines».
+- Q: Where is the Libretto subagents' model pinned? → A: when packaging Libretto into Atril (`scripts/bundle-libretto.mjs`), not in the hand copy: the copy is regenerated and would lose the change (assumed).
+- Q: Which ones? → A: those that read and give opinions without editing code — `converge-reader`, `review-lens-reliability`, `review-lens-security`, `spec-reviewer`, `work-reviewer` — go to `sonnet`; those that already carry a Libretto model keep it (`review-lens-design: sonnet`, `review-lens-intent` and `review-lens-tests: haiku`); `spec-writer` writes the contract and stays on the session's model (assumed).
 
-### Repos rotos (repo-gone, 11 nov 2026)
+### Broken repos (repo-gone, 11 nov 2026)
 
-- Un repo roto se ve como roto y se arregla desde Ajustes; git roto se dice como tal, nunca como un nombre de rama malo.
+- A broken repo looks broken and is fixed from Ajustes; broken git is called that, never a bad branch name.
 
 #### Alternatives that lost
 
 | Considered | Why it lost |
 |---|---|
-| Borrar el repo roto automáticamente | decide por la persona; puede ser un disco desconectado |
-| Culpar al nombre salvo que git falte (127) | la nota de Xcode sale con código 1 y seguiría culpando al nombre |
+| Delete the broken repo automatically | decides for the person; it may be a disconnected disk |
+| Blame the name unless git is missing (127) | Xcode's note exits with code 1 and would keep blaming the name |
 
 #### Decision log, answers as given (2026-11-11)
-- Q: (revisión en frío) ¿Qué va primero, el nombre de la rama o la salud del repo? → A: el nombre (W6), salvo que git esté roto (W156); después la salud, antes de cualquier git que escriba (assumed).
-- Q: (revisión en frío) ¿Qué salud tiene un repo con git roto? → A: `ok`: solo «not a git repository» en el stderr da `not-git`; git roto se dice al usarlo (W156) (assumed).
-- Q: (revisión en frío) ¿Dónde funcionan «Abrir Ajustes» e «Instalar herramientas de Xcode»? → A: en la fila del trabajo, los diálogos de nuevo trabajo y Empezar, la barra de reabrir y la barra lateral; `WorkFix` gana `'settings'` y `'git'` (assumed).
-- Q: ¿Cómo se sabe que git está roto y no que el nombre es malo? → A: (comprobado) un nombre inválido sale con código 128 y «is not a valid branch name» en stderr; git ausente da 127 y la nota de Xcode, código 1 con «xcode-select». Solo el primero culpa al nombre (assumed).
-- Q: ¿Qué botones tiene un repo roto en Ajustes? → A: «Buscar la carpeta…» (elige otra carpeta y la guarda con el mismo id si es un repo git) y «Quitar el repo» (lo borra de `repos.json`, nunca toca la carpeta; se niega si hay un trabajo abierto de ese repo) (assumed).
-- Q: ¿«Quitar el repo» también para repos sanos? → A: sí, en todas las filas: hoy no hay forma de quitar un repo desde la app (assumed).
-- Q: (al construir) ¿Y si `check-ref-format` falla sin «is not a valid branch name» ni git roto? → A: «git no ha podido comprobar el nombre {branch}.» con su salida plegada y «Abrir en Terminal»; nunca culpa al nombre (assumed).
-- Q: (al construir) ¿`lstat` o `existsSync` para `missing`? → A: `existsSync`, que sigue enlaces: un enlace a una carpeta que ya no está cuenta como perdida (assumed).
+- Q: (cold review) What goes first, the branch name or the repo's health? → A: the name (W6), unless git is broken (W156); then the health, before any git that writes (assumed).
+- Q: (cold review) What health does a repo with broken git have? → A: `ok`: only «not a git repository» in stderr gives `not-git`; broken git is reported on use (W156) (assumed).
+- Q: (cold review) Where do «Abrir Ajustes» and «Instalar herramientas de Xcode» work? → A: in the workspace row, the new-workspace and Empezar dialogs, the reopen bar and the sidebar; `WorkFix` gains `'settings'` and `'git'` (assumed).
+- Q: How do we know git is broken and not that the name is bad? → A: (checked) an invalid name exits with code 128 and «is not a valid branch name» in stderr; missing git gives 127 and Xcode's note, code 1 with «xcode-select». Only the first blames the name (assumed).
+- Q: What buttons does a broken repo have in Ajustes? → A: «Buscar la carpeta…» (picks another folder and saves it with the same id if it is a git repo) and «Quitar el repo» (removes it from `repos.json`, never touches the folder; it refuses if a workspace of that repo is open) (assumed).
+- Q: «Quitar el repo» for healthy repos too? → A: yes, on every row: today there is no way to remove a repo from the app (assumed).
+- Q: (at build time) And if `check-ref-format` fails without «is not a valid branch name» or broken git? → A: «git no ha podido comprobar el nombre {branch}.» with its output folded and «Abrir en Terminal»; it never blames the name (assumed).
+- Q: (at build time) `lstat` or `existsSync` for `missing`? → A: `existsSync`, which follows links: a link to a folder that is gone counts as missing (assumed).
 
-### Terminal que no engancha (term-attach, 11 nov 2026)
+### Terminal that will not attach (term-attach, 11 nov 2026)
 
-- Ninguna nueva.
+- None new.
 
 #### Alternatives that lost
 
 | Considered | Why it lost |
 |---|---|
-| Abrir `tmux attach` en Terminal.app | otra ventana para algo que suele arreglarse reintentando; queda como idea |
+| Open `tmux attach` in Terminal.app | another window for something that is usually fixed by retrying; stays as an idea |
 
 #### Decision log, answers as given (2026-11-11)
-- Q: (revisión en frío) ¿Qué contesta `attach` cuando no hay error? → A: `{ ok: true }` al enganchar y `{ ok: false }` para un trabajo desconocido o sin sesión (la vista de parado ya lo explica); nunca `undefined` (assumed).
-- Q: (revisión en frío) ¿Y si llega un error tras cambiar de trabajo? → A: se descarta: el efecto guarda el id con el que llamó y solo pinta si sigue montado con ese id (assumed).
-- Q: (revisión en frío) ¿Hay doble de xterm? → A: no: el test simula `@xterm/xterm` y `@xterm/addon-fit` con `vi.mock` (assumed).
-- Q: ¿Qué arreglo ofrece? → A: «Volver a intentar», que engancha otra vez; el agente sigue en tmux y la frase lo dice (assumed).
-- Q: ¿El mensaje de node-pty va al detalle? → A: sí: es un texto de node-pty sobre el proceso (`posix_spawnp failed`), sin datos de la persona (assumed).
+- Q: (cold review) What does `attach` answer when there is no error? → A: `{ ok: true }` on attaching and `{ ok: false }` for an unknown workspace or one without a session (the stopped view already explains it); never `undefined` (assumed).
+- Q: (cold review) And if an error arrives after switching workspace? → A: it is discarded: the effect keeps the id it called with and only paints if it is still mounted with that id (assumed).
+- Q: (cold review) Is there an xterm double? → A: no: the test mocks `@xterm/xterm` and `@xterm/addon-fit` with `vi.mock` (assumed).
+- Q: What fix does it offer? → A: «Volver a intentar», which attaches again; the agent stays in tmux and the sentence says so (assumed).
+- Q: Does node-pty's message go to the detail? → A: yes: it is a node-pty text about the process (`posix_spawnp failed`), with no data about the person (assumed).
 
-### Grafito: te necesita (grafito-you, 11 nov 2026)
+### Grafito: needs you (grafito-you, 11 nov 2026)
 
-- En Grafito el acento es para lo que pide a la persona; lo que solo trabaja va en gris.
+- In Grafito the accent is for what asks something of the person; what merely works is grey.
 
 #### Alternatives that lost
 
 | Considered | Why it lost |
 |---|---|
-| Un ámbar para «te necesita» en Grafito | segundo acento; W72 lo prohíbe y Pau quiere uno |
+| An amber for «needs you» in Grafito | second accent; W72 forbids it and Pau wants one |
 
 #### Decision log, answers as given (2026-11-11)
-- Q: (revisión del trabajo) `--run` también pinta el punto de aviso sin leer, la selección del buscador, el paso actual y «conectado» → A: `--run` sigue azul; un token nuevo `--working` solo para la etiqueta «trabajando» (gris en Grafito, igual que antes en Original).
-- Q: ¿Qué color cambia? → A: «trabajando» pasa al gris de los textos secundarios (`--sub`) y el único acento azul queda para «te necesita»: gris más un acento, como pidió Pau (assumed).
+- Q: (work review) `--run` also paints the unread notice dot, the search selection, the current step and «connected» → A: `--run` stays blue; a new token `--working` only for the «trabajando» label (grey in Grafito, as before in Original).
+- Q: What colour changes? → A: «trabajando» goes to the grey of secondary texts (`--sub`) and the only blue accent is left for «needs you»: grey plus one accent, as Pau asked (assumed).
 
-### Radar de choques (radar, 11 nov 2026)
+### Clash radar (radar, 11 nov 2026)
 
-- Atril avisa de choques entre trabajos del mismo repo por archivo; no decide nada ni toca ramas.
+- Atril warns about clashes between workspaces of the same repo by file; it decides nothing and touches no branches.
 
 #### Alternatives that lost
 
 | Considered | Why it lost |
 |---|---|
-| Comparar diffs línea a línea | más caro; el archivo ya avisa a tiempo |
-| Avisar solo al abrir la MR | llega tarde: el choque ya está hecho |
+| Compare diffs line by line | more expensive; the file already warns in time |
+| Warn only when the MR is opened | arrives late: the clash is already made |
 
 #### Decision log, answers as given (2026-11-11)
-- Q: (revisión en frío) ¿Qué base? → A: la `baseCommit` del registro de cada trabajo, también en los que trabajan en tu copia (assumed).
-- Q: (revisión en frío) ¿Qué trabajos entran? → A: todo registro que no sea de revisión, vivo o parado, como afectado y como «con quién» (assumed).
-- Q: (revisión en frío) ¿Y pasado el tope de vigilantes? → A: el tope sube a 12 (F48 enmendado); más allá, el más antiguo se cierra y ese trabajo recalcula: riesgo aceptado. Radar y panel comparten el vigilante de cada carpeta (assumed).
-- Q: ¿Qué cuenta como choque? → A: dos trabajos abiertos del mismo repo (ninguno de revisión) que cambian el mismo archivo respecto a su base, con commits o sin ellos (assumed).
-- Q: ¿Dónde se ve? → A: en la fila de cada trabajo afectado, una línea gris «Choca con {rama} en {archivo}» (y «y N más»), con la lista entera al pasar el ratón; sin color nuevo: gris más un acento (assumed).
-- Q: ¿Cuánto cuesta? → A: la lista de archivos de cada trabajo pasa por el vigilante de `quiet-panel`: sin cambios, cero procesos; el tope de vigilantes sube de 4 a 12 para que el radar y el panel no se expulsen (assumed).
+- Q: (cold review) What base? → A: the `baseCommit` of each workspace's record, also in those that work in your copy (assumed).
+- Q: (cold review) Which workspaces take part? → A: every record that is not a review one, live or stopped, both as affected and as «with whom» (assumed).
+- Q: (cold review) And past the cap on watchers? → A: the cap rises to 12 (F48 amended); beyond that, the oldest is closed and that workspace recalculates: accepted risk. Radar and panel share each folder's watcher (assumed).
+- Q: What counts as a clash? → A: two open workspaces of the same repo (neither a review one) that change the same file relative to their base, with commits or without (assumed).
+- Q: Where is it seen? → A: in the row of each affected workspace, a grey line «Choca con {rama} en {archivo}» (and «y N más»), with the whole list on hover; no new colour: grey plus one accent (assumed).
+- Q: How much does it cost? → A: each workspace's file list goes through the `quiet-panel` watcher: no changes, zero processes; the cap on watchers rises from 4 to 12 so that radar and panel do not evict each other (assumed).
 
-- Q: (al construir) ¿Cómo se separan los «{rama}: {archivo}» del título? → A: uno por línea (`\n`) (assumed).
-- Q: (al construir) ¿Quién pregunta cada 10 s? → A: la lista de trabajos de la barra lateral, mientras está montada (assumed).
-- Q: (al construir) El test de tope con 13 vigilantes tarda ~50 s en este Mac (cada proceso es caro) → A: su límite pasa de 60 s a 120 s; los del radar, a 90 s (assumed).
+- Q: (at build time) How are the «{rama}: {archivo}» entries separated in the title? → A: one per line (`\n`) (assumed).
+- Q: (at build time) Who polls every 10 s? → A: the sidebar's workspace list, while it is mounted (assumed).
+- Q: (at build time) The cap test with 13 watchers takes ~50 s on this Mac (each process is expensive) → A: its limit goes from 60 s to 120 s; the radar ones, to 90 s (assumed).
 
-### Lecciones para cada agente (lessons-first, 11 nov 2026)
+### Lessons for every agent (lessons-first, 11 nov 2026)
 
-- Atril recuerda a cada agente las lecciones del repo con una frase fija; el contenido lo lee el agente.
+- Atril reminds every agent of the repo's lessons with a fixed sentence; the agent reads the content.
 
 #### Alternatives that lost
 
 | Considered | Why it lost |
 |---|---|
-| Pegar el contenido en el prompt | se queda viejo y engorda el contexto; el agente puede leerlo |
-| Ponerlo en el `CLAUDE.md` del repo | escribe en el repo de la persona |
+| Paste the content in the prompt | goes stale and bloats the context; the agent can read it |
+| Put it in the repo's `CLAUDE.md` | writes into the person's repo |
 
 #### Decision log, answers as given (2026-11-11)
-- Q: (revisión en frío) ¿Y el comando que enseña «Empezar»? → A: mira el archivo en la carpeta del repo elegido (el worktree sale de ella); sin repo elegido, no lo lleva. El que se lanza mira la carpeta del trabajo (assumed).
-- Q: (revisión en frío) ¿QA y el `argv` a medida? → A: el agente de QA no lo lleva; el `argv` a medida es solo de tests (assumed).
-- Q: (revisión en frío) ¿Enlaces? → A: ni `.agents` ni `lessons.md` pueden ser enlaces (`lstat` de los dos) (assumed).
-- Q: ¿Cómo llegan las lecciones al agente? → A: Atril añade al arrancar `--append-system-prompt` con una frase fija que le pide leer `.agents/lessons.md` antes de empezar; no copia el contenido (el agente lo lee del repo, siempre al día) (assumed).
-- Q: ¿Siempre? → A: solo si `.agents/lessons.md` es un archivo normal dentro de la carpeta del trabajo (no un enlace); si no, nada cambia (assumed).
+- Q: (cold review) And the command that «Empezar» shows? → A: it looks at the file in the chosen repo's folder (the worktree comes from it); with no repo chosen, it does not carry it. The one that is launched looks at the workspace's folder (assumed).
+- Q: (cold review) QA and the custom `argv`? → A: the QA agent does not carry it; the custom `argv` is for tests only (assumed).
+- Q: (cold review) Links? → A: neither `.agents` nor `lessons.md` may be links (`lstat` of both) (assumed).
+- Q: How do the lessons reach the agent? → A: on startup Atril adds `--append-system-prompt` with a fixed sentence asking it to read `.agents/lessons.md` before starting; it does not copy the content (the agent reads it from the repo, always up to date) (assumed).
+- Q: Always? → A: only if `.agents/lessons.md` is a regular file inside the workspace's folder (not a link); otherwise nothing changes (assumed).
 
-### Dónde se atasca (stuck, 11 nov 2026)
+### Where it gets stuck (stuck, 11 nov 2026)
 
-- Los tiempos por tramo salen de git al cerrar el trabajo; Atril no vigila tiempos mientras trabajas.
+- The per-stage times come from git when the workspace is closed; Atril does not watch times while you work.
 
 #### Alternatives that lost
 
 | Considered | Why it lost |
 |---|---|
-| Vigilar el paso en vivo | el vigilante solo mira el trabajo elegido; los demás se perderían |
-| Tiempos de la forja (MR) | otra llamada de red y otra fuente; queda para después |
+| Watch the step live | the watcher only looks at the chosen workspace; the others would be lost |
+| Forge (MR) times | another network call and another source; left for later |
 
 #### Decision log, answers as given (2026-11-11)
-- Q: (revisión en frío) ¿Cuándo es «cerrar»? → A: el momento en que `historyEntry` corre, justo antes de quitar el trabajo (assumed).
-- Q: (revisión en frío) ¿Qué es «marcar una casilla»? → A: un commit en el que sube el número de casillas cerradas que da `parseBoxes` (`src/main/flow/checklist.ts`) respecto al commit anterior del documento (assumed).
-- Q: (revisión en frío) ¿Qué commits? → A: los de la rama, `git log <baseCommit>..HEAD -- <proposal.md>`, del más antiguo al más nuevo; un commit donde el archivo ya no existe (aterrizado) se salta (assumed).
-- Q: (revisión en frío) ¿Mediana y empates? → A: de los 20 más recientes, los que tengan ese tramo; con número par, la media de los dos centrales; empate: el primero en orden Spec, Plan, Construir, Cierre; menos de un minuto se escribe «<1 min». El titular va dentro de Terminados, visible al desplegarlo (assumed).
-- Q: ¿De dónde salen los tiempos? → A: de git, una vez, al cerrar el trabajo: los commits del documento del cambio (`.agents/changes/<cambio>/proposal.md`) marcan cuándo se escribió la spec, cuándo apareció el checklist y cuándo se marcó la última casilla; el principio es la creación del trabajo y el final, su cierre (assumed).
-- Q: ¿Qué tramos? → A: Spec (de abrir a la spec escrita), Plan (hasta el checklist), Construir (hasta la última casilla), Cierre (hasta cerrar el trabajo: revisar, MR, aterrizar) (assumed).
-- Q: (al construir) ¿Contra qué cuenta el primer commit de la rama si sube casillas? → A: contra 0; el documento en `baseCommit` no cuenta (assumed).
-- Q: (al construir) ¿Y si no sale ningún tramo? → A: la línea no lleva `steps` (assumed).
-- Q: (al construir) ¿Cómo se redondea {d}? → A: hacia abajo, en una sola unidad (105 min → «1 h»); «Cierre» en inglés es «Wrap-up» (assumed).
-- Q: ¿Dónde se ve? → A: en Terminados: los tramos de cada trabajo en su fila y, arriba, el tramo con la mediana más alta de los últimos 20 (assumed).
+- Q: (cold review) When is «closing»? → A: the moment `historyEntry` runs, right before the workspace is removed (assumed).
+- Q: (cold review) What is «ticking a box»? → A: a commit in which the number of closed boxes given by `parseBoxes` (`src/main/flow/checklist.ts`) goes up compared with the document's previous commit (assumed).
+- Q: (cold review) Which commits? → A: the branch's, `git log <baseCommit>..HEAD -- <proposal.md>`, from oldest to newest; a commit where the file no longer exists (landed) is skipped (assumed).
+- Q: (cold review) Median and ties? → A: of the 20 most recent, those that have that stage; with an even number, the mean of the two middle ones; tie: the first in the order Spec, Plan, Construir, Cierre; under a minute is written «<1 min». The headline goes inside Terminados, visible when it is expanded (assumed).
+- Q: Where do the times come from? → A: from git, once, when the workspace is closed: the commits of the change document (`.agents/changes/<cambio>/proposal.md`) mark when the spec was written, when the checklist appeared and when the last box was ticked; the start is the workspace's creation and the end, its closing (assumed).
+- Q: Which stages? → A: Spec (from opening to the spec written), Plan (up to the checklist), Construir (up to the last box), Cierre (up to closing the workspace: review, MR, landing) (assumed).
+- Q: (at build time) What does the branch's first commit count against if it raises boxes? → A: against 0; the document at `baseCommit` does not count (assumed).
+- Q: (at build time) And if no stage comes out? → A: the line carries no `steps` (assumed).
+- Q: (at build time) How is {d} rounded? → A: down, in a single unit (105 min → «1 h»); «Cierre» in English is «Wrap-up» (assumed).
+- Q: Where is it seen? → A: in Terminados: each workspace's stages in its row and, at the top, the stage with the highest median of the last 20 (assumed).
 
-### QA en la MR (qa-to-mr, 11 nov 2026)
+### QA in the MR (qa-to-mr, 11 nov 2026)
 
-- La QA llega a la MR como un comentario que la persona publica; nunca sola.
+- QA reaches the MR as a comment the person publishes; never on its own.
 
 #### Alternatives that lost
 
 | Considered | Why it lost |
 |---|---|
-| Ponerlo en la descripción de la MR | la escribe el agente al crearla; reescribirla pisa lo suyo |
-| Subir capturas | GitHub no tiene API para imágenes en comentarios; GitLab sí: queda para después |
+| Put it in the MR description | the agent writes it when creating the MR; rewriting it tramples its work |
+| Upload screenshots | GitHub has no API for images in comments; GitLab does: left for later |
 
 #### Decision log, answers as given (2026-11-11)
-- Q: (revisión en frío) ¿Qué MR, exactamente? → A: una de «Mías» (la persona es la autora, así se puede comentar) cuya rama es la del trabajo y cuyo proyecto resuelve al repo del trabajo con la misma búsqueda que `openmr`; con varias, la actualizada más tarde; sin ninguna, no hay botón (assumed).
-- Q: (revisión en frío) ¿Y si nunca se abrió la pantalla MR? → A: main pide la lista de MRs él mismo, reutilizando la última si tiene menos de 60 s (assumed).
-- Q: (revisión en frío) ¿Idioma y criterios sin pasos? → A: el comentario va en el idioma de la app; un criterio que falla lleva su nota, o si no su último paso, como cita (`> `); sin objetivo, la primera línea no lo nombra (assumed).
-- Q: (construcción) ¿Cómo lleva el fallo del comentario W150 completo? → A: `threads.reply` devuelve también `detail` y `fix` cuando la forja falla (`MrReply` los admite); `threads.test.ts` exige ahora los tres; y `openmr.ts` exporta `remoteNaming` para que la QA resuelva el repo igual que «Seguir en Atril» (assumed).
-- Q: (construcción) ¿Formato del comentario? → A: cada línea es su propio párrafo (líneas separadas por una en blanco) para que la cita `> ` no se trague la siguiente; el texto del criterio sin su id; el objetivo como su pestaña («Chrome», «Android · app») (assumed).
-- Q: ¿Cuándo llega a la MR? → A: solo cuando la persona pulsa «Publicar en la MR» en la pantalla QA; Atril no crea la MR (la abre el agente) ni publica solo (assumed).
-- Q: ¿Qué se publica? → A: un comentario general con el objetivo probado y una línea por criterio — Pasa, Falla o Sin probar — y, en los que fallan, su último paso; las capturas no (GitHub no tiene API para subir imágenes a un comentario): el comentario dice que están en Atril (assumed).
-- Q: ¿Cómo sabe Atril cuál es la MR? → A: la MR abierta de la lista de MRs cuya rama y repo coinciden con los del trabajo (assumed).
+- Q: (cold review) Which MR, exactly? → A: one of «Mías» (the person is the author, so it can be commented on) whose branch is the workspace's and whose project resolves to the workspace's repo with the same lookup as `openmr`; with several, the most recently updated; with none, there is no button (assumed).
+- Q: (cold review) And if the MR screen was never opened? → A: main requests the MR list itself, reusing the last one if it is under 60 s old (assumed).
+- Q: (cold review) Language and criteria without steps? → A: the comment is in the app's language; a failing criterion carries its note, or else its last step, as a quote (`> `); with no target, the first line does not name it (assumed).
+- Q: (construction) How does the failure of the W150 comment get fully carried? → A: `threads.reply` also returns `detail` and `fix` when the forge fails (`MrReply` admits them); `threads.test.ts` now requires all three; and `openmr.ts` exports `remoteNaming` so that QA resolves the repo the same way as «Seguir en Atril» (assumed).
+- Q: (construction) Comment format? → A: each line is its own paragraph (lines separated by a blank one) so that the `> ` quote does not swallow the next one; the criterion text without its id; the target as its tab («Chrome», «Android · app») (assumed).
+- Q: When does it reach the MR? → A: only when the person presses «Publicar en la MR» on the QA screen; Atril does not create the MR (the agent opens it) and does not publish by itself (assumed).
+- Q: What is published? → A: a general comment with the target tested and one line per criterion — Pasa, Falla or Sin probar — and, on those that fail, their last step; not the screenshots (GitHub has no API to upload images to a comment): the comment says they are in Atril (assumed).
+- Q: How does Atril know which MR it is? → A: the open MR in the MR list whose branch and repo match the workspace's (assumed).
 
-### Notificaciones (main) (notify-core, 12 nov 2026)
+### Notifications (main) (notify-core, 12 nov 2026)
 
 - See `proposal.md` → Prior decisions; all of them apply here.
 
-### Terminal de solo lectura (terminal-read-only, 14 nov 2026)
+### Read-only terminal (terminal-read-only, 14 nov 2026)
 
-- **Terminal de solo lectura** (Pau, 12 nov): ninguna entrada de la persona pasa por el xterm.
-- **Libretto no cambia** (assumed): Atril se adapta a cómo pregunta Libretto, nunca al revés.
-- **`kind` en el estado** (assumed): amplía, no sustituye, el prefijo del texto de `notify-core`.
-- **Teclas por tmux como transporte** (assumed). Techo: depende del dibujo de la TUI de Claude Code; el Agent SDK lo sustituye.
+- **Read-only terminal** (Pau, 12 nov): no input from the person goes through the xterm.
+- **Libretto does not change** (assumed): Atril adapts to how Libretto asks, never the other way round.
+- **`kind` in the state** (assumed): extends, does not replace, the text prefix of `notify-core`.
+- **Keys through tmux as the transport** (assumed). Ceiling: depends on how Claude Code's TUI draws; the Agent SDK replaces it.
 
 #### Alternatives that lost
 
 | Considered | Why it lost |
 |---|---|
-| Agent SDK ya | reescribe tmux, pausa, reabrir y respuestas; Pau eligió paso a paso |
-| Dejar la terminal escribible con un aviso | Pau: «deberían ser solo lectura» |
-| Hook `PermissionRequest` que decide él | bloquea el gancho esperando a Atril; las teclas ya funcionan y el SDK lo resolverá con datos |
+| Agent SDK now | rewrites tmux, pause, reopen and replies; Pau chose step by step |
+| Leave the terminal writable with a warning | Pau: «they should be read-only» |
+| `PermissionRequest` hook that decides | blocks the hook waiting for Atril; the keys already work and the SDK will solve it with data |
 
 #### Decision log, answers as given (2026-11-14)
-- Q: ¿Cómo se hace la terminal de solo lectura? → A: «Paso a paso (Recommended)»: ya, con los ganchos que hay; el Agent SDK como cambio aparte después.
-- Q: ¿Se toca Libretto? → A: no; Libretto sigue preguntando con `AskUserQuestion` y terminando turnos con texto; Atril solo cambia quién contesta (assumed, «te dejo a tu elección»).
-- Q: ¿Cómo se sabe qué espera el agente? → A: un campo nuevo `kind` en el estado (`question`, `permission`, `turn-end`, `idle`), además del texto; sustituye a «pregunta frente a fin de turno por prefijo» de `notify-core` sin romperlo: el texto sigue con su prefijo (assumed). Si es incorrecto: se deduce del prefijo y de `notification_type` en main.
-- Q: ¿Cómo contesta Atril? → A: como hoy, con teclas al panel por tmux (`sendKey`, `pressKey`, `pasteText`); la persona nunca teclea en la terminal (assumed). El Agent SDK lo cambiará por datos.
-- Q: ¿Permitir un permiso cómo? → A: «Permitir» manda `1` (Sí, una vez), «Denegar» manda Escape; «Permitir siempre» queda fuera (assumed: cambia ajustes del proyecto sin que la persona lo vea).
-- Q: ¿Varias preguntas en un `AskUserQuestion`? → A: la tarjeta las enseña de una en una, en el orden de Claude Code; contestar una pasa a la siguiente (assumed; se comprueba en la app real con Claude de verdad).
-- Q: ¿Selección múltiple? → A: fuera de este cambio: la tarjeta enseña la pregunta y las opciones y dice «Contesta por escrito abajo» (assumed). Techo: con el SDK llega como dato.
-- Q: ¿Y en modo Automático? → A: «cuando es modo automático… no tiene que salir nada, o sea, tiene que seguir hacia adelante la gente, con sus decisiones y todo» (Pau, 12 nov). Atril contesta él mismo: la opción recomendada en una pregunta, «Sigue con el plan; no hagas nada que no esté en él.» en un fin de turno; solo se para en lo que ya acordamos que pregunta (push y MR, W59) y en un fallo de verdad (una puerta que falla dos veces, una herramienta que falta) (assumed para las dos excepciones; si Pau quiere también el push sin preguntar, cambia W59).
-- Q: ¿Un permiso en Automático se concede solo? → A: no; el modo automático de permisos de Claude Code ya decide casi todo, y lo que aun así pregunte sale como tarjeta: conceder a ciegas lo que el propio Claude Code no se atreve es un riesgo de seguridad (assumed).
-- Q: ¿Qué manda «Sigue»? → A: nunca un «sí» suelto: en el dogfood, «Sí, sigue» se tomó como aprobación de lo último que Claude había ofrecido (publicar un comentario en la PR #11). Manda «Sigue con el plan; no hagas nada que no esté en él.» (assumed).
-- Q: ¿Queda alguna forma de escribir en la terminal? → A: no dentro de Atril; «Abrir en Terminal» (ya existe) sigue para quien quiera la TUI cruda (assumed).
+- Q: How is the terminal made read-only? → A: «Paso a paso (Recommended)»: now, with the hooks that exist; the Agent SDK as a separate change afterwards.
+- Q: Is Libretto touched? → A: no; Libretto keeps asking with `AskUserQuestion` and ending turns with text; Atril only changes who answers (assumed, «I leave it to you»).
+- Q: How do we know what the agent is waiting for? → A: a new `kind` field in the state (`question`, `permission`, `turn-end`, `idle`), besides the text; it replaces «question versus turn end by prefix» from `notify-core` without breaking it: the text keeps its prefix (assumed). If incorrect: it is deduced from the prefix and `notification_type` in main.
+- Q: How does Atril answer? → A: as today, with keys to the pane through tmux (`sendKey`, `pressKey`, `pasteText`); the person never types in the terminal (assumed). The Agent SDK will change this to data.
+- Q: How is a permission allowed? → A: «Permitir» sends `1` (Yes, once), «Denegar» sends Escape; «Permitir siempre» stays out (assumed: it changes project settings without the person seeing it).
+- Q: Several questions in one `AskUserQuestion`? → A: the card shows them one at a time, in Claude Code's order; answering one moves to the next (assumed; checked in the real app with a real Claude).
+- Q: Multiple selection? → A: out of this change: the card shows the question and the options and says «Contesta por escrito abajo» (assumed). Ceiling: with the SDK it arrives as data.
+- Q: And in Automatic mode? → A: «when it is automatic mode… nothing should show up, that is, people have to keep moving forward, with their decisions and everything» (Pau, 12 nov). Atril answers itself: the recommended option on a question, «Sigue con el plan; no hagas nada que no esté en él.» on a turn end; it only stops at what we already agreed asks (push and MR, W59) and at a real failure (a gate that fails twice, a missing tool) (assumed for the two exceptions; if Pau wants push without asking too, change W59).
+- Q: Is a permission granted by itself in Automatic? → A: no; Claude Code's automatic permission mode already decides almost everything, and what it still asks shows as a card: blindly granting what Claude Code itself does not dare is a security risk (assumed).
+- Q: What does «Sigue» send? → A: never a bare «yes»: in dogfooding, «Sí, sigue» was taken as approval of the last thing Claude had offered (publishing a comment on PR #11). It sends «Sigue con el plan; no hagas nada que no esté en él.» (assumed).
+- Q: Is there still any way to type in the terminal? → A: not inside Atril; «Abrir en Terminal» (already exists) remains for anyone who wants the raw TUI (assumed).
 
-- Q: ¿W74–W76 se amplían o se sustituyen? → A: se sustituyen, marcados `(amended)`: W74 guarda todas las preguntas sin recortar, W75 cambia sus formas de respuesta (sin «Sí, sigue»), W76 pasa a la tarjeta por tipo (assumed).
-- Q: ¿En Automático se suprime también el aviso en Avisos? → A: sí, en lo que Atril contesta solo no hay aviso de ningún tipo; V3 y W15 se enmiendan (assumed).
-- Q: ¿Y los paneles de shell de ⌘D? → A: también de solo lectura; ⌘D/⌘⇧D dejan de hacer nada y «Abrir en Terminal» da la shell escribible (assumed).
-- Q: ¿⌘↩? → A: envía el compositor solo cuando tiene el foco; en lo demás manda N2/W79 (assumed).
-- Q: ¿El recordatorio de inactividad cambia el `kind`? → A: no; pone `idle: true` y conserva el resto (W195 enmendado) (assumed).
-- Q: ¿Cuándo se reinicia el tope de 3 de Automático? → A: tras 30 s seguidos trabajando, no con el instante que sigue a nuestro propio «Sigue» (lo vimos en la prueba) (assumed).
-- Q: ¿La parada del push en Automático sale del texto o del permiso de W59? → A: del permiso de W59 (W207); no se lee el texto (assumed).
-- Q: ¿Selección múltiple en Automático? → A: se para como en Manual (assumed).
-- Q: ¿Quién lleva qué pregunta toca? → A: main, por sesión, desde 0 en cada entrada en needs-you; tras la última, Enter para enviar (assumed; se comprueba con Claude real).
-- Q: ¿Tareas de shell en segundo plano? → A: fuera; solo subagentes, que el gancho ya registra. Techo: con el Agent SDK llega como dato (assumed).
-- Q: ¿De dónde sale la herramienta de un permiso? → A: del último PreToolUse de esa sesión, que el gancho recuerda (assumed).
-- Q: ¿W45 sigue avisando a Claude? → A: no; el gancho reclama el umbral sin decirle nada y F25 lleva los botones; «Dejarla así» se guarda en `ui.json` `bigDismissed[workspaceId] = k` y sobrevive al reinicio (assumed).
+- Q: Are W74–W76 extended or replaced? → A: replaced, marked `(amended)`: W74 stores all the questions uncut, W75 changes its answer shapes (no «Sí, sigue»), W76 becomes the per-kind card (assumed).
+- Q: In Automatic is the notice in Avisos also suppressed? → A: yes, for what Atril answers by itself there is no notice of any kind; V3 and W15 are amended (assumed).
+- Q: And the ⌘D shell panes? → A: also read-only; ⌘D/⌘⇧D stop doing anything and «Abrir en Terminal» gives the writable shell (assumed).
+- Q: ⌘↩? → A: sends the composer only when it has focus; elsewhere N2/W79 rules (assumed).
+- Q: Does the idle reminder change the `kind`? → A: no; it sets `idle: true` and keeps the rest (W195 amended) (assumed).
+- Q: When does Automatic's cap of 3 reset? → A: after 30 s straight working, not with the instant that follows our own «Sigue» (we saw it in the test) (assumed).
+- Q: Does the push stop in Automatic come from the text or from W59's permission? → A: from W59's permission (W207); the text is not read (assumed).
+- Q: Multiple selection in Automatic? → A: it stops as in Manual (assumed).
+- Q: Who tracks which question is next? → A: main, per session, from 0 on each entry into needs-you; after the last one, Enter to submit (assumed; checked with a real Claude).
+- Q: Background shell tasks? → A: out of scope; only subagents, which the hook already records. Ceiling: with the Agent SDK it arrives as data (assumed).
+- Q: Where does a permission's tool come from? → A: from that session's last PreToolUse, which the hook remembers (assumed).
+- Q: Does W45 still warn Claude? → A: no; the hook claims the threshold without telling it anything and F25 carries the buttons; «Dejarla así» is stored in `ui.json` `bigDismissed[workspaceId] = k` and survives a restart (assumed).
 
-- Box 1 toca fuera de «In»: `src/main/menu.ts` (fuera «Dividir a la derecha/abajo», ⌘D/⌘⇧D, W196) y los tests que montaban el menú con `split` (`src/main/i18n.test.ts` cambia la etiqueta de ejemplo a «Pausar»; `src/renderer/flow/boxes.test.ts` comprueba que ⌘D/⌘⇧D ya no existen; `tutorial`, `pause`, `focus` y `overview` solo pierden `split`); `src/renderer/tour/Tour.tsx` (el paso de la terminal decía «escribe en él» y ⌘D); `src/main/pty.test.ts` pierde las llamadas a `input`, que ya no existe. `splitPane` sigue en `tmux.ts`: sus tests prueban otros criterios (W163, el destino exacto) (assumed).
-- Box 2: «an asked question keeps its options» (la prueba vieja de W74) se sustituye por la que nombra W74 enmendado. El gancho ya no escribe `options`/`multiSelect`; main los sigue leyendo en estados viejos (Constraints). W198 «recordar por sesión» vive en una opción de la sesión de tmux (`@atril-tool`), leída y escrita en la misma llamada `display` que el gancho ya hacía: guardarla en disco rompía la prueba de A1 («hook appends a short summary, never the payload»: ningún archivo bajo `ATRIL_HOME` con el comando). Así un comando solo llega a disco cuando un permiso espera por él, como pide W198 (assumed).
-- Box 3: «a quick answer reaches its own pane» (src/main/reply.test.ts, la prueba vieja de W75) se quita: W75 enmendado cita las dos de `status.test.ts`, que cubren sus cláusulas (pantalla propia, opción fuera de rango, estado que ya no espera, formas raras, trabajo que ya no está). N3 («a number answers the option with its key») ahora espera el Enter final de W75 tras la última pregunta. `QuickReplies.tsx` y su test pasan a `{ option, question }` y «Sigue» hasta que box 4 los sustituya. Fuera de «In»: `src/main/activity.ts` (W199: la línea «Esperando a un subagente» encima y el vigilante también mira `state/`), `src/preload/activity-i18n.ts` (W203 para líneas viejas), `src/renderer/mockApi.ts` y `src/renderer/overview.test.ts` (la forma nueva) (assumed).
-- W75 dice «a gone workspace or pane answers W53's sentence», pero W53 es del runner: se usa la de N3 («No se pudo enviar: ese trabajo ya no está»), como hasta ahora (assumed).
-- W203 se arregla en origen: `summarise.mjs` escribe «Te pregunta: ¿Puede usar {tool}?», «Te pregunta: ¿Puede seguir?» y «Claude te necesita» en lugar de los mensajes en inglés de Claude Code; las líneas viejas se traducen al enseñarlas (assumed).
-- Box 4: `QuickReplies.tsx` se borra y con él la IPC `status.quickReplies` (main la sigue usando para N3); su prueba vieja de W76 («a waiting row answers with one press») se quita de `src/renderer/quickreplies.test.ts`, que se queda con «the question card reads in every theme»; la del fila/tira encima de la terminal vive ahora en «a card answers by mouse and by number keys». W82 sigue diciendo que en «Todos» una pregunta multiSelect no lleva tarjeta: `AgentCard` tiene `skipMultiSelect` solo para ahí; `src/renderer/overview.test.ts` cambia el nombre del grupo y usa `waits`. Fuera de «In»: `src/renderer/styles.css` (cabecera, «Recomendada», descripción y la tira) (assumed).
-- La prueba de W76–W202 se escribió antes que `AgentCard.tsx`, pero no se vio en rojo: se corrió por primera vez con el componente ya escrito.
-- Box 5: el compositor sustituye la pista «Escribe en la terminal como siempre» (W143 decía que la pista no sale con el agente parado: ahora la pista no existe y el compositor sale desactivado; `src/renderer/reopen.test.ts` comprueba eso en lugar de la pista). ⌘↩ es el acelerador del menú «Siguiente», que Electron atiende antes que la página: `src/renderer/App.tsx` envía el compositor cuando tiene el foco y si no sigue con N2/W79 (fuera de «In»). Main: `composeAgent` en `status.ts` y la IPC `status.compose` (assumed). Su CSS viajó en el commit de box 4.
-- Box 6: lo que Automático contesta él mismo se lee como `working` en `createStatus` (por eso no hay tarjeta ni aviso, V3); la espera contestada se recuerda por su `at` para no contestarla dos veces. «Decidió: …» es una línea de actividad que pone main (como la de W199) hasta que el agente escribe otra; con varias preguntas, las etiquetas van unidas por « · ». Una opción sin `options` o una llamada con una pregunta sin opciones se para como Manual. Si mandar falla, se para como Manual. Las pruebas de box 3, 5 y 6 se escribieron antes que el código pero se corrieron con el código ya puesto; para ver que muerden, se rompió el código a propósito (`automatic` desactivado: dos de tres en rojo; la tercera es un «nunca» que solo cae si Atril concede) y se devolvió (assumed).
-- Box 7: `sizeNotice` pasa a `claimSize` (devuelve el `k` reclamado) y el gancho ya no imprime nada; la prueba vieja de W45 («a large branch asks claude to offer a split», src/main/activity.test.ts) se quita: la nueva de `agent.test.ts` corre el gancho de verdad y repite sus casos. La de F25 («a large branch warns at the top of the panel») la sustituye «a large branch offers to split it from the warning». Fuera de «In»: `src/renderer/flow/FlowPanel.tsx`, `src/main/ui.ts` y `src/preload/api.ts` (`bigDismissed`, que se mezcla clave a clave como `folded`; prueba nueva «remembers each branch-size threshold left as it is, per work» en `src/main/ui.test.ts`), `resources/branchsize.mjs`/`.d.mts`, `src/renderer/tour/Tour.tsx` (el paso de las casillas decía que Atril ya se lo había pedido a Claude) y `src/renderer/styles.css` (assumed).
-- Box 8 (app real): con la terminal enganchada con `attach -r`, tmux 3.7 rechaza todo `send-keys` a esa sesión («client is read-only»): ninguna respuesta, pausa ni Enter llegaba. Los tests no lo veían porque ninguno engancha un cliente de solo lectura. Arreglo en `src/main/tmux.ts` (fuera de «In»): si `send-keys` falla por eso, los mismos bytes van como pegado sin corchetes (`paste-buffer -r`), que llega como tecleado; `Enter` es `\r` y `Escape` es `\x1b`. Prueba nueva con un cliente `-r` de verdad: «keys reach a pane that a read-only client watches» (src/main/tmux.test.ts). Las pruebas existentes siguen viendo `send-keys` porque no enganchan clientes (assumed). Se comprueba con Claude real que un dígito tecleado así lo toma el selector.
-- Box 8 (app real), dos arreglos más: la tarjeta de la fila y la de encima de la terminal no se enteraban de una respuesta dada en la otra (con varias preguntas, la fila seguía ofreciendo la primera, que main ya rechaza): ahora una respuesta avisa a las dos y, contestadas todas, la tarjeta dice solo «Enviado» (caso nuevo en «a question card answers with its options»). Y «Decidió: …» no salía hasta la siguiente escritura del gancho: el feed de actividad relee cuando Automático decide (assumed).
-- Box 8, app real (dev, `claude` falso detrás de un `SHELL` falso, paneles con `cat` para ver cada tecla): cuatro filas con tarjeta (pregunta con dos preguntas y porqués, permiso de Bash, fin de turno, fin de turno con `idle`); teclear en la terminal no llegó al panel; «1» con la tarjeta enfocada mandó `1`+Enter y las dos tarjetas pasaron a la segunda pregunta; la última mandó su número, Enter y el Enter final; ⌘↩ en el compositor mandó el texto y vació la caja; «Permitir» mandó `1`; el fin de turno enfocó el compositor y «Sigue» pegó «Sigue con el plan…»; Automático contestó la recomendada («Decidió: Contarlos como festivos» en la fila, sin tarjeta), pegó «Sigue con el plan…» tres veces y a la cuarta enseñó la tarjeta; un permiso en Automático enseñó su tarjeta. Sin errores de consola. Foto: `bocetos/novedades/tarjetas.png`. Sin comprobar (necesita Claude real, no se gastó cuota): que el selector de Claude Code tome el dígito + Enter y el Enter final con varias preguntas, y que «Permitir» = `1` en su permiso.
+- Box 1 touches outside «In»: `src/main/menu.ts` (out go «Dividir a la derecha/abajo», ⌘D/⌘⇧D, W196) and the tests that mounted the menu with `split` (`src/main/i18n.test.ts` changes the example label to «Pausar»; `src/renderer/flow/boxes.test.ts` checks that ⌘D/⌘⇧D no longer exist; `tutorial`, `pause`, `focus` and `overview` only lose `split`); `src/renderer/tour/Tour.tsx` (the terminal step said «escribe en él» and ⌘D); `src/main/pty.test.ts` loses the calls to `input`, which no longer exists. `splitPane` stays in `tmux.ts`: its tests prove other criteria (W163, the exact destination) (assumed).
+- Box 2: «an asked question keeps its options» (W74's old proof) is replaced by the one that names amended W74. The hook no longer writes `options`/`multiSelect`; main still reads them from old states (Constraints). W198 «remember per session» lives in an option of the tmux session (`@atril-tool`), read and written in the same `display` call the hook already made: storing it on disk broke A1's proof («hook appends a short summary, never the payload»: no file under `ATRIL_HOME` with the command). That way a command reaches disk only when a permission is waiting on it, as W198 asks (assumed).
+- Box 3: «a quick answer reaches its own pane» (src/main/reply.test.ts, W75's old proof) is removed: amended W75 cites the two in `status.test.ts`, which cover its clauses (own pane, option out of range, a state that no longer waits, odd shapes, a workspace that is gone). N3 («a number answers the option with its key») now expects W75's final Enter after the last question. `QuickReplies.tsx` and its test move to `{ option, question }` and «Sigue» until box 4 replaces them. Outside «In»: `src/main/activity.ts` (W199: the «Esperando a un subagente» line on top and the watcher also looks at `state/`), `src/preload/activity-i18n.ts` (W203 for old lines), `src/renderer/mockApi.ts` and `src/renderer/overview.test.ts` (the new shape) (assumed).
+- W75 says «a gone workspace or pane answers W53's sentence», but W53 belongs to the runner: N3's sentence is used («No se pudo enviar: ese trabajo ya no está»), as until now (assumed).
+- W203 is fixed at the source: `summarise.mjs` writes «Te pregunta: ¿Puede usar {tool}?», «Te pregunta: ¿Puede seguir?» and «Claude te necesita» in place of Claude Code's English messages; old lines are translated when shown (assumed).
+- Box 4: `QuickReplies.tsx` is deleted and with it the IPC `status.quickReplies` (main still uses it for N3); its old W76 proof («a waiting row answers with one press») is removed from `src/renderer/quickreplies.test.ts`, which keeps «the question card reads in every theme»; the row/strip-above-the-terminal one now lives in «a card answers by mouse and by number keys». W82 still says that in «Todos» a multiSelect question carries no card: `AgentCard` has `skipMultiSelect` only for there; `src/renderer/overview.test.ts` changes the group's name and uses `waits`. Outside «In»: `src/renderer/styles.css` (header, «Recomendada», description and the strip) (assumed).
+- The proof of W76–W202 was written before `AgentCard.tsx`, but it was not seen red: it was run for the first time with the component already written.
+- Box 5: the composer replaces the hint «Escribe en la terminal como siempre» (W143 said the hint does not show with the agent stopped: now the hint does not exist and the composer shows disabled; `src/renderer/reopen.test.ts` checks that instead of the hint). ⌘↩ is the accelerator of the «Siguiente» menu, which Electron handles before the page: `src/renderer/App.tsx` sends the composer when it has focus and otherwise continues with N2/W79 (outside «In»). Main: `composeAgent` in `status.ts` and the IPC `status.compose` (assumed). Its CSS travelled in box 4's commit.
+- Box 6: what Automatic answers itself is read as `working` in `createStatus` (that is why there is no card or notice, V3); the answered wait is remembered by its `at` so as not to answer it twice. «Decidió: …» is an activity line that main sets (like W199's) until the agent writes another; with several questions, the labels are joined by « · ». An option without `options` or a call with a question without options stops as Manual. If sending fails, it stops as Manual. The proofs of boxes 3, 5 and 6 were written before the code but run with the code already in place; to see that they bite, the code was broken on purpose (`automatic` disabled: two of three red; the third is a «never» that only falls if Atril grants) and put back (assumed).
+- Box 7: `sizeNotice` becomes `claimSize` (returns the claimed `k`) and the hook no longer prints anything; W45's old proof («a large branch asks claude to offer a split», src/main/activity.test.ts) is removed: the new one in `agent.test.ts` runs the real hook and repeats its cases. F25's («a large branch warns at the top of the panel») is replaced by «a large branch offers to split it from the warning». Outside «In»: `src/renderer/flow/FlowPanel.tsx`, `src/main/ui.ts` and `src/preload/api.ts` (`bigDismissed`, which is merged key by key like `folded`; new proof «remembers each branch-size threshold left as it is, per work» in `src/main/ui.test.ts`), `resources/branchsize.mjs`/`.d.mts`, `src/renderer/tour/Tour.tsx` (the checkbox step said Atril had already asked Claude for it) and `src/renderer/styles.css` (assumed).
+- Box 8 (real app): with the terminal attached with `attach -r`, tmux 3.7 rejects every `send-keys` to that session («client is read-only»): no answer, pause or Enter got through. The tests did not see it because none attaches a read-only client. Fix in `src/main/tmux.ts` (outside «In»): if `send-keys` fails for that reason, the same bytes go as an unbracketed paste (`paste-buffer -r`), which arrives as typed; `Enter` is `\r` and `Escape` is `\x1b`. New proof with a real `-r` client: «keys reach a pane that a read-only client watches» (src/main/tmux.test.ts). Existing tests still see `send-keys` because they attach no clients (assumed). To be checked with a real Claude that a digit typed this way is taken by the selector.
+- Box 8 (real app), two more fixes: the row's card and the one above the terminal did not learn of an answer given in the other (with several questions, the row kept offering the first, which main already rejects): now an answer notifies both and, once all are answered, the card says just «Enviado» (new case in «a question card answers with its options»). And «Decidió: …» did not show until the hook's next write: the activity feed rereads when Automatic decides (assumed).
+- Box 8, real app (dev, fake `claude` behind a fake `SHELL`, panes with `cat` to see each key): four rows with a card (question with two questions and reasons, Bash permission, turn end, turn end with `idle`); typing in the terminal did not reach the pane; «1» with the card focused sent `1`+Enter and both cards moved to the second question; the last one sent its number, Enter and the final Enter; ⌘↩ in the composer sent the text and emptied the box; «Permitir» sent `1`; the turn end focused the composer and «Sigue» pasted «Sigue con el plan…»; Automatic answered the recommended one («Decidió: Contarlos como festivos» in the row, no card), pasted «Sigue con el plan…» three times and on the fourth showed the card; a permission in Automatic showed its card. No console errors. Photo: `bocetos/novedades/tarjetas.png`. Not checked (needs a real Claude, no quota was spent): that Claude Code's selector takes the digit + Enter and the final Enter with several questions, and that «Permitir» = `1` on its permission.
 
-### Escalera de corrección (harness-ladder, 20 nov 2026)
+### Correction ladder (harness-ladder, 20 nov 2026)
 
-- (2026-11-19, harness-ladder) Una lección que se repite sube al peldaño más alto que la pare (diseño > tipo o lint > test > texto); una entrada nueva en `lessons.md` nombra las lecciones sustituidas para que la retro no las vuelva a contar.
-- (2026-11-19, harness-ladder) El hook de commit corre typecheck y lint, no la suite: la suite sigue en la puerta.
+- (2026-11-19, harness-ladder) A lesson that repeats goes up to the highest rung that stops it (design > type or lint > test > text); a new entry in `lessons.md` names the lessons it replaces so that the retro does not count them again.
+- (2026-11-19, harness-ladder) The commit hook runs typecheck and lint, not the suite: the suite stays at the gate.
 
 #### Alternatives that lost
 
 | Considered | Why it lost |
 |---|---|
-| husky / lefthook | una dependencia para un archivo de tres líneas |
-| Mover `WARN_AT` y los modelos a `src/shared` para aplicar la frontera también a tests | el test que cruza solo compara una constante; mover no evita ningún fallo |
-| Probar las reglas corriendo `pnpm lint` sobre archivos fixture | escribe archivos en el árbol; `lintText` no |
+| husky / lefthook | a dependency for a three-line file |
+| Move `WARN_AT` and the models to `src/shared` to apply the boundary to tests too | the test that crosses only compares a constant; moving prevents no failure |
+| Prove the rules by running `pnpm lint` over fixture files | writes files into the tree; `lintText` does not |
 
 #### Decision log, answers as given (2026-11-20)
-- Q: ¿Qué lecciones suben primero? → A: las que se repiten y caben en una regla que hoy pasa o pasa con pocos arreglos: frontera main↔renderer, mocks de `window.atril` a mano, `homedir()` fuera de su sitio y commits en rojo (assumed; informe en `report.md` de la cola).
-- Q: ¿Las reglas valen también en tests? → A: la frontera no (siete tests la cruzan para comparar constantes; moverlas no evita ningún fallo real); la de mocks solo en tests (assumed).
-- Q: ¿El hook de commit corre la suite entera? → A: no, typecheck y lint: la suite tarda más de 10 min bajo carga; la suite sigue en la puerta (assumed). Si es incorrecto: el hook llama a `gate.sh`.
-- Q: (spec-reviewer) ¿Qué cuenta como importar? → A: declaraciones `import`/`export … from`, de tipos incluidas; `import()` dinámico y `vi.mock` no (assumed: `no-restricted-imports` no los ve y hoy nadie los usa así). Test es un archivo `*.test.ts(x)`; `test-helpers.ts` no lo es. `src/preload/**` queda fuera de la regla.
-- Q: (spec-reviewer) ¿Qué cuenta como asignar `window.atril`? → A: cualquier asignación a una propiedad llamada `atril` (`window.atril =`, `(window as X).atril =`, `globalThis.atril =`); `vi.stubGlobal`, `Object.assign` y `defineProperty` quedan fuera (assumed: nadie los usa para `atril` hoy).
-- Q: (spec-reviewer) ¿Qué cuenta como leer HOME? → A: `process.env.HOME` y `process.env['HOME']`; `env['HOME']` sobre un parámetro (`login-path.ts`) y la lista de variables permitidas de `forge/create.ts` no, porque no buscan la casa del usuario (assumed).
-- Q: (spec-reviewer) ¿Cómo migran los tests sin cambiar lo que prueban? → A: `mockApi` acepta un tercer argumento `over`, un parcial profundo de `AtrilApi` que se mezcla sobre el mock completo; cada test pasa sus stubs de hoy tal cual, promesas que no resuelven incluidas, y sus `expect` no se tocan (assumed).
-- Q: (spec-reviewer) `lessons.md` solo crece: ¿cómo se marcan las cubiertas? → A: una entrada nueva por casilla, `## 2026-11-19 · harness-ladder · arnés`, que nombra las lecciones que la regla sustituye (assumed).
-- Q: ¿Escrituras atómicas e `ipcMain` envuelto? → A: fuera de este cambio: 15 archivos con `writeFile` y 109 `ipcMain` en `index.ts` piden su propio cambio (assumed).
+- Q: Which lessons go up first? → A: those that repeat and fit in a rule that passes today or passes with few fixes: main↔renderer boundary, hand-written `window.atril` mocks, `homedir()` out of its place and red commits (assumed; report in the queue's `report.md`).
+- Q: Do the rules apply in tests too? → A: the boundary does not (seven tests cross it to compare constants; moving them prevents no real failure); the mocks one only in tests (assumed).
+- Q: Does the commit hook run the whole suite? → A: no, typecheck and lint: the suite takes more than 10 min under load; the suite stays at the gate (assumed). If incorrect: the hook calls `gate.sh`.
+- Q: (spec-reviewer) What counts as importing? → A: `import`/`export … from` declarations, type ones included; dynamic `import()` and `vi.mock` do not (assumed: `no-restricted-imports` does not see them and nobody uses them that way today). A test is a `*.test.ts(x)` file; `test-helpers.ts` is not. `src/preload/**` is outside the rule.
+- Q: (spec-reviewer) What counts as assigning `window.atril`? → A: any assignment to a property called `atril` (`window.atril =`, `(window as X).atril =`, `globalThis.atril =`); `vi.stubGlobal`, `Object.assign` and `defineProperty` are out (assumed: nobody uses them for `atril` today).
+- Q: (spec-reviewer) What counts as reading HOME? → A: `process.env.HOME` and `process.env['HOME']`; `env['HOME']` on a parameter (`login-path.ts`) and the allowed-variables list in `forge/create.ts` do not, because they do not look for the user's home (assumed).
+- Q: (spec-reviewer) How do tests migrate without changing what they test? → A: `mockApi` accepts a third argument `over`, a deep partial of `AtrilApi` that is merged over the full mock; each test passes its stubs from today as they are, never-resolving promises included, and its `expect`s are not touched (assumed).
+- Q: (spec-reviewer) `lessons.md` only grows: how are the covered ones marked? → A: one new entry per box, `## 2026-11-19 · harness-ladder · arnés`, that names the lessons the rule replaces (assumed).
+- Q: Atomic writes and wrapped `ipcMain`? → A: out of this change: 15 files with `writeFile` and 109 `ipcMain` in `index.ts` call for their own change (assumed).
 
-- Q: (builder) ¿Cuánto tarda `.githooks/pre-commit`? → A: 5,3 s y 4,8 s (typecheck + lint, dos medidas con `time`), muy por debajo de los 60 s del riesgo: se queda como está.
-- Q: (builder) ¿Qué tipo tiene `over`? → A: parcial profundo laxo: una hoja función acepta cualquier función y cada nivel admite miembros de más, porque los tests guardan sus stubs tal cual (respuestas parciales y `term.input`, que la API ya no tiene y `components/terminal.test.tsx` stub-ea para probar que nadie lo llama) (assumed).
-- Q: (builder) ¿Con qué fecha van las entradas de lecciones? → A: `## 2026-11-20 · harness-ladder · arnés`, el día en que se construyen, no el 19 que dice la entrada de arriba (assumed).
+- Q: (builder) How long does `.githooks/pre-commit` take? → A: 5.3 s and 4.8 s (typecheck + lint, two measurements with `time`), far below the risk's 60 s: it stays as it is.
+- Q: (builder) What type does `over` have? → A: a loose deep partial: a function leaf accepts any function and each level admits extra members, because the tests keep their stubs as they are (partial answers and `term.input`, which the API no longer has and `components/terminal.test.tsx` stubs to prove nobody calls it) (assumed).
+- Q: (builder) What date do the lessons entries carry? → A: `## 2026-11-20 · harness-ladder · arnés`, the day they are built, not the 19th that the entry above says (assumed).
 
 ## Task breakdown
 
@@ -2573,7 +2573,7 @@ Textos por `t()`.
   in the real `~/.atril/workspaces.json`).
   Proof: src/main/paths.test.ts a test without its own home never reaches the real one
 
-### Repos in Ajustes (move-repos-to-settings, 9 nov 2026)
+### Repos in Settings (move-repos-to-settings, 9 nov 2026)
 
 - **W43** While Trabajo is shown, the sidebar shall show «＋ Nuevo trabajo», which opens the
   «Nuevo trabajo» dialog, and shall not show a Repos section.
@@ -2686,7 +2686,7 @@ Textos por `t()`.
   en spec y plan; antes de subir te pregunta»; Nuevo trabajo without text offers none; Empezar's one
   click (I20) is always Manual; an automatic workspace's row shows «Auto».
   Proof: src/renderer/inbox/mode.test.ts the start dialogs offer manual or automatic
-### Subagentes (add-subagents-view, 10 nov 2026)
+### Subagents (add-subagents-view, 10 nov 2026)
 
 - **W62** On SubagentStart with a non-empty `agent_type` and `agent_id`, the hook shall add
   `{ id: agent_id, type, startedAt, transcript? }` (epoch seconds) to `entries` in
@@ -2712,7 +2712,7 @@ Textos por `t()`.
   no `endedAt`, and nothing otherwise.
   Proof: src/renderer/subagents.test.ts the row counts running subagents
 
-### Detalle del subagente (add-subagent-detail, 10 nov 2026)
+### Subagent detail (add-subagent-detail, 10 nov 2026)
 
 - **W67** Main shall send each entry to the window without `transcript`, with `description` taken from
   the meta file beside its transcript (`agent-<id>.meta.json`, field `description`,
@@ -2737,7 +2737,7 @@ Textos por `t()`.
   case is unproven).
   Proof: src/main/subagents.test.ts the log reads like Claude Code
 
-### Instalar desde el doctor (add-doctor-install-terminal, 10 nov 2026)
+### Install from the doctor (add-doctor-install-terminal, 10 nov 2026)
 
 - **W70** When the window asks `atril:doctor:install(tool)` with a tool in W21's list, main shall run
   `osascript` with two `-e` scripts — `tell application "Terminal" to activate` and
@@ -2755,7 +2755,7 @@ Textos por `t()`.
   before and after a `focus` event.
   Proof: src/renderer/doctor.test.ts install runs in the terminal and rechecks on focus
 
-### Paleta Grafito (adopt-grafito, 10 nov 2026)
+### Grafito palette (adopt-grafito, 10 nov 2026)
 
 - **W72** Where the palette is Grafito, every colour token in both themes other than `--ed-*`,
   `--jira`, `--jira-2` and `--on-jira` shall be a neutral (OKLCH chroma below 0.03), the accent hue
@@ -2769,7 +2769,7 @@ Textos por `t()`.
   One test holds a case per clause.
   Proof: src/renderer/theme.test.ts the palette is chosen in appearance and remembered
 
-### Respuestas rápidas (quick-replies, 10 nov 2026)
+### Quick replies (quick-replies, 10 nov 2026)
 
 - **W74** When the hook gets a PreToolUse for `AskUserQuestion`, it shall add to the needs-you state every question of the call in order as `{ question, header, options: [{ label, description }], multiSelect }`, labels and descriptions whole with whitespace collapsed; the stored questions shall stay while the state stays needs-you (a later Notification or Stop included) and go when it leaves needs-you.
   Proof: src/main/agent.test.ts the hook keeps every question and what a permission is for
@@ -2778,13 +2778,13 @@ Textos por `t()`.
   Proof: src/main/status.test.ts allow and deny send their keys
 - **W76** While a workspace is needs-you, its row and the strip above its terminal shall show one card by `kind` (W200–W202) instead of today's quick replies; pressing a button, by mouse or with keys 1–4 while the card has focus, shall send it (W75) and show «Enviado», disabling the card until the state changes, or show the error and keep it live.
   Proof: src/renderer/components/agentcard.test.tsx a card answers by mouse and by number keys
-### Escritura atómica (atomic-records, 10 nov 2026)
+### Atomic writes (atomic-records, 10 nov 2026)
 
 - **W80** Atril shall replace `workspaces.json` and `repos.json` by writing a temporary file and renaming it,
   so a reader during a write sees either the old file or the new one, never a partial one.
   Proof: src/main/workspaces.test.ts a reader never sees a half-written workspaces file
 
-### Modo foco (focus-mode, 10 nov 2026)
+### Focus mode (focus-mode, 10 nov 2026)
 
 - **W77** When the person chooses Trabajo → Modo foco (⌘⇧F) with a workspace selected, the
   Trabajo screen shall hide the sidebar and «Qué me toca» and keep that workspace's terminal and Libretto
@@ -2803,7 +2803,7 @@ Textos por `t()`.
   when that workspace is removed. One test holds a case per clause.
   Proof: src/renderer/focus.test.ts jump to the waiting agent and back
 
-### Todos los agentes (agents-overview, 10 nov 2026)
+### All agents (agents-overview, 10 nov 2026)
 
 - **W81** When the person picks «Todos» (or ⌘⇧A) on Trabajo, the workspace area shall show one card per
   workspace with its branch, repo, written state, Libretto stage and checklist «{closed}/{total}» when it
@@ -2819,7 +2819,7 @@ Textos por `t()`.
   outside it, the button shall not repeat the cut activity line, and answering there shall not open it. One test
   holds a case per clause.
   Proof: src/renderer/overview.test.ts a card opens its workspace or answers in place
-### QA en vivo (add-qa-lab, 10 nov 2026)
+### Live QA (add-qa-lab, 10 nov 2026)
 
 - **W83** Atril shall classify a workspace's folder as expo (an `app.json` or `app.config.*` and an `expo`
   dependency), react-native (a `react-native` dependency with `ios/` or `android/`), flutter (`pubspec.yaml`
@@ -2830,7 +2830,7 @@ Textos por `t()`.
   Proof: src/main/qa.test.ts projects are classified by their files
 - **W84** When the person presses «Probar en vivo» on a workspace's target, main shall write `$ATRIL_HOME/qa/<id>.mcp.json` with, for chrome, Playwright MCP `--browser chrome`; for safari, Playwright MCP `--browser webkit` (both `--isolated --output-dir $ATRIL_HOME/qa/<id>/`); for android, mobile-mcp; for ios, `xcrun mcpbridge` and mobile-mcp; split the workspace's pane and start `claude` there in the target's folder with `--mcp-config` that file, `--strict-mcp-config` and a prompt naming the platform, the command, the reserved device (W124) on mobile, the change's proposal path and the screenshot folder; the QA pane's tmux id is kept in `$ATRIL_HOME/qa/<id>.pane`; a second press while that pane lives shall be refused; «Detener QA» shall kill only that pane, free its device and keep the MCP file and the screenshots. One test holds a case per clause.
   Proof: src/main/qa.test.ts live qa starts one scoped agent with its tools
-### Pausar un agente (pause-agent, 10 nov 2026)
+### Pause an agent (pause-agent, 10 nov 2026)
 
 - **W86** When the person pauses a working workspace (Trabajo → Pausar, ⌘⇧P, or its card), main shall send
   Escape to that workspace's recorded agent pane and write `$ATRIL_HOME/paused/<session>`; while that mark
@@ -2850,7 +2850,7 @@ Textos por `t()`.
   working.
   Proof: src/renderer/pause.test.ts a paused agent reads en pausa and offers resume
 
-### Abrir una MR en Atril (open-work-from-mr, 10 nov 2026)
+### Open an MR in Atril (open-work-from-mr, 10 nov 2026)
 
 - **W89** When a workspace is opened with `existing: true` and a remote on a branch that exists there, Atril
   shall run `git fetch <remote> <branch>` and add the worktree on the local branch if it exists, or on a new local
@@ -2866,7 +2866,7 @@ Textos por `t()`.
   no workspace of their own (its folder is the person's copy), answering as for an unknown workspace.
   Proof: src/main/workspaces.test.ts a review session has no libretto panel of its own
 
-### Coste por trabajo (cost-per-work, 10 nov 2026)
+### Cost per work (cost-per-work, 10 nov 2026)
 
 - **W92** On every hook event whose payload's `transcript_path` is a string ending in `.jsonl`, the hook shall
   add that path as a line to `$ATRIL_HOME/transcripts/<session>` (W62's session name) when it is not there yet,
@@ -2877,7 +2877,7 @@ Textos por `t()`.
   Proof: src/main/cost.test.ts haiku long prompts and fable cache use their prices
 - **W94** A workspace's row title and its «Todos» card shall show no text with «$», «≈» or «tokens».
   Proof: src/renderer/cost.test.ts no workspace shows a cost
-### Historial (work-history, 10 nov 2026)
+### History (work-history, 10 nov 2026)
 
 - **W95** Atril shall record `createdAt` (epoch seconds) on every new workspace record, and when a workspace is
   removed successfully it shall append to `$ATRIL_HOME/history.jsonl` its branch, repo, Jira key, mode, Libretto
@@ -2891,7 +2891,7 @@ Textos por `t()`.
   «{m} min» / «{h} h {m} min» / «{d} d {h} h» when `createdAt` is known, no text with «$», «≈» or «tokens», and «hoy»
   or «hace {n} d» by calendar day; it shall update when main pushes a new line. One test holds a case per clause.
   Proof: src/renderer/history.test.ts finished works show in their own section
-### Primeros pasos (first-run-setup, 10 nov 2026)
+### First steps (first-run-setup, 10 nov 2026)
 
 - **W97** While Trabajo has no workspace record (stopped ones included), the history (W96) is empty, `setupDismissed` is not set and the
   tutorial is not open, it shall show «Primeros pasos» with five steps — 1 git, tmux and claude without a doctor
@@ -2901,7 +2901,7 @@ Textos por `t()`.
   tengo» shall set `setupDismissed`, kept across restarts. One test holds a case per clause.
   Proof: src/renderer/setup.test.ts a new person sees what is left to start
 
-### Empaquetar (package-and-sign, 10 nov 2026)
+### Packaging (package-and-sign, 10 nov 2026)
 
 - **W98** The repository shall hold an `electron-builder.config.cjs` asking for `dmg` and `zip` for `arm64` with
   `appId`, `productName: Atril`, the icon `build/icon.icns`, `extraResources` copying `resources` flat into the
@@ -2949,13 +2949,13 @@ Textos por `t()`.
   and on «Actualizar».
   Proof: src/renderer/libretto.test.ts the Libretto screen is reachable and keeps its repo
 
-### Tarjeta de pregunta (ask-card, 10 nov 2026)
+### Question card (ask-card, 10 nov 2026)
 
 - **W105** The question text and the enabled answer labels shall keep a contrast of at least 4.5:1 over `--ask-bg`
   in each of the original light, original dark, Grafito light and Grafito dark token sets.
   Proof: src/renderer/quickreplies.test.ts the question card reads in every theme
 
-### Gestionar la cola (queue-manage, 10 nov 2026)
+### Manage the queue (queue-manage, 10 nov 2026)
 
 - **W106** When the person saves an edited idea, Atril shall rewrite only its `## The ask, verbatim` section with
   every line of the new text quoted, keep its name and `Queued:` line, and commit only that file as
@@ -2984,7 +2984,7 @@ Textos por `t()`.
   «Encolar» above the queue; and «En cola» and «En curso» with their counts.
   Proof: src/renderer/libretto.test.ts the Libretto screen shows each repo with its counts
 
-### Cabecera tranquila (quiet-header, 11 nov 2026)
+### Quiet header (quiet-header, 11 nov 2026)
 
 - **W112** While «Uno» shows a workspace, the work header shall show «{repo} · {agent}» above the branch, beside the
   branch the same state label and icon as its row in the list (no pill), and to the right one group with the
@@ -2993,7 +2993,7 @@ Textos por `t()`.
   show that button. One test holds a case per clause.
   Proof: src/renderer/focus.test.ts the work header shows the state and a focus button
 
-### Pantalla de QA (qa-screen, 11 nov 2026)
+### QA screen (qa-screen, 11 nov 2026)
 
 - **W113** Atril shall show a «QA» screen in the rail between Libretto and Avisos and in ⌘K, with a card per live workspace naming its chosen target («Chrome», «Safari», «Android», «iOS») or «sin detectar», the picked one pressed; for the picked workspace, its current change's criteria (each `- **ID**` line under `## Verification criteria`, id and text), each with «Pasa», «Falla» or «Sin probar» from the report (last entry per id; absent → «Sin probar») and a summary «{p} pasan · {f} fallan · {u} sin probar»; «Este trabajo no tiene criterios que probar» when there are none; «Todas las capturas», the 12 newest of its QA folder, each at most 2 MB, as data URLs; W123's tabs and W126's lines; and «Probar en vivo» or «Detener QA» as W84. One test holds a case per clause.
   Proof: src/renderer/qa-screen.test.ts the QA screen reports each criterion
@@ -3026,7 +3026,7 @@ Textos por `t()`.
   shall show in the form and keep it open. One test holds a case per clause.
   Proof: src/main/qa-report.test.ts a bug goes to jira or to the agent once
 
-### QA: dónde se prueba (qa-targets, 11 nov 2026)
+### QA: where to test (qa-targets, 11 nov 2026)
 
 - **W120** Main shall list a workspace's QA targets by running W83 on its folder and on every subfolder up to two levels deep (skipping `node_modules`, `Pods`, `build`, `dist`, `vendor` and names starting with `.`, at most 200 folders read), never descending into a folder that classified (its `android/` and `ios/` belong to it), turning each classified folder into targets: web → `chrome` and `safari`; android → `android`; ios → `ios`; expo → `android` and `ios`; react-native and flutter → `android` if it has `android/`, `ios` if it has `ios/`; each with its folder relative to the repo (`''` for the root), W83's command, and a one-line reason naming the file that decided it (e.g. «Hay un package.json con el script dev»); root first, then by folder path; two targets with the same platform and folder count once.
   Proof: src/main/qa-targets.test.ts targets come from the root and two levels down with their reason
@@ -3043,18 +3043,18 @@ Textos por `t()`.
 - **W126** When launch answers a problem, the QA card shall show its what and cannot in words, a button with the fix and «Ver detalle» folded with the technical detail, with no raw error elsewhere; a workspace with no target shall read «No sé cómo abrir este proyecto», the line «Busqué package.json con dev, start o preview, app.json de Expo, pubspec.yaml, settings.gradle, .xcodeproj o Package.swift, en la raíz y dos niveles», and «Elegir a mano».
   Proof: src/renderer/qa-screen.test.ts a launch problem shows its fix and detail folded
 
-### Errores claros (plain-errors, 11 nov 2026)
+### Clear errors (plain-errors, 11 nov 2026)
 
 - **W127** If a tool's version command has not finished after 5 s, then the doctor shall kill it and report that tool with the problem «no responde en 5 s» and its install command, and the other tools as they answered; the kill is the runner's `timeoutMs` (SIGKILL, code 124).
   Proof: src/main/doctor.test.ts a hung tool is reported after 5 s
 
-### PATH del shell (login-path, 11 nov 2026)
+### Shell PATH (login-path, 11 nov 2026)
 
 - **W128** When Atril starts, main shall set its PATH, before the doctor or any agent runs, to the PATH printed by the person's `$SHELL -ilc` between two markers, then `~/.local/bin`, `/opt/homebrew/bin`, `/usr/local/bin` and the PATH it was launched with, each folder once, in that order; if the shell fails, prints no markers or has not answered in 3 s, then the same list without the shell's part.
   Proof: src/main/login-path.test.ts the shell's path comes first and nothing repeats
   Proof: src/main/login-path.test.ts a silent or slow shell still adds the usual folders
 
-### Copia con cambios (dirty-copy, 11 nov 2026)
+### Copy with changes (dirty-copy, 11 nov 2026)
 
 - **W129** When opening is asked with `worktree: true`, Atril shall open that workspace as a worktree even for an `in-place` repo, leave the main checkout's branch and files as they were, and keep the repo's mode.
   Proof: src/main/workspaces.test.ts worktree this time leaves the dirty copy alone
@@ -3062,7 +3062,7 @@ Textos por `t()`.
   Proof: src/renderer/newwork.test.ts a dirty copy offers a worktree this time
   Proof: src/renderer/newwork.test.ts a blank dirty retry opens plain claude in a worktree
   Proof: src/renderer/newwork.test.ts a git failure offers terminal for the repo
-### Abrir y cerrar sin errores crudos (ws-errors, 11 nov 2026)
+### Open and close without raw errors (ws-errors, 11 nov 2026)
 
 - **W131** If a git step or tmux fails while opening a workspace, then Atril shall create no record and answer one sentence per step — reading the repo's state: «No puedo leer el estado de git de {repo}.»; switching the copy: «git no me deja pasar tu copia a {branch}.»; fetching: «No he podido traer {branch} de {remote}.»; adding the worktree when its stderr matches `/already (checked out|used by worktree)/` (git's own wording; Atril runs git with its default English messages): «La rama {branch} ya está abierta en otra carpeta.», otherwise «git no ha podido crear la carpeta del trabajo.»; starting tmux: «tmux no ha podido arrancar el agente.» — with the command's stderr (or the thrown message) as `detail`, never inside the sentence, and `fix: 'terminal'` with the repo id.
   Proof: src/main/workspaces.test.ts a failing step when opening says which and folds its output
@@ -3077,7 +3077,7 @@ Textos por `t()`.
 - **W136** While a workspace's session is alive (its `alive` field from the workspace list), «Quitar» shall first ask in its row «¿Cerrar {branch}? Su agente se para y el trabajo pasa a Terminados.» with «Cerrar» and «Cancelar», and close only on «Cerrar»; a stopped workspace closes on the first click.
   Proof: src/renderer/closework.test.ts closing a live agent asks first
 
-### Modelo y esfuerzo (model-pick, 11 nov 2026)
+### Model and effort (model-pick, 11 nov 2026)
 
 - **W137** When a workspace opens from «Nuevo trabajo» or «Empezar» with an effort of `low`, `medium`, `high` or `xhigh`, the agent command (and the command «Empezar» shows) shall carry `--effort <level>` before the prompt and the record shall keep `effort`; with `default` or no effort the command has no `--effort` and the record has no `effort` field; any other value is refused in main with ««{effort}» no es un esfuerzo disponible» before anything runs.
   Proof: src/main/agent.test.ts effort reaches the command only from the list
@@ -3088,7 +3088,7 @@ Textos por `t()`.
   Proof: src/renderer/newwork.test.ts a suggestion is shown and used only on click
   Proof: src/renderer/inbox/start.test.ts the start dialog suggests from the jira type
 
-### Volver a abrir (reopen-work, 11 nov 2026)
+### Reopen (reopen-work, 11 nov 2026)
 
 - **W141** When reopening a workspace is asked by id while its agent is stopped — no session, or a session whose recorded pane is dead (W16), which is ended first — and its folder exists, Atril shall start a tmux session with the same name in that folder running `agentArgv` with the record's model and effort, plus `--continue` only when a transcript is recorded for it (`transcripts/<session>`), leaving its auto marker as it is, store the new pane id, and answer the workspace as alive; with `more: true` the effort goes one level up (none or `medium` → `high`, `low` → `medium`, `high` → `xhigh`) and is stored.
   Proof: src/main/workspaces.test.ts a stopped work reopens where it was
@@ -3099,7 +3099,7 @@ Textos por `t()`.
 - **W149** If the terminal's tmux client has exited or its descriptor is closed, then typing, resizing or detaching that terminal shall do nothing and never throw, and an exited client shall be forgotten so nothing more is sent to it.
   Proof: src/main/pty.test.ts a dead terminal client never throws
 
-### Archivos de estado dañados (state-files, 11 nov 2026)
+### Damaged state files (state-files, 11 nov 2026)
 
 - **W144** If `workspaces.json` exists but cannot be read, is not JSON, its `workspaces` is not an array, or an entry lacks a string `id`, `path`, `branch` or `session`, then every path that writes it — opening, closing, forgetting, reopening, pausing and any other — shall create, delete or write nothing and answer «No puedo leer workspaces.json: está dañado. No abro ni cierro trabajos hasta que se arregle.» with the error (code or parse message) as `detail` and `fix: 'reveal'`; a missing file still reads as empty.
   Proof: src/main/state.test.ts a damaged workspaces list blocks every change and writes nothing
@@ -3114,12 +3114,12 @@ Textos por `t()`.
   Proof: src/main/state.test.ts reveal shows only the state files
   Proof: src/renderer/statefiles.test.ts a damaged list shows its problem instead of the empty state
 
-### Jira, GitHub y GitLab (net-errors, 11 nov 2026)
+### Jira, GitHub and GitLab (net-errors, 11 nov 2026)
 
 - **W150** When a request to Jira, GitHub or GitLab gets an HTTP error or throws, `net-problem` shall answer one sentence naming the service — 401: «{service} ha rechazado tu token.»; 403: «{service} no te deja ver esto con ese token.»; 404: «{service} no encuentra esa dirección.»; 429: «{service} pide esperar: demasiadas consultas.»; 500–599: «{service} está fallando ahora mismo.»; any other status: «{service} ha contestado algo que no esperaba.»; a thrown `ENOTFOUND` or `EAI_AGAIN`: «No encuentro {service}.»; a certificate code (as S32): «El certificado de {service} no es válido.»; a timeout: «{service} no ha respondido a tiempo.»; a `SyntaxError` (a body that is not JSON): «{service} ha contestado algo que no entiendo.»; anything else: «No llego a {service}: ¿hay conexión?» — with `detail` `HTTP <n>` or the code (from `err.cause.code` when it matches `^[A-Z0-9_]+$`, else the exception's name), and `fix: 'settings'` for 401, 403, 404, a host not found and a certificate code (the person fixes the token or the address), `fix: 'retry'` otherwise. No sentence contains a status number or an exception name.
   Proof: src/main/net-problem.test.ts each status and network cause has its sentence and fix
 
-### Modelos de Libretto (libretto-models, 11 nov 2026)
+### Libretto models (libretto-models, 11 nov 2026)
 
 - **W151** When Libretto is bundled, every agent whose file name (without `.md`) is in Atril's list (`converge-reader`, `review-lens-reliability`, `review-lens-security`, `spec-reviewer`, `work-reviewer`) and whose leading `---` frontmatter has no line starting with `model:` shall get `model: sonnet` as the frontmatter's last line; an agent that has one keeps it.
   Proof: scripts/libretto-models.test.ts reviewers get sonnet unless libretto chose
@@ -3128,7 +3128,7 @@ Textos por `t()`.
 - **W152** The committed copy in `resources/libretto/agents/` shall be that function's output over the `171db90` copy: the five listed agents carry `model: sonnet`, `review-lens-design` keeps `sonnet`, `review-lens-intent` and `review-lens-tests` keep `haiku`, and `spec-writer` has no `model:` line — read from the files themselves.
   Proof: src/main/packaging.test.ts bundled reviewers run on sonnet
 
-### Repos rotos (repo-gone, 11 nov 2026)
+### Broken repos (repo-gone, 11 nov 2026)
 
 - **W154** The repo list shall give each repo `health`: `missing` when its folder does not exist, `not-git` when `git -C <path> rev-parse --git-dir` fails with «not a git repository» in its stderr, `ok` otherwise (git itself failing leaves `ok`: W156 says it when git is used).
   Proof: src/main/repos.test.ts each repo says whether its folder is there and is git
@@ -3143,7 +3143,7 @@ Textos por `t()`.
 - **W158** When the person picks a new folder for a repo by id, Atril shall store the folder's git top level as that repo's path keeping its id and mode; it shall refuse with S13's sentence if the folder is not a git repository, and with «Esa carpeta ya es el repo {id}.» if another repo already has that path; either refusal, or a cancelled picker, changes nothing.
   Proof: src/main/repos.test.ts a repo can be pointed at its new folder
 
-### Terminal que no engancha (term-attach, 11 nov 2026)
+### Terminal that will not attach (term-attach, 11 nov 2026)
 
 - **W160** When `atril:term:attach` is asked, main shall answer `{ ok: true }` once the tmux client started, `{ ok: false }` for an unknown or not-alive workspace, and, if starting the client throws, `{ error: «No he podido abrir la terminal de {branch}.», detail }` with the thrown message as `detail`, keeping no client for that workspace; it never rejects.
   Proof: src/main/pty.test.ts a client that cannot start answers an error and keeps nothing
@@ -3152,7 +3152,7 @@ Textos por `t()`.
 - **W162** «Volver a intentar» shall ask to attach again with the terminal's current size; on `{ ok: true }` the problem goes, and on another error it is replaced by the new one.
   Proof: src/renderer/terminal.test.ts retrying hides the problem or shows the new one
 
-### Panel más rápido (fast-panel, 11 nov 2026)
+### Faster panel (fast-panel, 11 nov 2026)
 
 - **W163** The status poll and `listWorkspaces` shall read tmux through one shared snapshot (`tmux list-panes -a` with session name, pane id and dead flag), taken at most once per second, so a status tick costs one tmux command whatever the number of works; creating, killing or respawning a session drops the snapshot, and decisions that act — sending a reply or keys, pausing, reopening — ask tmux directly instead.
   Proof: src/main/status.test.ts one tmux call per tick whatever the number of works
@@ -3161,12 +3161,12 @@ Textos por `t()`.
   Proof: src/main/status.test.ts a burst of hook writes refreshes once
   Proof: src/main/activity.test.ts a burst of activity writes refreshes once
 
-### Grafito: te necesita (grafito-you, 11 nov 2026)
+### Grafito: needs you (grafito-you, 11 nov 2026)
 
 - **W165** Where the palette is Grafito, in both themes, the «trabajando» label's `--working` shall be a neutral (OKLCH chroma below 0.03) while `--run` (unread dots, selection, current step) and `--you`/`--you-text` keep the accent, so a working row and a needs-you row never share a colour.
   Proof: src/renderer/theme.test.ts grafito tells needs-you from working
 
-### Radar de choques (radar, 11 nov 2026)
+### Collision radar (radar, 11 nov 2026)
 
 - **W166** Main shall answer, for every workspace record that is not a review, the other non-review records of the same repo that change at least one of the same files against their own `baseCommit` (committed or not), as `{ id, branch, files }` with repo-relative files sorted; records of different repos never collide, and a record sharing no file gets an empty list.
   Proof: src/main/radar.test.ts two works on one file collide and nothing else does
@@ -3176,7 +3176,7 @@ Textos por `t()`.
   Proof: src/renderer/radar.test.ts a colliding row says with whom and where
   Proof: src/renderer/radar.test.ts a row without collisions shows nothing new
 
-### Lecciones para cada agente (lessons-first, 11 nov 2026)
+### Lessons for every agent (lessons-first, 11 nov 2026)
 
 - **W169** `agentArgv({ lessons: true })` shall add `--append-system-prompt` with «Este repo guarda en .agents/lessons.md los errores que ya se pagaron aquí. Léelo antes de empezar y no los repitas.» before the prompt, and nothing without it.
   Proof: src/main/agent.test.ts lessons are pointed out only when the repo keeps them
@@ -3184,7 +3184,7 @@ Textos por `t()`.
   Proof: src/main/workspaces.test.ts a new or reopened work is told about lessons only with a real file
   Proof: src/main/jira/start.test.ts the shown command points at lessons only when the chosen repo keeps them
 
-### Dónde se atasca (stuck, 11 nov 2026)
+### Where it gets stuck (stuck, 11 nov 2026)
 
 - **W172** When a workspace with a Libretto change is closed, its history line shall carry `steps` in seconds from the branch's commits to that change's `proposal.md` (`<baseCommit>..HEAD`, oldest first): `spec` from the record's `createdAt` to the first commit whose file has a `## Verification criteria` section; `plan` from there to the first commit whose file has a box under `## Checklist`; `construir` from there to the last commit that raises the count of closed boxes; `cierre` from the last of those marks that exists to the moment of closing. A step is left out when either of its ends is missing (no `createdAt`, no such commit); a step of 0 is kept; none is ever negative.
   Proof: src/main/history.test.ts a closed work records the time of each step
@@ -3192,7 +3192,7 @@ Textos por `t()`.
 - **W173** Terminados shall show, under each entry with steps, its steps in order as «Spec {d} · Plan {d} · Construir {d} · Cierre {d}» (only those it has), with {d} as «<1 min», «{n} min», «{n} h» or «{n} d»; and at the top of the unfolded list, when at least three of the 20 newest entries have steps, «Donde más tiempo se va: {step} (mediana {d})» for the step with the highest median over the entries that have it (an even count takes the mean of the two middle values; a tie goes to the earlier step).
   Proof: src/renderer/history.test.ts each finished work shows its steps and the slowest one leads
 
-### QA en la MR (qa-to-mr, 11 nov 2026)
+### QA on the MR (qa-to-mr, 11 nov 2026)
 
 - **W170** When «Publicar en la MR» is pressed for a workspace that has its MR (Decision log), main shall post one general comment on that MR: «Pruebas en vivo con Atril · {target}» (or without « · {target}» when there is none), one line per criterion «{Pasa|Falla|Sin probar} · {criterion text}», each failing one followed by a quoted line (`> `) with its note or else its last step, and «Las capturas están en Atril.» — all in the app's language; the screen then shows «Publicado en la MR» with a link to the MR and the button becomes «Publicar de nuevo».
   Proof: src/main/qa-publish.test.ts the qa summary reaches the mr as one comment
@@ -3201,7 +3201,7 @@ Textos por `t()`.
 - **W171** While the workspace has no MR, the QA screen shall show «Abre la MR para poder publicar aquí la QA.» instead of the button; while a post runs the button is disabled, so a second press sends nothing; if posting fails, it shall show the W150 problem with its button and post nothing more.
   Proof: src/renderer/qa-publish.test.ts without an mr the button is not offered and a failure says why
 
-### Notificaciones (main) (notify-core, 12 nov 2026)
+### Notifications (main) (notify-core, 12 nov 2026)
 
 - **W176** While a session stays in `needs-you`, when its state file's text changes from one starting «Claude dice: » to one starting «Te pregunta: », Atril shall add one new `ask` notice with the new text, once per such change. (Bug 3.)
   Proof: src/main/status.test.ts a question after an end of turn notifies again
@@ -3245,7 +3245,7 @@ Textos por `t()`.
 - **W195** When Claude Code's idle reminder fires (a `Notification` with `notification_type` `idle_prompt` or «waiting for your input») while the session's state file says `needs-you`, the hook shall keep that file's `text`, `kind`, `questions`, `permission` and `at` as they were and set `idle: true`.
   Proof: src/main/agent.test.ts the idle reminder keeps the question
 
-### Terminal de solo lectura (terminal-read-only, 14 nov 2026)
+### Read-only terminal (terminal-read-only, 14 nov 2026)
 
 - **W196** The Trabajo terminal shall attach to the agent's tmux session as a read-only client (`tmux attach -r`) and send no keystroke, paste or mouse input to it, including the shell panes an earlier ⌘D left in the session; selecting text and ⌘C still copy. Main shall ignore `atril:term:input`, and ⌘D / ⌘⇧D shall do nothing.
   Proof: src/main/pty.test.ts the terminal client is read only
@@ -3273,14 +3273,14 @@ Textos por `t()`.
 - **W207** While a workspace is in Automático, a `permission` wait — including W59's push question — shall show its card and notify as Manual does.
   Proof: src/main/status.test.ts automatic never grants a permission by itself
 
-### Afinar la petición (refine-request, 20 nov 2026)
+### Refine the request (refine-request, 20 nov 2026)
 
 - **W208** When `atril:refine:ask(text)` is called with a string that, trimmed, has 1–2000 characters and no NUL, main shall run `claude -p --model haiku --output-format json --tools "" --no-session-persistence --json-schema <{questions: 1–5 strings}> <instruction>` once — the instruction in English, ending «Write the questions in {lang}.» with the app's language, as `scores.ts` does — with the trimmed request on stdin (never in argv) and a 60 s timeout, outside the scores queue, and answer `{ questions }`: `structured_output.questions`, each trimmed with newlines turned into spaces, empty and repeated ones dropped, each cut to 200 characters, at most 5. Any other argument shall answer `{ error: «No hay petición que afinar.», detail: 'argument', fix: 'retry' }` with no run.
   Proof: src/main/refine.test.ts asks haiku once with the request on stdin and keeps well-formed questions
 - **W209** If the run does not give questions, then main shall answer `{ error, detail, fix: 'retry' }`, never rejecting the IPC call and never carrying Claude's output: exit 124 → «Claude no ha contestado a tiempo.», detail `timeout`; exit 127 → «No encuentro Claude Code en este Mac.», detail `claude`; any other non-zero exit → «Claude ha fallado.», detail `exit {code}`; exit 0 with stdout that is not JSON, `is_error: true`, no `structured_output.questions` array, or no question left after W208's cleaning → «Claude no ha devuelto preguntas.», detail `json`, `is_error`, `schema` or `empty`. A call while one runs shall answer «Ya está preguntando.», detail `busy`, with no new run.
   Proof: src/main/refine.test.ts a failed ask says why and runs one at a time
 
-### Escalera de corrección (harness-ladder, 20 nov 2026)
+### Correction ladder (harness-ladder, 20 nov 2026)
 
 - **W210** If a file under `src/renderer/**` that is not `*.test.ts(x)` has an `import` or `export … from` declaration (type-only included) whose path resolves under `src/main/`, or one under `src/main/**` whose path resolves under `src/renderer/`, then `pnpm lint` shall fail with «renderer y main solo hablan por preload».
   Proof: src/main/harness.test.ts lint refuses an import across main and renderer
@@ -3293,7 +3293,7 @@ Textos por `t()`.
 - **W214** If `pnpm -s typecheck` fails, or if `pnpm -s lint` fails, then `.githooks/pre-commit` shall exit non-zero.
   Proof: src/main/harness.test.ts the pre-commit hook stops a red commit
 
-### Skills: encender y apagar (skills-toggle, 23 nov 2026)
+### Skills: turning on and off (skills-toggle, 23 nov 2026)
 
 - **W215** `skillsWriteOk` in `ui.json` shall survive a restart when it is `true`; any other value shall be dropped.
   Proof: src/main/ui.test.ts remembers skills write consent and drops anything but true

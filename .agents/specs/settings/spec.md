@@ -50,30 +50,30 @@ Governs: src/main/credentials/** src/renderer/settings/**
 - In English, activity lines and needs-you notifications read «Reading x.php», «Claude says: …»,
   «Asks you: …», «✗ phpunit failed» — Atril's words translated, what follows exactly as written.
 
-### Conexiones (redesign-connections, 10 nov 2026)
+### Connections (redesign-connections, 10 nov 2026)
 
-- Ajustes abre con tres filas de conexión que se leen de un vistazo y no ocupan media pantalla.
-- Conectar guía en tres pasos y dice qué permisos hacen falta; nada parece deshabilitado sin motivo.
-- Gestionar enseña Reemplazar y Borrar (y el tablero en Jira) sin mostrar nunca el token (S5).
-- En una ventana ancha, Ajustes usa dos columnas.
+- Ajustes opens with three connection rows that read at a glance and do not take up half the screen.
+- Conectar guides in three steps and says which permissions are needed; nothing looks disabled for no reason.
+- Gestionar shows Reemplazar and Borrar (and the board in Jira) without ever showing the token (S5).
+- In a wide window, Ajustes uses two columns.
 
-### Errores claros (plain-errors, 11 nov 2026)
+### Plain errors (plain-errors, 11 nov 2026)
 
-- Conectar Jira con una dirección que no responde dice qué falló, sin el nombre de la excepción, con el código plegado en «Ver detalle».
+- Connecting Jira with an address that does not respond says what failed, without the exception name, with the code folded under «Ver detalle».
 
-### Archivos de estado dañados (state-files, 11 nov 2026)
+### Damaged state files (state-files, 11 nov 2026)
 
-- Con `repos.json` dañado, Ajustes → Repos dice cuál y qué no puedes hacer, con «Mostrar en Finder», en vez de «Aún no hay ninguno».
+- With a damaged `repos.json`, Ajustes → Repos says which one and what you cannot do, with «Mostrar en Finder», instead of «Aún no hay ninguno».
 
-### Jira, GitHub y GitLab (net-errors, 11 nov 2026)
+### Jira, GitHub and GitLab (net-errors, 11 nov 2026)
 
-- Conectar GitHub o GitLab dice la causa sin el nombre de la excepción, con el código plegado, como Jira (S32).
+- Connecting GitHub or GitLab states the cause without the exception name, with the code folded, like Jira (S32).
 
-### Repos rotos (repo-gone, 11 nov 2026)
+### Broken repos (repo-gone, 11 nov 2026)
 
-- Ajustes → Repos marca un repo roto y deja buscar su carpeta o quitarlo; cualquier repo se puede quitar.
+- Ajustes → Repos marks a broken repo and lets you look for its folder or remove it; any repo can be removed.
 
-### Notificaciones (Ajustes y Avisos) (notify-ui, 14 nov 2026)
+### Notifications (Ajustes and Avisos) (notify-ui, 14 nov 2026)
 
 - In Ajustes you choose, per type, whether it reaches the Mac, only Avisos or nothing; set a whole group at once; see how each one arrives; set the waiting reminder, focus, grouping and quiet hours; send a test; and learn — with a button to fix it — when macOS blocks Atril.
 
@@ -134,30 +134,30 @@ disk; translating Claude's words.
 
 **Never scoped out:** a line that matches no known prefix shows exactly as it came.
 
-### Conexiones (redesign-connections, 10 nov 2026)
+### Connections (redesign-connections, 10 nov 2026)
 
-**In:** la presentación de las tarjetas de Jira, GitHub y GitLab, sus textos y el layout de Ajustes.
-**Out:** cómo se guardan o comprueban los tokens (S1–S4, S20 no cambian); nuevas forjas; OAuth.
-**Never scoped out:** el token nunca se muestra (S3, S5); teclado y foco en las filas y formularios;
-errores visibles junto al campo.
+**In:** the presentation of the Jira, GitHub and GitLab cards, their texts and the Ajustes layout.
+**Out:** how tokens are stored or checked (S1–S4, S20 do not change); new forges; OAuth.
+**Never scoped out:** the token is never shown (S3, S5); keyboard and focus in the rows and forms;
+errors visible next to the field.
 
-### Errores claros (plain-errors, 11 nov 2026)
+### Plain errors (plain-errors, 11 nov 2026)
 
-**In:** `src/main/credentials/check.ts`, `src/renderer/settings/Connection.tsx`, `src/renderer/settings/Ajustes.tsx`. **Out:** los errores de Forges.
+**In:** `src/main/credentials/check.ts`, `src/renderer/settings/Connection.tsx`, `src/renderer/settings/Ajustes.tsx`. **Out:** Forges errors.
 
-### Archivos de estado dañados (state-files, 11 nov 2026)
+### Damaged state files (state-files, 11 nov 2026)
 
-**In:** `src/renderer/settings/Repos.tsx`. **Out:** reparar el archivo.
+**In:** `src/renderer/settings/Repos.tsx`. **Out:** repairing the file.
 
-### Jira, GitHub y GitLab (net-errors, 11 nov 2026)
+### Jira, GitHub and GitLab (net-errors, 11 nov 2026)
 
-**In:** `src/main/credentials/forge.ts`, `src/renderer/settings/Forges.tsx`, `src/renderer/settings/Connection.tsx`. **Out:** Jira (ya hecho en S32).
+**In:** `src/main/credentials/forge.ts`, `src/renderer/settings/Forges.tsx`, `src/renderer/settings/Connection.tsx`. **Out:** Jira (already done in S32).
 
-### Repos rotos (repo-gone, 11 nov 2026)
+### Broken repos (repo-gone, 11 nov 2026)
 
-**In:** `src/renderer/settings/Repos.tsx`. **Out:** clonar de nuevo.
+**In:** `src/renderer/settings/Repos.tsx`. **Out:** cloning again.
 
-### Notificaciones (Ajustes y Avisos) (notify-ui, 14 nov 2026)
+### Notifications (Ajustes and Avisos) (notify-ui, 14 nov 2026)
 
 **In:** `src/renderer/settings/Notifications.tsx` (both cards), `src/renderer/avisos/**` (bug 4, the new kinds), `src/renderer/App.tsx` (mounting the card, the new targets of `openAviso`), `src/renderer/components/Problem.tsx` (an optional second button, `cant` optional), its place in `Ajustes.tsx` (second column, after «Idioma»), styles as tokens; in `src/main/**` and `src/preload/**`, only the one IPC call V15 needs to reuse main's `closable` (Decision log, 2026-11-14). **Out:** sounds, per-repo settings, the summary on return.
 
@@ -198,23 +198,23 @@ errores visibles junto al campo.
 
 - Every key passes through a literal `t()` call (S16).
 
-### Errores claros (plain-errors, 11 nov 2026)
+### Plain errors (plain-errors, 11 nov 2026)
 
-- `err.message` nunca llega a la ventana; solo códigos de lista y el nombre de la excepción, en el detalle.
+- `err.message` never reaches the window; only list codes and the exception name, in the detail.
 
-### Archivos de estado dañados (state-files, 11 nov 2026)
+### Damaged state files (state-files, 11 nov 2026)
 
-- La ventana pide mostrar el archivo por nombre, nunca por ruta.
+- The window asks to show the file by name, never by path.
 
-### Jira, GitHub y GitLab (net-errors, 11 nov 2026)
+### Jira, GitHub and GitLab (net-errors, 11 nov 2026)
 
-- `err.message` nunca llega a la ventana.
+- `err.message` never reaches the window.
 
-### Repos rotos (repo-gone, 11 nov 2026)
+### Broken repos (repo-gone, 11 nov 2026)
 
-- La ventana manda solo ids; el diálogo de carpeta lo abre main.
+- The window sends only ids; main opens the folder dialog.
 
-### Notificaciones (Ajustes y Avisos) (notify-ui, 14 nov 2026)
+### Notifications (Ajustes and Avisos) (notify-ui, 14 nov 2026)
 
 - Every text through `useT()` with its English entry; colours only from tokens; keyboard-operable (S-a11y as the rest of Ajustes).
 - Each change saves at once through `notify.set(patch)`; there is no «Guardar».
@@ -255,16 +255,16 @@ errores visibles junto al campo.
 | Keep «+ trabajo» per repo in Ajustes | starting work belongs where the work is, not in settings |
 
 #### Decision log, answers as given (2026-11-09)
-- Q: ¿Te vale el boceto `bocetos/repos.html` (repos en Ajustes, «＋ Nuevo trabajo» en la barra)? → A: «ok».
+- Q: Does the sketch `bocetos/repos.html` work for you (repos in Ajustes, «＋ Nuevo trabajo» in the bar)? → A: «ok».
 - Q: «No le preguntes, tú sigue» stands → the rest taken with the recommended option, marked (assumed).
-- Q: ¿Cómo se llama el diálogo cuando se abre desde Trabajo? → A: «Nuevo trabajo», el mismo diálogo que «Nueva tarea» con el texto opcional (assumed).
-- Q: ¿Y sin texto? → A: Claude a secas, sin `/libretto:libretto-flow`, como hacía «+ trabajo»; la rama hay que escribirla (assumed).
-- Q: (spec-reviewer) ¿«Auto» guarda el modo detectado? → A: no: Auto quita lo forzado (`setOverride(id, null)`), así la detección sigue mandando (W4) (assumed).
-- Q: (spec-reviewer) ¿Qué pasa al pulsar «Ir a Ajustes»? → A: el diálogo se cierra y se ve Ajustes; al volver se abre de nuevo y relee los repos (assumed).
-- Q: (spec-reviewer) ¿Qué dice el diálogo sin texto obligatorio? → A: etiqueta «¿Qué hay que hacer? (opcional)»; la fila «Lanza» muestra `claude` sin texto y `/libretto:libretto-flow «tu texto»` con texto (assumed).
-- Q: (spec-reviewer) ¿Y el boceto? → A: `bocetos/repos.html` queda como registro de la decisión; `fase1-nucleo.html` se actualiza para verse igual (tarjeta en Ajustes, botón en la barra) (assumed).
-- Q: (spec-reviewer) ¿El tutorial? → A: no tiene paso de repos; no cambia (assumed).
-- Q: ¿Dónde se ve el motivo del modo? → A: como `title` del desplegable y, en texto, bajo el nombre cuando el modo es in-place, que es el que conviene entender (assumed).
+- Q: What is the dialog called when opened from Trabajo? → A: «Nuevo trabajo», the same dialog as «Nueva tarea» with the text optional (assumed).
+- Q: And with no text? → A: plain Claude, without `/libretto:libretto-flow`, as «+ trabajo» did; the branch has to be typed (assumed).
+- Q: (spec-reviewer) Does «Auto» store the detected mode? → A: no: Auto removes the forced one (`setOverride(id, null)`), so detection keeps deciding (W4) (assumed).
+- Q: (spec-reviewer) What happens on pressing «Ir a Ajustes»? → A: the dialog closes and Ajustes shows; on coming back it opens again and rereads the repos (assumed).
+- Q: (spec-reviewer) What does the dialog say without required text? → A: label «¿Qué hay que hacer? (opcional)»; the «Lanza» row shows `claude` without text and `/libretto:libretto-flow «tu texto»` with text (assumed).
+- Q: (spec-reviewer) And the sketch? → A: `bocetos/repos.html` stays as a record of the decision; `fase1-nucleo.html` is updated to look the same (card in Ajustes, button in the bar) (assumed).
+- Q: (spec-reviewer) The tutorial? → A: it has no repos step; unchanged (assumed).
+- Q: Where is the reason for the mode shown? → A: as the dropdown's `title` and, as text, under the name when the mode is in-place, which is the one worth understanding (assumed).
 
 ### Language (add-language, 9 nov 2026)
 
@@ -283,16 +283,16 @@ errores visibles junto al campo.
 
 #### Decision log, answers as given (2026-11-09)
 - Q: «tu desarrollo todo sin parar … te dejo solo» stands → decisions taken with the recommended option, marked (assumed).
-- Q: ¿Qué opciones? → A: Español, English y Sistema; Sistema por defecto, como el tema (assumed).
-- Q: ¿Qué es «Sistema»? → A: el idioma preferido de macOS: español si empieza por `es`, inglés en cualquier otro caso (assumed).
-- Q: ¿Qué se traduce? → A: todo lo que escribe Atril: ventana, menú, avisos del Mac y mensajes de error; nunca lo que no escribe Atril: la terminal, lo que dice Claude, títulos de Jira, nombres de archivo ni el contenido de los documentos (assumed).
-- Q: ¿Hace falta reiniciar? → A: no: cambia al momento, menú incluido (assumed).
-- Q: ¿Librería de i18n? → A: no: un diccionario español → inglés y una función `t()` con `{variables}`; el texto en español es la clave, así que nada se queda sin texto si falta una traducción (assumed).
-- Q: (spec-reviewer) ¿Quién decide qué es «Sistema»? → A: main, con el idioma preferido de macOS; la ventana recibe el idioma ya resuelto, así ventana y menú nunca discrepan (assumed).
-- Q: (spec-reviewer) ¿Qué guarda `ui.json`? → A: `language: 'system' | 'es' | 'en'`, por defecto `system`; lo inválido se descarta (assumed).
-- Q: (spec-reviewer) ¿Qué cierra el «todo»? → A: un test que busca, fuera de los tests y del catálogo, literales con letras propias del español (á é í ó ú ñ ü ¿ ¡ «) que no pasen por `t()`; un texto sin tildes se le escapa: límite nombrado (assumed).
-- Q: (spec-reviewer) ¿Un error de Atril con texto de git o Jira dentro? → A: se traduce lo de Atril y lo ajeno viaja intacto en `{detail}` (assumed).
-- Q: (spec-reviewer) ¿Y los criterios que citan frases en español? → A: describen el texto en español; en inglés vale su entrada del catálogo (assumed).
+- Q: Which options? → A: Español, English and Sistema; Sistema by default, like the theme (assumed).
+- Q: What is «Sistema»? → A: macOS's preferred language: Spanish if it starts with `es`, English otherwise (assumed).
+- Q: What gets translated? → A: everything Atril writes: window, menu, Mac notices and error messages; never what Atril does not write: the terminal, what Claude says, Jira titles, file names or document contents (assumed).
+- Q: Is a restart needed? → A: no: it changes at once, menu included (assumed).
+- Q: An i18n library? → A: no: a Spanish → English dictionary and a `t()` function with `{variables}`; the Spanish text is the key, so nothing is left without text if a translation is missing (assumed).
+- Q: (spec-reviewer) Who decides what «Sistema» is? → A: main, with macOS's preferred language; the window receives the language already resolved, so window and menu never disagree (assumed).
+- Q: (spec-reviewer) What does `ui.json` store? → A: `language: 'system' | 'es' | 'en'`, default `system`; invalid values are discarded (assumed).
+- Q: (spec-reviewer) What closes «everything»? → A: a test that looks, outside tests and the catalog, for literals with Spanish-specific letters (á é í ó ú ñ ü ¿ ¡ «) that do not go through `t()`; a text without accents escapes it: a named limit (assumed).
+- Q: (spec-reviewer) An Atril error with git or Jira text inside? → A: Atril's part is translated and the foreign part travels intact in `{detail}` (assumed).
+- Q: (spec-reviewer) And the criteria that quote Spanish phrases? → A: they describe the Spanish text; in English its catalog entry applies (assumed).
 
 ### Create repos (add-create-repo, 9 nov 2026)
 
@@ -311,17 +311,17 @@ errores visibles junto al campo.
 
 #### Decision log, answers as given (2026-11-09)
 - Q: «tu desarrollo todo sin parar … te dejo solo» stands → decisions taken with the recommended option, marked (assumed).
-- Q: ¿Cómo se conecta Atril a GitHub y GitLab? → A: con un token en Ajustes, guardado cifrado y que no se vuelve a ver, como Jira — Pau, 9 nov: «Pensaba poner los tokens … de GitLab, GitHub y de Jira, no utilizar los GH» y «una vez que lo ponen, que ya no se puede visualizar».
-- Q: ¿GitLab propio? → A: dirección configurable, `https://gitlab.com` por defecto (assumed).
-- Q: ¿Dueño del repo? → A: la cuenta personal del token; organizaciones y grupos quedan fuera de este cambio (assumed).
-- Q: ¿Visibilidad por defecto? → A: privado; «Público» pide confirmarlo con un segundo clic que dice que cualquiera podrá verlo (assumed).
-- Q: ¿Cómo se clona? → A: por SSH con la URL que devuelve la forja; el token nunca entra en una URL ni en un comando de git; si SSH falla se dice y se muestra el comando para hacerlo a mano (assumed).
-- Q: ¿Inicializar el repo? → A: con un README, para que se pueda clonar y crear ramas al momento (assumed).
-- Q: (spec-reviewer) ¿Quién es dueño de crear y clonar? → A: workspaces (`src/main/forge/**` cae en su `Governs:`): W49–W51 en `spec-workspaces.md`; settings se queda con conexiones, tarjetas y diálogo (assumed).
-- Q: (spec-reviewer) ¿Qué dirección de GitLab vale? → A: solo `https://`, como Jira (assumed).
-- Q: (spec-reviewer) ¿Y un 403, un 5xx o un fallo de red al conectar? → A: nada se guarda; «… ha rechazado el token ({status})» o «No se ha podido conectar con … ({detail})» (assumed).
-- Q: (spec-reviewer) ¿Qué id toma el repo en Atril? → A: el de `registerRepo`; si está cogido, el libre que propone; la carpeta usa el nombre que devuelve la forja (assumed).
-- Q: (spec-reviewer) ¿Diálogo sin forjas conectadas? → A: dice «Conecta GitHub o GitLab en Ajustes» y Crear queda desactivado; «Clonar y añadir a Atril» empieza desmarcado (assumed).
+- Q: How does Atril connect to GitHub and GitLab? → A: with a token in Ajustes, stored encrypted and never shown again, like Jira — Pau, 9 nov: «Pensaba poner los tokens … de GitLab, GitHub y de Jira, no utilizar los GH» and «una vez que lo ponen, que ya no se puede visualizar».
+- Q: Self-hosted GitLab? → A: configurable address, `https://gitlab.com` by default (assumed).
+- Q: Repo owner? → A: the token's personal account; organisations and groups are out of this change (assumed).
+- Q: Default visibility? → A: private; «Público» asks for confirmation with a second click that says anyone will be able to see it (assumed).
+- Q: How is it cloned? → A: over SSH with the URL the forge returns; the token never enters a URL or a git command; if SSH fails it says so and shows the command to do it by hand (assumed).
+- Q: Initialise the repo? → A: with a README, so it can be cloned and branches created at once (assumed).
+- Q: (spec-reviewer) Who owns creating and cloning? → A: workspaces (`src/main/forge/**` falls under its `Governs:`): W49–W51 in `spec-workspaces.md`; settings keeps connections, cards and dialog (assumed).
+- Q: (spec-reviewer) Which GitLab address is valid? → A: only `https://`, like Jira (assumed).
+- Q: (spec-reviewer) And a 403, a 5xx or a network failure on connecting? → A: nothing is saved; «… ha rechazado el token ({status})» or «No se ha podido conectar con … ({detail})» (assumed).
+- Q: (spec-reviewer) Which id does the repo take in Atril? → A: `registerRepo`'s; if taken, the free one it proposes; the folder uses the name the forge returns (assumed).
+- Q: (spec-reviewer) Dialog with no connected forges? → A: it says «Conecta GitHub o GitLab en Ajustes» and Crear is disabled; «Clonar y añadir a Atril» starts unticked (assumed).
 
 ### Hook prefixes (translate-hook-prefixes, 9 nov 2026)
 
@@ -336,66 +336,66 @@ errores visibles junto al campo.
 
 #### Decision log, answers as given (2026-11-09)
 - Q: «tu desarrollo todo sin parar … te dejo solo» stands → decisions taken with the recommended option, marked (assumed).
-- Q: ¿Se traduce al escribir o al mostrar? → A: al mostrar: el hook no sabe el idioma resuelto (eso es de main) y las líneas ya escritas también deben cambiar; un único `localiseActivity` lo usan la ventana y main (assumed).
-- Q: ¿Qué no se toca? → A: lo que va detrás del prefijo: rutas, comandos, descripciones y las palabras de Claude, que viajan como `{detail}` (assumed).
+- Q: Is it translated on write or on display? → A: on display: the hook does not know the resolved language (that is main's) and lines already written must change too; a single `localiseActivity` is used by the window and main (assumed).
+- Q: What is left untouched? → A: what follows the prefix: paths, commands, descriptions and Claude's words, which travel as `{detail}` (assumed).
 
-- Q: (spec-reviewer) ¿Qué prefijos? → A: exactamente los que escribe `summarise.mjs`, listados en S27; se reconocen por el texto, no por el tipo (assumed).
-- Q: (spec-reviewer) ¿Y una línea `✗` sin «falló» al final? → A: se queda como vino (assumed).
+- Q: (spec-reviewer) Which prefixes? → A: exactly those `summarise.mjs` writes, listed in S27; they are recognised by their text, not by type (assumed).
+- Q: (spec-reviewer) And a `✗` line without «falló» at the end? → A: it stays as it came (assumed).
 
-### Conexiones (redesign-connections, 10 nov 2026)
+### Connections (redesign-connections, 10 nov 2026)
 
-- Pau, 10 nov: «diseño feísimo» de la tarjeta de GitLab; diseño minimalista (memoria design-taste-minimal).
-- Comprobar y guardar siempre activo, con el error junto al campo (assumed, 10 nov).
+- Pau, 10 nov: «diseño feísimo» of the GitLab card; minimalist design (memory design-taste-minimal).
+- Check and save always enabled, with the error next to the field (assumed, 10 nov).
 
 #### Alternatives that lost
 
 | Considered | Why it lost |
 |---|---|
-| Un asistente modal paso a paso | Más pantalla para tres campos; la fila desplegable se queda donde estás. |
-| Dejar «Guardar» deshabilitado con una pista | Es justo lo que parecía roto. |
+| A step-by-step modal wizard | More screen for three fields; the expandable row stays where you are. |
+| Leave «Guardar» disabled with a hint | It is exactly what looked broken. |
 
 #### Decision log, answers as given (2026-11-10)
-- Q: ¿Cómo se ve? → A: una sección «Conexiones» con una fila compacta por servicio (Jira, GitHub, GitLab):
-  nombre, para qué sirve en una línea, estado («Sin conectar» o «Conectado · cuenta · sitio») y un botón
-  «Conectar» o «Gestionar» (assumed, del diseño encolado).
-- Q: ¿El formulario? → A: solo al pulsar Conectar (o Reemplazar), dentro de la fila, en tres pasos
-  numerados: 1 · Crear el token (abre la página con los permisos ya marcados y los nombra), 2 · Pegarlo
-  (y dirección en GitLab y Jira), 3 · Comprobar y guardar (assumed).
-- Q: ¿El botón gris que parecía roto? → A: «Guardar y comprobar» está siempre activo con estilo primario;
-  si falta un campo, al pulsarlo dice cuál, junto al campo, sin llamar a nadie (assumed).
-- Q: ¿Para qué sirve cada uno? → A: Jira «Tus tareas y empezar trabajos»; GitHub y GitLab «Tus MR, revisar y
-  crear repos» (assumed: la conexión de forja también trae las MR).
-- Q: ¿Dos columnas? → A: sí, desde 1100 px de ancho: Conexiones y Repos a la izquierda, Apariencia e Idioma
-  a la derecha (assumed).
+- Q: What does it look like? → A: a «Conexiones» section with one compact row per service (Jira, GitHub, GitLab):
+  name, what it is for in one line, state («Sin conectar» or «Conectado · cuenta · sitio») and a
+  «Conectar» or «Gestionar» button (assumed, from the queued design).
+- Q: The form? → A: only on pressing Conectar (or Reemplazar), inside the row, in three numbered steps:
+  1 · Crear el token (opens the page with the permissions already ticked and names them), 2 · Pegarlo
+  (and address in GitLab and Jira), 3 · Comprobar y guardar (assumed).
+- Q: The grey button that looked broken? → A: «Guardar y comprobar» is always enabled with primary style;
+  if a field is missing, pressing it says which, next to the field, without calling anyone (assumed).
+- Q: What is each one for? → A: Jira «Tus tareas y empezar trabajos»; GitHub and GitLab «Tus MR, revisar y
+  crear repos» (assumed: the forge connection also brings the MRs).
+- Q: Two columns? → A: yes, from 1100 px wide: Conexiones and Repos on the left, Apariencia and Idioma
+  on the right (assumed).
 
-- Q: (revisor de spec) Holguras → A, todas (assumed):
-  - **Gestionar.** Una fila guardada enseña «Gestionar». Al desplegarla aparecen Reemplazar y Borrar, y
-    en Jira también el tablero. El token no se muestra nunca. S5 se enmienda para decirlo.
-  - **El botón de guardar** se sigue llamando «Guardar y comprobar», como hoy, para no tocar lo que ya
-    funciona.
-    - Está activo siempre, salvo durante la comprobación, en la que dice «Comprobando…».
-    - Si falta un campo, lo dice junto a ese campo y no llama a main.
-  - **Campos de Jira:** dirección, correo y token, como hoy. GitLab: dirección y token. GitHub: token.
-  - **Permisos.** Se nombran en texto visible junto al botón de crear el token:
+- Q: (spec reviewer) Gaps → A, all (assumed):
+  - **Gestionar.** A saved row shows «Gestionar». Unfolded, it shows Reemplazar and Borrar, and
+    for Jira also the board. The token is never shown. S5 is amended to say so.
+  - **The save button** is still called «Guardar y comprobar», as today, so as not to touch what already
+    works.
+    - It is always active, except during the check, when it says «Comprobando…».
+    - If a field is missing, it says so next to that field and does not call main.
+  - **Jira fields:** address, email and token, as today. GitLab: address and token. GitHub: token.
+  - **Permissions.** They are named in visible text next to the create-token button:
     - Jira: «un token de API de Atlassian»;
     - GitHub: «con el permiso repo»;
     - GitLab: «con el permiso api».
-    Las URL no cambian (S7).
-  - **Estado de la fila:**
+    The URLs do not change (S7).
+  - **Row state:**
     - «Sin conectar»;
-    - «Conectado · {cuenta}», con « · {sitio}» detrás solo cuando hay sitio (la dirección de Jira o la de
-      GitLab);
-    - «Cargando…» mientras llega.
-  - **Botón de la fila.** Conectar o Gestionar pliega y despliega la fila, y lleva `aria-expanded`. Su
-    texto no cambia al abrirla.
-  - **Dos columnas.**
-    - El selector es `.ajustes`. Ajustes coloca Apariencia y lo que llega como `children` (Idioma) en una
-      columna derecha, y Conexiones y Repos en la izquierda.
-    - Se mide el ancho de la ventana. Por debajo de 1100 px, una sola columna en el orden de hoy.
-    - Queda superada la línea de move-repos-to-settings que dice «entre Jira y Apariencia».
-  - **El boceto y la foto** no tienen criterio: son dibujo y evidencia.
+    - «Conectado · {cuenta}», with « · {sitio}» after it only when there is a site (the Jira address or the
+      GitLab one);
+    - «Cargando…» while it arrives.
+  - **Row button.** Conectar or Gestionar folds and unfolds the row, and carries `aria-expanded`. Its
+    text does not change when opened.
+  - **Two columns.**
+    - The selector is `.ajustes`. Ajustes places Apariencia and what arrives as `children` (Idioma) in a
+      right column, and Conexiones and Repos on the left.
+    - The window width is measured. Below 1100 px, a single column in today's order.
+    - The line from move-repos-to-settings saying «entre Jira y Apariencia» is superseded.
+  - **The sketch and the photo** have no criterion: they are drawing and evidence.
 
-### Notificaciones (Ajustes y Avisos) (notify-ui, 14 nov 2026)
+### Notifications (Ajustes and Avisos) (notify-ui, 14 nov 2026)
 
 - The settings file, the type table and `notify.*` are `notify-core`'s. The fold state of each group lives in `ui.json` `folded` under `ntf-agents`, `ntf-mr`, `ntf-account` (default unfolded) (assumed).
 
@@ -403,19 +403,19 @@ errores visibles junto al campo.
 
 | Considered | Why it lost |
 |---|---|
-| Botón «Guardar» | el resto de Ajustes guarda al momento |
+| «Guardar» button | the rest of Ajustes saves at once |
 
 #### Decision log, answers as given (2026-11-14)
-- Q: ¿«Nada» guarda el aviso en Avisos? → A: no; «Nada» no interrumpe ni guarda: la tarjeta dice «silenciado, no te avisa» (assumed).
-- Q: ¿«Cerrar su trabajo» cierra sin preguntar? → A: no; abre la confirmación de siempre (W136) para ese trabajo (assumed).
-- Q: ¿Dónde se recuerda el plegado de cada grupo? → A: en `ui.json` `folded`, con `ntf-agents`, `ntf-mr` y `ntf-account`, desplegados por defecto (assumed).
+- Q: Does «Nada» save the notice in Avisos? → A: no; «Nada» neither interrupts nor saves: the card says «silenciado, no te avisa» (assumed).
+- Q: Does «Cerrar su trabajo» close without asking? → A: no; it opens the usual confirmation (W136) for that job (assumed).
+- Q: Where is each group's fold remembered? → A: in `ui.json` `folded`, with `ntf-agents`, `ntf-mr` and `ntf-account`, unfolded by default (assumed).
 
-- Q: ¿Partir el cambio? → A: sí; este es la mitad de la ventana y espera a `notify-core` (assumed).
-- Q: ¿S37 y S43 se parten? → A: no; cada una es una tarjeta que se pinta de una vez y un test la recorre entera, con una aserción por cosa prometida. Techo: si una parte cambia sola, se parte entonces (assumed).
+- Q: Split the change? → A: yes; this is the window half and waits for `notify-core` (assumed).
+- Q: Are S37 and S43 split? → A: no; each is a card painted at once and one test walks the whole of it, with one assertion per promised thing. Ceiling: if a part changes alone, it is split then (assumed).
 
-- Q: ¿Qué botones lleva el aviso de ejemplo en «Así te llega»? → A: solo los que lleva el aviso real del Mac (W177, W186–W188): «Responder» en ask, done e idle; «Reabrir» en stopped; «Arreglar con Claude» en ci; «Cerrar su trabajo» en merged. Los inventados del boceto («Ver el plan», «Más tarde»…) no (assumed).
-- Q: ¿Los días marcados de «Todo el día» con el acento? → A: no; en gris (`--text` sobre `--on-text`): el blanco sobre `--run` no llega al contraste en oscuro (assumed).
-- Q: ¿Cómo sabe la ventana que un trabajo es del mismo repo que la MR (V15)? → A: una llamada IPC pequeña a main que reutiliza `closable` (el de W187, que mira los remotos); la ventana no tiene los remotos. Amplía el alcance a `src/main/**` y `src/preload/**` solo para esa llamada (assumed).
+- Q: Which buttons does the example notice in «Así te llega» carry? → A: only those the real Mac notice carries (W177, W186–W188): «Responder» on ask, done and idle; «Reabrir» on stopped; «Arreglar con Claude» on ci; «Cerrar su trabajo» on merged. The ones invented in the sketch («Ver el plan», «Más tarde»…) no (assumed).
+- Q: The days ticked in «Todo el día» with the accent? → A: no; in grey (`--text` on `--on-text`): white on `--run` does not reach contrast in dark (assumed).
+- Q: How does the window know a job belongs to the same repo as the MR (V15)? → A: a small IPC call to main that reuses `closable` (W187's, which looks at the remotes); the window does not have the remotes. It widens the scope to `src/main/**` and `src/preload/**` only for that call (assumed).
 
 ## Task breakdown
 
@@ -526,7 +526,7 @@ errores visibles junto al campo.
   Proof: src/renderer/settings/language.test.ts claude and jira text stay as written
   Proof: src/main/i18n.test.ts the notification body speaks the language
 
-### Conexiones (redesign-connections, 10 nov 2026)
+### Connections (redesign-connections, 10 nov 2026)
 
 - **S29** While Ajustes is shown, a «Conexiones» section shall list Jira, GitHub and GitLab as rows, each
   with its name, its purpose line, its state («Cargando…», «Sin conectar», or «Conectado · {cuenta}» plus
@@ -543,30 +543,30 @@ errores visibles junto al campo.
   Proof: src/renderer/settings/connections.test.ts connect guides in three steps
 - **S31** Ajustes shall group Conexiones and Repos in a left column and Apariencia, Idioma, Notificaciones and Cuándo in a right one, and `.ajustes` shall show them side by side while the window is at least 1100 px wide and as one column, left first, below that.
   Proof: src/renderer/settings/connections.test.ts settings use two columns when wide
-### Errores claros (plain-errors, 11 nov 2026)
+### Plain errors (plain-errors, 11 nov 2026)
 
 - **S32** If the Jira check's request throws (an HTTP status or a malformed address keep their own sentences), then Ajustes shall say what failed by cause — host not found (`ENOTFOUND`, `EAI_AGAIN`): «No encuentro {host}.»; a certificate code (starting `CERT_`, `ERR_TLS_`, `SELF_SIGNED`, `UNABLE_TO_`, `DEPTH_ZERO`): «El certificado de {host} no es válido.»; a timeout: «Jira no ha respondido en 10 s.»; anything else: «No responde nada en {origin}.» — each followed by «Revisa la dirección: la de tu Jira suele ser https://tuempresa.atlassian.net.», never with the exception name in the sentence, and under a folded «Ver detalle» the code read from `err.cause.code` when it matches `^[A-Z0-9_]+$`, else the exception's name.
   Proof: src/main/credentials/check.test.ts network failure names the cause and folds the code
   Proof: src/renderer/settings/settings.test.ts jira error folds its detail
 
-### Archivos de estado dañados (state-files, 11 nov 2026)
+### Damaged state files (state-files, 11 nov 2026)
 
 - **S33** While `repos.json` is damaged (W148), the Repos card shall show «No puedo leer repos.json: está dañado. No puedo usar ni cambiar tus repos hasta que se arregle.» with its detail folded and «Mostrar en Finder», and shall not show «Aún no hay ninguno» nor «Añadir repo…».
   Proof: src/renderer/statefiles.test.ts the repos card shows a damaged list instead of empty
 
-### Jira, GitHub y GitLab (net-errors, 11 nov 2026)
+### Jira, GitHub and GitLab (net-errors, 11 nov 2026)
 
 - **S34** If checking a GitHub or GitLab token gets an HTTP error or throws, then Ajustes shall show the W150 sentence for that forge — with «No se ha guardado.» after it — and the code under a folded «Ver detalle», never an exception name in the sentence; no fix button shows in Ajustes, where «Guardar y comprobar» already checks again. Jira keeps S32.
   Proof: src/main/credentials/forge.test.ts a forge check failure names the cause and folds the code
 
-### Repos rotos (repo-gone, 11 nov 2026)
+### Broken repos (repo-gone, 11 nov 2026)
 
 - **S35** Each repo row shall offer «Quitar el repo»; a refusal shows under the row as a problem with «Cerrar aviso».
   Proof: src/renderer/settings/repos.test.ts any repo can be removed and a refusal can be dismissed
 - **S36** A repo with health `missing` or `not-git` shall show «Carpeta no encontrada» or «No es un repo de git» instead of its mode select, and «Buscar la carpeta…».
   Proof: src/renderer/settings/repos.test.ts a broken repo can be found again
 
-### Notificaciones (Ajustes y Avisos) (notify-ui, 14 nov 2026)
+### Notifications (Ajustes and Avisos) (notify-ui, 14 nov 2026)
 
 - **S37** Ajustes shall show «Notificaciones» after «Idioma» with the intro «Todo llega a Avisos. Aquí eliges qué más te interrumpe con un aviso del Mac.» and three groups — «Tus agentes» (ask, done, stopped, idle, radar, qa), «Tus MR» (review, comment, ci, cipass, merged, following, opened) and «Tu cuenta» (quota) — each row with its label, its example text from the sketch, the tag «nuevo» on stopped, idle, radar, qa, cipass and quota, and a radio group «Mac · Solo Avisos · Nada» checked at the stored value; a row at «Nada» is dimmed. One test renders the card and asserts each of these.
   Proof: src/renderer/settings/notifications.test.ts the card lists every type at its stored value
