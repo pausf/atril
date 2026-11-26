@@ -27,7 +27,7 @@ import { createMerge } from './forge/merge'
 import { createQaPublish } from './qa-publish'
 import { ocrText } from './qa-pictures'
 import { createQaHosting, splice } from './forge/qa-hosting'
-import { boxDiff, boxRanges, forgetPlans } from './flow/boxes'
+import { forgetPlans } from './flow/boxes'
 import { closeQuiet } from './flow/quiet'
 import { createClashWatch, radar } from './radar'
 import { changeFolders } from './flow/stage'
@@ -63,7 +63,7 @@ import { loginPath } from './login-path'
 import { run } from './run'
 import { createMrPoll } from './mrpoll'
 import { createQuotaWatch, createUsage } from './usage'
-import { listWorkspaces, listWorkspacesOrNone, readRecordsOrNone, openWorktree, removeWorkspace, flowWorkspace, forgetWorkspace, reopenWorkspace, terminalAt } from './workspaces'
+import { listWorkspaces, listWorkspacesOrNone, readRecordsOrNone, openWorktree, removeWorkspace, flowWorkspace, forgetWorkspace, reopenWorkspace, terminalAt, panelBoxDiff, panelBoxes } from './workspaces'
 import { createFlowHub } from './flow/watch'
 import { installMenu } from './menu'
 import { createNotifier, parseNcprefs } from './notify'
@@ -733,11 +733,11 @@ app.whenReady().then(async () => {
   const currentChange = async (ws: { path: string }): Promise<string | undefined> => (await changeFolders(join(ws.path, '.agents', 'changes')))[0]
   ipcMain.handle('atril:flow:boxes', async (_e, id: string) => {
     const ws = await flowWorkspace(id, run)
-    return ws ? boxRanges(ws.path, ws.baseCommit, await currentChange(ws), run) : { boxes: [], total: 0 }
+    return ws ? panelBoxes(ws, await currentChange(ws), run) : { boxes: [], total: 0 }
   })
   ipcMain.handle('atril:flow:boxdiff', async (_e, id: string, index: unknown, path: unknown) => {
     const ws = await flowWorkspace(id, run)
-    return ws && Number.isInteger(index) && typeof path === 'string' ? boxDiff(ws.path, ws.baseCommit, await currentChange(ws), index as number, path, run) : ''
+    return ws && Number.isInteger(index) && typeof path === 'string' ? panelBoxDiff(ws, await currentChange(ws), index as number, path, run) : ''
   })
   ipcMain.handle('atril:flow:save', async (_e, id: string, change: unknown, name: unknown, text: unknown, mtimeMs: unknown) => {
     const ws = await flowWorkspace(id, run)

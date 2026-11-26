@@ -8,7 +8,7 @@ import { effortOptions, modelOptions } from '../renderer/components/models'
 import { agentArgv, EFFORTS, hooksSettings, MODELS } from './agent'
 import { resourcesDir } from './paths'
 import { run } from './run'
-import { agentSpy, cleanTmp, killTmux, makeRegisteredRepo, tmp, tmuxSock } from './test-helpers'
+import { agentSpy, cleanTmp, killTmux, makeRegisteredRepo, tmp, tmuxSock, workThatMergedMain } from './test-helpers'
 import { updateClaudeConfig, withTrust } from './trust'
 import { proposeStart, start } from './jira/start'
 import { openWorktree, removeWorkspace } from './workspaces'
@@ -737,6 +737,18 @@ describe('subagents hook', () => {
     expect(claim('MultiEdit')).toBeNull()
     expect(claimSize({ home, session: 'atril-unknown', event: 'PostToolUse', tool: 'Edit' })).toBeNull()
   }, 60000)
+
+  it("the branch size counts from where the work left origin's default branch", async () => {
+    const { claimSize } = await import('../../resources/branchsize.mjs')
+    // 900 lines arrived through merging main, 100 are the work's own: under 400, nothing to claim.
+    const w = workThatMergedMain(900, 100)
+    const rec = (extra: object) => ({ id: 'w1', repoId: 'demo', branch: 'feat/w', mode: 'worktree', path: w.path, baseCommit: w.base, agent: 'claude', session: 'atril-w1', paneId: '%1', ...extra })
+    writeFileSync(join(home, 'workspaces.json'), JSON.stringify({ workspaces: [rec({ baseRef: 'origin/main' })] }))
+    expect(claimSize({ home, session: 'atril-w1', event: 'PostToolUse', tool: 'Edit' })).toBeNull()
+    // A record from before baseRef still counts from baseCommit, main's lines included.
+    writeFileSync(join(home, 'workspaces.json'), JSON.stringify({ workspaces: [rec({})] }))
+    expect(claimSize({ home, session: 'atril-w1', event: 'PostToolUse', tool: 'Edit' })).toBe(2)
+  }, 30_000)
 
   it('the idle reminder keeps the question', async () => {
     const questions = [{ question: '¿Cuál?', header: 'Cuál', multiSelect: false, options: [{ label: 'A', description: '' }, { label: 'B', description: '' }] }]

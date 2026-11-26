@@ -2,7 +2,7 @@ import { mkdirSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { run, type Runner } from './run'
-import { cleanTmp, git, tmp } from './test-helpers'
+import { cleanTmp, git, tmp, workThatMergedMain } from './test-helpers'
 import { clock, closeQuiet, openWatchers } from './flow/quiet'
 import { createClashWatch, radar } from './radar'
 import type { RadarHit } from '../preload/api'
@@ -111,6 +111,22 @@ describe('the radar', () => {
       oooo0001: []
     })
   }, 90_000)
+
+  it("a work that merged origin's default branch clashes only on its own files", async () => {
+    const w = workThatMergedMain(3, 2)
+    // b starts from the newer main and edits main.txt, which w only has through the merge, and own.txt, which w wrote.
+    const b = join(tmp(), 'wt')
+    git(w.root, 'worktree', 'add', '-q', '--no-track', '-b', 'feat/b', b, 'origin/main')
+    put(b, 'main.txt', 'changed\n')
+    put(b, 'own.txt', 'b\n')
+    writeFileSync(
+      join(home, 'workspaces.json'),
+      JSON.stringify({ workspaces: [{ ...rec('w1', 'shop', 'feat/w', w.path, w.base), baseRef: 'origin/main' }, { ...rec('b1', 'shop', 'feat/b', b, w.main), baseRef: 'origin/main' }] })
+    )
+    const hits = await radar(run)
+    expect(hits['w1']?.map((h) => [h.id, h.files])).toEqual([['b1', ['own.txt']]])
+    expect(hits['b1']?.map((h) => [h.id, h.files])).toEqual([['w1', ['own.txt']]])
+  }, 30_000)
 
   it('the radar costs nothing while nothing changes', async () => {
     three()

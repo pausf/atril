@@ -39,6 +39,10 @@ Owner: `workspaces` (`src/main/workspaces.ts`, `src/main/radar.ts`, `src/main/in
 
 - Q: (phase 5) How is it built? → A: resolve the base in workspaces (one `defaultRef` + `workBase` in `workspaces.ts`) and pass the resolved base into the unchanged flow functions; merged is a record field; ids ride the radar (assumed; rejected: a `base` argument threaded through `src/main/flow/**`, and a separate «merged» poll of the forge).
 
+- Q: (spec-reviewer) Which ids are a work's own? → A: ids defined in its `.agents/changes/*/*.md` that no `- **<id>**` line under `.agents/` defines at the work's base (W303); ids already on main are nobody's to clash on (assumed).
+- Q: (spec-reviewer) W166/W168 contradicted? → A: both amended in this change; the hook-equals-panel equality gets W312 through one helper `panelBoxes`/`panelBoxDiff` that index.ts calls; `stateOf` gets W313 (assumed).
+- Q: (spec-reviewer) Muted merged notices, reopening a merged work, a failed fetch? → A: ceilings, named in Prior decisions; no extra code (assumed).
+
 ## Outcomes
 
 - «New work» in a repo whose checkout sits on an old branch creates a branch whose first commit is `origin`'s current default branch, not the checkout's HEAD; the person's checkout is not moved.
@@ -77,7 +81,8 @@ Owner: `workspaces` (`src/main/workspaces.ts`, `src/main/radar.ts`, `src/main/in
 - (2026-11-26, work-vs-main) Base = `origin`'s default branch after a fetch, `--no-track`; fallback to the last fetched ref, then to the local HEAD with no `baseRef` (assumed; if wrong, a dialog line naming the base).
 - (2026-11-26, work-vs-main) Size, panel total, boxes and radar measure from `merge-base HEAD <baseRef>`; `stageOf`, history and QA keep `baseCommit` (assumed).
 - (2026-11-26, work-vs-main) `merged: true` is sticky in the record, set by a matched `merged` notice or by ancestry after a new work's fetch. Ceiling: a squash-merged PR with forges disconnected is never seen as merged; the person removes it by hand.
-- (2026-11-26, work-vs-main) Shared criterion ids are a radar warning, not a renumbering (assumed).
+- (2026-11-26, work-vs-main) Shared criterion ids are a radar warning, not a renumbering (assumed). A work's ids are those its change documents define and its base does not.
+- (2026-11-26, work-vs-main) Ceilings of the merged mark: with `merged` notices muted the forge is not asked about vanished MRs (`avisos.ts`), so only ancestry marks; a fetch that fails marks nothing; a reopened merged work keeps reading «Merged» until removed. The hook falls back to `baseCommit` after its own 5 s timeout while the panel may already have the merge-base: the two can differ for one read.
 
 ## Task breakdown
 
@@ -91,7 +96,7 @@ Owner: `workspaces` (`src/main/workspaces.ts`, `src/main/radar.ts`, `src/main/in
 
 - **W300** When a new work (not `existing`, not a review) opens in a worktree of a repo that has a remote named `origin`, main shall run `git fetch origin` with a 15 s timeout and create the branch with `--no-track` from `origin`'s default ref — the target of `refs/remotes/origin/HEAD`, else `refs/remotes/origin/main`, else `refs/remotes/origin/master` — recording that commit as `baseCommit` and the ref's short name (`origin/main`) as `baseRef`; the person's checkout keeps its branch and HEAD.
   Proof: src/main/workspaces.test.ts a new work branches from origin's default branch, not the local checkout
-- **W301** When a new work opens in place (W7), main shall do W300's fetch and switch the person's copy with `git switch --no-track -c <branch> <ref>` from the same default ref, recording the same `baseCommit` and `baseRef`.
+- **W301** When a new work opens in place (W7), main shall do W300's fetch and switch the person's copy with `git switch --no-track -c <branch> <ref>` from the same default ref, recording the same `baseCommit` and `baseRef`; a branch that already exists locally is switched to as it is, with its HEAD as `baseCommit` and no `baseRef`.
   Proof: src/main/workspaces.test.ts an in-place new work starts from origin's default branch
 - **W302** If W300's or W301's fetch fails or times out, then main shall branch from the default ref as last fetched; if the repo has no `origin` remote or none of the three refs resolves, then it shall branch from the local HEAD as before this change and record no `baseRef`.
   Proof: src/main/workspaces.test.ts without a reachable origin a new work uses the last fetched default branch or the local HEAD
@@ -99,20 +104,29 @@ Owner: `workspaces` (`src/main/workspaces.ts`, `src/main/radar.ts`, `src/main/in
   Proof: src/main/workspaces.test.ts workBase answers where the work left its base ref and spawns nothing while quiet
 - **W304** While a record has `baseRef`, the branch size the hook claims (W45) shall be counted against the same base as W303.
   Proof: src/main/agent.test.ts the branch size counts from where the work left origin's default branch
-- **W305** The radar (W166) shall list each work's files against W303's base, so a work that merged a newer `origin/main` clashes only on files it changed itself; the panel's total and boxes (`atril:flow:boxes`, `atril:flow:boxdiff`) shall use the same base.
+- **W305** The radar (W166) shall list each work's files against W303's base, so a work that merged a newer `origin/main` clashes only on files it changed itself.
   Proof: src/main/radar.test.ts a work that merged origin's default branch clashes only on its own files
+- **W312** The panel's boxes and total (`atril:flow:boxes`) and a box's diff (`atril:flow:boxdiff`) shall be computed against W303's base, through `panelBoxes` and `panelBoxDiff`, so the panel's total equals the hook's count (W46) for a work with `baseRef`.
+  Proof: src/main/workspaces.test.ts the panel's total counts from the same base as the hook
 - **W306** When a `merged` notice is added and W187's rule matches it to a work, main shall set `merged: true` on that work's record; a `closed` notice or a notice with no match changes no record.
   Proof: src/main/workspaces.test.ts a merged notice marks its work merged and nothing else
-- **W307** When W300's or W301's fetch succeeds, main shall set `merged: true` on every other non-review record of that repo whose branch (`refs/heads/<branch>` in the repo) has at least one commit after its `baseCommit` and is an ancestor of the default ref; a branch with no commits of its own, with a commit not in the default ref, or missing, stays as it is.
+- **W307** When W300's or W301's fetch succeeds, main shall set `merged: true` on every other non-review record of that repo whose branch (`refs/heads/<branch>` in the repo) has at least one commit after its `baseCommit` and is an ancestor of the default ref; a branch with no commits of its own, with a commit not in the default ref, or missing, stays as it is; a failed fetch marks nothing.
   Proof: src/main/workspaces.test.ts a new work's fetch marks siblings whose branch already landed
 - **W308** The radar shall leave every `merged` record out on both sides: it gets an empty list and appears in nobody's.
   Proof: src/main/radar.test.ts a merged work is out of the clash check
-- **W309** While a work's record is `merged`, its row shall show «Merged» in place of its agent state and no agent card even while its agent waits for the person, and `stateOf` shall answer `done` for it; «Remove» behaves as before (W136).
+- **W309** While a work's record is `merged`, its row shall show «Merged» in place of its agent state and no agent card even while its agent waits for the person; «Remove» behaves as before (W136).
   Proof: src/renderer/radar.test.ts a merged work reads Merged with no agent card
-- **W310** Each radar hit shall carry `ids`: the criterion ids both works define in their own `.agents/changes/*/*.md` — lines starting `- **<capital letters><digits>**` whose line does not contain `(amended` — sorted with numbers in numeric order; a hit exists when files or ids are shared; files are read with `lstat`, links are not followed and files over 1 MB are skipped.
+- **W313** `stateOf` shall answer `done` for a `merged` work whatever its agent's state.
+  Proof: src/renderer/agents.test.ts a merged work counts as done
+- **W310** Each radar hit shall carry `ids`: the ids both works own, where a work owns an id defined by a line starting `- **<capital letters><digits>**` without `(amended` in one of its `.agents/changes/*/*.md`, and that no such line anywhere under `.agents/` defines in the work's base commit (W303); sorted by `localeCompare` with `numeric: true`; files are read with `lstat`, links are not followed and files over 1 MB are skipped.
   Proof: src/main/radar.test.ts two works defining the same new criterion ids clash on those ids
-- **W311** When a row's hits share ids, the row shall show «Same criterion ids as {branch}: {id}», or «… {id} and {n} more» with more than one, for the first hit with ids, and list `{branch}: {id}` for every shared id on hover; the file line (W168) shows as before.
+- **W311** When a row's hits share ids, the row shall show, under the file line, «Same criterion ids as {branch}: {id}» for the first hit with ids and its first id, followed by « and {n} more» where n is that hit's ids minus one, with every «{branch}: {id}» of every hit as the line's title.
   Proof: src/renderer/radar.test.ts a row with shared criterion ids says which and with whom
+- **W166** (amended) Main shall answer, for every workspace record that is neither a review nor `merged` (W308), the other such records of the same repo that change at least one of the same files against W303's base (committed or not) or own at least one of the same criterion ids (W310), as `{ id, branch, files, ids }` with repo-relative files sorted; records of different repos never collide, and a record sharing no file and no id gets an empty list.
+  Proof: src/main/radar.test.ts two works on one file collide and nothing else does
+- **W168** (amended) A workspace row whose collisions share files shall show, under its repo line and in the secondary grey, «Clashes with {branch} in {file}» for the first collision with files and its first file, followed by « and {n} more» where n is the total of files across all its collisions minus one, with every «{branch}: {file}» as the line's title; a row without shared files shows no such line. The window asks the radar every 10 s.
+  Proof: src/renderer/radar.test.ts a colliding row says with whom and where
+  Proof: src/renderer/radar.test.ts a row without collisions shows nothing new
 
 ## Approach
 
@@ -150,12 +164,14 @@ signature changes), `src/preload/api.ts`, `src/preload/i18n-es.ts`, `src/rendere
   run, merge-base)` with `baseCommit` on failure.
 - **Hook** (`branchsize.mjs` `claimSize`): `base = ws.baseRef ? mergeBase(ws.path, ws.baseRef) ?? ws.baseCommit :
   ws.baseCommit` through its own `git()` (5 s timeout).
-- **index.ts**: `atril:flow:boxes` and `atril:flow:boxdiff` pass `await workBase(ws, run)` instead of `ws.baseCommit`;
+- **index.ts**: `atril:flow:boxes` and `atril:flow:boxdiff` call `panelBoxes(ws, change, run)` / `panelBoxDiff(ws, change, index, file, run)` (workspaces.ts: `boxRanges`/`boxDiff` with `await workBase(ws, run)`);
   `tell` also passes the added notices to `markMergedFrom(added, closable)` (workspaces.ts), which marks the matched
   work of each `merged` notice.
 - **radar.ts**: filters `!r.merged`; inside the existing `quietly` callback lists changes against `await workBase(r)`
   and reads ids (`changeIds(path)`: `readdir .agents/changes`, per folder per `*.md`, `lstat` is a file ≤ 1 MB, regex
-  `^- \*\*([A-Z]+\d+)\*\*` per line not containing `(amended`). The answer per work becomes `{ files, ids }`; a hit
+  `^- \*\*([A-Z]+\d+)\*\*` per line not containing `(amended`), minus the ids its base already defines: `git grep -h -E
+  '^- \*\*[A-Z]+[0-9]+\*\*' <base> -- .agents` (exit 1 means none). The cache key stays `radar:<baseCommit>`: the
+  watcher already invalidates it on any `refs/` change, which is what moves the merge-base. The answer per work becomes `{ files, ids }`; a hit
   holds both shared sets and exists when either is non-empty. `createClashWatch` keeps reading `files` only.
 - **Renderer**: `stateOf` answers `done` for `w.merged`; the row shows `<span className="state done">{t('Merged')}</span>`
   for a merged work instead of `StateLabel` and gates the agent card on `stateOf(...) === 'needs-you'`; `RadarLine`
@@ -199,8 +215,8 @@ moves origin after the clone); W305 (a fixture with no merge of main passes triv
 
 ## Checklist
 
-- [ ] A new work starts from origin's default branch (worktree and in place, with fallbacks) · Closes: W300, W301, W302
-- [ ] `workBase` and its use in the hook's size, the panel's boxes and the radar · waits on box 1 · Closes: W303, W304, W305
-- [ ] Merged marks from notices and from ancestry after a fetch, merged works out of the radar, the row reads Merged · waits on box 1 · Closes: W306, W307, W308, W309
-- [ ] Shared criterion ids in the radar and on the row · waits on box 2 · Closes: W310, W311
+- [x] A new work starts from origin's default branch (worktree and in place, with fallbacks) · Closes: W300, W301, W302
+- [x] `workBase` and its use in the hook's size, the panel's boxes and the radar · waits on box 1 · Closes: W303, W304, W305, W312
+- [ ] Merged marks from notices and from ancestry after a fetch, merged works out of the radar, the row reads Merged · waits on box 1 · Closes: W306, W307, W308, W309, W313
+- [ ] Shared criterion ids in the radar and on the row · waits on box 2 · Closes: W310, W311, W166, W168
 - [ ] Drive it in the real app on its own CDP port with a temp ATRIL_HOME (a merged work, a clash on ids) · waits on boxes 3 and 4

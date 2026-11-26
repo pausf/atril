@@ -4,8 +4,9 @@ import { rmSync, symlinkSync, writeFileSync } from 'node:fs'
 import type { Effort } from '../preload/api'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { agentSpy, cleanTmp, git, killTmux, makeRegisteredRepo, tmp, tmuxOut, tmuxSock } from './test-helpers'
-import { flowWorkspace, forgetWorkspace, listWorkspaces, openWorktree, readRecords, removeWorkspace, reopenWorkspace, terminalAt, writeRecords } from './workspaces'
+import { agentSpy, cleanTmp, git, killTmux, makeRegisteredRepo, tmp, tmuxOut, tmuxSock, workThatMergedMain } from './test-helpers'
+import { closeQuiet, openWatchers } from './flow/quiet'
+import { flowWorkspace, forgetWorkspace, listWorkspaces, openWorktree, panelBoxes, readRecords, removeWorkspace, reopenWorkspace, terminalAt, workBase, writeRecords } from './workspaces'
 import { qaStatus } from './qa'
 import { run, type Runner } from './run'
 
@@ -708,4 +709,133 @@ describe('workspaces', () => {
     if (!('workspace' in viaDir)) throw new Error(viaDir.error)
     expect(told(spy.argvs.at(-1)!)).toBe(false)
   }, 60_000)
+})
+
+describe('the base of a new work', () => {
+  /** origin with `main`; main then moves on origin; the person's checkout sits on an older branch of its own. */
+  function drifted(): { bare: string; ahead: string; stale: string } {
+    const bare = tmp()
+    git(bare, 'init', '--bare', '-q', '-b', 'main')
+    git(repo, 'branch', '-M', 'main')
+    git(repo, 'remote', 'add', 'origin', bare)
+    git(repo, 'push', '-q', 'origin', 'main')
+    git(repo, 'fetch', '-q', 'origin')
+    git(repo, 'remote', 'set-head', 'origin', 'main')
+    const other = tmp()
+    git(other, 'clone', '-q', bare, '.')
+    writeFileSync(join(other, 'merged.txt'), 'landed on main')
+    git(other, 'add', '.')
+    git(other, 'commit', '-q', '-m', 'landed')
+    git(other, 'push', '-q', 'origin', 'main')
+    const ahead = git(other, 'rev-parse', 'HEAD').trim()
+    git(repo, 'switch', '-q', '-c', 'crash-reports')
+    writeFileSync(join(repo, 'stale.txt'), 'old work')
+    git(repo, 'add', '.')
+    git(repo, 'commit', '-q', '-m', 'stale')
+    return { bare, ahead, stale: git(repo, 'rev-parse', 'HEAD').trim() }
+  }
+  const tracking = (path: string, branch: string): string => {
+    try {
+      return git(path, 'config', `branch.${branch}.merge`).trim()
+    } catch {
+      return ''
+    }
+  }
+
+  it("a new work branches from origin's default branch, not the local checkout", async () => {
+    const { ahead, stale } = drifted()
+    const calls: Array<{ args: string[]; timeoutMs?: number }> = []
+    const spy: Runner = (cmd, args, opts) => {
+      if (cmd === 'git') calls.push({ args, timeoutMs: opts?.timeoutMs })
+      return run(cmd, args, opts)
+    }
+    const r = await openWorktree({ repoId: 'demo', branch: 'feat/fresh', agent: 'claude', argv: SLEEP }, spy)
+    if (!('workspace' in r)) throw new Error(r.error)
+
+    expect(calls.find((c) => c.args.includes('fetch'))).toEqual({ args: ['-C', repo, 'fetch', 'origin'], timeoutMs: 15_000 })
+    expect(git(r.workspace.path, 'rev-parse', 'HEAD').trim()).toBe(ahead)
+    expect(existsSync(join(r.workspace.path, 'merged.txt'))).toBe(true)
+    expect(existsSync(join(r.workspace.path, 'stale.txt'))).toBe(false)
+    expect(r.workspace.baseCommit).toBe(ahead)
+    expect(r.workspace.baseRef).toBe('origin/main')
+    // A branch tracking main under another name would aim a plain push at main.
+    expect(tracking(repo, 'feat/fresh')).toBe('')
+    expect(git(repo, 'branch', '--show-current').trim()).toBe('crash-reports')
+    expect(git(repo, 'rev-parse', 'HEAD').trim()).toBe(stale)
+  }, 30_000)
+
+  it("an in-place new work starts from origin's default branch", async () => {
+    const { ahead } = drifted()
+    writeFileSync(join(home, 'repos.json'), JSON.stringify({ repos: [{ id: 'demo', path: repo, override: 'in-place' }] }))
+    const r = await openWorktree({ repoId: 'demo', branch: 'feat/here', agent: 'claude', argv: SLEEP })
+    if (!('workspace' in r)) throw new Error(r.error)
+
+    expect(git(repo, 'branch', '--show-current').trim()).toBe('feat/here')
+    expect(git(repo, 'rev-parse', 'HEAD').trim()).toBe(ahead)
+    expect(r.workspace.baseCommit).toBe(ahead)
+    expect(r.workspace.baseRef).toBe('origin/main')
+    expect(r.workspace.previousBranch).toBe('crash-reports')
+    expect(tracking(repo, 'feat/here')).toBe('')
+  }, 30_000)
+
+  it('without a reachable origin a new work uses the last fetched default branch or the local HEAD', async () => {
+    const { bare } = drifted()
+    const lastFetched = git(repo, 'rev-parse', 'origin/main').trim()
+    // origin/HEAD gone too: origin/main is the second place to look.
+    git(repo, 'remote', 'set-head', 'origin', '-d')
+    rmSync(bare, { recursive: true, force: true })
+    const offline = await openWorktree({ repoId: 'demo', branch: 'feat/offline', agent: 'claude', argv: SLEEP })
+    if (!('workspace' in offline)) throw new Error(offline.error)
+    expect(git(offline.workspace.path, 'rev-parse', 'HEAD').trim()).toBe(lastFetched)
+    expect(offline.workspace.baseRef).toBe('origin/main')
+
+    // A fetch that times out counts as failed, the same way.
+    const slow: Runner = (cmd, args, opts) => (args.includes('fetch') ? Promise.resolve({ code: 124, stdout: '', stderr: 'timed out' }) : run(cmd, args, opts))
+    const timedOut = await openWorktree({ repoId: 'demo', branch: 'feat/slow', agent: 'claude', argv: SLEEP }, slow)
+    if (!('workspace' in timedOut)) throw new Error(timedOut.error)
+    expect(timedOut.workspace.baseCommit).toBe(lastFetched)
+
+    // No origin at all: the local HEAD, as before, and no baseRef.
+    git(repo, 'remote', 'remove', 'origin')
+    const head = git(repo, 'rev-parse', 'HEAD').trim()
+    const local = await openWorktree({ repoId: 'demo', branch: 'feat/local', agent: 'claude', argv: SLEEP })
+    if (!('workspace' in local)) throw new Error(local.error)
+    expect(local.workspace.baseCommit).toBe(head)
+    expect(local.workspace.baseRef).toBeUndefined()
+  }, 40_000)
+})
+
+describe('the base a work is measured from', () => {
+  afterEach(() => {
+    for (const p of openWatchers()) closeQuiet(p)
+  })
+
+  it('workBase answers where the work left its base ref and spawns nothing while quiet', async () => {
+    const w = workThatMergedMain(900, 100)
+    let spawns = 0
+    const spy: Runner = (cmd, args, opts) => {
+      spawns++
+      return run(cmd, args, opts)
+    }
+    const rec = { path: w.path, baseCommit: w.base, baseRef: 'origin/main' }
+    expect(await workBase(rec, spy)).toBe(w.main)
+    await new Promise((ok) => setTimeout(ok, 300))
+    spawns = 0
+    expect(await workBase(rec, spy)).toBe(w.main)
+    expect(spawns).toBe(0)
+
+    // No baseRef: baseCommit, without asking git. A ref that does not resolve: baseCommit too.
+    expect(await workBase({ path: w.path, baseCommit: w.base }, spy)).toBe(w.base)
+    expect(spawns).toBe(0)
+    expect(await workBase({ path: w.path, baseCommit: w.base, baseRef: 'origin/gone' }, spy)).toBe(w.base)
+  }, 30_000)
+
+  it("the panel's total counts from the same base as the hook", async () => {
+    const { branchSize } = await import('../../resources/branchsize.mjs')
+    const w = workThatMergedMain(900, 100)
+    const rec = { path: w.path, baseCommit: w.base, baseRef: 'origin/main' }
+    // own.txt's 100 lines; main.txt's 900 came in through the merge.
+    expect((await panelBoxes(rec, undefined)).total).toBe(100)
+    expect(branchSize(w.path, await workBase(rec))).toBe(100)
+  }, 30_000)
 })
