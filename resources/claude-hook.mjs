@@ -224,6 +224,8 @@ try {
 
   // W217, W218, W225: a stop with open boxes is answered here and the agent keeps going.
   let blocks = event === 'UserPromptSubmit' ? 0 : Number.isInteger(prev.blocks) ? prev.blocks : 0
+  // W221: the turn a state belongs to, so main can tell one turn end notified twice.
+  const turn = event === 'UserPromptSubmit' ? at : Number.isInteger(prev.turn) ? prev.turn : undefined
   // W44: Claude's question tool is a stop (Libretto's before code is one): it waits for the person.
   let state = event === 'PreToolUse' && payload?.tool_name === 'AskUserQuestion' ? 'needs-you' : STATES[event]
   // W219: a question to the person in prose is a wait, whatever is left to do.
@@ -258,7 +260,7 @@ try {
   else {
     const body = asked ? { text: `Te pregunta: ${asked}` } : (state === 'needs-you' || state === 'done') && line ? { text: line.text } : {}
     const kind = asked ? { kind: 'question', questions: [{ question: asked, header: '', options: [], multiSelect: false }] } : details(event, state, payload, prev, lastTool)
-    replace(stateFile, JSON.stringify({ state, at, ...body, ...kind, ...(idle && { idle: true }), blocks }) + '\n')
+    replace(stateFile, JSON.stringify({ state, at, ...body, ...kind, ...(idle && { idle: true }), blocks, ...(turn !== undefined && { turn }) }) + '\n')
   }
 
   try {

@@ -474,6 +474,37 @@ describe('answers', () => {
     for (const s of ['working', 'paused', 'stopped'] as const) expect(leftWait(s)).toBe(true)
   }, 30_000)
 
+  it('the same turn end notifies once', async () => {
+    const { createStatus } = await import('./status')
+    const ws = await open(SLEEP)
+    const notify = vi.fn()
+    const status = createStatus({ onChange: () => {}, notify })
+    await status.refresh()
+    let at = 1
+    const step = async (body: object): Promise<void> => {
+      wait(ws.session, { at: at++, ...body })
+      await status.refresh()
+    }
+    const calls = (): unknown[] => notify.mock.calls.map((c) => [c[1], c[2]])
+    await step({ state: 'done', turn: 10, text: 'Claude dice: listo' })
+    await step({ state: 'working', turn: 10 })
+    // The same turn, the same end: no second notice.
+    await step({ state: 'done', turn: 10, text: 'Claude dice: listo' })
+    expect(calls()).toEqual([['done', 'Claude dice: listo']])
+    // Another kind in that turn is news; so is the same end in a new turn.
+    await step({ state: 'working', turn: 10 })
+    await step({ kind: 'turn-end', turn: 10, text: 'Claude dice: listo' })
+    await step({ state: 'working', turn: 11 })
+    await step({ state: 'done', turn: 11, text: 'Claude dice: listo' })
+    expect(calls()).toHaveLength(3)
+    // Without a turn, nothing matches: W27 as before.
+    for (let i = 0; i < 2; i++) {
+      await step({ state: 'working' })
+      await step({ state: 'done', text: 'Claude dice: listo' })
+    }
+    expect(calls()).toHaveLength(5)
+  }, 30_000)
+
   it('a done agent waits for its subagents too', async () => {
     const { createStatus } = await import('./status')
     const ws = await open(SLEEP)

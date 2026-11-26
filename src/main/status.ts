@@ -33,6 +33,7 @@ interface HookFile {
   questions?: unknown
   permission?: unknown
   idle?: unknown
+  turn?: unknown
   /** Before W197: the first question's labels. */
   options?: unknown
   multiSelect?: unknown
@@ -318,6 +319,15 @@ export function createStatus({ run = defaultRun, onChange, notify, stopped = () 
   const since = new Map<string, number>()
   /** Per session in needs-you: main's clock at the entry, the hook text last seen, whether W180 fired. */
   const waits = new Map<string, { at: number; text: string | undefined; reminded: boolean }>()
+  /** W221: per workspace, the turn, kind and text of the last entry notified. */
+  const notified = new Map<string, string>()
+  const fresh = (ws: WorkspaceView, file: HookFile, next: AgentState): boolean => {
+    if (!Number.isInteger(file.turn)) return true
+    const key = `${file.turn}|${next === 'done' ? 'done' : (kindOfWait(file) ?? '')}|${str(file.text)}`
+    if (notified.get(ws.id) === key) return false
+    notified.set(ws.id, key)
+    return true
+  }
   let busy = false
   let seeded = false
   let timer: NodeJS.Timeout | undefined
@@ -349,10 +359,10 @@ export function createStatus({ run = defaultRun, onChange, notify, stopped = () 
             const text = typeof file.text === 'string' ? plainWait(file.text) : undefined
             waits.set(ws.id, { at: now(), text, reminded: false })
             // The first pass only records: reopening Atril must not announce what was already waiting.
-            if (seeded && shouldNotify(prev, next)) notify(ws, kindOf(text), text)
+            if (seeded && shouldNotify(prev, next) && fresh(ws, file, next)) notify(ws, kindOf(text), text)
           } else {
             waits.delete(ws.id)
-            if (next === 'done' && seeded && shouldNotify(prev, next)) notify(ws, 'done', typeof file.text === 'string' ? file.text : undefined)
+            if (next === 'done' && seeded && shouldNotify(prev, next) && fresh(ws, file, next)) notify(ws, 'done', typeof file.text === 'string' ? file.text : undefined)
           }
           if (seeded && next === 'stopped' && prev !== undefined && !closing(ws.id)) stops.push(ws)
           continue
@@ -374,6 +384,7 @@ export function createStatus({ run = defaultRun, onChange, notify, stopped = () 
           known.delete(id)
           since.delete(id)
           waits.delete(id)
+          notified.delete(id)
           left(id)
         }
       if (stops.length) stopped(stops)

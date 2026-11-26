@@ -536,6 +536,16 @@ describe('subagents hook', () => {
     }
   }, 60000)
 
+  it('a prompt starts a turn that every event carries', async () => {
+    const before = Math.floor(Date.now() / 1000)
+    const carried = stateOf((await fireIn([['UserPromptSubmit', { prompt: 'x' }], bash('ls'), ['PostToolUse', { tool_name: 'Bash' }], ['Stop', {}], idle])).session)
+    expect(carried).toMatchObject({ state: 'done', idle: true })
+    expect(carried['turn']).toBeGreaterThanOrEqual(before)
+    expect(carried['turn']).toBeLessThanOrEqual(carried['at'] as number)
+    // No prompt yet: no turn.
+    expect(stateOf((await fireIn([bash('ls'), ['Stop', {}]])).session)).not.toHaveProperty('turn')
+  }, 30000)
+
   it('the hook says what kind of wait it is', async () => {
     const q = { question: '¿Sigo?', header: 'Seguir', options: [{ label: 'Sí' }, { label: 'No' }] }
     expect(stateOf((await fireIn([ask([q])])).session)).toMatchObject({ state: 'needs-you', kind: 'question' })
