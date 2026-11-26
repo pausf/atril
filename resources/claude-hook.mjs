@@ -227,33 +227,36 @@ try {
   // W44: Claude's question tool is a stop (Libretto's before code is one): it waits for the person.
   let state = event === 'PreToolUse' && payload?.tool_name === 'AskUserQuestion' ? 'needs-you' : STATES[event]
   // W219: a question to the person in prose is a wait, whatever is left to do.
+  // W228: a stop while a question or permission still waits stays that wait's turn end, as before.
+  const pending = prev.state === 'needs-you' && (prev.kind === 'question' || prev.kind === 'permission')
   let asked = ''
-  if (event === 'Stop' && typeof payload?.transcript_path === 'string') {
+  if (event === 'Stop' && !pending && typeof payload?.transcript_path === 'string') {
     try {
       asked = proseQuestion(lastText(readTail(payload.transcript_path)))
     } catch {
       /* unreadable transcript: no question */
     }
   }
-  if (event === 'Stop' && !asked) {
+  if (event === 'Stop' && !asked && !pending) {
     const open = openBoxes(payload?.cwd)
     const stop = decideStop({ open, active: payload?.stop_hook_active, blocks, paused: existsSync(join(home, 'paused', name)) })
     blocks = stop.blocks
     if (stop.outcome === 'block') {
       state = 'working'
       process.stdout.write(JSON.stringify({ decision: 'block', reason: reason(open) }))
-    }
+    } else if (stop.outcome === undefined) state = 'done' // W220: nothing open, nothing asked
+
   }
 
   // W87: Atril's pause mark goes when the person types or the agent waits; a late tool event keeps it.
   // Claude Code's idle reminder after a minute at the prompt is not a question: a pause survives it (W87).
   const idle = event === 'Notification' && (payload?.notification_type === 'idle_prompt' || /waiting for your input/i.test(text(payload?.message)))
-  if (event === 'UserPromptSubmit' || (state === 'needs-you' && !idle)) rmSync(join(home, 'paused', name), { force: true })
+  if (event === 'UserPromptSubmit' || ((state === 'needs-you' || state === 'done') && !idle)) rmSync(join(home, 'paused', name), { force: true })
 
   // W195: the idle reminder is no new question; a waiting state keeps everything and only says it has been a while.
-  if (idle && prev.state === 'needs-you') replace(stateFile, JSON.stringify({ ...prev, idle: true }) + '\n')
+  if (idle && (prev.state === 'needs-you' || prev.state === 'done')) replace(stateFile, JSON.stringify({ ...prev, idle: true }) + '\n')
   else {
-    const body = asked ? { text: `Te pregunta: ${asked}` } : state === 'needs-you' && line ? { text: line.text } : {}
+    const body = asked ? { text: `Te pregunta: ${asked}` } : (state === 'needs-you' || state === 'done') && line ? { text: line.text } : {}
     const kind = asked ? { kind: 'question', questions: [{ question: asked, header: '', options: [], multiSelect: false }] } : details(event, state, payload, prev, lastTool)
     replace(stateFile, JSON.stringify({ state, at, ...body, ...kind, ...(idle && { idle: true }), blocks }) + '\n')
   }

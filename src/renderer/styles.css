@@ -1061,7 +1061,8 @@ kbd {
 .state.needs-you {
   color: var(--you-text);
 }
-.state.paused {
+.state.paused,
+.state.done {
   color: var(--sub);
 }
 .state.stopped {

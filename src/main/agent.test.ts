@@ -524,16 +524,31 @@ describe('subagents hook', () => {
     expect(JSON.parse(told.outs[0] ?? '').decision).toBe('block')
   }, 60000)
 
+  it('a stop with nothing left is done', async () => {
+    for (const cwd of [repoWithBoxes(0), undefined]) {
+      const { session, outs } = await fireIn([['Stop', { ...(cwd && { cwd }), stop_hook_active: false }]], { paused: true })
+      expect(outs[0]).toBe('')
+      const state = stateOf(session)
+      expect(state).toMatchObject({ state: 'done', text: 'Claude ha terminado' })
+      expect(state).not.toHaveProperty('kind')
+      // Done is a wait for the pause mark: it goes.
+      expect(existsSync(join(home, 'paused', session))).toBe(false)
+    }
+  }, 60000)
+
   it('the hook says what kind of wait it is', async () => {
     const q = { question: '¿Sigo?', header: 'Seguir', options: [{ label: 'Sí' }, { label: 'No' }] }
     expect(stateOf((await fireIn([ask([q])])).session)).toMatchObject({ state: 'needs-you', kind: 'question' })
     expect(stateOf((await fireIn([bash('ls'), permit()])).session)).toMatchObject({ state: 'needs-you', kind: 'permission' })
     // The older wording without notification_type is a permission too.
     expect(stateOf((await fireIn([bash('ls'), permit({})])).session)).toMatchObject({ state: 'needs-you', kind: 'permission' })
-    expect(stateOf((await fireIn([['Stop', {}]])).session)).toMatchObject({ state: 'needs-you', kind: 'turn-end' })
+    // A Stop with open boxes past the cap is a turn end (W225); with nothing open, done (W220).
+    expect(stateOf((await fireIn([['Stop', { cwd: repoWithBoxes(1) }]], { paused: true })).session)).toMatchObject({ state: 'needs-you', kind: 'turn-end' })
+    expect(stateOf((await fireIn([['Stop', {}]])).session)).toMatchObject({ state: 'done' })
     // The idle reminder leaves the kind as it was and only says it has been a while.
-    const reminded = stateOf((await fireIn([['Stop', {}], idle])).session)
+    const reminded = stateOf((await fireIn([['Stop', { cwd: repoWithBoxes(1) }], idle], { paused: true })).session)
     expect(reminded).toMatchObject({ state: 'needs-you', kind: 'turn-end', idle: true })
+    expect(stateOf((await fireIn([['Stop', {}], idle])).session)).toMatchObject({ state: 'done', idle: true })
     // Any other notification is a wait of no known kind, read by its prefix as before.
     expect(stateOf((await fireIn([['Notification', { message: 'hola' }]])).session).kind).toBeUndefined()
     // Working states carry no kind.
@@ -570,8 +585,12 @@ describe('subagents hook', () => {
 
     // They go when the state leaves needs-you, and do not come back with the next stop.
     const left = stateOf((await fireIn([ask([first]), ['PostToolUse', { tool_name: 'AskUserQuestion' }], ['Stop', {}]])).session)
-    expect(left).toMatchObject({ state: 'needs-you', kind: 'turn-end' })
+    expect(left).toMatchObject({ state: 'done' })
     expect(left).not.toHaveProperty('questions')
+    // W228: a pending question is never kept going over, open boxes or not.
+    const pending = await fireIn([ask([first]), ['Stop', { cwd: repoWithBoxes(2), stop_hook_active: false }]])
+    expect(pending.outs[1]).toBe('')
+    expect(stateOf(pending.session)).toMatchObject({ state: 'needs-you', kind: 'turn-end', questions: [stored[0]] })
     const leaving = stateOf((await fireIn([ask([first]), ['UserPromptSubmit', { prompt: 'sigue' }]])).session)
     expect(leaving).toMatchObject({ state: 'working' })
     expect(leaving).not.toHaveProperty('questions')

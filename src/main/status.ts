@@ -20,7 +20,10 @@ const pauseFile = (session: string): string => join(atrilHome(), 'paused', sessi
 
 /** One notification per entry into needs-you (W15, W27). */
 export const shouldNotify = (prev: AgentState | undefined, next: AgentState): boolean =>
-  next === 'needs-you' && prev !== 'needs-you'
+  (next === 'needs-you' || next === 'done') && prev !== next
+
+/** V11: a state that leaves the wait behind marks its notices read; entering `done` does not (W15). */
+export const leftWait = (state: AgentState): boolean => state !== 'needs-you' && state !== 'done'
 
 interface HookFile {
   state?: string
@@ -77,9 +80,9 @@ const nextQuestion = (session: string, file: HookFile): number => {
   return p && p.at === file.at ? p.next : 0
 }
 
-/** W199: an end of turn while one of its subagents still runs is not a wait yet. */
+/** W199: an end of turn, or done, while one of its subagents still runs is not a wait yet. */
 async function behindSubagent(session: string, file: HookFile): Promise<boolean> {
-  if (file.state !== 'needs-you' || kindOfWait(file) !== 'turn-end') return false
+  if (file.state !== 'done' && (file.state !== 'needs-you' || kindOfWait(file) !== 'turn-end')) return false
   return ((await readSubagents(session)) ?? []).some((e) => e.endedAt === undefined)
 }
 
@@ -116,7 +119,7 @@ async function hookState(session: string): Promise<AgentState> {
   if (existsSync(pauseFile(session))) return 'paused'
   const file = await hookFile(session)
   if (await behindSubagent(session, file)) return 'working'
-  return file.state === 'needs-you' || file.state === 'working' ? file.state : 'working'
+  return file.state === 'needs-you' || file.state === 'done' || file.state === 'working' ? file.state : 'working'
 }
 
 /** What a needs-you agent waits for (W200–W202); null otherwise. */
@@ -347,7 +350,10 @@ export function createStatus({ run = defaultRun, onChange, notify, stopped = () 
             waits.set(ws.id, { at: now(), text, reminded: false })
             // The first pass only records: reopening Atril must not announce what was already waiting.
             if (seeded && shouldNotify(prev, next)) notify(ws, kindOf(text), text)
-          } else waits.delete(ws.id)
+          } else {
+            waits.delete(ws.id)
+            if (next === 'done' && seeded && shouldNotify(prev, next)) notify(ws, 'done', typeof file.text === 'string' ? file.text : undefined)
+          }
           if (seeded && next === 'stopped' && prev !== undefined && !closing(ws.id)) stops.push(ws)
           continue
         }

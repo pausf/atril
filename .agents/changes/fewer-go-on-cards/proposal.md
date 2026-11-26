@@ -94,7 +94,11 @@ Durable decisions: the six in Prior decisions below
   Proof: src/renderer/components/agentcard.test.tsx a question in prose shows without buttons
 - **W226** While a workspace is in Automático, a question wait whose due question has no options shall not be answered by Atril, and Atril shall add one `ask` notice for it (W15).
   Proof: src/main/status.test.ts automatic leaves a question in prose to the person
-- **W220** When the hook gets `Stop` and none of W217, W225 or W219 applies, it shall write `state: done` with the turn's text as today and no `kind`, and remove the pause mark as for `needs-you`.
+- **W228** If the hook gets `Stop` while its state file says `needs-you` with `kind` `question` or `permission`, then it shall write `needs-you` with `kind: turn-end`, keeping the stored questions, as before this change: no block, no W219, no `done`.
+  Proof: src/main/agent.test.ts the hook keeps every question and what a permission is for
+- **W26** (amended) When a Claude hook reports `Stop` for a session, Atril shall set its agent state as W217–W220 and W228 decide (`working`, `needs-you` or `done`; with no checklist and no question, `done`); when it reports `UserPromptSubmit`, to `working`.
+  Proof: src/main/status.test.ts stop marks done and prompt submit marks working
+- **W220** When the hook gets `Stop` and none of W228, W217, W225 or W219 applies, it shall write `state: done` with the turn's text as today and no `kind`, and remove the pause mark as for `needs-you`.
   Proof: src/main/agent.test.ts a stop with nothing left is done
 - **W227** Atril shall report a session whose state file says `done` as `done`, with no wait (`waitOf` null) and outside «Siguiente» (N1), and Automático shall send nothing to it.
   Proof: src/main/status.test.ts a done agent is done, not a wait
@@ -171,6 +175,6 @@ New tests (red first): the four hook cases in `agent.test.ts`, three in `status.
 
 - [x] Keep going on its own: `keepgoing.mjs` (`openBoxes`, `decideStop`, reason), the hook blocks a `Stop` with open boxes, carries `blocks` and `turn`, stops blocking after 5 or under a pause mark (today's turn-end otherwise) · Closes: W217, W218, W225
 - [x] A question in prose: `summarise.mjs` `lastText`, `proseQuestion`, the hook writes a question wait with one option-less question; the card shows it without buttons; Automático leaves it · waits on box 1 · Closes: W219, W223, W226
-- [ ] Done: the hook writes `state: done` when nothing is open and nothing is asked; `AgentState` `done` through main (state, `done` notice, no V11 expiry, Automático ignores it, out of «Siguiente») and the renderer («terminado», icon, «Todos» order) · waits on box 2 · Closes: W220, W227, W199, W197, W15, W27, W222, W224, V11, F51
+- [x] Done: the hook writes `state: done` when nothing is open and nothing is asked; `AgentState` `done` through main (state, `done` notice, no V11 expiry, Automático ignores it, out of «Siguiente») and the renderer («terminado», icon, «Todos» order) · waits on box 2 · Closes: W220, W228, W26, W227, W199, W197, W15, W27, W222, W224, V11, F51
 - [ ] One notice per turn end: main remembers the last notified `turn|kind|text` per workspace and skips an identical entry · waits on box 3 · Closes: W221
 - [ ] Shown in the real app and recorded: drive a fake hook state through `done` and a prose question in dev, photo of the window in `bocetos/novedades/`, `bocetos/novedades.html` and `bocetos/fase1-nucleo.html`, the real-Claude check under «Sin probar» in CLAUDE.md · waits on box 4

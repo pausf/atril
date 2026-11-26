@@ -11,6 +11,7 @@ const PATHS = {
   working: '<path d="M12 3.5a8.5 8.5 0 1 1-8.5 8.5" opacity=".35"/><path d="M3.5 12A8.5 8.5 0 0 1 12 3.5"/>',
   'needs-you':
     '<path d="M5 6.5A2.5 2.5 0 0 1 7.5 4h9A2.5 2.5 0 0 1 19 6.5v7a2.5 2.5 0 0 1-2.5 2.5H11l-4 3.5V16A2 2 0 0 1 5 14z"/><path d="M12 7.5v3.5M12 13.2v.1"/>',
+  done: '<circle cx="12" cy="12" r="8.5"/><path d="M8 12.3l2.6 2.6L16 9.5"/>',
   paused: '<circle cx="12" cy="12" r="8.5"/><path d="M10 9v6M14 9v6"/>',
   stopped: '<circle cx="12" cy="12" r="8.5"/><rect x="9" y="9" width="6" height="6" rx="1"/>',
   worktree: '<circle cx="6" cy="5.5" r="2"/><circle cx="6" cy="18.5" r="2"/><circle cx="18" cy="8.5" r="2"/><path d="M6 7.5v9M18 10.5c0 4-4 4.5-12 6"/>',
