@@ -322,17 +322,17 @@ describe('subagents hook', () => {
 
   interface Entry { id: string; type: string; description?: string; transcript?: string; startedAt: number; endedAt?: number }
   interface Pending { type: string; description: string; at: number }
-  interface Seed { entries?: Entry[]; pending?: Pending[]; state?: object }
+  interface Seed { entries?: Entry[]; pending?: Pending[]; state?: object; paused?: true }
   const NOW = (): number => Math.floor(Date.now() / 1000)
   const agent = (type: string, extra: object = {}, tool = 'Agent'): [string, object] => ['PreToolUse', { tool_name: tool, tool_input: { subagent_type: type, description: `d-${type}`, prompt: 'SECRET-PROMPT', ...extra } }]
 
   /** Runs the real hook for each event in a fresh workspace; the optional seed is on disk before the first one. */
-  async function fireIn(events: [string, object][], seed?: Seed): Promise<{ session: string; file: Seed | undefined }> {
+  async function fireIn(events: [string, object][], seed?: Seed): Promise<{ session: string; file: Seed | undefined; outs: string[] }> {
     const dir = tmp()
     const gate = join(dir, 'go')
     const steps = events.map(([event, payload], i) => {
       writeFileSync(join(dir, `in-${i}.json`), JSON.stringify(payload))
-      return `${hooksSettings().hooks[event]?.[0]?.hooks[0]?.command ?? ''} <'${join(dir, `in-${i}.json`)}'`
+      return `${hooksSettings().hooks[event]?.[0]?.hooks[0]?.command ?? ''} <'${join(dir, `in-${i}.json`)}' >'${join(dir, `out-${i}`)}'`
     })
     const r = await openWorktree({
       repoId: 'demo',
@@ -346,7 +346,11 @@ describe('subagents hook', () => {
       mkdirSync(join(home, 'state'), { recursive: true })
       writeFileSync(join(home, 'state', `${session}.json`), JSON.stringify(seed.state))
     }
-    if (seed && !seed.state) {
+    if (seed?.paused) {
+      mkdirSync(join(home, 'paused'), { recursive: true })
+      writeFileSync(join(home, 'paused', session), '1')
+    }
+    if (seed && !seed.state && !seed.paused) {
       mkdirSync(join(home, 'subagents'), { recursive: true })
       writeFileSync(join(home, 'subagents', `${session}.json`), JSON.stringify({ entries: seed.entries ?? [], pending: seed.pending ?? [] }))
     }
@@ -354,7 +358,8 @@ describe('subagents hook', () => {
     const end = Date.now() + 15000
     while (!existsSync(join(dir, 'done')) && Date.now() < end) await new Promise((ok) => setTimeout(ok, 100))
     const path = join(home, 'subagents', `${session}.json`)
-    return { session, file: existsSync(path) ? JSON.parse(readFileSync(path, 'utf8')) : undefined }
+    const outs = events.map((_, i) => (existsSync(join(dir, `out-${i}`)) ? readFileSync(join(dir, `out-${i}`), 'utf8') : ''))
+    return { session, file: existsSync(path) ? JSON.parse(readFileSync(path, 'utf8')) : undefined, outs }
   }
   const start = (id: string, type: string, extra: object = {}): [string, object] => ['SubagentStart', { agent_id: id, agent_type: type, prompt: 'SECRET-PROMPT', ...extra }]
   const stop = (id: string, type: string): [string, object] => ['SubagentStop', { agent_id: id, agent_type: type, agent_transcript_path: '/SECRET-PATH.jsonl', last_assistant_message: 'SECRET-LAST', stop_hook_active: false }]
@@ -424,16 +429,203 @@ describe('subagents hook', () => {
   const permit = (extra: object = { notification_type: 'permission_prompt' }): [string, object] => ['Notification', { message: 'Claude needs your permission to use Bash', ...extra }]
   const idle: [string, object] = ['Notification', { notification_type: 'idle_prompt', message: 'Claude is waiting for your input' }]
 
+  /** A repo folder with one change whose checklist has `open` open boxes; returns a folder inside it. */
+  function repoWithBoxes(open: number, name = 'demo-change'): string {
+    const root = tmp()
+    mkdirSync(join(root, '.git'))
+    mkdirSync(join(root, '.agents', 'changes', name), { recursive: true })
+    const boxes = [...Array.from({ length: open }, (_, i) => `- [ ] box ${i}`), '- [x] done one'].join('\n')
+    writeFileSync(join(root, '.agents', 'changes', name, 'proposal.md'), `# ${name}\n\n## Checklist\n\n${boxes}\n`)
+    mkdirSync(join(root, 'src'))
+    return join(root, 'src')
+  }
+  const stopIn = (cwd: string, active?: boolean): [string, object] => ['Stop', { cwd, ...(active !== undefined && { stop_hook_active: active }) }]
+
+  it('a stop with open boxes keeps the agent going', async () => {
+    const cwd = repoWithBoxes(2)
+    const { session, outs } = await fireIn([stopIn(cwd, false)])
+    const out = JSON.parse(outs[0] ?? '')
+    expect(out.decision).toBe('block')
+    expect(out.reason).toContain('demo-change')
+    expect(out.reason).toContain('2 open')
+    const state = stateOf(session)
+    expect(state).toMatchObject({ state: 'working', blocks: 1 })
+    expect(state).not.toHaveProperty('kind')
+  }, 30000)
+
+  it('only open boxes under the checklist of the repo count', async () => {
+    const { openBoxes } = await import('../../resources/keepgoing.mjs')
+    const root = tmp()
+    mkdirSync(join(root, '.git'))
+    const change = (name: string, body: string): void => {
+      mkdirSync(join(root, '.agents', 'changes', name), { recursive: true })
+      writeFileSync(join(root, '.agents', 'changes', name, 'proposal.md'), body)
+    }
+    change('a', ['# a', '- [ ] above the checklist', '## Checklist', '- [ ] one', '  * [ ] two', '```', '- [ ] fenced', '```', '- [x] closed', '## After', '- [ ] after'].join('\n'))
+    change('b', '# b\n\n## Checklist\n\n- [x] all done\n')
+    change('c', '# c, a capture with no checklist\n- [ ] not a task\n')
+    expect(openBoxes(join(root, '.agents'))).toEqual([{ change: 'a', open: 2, first: 'one' }])
+    // A parent folder's changes are not this repo's.
+    const inner = join(root, 'nested')
+    mkdirSync(join(inner, '.git'), { recursive: true })
+    expect(openBoxes(inner)).toEqual([])
+    // A worktree's .git is a file.
+    const wt = tmp()
+    writeFileSync(join(wt, '.git'), 'gitdir: /elsewhere')
+    expect(openBoxes(wt)).toEqual([])
+    expect(openBoxes('/')).toEqual([])
+    expect(openBoxes(undefined)).toEqual([])
+  })
+
+  it('a fresh stop or a prompt restarts the count', async () => {
+    const cwd = repoWithBoxes(1)
+    expect(stateOf((await fireIn([stopIn(cwd, false), stopIn(cwd, true), stopIn(cwd, true)])).session)).toMatchObject({ blocks: 3 })
+    expect(stateOf((await fireIn([stopIn(cwd, false), stopIn(cwd, true), stopIn(cwd, false)])).session)).toMatchObject({ blocks: 1 })
+    // An absent field carries the count.
+    expect(stateOf((await fireIn([stopIn(cwd, false), stopIn(cwd)])).session)).toMatchObject({ blocks: 2 })
+    expect(stateOf((await fireIn([stopIn(cwd, false), stopIn(cwd, true), ['UserPromptSubmit', { prompt: 'x' }], bash('ls')])).session)).toMatchObject({ state: 'working', blocks: 0 })
+  }, 90000)
+
+  it('keeping going stops after five blocks in a row', async () => {
+    const cwd = repoWithBoxes(1)
+    for (const active of [true, undefined]) {
+      const { session, outs } = await fireIn([stopIn(cwd, false), ...Array.from({ length: 5 }, () => stopIn(cwd, active))])
+      expect(outs.slice(0, 5).every((o) => JSON.parse(o).decision === 'block')).toBe(true)
+      expect(outs[5]).toBe('')
+      expect(stateOf(session)).toMatchObject({ state: 'needs-you', kind: 'turn-end' })
+    }
+  }, 60000)
+
+  it('a paused agent is never kept going', async () => {
+    const { session, outs } = await fireIn([stopIn(repoWithBoxes(3), false)], { paused: true })
+    expect(outs[0]).toBe('')
+    expect(stateOf(session)).toMatchObject({ state: 'needs-you', kind: 'turn-end' })
+  }, 30000)
+
+  it('a question in prose is a question wait', async () => {
+    const said = (text: string): string => {
+      const path = join(tmp(), 't.jsonl')
+      writeFileSync(path, JSON.stringify({ type: 'assistant', message: { role: 'assistant', content: [{ type: 'text', text }] } }) + '\n')
+      return path
+    }
+    const stopSaying = (text: string, cwd = repoWithBoxes(2)): [string, object] => ['Stop', { cwd, stop_hook_active: false, transcript_path: said(text) }]
+    // Open boxes or not, a question to the person is a wait, never a block.
+    const { session, outs } = await fireIn([stopSaying('Fase 7 hecha.\n\n  **¿Hago   push y abro la MR?**  \n')])
+    expect(outs[0]).toBe('')
+    expect(stateOf(session)).toMatchObject({
+      state: 'needs-you',
+      kind: 'question',
+      text: 'Te pregunta: ¿Hago push y abro la MR?',
+      questions: [{ question: '¿Hago push y abro la MR?', header: '', options: [], multiSelect: false }]
+    })
+    const long = `¿${'muy '.repeat(80)}largo?`
+    expect((stateOf((await fireIn([stopSaying(long)])).session)['questions'] as { question: string }[])[0]!.question).toHaveLength(200)
+    // A question mark that is not at the end is no question: the open boxes keep it going.
+    const told = await fireIn([stopSaying('¿Sigo? Sí, sigo con la casilla 2.')])
+    expect(JSON.parse(told.outs[0] ?? '').decision).toBe('block')
+  }, 60000)
+
+  it('a stop with nothing left is done', async () => {
+    for (const cwd of [repoWithBoxes(0), undefined]) {
+      const { session, outs } = await fireIn([['Stop', { ...(cwd && { cwd }), stop_hook_active: false }]], { paused: true })
+      expect(outs[0]).toBe('')
+      const state = stateOf(session)
+      expect(state).toMatchObject({ state: 'done', text: 'Claude ha terminado' })
+      expect(state).not.toHaveProperty('kind')
+      // Done is a wait for the pause mark: it goes.
+      expect(existsSync(join(home, 'paused', session))).toBe(false)
+    }
+  }, 60000)
+
+  it('a prompt starts a turn that every event carries', async () => {
+    const before = Math.floor(Date.now() / 1000)
+    const carried = stateOf((await fireIn([['UserPromptSubmit', { prompt: 'x' }], bash('ls'), ['PostToolUse', { tool_name: 'Bash' }], ['Stop', {}], idle])).session)
+    expect(carried).toMatchObject({ state: 'done', idle: true })
+    expect(carried['turn']).toBeGreaterThanOrEqual(before)
+    expect(carried['turn']).toBeLessThanOrEqual(carried['at'] as number)
+    // No prompt yet: no turn.
+    expect(stateOf((await fireIn([bash('ls'), ['Stop', {}]])).session)).not.toHaveProperty('turn')
+  }, 30000)
+
+  it('a stop while a background shell runs is working', async () => {
+    const started = (id: string): object => ({ type: 'user', message: { role: 'user', content: [{ type: 'tool_result', tool_use_id: 't1', content: `Command running in background with ID: ${id}. Output is being written to: /tmp/x.output.` }] } })
+    const ended = (id: string): object => ({ type: 'user', message: { role: 'user', content: `<task-notification>\n<task-id>${id}</task-id>\n<status>completed</status>\n</task-notification>` } })
+    const said = (text: string): object => ({ type: 'assistant', message: { role: 'assistant', content: [{ type: 'text', text }] } })
+    const transcript = (...entries: object[]): string => {
+      const path = join(tmp(), 't.jsonl')
+      writeFileSync(path, '{"cut half a line\n' + entries.map((e) => JSON.stringify(e)).join('\n') + '\n')
+      return path
+    }
+    const stopWith = (cwd: string, ...entries: object[]): [string, object] => ['Stop', { cwd, stop_hook_active: false, transcript_path: transcript(...entries) }]
+    // Running: working, waiting on the shell, no block even with open boxes and no question card even when it asks.
+    const running = await fireIn([stopWith(repoWithBoxes(2), started('b1'), started('b2'), ended('b1'), said('Espero a la suite. ¿Sigo?'))])
+    expect(running.outs[0]).toBe('')
+    expect(stateOf(running.session)).toMatchObject({ state: 'working', waiting: 'shell', blocks: 0 })
+    expect(stateOf(running.session)).not.toHaveProperty('kind')
+    // Every shell ended: the stop is classified as before (here, open boxes keep it going).
+    const over = await fireIn([stopWith(repoWithBoxes(2), started('b1'), ended('b1'), said('Suite en verde.'))])
+    expect(JSON.parse(over.outs[0] ?? '').decision).toBe('block')
+    expect(stateOf(over.session)).not.toHaveProperty('waiting')
+    // Quoted strings are not a shell: an assistant text and a tool's output that only mention them.
+    const quoted = await fireIn([
+      stopWith(
+        repoWithBoxes(0),
+        said('Command running in background with ID: zz9'),
+        { type: 'user', message: { role: 'user', content: [{ type: 'tool_result', tool_use_id: 't2', content: 'rg found: Command running in background with ID: zz8' }] } }
+      )
+    ])
+    expect(stateOf(quoted.session)).toMatchObject({ state: 'done' })
+    // A pending question still wins (W228).
+    const q = { question: '¿Sigo?', header: 'Seguir', options: [{ label: 'Sí' }] }
+    const pending = await fireIn([ask([q]), stopWith(repoWithBoxes(0), started('b3'))])
+    expect(stateOf(pending.session)).toMatchObject({ state: 'needs-you', kind: 'turn-end' })
+  }, 90000)
+
+  it('the keep-going cap names the box it is on', async () => {
+    const root = tmp()
+    mkdirSync(join(root, '.git'))
+    mkdirSync(join(root, '.agents', 'changes', 'add-coupons'), { recursive: true })
+    writeFileSync(join(root, '.agents', 'changes', 'add-coupons', 'proposal.md'), `# a\n\n## Checklist\n\n- [x] done\n- [ ]   Apply   the coupon ${'x'.repeat(150)}\n- [ ] later\n`)
+    const capped = await fireIn([stopIn(root, false), ...Array.from({ length: 5 }, () => stopIn(root, true))])
+    const state = stateOf(capped.session)
+    expect(state).toMatchObject({ state: 'needs-you', kind: 'turn-end', why: 'cap' })
+    expect(state['box']).toBe(`Apply the coupon ${'x'.repeat(150)}`.slice(0, 119) + '…')
+    // A pause is no cap.
+    expect(stateOf((await fireIn([stopIn(root, false)], { paused: true })).session)).not.toHaveProperty('why')
+  }, 60000)
+
+  it('stops that repeat themselves are counted', async () => {
+    const said = (text: string): string => {
+      const path = join(tmp(), 't.jsonl')
+      writeFileSync(path, JSON.stringify({ type: 'assistant', message: { role: 'assistant', content: [{ type: 'text', text }] } }) + '\n')
+      return path
+    }
+    const stop = (text: string): [string, object] => ['Stop', { transcript_path: said(text) }]
+    const failed: [string, object] = ['PostToolUse', { tool_name: 'Bash', tool_input: { command: 'pnpm test' }, tool_response: { exit_code: 1 } }]
+    // The same last sentence twice, a «Sigue» in between included: a repeat.
+    const twice = stateOf((await fireIn([stop('Miro el fallo.\n\nEspero   la suite.'), ['UserPromptSubmit', { prompt: 'Sigue' }], stop('Otra cosa. Espero la suite.')])).session)
+    expect(twice).toMatchObject({ said: 'Espero la suite.', repeat: 1 })
+    expect(stateOf((await fireIn([stop('Uno.'), stop('Uno.'), stop('Uno.')])).session)).toMatchObject({ repeat: 2 })
+    expect(stateOf((await fireIn([stop('Uno.'), stop('Dos.')])).session)).toMatchObject({ said: 'Dos.', repeat: 0 })
+    // The same tool error on two stops in a row, whatever was said.
+    expect(stateOf((await fireIn([failed, stop('Uno.'), failed, stop('Dos.')])).session)).toMatchObject({ repeat: 1 })
+    // A stop clears the error: the next stop without one does not match.
+    expect(stateOf((await fireIn([failed, stop('Uno.'), stop('Dos.')])).session)).toMatchObject({ repeat: 0 })
+  }, 90000)
+
   it('the hook says what kind of wait it is', async () => {
     const q = { question: '¿Sigo?', header: 'Seguir', options: [{ label: 'Sí' }, { label: 'No' }] }
     expect(stateOf((await fireIn([ask([q])])).session)).toMatchObject({ state: 'needs-you', kind: 'question' })
     expect(stateOf((await fireIn([bash('ls'), permit()])).session)).toMatchObject({ state: 'needs-you', kind: 'permission' })
     // The older wording without notification_type is a permission too.
     expect(stateOf((await fireIn([bash('ls'), permit({})])).session)).toMatchObject({ state: 'needs-you', kind: 'permission' })
-    expect(stateOf((await fireIn([['Stop', {}]])).session)).toMatchObject({ state: 'needs-you', kind: 'turn-end' })
+    // A Stop with open boxes past the cap is a turn end (W225); with nothing open, done (W220).
+    expect(stateOf((await fireIn([['Stop', { cwd: repoWithBoxes(1) }]], { paused: true })).session)).toMatchObject({ state: 'needs-you', kind: 'turn-end' })
+    expect(stateOf((await fireIn([['Stop', {}]])).session)).toMatchObject({ state: 'done' })
     // The idle reminder leaves the kind as it was and only says it has been a while.
-    const reminded = stateOf((await fireIn([['Stop', {}], idle])).session)
+    const reminded = stateOf((await fireIn([['Stop', { cwd: repoWithBoxes(1) }], idle], { paused: true })).session)
     expect(reminded).toMatchObject({ state: 'needs-you', kind: 'turn-end', idle: true })
+    expect(stateOf((await fireIn([['Stop', {}], idle])).session)).toMatchObject({ state: 'done', idle: true })
     // Any other notification is a wait of no known kind, read by its prefix as before.
     expect(stateOf((await fireIn([['Notification', { message: 'hola' }]])).session).kind).toBeUndefined()
     // Working states carry no kind.
@@ -470,8 +662,12 @@ describe('subagents hook', () => {
 
     // They go when the state leaves needs-you, and do not come back with the next stop.
     const left = stateOf((await fireIn([ask([first]), ['PostToolUse', { tool_name: 'AskUserQuestion' }], ['Stop', {}]])).session)
-    expect(left).toMatchObject({ state: 'needs-you', kind: 'turn-end' })
+    expect(left).toMatchObject({ state: 'done' })
     expect(left).not.toHaveProperty('questions')
+    // W228: a pending question is never kept going over, open boxes or not.
+    const pending = await fireIn([ask([first]), ['Stop', { cwd: repoWithBoxes(2), stop_hook_active: false }]])
+    expect(pending.outs[1]).toBe('')
+    expect(stateOf(pending.session)).toMatchObject({ state: 'needs-you', kind: 'turn-end', questions: [stored[0]] })
     const leaving = stateOf((await fireIn([ask([first]), ['UserPromptSubmit', { prompt: 'sigue' }]])).session)
     expect(leaving).toMatchObject({ state: 'working' })
     expect(leaving).not.toHaveProperty('questions')

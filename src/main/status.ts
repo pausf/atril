@@ -20,7 +20,10 @@ const pauseFile = (session: string): string => join(atrilHome(), 'paused', sessi
 
 /** One notification per entry into needs-you (W15, W27). */
 export const shouldNotify = (prev: AgentState | undefined, next: AgentState): boolean =>
-  next === 'needs-you' && prev !== 'needs-you'
+  (next === 'needs-you' || next === 'done') && prev !== next
+
+/** V11: a state that leaves the wait behind marks its notices read; entering `done` does not (W15). */
+export const leftWait = (state: AgentState): boolean => state !== 'needs-you' && state !== 'done'
 
 interface HookFile {
   state?: string
@@ -30,6 +33,12 @@ interface HookFile {
   questions?: unknown
   permission?: unknown
   idle?: unknown
+  turn?: unknown
+  waiting?: unknown
+  repeat?: unknown
+  why?: unknown
+  box?: unknown
+  said?: unknown
   /** Before W197: the first question's labels. */
   options?: unknown
   multiSelect?: unknown
@@ -77,9 +86,9 @@ const nextQuestion = (session: string, file: HookFile): number => {
   return p && p.at === file.at ? p.next : 0
 }
 
-/** W199: an end of turn while one of its subagents still runs is not a wait yet. */
+/** W199: an end of turn, or done, while one of its subagents still runs is not a wait yet. */
 async function behindSubagent(session: string, file: HookFile): Promise<boolean> {
-  if (file.state !== 'needs-you' || kindOfWait(file) !== 'turn-end') return false
+  if (file.state !== 'done' && (file.state !== 'needs-you' || kindOfWait(file) !== 'turn-end')) return false
   return ((await readSubagents(session)) ?? []).some((e) => e.endedAt === undefined)
 }
 
@@ -108,6 +117,8 @@ export async function decidedLine(session: string, newest: { at: number; text: s
 /** W199: the line the row shows instead of the turn's last words while a subagent runs. */
 export async function waitingLine(session: string): Promise<{ at: number; text: string } | null> {
   const file = await hookFile(session)
+  // W290: a stop behind its own background shell, written as working by the hook.
+  if (file.state === 'working' && file.waiting === 'shell') return { at: file.at ?? 0, text: 'Esperando a una shell en segundo plano' } // i18n-ignore: an activity line, localised when shown
   return (await behindSubagent(session, file)) ? { at: file.at ?? 0, text: 'Esperando a un subagente' } : null // i18n-ignore: an activity line, localised when shown
 }
 
@@ -116,7 +127,7 @@ async function hookState(session: string): Promise<AgentState> {
   if (existsSync(pauseFile(session))) return 'paused'
   const file = await hookFile(session)
   if (await behindSubagent(session, file)) return 'working'
-  return file.state === 'needs-you' || file.state === 'working' ? file.state : 'working'
+  return file.state === 'needs-you' || file.state === 'done' || file.state === 'working' ? file.state : 'working'
 }
 
 /** What a needs-you agent waits for (W200–W202); null otherwise. */
@@ -131,7 +142,19 @@ export async function waitOf(session: string): Promise<AgentWait | null> {
     questions: questionsOf(file),
     next: nextQuestion(session, file),
     ...(kind === 'permission' && typeof p?.tool === 'string' && p.tool && { permission: { tool: p.tool, ...(typeof p.summary === 'string' && p.summary && { summary: p.summary }) } }),
-    idle: file.idle === true
+    idle: file.idle === true,
+    ...(kind === 'turn-end' && reasonOf(file))
+  }
+}
+
+/** W293: why a turn end shows, read from the hook's W291–W292 fields. */
+function reasonOf(file: HookFile): Pick<AgentWait, 'why' | 'box' | 'said'> {
+  const loop = Number.isInteger(file.repeat) && (file.repeat as number) >= 1
+  const cap = !loop && file.why === 'cap'
+  return {
+    ...(loop && { why: 'loop' as const }),
+    ...(cap && { why: 'cap' as const, ...(str(file.box) && { box: str(file.box) }) }),
+    ...(str(file.said) && { said: str(file.said) })
   }
 }
 
@@ -274,8 +297,11 @@ export async function pauseAgent(id: string, run: Runner = defaultRun): Promise<
   if ('error' in blocked) return { error: blocked.error }
   const ws = await liveWorkspace(id, run)
   if (!ws) return { error: replyGone() }
-  if ((await hookState(ws.session)) !== 'working') return { error: t('That agent is not working.') }
-  if (!(await pressKey(ws.paneId, 'Escape', run))) return { error: replyGone() }
+  const state = await hookState(ws.session)
+  // W294: a turn end is already stopped: only the mark, no Escape.
+  const turnEnd = state === 'needs-you' && kindOfWait(await hookFile(ws.session)) === 'turn-end'
+  if (state !== 'working' && !turnEnd) return { error: t('That agent is not working.') }
+  if (!turnEnd && !(await pressKey(ws.paneId, 'Escape', run))) return { error: replyGone() }
   await mkdir(join(atrilHome(), 'paused'), { recursive: true })
   await writeFile(pauseFile(ws.session), String(Math.floor(Date.now() / 1000)))
   return { ok: true }
@@ -315,6 +341,15 @@ export function createStatus({ run = defaultRun, onChange, notify, stopped = () 
   const since = new Map<string, number>()
   /** Per session in needs-you: main's clock at the entry, the hook text last seen, whether W180 fired. */
   const waits = new Map<string, { at: number; text: string | undefined; reminded: boolean }>()
+  /** W221: per workspace, the turn, kind and text of the last entry notified. */
+  const notified = new Map<string, string>()
+  const fresh = (ws: WorkspaceView, file: HookFile, next: AgentState): boolean => {
+    if (!Number.isInteger(file.turn)) return true
+    const key = `${file.turn}|${next === 'done' ? 'done' : (kindOfWait(file) ?? '')}|${str(file.text)}`
+    if (notified.get(ws.id) === key) return false
+    notified.set(ws.id, key)
+    return true
+  }
   let busy = false
   let seeded = false
   let timer: NodeJS.Timeout | undefined
@@ -346,8 +381,11 @@ export function createStatus({ run = defaultRun, onChange, notify, stopped = () 
             const text = typeof file.text === 'string' ? plainWait(file.text) : undefined
             waits.set(ws.id, { at: now(), text, reminded: false })
             // The first pass only records: reopening Atril must not announce what was already waiting.
-            if (seeded && shouldNotify(prev, next)) notify(ws, kindOf(text), text)
-          } else waits.delete(ws.id)
+            if (seeded && shouldNotify(prev, next) && fresh(ws, file, next)) notify(ws, kindOf(text), text)
+          } else {
+            waits.delete(ws.id)
+            if (next === 'done' && seeded && shouldNotify(prev, next) && fresh(ws, file, next)) notify(ws, 'done', typeof file.text === 'string' ? file.text : undefined)
+          }
           if (seeded && next === 'stopped' && prev !== undefined && !closing(ws.id)) stops.push(ws)
           continue
         }
@@ -368,6 +406,7 @@ export function createStatus({ run = defaultRun, onChange, notify, stopped = () 
           known.delete(id)
           since.delete(id)
           waits.delete(id)
+          notified.delete(id)
           left(id)
         }
       if (stops.length) stopped(stops)

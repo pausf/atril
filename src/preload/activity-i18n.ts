@@ -9,6 +9,7 @@ export function localiseActivity(text: string, t: T): string {
   if (text === 'Claude te necesita') return t('Claude needs you')
   if (text === 'Claude ha terminado') return t('Claude has finished')
   if (text === 'Esperando a un subagente') return t('Waiting for a subagent')
+  if (text === 'Esperando a una shell en segundo plano') return t('Waiting for a background shell')
   // W203: lines written before the hook told Claude Code's English messages in Atril's words.
   const tool = /^Te pregunta: Claude needs your permission to use (.+)$/.exec(text) // i18n-ignore: matches Claude Code's English, never shown
   if (tool) return t('Asks you: may it use {detail}?', { detail: tool[1]! })

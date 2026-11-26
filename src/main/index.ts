@@ -9,7 +9,7 @@ import { createQaDone, qaBug, qaReport, qaRetest } from './qa-report'
 import { runFix } from './qa-fix'
 import { addManual, chooseTarget, removeManual } from './qa-targets'
 import { createAvisos, NOTIFY_DEFAULTS, patchNotifySettings, readNotifySettings, workName } from './avisos'
-import { agentState, answerAgent, createStatus, optionCount, pauseAgent, replyFromNotice, replyToAgent, resumeAgent, waitOf, composeAgent } from './status'
+import { agentState, answerAgent, createStatus, leftWait, optionCount, pauseAgent, replyFromNotice, replyToAgent, resumeAgent, waitOf, composeAgent } from './status'
 import { getLang, setLang, t } from './lang'
 import { resolveLang } from '../preload/i18n'
 import { readDocs, saveDoc } from './flow/document'
@@ -865,7 +865,7 @@ app.whenReady().then(async () => {
     onChange: (id, state) => {
       BrowserWindow.getAllWindows().forEach((w) => w.webContents.send('atril:status:change', id, state))
       // V11: leaving needs-you means its questions were answered.
-      if (state !== 'needs-you') void avisos.expire(id).catch(() => undefined)
+      if (leftWait(state)) void avisos.expire(id).catch(() => undefined)
       if (id === menu.selected) refreshMenu()
       void pushNext()
     },

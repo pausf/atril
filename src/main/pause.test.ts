@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import type { WorkspaceView } from '../preload/api'
 import { hooksSettings } from './agent'
@@ -134,6 +134,25 @@ describe('pause', () => {
     expect(sent).toEqual([])
   })
 
+  it('a looping turn end pauses without a key', async () => {
+    makeRegisteredRepo(home)
+    const { pauseAgent, agentState } = await import('./status')
+    const a = await open('feat/loop')
+    mkdirSync(join(home, 'state'), { recursive: true })
+    const write = (body: object): void => writeFileSync(join(home, 'state', `${a.session}.json`), JSON.stringify({ state: 'needs-you', at: 2, ...body }))
+    write({ kind: 'turn-end', repeat: 1, said: 'Espero la suite.' })
+    const { run, sent } = await spied()
+    expect(await pauseAgent(a.id, run)).toEqual({ ok: true })
+    expect(sent).toEqual([])
+    expect(existsSync(join(home, 'paused', a.session))).toBe(true)
+    expect(await agentState(a, run)).toBe('paused')
+    // Any other wait is still refused.
+    rmSync(join(home, 'paused', a.session))
+    write({ kind: 'question', questions: [] })
+    expect(await pauseAgent(a.id, run)).toEqual({ error: 'Ese agente no está trabajando.' })
+    expect(sent).toEqual([])
+  })
+
   it('resuming asks the agent to go on', async () => {
     makeRegisteredRepo(home)
     const { pauseAgent, resumeAgent, agentState, replyGone } = await import('./status')
@@ -164,13 +183,13 @@ describe('pause', () => {
     // Not paused (never, or no longer): the message names it.
     expect(await resumeAgent(b.id, run)).toEqual({ error: 'Ese agente no está en pausa.' })
 
-    // A UserPromptSubmit (the person typing) or a needs-you state from the real hook removes the mark too.
+    // A UserPromptSubmit (the person typing) or a needs-you or done state from the real hook removes the mark too.
     const c = await open('feat/rc', hookSteps(['UserPromptSubmit'], ['Notification'], ['Stop'], ['Notification:idle']))
     const marked = (): void => {
       mkdirSync(join(home, 'paused'), { recursive: true })
       writeFileSync(join(home, 'paused', c.session), '1')
     }
-    for (const [i, want] of ['working', 'needs-you', 'needs-you'].entries()) {
+    for (const [i, want] of ['working', 'needs-you', 'done'].entries()) {
       marked()
       expect(await agentState(c, run)).toBe('paused')
       tmuxOut(sock, 'send-keys', '-t', c.paneId, 'Enter')

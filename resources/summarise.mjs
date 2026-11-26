@@ -32,7 +32,8 @@ function failed(response) {
   return (typeof code === 'number' && code !== 0) || Boolean(response.error) || response.interrupted === true}
 
 // The tail may start mid-line, and one assistant turn spans several entries: take the newest one that has text.
-function lastSaid(tail) {
+/** The newest assistant text in a transcript tail, as written (W219); '' when there is none. */
+export function lastText(tail) {
   const lines = tail.split('\n')
   for (let i = lines.length - 1; i >= 0; i--) {
     let entry
@@ -44,17 +45,18 @@ function lastSaid(tail) {
     const msg = entry?.message
     if ((msg?.role ?? entry?.type) !== 'assistant') continue
     const content = msg?.content
-    const text = flat(
+    const text =
       typeof content === 'string'
         ? content
         : Array.isArray(content)
-          ? content.filter((b) => b?.type === 'text').map((b) => b.text).join(' ')
+          ? content.filter((b) => b?.type === 'text').map((b) => b.text).join('\n')
           : ''
-    )
-    if (text) return text
+    if (flat(text)) return text
   }
   return ''
 }
+
+const lastSaid = (tail) => flat(lastText(tail))
 
 /** @returns {{kind: string, text: string} | null} null when the event leaves no line. */
 export function summarise(event, payload, readTranscriptTail) {

@@ -549,7 +549,7 @@ export interface AvisosApi {
 
 export type ForgeStatus = { saved: false } | { saved: true; account?: string; site?: string }
 
-export type AgentState = 'working' | 'needs-you' | 'paused' | 'stopped'
+export type AgentState = 'working' | 'needs-you' | 'done' | 'paused' | 'stopped'
 
 /** W75: an option of the question due now, or one of main's own actions; main chooses the keys and words. */
 export type QuickChoice = { option: number; question: number } | { allow: true } | { deny: true } | { continue: true }
@@ -577,6 +577,11 @@ export interface AgentWait {
   next: number
   permission?: { tool: string; summary?: string }
   idle: boolean
+  /** W293: why a turn end shows: the same stop again, or the keep-going cap with the box it is on. */
+  why?: 'loop' | 'cap'
+  box?: string
+  /** W293: the agent's own last sentence. */
+  said?: string
 }
 export type QuickAnswer = { ok: true } | { error: string }
 

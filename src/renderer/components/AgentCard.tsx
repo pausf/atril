@@ -37,9 +37,12 @@ const ANSWERED = 'atril-answered'
 // The same mark Automático picks by (W205).
 const RECOMMENDED = /\s*\((Recommended|Recomendado)\)\s*$/
 
+/** W294: «Pausar» on a looping turn end goes to the pause, not to the agent. */
+type Choice = QuickChoice | 'pause'
+
 interface Button {
   label: string
-  choice: QuickChoice
+  choice: Choice
   description?: string
   recommended?: boolean
 }
@@ -48,7 +51,7 @@ interface Button {
 export function AgentCard({ workspaceId, activityAt, onShown, focusComposer, skipMultiSelect }: Props) {
   const t = useT()
   const [wait, setWait] = useState<AgentWait | null>(null)
-  const [result, setResult] = useState<{ sent: boolean; text: string; choice?: QuickChoice } | null>(null)
+  const [result, setResult] = useState<{ sent: boolean; text: string; choice?: Choice } | null>(null)
 
   // The row and the strip above the terminal show the same wait: an answer in one moves both on.
   const [answers, setAnswers] = useState(0)
@@ -117,15 +120,18 @@ export function AgentCard({ workspaceId, activityAt, onShown, focusComposer, ski
         choice: { option, question: wait.next }
       }))
   } else {
-    // An end of turn, or a wait the hook did not name: what it said and «Sigue».
+    // An end of turn, or a wait the hook did not name: why it stopped (W293), else what it said, and «Sigue».
     const words = wait.text?.startsWith('Claude dice: ') ? wait.text.slice('Claude dice: '.length) : ''
     head = words ? t('Finished: {text}', { text: words }) : wait.kind === 'turn-end' || !said ? t('Finished its turn') : said
-    buttons = [{ label: t('Go on'), choice: { continue: true } }]
+    if (wait.said) head = t('Stopped because: “{said}”', { said: wait.said })
+    if (wait.why === 'cap') head = t('Stopped 5 times with open boxes: it may be stuck')
+    if (wait.why === 'loop') head = t('It repeats itself: looks like a loop')
+    buttons = [{ label: t('Go on'), choice: { continue: true } }, ...(wait.why === 'loop' ? [{ label: t('Pause'), choice: 'pause' as const }] : [])]
   }
 
-  const press = (choice: QuickChoice): void => {
+  const press = (choice: Choice): void => {
     setResult({ sent: false, text: '' })
-    void window.atril.status.answer(workspaceId, choice).then((r) => {
+    void (choice === 'pause' ? window.atril.status.pause(workspaceId) : window.atril.status.answer(workspaceId, choice)).then((r) => {
       if (!('ok' in r)) return setResult({ sent: false, text: r.error, choice })
       setResult({ sent: true, text: t('Sent') })
       // Several questions in one call: the next one shows once main has moved on, here and in the other card.
@@ -144,6 +150,7 @@ export function AgentCard({ workspaceId, activityAt, onShown, focusComposer, ski
     <div className="ask" role="group" aria-label={t('What the agent is waiting for')} tabIndex={0} onKeyDown={onKey}>
       {question?.header && <p className="ask-head">{question.header}</p>}
       <p className="ask-q">{head}</p>
+      {wait.why === 'cap' && wait.box && <p className="ask-note">{t('On: {box}', { box: wait.box })}</p>}
       {buttons.map((b, i) => (
         <button key={i} type="button" className="ask-opt" disabled={sent} aria-label={b.label} onClick={() => press(b.choice)}>
           <kbd aria-hidden="true">{i + 1}</kbd>

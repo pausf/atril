@@ -484,3 +484,8 @@ A «forced red» went by green because `sd` with `^` matched nothing and the fil
 
 ## 2026-11-26 · english-source · 6
 Three tests read Spanish through an identity `t` (`(es) => es`) and a production export `STEPS` did the same. Flipping the keys broke them, not the catalog. When the source language of a text changes, grep for identity `t` helpers, not only for `t('…')` calls.
+## 2026-11-26 · fewer-go-on-cards · 6→7
+Reviewer found nothing against the contract (27 proofs re-run, all green). Before the review the build caught two gaps itself: a Stop with an unanswered question would have become `done` (W228 added, the ask said «no pending question or permission»), and four older proofs assumed every Stop is `needs-you` (W26 and W87 amended in the change, the tests updated, not weakened).
+
+## 2026-11-26 · fewer-go-on-cards · 6→7
+Second, bounded review of the why-card box (25a000f...HEAD): nothing found, 6 proofs re-run green. Worth keeping: after this change a «Sigue» card only shows at the keep-going cap or after a pending wait, so the loop wording mostly arrives together with the cap; a loop in Automático is still pressed up to 3 times before its card.

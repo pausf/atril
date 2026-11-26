@@ -133,7 +133,7 @@ export function DocModal({ workspaceId, part, auto = false, onClose }: Props) {
           {readOnly ? (
             <span className="ro">{auto ? t('🔒 read-only · automatic mode') : t('🔒 read-only · Claude is writing')}</span>
           ) : (
-            <span className="rw">{state === 'stopped' || state === 'paused' ? t('✎ editable · agent stopped') : t('✎ editable · Claude is waiting for you')}</span>
+            <span className="rw">{state === 'stopped' || state === 'paused' ? t('✎ editable · agent stopped') : state === 'done' ? t('✎ editable · Claude has finished') : t('✎ editable · Claude is waiting for you')}</span>
           )}
           <span className="sp" />
           <button type="button" onClick={() => void save()} disabled={readOnly || !dirty(file)}>
