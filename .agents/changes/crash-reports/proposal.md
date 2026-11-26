@@ -124,6 +124,6 @@ La limpieza por patrones y la firma: sin ellas, un PR filtra el disco de la pers
 
 ## Checklist
 
-- [ ] Informe: limpiar, firmar y markdown · Closes: R1, R2
+- [x] Informe: limpiar, firmar y markdown · Closes: R1, R2
 - [ ] Envío como PR con puertas y fallos, captura en main y ventana, IPC, preload y `ui.json` · waits on box 1 · Closes: R3, R4, R7, R5, W216
 - [ ] Tarjeta «Fallos» con diálogo, textos en inglés, foto (vista `ajustes-fallos`) y bocetos · waits on box 2 · Closes: R6, S47
