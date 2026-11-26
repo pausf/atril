@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildReport, type RawCrash } from './report'
+import { buildReport, scrub, type RawCrash } from './report'
 
 const HOME = '/Users/ana maria'
 const ctx = { home: HOME, versions: { atril: '0.9.0', electron: '45.1.0', macos: '15.3.1' } }
@@ -29,6 +29,12 @@ describe('crash report', () => {
       'Bearer abc.def-123',
       'Basic dXNlcjpwYXNz',
       'token=abc123',
+      'password=hunter2',
+      'passwd=hunter2',
+      'secret=s3cr3t',
+      'api_key=k1',
+      'apikey=k2',
+      'Authorization: Digest abc123',
       'a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6',
       'QUJDREVGR0hJSktMTU5PUFFSU1RVVldYWVoxMjM0NTY='
     ])
@@ -36,11 +42,17 @@ describe('crash report', () => {
     // E-mail addresses.
     expect(msg('no user ana.maria+x@acme.example.com here')).toBe('no user <email> here')
     // Server addresses.
-    for (const host of ['https://jira.acme.example/rest/api/2?x=1', 'ssh://git@acme.example/x.git', '10.0.0.12', '10.0.0.12:8080', '::1', 'fe80::1ff:fe23:4567:890a', 'api.acme.example:443', 'localhost:5173', 'git@github.com:acme/shop-web.git'])
+    for (const host of ['https://jira.acme.example/rest/api/2?x=1', 'ssh://git@acme.example/x.git', '10.0.0.12', '10.0.0.12:8080', '::1', 'fe80::1ff:fe23:4567:890a', 'api.acme.example:443', 'localhost:5173', 'git@github.com:acme/shop-web.git', 'jira.acme.corp', 'github.com/acme/shop-web', 'gitlab.com/acme/shop-web/-/merge_requests/1'])
       expect(msg(`connect ${host} refused`), host).toBe('connect <url> refused')
-    // Other absolute paths and ~/ paths; the app's own files keep their tail.
-    for (const path of ['/Users/otra/x.ts', '/home/otra/x.ts', '/private/var/folders/ab/T/x', '/var/log/x.log', '/tmp/x', '/Volumes/Disco/x', 'C:\\Users\\otra\\x.ts', '~/gitrepos/shop-web'])
-      expect(msg(`open ${path} failed`), path).toBe('open <path> failed')
+    // Versions, stack frame names and the app's own frames are not hosts.
+    expect(msg('Atril 1.2.3 on Electron 45.1.0 failed')).toBe('Atril 1.2.3 on Electron 45.1.0 failed')
+    expect(trace('Error: x\n    at Object.exports.handler (index.js:1:2)\n    at async Promise.all (index 0)')).toContain('at Object.exports.handler (index.js:1:2)\n    at async Promise.all (index 0)')
+    // Other absolute paths, ~/ paths and relative paths of two or more segments; absolute ones run across spaces.
+    for (const path of ['/Users/otra/x.ts', '/home/otra/x.ts', '/private/var/folders/ab/T/x', '/var/log/x.log', '/tmp/x', '/Volumes/Disco/x', 'C:\\Users\\otra\\x.ts', '~/gitrepos/shop-web', '/Users/pau/My Documents/medical record.pdf', '/etc/hosts', '/opt/acme/x', '/usr/local/bin/x', 'C:/Users/pau/x', './a/b', 'a/b/c'])
+      expect(msg(`failed: ${path}`), path).toBe('failed: <path>')
+    expect(msg('open /Users/pau/My Documents/a b.txt, then x')).toBe('open <path>, then x')
+    expect(trace('Error: x\n    at /Users/pau/My Documents/a.js:12:3')).toContain('at <path>:12:3')
+    expect(msg('text/html and/or json')).toBe('text/html and/or json')
     expect(trace(`Error: x\n    at f (${HOME}/Applications/Atril.app/Contents/Resources/app.asar/out/main/index.js:12:3)\n    at g (/Users/otra/dev/atril/out/renderer/assets/index.js:1:2)`)).toContain(
       'at f (<path>/app.asar/out/main/index.js:12:3)\n    at g (<path>/out/renderer/assets/index.js:1:2)'
     )
@@ -48,14 +60,21 @@ describe('crash report', () => {
     expect(trace('Error: x\n    at h (node:internal/x.js:12:34)')).toContain('node:internal/x.js:12:34')
     // Jira-like keys.
     expect(msg('issue SHOP-1234 failed')).toBe('issue <key> failed')
-    // In the message only, quoted text.
+    // Quoted text, in the message and in the stack (V8 repeats the message on its first line).
     expect(msg('bad "secret title" and \'other\' and «más»')).toBe('bad <text> and <text> and <text>')
-    expect(trace('Error: x\n    at "kept"')).toContain('"kept"')
+    expect(trace('Error: bad "secret title"\n    at x')).toContain('Error: bad <text>\n')
     // Cut to 4 000 characters each.
     const long = buildReport(raw('m'.repeat(5000), 's'.repeat(5000)), ctx).markdown
     expect(long).toContain('m'.repeat(4000) + '\n')
     expect(long).not.toContain('m'.repeat(4001))
     expect(long).not.toContain('s'.repeat(4001))
+    // Cut before scrubbing, and scrubbing is linear.
+    let t0 = performance.now()
+    scrub('a-'.repeat(8192), HOME)
+    expect(performance.now() - t0).toBeLessThan(50)
+    t0 = performance.now()
+    buildReport(raw('a-'.repeat(1_000_000), 'a-'.repeat(1_000_000)), ctx)
+    expect(performance.now() - t0).toBeLessThan(50)
     // No home path survives anywhere.
     expect(long + buildReport(raw(`x ${HOME}/a`, `at ${HOME}/b`), ctx).markdown).not.toContain('/Users/')
   })

@@ -24,6 +24,9 @@ describe('window crashes', () => {
     window.dispatchEvent(new ErrorEvent('error', { message: 'Script error.' }))
     window.dispatchEvent(Object.assign(new Event('unhandledrejection'), { reason: new TypeError('promise broke') }))
     window.dispatchEvent(Object.assign(new Event('unhandledrejection'), { reason: 'plain' }))
+    // Browser layout noise is not a crash.
+    window.dispatchEvent(new ErrorEvent('error', { message: 'ResizeObserver loop completed with undelivered notifications.' }))
+    window.dispatchEvent(new ErrorEvent('error', { error: new Error('ResizeObserver loop limit exceeded'), message: 'ResizeObserver loop limit exceeded' }))
     expect(send.mock.calls.map((c) => c[0])).toEqual([
       { message: 'listener broke', stack: err.stack },
       { message: 'Script error.', stack: '' },

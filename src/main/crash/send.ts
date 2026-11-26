@@ -29,16 +29,21 @@ interface Ledger {
 
 const file = (): string => join(atrilHome(), 'crash-sent.json')
 
+const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v)
+
+/** R4: a missing, damaged or wrongly-shaped file reads as empty; the next write replaces it. */
 async function readLedger(now: number): Promise<Ledger> {
-  let r: Partial<Ledger> = {}
+  let r: unknown = null
   try {
-    r = JSON.parse(await readFile(file(), 'utf8')) as Partial<Ledger>
+    r = JSON.parse(await readFile(file(), 'utf8'))
   } catch {
-    // Missing or damaged: start over.
+    // Missing or unparsable: start over.
   }
-  const failed = Object.fromEntries(Object.entries(r.failed ?? {}).filter(([, at]) => typeof at === 'number' && now - at < DAY))
-  const times = (Array.isArray(r.times) ? r.times : []).filter((at) => typeof at === 'number' && now - at < DAY)
-  return { sent: r.sent ?? {}, failed, times }
+  const o = isRecord(r) ? r : {}
+  const sent = Object.fromEntries(Object.entries(isRecord(o['sent']) ? o['sent'] : {}).filter((e): e is [string, string] => typeof e[1] === 'string'))
+  const failed = Object.fromEntries(Object.entries(isRecord(o['failed']) ? o['failed'] : {}).filter((e): e is [string, number] => typeof e[1] === 'number' && now - e[1] < DAY))
+  const times = (Array.isArray(o['times']) ? o['times'] : []).filter((at): at is number => typeof at === 'number' && now - at < DAY)
+  return { sent, failed, times }
 }
 
 async function writeLedger(l: Ledger): Promise<void> {

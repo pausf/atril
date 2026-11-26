@@ -138,6 +138,15 @@ describe('crash send', () => {
     for (const m of ['boom a', 'boom b', 'boom c', 'boom d', 'boom e']) await make(store, github().fetch).report(raw(m))
     expect(sent().times).toHaveLength(5)
     await nothing(store, 'cap')
+    // A missing, unparsable or wrongly-shaped ledger reads as empty, is rewritten and never stops sending.
+    for (const bad of ['null', '{nope', '[]', '"x"', JSON.stringify({ sent: 'x', failed: [], times: 'y' }), JSON.stringify({ sent: { a: 1 }, failed: { b: 'c' }, times: [1, 'x'] })]) {
+      process.env['ATRIL_HOME'] = tmp()
+      writeFileSync(sentFile(), bad)
+      const gh = github()
+      await make(await setup(), gh.fetch).report(raw())
+      expect(gh.spy, bad).toHaveBeenCalled()
+      expect(sent(), bad).toEqual({ sent: { [sig]: 'https://github.com/pausf/atril/issues/9' }, failed: {}, times: [T0] })
+    }
     // A send is running.
     process.env['ATRIL_HOME'] = tmp()
     let release: () => void = () => undefined
