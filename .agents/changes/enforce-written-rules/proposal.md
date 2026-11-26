@@ -144,4 +144,4 @@ POSIX `sh`, git (for `git grep`), node (already required) for the guard's JSON. 
 
 - [x] `.githooks/pre-push` with its tests written first and seen red (real `git push`, blank list, invalid pattern, integrity line) · Closes: W230, W231, W232
 - [x] `.claude/settings.json` and `.claude/hooks/no-build.sh` with their tests written first and seen red, run as settings.json names the command · Closes: W233, W234
-- [ ] `CLAUDE.md` rewritten short and in English with its size and sections test, plus the lessons entry and the `Governs:` line (landing hygiene, no criterion) · waits on boxes 1 and 2 · Closes: W235
+- [x] `CLAUDE.md` rewritten short and in English with its size and sections test, plus the lessons entry and the `Governs:` line (landing hygiene, no criterion) · waits on boxes 1 and 2 · Closes: W235

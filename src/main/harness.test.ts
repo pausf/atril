@@ -229,6 +229,16 @@ describe('harness', () => {
     }
   })
 
+  it('CLAUDE.md stays a short brief that points at the hooks', () => {
+    const raw = readFileSync(join(repoRoot, 'CLAUDE.md'))
+    const md = raw.toString('utf8')
+    expect(raw.length).toBeLessThanOrEqual(7000)
+    expect(md).toContain('.githooks/pre-push')
+    expect(md).toContain('.claude/settings.json')
+    for (const heading of ['## Last landed', '## Next', '## Untested with real data']) expect(md).toContain(`\n${heading}\n`)
+    for (const gone of ['git grep -niE', 'Where we left off', 'Dónde lo dejamos']) expect(md).not.toContain(gone)
+  })
+
   it('the build guard lets everything else through', () => {
     const payloads = [
       bash('pnpm -s typecheck'),
