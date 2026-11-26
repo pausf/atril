@@ -59,6 +59,7 @@ Sin probar con datos reales (necesita a Pau):
 - `openmr.test.ts` y `pause.test.ts` fallan a veces en la suite completa por tiempo de git bajo carga (pasa solo): mirarlo en la ronda de QA.
 - Que Esc pause a Claude sin eventos sueltos y que «Sigue donde lo dejaste.» se tome como mensaje nuevo.
 - La página de la MR contra forjas reales: «Fusionar» de verdad en GitHub (squash) y en GitLab (sin parámetros), los campos de M39 en una MR real de GitLab (`detailed_merge_status`, `has_conflicts`, `target_branch`; GitHub ya comprobado), los revisores de GitLab y los hilos del lado viejo (`bocetos/qa-final.html`).
+- Menos «Sigue» (issue #7, 26 nov): que Claude Code real siga con `{"decision":"block"}` en el Stop, mande `stop_hook_active` y `cwd` como se espera, y que el tope de 5 corte de verdad; que el último texto del transcript ya esté escrito cuando llega el Stop (pregunta en prosa).
 - La revisión por lentes leyendo la petición de verdad (M49): que Claude tome la descripción como contexto y no como órdenes.
 
 ## Cómo se trabaja aquí
