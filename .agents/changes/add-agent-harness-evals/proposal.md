@@ -167,5 +167,5 @@ The pure/I-O split (it is what lets scoring be tested first), the hidden accepta
 - [x] argument handling, the estimate and the confirmation in `evals/run.mjs`, tests first, nothing spawned · independent · Closes: E7, E8
 - [x] the sample repo, the three tasks with their hidden acceptance tests, the vitest exclusion for the fixtures, and `evals/fixtures.test.ts` · independent · Closes: E13
 - [x] one attempt end to end: fresh git repo, headless spawn with its flags and timeout, evidence from the final tree, scoring and the report files, proved with a fake claude · waits on boxes 1, 2, 3 and 4 · Closes: E9, E10, E11, E14
-- [ ] the guard that nothing starts the evals by itself, the `evals/reports/` line in `.gitignore` and the line in `CLAUDE.md` · waits on box 5 · Closes: E12, E15
+- [x] the guard that nothing starts the evals by itself, the `evals/reports/` line in `.gitignore` and the line in `CLAUDE.md` · waits on box 5 · Closes: E12, E15
 - [ ] the one proof run, task `add-coupon` × 2 runs on `haiku`, judged by the session reading its report: closed only when the report shows the flow skill called in both runs, otherwise the `--command` prefix is fixed, nothing is re-run without Pau, and the box stays open · waits on boxes 5 and 6 · Closes: the Outcomes line "Proven once, by hand"

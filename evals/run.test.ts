@@ -172,6 +172,16 @@ describe('evals one attempt', () => {
     expect(r.status).toBe(0)
   })
 
+  it('nothing in the repo starts the evals by itself', () => {
+    const root = join(here, '..')
+    const texts = [Object.values(JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')).scripts).join('\n')]
+    for (const dir of ['.githooks', '.github/workflows']) {
+      if (existsSync(join(root, dir))) for (const name of readdirSync(join(root, dir))) texts.push(readFileSync(join(root, dir, name), 'utf8'))
+    }
+    expect(texts.length).toBeGreaterThan(2)
+    for (const text of texts) expect(text).not.toMatch(/evals\/run/)
+  })
+
   it('main runs the whole loop and writes the report', () => {
     env('solve')
     const out = join(mkdtempSync(join(tmpdir(), 'evals-o-')), 'reports')

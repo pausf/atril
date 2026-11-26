@@ -5,3 +5,4 @@ dist
 # old mr-cockpit concept: holds work data, never publish
 caso-*
 flujo-mr*
+evals/reports/

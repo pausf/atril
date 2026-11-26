@@ -82,6 +82,7 @@ Sin probar con datos reales (necesita a Pau):
 - **Nunca** una carpeta llamada `secrets` (hay una regla de denegación global), ni leer `~/.atril/secrets.bin`. Los tokens solo viven en main.
 - **No tocar:** los repos reales de Pau, sus sesiones de tmux por defecto ni `~/.claude.json`. Los tests usan su propio socket de tmux y un `ATRIL_HOME` temporal.
 - **Cuota:** Pau cuida su cuota de Claude. Nada de llamadas automáticas a Claude: solo bajo demanda. Subagentes acotados, en Sonnet para lo mecánico, nunca Fable.
+- **Evals (by hand only):** `node evals/run.mjs --model <m>` runs the Libretto flow headless on 3 fixed tasks and scores each run (spec: `.agents/specs/evals/spec.md`). It spends real quota: never start it from a hook, a test or CI, and never without Pau's go-ahead.
 - **Cada función que aterriza** actualiza:
   - `bocetos/novedades.html`: sección, foto real en `bocetos/novedades/*.png` e historial;
   - `bocetos/fase1-nucleo.html` (el boceto).
