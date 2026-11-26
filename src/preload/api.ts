@@ -1083,6 +1083,8 @@ export interface RadarHit {
   id: string
   branch: string
   files: string[]
+  /** W310: criterion ids both works own; main always sends it, older fixtures may not. */
+  ids?: string[]
 }
 
 export interface RadarApi {

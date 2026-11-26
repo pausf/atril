@@ -246,6 +246,8 @@ export const ES: Record<string, string> = {
   '1 subagent': '1 subagente',
   'Clashes with {branch} in {file}': 'Choca con {branch} en {file}',
   Merged: 'Fusionada',
+  'Same criterion ids as {branch}: {id}': 'Mismos ids de criterio que {branch}: {id}',
+  'Same criterion ids as {branch}: {id} and {n} more': 'Mismos ids de criterio que {branch}: {id} y {n} más',
   'Clashes with {branch} in {file} and {n} more': 'Choca con {branch} en {file} y {n} más',
   '{n} subagents': '{n} subagentes',
   'working · {d}': 'trabajando · {d}',

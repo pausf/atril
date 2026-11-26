@@ -11,16 +11,26 @@ import { fixLabel, Problem, sharedFix } from './Problem'
 import { NavigationContext } from '../settings/navigation'
 import { useRadar } from '../radar'
 
-/** W168: the first collision, how many files more, and every one of them on hover. */
+/** W168, W311: the first collision with files and how many more; the first with ids; every one of them on hover. */
 function RadarLine({ hits = [] }: { hits?: RadarHit[] }) {
   const t = useT()
-  const first = hits[0]
-  if (!first?.files[0]) return null
-  const vars = { branch: first.branch, file: first.files[0], n: hits.reduce((n, h) => n + h.files.length, 0) - 1 }
+  const withFile = hits.find((h) => h.files.length > 0)
+  const withIds = hits.find((h) => (h.ids ?? []).length > 0)
+  const files = withFile && { branch: withFile.branch, file: withFile.files[0]!, n: hits.reduce((n, h) => n + h.files.length, 0) - 1 }
+  const ids = withIds && { branch: withIds.branch, id: withIds.ids![0]!, n: withIds.ids!.length - 1 }
   return (
-    <span className="ws-radar" title={hits.flatMap((h) => h.files.map((f) => `${h.branch}: ${f}`)).join('\n')}>
-      {vars.n > 0 ? t('Clashes with {branch} in {file} and {n} more', vars) : t('Clashes with {branch} in {file}', vars)}
-    </span>
+    <>
+      {files && (
+        <span className="ws-radar" title={hits.flatMap((h) => h.files.map((f) => `${h.branch}: ${f}`)).join('\n')}>
+          {files.n > 0 ? t('Clashes with {branch} in {file} and {n} more', files) : t('Clashes with {branch} in {file}', files)}
+        </span>
+      )}
+      {ids && (
+        <span className="ws-radar ids" title={hits.flatMap((h) => (h.ids ?? []).map((i) => `${h.branch}: ${i}`)).join('\n')}>
+          {ids.n > 0 ? t('Same criterion ids as {branch}: {id} and {n} more', ids) : t('Same criterion ids as {branch}: {id}', ids)}
+        </span>
+      )}
+    </>
   )
 }
 

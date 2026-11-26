@@ -65,6 +65,33 @@ describe('the collision radar', () => {
     expect(row('PF-1').querySelector('.ws-remove')?.textContent).toBe('Quitar')
   })
 
+  it('a row with shared criterion ids says which and with whom', async () => {
+    mockApi({
+      workspaces: [workspace('aaaaaaa1', 'PF-1'), workspace('aaaaaaa2', 'PF-2'), workspace('aaaaaaa3', 'PF-3')],
+      radar: {
+        aaaaaaa1: [
+          { id: 'aaaaaaa2', branch: 'PF-2', files: [], ids: ['W217', 'W218', 'W219'] },
+          { id: 'aaaaaaa3', branch: 'PF-3', files: ['src/cart.ts'], ids: ['W217'] }
+        ],
+        aaaaaaa2: [{ id: 'aaaaaaa1', branch: 'PF-1', files: [], ids: ['W217'] }],
+        aaaaaaa3: [{ id: 'aaaaaaa1', branch: 'PF-1', files: ['src/cart.ts'], ids: [] }]
+      }
+    })
+    render(createElement(App))
+    await screen.findByText('PF-3')
+    const ids = (branch: string): HTMLElement | null => row(branch).querySelector('.ws-radar.ids')
+    await waitFor(() => expect(ids('PF-1')).not.toBeNull())
+    expect(ids('PF-1')!.textContent).toBe('Mismos ids de criterio que PF-2: W217 y 2 más')
+    expect(ids('PF-1')!.title).toBe('PF-2: W217\nPF-2: W218\nPF-2: W219\nPF-3: W217')
+    // The file line comes from the first hit with files, above the ids line.
+    const files = row('PF-1').querySelector('.ws-radar:not(.ids)')!
+    expect(files.textContent).toBe('Choca con PF-3 en src/cart.ts')
+    expect(files.compareDocumentPosition(ids('PF-1')!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(ids('PF-2')!.textContent).toBe('Mismos ids de criterio que PF-1: W217')
+    expect(row('PF-2').querySelector('.ws-radar:not(.ids)')).toBeNull()
+    expect(ids('PF-3')).toBeNull()
+  })
+
   it('a row without collisions shows nothing new', async () => {
     mockApi({ workspaces: [workspace('aaaaaaa1', 'PF-1'), workspace('aaaaaaa2', 'PF-2')], radar: { aaaaaaa1: [], aaaaaaa2: [] } })
     render(createElement(App))

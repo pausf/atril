@@ -218,5 +218,5 @@ moves origin after the clone); W305 (a fixture with no merge of main passes triv
 - [x] A new work starts from origin's default branch (worktree and in place, with fallbacks) · Closes: W300, W301, W302
 - [x] `workBase` and its use in the hook's size, the panel's boxes and the radar · waits on box 1 · Closes: W303, W304, W305, W312
 - [x] Merged marks from notices and from ancestry after a fetch, merged works out of the radar, the row reads Merged · waits on box 1 · Closes: W306, W307, W308, W309, W313
-- [ ] Shared criterion ids in the radar and on the row · waits on box 2 · Closes: W310, W311, W166, W168
+- [x] Shared criterion ids in the radar and on the row · waits on box 2 · Closes: W310, W311, W166, W168
 - [ ] Drive it in the real app on its own CDP port with a temp ATRIL_HOME (a merged work, a clash on ids) · waits on boxes 3 and 4
