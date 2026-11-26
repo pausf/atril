@@ -77,6 +77,13 @@ Governs: src/main/credentials/** src/renderer/settings/**
 
 - In Ajustes you choose, per type, whether it reaches the Mac, only Avisos or nothing; set a whole group at once; see how each one arrives; set the waiting reminder, focus, grouping and quiet hours; send a test; and learn — with a button to fix it — when macOS blocks Atril.
 
+### English source language (english-source, 26 nov 2026)
+
+- Every literal key in `t()`, `useT()` and `translate()` in `src/` is the English text. `src/preload/i18n-es.ts` holds `ES: Record<string, string>`, English → Spanish, one entry per key.
+- In Spanish (Mac in Spanish, or «Español» in Ajustes → Idioma) the person sees the same Spanish as before the change; in English, the same English. Placeholders (`{n}`, `{detail}`) are untouched and `{detail}` stays untranslated.
+- A test fails the day a key in code has no Spanish entry (and when an entry has no caller).
+- The flip is done by a script that reads the current catalog and rewrites call sites through the TypeScript AST; it ends with an equivalence check: for every old key, `old es` equals `ES[new key]` and `old EN[key]` equals the new key without its context suffix.
+
 ## Scope boundaries
 
 **In:** storing, checking, replacing and deleting the Jira token, through a store and a card
@@ -114,7 +121,7 @@ validation (id pattern, not a git folder).
 window. **Out:** more languages, translating Jira or Claude, dates and numbers formatted per
 locale beyond the time already shown, the sketches.
 
-**Never scoped out:** a text with no English entry shows in Spanish rather than empty; the card is
+**Never scoped out:** a text with no Spanish entry shows in English rather than empty (english-source flipped the key); the card is
 keyboard-reachable like Apariencia.
 
 ### Create repos (add-create-repo, 9 nov 2026)
@@ -160,6 +167,15 @@ errores visibles junto al campo.
 ### Notificaciones (Ajustes y Avisos) (notify-ui, 14 nov 2026)
 
 **In:** `src/renderer/settings/Notifications.tsx` (both cards), `src/renderer/avisos/**` (bug 4, the new kinds), `src/renderer/App.tsx` (mounting the card, the new targets of `openAviso`), `src/renderer/components/Problem.tsx` (an optional second button, `cant` optional), its place in `Ajustes.tsx` (second column, after «Idioma»), styles as tokens; in `src/main/**` and `src/preload/**`, only the one IPC call V15 needs to reuse main's `closable` (Decision log, 2026-11-14). **Out:** sounds, per-repo settings, the summary on return.
+
+### English source language (english-source, 26 nov 2026)
+
+**In:** `src/preload/i18n.ts` (`translate` reads `ES`), new `src/preload/i18n-es.ts`, deletion of `src/preload/i18n-en.ts`; every `t()`/`useT()`/`translate()` call with a literal key in `src/**` (main, renderer, preload, tests that pass keys); `src/preload/activity-i18n.ts` (matches Spanish hook lines, returns English keys); `src/preload/i18n.test.ts` and `src/main/i18n.test.ts` (keys flipped, the missing-from-Spanish test); `CLAUDE.md` line on «Textos»; the settings spec's lines «a text with no English entry shows in Spanish rather than empty» and «Every text through `useT()` with its English entry», amended by hand at landing; the S19 scan's file filter (`i18n-en.ts` out, `i18n-es.ts` in).
+Ownership: `src/preload/i18n-es.ts` is governed by the settings spec like `i18n-en.ts` was (S16/S19 live there), though `src/preload/**` is in workspaces' `Governs:`; unchanged by this change.
+
+**Out (named):** translating specs, docs or test names (the ask); the hook `resources/summarise.mjs` and the Spanish activity lines main stores (every `// i18n-ignore` line in `status.ts`, `notify.ts` and `activity-i18n.ts` keeps its Spanish literal; only the `t()` keys beside them flip); Claude prompts (`LESSONS_NOTE`, `CONTINUE`, `SPLIT`) and demo data marked `// i18n-ignore`; a third language; any rewording of an English text; i18n libraries.
+
+**Never scoped out:** the Spanish a person sees stays byte-identical, including punctuation and `{placeholders}`; a missing Spanish entry never shows an empty string (falls back to the English key).
 
 ## Constraints
 
@@ -216,8 +232,17 @@ errores visibles junto al campo.
 
 ### Notificaciones (Ajustes y Avisos) (notify-ui, 14 nov 2026)
 
-- Every text through `useT()` with its English entry; colours only from tokens; keyboard-operable (S-a11y as the rest of Ajustes).
+- Every text through `useT()` with its Spanish entry; colours only from tokens; keyboard-operable (S-a11y as the rest of Ajustes).
 - Each change saves at once through `notify.set(patch)`; there is no «Guardar».
+
+### English source language (english-source, 26 nov 2026)
+
+- `t()` keys stay literals (S16: no template literals); the AST walk finds `t(`, `translate(lang, `, and `useT()`'s `t`.
+- Colliding English texts need distinct keys; the context suffix is `@@word`, matched as `/@@\w+$/`, and no real English text ends that way.
+- Tests assert Spanish through the Spanish Mac mock (`language: 'es'`); they must stay green unmodified except where they pass a Spanish key to `t()`/`translate()`.
+- A test that flakes under load (`openmr.test.ts`, `pause.test.ts`) and passes alone counts as green, and is reported as such.
+- Gates: `pnpm -s typecheck`, `pnpm -s lint`, `pnpm -s test` (the hook runs the first two). Never `pnpm build`.
+- Comment density as in neighbouring files; `ponytail:` comments in English.
 
 ## Prior decisions
 
@@ -417,6 +442,31 @@ errores visibles junto al campo.
 - Q: ¿Los días marcados de «Todo el día» con el acento? → A: no; en gris (`--text` sobre `--on-text`): el blanco sobre `--run` no llega al contraste en oscuro (assumed).
 - Q: ¿Cómo sabe la ventana que un trabajo es del mismo repo que la MR (V15)? → A: una llamada IPC pequeña a main que reutiliza `closable` (el de W187, que mira los remotos); la ventana no tiene los remotos. Amplía el alcance a `src/main/**` y `src/preload/**` solo para esa llamada (assumed).
 
+### English source language (english-source, 26 nov 2026)
+
+- add-language (9 nov 2026): no i18n library, a dictionary and `t()` with `{variables}`; main owns the resolved language. Unchanged. What flips is which side is the key: before, a missing English entry showed the Spanish; now a missing Spanish entry shows the English (the test makes it impossible to ship).
+- S19 stays as written. **Ceiling named:** it cannot see an English text that skips `t()` (no accents to catch), so a new untranslated English literal is caught only by S15's screens or by reading. Upgrade path if it bites: an ESLint rule on JSX text nodes.
+- Context suffix `@@word` (26 nov 2026): English display strips it; it exists only to keep two Spanish texts apart and is never shown.
+- Every Decision-log answer above, 26 nov 2026, was assumed (Pau's standing rule: don't stop to ask).
+
+#### Alternatives that lost
+
+| Considered | Why it lost |
+|---|---|
+| Regex rewrite, reusing the scan's `KEY` | Escaped quotes, multi-line calls and `translate(lang, …)` are where regex mis-edits silently; a rewrite cannot fail loudly the way a scan can |
+| Flip only at lookup (`EN` stays, code keeps Spanish) | Leaves Spanish as the source in code, which is what the ask removes |
+| `t(key, vars, ctx)` third argument for collisions | Changes three signatures and the hook for 17 keys; the suffix is invisible to callers |
+| Accept the 17 lost distinctions | Breaks «exactly today's Spanish» on, e.g., «Atrás» showing «Volver» |
+
+#### Decision log, answers as given (2026-11-26)
+- Q: two Spanish texts translate to the same English («Volver» and «Atrás» are both «Back»; 16 groups, 17 extra keys, found by reading `i18n-en.ts`): flipping the map loses one of them → A: keep today's Spanish exact: the extra keys get a context suffix `Back@@nav` that English display strips; the suffix is chosen from a small table in the script (assumed; if wrong, a pair of Spanish texts collapses into one and the Spanish screen changes, which the equivalence check would show)
+- Q: who writes the Spanish catalog → A: the script, from the current `i18n-en.ts` (key = old Spanish, value = old English), so the Spanish cannot drift while flipping (assumed)
+- Q: hook lines (`resources/summarise.mjs`) and main's stored activity lines are Spanish data → A: they stay Spanish; `localiseActivity` keeps matching them and now returns English keys (assumed; translating the hook is out)
+- Q: identical words (`Git`, `OK`) → A: still get an ES entry, so the "key missing from the Spanish catalog" test is strict with no allow-list (assumed)
+- Q: (phase 5 fork) how to rewrite 1,100 call sites → A: TypeScript-AST script, not regex (assumed; if wrong, an escaped quote or multi-line call is missed and the scan test names it). Rejected: regex like the scan's `KEY` (misses nothing today only because the scan is allowed to fail loudly, a rewrite is not), and flipping only at lookup, leaving Spanish keys in code (does not make English the source, which is the ask)
+- Q: (phase 5 fork) how to keep both Spanish texts of a colliding pair → A: context suffix in the key (assumed). Rejected: a second `t(key, vars, ctx)` argument (every signature and the `useT` hook change for 17 keys), and accepting the loss (breaks «exactly today's Spanish»)
+- Q: `i18n-en.ts` → A: deleted at the end of the flip, nothing else imports it (assumed)
+
 ## Task breakdown
 
 - Encrypted store with save / exists / delete.
@@ -480,9 +530,9 @@ errores visibles junto al campo.
 - **S15** When the person picks English, the window shall show Atril's own texts in English at
   once — the rail, Trabajo, Tareas, Ajustes and the Nueva tarea dialog — without a restart.
   Proof: src/renderer/settings/language.test.ts the window switches language at once
-- **S16** Every literal key passed to `t()` or `translate()` in `src/` shall have an English entry,
-  no key shall be a template literal, and the catalog shall hold no entry that no call uses.
-  Proof: src/preload/i18n.test.ts every text has its english
+- **S16** Every literal key passed to `t()` or `translate()` in `src/` shall have a Spanish entry in `ES` with the same `{placeholders}` as the key, no key shall be a template literal, and the catalog shall hold no entry that no call uses.
+  Ceiling named: one test holds the four promises, in four separate `expect`s (missing, placeholders, template literal, unused), each forced red once before it is believed.
+  Proof: src/preload/i18n.test.ts every text has its spanish
 - **S17** While the language is English, texts Atril did not write — Claude's words and
   the path, command or description inside an activity line, a Jira title, a file name, the detail
   inside an error — shall be shown exactly as they came.
@@ -594,3 +644,13 @@ errores visibles junto al campo.
 
 - **S47** Ajustes shall show the «Fallos» card (crash R6) in the first column, after «Repos».
   Proof: src/renderer/crash/crash.test.tsx "the Fallos card asks before sending and shows the last send"
+
+### English source language (english-source, 26 nov 2026)
+
+- **S48** The `translate` function shall return, for language `es`, the entry of `ES` for the key (with its `{placeholders}` replaced), and for `en` the key itself without any context suffix; a key with no `ES` entry shall show as the English text, suffix stripped, in either language.
+  Proof: src/preload/i18n.test.ts english is the key and spanish is the catalog
+- **S49** Where two Spanish texts share one English text, the two keys shall differ by a context suffix, English shall show both without it, and Spanish shall show each its own text.
+  Proof: src/preload/i18n.test.ts same english two spanish
+- **S50** While the language is Spanish, the rail, Trabajo, Tareas, Ajustes and the Nueva tarea dialog shall show the Spanish they showed before English became the source, asserted as literal Spanish strings.
+  Ceiling named: this samples five screens; the whole-catalog proof is the script's equivalence report (old Spanish equals `ES[new key]` for all ~1,110 keys), which is pasted into the commit message of box 1 because the script is throwaway.
+  Proof: src/renderer/settings/language.test.ts the window shows spanish after the flip
