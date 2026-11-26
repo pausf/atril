@@ -7,9 +7,9 @@ export function ConnectInSettings({ service }: { service: string }) {
   const t = useT()
   return (
     <>
-      {t('Conecta {service} en', { service })}{' '}
+      {t('Connect {service} in', { service })}{' '}
       <button className="linklike" onClick={openSettings}>
-        {t('Ajustes')}
+        {t('Settings')}
       </button>
     </>
   )

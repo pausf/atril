@@ -73,14 +73,14 @@ const EDGE = /^[\s*_`"'»”)]+|[\s*_`"'»”)]+$/g
 
 const clip = (s, n) => (s.length > n ? `${s.slice(0, n - 1)}…` : s)
 
-/** W232: the last sentence of the agent's words, for «Para porque:». */
+/** W292: the last sentence of the agent's words, for «Para porque:». */
 export function lastSentence(text) {
   const last = (typeof text === 'string' ? text.split('\n').filter((l) => l.trim()).at(-1) : '') ?? ''
   const pieces = last.replace(/\s+/g, ' ').trim().split(/(?<=[.!?…])\s+/).filter(Boolean)
   return clip(pieces.at(-1) ?? '', 200)
 }
 
-/** W231: the box the agent is on, for the cap's card. */
+/** W291: the box the agent is on, for the cap's card. */
 export const boxOf = (open) => clip(open[0]?.first ?? '', 120)
 
 /** W219: the last line of the agent's words when they end with a question to the person, else ''. */

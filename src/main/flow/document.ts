@@ -36,13 +36,13 @@ export async function saveDoc(
   text: string,
   mtimeMs: number
 ): Promise<{ mtimeMs: number } | { error: string }> {
-  if (state === 'working') return { error: t('Claude está escribiendo: no se ha guardado') }
+  if (state === 'working') return { error: t('Claude is writing: it was not saved') }
   const dir = join(workspacePath, '.agents', 'changes', change)
   const isDir = await stat(dir).then((s) => s.isDirectory(), () => false)
-  if (!CHANGE_RE.test(change) || !DOC_RE.test(name) || !isDir) return { error: t('Ese archivo no se puede editar desde Atril') }
+  if (!CHANGE_RE.test(change) || !DOC_RE.test(name) || !isDir) return { error: t('That file cannot be edited from Atril') }
   const file = join(dir, name)
   const current = await stat(file).catch(() => null)
-  if (!current || current.mtimeMs !== mtimeMs) return { error: t('Claude ha cambiado el archivo mientras editabas: copia tu texto y vuelve a abrirlo') }
+  if (!current || current.mtimeMs !== mtimeMs) return { error: t('Claude changed the file while you were editing: copy your text and open it again') }
   // ponytail: a crash between write and rename leaves this hidden file; the next save replaces it.
   const tmpFile = join(dir, `.${name}.atril-tmp`)
   await writeFile(tmpFile, text)

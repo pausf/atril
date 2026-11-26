@@ -80,7 +80,7 @@ export function DocModal({ workspaceId, part, auto = false, onClose }: Props) {
   }
 
   const close = (): void => {
-    if (files.some((f) => dirty(f.name)) && !window.confirm(t('Tienes cambios sin guardar. ¿Cerrar y descartarlos?'))) return
+    if (files.some((f) => dirty(f.name)) && !window.confirm(t('You have unsaved changes. Close and discard them?'))) return
     onClose()
   }
 
@@ -99,14 +99,14 @@ export function DocModal({ workspaceId, part, auto = false, onClose }: Props) {
         <div className="edhead">
           <h3 id="doc-title">{titles[part]}</h3>
           <span className="docchange">{docs?.change ?? ''}</span>
-          <div className="ftabs" role="tablist" aria-label={t('Archivos')}>
+          <div className="ftabs" role="tablist" aria-label={t('Files')}>
             {files.map((f) => (
               <button
                 key={f.name}
                 type="button"
                 role="tab"
                 aria-selected={f.name === file}
-                aria-label={dirty(f.name) ? t('{name} sin guardar', { name: f.name }) : f.name}
+                aria-label={dirty(f.name) ? t('{name} unsaved', { name: f.name }) : f.name}
                 onClick={() => setFile(f.name)}
               >
                 {f.name}
@@ -116,7 +116,7 @@ export function DocModal({ workspaceId, part, auto = false, onClose }: Props) {
           </div>
           <span className="sp" />
           <button type="button" className="btn" onClick={close}>
-            {t('Cerrar')}
+            {t('Close')}
           </button>
         </div>
         {error && (
@@ -125,19 +125,19 @@ export function DocModal({ workspaceId, part, auto = false, onClose }: Props) {
           </div>
         )}
         {docs === null ? (
-          <div className="empty">{t('Este trabajo aún no tiene documentos de Libretto.')}</div>
+          <div className="empty">{t('This work has no Libretto documents yet.')}</div>
         ) : (
           <DocEditor text={text} readOnly={readOnly} onChange={edit} cursor={cursor} />
         )}
         <div className="edstatus">
           {readOnly ? (
-            <span className="ro">{auto ? t('🔒 solo lectura · modo automático') : t('🔒 solo lectura · Claude está escribiendo')}</span>
+            <span className="ro">{auto ? t('🔒 read-only · automatic mode') : t('🔒 read-only · Claude is writing')}</span>
           ) : (
-            <span className="rw">{state === 'stopped' || state === 'paused' ? t('✎ editable · agente parado') : state === 'done' ? t('✎ editable · Claude ha terminado') : t('✎ editable · Claude te espera')}</span>
+            <span className="rw">{state === 'stopped' || state === 'paused' ? t('✎ editable · agent stopped') : state === 'done' ? t('✎ editable · Claude has finished') : t('✎ editable · Claude is waiting for you')}</span>
           )}
           <span className="sp" />
           <button type="button" onClick={() => void save()} disabled={readOnly || !dirty(file)}>
-            {t('Guardar ⌘S')}
+            {t('Save ⌘S')}
           </button>
         </div>
       </div>

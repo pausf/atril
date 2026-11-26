@@ -3,6 +3,7 @@ import { join } from 'node:path'
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import type { Effort } from '../preload/api'
+import { translate } from '../preload/i18n'
 import { effortOptions, modelOptions } from '../renderer/components/models'
 import { agentArgv, EFFORTS, hooksSettings, MODELS } from './agent'
 import { resourcesDir } from './paths'
@@ -81,7 +82,7 @@ describe('model', () => {
     expect(stored.model).toBe('haiku')
 
     // W34: Fable is not offered; the effort picker beside the model offers default plus the four levels.
-    const id = (es: string): string => es
+    const id = (k: string): string => translate('es', k)
     expect(MODELS).toEqual(['default', 'opus', 'sonnet', 'haiku'])
     expect(modelOptions(id).map((m) => m.value)).toEqual([...MODELS])
     expect(effortOptions(id)).toEqual([

@@ -71,5 +71,5 @@ export async function fileDiff(path: string, base: string, file: string, run: Ru
   if (bytes.length <= MAX_DIFF) return r.stdout
   // ponytail: the runner buffers the whole output first; stream it if a diff ever threatens memory.
   const head = bytes.subarray(0, MAX_DIFF).toString('utf8')
-  return `${head.slice(0, head.lastIndexOf('\n') + 1)}${t('Diff recortado a 1 MB')}`
+  return `${head.slice(0, head.lastIndexOf('\n') + 1)}${t('Diff cut at 1 MB')}`
 }

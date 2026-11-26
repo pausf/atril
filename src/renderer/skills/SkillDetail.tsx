@@ -27,15 +27,15 @@ function UseBars({ use }: { use: SkillUse | null }) {
   const total = days.reduce((a, n) => a + n, 0)
   return (
     <div className="skd-use">
-      <p className="skd-use-h">{t('Uso · últimos 14 días')}</p>
-      <div className="skd-bars" role="group" aria-label={t('Uso · últimos 14 días')}>
+      <p className="skd-use-h">{t('Use · last 14 days')}</p>
+      <div className="skd-bars" role="group" aria-label={t('Use · last 14 days')}>
         {recent.map((n, i) => {
           const day = new Date(now.getFullYear(), now.getMonth(), now.getDate() - (13 - i)).toLocaleDateString(locale, { day: 'numeric', month: 'short' })
           return <span key={i} role="img" aria-label={`${day}: ${n}`} title={`${day}: ${n}`} style={{ height: `${n === 0 ? 2 : Math.max(2, Math.round((n / max) * BAR_PX))}px` }} />
         })}
       </div>
-      <p>{total === 1 ? t('1 vez en 30 días') : total > 0 ? t('{n} veces en 30 días', { n: total }) : t('Sin usar en 30 días.')}</p>
-      <p className="where">{t('Según las sesiones de Claude Code en este Mac.')}</p>
+      <p>{total === 1 ? t('Once in 30 days') : total > 0 ? t('{n} times in 30 days', { n: total }) : t('Unused in 30 days.')}</p>
+      <p className="where">{t('From the Claude Code sessions on this Mac.')}</p>
     </div>
   )
 }
@@ -154,15 +154,15 @@ export function SkillDetail({
     document.addEventListener('keydown', key)
     return () => document.removeEventListener('keydown', key)
   }, [onClose])
-  const yes = (b: boolean): string => (b ? t('sí') : t('no'))
+  const yes = (b: boolean): string => (b ? t('yes') : t('no'))
   const fields: [string, string | undefined][] = [
-    [t('Cuándo usarla'), item.whenToUse],
-    [t('Argumentos'), item.argumentHint],
-    [t('Herramientas'), item.allowedTools?.join(', ')],
-    [t('Modelo'), item.model],
-    [t('Esfuerzo'), item.effort],
-    [t('Claude la usa solo'), item.disableModelInvocation === undefined ? undefined : yes(!item.disableModelInvocation)],
-    [t('Se llama con /'), item.userInvocable === undefined ? undefined : yes(item.userInvocable)]
+    [t('When to use it'), item.whenToUse],
+    [t('Arguments'), item.argumentHint],
+    [t('Tools'), item.allowedTools?.join(', ')],
+    [t('Model'), item.model],
+    [t('Effort'), item.effort],
+    [t('Claude uses it on its own'), item.disableModelInvocation === undefined ? undefined : yes(!item.disableModelInvocation)],
+    [t('Called with /'), item.userInvocable === undefined ? undefined : yes(item.userInvocable)]
   ]
   const name = fullName(item)
   return (
@@ -170,18 +170,18 @@ export function SkillDetail({
       <div className="skd-h">
         <h2>{name}</h2>
         <button ref={closeBtn} type="button" className="btn" onClick={onClose}>
-          {t('Cerrar')}
+          {t('Close')}
         </button>
       </div>
       <p className="skd-chips">
         <span className="tag">{originLabel(t, item, repo)}</span>
-        {item.kind === 'command' && <span className="tag">{t('comando')}</span>}
+        {item.kind === 'command' && <span className="tag">{t('command')}</span>}
         <span className="tag">{stateLabel(t, item.state)}</span>
       </p>
       {item.description && <p className="skd-d">{item.description}</p>}
       {(item.origin === 'personal' || item.origin === 'project') && (
         <div className="skd-st">
-          <div role="radiogroup" aria-label={t('Estado')} aria-busy={busy}>
+          <div role="radiogroup" aria-label={t('State')} aria-busy={busy}>
             {STATES.map((s) => (
               <label key={s}>
                 <input type="radio" name="sk-state" checked={item.state === s} disabled={busy || item.lockedBy !== undefined} onChange={() => onSet(s)} />
@@ -189,7 +189,7 @@ export function SkillDetail({
               </label>
             ))}
           </div>
-          {item.lockedBy && <p className="where">{t('Lo fija {file}', { file: item.lockedBy })}</p>}
+          {item.lockedBy && <p className="where">{t('Fixed by {file}', { file: item.lockedBy })}</p>}
           {note && <p role="status">{note}</p>}
         </div>
       )}
@@ -207,24 +207,24 @@ export function SkillDetail({
       {editable && !edit && (
         <p>
           <button type="button" className="btn" onClick={() => void startEdit()}>
-            {t('Editar')}
+            {t('Edit@@action')}
           </button>
-          {saved && <span role="status"> {t('Guardado.')}</span>}
+          {saved && <span role="status"> {t('Saved.')}</span>}
         </p>
       )}
       {readFail !== null && (
         <Problem
-          what={readFail.includes(t('Es demasiado grande para editarla aquí.')) ? t('Es demasiado grande para editarla aquí.') : t('No he podido abrir la skill para editarla.')}
+          what={readFail.includes(t('It is too big to edit here.')) ? t('It is too big to edit here.') : t('I could not open the skill to edit it.')}
           detail={readFail}
           onClose={() => setReadFail(null)}
         />
       )}
       {edit ? (
         <div className="skd-ed">
-          {edit.before && <p className="notice" role="note">{t('Tienes cambios sin guardar de antes.')}</p>}
+          {edit.before && <p className="notice" role="note">{t('You have unsaved changes from before.')}</p>}
           <textarea
             className="skd-edit"
-            aria-label={t('Texto de {name}', { name: item.name })}
+            aria-label={t('Text of {name}', { name: item.name })}
             value={edit.text}
             spellCheck={false}
             disabled={saving}
@@ -238,7 +238,7 @@ export function SkillDetail({
           />
           {ask?.kind === 'conflict' && (
             <div className="skd-ask" role="alert">
-              <p>{t('Este archivo ha cambiado fuera de Atril.')}</p>
+              <p>{t('This file changed outside Atril.')}</p>
               <button
                 type="button"
                 className="btn"
@@ -248,31 +248,31 @@ export function SkillDetail({
                   setAsk(null)
                 }}
               >
-                {t('Cargar el de disco')}
+                {t('Load the one on disk')}
               </button>
               <button type="button" className="btn" disabled={saving} onClick={() => void save({ force: true })}>
-                {t('Guardar el mío encima')}
+                {t('Save mine over it')}
               </button>
             </div>
           )}
           {ask?.kind === 'broken' && (
             <div className="skd-ask" role="alert">
-              <p>{t('La cabecera no se entiende: Claude Code puede ignorar esta skill.')}</p>
+              <p>{t('The header is not understood: Claude Code may ignore this skill.')}</p>
               <button type="button" className="btn" disabled={saving} onClick={() => void save({ ...(ask.force ? { force: true } : {}), allowBroken: true })}>
-                {t('Guardar igual')}
+                {t('Save anyway')}
               </button>
               <button type="button" className="btn" onClick={() => setAsk(null)}>
-                {t('Seguir editando')}
+                {t('Keep editing')}
               </button>
             </div>
           )}
-          {fail !== null && <Problem what={t('No he podido guardar la skill.')} cant={t('El texto sigue aquí, sin guardar.')} detail={fail} />}
+          {fail !== null && <Problem what={t('I could not save the skill.')} cant={t('The text is still here, unsaved.')} detail={fail} />}
           <div className="skd-act">
             <button type="button" className="btn p" disabled={saving} onClick={() => void save()}>
-              {t('Guardar')}
+              {t('Save')}
             </button>
             <button type="button" className="btn" onClick={() => guard(leaveEdit)}>
-              {t('Descartar')}
+              {t('Discard')}
             </button>
           </div>
         </div>

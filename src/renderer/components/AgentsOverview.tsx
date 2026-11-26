@@ -47,11 +47,11 @@ export function AgentsOverview({ workspaces, next, switcher, onOpen }: Props) {
   }
 
   return (
-    <section className="col center overview" aria-label={t('Todos los agentes')}>
+    <section className="col center overview" aria-label={t('All agents')}>
       <div className="whead">
         <div>
-          <div className="m">{t('{n} trabajos', { n: workspaces.length })}</div>
-          <h1>{t('Todos los agentes')}</h1>
+          <div className="m">{t('{n} workspaces', { n: workspaces.length })}</div>
+          <h1>{t('All agents')}</h1>
         </div>
         <span className="sp" />
         {switcher}
@@ -80,7 +80,7 @@ export function AgentsOverview({ workspaces, next, switcher, onOpen }: Props) {
                 </span>
                 <span className="ov-meta">{w.repoId}</span>
                 {flow?.stage === 'sin-libretto' ? (
-                  <span className="ov-stage none">{t('sin Libretto')}</span>
+                  <span className="ov-stage none">{t('no Libretto')}</span>
                 ) : (
                   stage && (
                     <span className="ov-stage">
@@ -97,11 +97,11 @@ export function AgentsOverview({ workspaces, next, switcher, onOpen }: Props) {
                         <span className="ov-ago">{ago(t, act.at, now)}</span>
                       </>
                     ) : (
-                      <span className="ov-act-text">{t('sin actividad')}</span>
+                      <span className="ov-act-text">{t('no activity')}</span>
                     )}
                   </span>
                 )}
-                {running > 0 && <span className="ov-subs">{running === 1 ? t('1 subagente') : t('{n} subagentes', { n: running })}</span>}
+                {running > 0 && <span className="ov-subs">{running === 1 ? t('1 subagent') : t('{n} subagents', { n: running })}</span>}
               </button>
               {/* Outside the card's button: answering must not open it (W82). */}
               {state === 'needs-you' && (
@@ -127,7 +127,7 @@ function PauseButton({ workspaceId, paused }: { workspaceId: string; paused: boo
   return (
     <div className="quick-replies">
       <button type="button" className="quick-reply" onClick={press}>
-        {paused ? t('Reanudar') : t('Pausar')}
+        {paused ? t('Resume') : t('Pause')}
       </button>
       {error && <span className="bad">{error}</span>}
     </div>

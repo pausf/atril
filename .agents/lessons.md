@@ -262,88 +262,88 @@ Reviewer found nothing (W97 proof and ui.ts validation re-run). The builder corr
 - Targets are kept per repo but a worktree may lack the folder; tmux's raw error would reach the card. Fixed: a missing folder answers «Elegir a mano» before any split; test watched red.
 
 ## 2026-11-11 · plain-errors · 6→7
-Un test arreglado de paso (una carrera en `boxes.test.ts`) quedó fuera del contrato y el revisor lo marcó. Si una carrera sale al construir, se apunta en el Decision log en el momento, no después.
+A test fixed along the way (a race in `boxes.test.ts`) stayed outside the contract and the reviewer flagged it. If a race shows up while building, it goes in the Decision log at that moment, not afterwards.
 
 ## 2026-11-11 · plain-errors · 6→7
-El estado inicial de la cuota («aún sin leer») cae en la frase genérica; encaja con W20, pero un estado «cargando» que se pinta como error es fácil de olvidar al escribir frases por causa.
+The initial quota state («aún sin leer») falls into the generic sentence; it fits W20, but a «cargando» state painted as an error is easy to forget when writing sentences per cause.
 
 ## 2026-11-11 · login-path · 6→7
-Nada contra el contrato. Duda del revisor: un `$SHELL` fish, ¿une `"$PATH"` con espacios? No: desde fish 3, PATH es una variable de rutas y entre comillas se une con «:». Si un shell raro no lo hace, las carpetas fijas siguen entrando. Lección general: un PATH vacío lo heredan todas las apps del Dock; cualquier herramienta nueva que se lance desde main pasa por aquí.
+Nothing against the contract. Reviewer's doubt: does a fish `$SHELL` join `"$PATH"` with spaces? No: since fish 3, PATH is a path variable and, quoted, it joins with «:». If an odd shell does not, the fixed folders still get in. General lesson: an empty PATH is inherited by every Dock app; any new tool launched from main goes through here.
 
 ## 2026-11-11 · dirty-copy · 6→7
-El reintento con texto vacío (Claude a secas en un worktree) no tenía test: un criterio que dice «el mismo texto y modo» cubre dos ramas del código, y el test solo probaba una. Añadido «a blank dirty retry opens plain claude in a worktree».
+The retry with empty text (plain Claude in a worktree) had no test: a criterion saying «el mismo texto y modo» covers two code branches, and the test only proved one. Added «a blank dirty retry opens plain claude in a worktree».
 
 ## 2026-11-11 · ws-errors · 6→7
-«Olvidar» nunca borra la carpeta, pero su test borra la carpeta antes de olvidar: no podría ver un borrado. Una cláusula «nunca X» necesita un caso donde X sería visible.
+«Olvidar» never deletes the folder, but its test deletes the folder before forgetting: it could not see a deletion. A «never X» clause needs a case where X would be visible.
 
 ## 2026-11-11 · ws-errors · 6→7
-`atril:ws:forget` acepta cualquier id, también uno vivo con su carpeta; solo la ventana lo limita al caso roto. Aceptado: no toca la carpeta y el registro se puede volver a crear abriendo la rama.
+`atril:ws:forget` accepts any id, also a live one with its folder; only the window limits it to the broken case. Accepted: it does not touch the folder and the record can be recreated by opening the branch.
 
 ## 2026-11-11 · model-pick · 6→7
-`proposeStart` construía el comando que se enseña con un modelo sin validar (el que se ejecuta sí se validaba). Si dos caminos montan el mismo comando, los dos pasan por la misma lista; ahora lo prueba «an unknown effort is refused before anything runs».
+`proposeStart` built the displayed command with an unvalidated model (the one that runs was validated). If two paths build the same command, both go through the same list; now «an unknown effort is refused before anything runs» proves it.
 
-## 2026-11-11 · model-pick · arnés
-Desde `login-path`, el PATH del shell de login va delante: un `claude` falso solo en `PATH` pierde y las pruebas arrancan el real (gastó cuota en repos de prueba). El arnés usa un `SHELL` falso que antepone los dobles; anotado en CLAUDE.md.
+## 2026-11-11 · model-pick · harness
+Since `login-path`, the login shell's PATH goes first: a fake `claude` only in `PATH` loses and the tests start the real one (it burned quota on test repos). The harness uses a fake `SHELL` that prepends the doubles; noted in CLAUDE.md.
 
 ## 2026-11-11 · reopen-work · 6→7
-Dos reopen del mismo trabajo a la vez (ventana recargada) veían los dos «sin sesión»; el `catch` del segundo mataba la sesión sana del primero y ninguno salía bien. Una limpieza tras un fallo solo puede deshacer lo que creó esa misma llamada: candado por id. Proof: «a stopped work reopens where it was».
+Two reopens of the same work at once (reloaded window) both saw «sin sesión»; the second's `catch` killed the first's healthy session and neither came out right. Cleanup after a failure may only undo what that same call created: a lock per id. Proof: «a stopped work reopens where it was».
 
-## 2026-11-11 · reopen-work · prueba en la app real
-Matar tmux con un trabajo abierto bloqueaba Atril entero: `term:resize` llegaba a un cliente pty muerto, node-pty lanzaba EBADF dentro de un `ipcMain.on` y Electron mostraba un NSAlert modal. Los tests no lo veían porque no usan node-pty real; solo salió al probar en la app. W149.
+## 2026-11-11 · reopen-work · real-app test
+Killing tmux with a work open froze the whole of Atril: `term:resize` reached a dead pty client, node-pty threw EBADF inside an `ipcMain.on` and Electron showed a modal NSAlert. The tests did not see it because they do not use a real node-pty; it only showed up when testing in the app. W149.
 
 ## 2026-11-11 · state-files · 6→7
-Aceptado sin arreglar: si `workspaces.json` se daña entre la comprobación inicial de «Quitar» y su escritura final, el worktree ya se ha quitado y la escritura falla sin sobrescribir nada. Abrir sí deshace (W146). Ventana de milisegundos; si aparece en la práctica, quitar debe escribir el registro antes de borrar.
+Accepted without fixing: if `workspaces.json` gets damaged between «Quitar»'s initial check and its final write, the worktree has already been removed and the write fails without overwriting anything. Opening does undo (W146). A window of milliseconds; if it shows up in practice, removing must write the record before deleting.
 
 ## 2026-11-11 · net-errors · 6→7
-W150 decía «cualquier error HTTP» y el cambio solo tocó las llamadas de su lista: crear repo (`HTTP <n>` de reserva), buscar tableros, mover a In Progress y pasar a Jira seguían con el número en la frase. Cuando un criterio dice «cualquier», buscar todas las llamadas (`rg "respondió|HTTP \$\{"`) antes de cerrar. Arreglados; sus tests ahora exigen la frase exacta.
+W150 said «cualquier error HTTP» and the change only touched the calls on its list: creating a repo (`HTTP <n>` fallback), searching boards, moving to In Progress and passing to Jira still carried the number in the sentence. When a criterion says «cualquier», look for all the calls (`rg "respondió|HTTP \$\{"`) before closing. Fixed; their tests now require the exact sentence.
 
-## 2026-11-11 · net-errors · pendiente
-`forge/scores.ts:225` y `forge/lenses.ts:175` pueden pasar `err.message` a la frase si lo que se lanza no es un `Failure`. Va con el rediseño de la MR.
+## 2026-11-11 · net-errors · pending
+`forge/scores.ts:225` and `forge/lenses.ts:175` can pass `err.message` to the sentence if what is thrown is not a `Failure`. Goes with the MR redesign.
 
 ## 2026-11-11 · libretto-models · 6→7
-El Decision log decía que la frase «la copia es `171db90`» de la spec cambiaba, y el commit no la tocaba: una decisión que nombra un cambio en la spec viva se hace en el mismo commit, no se deja a `land.py`.
+The Decision log said the spec's sentence «la copia es `171db90`» changed, and the commit did not touch it: a decision that names a change to the living spec is made in the same commit, not left to `land.py`.
 
-## 2026-11-11 · net-errors · después de aterrizar
-`qa-report.test.ts` seguía esperando «400» en la frase: `net-errors` cambió `libretto.ts` y no corrí los tests de quien lo usa. Al cambiar una frase compartida, `rg` del texto viejo en `*.test.ts` antes de aterrizar.
+## 2026-11-11 · net-errors · after landing
+`qa-report.test.ts` still expected «400» in the sentence: `net-errors` changed `libretto.ts` and I did not run the tests of its users. When changing a shared sentence, `rg` the old text in `*.test.ts` before landing.
 
 ## 2026-11-11 · repo-gone · 6→7
-Nada contra el contrato. Aceptado: quitar un repo lee `workspaces.json` y luego escribe `repos.json` sin candado; un trabajo abierto justo entre medias apuntaría a un repo quitado (W155 lo diría al usarlo).
+Nothing against the contract. Accepted: removing a repo reads `workspaces.json` and then writes `repos.json` with no lock; a work opened right in between would point to a removed repo (W155 would say so on use).
 
 ## 2026-11-11 · term-attach · 6→7
-«Never rejects» se probó solo en `pty.attach`; el manejador IPC leía la lista con el lector estricto y rechazaría con `workspaces.json` dañado. Un IPC que solo enseña usa `listWorkspacesOrNone` (W145).
+«Never rejects» was proven only in `pty.attach`; the IPC handler read the list with the strict reader and would reject with a damaged `workspaces.json`. An IPC that only shows uses `listWorkspacesOrNone` (W145).
 
 ## 2026-11-11 · fast-panel · 6→7
-Responder, contestar rápido y pausar decidían «vivo» con la foto de tmux de 1 s porque `listWorkspaces` pasó a usarla: un lector compartido que se abarata cambia también a quien actúa. Las acciones leen el registro y preguntan `has-session` directamente.
+Replying, quick replies and pausing decided «alive» with tmux's 1 s snapshot because `listWorkspaces` started using it: a shared reader that gets cheaper also changes whoever acts. Actions read the record and ask `has-session` directly.
 
 ## 2026-11-11 · fast-panel · 6→7
-La caché del plan leía el checklist antes de su `stat`: una edición entre medias guardaba el plan viejo con la clave nueva. Primero la clave, luego la lectura.
+The plan cache read the checklist before its `stat`: an edit in between stored the old plan under the new key. First the key, then the read.
 
-## 2026-11-11 · fast-panel · medición
-En el Mac de Pau cada proceso cuesta ~125 ms en reposo y 300–800 ms con carga (no es git: `/usr/bin/true` 3 ms, git hace 6,5 ms de trabajo; probable antivirus). Antes/después con 4 trabajos: boxDiff 3,9–5,3 s → 1,5–1,8 s; boxes repetido 4,7–6,3 s → 1,6 s; reposo 11 → 5 procesos/s. Queda: no lanzar nada si el vigilante de archivos dice que nada cambió.
+## 2026-11-11 · fast-panel · measurement
+On Pau's Mac each process costs ~125 ms at rest and 300–800 ms under load (not git: `/usr/bin/true` 3 ms, git does 6.5 ms of work; probably antivirus). Before/after with 4 works: boxDiff 3.9–5.3 s → 1.5–1.8 s; repeated boxes 4.7–6.3 s → 1.6 s; at rest 11 → 5 processes/s. Left: launch nothing if the file watcher says nothing changed.
 
 ## 2026-11-11 · grafito-you · 6→7
-Cambié `--run` a gris para la etiqueta «trabajando» sin buscar quién más lo usaba: el punto de aviso sin leer, la selección del buscador, el paso actual y «conectado» perdían el acento. Antes de cambiar un token, `rg "var(--token)"`; si el cambio es para un solo sitio, token nuevo.
+I changed `--run` to grey for the «trabajando» label without looking for who else used it: the unread notice dot, the search selection, the current step and «conectado» lost the accent. Before changing a token, `rg "var(--token)"`; if the change is for a single place, a new token.
 
 ## 2026-11-11 · diff-header · 6→7
-Quitar la cabecera dejó a la vista que `diffLine` coloreaba como cabecera cualquier `--- x`, también una línea borrada; y un renombrado sin cambios quedaba en blanco. Un test de texto no ve clases: si el cambio es de cómo se ve, el test mira el marcado.
+Removing the header exposed that `diffLine` coloured any `--- x` as a header, also a deleted line; and a rename with no changes was left blank. A text test does not see classes: if the change is about how it looks, the test looks at the markup.
 
 ## 2026-11-11 · quiet-panel · 6→7
-Un vigilante que fallaba (error de `fs.watch` o `rev-parse` caído una vez) quedaba muerto en su hueco para siempre y ese trabajo calculaba en cada vuelta. Un recurso que falla se sustituye en la siguiente petición, no se guarda. Aceptados sin arreglar: el reloj de pared hacia atrás alarga el tope de 30 s; un trabajo que ya no está en la lista conserva su vigilante hasta que lo saca el quinto.
+A watcher that failed (an `fs.watch` error or `rev-parse` down once) stayed dead in its slot forever and that work computed on every turn. A resource that fails is replaced on the next request, not kept. Accepted without fixing: the wall clock going backwards lengthens the 30 s cap; a work no longer in the list keeps its watcher until the fifth pushes it out.
 
-## 2026-11-11 · quiet-panel · medición
-Con 4 trabajos: casillas repetidas 1,6 s → 0–1 ms; volver a un trabajo 2,4 s → 62 ms; reposo 5 → 2,2 procesos/s. Quedan: la primera visita (~6 s, plan en frío) y el diff de la casilla abierta, que se repite cada 3 s.
+## 2026-11-11 · quiet-panel · measurement
+With 4 works: repeated boxes 1.6 s → 0–1 ms; returning to a work 2.4 s → 62 ms; at rest 5 → 2.2 processes/s. Left: the first visit (~6 s, cold plan) and the open box's diff, which repeats every 3 s.
 
 ## 2026-11-11 · flow-empty · 6→7
-«Nunca en blanco» se probó con «leyendo» y con las fases tempranas, pero `null` (main dice «no hay flujo», p. ej. una revisión) seguía dejando la pestaña vacía. Para una promesa «nunca X», enumerar cada valor que puede llegar, no solo los del ejemplo.
+«Never blank» was proven with «leyendo» and with the early phases, but `null` (main says «no flow», e.g. a review) still left the tab empty. For a «never X» promise, enumerate every value that can arrive, not just the example's.
 
 ## 2026-11-11 · lessons-first · 6→7
-El criterio nombraba tres sitios (abrir, reabrir y el comando de «Empezar») y dos tipos de enlace, pero las pruebas cubrían solo el archivo enlazado y no el comando enseñado. Cada cláusula de un criterio con «y» necesita su caso.
+The criterion named three places (open, reopen and the «Empezar» command) and two link types, but the tests covered only the linked file and not the displayed command. Each clause of a criterion with «y» needs its case.
 
-## 2026-11-11 · lessons-first · después de aterrizar
-`LESSONS_NOTE` es castellano sin `t()` y rompió «no spanish text skips t» (src/preload/i18n.test.ts), que no corrí. Un texto para el modelo lleva `// i18n-ignore` con su porqué; y al cambiar main, correr las dos pruebas de idioma, no solo una.
+## 2026-11-11 · lessons-first · after landing
+`LESSONS_NOTE` is Spanish without `t()` and broke «no spanish text skips t» (src/preload/i18n.test.ts), which I did not run. A text for the model carries `// i18n-ignore` with its why; and when changing main, run both language tests, not just one.
 
 ## 2026-11-11 · qa-to-mr · 6→7
-El constructor ensanchó la respuesta de `threads.reply` (de otra capacidad, mr) y no había `spec-mr.md`: la forma nueva nunca habría llegado a la spec de MR. Si un cambio toca un archivo gobernado por otra capacidad, su delta va en el mismo cambio. Pendiente aceptado: lo que el agente de QA escribe en notas y pasos se publica tal cual; no hay vista previa antes de «Publicar en la MR».
+The builder widened `threads.reply`'s answer (another capability's, mr) and there was no `spec-mr.md`: the new shape would never have reached the MR spec. If a change touches a file governed by another capability, its delta goes in the same change. Accepted pending: what the QA agent writes in notes and steps is published as is; there is no preview before «Publicar en la MR».
 
 ## 2026-11-12 · notify-core · 6→7
 A numbered reply from the Mac turned every refusal of `answerAgent` into «ese trabajo ya no está», although the work still existed (N3 allows that sentence only for a vanished work or pane). A result type with three outcomes was squeezed into two. Fixed with `fromAnswer`, which keeps the refusal's own sentence; proved by «only a vanished work reads as gone» and «a refused numbered reply says why, not that the work is gone».
@@ -390,16 +390,16 @@ A dev-only snapshot view and a seed prop went into `App.tsx`, outside Scope «In
 ## 2026-11-20 · refine-request · 6→7
 I30 covers both dialogs and both «Lanza» templates; its proof drove only «Nueva tarea» with the flow template. A criterion naming two surfaces needs each one driven once. Fixed: a test for «Nuevo trabajo» in Automático with the composed text.
 
-## 2026-11-20 · refine-request · arnés
+## 2026-11-20 · refine-request · harness
 A gate hung ~10 h overnight: killed runs left `atril-test-*` tmux servers alive and the next suite never got past RUN. The gate script now kills leftover test servers first and wraps each suite in a hard `alarm` (30 min, rerun 15 min).
 
-## 2026-11-20 · harness-ladder · arnés
+## 2026-11-20 · harness-ladder · harness
 Two rules moved from prose to `pnpm lint` (W210, W212). Files under `src/renderer` and `src/main` (tests apart) can no longer import from each other: they talk through preload. Outside `paths.ts`, `trust.ts` and `qa.ts`, code in `src/main` can no longer call `homedir()` or read `process.env.HOME`. The home rule replaces «2026-11-09 · fix-test-home-leak · 6» (every module resolves the home through one function) and the home half of «2026-11-10 · add-qa-lab · 6→7». Both are proved by `src/main/harness.test.ts`, which lints one text that must fail and one that must pass against the real config.
 
-## 2026-11-20 · harness-ladder · arnés
+## 2026-11-20 · harness-ladder · harness
 `pnpm lint` now refuses any assignment to a member named `atril` outside `src/renderer/mockApi.ts` (W211). A test with its own stubs passes them as `mockApi({}, undefined, over)`: they are laid over the full mock, so a component that gains a new `window.atril` call no longer breaks tests whose mock lacks it. Ten tests were migrated, changing only their setup line. This replaces «2026-11-10 · add-doctor-install-terminal · 7» (hand-built `window.atril` missing `snapshotView`, check every hand-made mock). `over` is typed loosely on purpose: `components/terminal.test.tsx` stubs `term.input`, a member the API no longer has, to prove that nobody calls it.
 
-## 2026-11-20 · harness-ladder · arnés
+## 2026-11-20 · harness-ladder · harness
 A commit with red typecheck or lint can no longer go in (W213, W214). The `prepare` script sets `core.hooksPath` to `.githooks`, and `.githooks/pre-commit` runs `pnpm -s typecheck` and `pnpm -s lint` with `set -e`, in about 5 s. This replaces the typecheck and lint half of «2026-11-09 · add-atril-core · 8» (a gate inside an `&&` chain that always returned 0), «2026-11-09 · add-agent-activity · 6» (two commits in a row while red) and «2026-11-09 · add-language · 6» (proofs committed while red). The test half still depends on the gate: the hook does not run the suite, which takes more than 10 min under load.
 
 ## 2026-11-20 · harness-ladder · 6→7
@@ -411,7 +411,7 @@ The `window.atril` rule was scoped to `src/**` while W211 says any file; `test/s
 ## 2026-11-20 · harness-ladder · 6→7
 A call-site selector (`callee.name='homedir'`) misses `import { homedir as h }`. Ban the import specifier as well as the call. Fixed: `ImportSpecifier[imported.name='homedir']`.
 
-## 2026-11-20 · harness-ladder · arnés
+## 2026-11-20 · harness-ladder · harness
 Every full gate in this change failed 12–14 tmux/git tests under load and passed them alone on rerun. The gate is green but twice as slow; queue: run the tmux/git files in their own vitest project with fewer workers.
 
 ## 2026-11-20 · mr-page-wide · 6→7
@@ -466,13 +466,24 @@ A decision log line said a test covered the catalog read during an action; none 
 `undefined === undefined` matched a `local` install without `projectPath` when no repo was picked, offering buttons main would refuse. Comparisons against an optional lookup guard the lookup first. Fixed, forced red.
 
 ## 2026-11-25 · skills-usage · 6→7
-- El revisor en frío no encontró nada. Mirando la foto salieron dos fallos que los tests daban por buenos porque el contrato los permitía: las skills de Atril contaban como «candidatas a apagar» (no se apagan una a una) y un solo uso decía «1 veces». Regla: mirar la foto contra lo que la persona leerá, no solo contra el criterio; el singular y lo que no se puede tocar van en el contrato desde el principio.
-- El filtro de texto antes de `JSON.parse` busca `"name":"Skill"` sin espacios: comprobado contra una sesión real de este proyecto (Claude Code escribe JSON compacto). Si un día cuenta 0, mirar esto primero.
+- The cold reviewer found nothing. Looking at the photo turned up two failures the tests took as fine because the contract allowed them: Atril's skills counted as «candidatas a apagar» (they are not switched off one by one) and a single use said «1 veces». Rule: look at the photo against what the person will read, not only against the criterion; the singular and what cannot be touched go in the contract from the start.
+- The text filter before `JSON.parse` looks for `"name":"Skill"` without spaces: checked against a real session of this project (Claude Code writes compact JSON). If one day it counts 0, look here first.
 
 ## 2026-11-26 · crash-reports · 6→7
 - The work reviewer fed the scrubber real-looking input and found what the per-pattern test missed: quoted text survived in the stack (V8 repeats the message on its first line), bare hostnames (`jira.acme.corp`) and paths with spaces leaked, short `password=` values stayed, a damaged `crash-sent.json` silently stopped all sending, and the e-mail regex took ~300 ms on 16 KB. Rule: a scrubber is proven by adversarial inputs and a timing case, not by one example per pattern; anything whose output leaves the machine is cut before it is scanned.
 - Pau changed the delivery three times (PR from a branch → fork → issue turned into a PR by a repo workflow) once the repo was going public. Rule: settle visibility and who has write access before designing anything that writes to a forge.
 
+## 2026-11-26 · enforce-written-rules · arnés
+Two written rules moved from CLAUDE.md to hooks (W230–W234). The work-identifier scan before a push is `.githooks/pre-push`; it scans the tip tree of each pushed ref, drops blank lines from the private list (a blank pattern matches every line), ignores only `pnpm-lock.yaml` lines that contain `integrity:`, and refuses the push when the scan itself fails. «Never `pnpm build`» is a PreToolUse guard in `.claude/settings.json` (`.claude/hooks/no-build.sh`, exit 2 with one line). This replaces the prose rule in CLAUDE.md «Puertas» and the «Antes de cada push» scan (including the note that a lock `integrity` hash can match by chance). CLAUDE.md lost its per-branch history and went from 14474 to about 5300 bytes, with a test (W235) that keeps it under 7000. Known ceilings: an identifier added and removed inside one push passes; `pnpm -C dir build`, `sh -c "pnpm build"` and other build entry points pass the guard; `git push --no-verify` is the person's own choice.
+
+## 2026-11-26 · enforce-written-rules · 6→7
+Reviewer found nothing against the contract (the six proofs W230–W235 re-run, 11/11 in harness.test.ts, green). It did not re-run the forced-red mutations; the builder did (chmod -x, no `sed`, every git-grep error read as no match, broken guard regex, wrong matcher, guard that never denies) and each turned the named test red. Not exercised: the guard inside a live Claude Code session; the test runs the registered command with `sh -c` and `CLAUDE_PROJECT_DIR` set, as settings.json names it.
+
+## 2026-11-26 · english-source · 6
+A «forced red» went by green because `sd` with `^` matched nothing and the file never changed. Check the diff of the sabotage (`git diff --stat`) before reading the test's verdict; a red you did not see happen is not a red.
+
+## 2026-11-26 · english-source · 6
+Three tests read Spanish through an identity `t` (`(es) => es`) and a production export `STEPS` did the same. Flipping the keys broke them, not the catalog. When the source language of a text changes, grep for identity `t` helpers, not only for `t('…')` calls.
 ## 2026-11-26 · fewer-go-on-cards · 6→7
 Reviewer found nothing against the contract (27 proofs re-run, all green). Before the review the build caught two gaps itself: a Stop with an unanswered question would have become `done` (W228 added, the ask said «no pending question or permission»), and four older proofs assumed every Stop is `needs-you` (W26 and W87 amended in the change, the tests updated, not weakened).
 

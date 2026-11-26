@@ -4,21 +4,21 @@ import { useT, type T } from '../ui'
 /** The one button each fix gets (W130, W133, W135, W147, W150, W159); no fix, no button. */
 export const fixLabel = (t: T, fix: WorkFix | NetFix | undefined, forge?: string): string | undefined =>
   fix === 'forge'
-    ? t('Abrir en {forge} ↗', { forge: forge ?? '' })
+    ? t('Open in {forge} ↗', { forge: forge ?? '' })
     : fix === 'worktree'
-    ? t('Usar un worktree esta vez')
+    ? t('Use a worktree this time')
     : fix === 'terminal'
-      ? t('Abrir en Terminal')
+      ? t('Open in Terminal')
       : fix === 'forget'
-        ? t('Quitar de la lista igualmente')
+        ? t('Remove from the list anyway')
         : fix === 'reveal'
-          ? t('Mostrar en Finder')
+          ? t('Show in Finder')
           : fix === 'settings'
-            ? t('Abrir Ajustes')
+            ? t('Open Settings')
             : fix === 'retry'
-              ? t('Volver a comprobar')
+              ? t('Check again')
               : fix === 'git'
-                ? t('Instalar herramientas de Xcode')
+                ? t('Install Xcode tools')
                 : undefined
 
 /** W159: the two fixes every workspace problem does the same way; false leaves the fix to the caller. */
@@ -52,12 +52,12 @@ export function Problem({ what, cant, fix, onFix, alt, onAlt, detail, busy, onCl
       )}
       {onClose && (
         <button type="button" className="btn" onClick={onClose}>
-          {t('Cerrar aviso')}
+          {t('Dismiss')}
         </button>
       )}
       {detail && (
         <details>
-          <summary>{t('Ver detalle')}</summary>
+          <summary>{t('Show detail')}</summary>
           <code>{detail}</code>
         </details>
       )}

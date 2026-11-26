@@ -26,20 +26,20 @@ function Stopped({ ws, onReopened, onForget }: { ws: WorkspaceView; onReopened: 
   }
   return (
     <div className="ws-stopped">
-      <b>{t('{branch} está parado: su sesión de tmux ya no existe (un reinicio o tmux cerrado).', { branch: ws.branch })}</b>
-      <p>{t('Su agente no sigue hasta que lo vuelvas a abrir.')}</p>
+      <b>{t('{branch} is stopped: its tmux session no longer exists (a restart or tmux closed).', { branch: ws.branch })}</b>
+      <p>{t('Its agent does not go on until you reopen it.')}</p>
       <button type="button" className="btn p" disabled={busy} onClick={() => reopen(false)}>
-        {t('Volver a abrir')}
+        {t('Reopen')}
       </button>
       {ws.effort !== 'xhigh' && (
         <button type="button" className="btn" disabled={busy} onClick={() => reopen(true)}>
-          {t('Seguir con más esfuerzo')}
+          {t('Go on with more effort')}
         </button>
       )}
       {refusal && (
         <Problem
           what={refusal.error}
-          cant={t('Su agente no sigue hasta que lo vuelvas a abrir.')}
+          cant={t('Its agent does not go on until you reopen it.')}
           fix={fixLabel(t, refusal.fix)}
           onFix={() =>
             sharedFix(refusal.fix, openSettings) ||
@@ -93,9 +93,9 @@ export function Workspace({
       {ws && <Steps ws={ws} flow={flow} />}
       <div className="whead">
         <div>
-          <div className="m">{ws ? `${ws.repoId} · ${ws.agent}` : t('Ningún trabajo abierto')}</div>
+          <div className="m">{ws ? `${ws.repoId} · ${ws.agent}` : t('No work open')}</div>
           <div className="tline">
-            <h1>{ws ? ws.branch : t('Elige un trabajo')}</h1>
+            <h1>{ws ? ws.branch : t('Pick a workspace')}</h1>
             {ws && <StateLabel state={stateOf(states, ws)} />}
           </div>
         </div>
@@ -131,7 +131,7 @@ export function Workspace({
           ) : (
             !ws && (
               <div className="term">
-                <div className="s">{t('Aquí saldrá la terminal de tu agente, dentro de tmux.')}</div>
+                <div className="s">{t("Your agent's terminal will show up here, inside tmux.")}</div>
               </div>
             )
           )}

@@ -577,10 +577,10 @@ export interface AgentWait {
   next: number
   permission?: { tool: string; summary?: string }
   idle: boolean
-  /** W233: why a turn end shows: the same stop again, or the keep-going cap with the box it is on. */
+  /** W293: why a turn end shows: the same stop again, or the keep-going cap with the box it is on. */
   why?: 'loop' | 'cap'
   box?: string
-  /** W233: the agent's own last sentence. */
+  /** W293: the agent's own last sentence. */
   said?: string
 }
 export type QuickAnswer = { ok: true } | { error: string }

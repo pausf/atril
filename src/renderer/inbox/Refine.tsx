@@ -11,10 +11,10 @@ export interface Asked {
 
 /** I30: the four fixed questions and the prefix each answer travels with. */
 const fixedQuestions = (t: T): Array<[label: string, prefix: string]> => [
-  [t('¿Qué tiene que pasar cuando esté hecho?'), t('Hecho cuando:')],
-  [t('¿Qué no entra?'), t('No entra:')],
-  [t('¿Dónde se toca? (pantalla, archivos)'), t('Dónde:')],
-  [t('Un ejemplo'), t('Ejemplo:')]
+  [t('What has to happen when it is done?'), t('Done when:')],
+  [t('What is left out?'), t('Left out:')],
+  [t('Where does it change? (screen, files)'), t('Where:')],
+  [t('An example'), t('Example:')]
 ]
 
 const clean = (s: string): string => s.replace(/\s*[\r\n]+\s*/g, ' ').trim()
@@ -62,7 +62,7 @@ export function Refine({ startOpen, text, fixed, onFixed, asked, onAsked, count 
   const ask = async (): Promise<void> => {
     setAsking(true)
     setFailed(null)
-    const r: RefineResult = await window.atril.refine.ask(text).catch((e: unknown) => ({ error: t('Claude ha fallado.'), detail: String(e), fix: 'retry' as const }))
+    const r: RefineResult = await window.atril.refine.ask(text).catch((e: unknown) => ({ error: t('Claude failed.'), detail: String(e), fix: 'retry' as const }))
     setAsking(false)
     if ('error' in r) return setFailed(r)
     onAsked(r.questions.map((q) => ({ q, a: '' })))
@@ -71,9 +71,9 @@ export function Refine({ startOpen, text, fixed, onFixed, asked, onAsked, count 
   return (
     <details className="refine" open={startOpen}>
       <summary>
-        {t('Afinar la petición')}
-        <span className="op"> · {t('opcional')}</span>
-        {count > 0 && <span className="cnt"> · {count === 1 ? t('1 respuesta añadida') : t('{n} respuestas añadidas', { n: count })}</span>}
+        {t('Refine the request')}
+        <span className="op"> · {t('optional')}</span>
+        {count > 0 && <span className="cnt"> · {count === 1 ? t('1 answer added') : t('{n} answers added', { n: count })}</span>}
       </summary>
       <div className="rb" onKeyDown={walk}>
         {fixedQuestions(t).map(([label], i) => (
@@ -82,7 +82,7 @@ export function Refine({ startOpen, text, fixed, onFixed, asked, onAsked, count 
             <input id={`refine-f${i}`} value={fixed[i] ?? ''} onChange={(e) => onFixed(fixed.map((v, j) => (j === i ? e.target.value : v)))} />
           </div>
         ))}
-        {asked.length > 0 && <div className="aih">{t('Claude pregunta, sobre tu petición')}</div>}
+        {asked.length > 0 && <div className="aih">{t('Claude asks, about your request')}</div>}
         {asked.map(({ q, a }, i) => (
           <div className="rq" key={q}>
             <label htmlFor={`refine-a${i}`}>{q}</label>
@@ -91,16 +91,16 @@ export function Refine({ startOpen, text, fixed, onFixed, asked, onAsked, count 
         ))}
         <div className="rask">
           <button type="button" className="btn" disabled={asking} onClick={() => void ask()}>
-            {asked.length ? t('Volver a preguntar') : t('Que Claude me pregunte')}
+            {asked.length ? t('Ask again') : t('Let Claude ask me')}
           </button>
-          <span>{t('Usa Claude Haiku, solo cuando lo pulsas.')}</span>
+          <span>{t('Uses Claude Haiku, only when you press it.')}</span>
         </div>
         {asking && (
           <div className="think" role="status">
-            {t('Pensando…')}
+            {t('Thinking…')}
           </div>
         )}
-        {failed && <Problem what={failed.error} cant={t('Puedes empezar igual: afinar es opcional.')} fix={t('Volver a intentar')} onFix={() => void ask()} detail={failed.detail} />}
+        {failed && <Problem what={failed.error} cant={t('You can start anyway: refining is optional.')} fix={t('Try again')} onFix={() => void ask()} detail={failed.detail} />}
       </div>
     </details>
   )

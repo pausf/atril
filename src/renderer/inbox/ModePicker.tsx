@@ -6,13 +6,13 @@ export function ModePicker({ auto, onChange, disabled }: { auto: boolean; onChan
   const t = useT()
   const id = useId()
   const options = [
-    { value: false, title: t('Manual'), line: t('Se para con la spec y el plan escritos y te pregunta') },
-    { value: true, title: t('Automático'), line: t('Sin parar en spec y plan; antes de subir te pregunta') }
+    { value: false, title: t('Manual'), line: t('Stops once the spec and plan are written and asks you') },
+    { value: true, title: t('Auto'), line: t('No stop at spec and plan; asks before pushing') }
   ]
   return (
     <div className="f">
-      <span className="lbl">{t('Modo')}</span>
-      <span className="modes" role="radiogroup" aria-label={t('Modo')}>
+      <span className="lbl">{t('Mode')}</span>
+      <span className="modes" role="radiogroup" aria-label={t('Mode')}>
         {options.map((o) => (
           <label key={String(o.value)} className="mode-card">
             <input

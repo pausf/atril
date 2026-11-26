@@ -15,12 +15,12 @@ states, with no extra forge request.
   opening its MR view, or its workspace for an agent.
 - **Marcar todo leído** clears the unread count; opening a notice marks it read.
 
-### Notificaciones (main) (notify-core, 12 nov 2026)
+### Notifications (main) (notify-core, 12 nov 2026)
 
-- Cada aviso dice de qué trabajo es en su título («WEB-3535 te pregunta», «OPS-4131 se ha parado»), no solo «Atril».
-- Atril avisa también cuando un agente se para, cuando lleva N minutos esperándote, cuando dos trabajos tocan el mismo archivo, cuando termina la QA, cuando la CI vuelve a pasar, cuando una MR se fusiona o se cierra y cuando la cuota de Claude llega al 80 %; la CI que falla llega al Mac con «Arreglar con Claude».
-- En Ajustes → Notificaciones eliges por tipo Mac / Solo Avisos / Nada, por grupos de golpe, los minutos del recordatorio, el modo foco, la agrupación y las horas de silencio; «Probar un aviso» saca uno de verdad, y si macOS no deja avisar te lo dice con «Abrir Ajustes del Sistema».
-- Avisos deja de acumular preguntas ya contestadas, guarda lo que preguntaba el agente y se entera de las MR aunque la ventana esté cerrada.
+- Each notice names its work in its title («WEB-3535 te pregunta», «OPS-4131 se ha parado»), not just «Atril».
+- Atril also notifies when an agent stops, when it has been waiting for you for N minutes, when two jobs touch the same file, when QA finishes, when CI passes again, when an MR is merged or closed and when the Claude quota reaches 80%; a failing CI reaches the Mac with «Arreglar con Claude».
+- In Ajustes → Notificaciones you choose per type Mac / Solo Avisos / Nada, per group at once, the reminder minutes, focus mode, grouping and quiet hours; «Probar un aviso» fires a real one, and if macOS does not allow notifications it tells you so with «Abrir Ajustes del Sistema».
+- Avisos stops piling up questions that were already answered, keeps what the agent asked, and learns about MRs even when the window is closed.
 
 ## Scope boundaries
 
@@ -34,13 +34,13 @@ existing needs-you one), per-kind mute settings.
 **Never scoped out:** no extra forge request; notice text built from Atril's own words plus the
 MR's title as `{detail}`, shown as text; the screen is keyboard-operable.
 
-### Notificaciones (main) (notify-core, 12 nov 2026)
+### Notifications (main) (notify-core, 12 nov 2026)
 
-**In:** los bugs 1–3 y 5–10 de de `bocetos/notificaciones.md` §«Huecos y bugs»; los tipos `stopped`, `idle`, `radar`, `qa`, `cipass`, `merged`/`closed` y `quota`, y `ask`/`done` separados; la CI que falla en el Mac con su acción; `$ATRIL_HOME/notifications.json`; la API `notify.*` que usará la tarjeta.
+**In:** bugs 1–3 and 5–10 of `bocetos/notificaciones.md` §«Huecos y bugs»; the types `stopped`, `idle`, `radar`, `qa`, `cipass`, `merged`/`closed` and `quota`, and `ask`/`done` split apart; a failing CI on the Mac with its action; `$ATRIL_HOME/notifications.json`; the `notify.*` API the card will use.
 
-**Out (nombrado):** la tarjeta de Ajustes, la pantalla Avisos y el bug 4 (`notify-ui`); la app del móvil, Skills y «Afinar la petición» (otros cambios); el resumen al volver (idea 13); el contador del Dock (idea 14); «un revisor ha comentado» y «te han aprobado» (idea 10, piden datos que el listado no trae); «paso de Libretto listo» (idea 11); avisos de Jira o forja caídas (idea 12); el segundo aviso al 95 % de cuota; sonidos propios; avisos dentro de la app (*toasts*); el radar sondeado sin ventana.
+**Out (named):** the Ajustes card, the Avisos screen and bug 4 (`notify-ui`); the phone app, Skills and «Afinar la petición» (other changes); the summary on return (idea 13); the Dock counter (idea 14); «a reviewer commented» and «you were approved» (idea 10, they need data the listing does not carry); «Libretto step ready» (idea 11); notices for Jira or forge outages (idea 12); the second notice at 95% quota; custom sounds; in-app notices (*toasts*); radar polling without a window.
 
-**Never scoped out:** ningún aviso dispara una llamada a Claude; los textos de la forja y del agente se muestran como texto, nunca como HTML; la tarjeta se maneja entera con teclado (radios con flechas, interruptores con espacio); un fallo al guardar o al leer los permisos sigue la regla de errores.
+**Never scoped out:** no notice triggers a call to Claude; forge and agent texts are shown as text, never as HTML; the whole card is keyboard-operable (radios with arrows, switches with space); a failure to save or read the permissions follows the errors rule.
 
 ## Constraints
 
@@ -49,15 +49,15 @@ MR's title as `{detail}`, shown as text; the screen is keyboard-operable.
 - Uses add-mr-lists' listing and the status tracker; `MrItem` gains `notes?`.
 - New capability `avisos`: `src/main/avisos.ts` and `src/renderer/avisos/**`.
 
-### Notificaciones (main) (notify-core, 12 nov 2026)
+### Notifications (main) (notify-core, 12 nov 2026)
 
-- **Ninguna llamada automática a Claude.** «Arreglar con Claude» y «Reabrir» solo corren cuando la persona pulsa. La cuota sale del sondeo de `usage.ts` que ya existe; no se añade ninguno.
-- **Textos:** castellano de España, por `t()` en main y `useT()` en la ventana, con su entrada en `src/preload/i18n-en.ts`; los escaneos S16/S19 deben seguir verdes. El idioma es el del momento de mostrar (W48).
-- **Colores:** solo tokens de `:root` y `[data-theme='dark']`; la tarjeta usa gris + el acento (`--run`), como el boceto.
-- **Errores:** frase de qué pasó y qué no puedes hacer, un botón que lo arregla y el detalle técnico plegado en «Ver detalle» (componente `Problem`).
-- **Títulos:** el aviso del Mac de un trabajo lleva su nombre en el título — `jiraKey`, o la rama si no tiene — y el repo en el subtítulo; los de MR, la frase del tipo en el título y el título de la MR en el cuerpo.
-- Escrituras atómicas (`.tmp` + `rename`) y serializadas, como `avisos.json` y `ui.json`.
-- Tests con `ATRIL_HOME` temporal y su propio socket de tmux; nada de `~/.claude.json`, ni sesiones de tmux por defecto, ni repos reales.
+- **No automatic call to Claude.** «Arreglar con Claude» and «Reabrir» only run when the person presses. The quota comes from the existing `usage.ts` poll; none is added.
+- **Texts:** Spanish from Spain, through `t()` in main and `useT()` in the window, the key is the English text and each has its Spanish entry in `src/preload/i18n-es.ts`; the S16/S19 scans must stay green. The language is the one at the moment of showing (W48).
+- **Colours:** only tokens from `:root` and `[data-theme='dark']`; the card uses grey + the accent (`--run`), as in the sketch.
+- **Errors:** a sentence saying what happened and what you cannot do, a button that fixes it and the technical detail folded in «Ver detalle» (`Problem` component).
+- **Titles:** a job's Mac notice carries its name in the title — `jiraKey`, or the branch if it has none — and the repo in the subtitle; MR ones carry the kind's phrase in the title and the MR title in the body.
+- Atomic (`.tmp` + `rename`) and serialised writes, like `avisos.json` and `ui.json`.
+- Tests with a temporary `ATRIL_HOME` and their own tmux socket; no `~/.claude.json`, no default tmux sessions, no real repos.
 
 ## Prior decisions
 
@@ -76,63 +76,63 @@ MR's title as `{detail}`, shown as text; the screen is keyboard-operable.
 
 #### Decision log, answers as given (2026-11-09)
 - Q: «sigue con todo haz mejoras, nuevas features» — Pau, 9 nov → decisions taken with the recommended option, marked (assumed).
-- Q: ¿De dónde salen los avisos? → A: de comparar cada carga de MR con la anterior y de los cambios de estado de los agentes; ninguna consulta extra a las forjas (assumed).
-- Q: ¿Y la primera carga? → A: solo fija la referencia: no genera avisos (assumed).
-- Q: ¿«Comentario nuevo»? → A: cuando sube el recuento de comentarios de una MR de Mías o Me toca revisar: GitHub `comments` de la búsqueda (siempre presente, misma fuente siempre), GitLab `user_notes_count`; tus propios comentarios también lo suben: límite nombrado (assumed).
-- Q: (spec-reviewer) ¿Una lista recortada a 50? → A: esa lista de esa forja no da avisos de «nueva» ni de «ya no está» en esa carga (assumed).
-- Q: (spec-reviewer) ¿Una MR en varias listas? → A: la referencia guarda el conjunto de listas de cada URL; las reglas de cada aviso dicen contra qué se comparan (assumed).
-- Q: (spec-reviewer) ¿Trabajo borrado? → A: «Ese trabajo ya no está» (assumed).
-- Q: ¿Cuántos se guardan? → A: los últimos 200, en `$ATRIL_HOME/avisos.json` (assumed).
+- Q: Where do notices come from? → A: from comparing each MR load with the previous one and from agent state changes; no extra queries to the forges (assumed).
+- Q: And the first load? → A: it only sets the baseline: it produces no notices (assumed).
+- Q: «Comentario nuevo»? → A: when the comment count of an MR in Mías or Me toca revisar goes up: GitHub `comments` from the search (always present, same source every time), GitLab `user_notes_count`; your own comments raise it too: named limit (assumed).
+- Q: (spec-reviewer) A list cut at 50? → A: that forge's list gives no «new» or «gone» notices in that load (assumed).
+- Q: (spec-reviewer) An MR in several lists? → A: the baseline keeps the set of lists of each URL; each notice's rules say what it is compared against (assumed).
+- Q: (spec-reviewer) A deleted work? → A: «Ese trabajo ya no está» (assumed).
+- Q: How many are kept? → A: the last 200, in `$ATRIL_HOME/avisos.json` (assumed).
 
-### Notificaciones (main) (notify-core, 12 nov 2026)
+### Notifications (main) (notify-core, 12 nov 2026)
 
-- **Avisos más allá de «te necesita» al Mac** — Pau, 11 nov: «me gusta ya las notificaciones y todo». Sustituye a «Out: Mac notifications for MR notices … per-kind mute settings» de add-avisos (9 nov): ahora cada tipo elige.
-- **`notifications.json` propio** en `$ATRIL_HOME`, no `ui.json` (assumed, ver Decision log). Un archivo ilegible o un campo inválido vale sus valores por defecto, como `ui.json`.
-- **«Nada» ni interrumpe ni guarda** (assumed).
-- **Una petición por MR que sale de Mías**, como mucho 10 por listado, para separar fusionada de cerrada (assumed). Techo: con más de 10 MR desaparecidas a la vez, las demás quedan como «Ya no está abierta».
-- **El sondeo de MR pasa a main** (bug 10): main lista cada 5 min si nadie lo ha hecho, haya ventana o no; la ventana sigue pidiendo cuando quiere y eso cuenta como listado (assumed).
-- **«Choca» solo con ventana** (assumed). Techo: con la ventana cerrada no hay choques; si Pau lo echa en falta, main sondea el radar cada minuto.
-- **La espera de «Lleva N min» vive en memoria de main** (assumed). Techo: reabrir Atril la reinicia.
-- **El permiso de macOS se lee de `com.apple.ncprefs`** (assumed). Techo: si Apple cambia el formato, el problema no se enseña nunca (falla hacia «no lo sé», no hacia un falso bloqueo).
-- **Pregunta frente a fin de turno por prefijo del texto** (assumed): evita un campo nuevo en el estado; los archivos de estado de hoy siguen valiendo.
+- **Notices beyond «needs you» on the Mac** — Pau, 11 nov: «me gusta ya las notificaciones y todo». Replaces «Out: Mac notifications for MR notices … per-kind mute settings» of add-avisos (9 nov): now each type chooses.
+- **Its own `notifications.json`** in `$ATRIL_HOME`, not `ui.json` (assumed, see Decision log). An unreadable file or an invalid field takes its defaults, like `ui.json`.
+- **«Nada» neither interrupts nor stores** (assumed).
+- **One request per MR leaving Mías**, at most 10 per listing, to tell merged from closed (assumed). Ceiling: with more than 10 MRs gone at once, the rest are left as «Ya no está abierta».
+- **MR polling moves to main** (bug 10): main lists every 5 min if nobody has, window or not; the window keeps asking whenever it wants and that counts as a listing (assumed).
+- **«Choca» only with a window** (assumed). Ceiling: with the window closed there are no clashes; if Pau misses it, main polls the radar every minute.
+- **The «Lleva N min» wait lives in main's memory** (assumed). Ceiling: reopening Atril restarts it.
+- **The macOS permission is read from `com.apple.ncprefs`** (assumed). Ceiling: if Apple changes the format, the problem is never shown (it fails towards «don't know», not towards a false block).
+- **Question versus end of turn by text prefix** (assumed): avoids a new field in the state; today's state files stay valid.
 
 #### Alternatives that lost
 
 | Considered | Why it lost |
 |---|---|
-| Ajustes dentro de `ui.json` | `clean` tira campos desconocidos y `patchUi` ya fusiona `folded` a mano; un tercer objeto anidado complica el archivo que más se toca |
-| Campo `kind` nuevo en el estado del gancho | el prefijo del texto ya lo dice y los estados de hoy siguen valiendo |
-| Distinguir fusionada/cerrada sin petición | el listado solo trae MR abiertas: sin petición no hay forma |
-| Agrupar por trabajo con `groupId` de macOS | Electron no lo ofrece en macOS de forma fiable; el agrupado propio se prueba |
-| Sondear el radar en main siempre | `git diff` de cada trabajo cada pocos segundos sin nadie mirando |
+| Settings inside `ui.json` | `clean` drops unknown fields and `patchUi` already merges `folded` by hand; a third nested object complicates the file that is touched most |
+| New `kind` field in the hook state | the text prefix already says it and today's states stay valid |
+| Telling merged from closed without a request | the listing only carries open MRs: without a request there is no way |
+| Group by work with macOS `groupId` | Electron does not offer it reliably on macOS; our own grouping is tested |
+| Always poll the radar in main | a `git diff` of every job every few seconds with nobody looking |
 
 #### Decision log, answers as given (2026-11-12)
-- Q: ¿Dónde se guardan los ajustes de avisos? → A: en un archivo propio, `$ATRIL_HOME/notifications.json`, no en `ui.json`: main lo lee en cada aviso, `ui.json` es estado de la ventana con un `clean` que tira lo que no conoce y un `patchUi` con fusión especial para `folded`; un archivo dañado solo devuelve los avisos a sus valores por defecto (assumed). Si es incorrecto: un campo `notifications` en `UiState` y el criterio V7 cambia de archivo.
-- Q: ¿«Nada» guarda el aviso en Avisos? → A: no; «Nada» no interrumpe ni guarda: la tarjeta dice «silenciado, no te avisa» (assumed). Si es incorrecto: V9 se invierte y «Nada» = «Solo Avisos» sin contador.
-- Q: ¿Cómo se distingue fusionada de cerrada si el listado no lo dice? → A: una petición a la forja por cada MR que sale de Mías (como mucho 10 por listado); si falla, queda el «Ya no está abierta» de hoy (assumed). Rompe a propósito «ninguna consulta extra» de V1 para ese único caso. Si es incorrecto: un solo tipo «Ya no está abierta» que abre la MR en la forja.
-- Q: ¿Cuándo es «QA terminada»? → A: la primera vez, desde que se lanzó la QA de ese trabajo, que `report.json` tiene cada criterio del cambio en Pasa o Falla (ninguno Sin probar ni ausente); una vez por ejecución (assumed).
-- Q: ¿«Lleva N min esperándote» cuenta desde cuándo? → A: desde que main ve entrar el trabajo en `needs-you` (reloj de main, en memoria); reabrir Atril reinicia la cuenta: límite nombrado (assumed).
-- Q: ¿Pregunta o fin de turno, cómo se sabe? → A: por el prefijo del texto que ya escribe el gancho: «Te pregunta: » es pregunta, «Claude dice: » es fin de turno, sin texto o con otro, pregunta (assumed).
-- Q: ¿El recordatorio de inactividad de Claude Code (idle_prompt) cuenta como pregunta nueva? → A: no; el gancho deja el texto, las opciones y la hora del estado anterior tal como estaban (assumed).
-- Q: ¿Qué hace «Agrupar»? → A: como mucho un aviso del Mac cada 120 s; lo que llega dentro de esa ventana se aguanta y, al cerrarse, sale solo si es uno o como «{n} agentes te necesitan» / «{n} avisos nuevos» si son varios (assumed).
-- Q: ¿Horas de silencio y días? → A: de 19:00 a 09:00 por defecto (cruza la medianoche), apagado por defecto; los días marcados (S y D por defecto) son silencio todo el día; en silencio, lo que iba al Mac va solo a Avisos; sin resumen al volver (assumed).
-- Q: ¿«Choca con otro trabajo» y la ventana cerrada? → A: se calcula cuando el radar se pide (la ventana lo pide cada 10 s); con la ventana cerrada no hay avisos de choque: límite nombrado (assumed). Si es incorrecto: main sondea el radar cada minuto sin ventana.
-- Q: ¿Cómo se sabe que macOS bloquea los avisos? → A: `defaults export com.apple.ncprefs -` y la entrada del `bundle-id` de Atril; bloqueado si su `flags` no tiene el bit 25 (`0x2000000`); sin entrada o sin poder leerlo, «no lo sé» y no se enseña el problema (assumed; el significado del bit no está documentado por Apple — se comprueba en la ronda de QA con Pau).
-- Q: ¿«Cerrar su trabajo» cierra sin preguntar? → A: no; abre la confirmación de siempre (W136) para ese trabajo (assumed).
-- Q: ¿«Arreglar con Claude» desde el globo? → A: trae Atril al frente en esa MR y lanza ahí el «Arreglar CI con Claude» de M30, que ya enseña su resultado y sus errores; es una pulsación de la persona, no una llamada automática (assumed).
-- Q: ¿Aviso al 95 % de cuota? → A: no; la tarjeta solo tiene el 80 % (assumed).
+- Q: Where are the notice settings stored? → A: in a file of their own, `$ATRIL_HOME/notifications.json`, not in `ui.json`: main reads it on every notice, `ui.json` is window state with a `clean` that drops what it does not know and a `patchUi` with special merging for `folded`; a damaged file only returns notices to their defaults (assumed). If wrong: a `notifications` field in `UiState` and criterion V7 changes file.
+- Q: Does «Nada» store the notice in Avisos? → A: no; «Nada» neither interrupts nor stores: the card says «silenciado, no te avisa» (assumed). If wrong: V9 is inverted and «Nada» = «Solo Avisos» without a counter.
+- Q: How is merged told from closed if the listing does not say? → A: one forge request for each MR that leaves Mías (at most 10 per listing); if it fails, today's «Ya no está abierta» remains (assumed). Deliberately breaks V1's «no extra query» for that single case. If wrong: a single «Ya no está abierta» type that opens the MR on the forge.
+- Q: When is «QA terminada»? → A: the first time, since that job's QA was launched, that `report.json` has every criterion of the change as Pasa or Falla (none Sin probar or missing); once per run (assumed).
+- Q: «Lleva N min esperándote» counts from when? → A: from when main sees the job enter `needs-you` (main's clock, in memory); reopening Atril restarts the count: named limit (assumed).
+- Q: Question or end of turn, how is it known? → A: by the text prefix the hook already writes: «Te pregunta: » is a question, «Claude dice: » is an end of turn, no text or another one, question (assumed).
+- Q: Does Claude Code's idle reminder (idle_prompt) count as a new question? → A: no; the hook leaves the previous state's text, options and time as they were (assumed).
+- Q: What does «Agrupar» do? → A: at most one Mac notice every 120 s; what arrives inside that window is held and, when it closes, goes out alone if it is one or as «{n} agentes te necesitan» / «{n} avisos nuevos» if there are several (assumed).
+- Q: Quiet hours and days? → A: from 19:00 to 09:00 by default (crosses midnight), off by default; the marked days (Sat and Sun by default) are silent all day; while quiet, what went to the Mac goes only to Avisos; no summary on return (assumed).
+- Q: «Choca con otro trabajo» and the closed window? → A: it is computed when the radar is requested (the window requests it every 10 s); with the window closed there are no clash notices: named limit (assumed). If wrong: main polls the radar every minute without a window.
+- Q: How is it known that macOS blocks notifications? → A: `defaults export com.apple.ncprefs -` and the entry for Atril's `bundle-id`; blocked if its `flags` lacks bit 25 (`0x2000000`); with no entry or unable to read it, «don't know» and the problem is not shown (assumed; the bit's meaning is not documented by Apple — checked in the QA round with Pau).
+- Q: Does «Cerrar su trabajo» close without asking? → A: no; it opens the usual confirmation (W136) for that job (assumed).
+- Q: «Arreglar con Claude» from the bubble? → A: brings Atril to the front on that MR and launches M30's «Arreglar CI con Claude» there, which already shows its result and its errors; it is a person's press, not an automatic call (assumed).
+- Q: A notice at 95% quota? → A: no; the card only has 80% (assumed).
 
-- Q: ¿Un tipo en «Nada» sigue moviendo las referencias (CI asentada, `notes`, Mías)? → A: sí, siempre; solo se descarta el aviso. La petición de W184 no se hace si `merged` está en «Nada» (assumed). Si es incorrecto: al quitar el silencio llegaría un aviso viejo.
-- Q: ¿«Claude ha terminado» (fin de turno sin texto) es `ask` o `done`? → A: `done`; `ask` solo con «Te pregunta: », «Claude te necesita», sin texto u otro (assumed).
-- Q: ¿Un aviso aguantado por el agrupador vuelve a mirar foco y silencio al salir? → A: sí; si al salir `route()` ya no dice `mac`, se queda solo en Avisos (assumed). Cumple W78: no llega al Mac más tarde.
-- Q: ¿El aviso de W179 cuenta en la ventana de 120 s? → A: sí, como uno; si se aguanta, sus avisos entran en el grupo uno a uno (assumed).
-- Q: ¿Quién prueba las ocho combinaciones del foco? → A: `focus.test.ts`, llamando a `route()`; V10 prueba Nada/Avisos y el silencio (assumed).
-- Q: ¿Un `report.json` viejo cuenta como QA terminada? → A: no; cuenta solo si se modificó después del `launchQa`; sin criterios en el cambio, no hay aviso; reiniciar Atril desarma (assumed, techo nombrado).
-- Q: ¿De dónde sale el id de proyecto de GitLab? → A: la ruta del proyecto de la URL, codificada (`acme%2Fshop-web`), que la API acepta como id (assumed).
-- Q: ¿Quién guarda la hora del último listado? → A: `lastMrs` de `index.ts` (el que ya usa la QA a la MR); `mrpoll` lo lee y lo escribe (assumed).
-- Q: ¿Partir el cambio? → A: sí, en dos: `notify-core` (main) y `notify-ui` (Ajustes y Avisos), como propuso la revisión (assumed).
-- Q: (Pau, 12 nov) «para una tarea tan pequeña tengo 40 avisos… cuando tenga 200 no es gestionable» (en la prueba, 32 de 40 eran `agent` sin leer de solo 3 trabajos) → A: un solo aviso de agente sin leer por trabajo (V18), los leídos caducan a los 7 días con tope de 300 (V19, sustituye el tope de 200 de V4, que pasa a amended) y el contador cuenta trabajos, no avisos de agente (V20, calculado en la ventana: `src/renderer/avisos/Avisos.tsx`).
-- Q: (Pau, 12 nov, comparando con Orca, cuyo contador «se limpia al visitar el trabajo») → A: abrir un trabajo marca leídos sus avisos de agente (V21); la ventana avisa a main con `avisos.seen(id)`.
+- Q: Does a type set to «Nada» keep moving the references (settled CI, `notes`, Mías)? → A: yes, always; only the notice is discarded. W184's request is not made if `merged` is on «Nada» (assumed). If wrong: when the mute is lifted an old notice would arrive.
+- Q: Is «Claude ha terminado» (end of turn with no text) `ask` or `done`? → A: `done`; `ask` only with «Te pregunta: », «Claude te necesita», no text or another (assumed).
+- Q: Does a notice held by the grouper look at focus and quiet again on release? → A: yes; if on release `route()` no longer says `mac`, it stays in Avisos only (assumed). Satisfies W78: it never reaches the Mac later.
+- Q: Does W179's notice count in the 120 s window? → A: yes, as one; if held, its notices join the group one by one (assumed).
+- Q: Who tests the eight focus combinations? → A: `focus.test.ts`, calling `route()`; V10 tests Nada/Avisos and quiet (assumed).
+- Q: Does an old `report.json` count as QA finished? → A: no; it counts only if modified after `launchQa`; with no criteria in the change, there is no notice; restarting Atril disarms it (assumed, named ceiling).
+- Q: Where does the GitLab project id come from? → A: the project path from the URL, encoded (`acme%2Fshop-web`), which the API accepts as an id (assumed).
+- Q: Who stores the time of the last listing? → A: `lastMrs` in `index.ts` (the one QA-to-MR already uses); `mrpoll` reads and writes it (assumed).
+- Q: Split the change? → A: yes, in two: `notify-core` (main) and `notify-ui` (Ajustes and Avisos), as the review proposed (assumed).
+- Q: (Pau, 12 nov) «para una tarea tan pequeña tengo 40 avisos… cuando tenga 200 no es gestionable» (in the test, 32 of 40 were unread `agent` from just 3 jobs) → A: a single unread agent notice per job (V18), read ones expire after 7 days with a cap of 300 (V19, replaces V4's cap of 200, which becomes amended) and the counter counts jobs, not agent notices (V20, computed in the window: `src/renderer/avisos/Avisos.tsx`).
+- Q: (Pau, 12 nov, comparing with Orca, whose counter «se limpia al visitar el trabajo») → A: opening a job marks its agent notices read (V21); the window tells main with `avisos.seen(id)`.
 
 ## Task breakdown
 
@@ -158,7 +158,7 @@ MR's title as `{detail}`, shown as text; the screen is keyboard-operable.
 - **V6** Opening a notice shall mark it read and: for `review`, `comment`, `ci`, `cipass`, `following` and `opened`, open its MR page (M43) when the MR is in the latest listing (held app-wide, M9), otherwise say «Esta MR ya no está en la lista»; for `merged`, `closed` and `gone`, open the MR in its forge; for `ask`, `done`, `idle`, `stopped`, `qa`, `radar` and the stored legacy `agent`, open its workspace (for `qa`, its QA screen; for `radar`, the first of the two), or say «Ese trabajo ya no está» when it is gone; for `quota`, open nothing beyond marking it read.
   Proof: src/renderer/avisos/avisos.test.ts a notice opens what it is about
   Proof: src/renderer/avisos/avisos.test.ts merged, closed and gone open the forge
-### Notificaciones (main) (notify-core, 12 nov 2026)
+### Notifications (main) (notify-core, 12 nov 2026)
 
 - **V16** When an MR listing completes, Atril shall add «La CI falla» (`ci`) for an MR in Mías whose last settled CI state (`pass` or `fail`, ignoring `running` and `none`) was `pass` and is now `fail`, and «La CI vuelve a pasar» (`cipass`) when it was `fail` and is now `pass`.
   Proof: src/main/avisos.test.ts ci fail and pass count the last settled state across running
@@ -186,7 +186,7 @@ MR's title as `{detail}`, shown as text; the screen is keyboard-operable.
 - **V12** When the person clicks a Mac notification that came from a stored notice, Atril shall mark that notice read; a grouped notification, or W179's, shall mark read every stored notice id it carries. (Bug 2.)
   Proof: src/main/avisos.test.ts clicking the Mac notice marks its notice read
 
-### Notificaciones (Ajustes y Avisos) (notify-ui, 14 nov 2026)
+### Notifications (Ajustes and Avisos) (notify-ui, 14 nov 2026)
 
 - **V13** The Avisos screen shall show, under the title of an `ask` or `done` notice that has a `detail`, that text localised as the needs-you body is (S28), as plain text; a notice without `detail` shows its title alone. (Bug 4.)
   Proof: src/renderer/avisos/avisos.test.ts a question keeps what it asked

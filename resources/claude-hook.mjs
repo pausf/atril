@@ -243,7 +243,7 @@ try {
   const shell = event === 'Stop' && !pending && shellsRunning(tail)
   if (shell) state = 'working'
   const asked = shell ? '' : proseQuestion(lastText(tail))
-  // W231: the cap's fallback says which box the agent is on.
+  // W291: the cap's fallback says which box the agent is on.
   let cap
   if (event === 'Stop' && !asked && !pending && !shell) {
     const open = openBoxes(payload?.cwd)
@@ -257,7 +257,7 @@ try {
 
   }
 
-  // W232: what it said on this stop, and how many stops in a row said it (or failed the same way).
+  // W292: what it said on this stop, and how many stops in a row said it (or failed the same way).
   let fail = typeof prev.fail === 'string' ? prev.fail : undefined
   if (line?.kind === 'fail') fail = line.text
   let lastStop = prev.lastStop && typeof prev.lastStop === 'object' ? prev.lastStop : undefined

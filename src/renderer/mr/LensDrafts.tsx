@@ -42,7 +42,7 @@ export function useDrafts(m: MrItem): DraftsState {
     // A click is a discrete event, so React disables the button before a second one lands.
     setReviewing(true)
     // A rejected call must not leave «Revisando…» forever.
-    const r = await window.atril.mr.review(m.url).catch((): MrDraftsResult => ({ error: t('Claude no ha podido revisar esta MR: {detail}', { detail: 'error' }) }))
+    const r = await window.atril.mr.review(m.url).catch((): MrDraftsResult => ({ error: t('Claude could not review this MR: {detail}', { detail: 'error' }) }))
     setReviewing(false)
     setFailure(take(r) ?? '')
   }, [m.url, t])
@@ -60,8 +60,8 @@ export function useDrafts(m: MrItem): DraftsState {
 /** M29: one draft as text; its actions while open, a word after. Draft text is Claude's, never markup. */
 export function Draft({ d, s }: { d: MrDraft; s: DraftsState }) {
   const t = useT()
-  const lens = { intent: t('Intención'), security: t('Seguridad'), design: t('Diseño'), reliability: t('Fiabilidad'), tests: t('Tests') }
-  const severity = { high: t('Alta'), medium: t('Media'), low: t('Baja') }
+  const lens = { intent: t('Intent'), security: t('Security'), design: t('Design'), reliability: t('Reliability'), tests: t('Tests') }
+  const severity = { high: t('High'), medium: t('Medium'), low: t('Low') }
   const api = window.atril.mr
   return (
     <div className="mr-draft">
@@ -71,19 +71,19 @@ export function Draft({ d, s }: { d: MrDraft; s: DraftsState }) {
       {d.state === 'open' ? (
         <div className="mr-draft-actions">
           <button type="button" className="btn" disabled={s.acting[d.id]} onClick={() => void s.act(d, api.publishDraft)}>
-            {d.file && d.line !== undefined ? t('Publicar en esta línea') : t('Publicar')}
+            {d.file && d.line !== undefined ? t('Publish on this line') : t('Publish')}
           </button>
           {s.data?.canSend && (
             <button type="button" className="btn" disabled={s.acting[d.id]} onClick={() => void s.act(d, api.sendDraft)}>
-              {t('Mandar al agente')}
+              {t('Send to the agent')}
             </button>
           )}
           <button type="button" className="linklike" disabled={s.acting[d.id]} onClick={() => void s.act(d, api.discardDraft)}>
-            {t('Descartar')}
+            {t('Discard')}
           </button>
         </div>
       ) : (
-        <span className="mr-draft-done">{d.state === 'published' ? t('Publicado') : t('Enviado al agente')}</span>
+        <span className="mr-draft-done">{d.state === 'published' ? t('Published') : t('Sent to the agent')}</span>
       )}
       {/* M37: main's own text, already in the person's language. */}
       {d.state === 'published' && d.note && <p className="f-note">{d.note}</p>}
@@ -105,13 +105,13 @@ export function LensDrafts({ s, drafts }: { s: DraftsState; drafts: MrDraft[] })
   return (
     <section className="mr-lens" aria-labelledby="mr-lens-title">
       <h4 id="mr-lens-title">{t('Libretto')}</h4>
-      {data.stale && <p className="score-stale">{t('De un commit anterior')}</p>}
+      {data.stale && <p className="score-stale">{t('From an earlier commit')}</p>}
       {failure && (
         <p className="mr-score-error" role="alert">
           {failure}
         </p>
       )}
-      {reviewed && data.drafts.length === 0 && <p className="f-note">{t('Libretto no ha encontrado nada que comentar')}</p>}
+      {reviewed && data.drafts.length === 0 && <p className="f-note">{t('Libretto found nothing to comment on')}</p>}
       {drafts.length > 0 && (
         <ul className="mr-drafts">
           {drafts.map((d) => (

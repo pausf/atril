@@ -42,20 +42,20 @@ export function Setup({ report, active, onTools, onNewWork, onDismiss }: {
   }, [active])
 
   const tools = report && !report.some((r) => !r.ok && CORE.includes(r.tool))
-  const toSettings = t('Ir a Ajustes')
+  const toSettings = t('Go to Settings')
   const steps: { name: string; done?: boolean | null; optional?: boolean; note?: string; button: string; onClick(): void }[] = [
-    { name: t('Herramientas listas'), done: report ? tools : null, note: report ? undefined : t('Comprobando…'), button: t('Ver qué falta'), onClick: onTools },
-    { name: t('Añade un repo'), done: live?.repos ?? null, button: toSettings, onClick: onSettings },
-    { name: t('Conecta Jira'), done: live?.jira ?? null, optional: true, button: toSettings, onClick: onSettings },
-    { name: t('Conecta GitHub o GitLab'), done: live?.forge ?? null, optional: true, button: toSettings, onClick: onSettings },
-    { name: t('Abre tu primer trabajo'), button: t('Nuevo trabajo'), onClick: onNewWork }
+    { name: t('Tools ready'), done: report ? tools : null, note: report ? undefined : t('Checking…'), button: t('See what is missing'), onClick: onTools },
+    { name: t('Add a repo'), done: live?.repos ?? null, button: toSettings, onClick: onSettings },
+    { name: t('Connect Jira'), done: live?.jira ?? null, optional: true, button: toSettings, onClick: onSettings },
+    { name: t('Connect GitHub or GitLab'), done: live?.forge ?? null, optional: true, button: toSettings, onClick: onSettings },
+    { name: t('Open your first workspace'), button: t('New work'), onClick: onNewWork }
   ]
 
   return (
     <main className="col center">
       <section className="setup" aria-labelledby="setup-h">
-        <h1 id="setup-h">{t('Primeros pasos')}</h1>
-        <p className="setup-lead">{t('Lo que falta para empezar. Cada paso se marca solo.')}</p>
+        <h1 id="setup-h">{t('First steps')}</h1>
+        <p className="setup-lead">{t('What is left to get started. Each step ticks itself.')}</p>
         <ol>
           {steps.map((s, i) => (
             <li key={s.name} className={s.done ? 'done' : undefined}>
@@ -64,12 +64,12 @@ export function Setup({ report, active, onTools, onNewWork, onDismiss }: {
               ) : s.done === null ? (
                 <span className="setup-mark" aria-hidden="true" />
               ) : (
-                <span className="setup-mark" role="img" aria-label={s.done ? t('Hecho') : t('Pendiente')}>
+                <span className="setup-mark" role="img" aria-label={s.done ? t('Done@@task') : t('To do')}>
                   {s.done ? '✓' : i + 1}
                 </span>
               )}
               <span className="setup-name">{s.name}</span>
-              {s.optional && <span className="setup-opt">{t('opcional')}</span>}
+              {s.optional && <span className="setup-opt">{t('optional')}</span>}
               {s.note && <span className="setup-opt">{s.note}</span>}
               <span className="sp" />
               {s.done === false || s.done === undefined ? (
@@ -82,7 +82,7 @@ export function Setup({ report, active, onTools, onNewWork, onDismiss }: {
         </ol>
         <div className="setup-foot">
           <button className="linklike" onClick={onDismiss}>
-            {t('Ya lo tengo')}
+            {t('Got it')}
           </button>
         </div>
       </section>

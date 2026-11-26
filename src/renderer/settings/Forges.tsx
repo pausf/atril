@@ -52,7 +52,7 @@ export function ForgeCard({ forge }: { forge: ForgeId }) {
     <ConnectionRow
       id={id}
       name={name}
-      purpose={t('Tus MR, revisar y crear repos')}
+      purpose={t('Your MRs, reviews and new repos')}
       state={state}
       saved={status && status.saved}
       open={open}
@@ -62,22 +62,22 @@ export function ForgeCard({ forge }: { forge: ForgeId }) {
       }}
     >
       {status?.saved && !replacing ? (
-        <Manage note={t('El token no se muestra nunca. Si lo pierdes, crea uno nuevo y pulsa Reemplazar.')} onReplace={() => setReplacing(true)} onRemove={() => void remove()} />
+        <Manage note={t('The token is never shown. If you lose it, create a new one and press Replace.')} onReplace={() => setReplacing(true)} onRemove={() => void remove()} />
       ) : (
         <ConnectSteps
-          createLabel={t('Crear token en {forge}', { forge: name })}
-          createNote={forge === 'github' ? t('con el permiso repo') : t('con el permiso api')}
+          createLabel={t('Create token on {forge}', { forge: name })}
+          createNote={forge === 'github' ? t('with the repo scope') : t('with the api scope')}
           onCreate={() => void window.atril.settings.forge.openTokenPage(forge, site || undefined)}
           fields={
             <>
-              {forge === 'gitlab' && <Field id={`${id}-site`} label={t('Dirección')} value={site} onChange={(e) => setSite(e.target.value)} placeholder="https://gitlab.com" />}
+              {forge === 'gitlab' && <Field id={`${id}-site`} label={t('Address')} value={site} onChange={(e) => setSite(e.target.value)} placeholder="https://gitlab.com" />}
               <Field
                 id={`${id}-token`}
                 label={t('Token')}
                 type="password"
                 value={token}
                 onChange={(e) => setToken(e.target.value)}
-                error={missing && !token ? t('Falta el token.') : undefined}
+                error={missing && !token ? t('The token is missing.') : undefined}
               />
             </>
           }

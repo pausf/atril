@@ -18,35 +18,33 @@ const KEYS = /(⌘⇧?[A-Z0-9↩]|⌥|↑|↓|\bEnter\b|\bEsc\b)/
 const keys = (text: string): ReactNode => text.split(KEYS).map((part, n) => (n % 2 ? <kbd key={n}>{part}</kbd> : part))
 
 export const stepsOf = (t: T): readonly Step[] => [
-  { target: 'rail', screen: 'work', title: t('Tus pantallas'), text: keys(t('A la izquierda tienes las siete pantallas: Trabajo, Tareas, MR, Libretto, QA, Avisos y Ajustes. Pulsa una para cambiar; lo que tengas en Trabajo sigue vivo mientras estás en otra. El número sobre MR cuenta las que te toca revisar, y el de Avisos, los que aún no has leído.')) },
-  { target: 'next-up', screen: 'work', title: t('Qué me toca'), text: keys(t('Esta franja junta lo que te espera: primero los agentes que te necesitan y después las tareas por empezar. Pulsa uno para ir a su trabajo o al diálogo de Empezar, o pulsa ⌘↩ para ir al primero. Si no hay nada pendiente, no aparece.')) },
-  { target: 'new-work', screen: 'work', title: t('Nuevo trabajo'), text: keys(t('Abre un trabajo en uno de tus repos: Atril crea la rama, en un worktree o en tu copia según el repo, y lanza Claude dentro de tmux. Si escribes qué hay que hacer, Libretto empieza por la spec y eliges el modo; si lo dejas en blanco, abre Claude a secas. Con ⌘↩ lo empiezas sin soltar el teclado.')) },
-  { target: 'workspaces', screen: 'work', title: t('Trabajo en marcha'), text: keys(t('Cada trabajo con su agente, su estado escrito (trabajando, te necesita, en pausa o parado), lo último que ha hecho y cuántos subagentes tiene en marcha. Cuando un agente te necesita, tu Mac te avisa y puedes contestarle desde la notificación o con las respuestas rápidas que salen en su fila, sin abrir su terminal. Con ⌘1 a ⌘9 eliges los nueve primeros; ⌘⇧A («Todos») los enseña todos en tarjetas, primero los que te necesitan, ⌘⇧F (modo foco) deja solo el elegido y te avisa arriba si otro te necesita, y ⌘⇧P lo pausa o lo reanuda.')) },
-  { target: 'terminal', screen: 'work', title: t('La terminal de tu agente'), text: keys(t('Es tu Claude Code de verdad, dentro de tmux, de solo lectura: lo ves trabajar y puedes copiar, pero no se escribe en él. Lo que le digas pasa por Atril: las tarjetas cuando te pregunta y «Escribe al agente», debajo. Si cierras Atril, el agente sigue trabajando en tmux.')) },
-  { target: 'flow', screen: 'work', title: t('El panel de Libretto'), text: keys(t('A la derecha ves cómo va el trabajo elegido, leído de su carpeta .agents: casillas con su código y subagentes. Tiene dos pestañas, Libretto y Actividad, y pasas de una a otra con las flechas. ⌘J te trae aquí y ⌘L te lleva a la barra lateral.')) },
-  { target: 'stages', screen: 'work', title: t('Los pasos'), text: keys(t('Seis tramos con nombre sobre el título del trabajo: Entrada, Spec, Plan, Construir, Revisar y Aterrizar. El actual se va llenando con las casillas cerradas. Spec y Plan se pueden pulsar: abren lo que ha escrito Claude, y mientras te espera puedes corregirlo y guardarlo con ⌘S.')) },
-  { target: 'flow-checklist', screen: 'work', title: t('Casillas'), text: keys(t('Desde Construir, el checklist es una línea de tiempo: pulsa una casilla cerrada para ver el código que la cerró y, en la que toca ahora, el que Claude está escribiendo, al día cada 3 segundos. Si la rama pasa de 400 líneas, sale un aviso arriba: puedes pedirle que la separe en MRs encadenadas o dejarla así.')) },
-  { target: 'flow-subagents', screen: 'work', title: t('Subagentes'), text: keys(t('Cuando Claude encarga una parte a un subagente, aquí ves qué le ha pedido, de qué tipo es y cuánto lleva trabajando o cuánto tardó. Pulsa uno para abrir su registro, con lo que hace contado como en una terminal y al día cada segundo mientras trabaja.')) },
-  { target: 'activity', screen: 'work', title: t('Actividad'), text: keys(t('Esta pestaña cuenta en frases lo que ha hecho el agente del trabajo elegido: qué lee, qué edita, qué ejecuta y qué te pregunta, lo más reciente arriba. Sirve para ponerte al día sin leer la terminal entera.')) },
-  { target: 'tasks', screen: 'tasks', title: t('Tus tareas de Jira'), text: keys(t('Tus tareas abiertas de Jira, agrupadas por estado o por las columnas de tu tablero, y al día cada 5 minutos. «Empezar» crea la rama, pasa la tarea a In Progress y lanza Libretto con su clave; si Atril aún no sabe en qué repo va ese proyecto, te lo pregunta antes. Si haces clic con ⌥ pulsado, siempre abre el diálogo para elegir repo, rama, modelo y modo.')) },
-  { target: 'start-mode', screen: 'tasks', title: t('Manual o automático'), text: keys(t('Al empezar una tarea, o un trabajo con texto, eliges el modo. Manual se para con la spec y el plan escritos y te pregunta antes de construir; Automático sigue sin parar, pero te pregunta antes de subir nada. En automático, la Spec y el Plan se ven en solo lectura.')) },
-  { target: 'new-task', screen: 'tasks', title: t('Nueva tarea'), text: keys(t('Para algo que no está en Jira: escribe qué hay que hacer y elige repo, rama, modelo y modo. Libretto toma tu texto como petición y empieza por la spec. Con ⌘↩ la empiezas en el acto.')) },
-  { target: 'mr', screen: 'mr', title: t('Tus MR'), text: keys(t('Tres listas de GitHub y GitLab: Mías, Me toca revisar y Sigo, con su CI, su tamaño, cuándo se movieron y si están en conflicto. Pulsa una y su página ocupa la pantalla (J y K pasan a la siguiente o la anterior): el código con cada hilo y cada borrador en su línea, la conversación y, a la derecha, la puntuación, «Contra su spec», los revisores y la CI. En las tuyas que la forja deja fusionar, «Fusionar» te pregunta antes de hacerlo.')) },
-  { target: 'mr-tools', screen: 'mr', title: t('Puntuar y revisar'), text: keys(t('En la página de una MR, «Revisar ▾» ofrece Puntuar (dificultad y riesgo del 1 al 5, con Claude Sonnet), Comentar (borradores por lente en su línea, que publicas, descartas o mandas al agente) y A fondo (Libretto revisándola en tu repo). Puntuar y Comentar salen en Mías y en Me toca revisar, y en la bandeja cada una de esas filas trae también «Puntuar». Solo gastan cuota cuando los pulsas.')) },
-  { target: 'avisos', screen: 'avisos', title: t('Avisos'), text: keys(t('Lo que ha cambiado en tus MR y en tus agentes: revisiones que te piden, comentarios nuevos, CI que falla, MRs nuevas en lo que sigues y agentes que te necesitan. Pulsa uno para ir a su MR o a su trabajo, y queda leído; «Marcar todo leído» los limpia de golpe. Arriba puedes filtrarlos por tipo.')) },
-  { target: 'libretto', screen: 'libretto', title: t('Libretto'), text: keys(t('La cola de ideas de cada repo y lo que está en curso, leído de su carpeta .agents: no gasta cuota. Escribe una idea y «Encolar» la guarda y la commitea sola en la rama actual; «Empezar» abre su trabajo en la rama feat/ con Libretto ya en la spec. Elige el repo arriba y «Actualizar» vuelve a leerlo.')) },
-  { target: 'qa', screen: 'qa', title: t('QA'), text: keys(t('Eliges un trabajo y ves cada criterio de su cambio con Pasa, Falla o Sin probar. «Probar en vivo» abre al lado un Claude que recorre la app y deja un informe y capturas; «Ver cómo» enseña sus pasos, «Probar este» repite un criterio y «Marcar como bug» lo lleva a Jira o al agente.')) },
-  { target: 'doctor', screen: 'work', title: t('Herramientas que faltan'), text: keys(t('Si falta alguna herramienta que Atril necesita (git, tmux, claude o jira), arriba sale un aviso en rojo con cuántas son. Púlsalo: «Copiar» copia el comando de instalación e «Instalar» lo ejecuta en Terminal. Cuando vuelves a la ventana de Atril, lo comprueba otra vez y el aviso se va si ya está todo.')) },
-  { target: 'palette', screen: 'work', title: t('Buscar con ⌘K'), text: keys(t('⌘K abre un buscador para todo Atril: pantallas, acciones, trabajos, MR y tareas. Escribe unas letras, muévete con ↑ y ↓ y pulsa Enter para ir; Esc lo cierra.')) },
-  { target: 'usage', screen: 'work', title: t('Tu cuota de Claude'), text: keys(t('Abajo ves cuánto llevas gastado de Claude en las últimas 5 horas y en 7 días, y cuándo se reinicia la semana. Las barras cambian de color al pasar del 80 %, así sabes si te da para otro agente.')) },
-  { target: 'session', screen: 'work', title: t('Tu sesión'), text: keys(t('Arriba a la derecha está la cuenta de Jira con la que entras, o «Sin conectar». Púlsalo para ir a Ajustes y conectar, reemplazar o borrar tu token.')) },
-  { target: 'connections', screen: 'settings', title: t('Conexiones'), text: keys(t('Aquí conectas Jira, GitHub y GitLab con un token, y Atril lo comprueba al guardarlo. Se guardan cifrados en el Llavero de tu Mac, no se vuelven a mostrar y tus agentes nunca los reciben: solo puedes reemplazarlos o borrarlos. En Jira, además, eliges el tablero que ordena tus Tareas.')) },
-  { target: 'repos', screen: 'settings', title: t('Repos'), text: keys(t('Añade la carpeta de un repo git, o crea uno nuevo en GitHub o GitLab y, si quieres, Atril lo clona y lo añade. Atril decide si cada trabajo va en su propio worktree o en tu copia: si hay archivos sin versionar, como un .env, o las dependencias pesan mucho, usa tu copia. Con el selector de cada repo lo fuerzas.')) },
-  { target: 'appearance', screen: 'settings', title: t('Apariencia'), text: keys(t('Elige la paleta, Original o Grafito, y el tema: Claro, Oscuro o Automático, que sigue a tu Mac. Para volver a ver este tutorial, ve a Ayuda → Tutorial o búscalo con ⌘K.')) }
+  { target: 'rail', screen: 'work', title: t('Your screens'), text: keys(t('On the left are the seven screens: Work, Tasks, MR, Libretto, QA, Notices and Settings. Click one to switch; whatever you have in Work stays alive while you are elsewhere. The number on MR counts the ones waiting for your review, and the one on Notices, the ones you have not read yet.')) },
+  { target: 'next-up', screen: 'work', title: t('Up next'), text: keys(t('This strip gathers what is waiting for you: first the agents that need you, then the tasks to start. Click one to go to its workspace or to the Start dialog, or press ⌘↩ to go to the first. When nothing is waiting, it does not show.')) },
+  { target: 'new-work', screen: 'work', title: t('New work'), text: keys(t('Opens a workspace in one of your repos: Atril creates the branch, in a worktree or in your copy depending on the repo, and launches Claude inside tmux. If you write what needs doing, Libretto starts with the spec and you pick the mode; if you leave it blank, it opens plain Claude. ⌘↩ starts it without leaving the keyboard.')) },
+  { target: 'workspaces', screen: 'work', title: t('Work in progress'), text: keys(t('Each workspace with its agent, its status written out (working, needs you, paused or stopped), the last thing it did and how many subagents it has running. When an agent needs you, your Mac tells you and you can answer it from the notification or with the quick replies shown in its row, without opening its terminal. ⌘1 to ⌘9 pick the first nine; ⌘⇧A («All») shows them all as cards, those that need you first, ⌘⇧F (focus mode) leaves only the chosen one and tells you at the top if another needs you, and ⌘⇧P pauses or resumes it.')) },
+  { target: 'terminal', screen: 'work', title: t("Your agent's terminal"), text: keys(t("It's your real Claude Code, inside tmux, read-only: you watch it work and can copy, but nothing is typed into it. What you tell it goes through Atril: the cards when it asks and «Write to the agent», below. If you close Atril, the agent keeps working in tmux.")) },
+  { target: 'flow', screen: 'work', title: t('The Libretto panel'), text: keys(t('On the right you see how the selected workspace is going, read from its .agents folder: boxes with their code and subagents. It has two tabs, Libretto and Activity, and the arrow keys move between them. ⌘J brings you here and ⌘L takes you to the sidebar.')) },
+  { target: 'stages', screen: 'work', title: t('The steps'), text: keys(t('Six named segments above the title of the work: Intake, Spec, Plan, Build, Review and Land. The current one fills as boxes close. Spec and Plan can be clicked: they open what Claude wrote, and while it waits for you, you can correct it and save with ⌘S.')) },
+  { target: 'flow-checklist', screen: 'work', title: t('Boxes'), text: keys(t('From Build on, the checklist is a timeline: press a closed box to see the code that closed it and, on the box due now, the code Claude is writing, refreshed every 3 seconds. If the branch goes past 400 lines, a warning shows at the top: you can ask it to split it into chained MRs or leave it as it is.')) },
+  { target: 'flow-subagents', screen: 'work', title: t('Subagents'), text: keys(t('When Claude hands part of the work to a subagent, here you see what it asked for, what type it is and how long it has been working or how long it took. Click one to open its log, with what it does shown as in a terminal and updated every second while it works.')) },
+  { target: 'activity', screen: 'work', title: t('Activity'), text: keys(t('This tab tells in sentences what the selected agent has done: what it reads, edits, runs and asks you, newest on top. It lets you catch up without reading the whole terminal.')) },
+  { target: 'tasks', screen: 'tasks', title: t('Your Jira tasks'), text: keys(t('Your open Jira tasks, grouped by status or by your board’s columns, and refreshed every 5 minutes. “Start” creates the branch, moves the task to In Progress and runs Libretto with its key; if Atril does not know yet which repo that project goes in, it asks you first. If you click with ⌥ held, it always opens the dialog to choose repo, branch, model and mode.')) },
+  { target: 'start-mode', screen: 'tasks', title: t('Manual or automatic'), text: keys(t('When you start a task, or a workspace with text, you pick the mode. Manual stops with the spec and the plan written and asks you before building; Automatic goes on without stopping, but asks you before pushing anything. In automatic mode, the Spec and the Plan are read-only.')) },
+  { target: 'new-task', screen: 'tasks', title: t('New task'), text: keys(t('For something that is not in Jira: write what needs doing and pick repo, branch, model and mode. Libretto takes your text as the request and starts with the spec. ⌘↩ starts it right away.')) },
+  { target: 'mr', screen: 'mr', title: t('Your MRs'), text: keys(t('Three lists from GitHub and GitLab: Mine, To review and Following, with their CI, their size, when they last moved and whether they are in conflict. Click one and its page fills the screen (J and K move to the next or previous one): the code with each thread and each draft on its line, the conversation and, on the right, the score, “Against its spec”, the reviewers and the CI. On yours that the forge lets merge, “Merge” asks you before doing it.')) },
+  { target: 'mr-tools', screen: 'mr', title: t('Score and review'), text: keys(t('On an MR’s page, “Review ▾” offers Score (difficulty and risk from 1 to 5, with Claude Sonnet), Comment (drafts per lens on their line, which you publish, discard or send to the agent) and In depth (Libretto reviewing it in your repo). Score and Comment show in Mine and To review, and in the inbox each of those rows also has “Score”. They only spend quota when you click them.')) },
+  { target: 'avisos', screen: 'avisos', title: t('Notices'), text: keys(t('What changed in your MRs and your agents: reviews requested from you, new comments, failing CI, new MRs in what you follow and agents that need you. Click one to go to its MR or workspace, and it is marked read; “Mark all read” clears them at once. At the top you can filter them by type.')) },
+  { target: 'libretto', screen: 'libretto', title: t('Libretto'), text: keys(t("Each repo's idea queue and what is in flight, read from its .agents folder: it costs no quota. Type an idea and “Queue” saves it and commits it on the current branch by itself; “Start” opens its work on a feat/ branch with Libretto already at the spec. Pick the repo at the top and “Refresh” reads it again.")) },
+  { target: 'qa', screen: 'qa', title: t('QA'), text: keys(t('You pick a work and see each criterion of its change as Pass, Fail or Untested. «Test live» opens a Claude alongside that walks through the app and leaves a report and screenshots; «See how» shows its steps, «Test this» repeats one criterion and «Mark as bug» takes it to Jira or to the agent.')) },
+  { target: 'doctor', screen: 'work', title: t('Missing tools'), text: keys(t('If a tool Atril needs is missing (git, tmux, claude or jira), a red warning at the top says how many. Click it: “Copy” copies the install command and “Install” runs it in Terminal. When you come back to the Atril window, it checks again and the warning goes away once everything is there.')) },
+  { target: 'palette', screen: 'work', title: t('Search with ⌘K'), text: keys(t('⌘K opens a search across all of Atril: screens, actions, workspaces, MRs and tasks. Type a few letters, move with ↑ and ↓ and press Enter to go; Esc closes it.')) },
+  { target: 'usage', screen: 'work', title: t('Your Claude quota'), text: keys(t('At the bottom you see how much Claude you have used in the last 5 hours and 7 days, and when the week resets. The bars change colour past 80 %, so you know if you have room for another agent.')) },
+  { target: 'session', screen: 'work', title: t('Your session'), text: keys(t('Top right is the Jira account you are signed in with, or “Not connected”. Click it to go to Settings and connect, replace or delete your token.')) },
+  { target: 'connections', screen: 'settings', title: t('Connections'), text: keys(t('Here you connect Jira, GitHub and GitLab with a token, and Atril checks it when you save it. They are stored encrypted in your Mac’s Keychain, never shown again and never given to your agents: you can only replace or delete them. In Jira you also pick the board that orders your Tasks.')) },
+  { target: 'repos', screen: 'settings', title: t('Repos'), text: keys(t('Add the folder of a git repo, or create a new one on GitHub or GitLab and, if you want, Atril clones and adds it. Atril decides whether each workspace gets its own worktree or uses your copy: if there are unversioned files, like a .env, or the dependencies are very heavy, it uses your copy. The selector on each repo forces it.')) },
+  { target: 'appearance', screen: 'settings', title: t('Appearance'), text: keys(t('Pick the palette, Original or Graphite, and the theme: Light, Dark or Auto, which follows your Mac. To see this tutorial again, go to Help → Tutorial or search for it with ⌘K.')) }
 ]
 
-/** Spanish, as written: what tests and the dev snapshots count; the window renders `stepsOf(t)`. */
-export const STEPS = stepsOf((es) => es)
 
 interface Box {
   left: number
@@ -174,7 +172,7 @@ export function Tour({ screen, goTo, onClose, startAt = -1 }: Props) {
         {step ? (
           <>
             <div className="stepn">
-              {t('Paso {n} de {total}', { n: i + 1, total: STEPS.length })}
+              {t('Step {n} of {total}', { n: i + 1, total: STEPS.length })}
             </div>
             <h4 id="tour-title">{step.title}</h4>
             <p>{step.text}</p>
@@ -185,31 +183,31 @@ export function Tour({ screen, goTo, onClose, startAt = -1 }: Props) {
             </div>
             <div className="nav">
               <button type="button" className="skip" onClick={onClose}>
-                {t('Saltar')}
+                {t('Skip')}
               </button>
               <span className="sp" />
               <button type="button" className="btn" disabled={i === 0} onClick={prev}>
-                {t('Atrás')}
+                {t('Back@@nav')}
               </button>
               <button type="button" className="btn p" data-primary onClick={next}>
-                {last ? t('Terminar') : t('Siguiente')}
+                {last ? t('Finish') : t('Next')}
               </button>
             </div>
-            <div className="kb">{kbd('←')} {kbd('→')} {t('para moverte')} · {kbd('Enter')} {t('siguiente')} · {kbd('Esc')} {t('salir')}</div>
+            <div className="kb">{kbd('←')} {kbd('→')} {t('to move')} · {kbd('Enter')} {t('next')} · {kbd('Esc')} {t('exit')}</div>
           </>
         ) : (
           <>
-            <h4 id="tour-title">{t('Bienvenido a Atril')}</h4>
+            <h4 id="tour-title">{t('Welcome to Atril')}</h4>
             <p>
-              {t('Tus tareas de Jira, tus agentes de Claude y el flujo de Libretto, en una sola ventana. Te enseño cada pieza en tres minutos.')}
+              {t('Your Jira tasks, your Claude agents and the Libretto flow, in a single window. I will show you each piece in three minutes.')}
             </p>
             <div className="nav">
               <button type="button" className="btn" onClick={onClose}>
-                {t('Saltar')}
+                {t('Skip')}
               </button>
               <span className="sp" />
               <button type="button" className="btn p" data-primary onClick={() => setI(0)}>
-                {t('Enséñamelo · 3 min')}
+                {t('Show me · 3 min')}
               </button>
             </div>
           </>

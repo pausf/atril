@@ -87,7 +87,7 @@ const autoMarker = (id: string): string => join(home(), 'auto', sessionName(id))
 /** W131/W132: git's or tmux's own words go folded in `detail`, never in the sentence. */
 const failed = (error: string, detail: string): { error: string; detail: string; fix: 'terminal' } => ({ error, detail: detail.trim(), fix: 'terminal' })
 /** W156: a git that cannot run is said as such, never as the step's own failure. */
-const noGit = (stderr: string): WorkRefusal => ({ error: t('git no funciona en este Mac.'), detail: stderr.trim(), fix: 'git' })
+const noGit = (stderr: string): WorkRefusal => ({ error: t('git does not work on this Mac.'), detail: stderr.trim(), fix: 'git' })
 const gitFailed = (r: RunResult, error: string): WorkRefusal => (gitBroken(r) ? noGit(r.stderr) : failed(error, r.stderr))
 
 const READ_ONLY = new Set(['EACCES', 'EPERM', 'EROFS'])
@@ -95,7 +95,7 @@ const READ_ONLY = new Set(['EACCES', 'EPERM', 'EROFS'])
 function unwritable(err: unknown, other?: string): WorkRefusal | undefined {
   if (err instanceof StateError) return stateProblem(err)
   const code = (err as NodeJS.ErrnoException).code ?? String(err)
-  if (READ_ONLY.has(code)) return { error: t('No puedo escribir en la carpeta de Atril ({home}).', { home: home() }), detail: code, fix: 'reveal', file: 'workspaces' }
+  if (READ_ONLY.has(code)) return { error: t("I can't write to Atril's folder ({home}).", { home: home() }), detail: code, fix: 'reveal', file: 'workspaces' }
   return other === undefined ? undefined : { error: other, detail: code }
 }
 
@@ -114,29 +114,29 @@ export async function openWorktree(
 ): Promise<WorkspaceResult> {
   const { repoId, branch, agent } = input
   const prompt = input.task === undefined ? input.prompt : taskPrompt(input.task, input.auto)
-  if (prompt === null) return { error: t('El texto de la tarea no es válido (máx. 2000 caracteres).') }
+  if (prompt === null) return { error: t('The task text is not valid (max. 2000 characters).') }
   // W6: nothing else runs before the branch name is validated; only git's own words blame the name.
   const name = await run('git', ['check-ref-format', '--branch', branch])
   if (name.code !== 0) {
     if (gitBroken(name)) return noGit(name.stderr)
-    if (name.stderr.includes('is not a valid branch name')) return { error: t('«{branch}» no es un nombre de rama válido', { branch }) }
-    return failed(t('git no ha podido comprobar el nombre {branch}.', { branch }), name.stderr)
+    if (name.stderr.includes('is not a valid branch name')) return { error: t('“{branch}” is not a valid branch name', { branch }) }
+    return failed(t('git could not check the name {branch}.', { branch }), name.stderr)
   }
 
   const blocked = await stateBlock()
   if (blocked) return blocked
   const repo = (await readRepos()).find((r) => r.id === repoId)
-  if (!repo) return { error: t('No hay ningún repo «{id}»', { id: repoId }) }
+  if (!repo) return { error: t('There is no repo “{id}”', { id: repoId }) }
   // W155: before any git that writes and any tmux.
   const health = await repoHealth(repo.path, run)
   if (typeof health !== 'string') return noGit(health.broken)
-  if (health === 'missing') return { error: t('La carpeta de {repo} ya no existe ({path}).', { repo: repoId, path: repo.path }), fix: 'settings' }
-  if (health === 'not-git') return { error: t('La carpeta de {repo} no es un repo de git ({path}).', { repo: repoId, path: repo.path }), fix: 'settings' }
+  if (health === 'missing') return { error: t('The folder of {repo} no longer exists ({path}).', { repo: repoId, path: repo.path }), fix: 'settings' }
+  if (health === 'not-git') return { error: t('The folder of {repo} is not a git repo ({path}).', { repo: repoId, path: repo.path }), fix: 'settings' }
 
   const review = input.review === true
   const detected = review ? null : repo.override ? { mode: repo.override, reason: '' } : await detectMode(repo.path, run)
   const inPlace = detected !== null && input.worktree !== true && effectiveMode(repo, detected).mode === 'in-place'
-  if (inPlace && input.existing === true) return { error: t('Este repo trabaja en tu copia: cambia de rama a mano') }
+  if (inPlace && input.existing === true) return { error: t('This repo works in your own copy: switch branch by hand') }
 
   let path: string
   let previousBranch: string | undefined
@@ -147,17 +147,17 @@ export async function openWorktree(
   } else if (inPlace) {
     const open = (await readRecords()).find((r) => r.repoId === repoId && r.mode === 'in-place')
     // W7: a worktree this once is the way out that leaves the open work alone.
-    if (open) return { error: t('{repo} trabaja en tu copia y ya tiene un trabajo abierto ({branch}).', { repo: repoId, branch: open.branch }), fix: 'worktree' }
+    if (open) return { error: t('{repo} works in your copy and already has an open work ({branch}).', { repo: repoId, branch: open.branch }), fix: 'worktree' }
     const status = await run('git', ['-C', repo.path, 'status', '--porcelain'])
-    if (status.code !== 0) return gitFailed(status, t('No puedo leer el estado de git de {repo}.', { repo: repoId }))
+    if (status.code !== 0) return gitFailed(status, t('I cannot read the git state of {repo}.', { repo: repoId }))
     const dirty = status.stdout.split('\n').filter((l) => l.trim() !== '')
     if (dirty.length > 0) {
       // W8: what is dirty and why the repo works in place go folded; the fix never touches those changes.
-      const current = (await run('git', ['-C', repo.path, 'branch', '--show-current'])).stdout.trim() || t('HEAD suelto')
-      const changes = dirty.length === 1 ? t('1 cambio') : t('{n} cambios', { n: dirty.length })
+      const current = (await run('git', ['-C', repo.path, 'branch', '--show-current'])).stdout.trim() || t('detached HEAD')
+      const changes = dirty.length === 1 ? t('1 change') : t('{n} changes', { n: dirty.length })
       return {
-        error: t('Tu copia de {repo} tiene {changes} sin commitear en {branch}: no puedo pasarla a {new} sin mezclarlos.', { repo: repoId, changes, branch: current, new: branch }),
-        detail: `${dirty.slice(0, 20).join('\n')}\n\n${t('Trabaja en tu copia: {reason}', { reason: effectiveMode(repo, detected!).reason })}`,
+        error: t("Your copy of {repo} has {changes} uncommitted on {branch}: I can't move it to {new} without mixing them.", { repo: repoId, changes, branch: current, new: branch }),
+        detail: `${dirty.slice(0, 20).join('\n')}\n\n${t('It works in your copy: {reason}', { reason: effectiveMode(repo, detected!).reason })}`,
         fix: 'worktree'
       }
     }
@@ -167,7 +167,7 @@ export async function openWorktree(
     const exists = (await run('git', ['-C', repo.path, 'rev-parse', '--verify', '--quiet', `refs/heads/${branch}`])).code === 0
     madeBranch = !exists
     const sw = await run('git', ['-C', repo.path, 'switch', ...(exists ? [] : ['-c']), branch])
-    if (sw.code !== 0) return gitFailed(sw, t('git no me deja pasar tu copia a {branch}.', { branch }))
+    if (sw.code !== 0) return gitFailed(sw, t('git will not let me switch your copy to {branch}.', { branch }))
     path = repo.path
   } else {
     path = worktreePath(repoId, branch)
@@ -175,7 +175,7 @@ export async function openWorktree(
     if (input.existing === true) {
       const remote = input.remote ?? 'origin'
       const fetch = await run('git', ['-C', repo.path, 'fetch', remote, branch])
-      if (fetch.code !== 0) return gitFailed(fetch, t('No he podido traer {branch} de {remote}.', { branch, remote }))
+      if (fetch.code !== 0) return gitFailed(fetch, t('I could not fetch {branch} from {remote}.', { branch, remote }))
       fetched = (await run('git', ['-C', repo.path, 'rev-parse', `refs/remotes/${remote}/${branch}`])).stdout.trim()
       // W89: the base is where the MR's branch left the main line, so Cambios shows the whole MR at once.
       for (const line of [`refs/remotes/${remote}/HEAD`, `refs/remotes/${remote}/main`, `refs/remotes/${remote}/master`, 'refs/heads/main', 'refs/heads/master']) {
@@ -199,7 +199,7 @@ export async function openWorktree(
     if (add.code !== 0) {
       // Atril runs git with its default English messages: this is git's own wording for a branch held elsewhere.
       const held = /already (checked out|used by worktree)/.test(add.stderr)
-      return gitFailed(add, held ? t('La rama {branch} ya está abierta en otra carpeta.', { branch }) : t('git no ha podido crear la carpeta del trabajo.'))
+      return gitFailed(add, held ? t('Branch {branch} is already open in another folder.', { branch }) : t('git could not create the work folder.'))
     }
   }
 
@@ -234,7 +234,7 @@ export async function openWorktree(
     if (auto) await unlink(autoMarker(id), { force: true })
     await killSession(id, run)
     await undo()
-    return failed(t('tmux no ha podido arrancar el agente.'), err instanceof Error ? err.message : String(err))
+    return failed(t('tmux could not start the agent.'), err instanceof Error ? err.message : String(err))
   }
 
   const record: WorkspaceRecord = {
@@ -261,7 +261,7 @@ export async function openWorktree(
     if (auto) await unlink(autoMarker(id), { force: true })
     await killSession(id, run)
     await undo()
-    return unwritable(err, t('No he podido guardar el trabajo.'))!
+    return unwritable(err, t("I couldn't save the workspace."))!
   }
   return { workspace: { ...record, alive: true } }
 }
@@ -278,7 +278,7 @@ export async function removeWorkspace(id: string, run: Runner = defaultRun): Pro
   if (blocked) return blocked
   const records = await readRecords()
   const rec = records.find((r) => r.id === id)
-  if (!rec) return { error: t('Ese trabajo ya no existe') }
+  if (!rec) return { error: t('That work no longer exists') }
   if (rec.mode === 'review') {
     // W90: the folder is the person's own repo; ending the session is all there is to undo.
     await killSession(id, run)
@@ -288,22 +288,22 @@ export async function removeWorkspace(id: string, run: Runner = defaultRun): Pro
   }
 
   const repo = (await readRepos()).find((r) => r.id === rec.repoId)
-  if (!repo) return { error: t('No hay ningún repo «{id}»', { id: rec.repoId }) }
+  if (!repo) return { error: t('There is no repo “{id}”', { id: rec.repoId }) }
 
   const branch = rec.branch
-  if (!existsSync(rec.path)) return { error: t('La carpeta de {branch} ya no existe.', { branch }), fix: 'forget' }
+  if (!existsSync(rec.path)) return { error: t('The folder of {branch} no longer exists.', { branch }), fix: 'forget' }
   const status = await run('git', ['-C', rec.path, 'status', '--porcelain'])
-  if (status.code !== 0) return gitFailed(status, t('No puedo leer el estado de git de {branch}.', { branch }))
+  if (status.code !== 0) return gitFailed(status, t('I cannot read the git state of {branch}.', { branch }))
   const dirty = status.stdout.split('\n').filter((l) => l.trim() !== '')
   if (dirty.length > 0) {
-    const changes = dirty.length === 1 ? t('1 cambio') : t('{n} cambios', { n: dirty.length })
-    return { error: t('{branch} tiene {changes} sin commitear: no lo cierro para no perderlos.', { branch, changes }), detail: dirty.slice(0, 20).join('\n'), fix: 'terminal' }
+    const changes = dirty.length === 1 ? t('1 change') : t('{n} changes', { n: dirty.length })
+    return { error: t('{branch} has {changes} uncommitted: I will not close it so they are not lost.', { branch, changes }), detail: dirty.slice(0, 20).join('\n'), fix: 'terminal' }
   }
 
   if (rec.mode === 'in-place') {
     // The main checkout is shared with the person: never switch them off a branch they chose by hand.
     const current = (await run('git', ['-C', rec.path, 'branch', '--show-current'])).stdout.trim()
-    if (current !== branch) return { error: t('Tu copia está en {current}, no en {branch}: vuelve a {branch} antes de cerrar.', { current: current || t('HEAD suelto'), branch }), fix: 'terminal' }
+    if (current !== branch) return { error: t('Your copy is on {current}, not {branch}: go back to {branch} before closing.', { current: current || t('detached HEAD'), branch }), fix: 'terminal' }
   }
 
   // W95: read before the folder and the transcript list go; written only once the removal got through.
@@ -319,12 +319,12 @@ export async function removeWorkspace(id: string, run: Runner = defaultRun): Pro
     // Never delete the branch: the person's commits live there.
     const prev = rec.previousBranch ?? ''
     const back = await run('git', ['-C', rec.path, 'switch', ...(/^[0-9a-f]{40}$/.test(prev) ? ['--detach'] : []), prev])
-    if (back.code !== 0) return gitFailed(back, t('git no ha podido cerrar {branch}; su agente ya está parado.', { branch }))
+    if (back.code !== 0) return gitFailed(back, t('git could not close {branch}; its agent is already stopped.', { branch }))
     return done()
   }
   // No --force: git itself refuses anything the status check missed.
   const rm = await run('git', ['-C', repo.path, 'worktree', 'remove', rec.path])
-  if (rm.code !== 0) return gitFailed(rm, t('git no ha podido cerrar {branch}; su agente ya está parado.', { branch }))
+  if (rm.code !== 0) return gitFailed(rm, t('git could not close {branch}; its agent is already stopped.', { branch }))
   return done()
 }
 
@@ -334,7 +334,7 @@ export async function forgetWorkspace(id: string, run: Runner = defaultRun): Pro
   if (blocked) return blocked
   const records = await readRecords()
   const rec = records.find((r) => r.id === id)
-  if (!rec) return { error: t('Ese trabajo ya no existe') }
+  if (!rec) return { error: t('That work no longer exists') }
   await killSession(id, run)
   await writeRecords(records.filter((r) => r.id !== id))
   await dropFiles(id)
@@ -353,7 +353,7 @@ const oneUp = (effort: Effort | undefined): Effort | undefined =>
 const reopening = new Set<string>()
 
 export async function reopenWorkspace(id: string, opts: { more?: boolean }, run: Runner = defaultRun): Promise<WorkspaceResult> {
-  if (reopening.has(id)) return { error: t('Este trabajo ya está abierto.') }
+  if (reopening.has(id)) return { error: t('This work is already open.') }
   reopening.add(id)
   try {
     return await reopenOnce(id, opts, run)
@@ -367,13 +367,13 @@ async function reopenOnce(id: string, opts: { more?: boolean }, run: Runner): Pr
   if (blocked) return blocked
   const records = await readRecords()
   const rec = records.find((r) => r.id === id)
-  if (!rec) return { error: t('Ese trabajo ya no existe') }
+  if (!rec) return { error: t('That work no longer exists') }
   const live = await hasSession(id, run)
   // Pane ids are reused after a server restart: only the record's pane in this session counts (W16).
-  if (live && (await hasPane(id, rec.paneId, run)) && !(await paneDead(rec.paneId, run))) return { error: t('Este trabajo ya está abierto.') }
-  if (!existsSync(rec.path)) return { error: t('La carpeta de {branch} ya no existe.', { branch: rec.branch }), fix: 'forget' }
+  if (live && (await hasPane(id, rec.paneId, run)) && !(await paneDead(rec.paneId, run))) return { error: t('This work is already open.') }
+  if (!existsSync(rec.path)) return { error: t('The folder of {branch} no longer exists.', { branch: rec.branch }), fix: 'forget' }
   const effort = opts.more === true ? oneUp(rec.effort) : rec.effort
-  if (effort === undefined && opts.more === true) return { error: t('Ya está en el esfuerzo más alto.') }
+  if (effort === undefined && opts.more === true) return { error: t('It is already at the highest effort.') }
   if (live) await killSession(id, run)
   const resume = existsSync(join(home(), 'transcripts', sessionName(id))) ? (true as const) : undefined
   let paneId: string
@@ -381,7 +381,7 @@ async function reopenOnce(id: string, opts: { more?: boolean }, run: Runner): Pr
     paneId = await newSession(id, rec.path, agentArgv({ model: rec.model, effort, resume, lessons: await hasLessons(rec.path) }), run)
   } catch (err) {
     await killSession(id, run)
-    return failed(t('tmux no ha podido arrancar el agente.'), err instanceof Error ? err.message : String(err))
+    return failed(t('tmux could not start the agent.'), err instanceof Error ? err.message : String(err))
   }
   const updated: WorkspaceRecord = { ...rec, paneId, ...(effort !== undefined && { effort }) }
   // Re-read: the list may have changed while tmux started.
@@ -395,10 +395,10 @@ export async function terminalAt(target: { repoId: string } | { id: string }, ru
   let path: string | undefined
   if (typeof t0?.repoId === 'string') {
     path = (await readRepos()).find((r) => r.id === t0.repoId)?.path
-    if (path === undefined) return { error: t('No hay ningún repo «{id}»', { id: t0.repoId }) }
+    if (path === undefined) return { error: t('There is no repo “{id}”', { id: t0.repoId }) }
   } else if (typeof t0?.id === 'string') {
     path = (await readRecords()).find((r) => r.id === t0.id)?.path
   }
-  if (path === undefined) return { error: t('Ese trabajo ya no existe') }
+  if (path === undefined) return { error: t('That work no longer exists') }
   return inTerminal(`cd '${path.replace(/'/g, "'\\''")}' && git status`, run)
 }

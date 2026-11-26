@@ -188,20 +188,20 @@ export function createLenses({ store, run, fetchImpl = fetch, target, listed, po
   async function work(url: string, tgt: ScoreTarget): Promise<MrDraftsResult> {
     const secret = await store.readSecret(tgt.forge).catch(() => null)
     const get = forgeGet(tgt, secret, fetchImpl)
-    const fail = (detail: string | number): MrDraftsResult => ({ error: t('Claude no ha podido revisar esta MR: {detail}', { detail }) })
+    const fail = (detail: string | number): MrDraftsResult => ({ error: t('Claude could not review this MR: {detail}', { detail }) })
 
     let head = tgt.head
     let diff: string
     let mr: { title?: string; body?: string } | undefined
     try {
-      if (!secret?.['token']) throw new Failure(t('Conecta GitHub o GitLab en Ajustes'))
+      if (!secret?.['token']) throw new Failure(t('Connect GitHub or GitLab in Settings'))
       if (tgt.forge === 'github') {
         const pull = (await (await get(tgt.ref)).json()) as { head?: { sha?: string }; title?: string; body?: string | null }
         head = pull.head?.sha
         mr = { ...(typeof pull.title === 'string' && { title: pull.title }), ...(typeof pull.body === 'string' && { body: pull.body }) }
       }
       // M26: no head, nothing to key drafts by: refused before spending quota.
-      if (!head) throw new Failure(t('No se sabe el último commit de esta MR: actualiza'))
+      if (!head) throw new Failure(t('The latest commit of this MR is unknown: refresh'))
       const cached = await readDrafts(url)
       if (cached && cached.head === head) return view(url, tgt, cached, true)
       diff = await fetchDiff(get, tgt)
@@ -221,16 +221,16 @@ export function createLenses({ store, run, fetchImpl = fetch, target, listed, po
     const args = ['-p', '--model', 'sonnet', '--output-format', 'json', '--tools', '', '--no-session-persistence', '--json-schema', JSON.stringify(SCHEMA), instruction(getLang(), metrics(diff))]
     const r = await run('claude', args, { input: text, timeoutMs: CLAUDE_MS, secret: true })
     // M16's details: a code or a fixed word, never Claude's own output.
-    if (r.code === 124) return fail(t('tiempo agotado'))
+    if (r.code === 124) return fail(t('timed out'))
     if (r.code !== 0) return fail(r.code)
     let answer: { is_error?: unknown; structured_output?: unknown }
     try {
       answer = JSON.parse(r.stdout)
     } catch {
-      return fail(t('respuesta fuera del esquema'))
+      return fail(t('answer outside the schema'))
     }
     const found = answer?.structured_output
-    if (answer?.is_error !== false || !validFindings(found)) return fail(t('respuesta fuera del esquema'))
+    if (answer?.is_error !== false || !validFindings(found)) return fail(t('answer outside the schema'))
 
     const drafts = (found as unknown as { findings: Finding[] }).findings.map((f): MrDraft => ({ id: randomUUID(), ...f, state: 'open' }))
     const stored: Stored = { head, drafts, renames: renames(diff) }
@@ -238,11 +238,11 @@ export function createLenses({ store, run, fetchImpl = fetch, target, listed, po
     return view(url, tgt, stored, true)
   }
 
-  const closed = (): MrDraftsResult => ({ error: t('Ese borrador ya no está abierto') })
+  const closed = (): MrDraftsResult => ({ error: t('That draft is no longer open') })
 
   /** M27, M28: the checks every action shares, then `how` runs once on an open draft: a string is its error, an object goes into the marked draft. */
   async function act(url: string, id: string, how: (d: MrDraft, tgt: ScoreTarget | undefined, stored: Stored) => Promise<string | Partial<MrDraft> | undefined>, after: 'mark' | 'remove', mark?: MrDraft['state']): Promise<MrDraftsResult> {
-    if (!listed(url)) return { error: t('Esta MR ya no está en la lista: actualiza') }
+    if (!listed(url)) return { error: t('This MR is no longer in the list: refresh') }
     const key = `${url}\n${id}`
     const current = await readDrafts(url)
     const draft = current?.drafts.find((d) => d.id === id)
@@ -273,9 +273,9 @@ export function createLenses({ store, run, fetchImpl = fetch, target, listed, po
       const running = pending.get(key)
       if (running) return running
       const tgt = target(url)
-      if (!tgt) return Promise.resolve({ error: t('Solo se pueden puntuar tus MR y las que te toca revisar') })
+      if (!tgt) return Promise.resolve({ error: t('Only your MRs and the ones you have to review can be scored') })
       const promise = queue(() => work(url, tgt))
-        .catch((): MrDraftsResult => ({ error: t('Claude no ha podido revisar esta MR: {detail}', { detail: 'error' }) }))
+        .catch((): MrDraftsResult => ({ error: t('Claude could not review this MR: {detail}', { detail: 'error' }) }))
         .then((r) => {
           pending.delete(key)
           return r
@@ -295,7 +295,7 @@ export function createLenses({ store, run, fetchImpl = fetch, target, listed, po
         if (tgt && d.file && d.line !== undefined && !(tgt.head && tgt.head !== stored.head)) {
           try {
             const secret = await store.readSecret(tgt.forge).catch(() => null)
-            if (!secret?.['token']) return t('Conecta GitHub o GitLab en Ajustes')
+            if (!secret?.['token']) return t('Connect GitHub or GitLab in Settings')
             const r = await postLine(tgt, secret, fetchImpl, { head: stored.head, file: d.file, oldFile: stored.renames?.[d.file] ?? d.file, line: d.line, body: lineBody(d) })
             if (r === 'posted') return undefined
             rejected = r === 'rejected'
@@ -306,14 +306,14 @@ export function createLenses({ store, run, fetchImpl = fetch, target, listed, po
         }
         const r = await post(url, commentBody(d))
         if ('error' in r) return r.error
-        return rejected ? { note: t('Publicado como comentario general: la forja no aceptó esa línea') } : undefined
+        return rejected ? { note: t('Published as a general comment: the forge did not take that line') } : undefined
       }, 'mark', 'published'),
 
     send: (url: string, id: string): Promise<MrDraftsResult> =>
       act(url, id, async (d, tgt) => {
         const agent = await agentFor(url, tgt)
         if (!agent) return replyGone()
-        const text = t('Revisión de Libretto ({lens}, {severity}) en {location}: {text}', { lens: d.lens, severity: d.severity, location: location(d) ?? t('la MR'), text: d.text })
+        const text = t('Libretto review ({lens}, {severity}) at {location}: {text}', { lens: d.lens, severity: d.severity, location: location(d) ?? t('the MR'), text: d.text })
         return (await send(agent.id, text)) === 'sent' ? undefined : replyGone()
       }, 'mark', 'sent'),
 
@@ -328,15 +328,15 @@ export function createLenses({ store, run, fetchImpl = fetch, target, listed, po
     /** M30: asks M28's agent to fix a failing CI, typed as one literal line; one at a time per MR. */
     async fixCi(url: string): Promise<MrFixCiResult> {
       const key = `fixCi\n${url}`
-      if (busy.has(key)) return { error: t('Ya se está enviando a ese trabajo') }
+      if (busy.has(key)) return { error: t('Already sending to that workspace') }
       busy.add(key)
       try {
         const tgt = target(url)
-        if (tgt?.ci !== 'fail') return { error: t('La CI de esta MR ya no falla.') }
+        if (tgt?.ci !== 'fail') return { error: t("This MR's CI is no longer failing.") }
         const agent = await agentFor(url, tgt)
-        if (!agent) return { error: t('No hay un único trabajo de esta MR abierto en Atril.') }
+        if (!agent) return { error: t('There is no single workspace for this MR open in Atril.') }
         const cmd = tgt.forge === 'github' ? 'gh pr checks' : 'glab ci view'
-        const text = t('La CI de {url} falla. Mira qué ha fallado con {cmd}, arréglalo y avísame antes de subir nada.', { url, cmd })
+        const text = t('The CI of {url} is failing. Check what failed with {cmd}, fix it and tell me before pushing anything.', { url, cmd })
         return (await send(agent.id, text)) === 'sent' ? { sent: agent.branch } : { error: replyGone() }
       } finally {
         busy.delete(key)

@@ -108,7 +108,7 @@ export function useNotifySettings(): { s: NotifySettings | null; save: (patch: N
 
 function Seg({ row, value, onPick }: { row: TypeRow; value: NotifyRoute; onPick: (v: NotifyRoute) => void }) {
   const t = useT()
-  const label: Record<NotifyRoute, string> = { mac: t('Mac'), list: t('Solo Avisos'), mute: t('Nada') }
+  const label: Record<NotifyRoute, string> = { mac: t('Mac'), list: t('Only Notices'), mute: t('Nothing') }
   // S38: ← → move and select, and stay in the group (no global shortcut hears them).
   const onKey = (e: KeyboardEvent<HTMLSpanElement>): void => {
     if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return
@@ -137,13 +137,13 @@ function Row({ row, st }: { row: TypeRow; st: NotifyState }) {
   const title =
     row.k === 'idle'
       ? splice(
-          t('Lleva {m} min esperándote', { m: MARK }),
-          <span className="nt-step" role="group" aria-label={t('Minutos esperándote')}>
-            <button type="button" aria-label={t('Cinco minutos menos')} disabled={m <= 5} onClick={() => st.save({ idleMinutes: Math.max(5, m - 5) })}>
+          t('Waiting for you for {m} min', { m: MARK }),
+          <span className="nt-step" role="group" aria-label={t('Minutes waiting for you')}>
+            <button type="button" aria-label={t('Five minutes less')} disabled={m <= 5} onClick={() => st.save({ idleMinutes: Math.max(5, m - 5) })}>
               −
             </button>
             <output aria-live="polite">{m}</output>
-            <button type="button" aria-label={t('Cinco minutos más')} disabled={m >= 120} onClick={() => st.save({ idleMinutes: Math.min(120, m + 5) })}>
+            <button type="button" aria-label={t('Five minutes more')} disabled={m >= 120} onClick={() => st.save({ idleMinutes: Math.min(120, m + 5) })}>
               +
             </button>
           </span>
@@ -157,7 +157,7 @@ function Row({ row, st }: { row: TypeRow; st: NotifyState }) {
       <span className="tx">
         <span className="l">
           <b>{title}</b>
-          {row.fresh && <span className="nt-new">{t('nuevo')}</span>}
+          {row.fresh && <span className="nt-new">{t('new')}</span>}
         </span>
         <span className="ex" title={row.ex}>
           {row.ex}
@@ -174,7 +174,7 @@ function Group({ g, st }: { g: TypeGroup; st: NotifyState }) {
   const n = g.rows.length
   const mac = g.rows.filter((r) => st.s.types[r.k] === 'mac').length
   const list = g.rows.filter((r) => st.s.types[r.k] === 'list').length
-  const sum = [n === 1 ? t('1 tipo · {mac} al Mac', { mac }) : t('{n} tipos · {mac} al Mac', { n, mac }), ...(list ? [t('{list} solo en Avisos', { list })] : [])].join(' · ')
+  const sum = [n === 1 ? t('1 type · {mac} to the Mac', { mac }) : t('{n} types · {mac} to the Mac', { n, mac }), ...(list ? [t('{list} only in Notices', { list })] : [])].join(' · ')
   const all = (v: NotifyRoute): void => st.save({ types: Object.fromEntries(g.rows.map((r) => [r.k, v])) })
   return (
     <section className="nt-g" aria-labelledby={`nt-g-${g.id}`}>
@@ -187,15 +187,15 @@ function Group({ g, st }: { g: TypeGroup; st: NotifyState }) {
           <b id={`nt-g-${g.id}`}>{g.name}</b>
           <span className="sum">{sum}</span>
         </button>
-        <span className="nt-all" role="group" aria-label={t('Todo {group}', { group: g.name })}>
+        <span className="nt-all" role="group" aria-label={t('All {group}', { group: g.name })}>
           <button type="button" onClick={() => all('mac')}>
-            {t('Todo al Mac')}
+            {t('All to the Mac')}
           </button>
           <button type="button" onClick={() => all('list')}>
-            {t('Todo a Avisos')}
+            {t('All to Notices')}
           </button>
           <button type="button" onClick={() => all('mute')}>
-            {t('Silenciar')}
+            {t('Mute')}
           </button>
         </span>
       </div>
@@ -218,14 +218,14 @@ function Preview({ st, label, shot }: { st: NotifyState; label: string; shot: nu
   return (
     <div className="nt-prev" role="region" aria-labelledby="nt-prev-h">
       <p className="lb" id="nt-prev-h">
-        {t('Así te llega')}
+        {t('How it reaches you')}
       </p>
       <div key={shot} className={`nt-ban${shot > 0 ? ' slide' : ''}${v === 'mac' ? '' : ' dim'}`}>
         <AppMark className="ap" />
         <div className="tx">
           <div className="hd">
             <b>Atril</b>
-            <span>{t('ahora')}</span>
+            <span>{t('now')}</span>
           </div>
           <b className="t">{ex.title}</b>
           <span className="b">{ex.body}</span>
@@ -240,10 +240,10 @@ function Preview({ st, label, shot }: { st: NotifyState; label: string; shot: nu
       </div>
       <p className="nt-cap">
         {v === 'mac'
-          ? splice(t('Así te sale en el Mac: {label}', { label: MARK }), b)
+          ? splice(t('How it shows on the Mac: {label}', { label: MARK }), b)
           : v === 'list'
-            ? splice(t('{label}: solo en Avisos, sin globo ni sonido', { label: MARK }), b)
-            : splice(t('{label}: silenciado, no te avisa', { label: MARK }), b)}
+            ? splice(t('{label}: only in Notices, no banner or sound', { label: MARK }), b)
+            : splice(t('{label}: muted, it does not tell you', { label: MARK }), b)}
       </p>
     </div>
   )
@@ -267,7 +267,7 @@ function QuietBar({ from, to }: { from: string; to: string }) {
   const e = hours(to)
   const spans = f === e ? [] : f < e ? [[f, e]] : [[f, 24], [0, e]]
   return (
-    <span className="nt-tl" role="img" aria-label={t('Silencio de {from} a {to}', { from, to })}>
+    <span className="nt-tl" role="img" aria-label={t('Quiet from {from} to {to}', { from, to })}>
       {spans.map(([a, b]) => (
         <i key={a} style={{ left: `${(a! / 24) * 100}%`, width: `${((b! - a!) / 24) * 100}%` }} />
       ))}
@@ -288,72 +288,72 @@ function When({ st, onTest, said }: { st: NotifyState; onTest: () => void; said:
   const q = st.s.quiet
   const off = q.on ? {} : { tabIndex: -1 }
   const letter: Record<Weekday, [string, string]> = {
-    mon: [t('L'), t('lunes')],
-    tue: [t('M'), t('martes')],
-    wed: [t('X'), t('miércoles')],
-    thu: [t('J'), t('jueves')],
-    fri: [t('V'), t('viernes')],
-    sat: [t('S'), t('sábado')],
-    sun: [t('D'), t('domingo')]
+    mon: [t('M'), t('Monday')],
+    tue: [t('T'), t('Tuesday')],
+    wed: [t('W'), t('Wednesday')],
+    thu: [t('T@@thu'), t('Thursday')],
+    fri: [t('F'), t('Friday')],
+    sat: [t('S'), t('Saturday')],
+    sun: [t('S@@sun'), t('Sunday')]
   }
   const toggleDay = (d: Weekday): void => st.save({ quiet: { days: DAYS.filter((x) => (x === d ? !q.days.includes(d) : q.days.includes(x))) } })
   return (
     <section className="scard nt-card" aria-labelledby="when-h">
-      <h3 id="when-h">{t('Cuándo')}</h3>
-      <p className="hint2">{t('Cuándo te interrumpe el Mac. Avisos lo guarda todo, siempre.')}</p>
+      <h3 id="when-h">{t('When')}</h3>
+      <p className="hint2">{t('When the Mac interrupts you. Notices keeps everything, always.')}</p>
       <div className="nt-w">
         <span className="ic">
           <NtIcon name="moon" />
         </span>
         <span className="tx">
-          <b>{t('Respetar el modo foco')}</b>
-          <span className="ex">{t('Con el modo foco y Atril delante, el Mac se calla: te avisa la píldora de arriba.')}</span>
+          <b>{t('Respect focus mode')}</b>
+          <span className="ex">{t('With focus mode on and Atril in front, the Mac stays quiet: the pill at the top tells you.')}</span>
         </span>
-        <Switch on={st.s.focus} label={t('Respetar el modo foco')} onToggle={() => st.save({ focus: !st.s.focus })} />
+        <Switch on={st.s.focus} label={t('Respect focus mode')} onToggle={() => st.save({ focus: !st.s.focus })} />
       </div>
       <div className="nt-w">
         <span className="ic">
           <NtIcon name="list" />
         </span>
         <span className="tx">
-          <b>{t('Agrupar')}</b>
-          <span className="ex">{t('Un solo aviso del Mac por cada 2 min.')}</span>
+          <b>{t('Group')}</b>
+          <span className="ex">{t('A single Mac notification every 2 min.')}</span>
           <span className={`nt-stack${st.s.group ? '' : ' off'}`} aria-hidden>
             <span className="three">
-              <i>{t('{work} te pregunta', { work: 'WEB-3535' })}</i>
-              <i>{t('{work} te pregunta', { work: 'SHOP-2630' })}</i>
-              <i>{t('{work} se ha parado', { work: 'OPS-4131' })}</i>
+              <i>{t('{work} asks you', { work: 'WEB-3535' })}</i>
+              <i>{t('{work} asks you', { work: 'SHOP-2630' })}</i>
+              <i>{t('{work} has stopped', { work: 'OPS-4131' })}</i>
             </span>
             <span className="arr">→</span>
             <span className="one">
               <AppMark />
               <span>
-                <b>{t('{n} agentes te necesitan', { n: 3 })}</b>
-                <span>{t('{list} y {last}', { list: 'WEB-3535, SHOP-2630', last: 'OPS-4131' })}</span>
+                <b>{t('{n} agents need you', { n: 3 })}</b>
+                <span>{t('{list} and {last}', { list: 'WEB-3535, SHOP-2630', last: 'OPS-4131' })}</span>
               </span>
             </span>
           </span>
         </span>
-        <Switch on={st.s.group} label={t('Agrupar')} onToggle={() => st.save({ group: !st.s.group })} />
+        <Switch on={st.s.group} label={t('Group')} onToggle={() => st.save({ group: !st.s.group })} />
       </div>
       <div className="nt-w">
         <span className="ic">
           <NtIcon name="mute" />
         </span>
         <span className="tx">
-          <b>{t('Horas de silencio')}</b>
-          <span className="ex">{t('Nada suena; todo queda en Avisos para cuando vuelvas.')}</span>
+          <b>{t('Quiet hours')}</b>
+          <span className="ex">{t('Nothing sounds; everything waits in Notices for when you are back.')}</span>
           <span className="nt-quiet" aria-disabled={q.on ? undefined : true}>
             <span className="rg">
               {splice(
-                t('de {from} a {to}', { from: MARK, to: MARK }),
-                <input type="time" value={q.from} aria-label={t('Desde')} {...off} onChange={(e) => e.target.value && st.save({ quiet: { from: e.target.value } })} />,
-                <input type="time" value={q.to} aria-label={t('Hasta')} {...off} onChange={(e) => e.target.value && st.save({ quiet: { to: e.target.value } })} />
+                t('from {from} to {to}', { from: MARK, to: MARK }),
+                <input type="time" value={q.from} aria-label={t('From')} {...off} onChange={(e) => e.target.value && st.save({ quiet: { from: e.target.value } })} />,
+                <input type="time" value={q.to} aria-label={t('To')} {...off} onChange={(e) => e.target.value && st.save({ quiet: { to: e.target.value } })} />
               )}
             </span>
             <QuietBar from={q.from} to={q.to} />
-            <span className="nt-days" role="group" aria-label={t('Todo el día')}>
-              <span aria-hidden>{t('Todo el día:')}</span>
+            <span className="nt-days" role="group" aria-label={t('All day')}>
+              <span aria-hidden>{t('All day:')}</span>
               {DAYS.map((d) => (
                 <button key={d} type="button" aria-pressed={q.days.includes(d)} aria-label={letter[d][1]} {...off} onClick={() => toggleDay(d)}>
                   {letter[d][0]}
@@ -362,11 +362,11 @@ function When({ st, onTest, said }: { st: NotifyState; onTest: () => void; said:
             </span>
           </span>
         </span>
-        <Switch on={q.on} label={t('Horas de silencio')} onToggle={() => st.save({ quiet: { on: !q.on } })} />
+        <Switch on={q.on} label={t('Quiet hours')} onToggle={() => st.save({ quiet: { on: !q.on } })} />
       </div>
       <div className="nt-test">
         <button type="button" className="btn" onClick={onTest}>
-          {t('Probar un aviso')}
+          {t('Try a notification')}
         </button>
         <span className="lockn" role="status">
           {said}
@@ -395,9 +395,9 @@ export function Notifications() {
     void window.atril.notify.test(cur).then(
       (r) => {
         if (r === 'blocked') setPerm('blocked')
-        setSaid(r === 'blocked' ? t('macOS no lo dejará salir: arréglalo arriba.') : t('Enviado: mira la esquina de tu pantalla.'))
+        setSaid(r === 'blocked' ? t('macOS will not let it out: fix it above.') : t('Sent: look at the corner of your screen.'))
       },
-      () => setSaid(t('macOS no lo dejará salir: arréglalo arriba.'))
+      () => setSaid(t('macOS will not let it out: fix it above.'))
     )
   }
   return (
@@ -405,27 +405,27 @@ export function Notifications() {
       <section className="scard nt-card" aria-labelledby="ntf-h">
         {perm === 'blocked' && (
           <Problem
-            what={t('macOS no deja a Atril mostrar avisos.')}
-            cant={t('Todo sigue llegando a Avisos, pero el Mac no te interrumpe aunque elijas «Mac».')}
-            fix={t('Abrir Ajustes del Sistema')}
+            what={t('macOS does not let Atril show notifications.')}
+            cant={t('Everything still reaches Notices, but the Mac does not interrupt you even if you choose «Mac».')}
+            fix={t('Open System Settings')}
             onFix={() => void window.atril.notify.openSystem()}
-            alt={t('Volver a comprobar')}
+            alt={t('Check again')}
             onAlt={check}
             detail=""
           />
         )}
         {failed && (
           <Problem
-            what={t('No he podido guardar tus avisos: el cambio se perderá al cerrar Atril.')}
-            fix={t('Volver a intentar')}
+            what={t('I could not save your notifications: the change will be lost when Atril closes.')}
+            fix={t('Try again')}
             onFix={() => save(failed.patch)}
             detail={failed.detail}
           />
         )}
         <div className="nt-hd">
           <div className="nt-intro">
-            <h3 id="ntf-h">{t('Notificaciones')}</h3>
-            <p className="hint2">{t('Todo llega a Avisos. Aquí eliges qué más te interrumpe con un aviso del Mac.')}</p>
+            <h3 id="ntf-h">{t('Notifications')}</h3>
+            <p className="hint2">{t('Everything reaches Notices. Here you choose what else interrupts you with a Mac notification.')}</p>
           </div>
           <Preview st={st} label={label} shot={shot} />
         </div>

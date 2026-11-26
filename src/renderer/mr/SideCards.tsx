@@ -10,44 +10,44 @@ import { ScoreView } from './ScoreView'
 export function SideCards({ m, list, score, onScore, page, onRetry }: { m: MrItem; list: MrListName; score: MrScoreState; onScore: () => void; page: MrPage | null; onRetry: () => void }) {
   const t = useT()
   const { openSettings } = useContext(NavigationContext)
-  const said: Record<MrReviewer['state'], string> = { approved: t('aprobó'), changes: t('pidió cambios'), commented: t('comentó'), pending: t('pendiente') }
+  const said: Record<MrReviewer['state'], string> = { approved: t('approved'), changes: t('requested changes'), commented: t('commented'), pending: t('pending') }
   const loaded = page && 'files' in page ? page : null
   const reviewers = loaded?.reviewers
   return (
-    <aside className="mr-side" aria-label={t('Esta MR')}>
+    <aside className="mr-side" aria-label={t('This MR')}>
       <section className="mr-card">
-        <h3>{t('Puntuación')}</h3>
+        <h3>{t('Score@@noun')}</h3>
         {list === 'following' ? (
-          <p className="f-note">{t('Las MR de Sigo no se puntúan.')}</p>
+          <p className="f-note">{t('MRs you follow are not scored.')}</p>
         ) : score.state === 'done' ? (
           <ScoreView m={m} score={score.score} onScore={onScore} />
         ) : score.state === 'queued' ? (
-          <p className="f-note">{t('En cola')}</p>
+          <p className="f-note">{t('Queued')}</p>
         ) : score.state === 'running' ? (
-          <p className="f-note">{t('Puntuando…')}</p>
+          <p className="f-note">{t('Scoring…')}</p>
         ) : (
           <>
-            {score.state === 'error' ? <p className="mr-score-error">{score.text}</p> : <p className="f-note">{t('Sin puntuar')}</p>}
+            {score.state === 'error' ? <p className="mr-score-error">{score.text}</p> : <p className="f-note">{t('Not scored')}</p>}
             <button type="button" className="btn" onClick={onScore}>
-              {t('Puntuar')}
+              {t('Score')}
             </button>
           </>
         )}
       </section>
       <section className="mr-card">
-        <h3>{t('Contra su spec')}</h3>
+        <h3>{t('Against its spec')}</h3>
         {loaded &&
           (loaded.contract ? (
             <>
-              <p>{t('Contrato de Libretto: {contract}', { contract: loaded.contract })}</p>
-              <p className="f-note">{t('Sus criterios se comprueban con «A fondo».')}</p>
+              <p>{t('Libretto contract: {contract}', { contract: loaded.contract })}</p>
+              <p className="f-note">{t('Its criteria are checked with «In depth».')}</p>
             </>
           ) : (
-            <p className="f-note">{t('Sin contrato de Libretto en esta MR.')}</p>
+            <p className="f-note">{t('No Libretto contract in this MR.')}</p>
           ))}
       </section>
       <section className="mr-card">
-        <h3>{t('Revisores')}</h3>
+        <h3>{t('Reviewers')}</h3>
         {reviewers &&
           (Array.isArray(reviewers) ? (
             reviewers.length ? (
@@ -57,7 +57,7 @@ export function SideCards({ m, list, score, onScore, page, onRetry }: { m: MrIte
                 ))}
               </ul>
             ) : (
-              <p className="f-note">{t('Aún sin revisores')}</p>
+              <p className="f-note">{t('No reviewers yet')}</p>
             )
           ) : (
             <Problem what={reviewers.error} fix={fixLabel(t, reviewers.fix ?? 'retry')} onFix={reviewers.fix === 'settings' ? openSettings : onRetry} detail={reviewers.detail ?? ''} />
@@ -66,7 +66,7 @@ export function SideCards({ m, list, score, onScore, page, onRetry }: { m: MrIte
       <section className="mr-card">
         <h3>{t('CI')}</h3>
         {m.ci ? <FixCi m={m} /> : <span>—</span>}
-        {m.conflict && <p className="conflict">{t('En conflicto')}</p>}
+        {m.conflict && <p className="conflict">{t('In conflict')}</p>}
       </section>
     </aside>
   )

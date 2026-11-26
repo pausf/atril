@@ -185,10 +185,10 @@ export function QaScreen({ workspaces, selected, pending, setPending, openSettin
     <section className="tasks-screen qa-screen" data-tour="qa">
       <div className="lbw">
         <h1>{t('QA')}</h1>
-        <p className="lead">{t('Prueba en vivo lo que construye cada trabajo, en un navegador o emulador.')}</p>
-        {list.length === 0 && <div className="empty">{t('Abre un trabajo para probarlo.')}</div>}
+        <p className="lead">{t('Test live what each work builds, in a browser or an emulator.')}</p>
+        {list.length === 0 && <div className="empty">{t('Open a work to test it.')}</div>}
         {list.length > 0 && (
-          <div className="qa-cards" role="group" aria-label={t('Trabajos')}>
+          <div className="qa-cards" role="group" aria-label={t('Works')}>
             {list.map((w) => (
               <button key={w.id} type="button" className={`qa-card${reports[w.id] && !reports[w.id]!.target ? ' off' : ''}`} aria-pressed={w.id === id} onClick={() => setPicked(w.id)}>
                 <b>{w.jiraKey ?? w.branch}</b> <span>{w.id in reports ? platformLabel(t, reports[w.id]?.target?.platform) : ''}</span>
@@ -199,7 +199,7 @@ export function QaScreen({ workspaces, selected, pending, setPending, openSettin
         {ws && report && (
           <>
             {report.targets.length > 1 && (
-              <div className="qat-tabs" role="group" aria-label={t('Objetivos')}>
+              <div className="qat-tabs" role="group" aria-label={t('Targets')}>
                 {report.targets.map((x) => (
                   <button key={x.key} type="button" className="qat-tab" aria-pressed={x.key === report.target?.key} disabled={busy} onClick={() => void choose(x.key)}>
                     {targetLabel(t, x)}
@@ -212,23 +212,23 @@ export function QaScreen({ workspaces, selected, pending, setPending, openSettin
                 <span>{report.target.why}</span>
                 {report.target.source === 'manual' && (
                   <button type="button" className="btn" onClick={() => void unmanual(report.target!.key)}>
-                    {t('Quitar')}
+                    {t('Remove')}
                   </button>
                 )}
                 <span className="qa-sp" />
                 {!picking && (
                   <button type="button" className="btn" onClick={() => setPicking(true)}>
-                    {t('Elegir a mano')}
+                    {t('Pick by hand')}
                   </button>
                 )}
               </p>
             ) : (
               <div className="qat-none">
-                <b>{t('No sé cómo abrir este proyecto')}</b>
-                <p>{t('Busqué package.json con dev, start o preview, app.json de Expo, pubspec.yaml, settings.gradle, .xcodeproj o Package.swift, en la raíz y dos niveles')}</p>
+                <b>{t('I do not know how to open this project')}</b>
+                <p>{t("I looked for package.json with dev, start or preview, Expo's app.json, pubspec.yaml, settings.gradle, .xcodeproj or Package.swift, at the root and two levels down")}</p>
                 {!picking && (
                   <button type="button" className="btn p" onClick={() => setPicking(true)}>
-                    {t('Elegir a mano')}
+                    {t('Pick by hand')}
                   </button>
                 )}
               </div>
@@ -248,15 +248,15 @@ export function QaScreen({ workspaces, selected, pending, setPending, openSettin
             <div className="qa-bar">
               <div className="qa-grow">
                 <b>{report.target ? targetLabel(t, report.target) : platformLabel(t, null)}</b>
-                <span>{report.change ? t('Cambio: {change}', { change: report.change }) : t('Sin cambio abierto')}</span>
+                <span>{report.change ? t('Change: {change}', { change: report.change }) : t('No open change')}</span>
               </div>
-              {status?.live && <span className="qa-live">● {t('en vivo')}</span>}
+              {status?.live && <span className="qa-live">● {t('live')}</span>}
               <button type="button" className="btn" disabled={busy || report.criteria.length === 0} onClick={() => void retest(null)}>
-                {t('Reprobar todo')}
+                {t('Test all again')}
               </button>
               {status && (status.live || report.target) && (
                 <button type="button" className={status.live ? 'btn' : 'btn p'} disabled={busy} onClick={() => void press()}>
-                  {status.live ? t('Detener QA') : t('Probar en vivo')}
+                  {status.live ? t('Stop QA') : t('Test live')}
                 </button>
               )}
             </div>
@@ -266,22 +266,22 @@ export function QaScreen({ workspaces, selected, pending, setPending, openSettin
                   <>
                     {published[id] && !postFail && (
                       <button type="button" className="lnk" onClick={() => void window.atril.mr.open(published[id]!)}>
-                        {t('Publicado en la MR')}
+                        {t('Published on the MR')}
                       </button>
                     )}
                     <button type="button" className="btn" disabled={posting} onClick={() => void publish()}>
-                      {published[id] ? t('Publicar de nuevo') : t('Publicar en la MR')}
+                      {published[id] ? t('Publish again') : t('Publish on the MR')}
                     </button>
                   </>
                 ) : (
-                  <span>{t('Abre la MR para poder publicar aquí la QA.')}</span>
+                  <span>{t('Open the MR to publish the QA here.')}</span>
                 )}
               </div>
             )}
             {postFail && (
               <Problem
                 what={postFail.error}
-                cant={t('La QA no ha llegado a la MR.')}
+                cant={t('The QA did not reach the MR.')}
                 fix={netFixLabel(t, postFail.fix)}
                 busy={posting}
                 onFix={() => (postFail.fix === 'settings' ? openSettings() : void publish())}
@@ -295,7 +295,7 @@ export function QaScreen({ workspaces, selected, pending, setPending, openSettin
               </p>
             )}
             {report.criteria.length === 0 ? (
-              <div className="empty">{t('Este trabajo no tiene criterios que probar')}</div>
+              <div className="empty">{t('This work has no criteria to test')}</div>
             ) : (
               <>
                 <Summary report={report} />
@@ -317,19 +317,19 @@ export function QaScreen({ workspaces, selected, pending, setPending, openSettin
               </>
             )}
             <section className="qa-all" aria-labelledby="qa-all-h">
-              <h2 id="qa-all-h">{t('Todas las capturas')}</h2>
+              <h2 id="qa-all-h">{t('All screenshots')}</h2>
               {status && status.shots.length > 0 ? (
                 <ul className="qa-shots">
                   {status.shots.map((s) => (
                     <li key={s.name}>
-                      <button type="button" title={s.name} aria-label={t('Ver {name} en grande', { name: s.name })} onClick={() => setBig(s)}>
+                      <button type="button" title={s.name} aria-label={t('View {name} large', { name: s.name })} onClick={() => setBig(s)}>
                         <img src={s.src} alt={s.name} />
                       </button>
                     </li>
                   ))}
                 </ul>
               ) : (
-                <p className="fmeta">{t('Sin capturas todavía')}</p>
+                <p className="fmeta">{t('No screenshots yet')}</p>
               )}
             </section>
           </>
@@ -360,11 +360,11 @@ function Summary({ report }: { report: QaReport }) {
   const f = n('fail')
   return (
     <p className="qa-sum">
-      <span className="qa-tag pass">{p === 1 ? t('1 pasa') : t('{n} pasan', { n: p })}</span>
+      <span className="qa-tag pass">{p === 1 ? t('1 passes') : t('{n} pass', { n: p })}</span>
       <i> · </i>
-      <span className="qa-tag fail">{f === 1 ? t('1 falla') : t('{n} fallan', { n: f })}</span>
+      <span className="qa-tag fail">{f === 1 ? t('1 fails') : t('{n} fail', { n: f })}</span>
       <i> · </i>
-      <span className="qa-tag">{t('{n} sin probar', { n: report.criteria.length - p - f })}</span>
+      <span className="qa-tag">{t('{n} untested', { n: report.criteria.length - p - f })}</span>
     </p>
   )
 }
@@ -375,7 +375,7 @@ function Row({ c, entry, testing, shots, onHow, onBug, onTest, busy }: { c: QaCr
   const status = entry && entry.status !== 'untested' ? entry.status : 'untested'
   const first = entry?.steps.find((s) => s.shot && shots.has(s.shot))
   const total = entry && entry.steps.length > 0 && entry.steps.every((s) => s.ms !== undefined) ? entry.steps.reduce((a, s) => a + s.ms!, 0) : null
-  const summary = entry && entry.steps.length > 0 ? [t('{n} pasos', { n: entry.steps.length }), total !== null && t('{n} s', { n: (total / 1000).toLocaleString(locale, { maximumFractionDigits: 0 }) })].filter(Boolean).join(' · ') : ''
+  const summary = entry && entry.steps.length > 0 ? [t('{n} steps', { n: entry.steps.length }), total !== null && t('{n} s', { n: (total / 1000).toLocaleString(locale, { maximumFractionDigits: 0 }) })].filter(Boolean).join(' · ') : ''
   return (
     <li className="qa-crit">
       <span className="qa-id">{c.id}</span>
@@ -383,10 +383,10 @@ function Row({ c, entry, testing, shots, onHow, onBug, onTest, busy }: { c: QaCr
       {testing ? (
         <span className="qa-tag run">
           <i className="qa-dot" aria-hidden />
-          {t('Probando…')}
+          {t('Testing…')}
         </span>
       ) : (
-        <span className={`qa-tag ${status}`}>{status === 'pass' ? t('Pasa') : status === 'fail' ? t('Falla') : t('Sin probar')}</span>
+        <span className={`qa-tag ${status}`}>{status === 'pass' ? t('Passing') : status === 'fail' ? t('Failing') : t('Untested')}</span>
       )}
       <div className="qa-ev">
         {!testing && first && (
@@ -395,21 +395,21 @@ function Row({ c, entry, testing, shots, onHow, onBug, onTest, busy }: { c: QaCr
             <img src={shots.get(first.shot!)} alt="" />
           </button>
         )}
-        <span className="qa-note">{testing ? '' : [entry?.note || (entry ? '' : t('Aún no probado.')), summary].filter(Boolean).join(' · ')}</span>
+        <span className="qa-note">{testing ? '' : [entry?.note || (entry ? '' : t('Not tested yet.')), summary].filter(Boolean).join(' · ')}</span>
         <span className="qa-sp" />
         {!testing && status === 'fail' && (
           <button type="button" className="btn" data-qa={`${c.id}-bug`} onClick={onBug}>
-            {t('Marcar como bug')}
+            {t('Mark as bug')}
           </button>
         )}
         {!testing && entry && entry.steps.length > 0 && (
           <button type="button" className="btn" data-qa={`${c.id}-how`} onClick={onHow}>
-            {t('Ver cómo')}
+            {t('See how')}
           </button>
         )}
         {!testing && (
           <button type="button" className="btn" disabled={busy} data-qa={`${c.id}-try`} onClick={onTest}>
-            {t('Probar este')}
+            {t('Test this')}
           </button>
         )}
       </div>
@@ -428,7 +428,7 @@ function ShotModal({ shot, onClose }: { shot: QaShot; onClose: () => void }) {
           <h3 id="qa-title">{shot.name}</h3>
           <span className="sp" />
           <button type="button" className="btn" onClick={onClose}>
-            {t('Cerrar')}
+            {t('Close')}
           </button>
         </div>
         <div className="qa-big">
