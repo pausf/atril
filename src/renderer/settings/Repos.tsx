@@ -39,6 +39,14 @@ export function Repos() {
   }
   // ponytail: dev-only, ATRIL_SNAPSHOT_VIEW=create-repo opens the dialog for a photo.
   useEffect(() => void window.atril.snapshotView().then((v) => v === 'create-repo' && setCreating(true)), [])
+  // ponytail: dev-only, ATRIL_SNAPSHOT_VIEW=ajustes-harness opens every healthy repo's Harness card for a photo.
+  useEffect(() => {
+    void window.atril.snapshotView().then(async (v) => {
+      if (v !== 'ajustes-harness') return
+      const all = await window.atril.repos.list()
+      if (Array.isArray(all)) setHarness(new Set(all.filter((r) => r.health === 'ok').map((r) => r.id)))
+    })
+  }, [])
 
   useEffect(() => {
     window.atril.repos
