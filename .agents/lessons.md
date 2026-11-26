@@ -529,3 +529,11 @@ I told Pau his brief was wrong («there is no `i18n-es.ts`») after checking onl
 - `spec-drift --anchors` read `Proof: file "name"` with the quotes as part of the name and called every citation broken; the working form is `Proof: file name` with no quotes (the form the older criteria use).
 - Main speaks Spanish by default (`lang.ts`), so a detail like «142 lines» built in main would have shown English-keyed text untranslated in tests and Spanish in the app. Items now carry names and numbers only and the window writes the sentences through `t()`.
 - A criterion that said «one test holds every clause» grew to five clauses once the card was built, and the tests followed the clauses rather than the criterion. Cut the criterion when the tests split (W286 → W286, W288, W289, W295) instead of citing a test that no longer holds them.
+
+## 2026-11-26 · fix-cdp-isolation · 6
+- A fresh worktree has no Electron binary (`Error: Electron uninstall`, exit 1): a drive that expects «exit 1» reads that as the guard working. Before believing an exit code, read the log line that proves the cause (`atril: ATRIL_CDP_PORT … refusing to start`, plus Chromium's `bind() failed`). `node node_modules/electron/install.js` installs the binary; `pnpm install` does not.
+- The hidden probe window of the CDP gate was the only window: destroying it fired `window-all-closed` → `app.quit()` before the real window existed. The unit tests were green and the first free-port drive «worked» because it read the target list before the app died. Drive until the real window shows, then check the app is still alive seconds later (W331).
+- Seen three times as prose (`add-pr-qa-pictures`, `skills-dense`, `repo-harness`) and now enforced: a busy `ATRIL_CDP_PORT` makes a dev Atril exit 1, and `attachVerified` refuses any browser whose pages lack the launch token. Stop a drive with `pkill -f "$PWD/node_modules"`, never `pkill -f "electron-vite dev"` (other worktrees run theirs).
+
+## 2026-11-26 · fix-cdp-isolation · 6→7
+Reviewer found nothing against the contract (12 proofs re-run, typecheck and lint green). It did not drive the real app, so the busy-port exit and the free-port start rest on the builder's own drive (logged above); that drive is what found W331, which no unit test would have.

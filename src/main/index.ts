@@ -1,5 +1,6 @@
 import { app, BrowserWindow, dialog, ipcMain, Notification, safeStorage, shell } from 'electron'
 import { effortError, librettoDir, MODELS, writeHooksFile } from './agent'
+import { cdpConfig, guardCdp, LAUNCH_QUERY, verifyOwnTarget, withLaunch } from './cdp'
 import { createActivity } from './activity'
 import { createSubagents } from './subagents'
 import { createCost } from './cost'
@@ -74,8 +75,28 @@ import type { Agent, AgentState, QuickAnswer, QuickChoice } from '../preload/api
 // Dev-only evidence hooks (screenshots for review). A packaged app ignores them all, so no
 // environment variable can swap real data for fake data in front of the person.
 const SNAPSHOT = app.isPackaged ? undefined : process.env['ATRIL_SNAPSHOT']
-// ponytail: dev-only, ATRIL_CDP_PORT lets a session drive the real window with Playwright (connectOverCDP).
-if (!app.isPackaged && process.env['ATRIL_CDP_PORT']) app.commandLine.appendSwitch('remote-debugging-port', process.env['ATRIL_CDP_PORT'])
+// Dev-only: ATRIL_CDP_PORT lets a session drive the real window with Playwright, but only with the
+// launcher's ATRIL_LAUNCH_TOKEN, and cdpGate() below refuses to start if the port is not ours (issue #13).
+const CDP = cdpConfig({ packaged: app.isPackaged, env: process.env })
+if (CDP && 'error' in CDP) {
+  process.stderr.write(`atril: ${CDP.error}\n`)
+  app.exit(1)
+} else if (CDP) app.commandLine.appendSwitch('remote-debugging-port', String(CDP.port))
+
+// True until the first real window exists: closing cdpGate's probe must not fire window-all-closed's quit.
+let starting = true
+
+// ponytail: a hidden probe window so the guard runs before the rest of startup; a textual order test is the ceiling, a lint rule if it ever drifts
+async function cdpGate(): Promise<void> {
+  if (!CDP || 'error' in CDP) return
+  const { port, token } = CDP
+  const probe = new BrowserWindow({ show: false, width: 1, height: 1 })
+  await probe.loadURL(withLaunch('about:blank', token))
+  let refused = false
+  await guardCdp({ verify: () => verifyOwnTarget(port, token), attempts: 10, delayMs: 150, sleep: (ms) => new Promise((r) => setTimeout(r, ms)), port, err: (line) => process.stderr.write(line), exit: (code) => { refused = true; app.exit(code) } })
+  if (refused) await new Promise<never>(() => {})
+  probe.destroy()
+}
 
 function fakeMrs(): MrLists {
   const ago = (h: number): string => new Date(Date.now() - h * 3600_000).toISOString()
@@ -297,6 +318,7 @@ function fakeBoardGroups(): InboxGroup[] {
 }
 
 function createWindow(): void {
+  starting = false
   const win = new BrowserWindow({
     width: 1440,
     height: 900,
@@ -319,8 +341,9 @@ function createWindow(): void {
   win.webContents.on('will-navigate', (e) => e.preventDefault())
 
   const devUrl = process.env['ELECTRON_RENDERER_URL']
-  if (devUrl) void win.loadURL(devUrl)
-  else void win.loadFile(join(__dirname, '../renderer/index.html'))
+  const launch = CDP && !('error' in CDP) ? CDP.token : undefined
+  if (devUrl) void win.loadURL(launch ? withLaunch(devUrl, launch) : devUrl)
+  else void win.loadFile(join(__dirname, '../renderer/index.html'), launch ? { query: { [LAUNCH_QUERY]: launch } } : undefined)
 
   // ponytail: dev-only hook so a session can see the render. ATRIL_SNAPSHOT=/abs/path.png
   // captures the page once doctor has rendered, writes the PNG and quits.
@@ -353,6 +376,7 @@ const crash = createCrash({
 installCrashHooks({ proc: process, app, ipc: ipcMain, isOwnWindow: (s) => BrowserWindow.getAllWindows().some((w) => w.webContents === s), crash })
 
 app.whenReady().then(async () => {
+  await cdpGate()
   // W128: before the doctor or any agent spawns anything.
   process.env['PATH'] = await loginPath(run)
   // Packaged builds take build/icon.icns from the bundle; in dev the Dock needs telling.
@@ -1004,4 +1028,6 @@ app.whenReady().then(async () => {
 })
 
 app.on('before-quit', pty.detachAll)
-app.on('window-all-closed', () => app.quit())
+app.on('window-all-closed', () => {
+  if (!starting) app.quit()
+})
