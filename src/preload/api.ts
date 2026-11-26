@@ -23,6 +23,22 @@ export interface RepoView {
   health: RepoHealth
 }
 
+/** W280–W285: one thing a repo's agent harness can have. Language-free: the window writes the sentences. */
+export type HarnessId = 'memory' | 'skills' | 'lint' | 'typecheck' | 'test' | 'precommit' | 'ci' | 'hooks' | 'permissions' | 'prepush'
+export interface HarnessItem {
+  id: HarnessId
+  group: 'context' | 'verification' | 'guardrails'
+  ok: boolean
+  /** A file, script or folder name; `unreadable` for a settings file that is damaged or too large. */
+  detail?: string
+  /** Lines of the memory file, or how many skills. */
+  n?: number
+  /** The memory file is over 1 MB and was not read. */
+  big?: true
+  /** Main has a docs page for this item. */
+  doc?: true
+}
+
 /** W144/W148: Atril's two state files; the window names one to reveal, never a path. */
 export type StateFile = 'workspaces' | 'repos'
 /** A state file that exists but cannot be used: nothing is written over it until the person fixes it. */
