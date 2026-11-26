@@ -83,21 +83,27 @@ In Settings → Repos, each healthy repo row has a «Harness» button. Opening i
 ## Verification criteria
 
 - **W280** When the detector reads a repo, it shall report `memory` as found, with `detail` the file name and `n` its line count, when `CLAUDE.md` or `AGENTS.md` is a file at the repo root (`CLAUDE.md` wins when both are), and `skills` as found with its count when `.claude/skills/<name>/SKILL.md` exists for one or more names; otherwise each is a gap. A `CLAUDE.md` over 1 MB shall be found without being read, with `big: true` and no `n`. `skills` shall carry `n` the number of skills. A `.claude/skills/<name>` entry that is a link to a folder inside the repo counts like a folder (W284). One test holds every clause.
-  Proof: src/main/repoharness.test.ts "context items read CLAUDE.md or AGENTS.md and the skills folder"
+  Proof: src/main/repoharness.test.ts context items read CLAUDE.md or AGENTS.md and the skills folder
 - **W281** When the detector reads a repo, it shall report `lint` found when the `scripts` of its `package.json` or `composer.json` has `lint`, `typecheck` when it has `typecheck`, `type-check` or `tsc`, and `test` when it has `test` whose command is not npm's default placeholder (`echo "Error: no test specified" && exit 1`), each with the script name as detail; a missing file, damaged JSON or a `scripts` that is not an object, or a file over 1 MB, shall read as gaps, never as an error. One test holds every clause.
-  Proof: src/main/repoharness.test.ts "verification scripts come from package.json and composer.json"
+  Proof: src/main/repoharness.test.ts verification scripts come from package.json and composer.json
 - **W282** When the detector reads a repo, it shall report `precommit` or `prepush` found when a regular file named `pre-commit` or `pre-push` (not `*.sample`) is in `.githooks/`, `.husky/` or, only when `.git` is a folder, `.git/hooks/`; and `ci` found, with as detail the first of `.github/workflows`, `.gitlab-ci.yml` and `.circleci/config.yml` that matches, when `.github/workflows/` holds a `.yml` or `.yaml` file, or `.gitlab-ci.yml` or `.circleci/config.yml` is a file. The executable bit is not read: a hook file counts whatever its mode. One test holds every clause.
-  Proof: src/main/repoharness.test.ts "hook files and CI workflows are found in their fixed places"
+  Proof: src/main/repoharness.test.ts hook files and CI workflows are found in their fixed places
 - **W283** When the detector reads a repo, it shall report `hooks` found when `.claude/settings.json` parses and its `hooks` is an object with at least one event holding a non-empty array, and `permissions` found when its `permissions` has a non-empty `allow`, `deny` or `ask` array; if the file is damaged, missing or over 1 MB, then both shall be gaps (damaged and over-size with the detail `unreadable`), never an error. One test holds every clause.
-  Proof: src/main/repoharness.test.ts "guardrails read hooks and permissions from claude settings"
+  Proof: src/main/repoharness.test.ts guardrails read hooks and permissions from claude settings
 - **W284** The detector shall write nothing in the repo (the tree is identical before and after, mtimes included), spawn no process, and, for every segment of a path it checks (folders and the last one), treat a symlink whose real target is outside the repo as absent and one that resolves inside the repo as the thing it points to. One test holds every clause.
-  Proof: src/main/repoharness.test.ts "never writes, never spawns and never follows a link out of the repo"
+  Proof: src/main/repoharness.test.ts never writes, never spawns and never follows a link out of the repo
 - **W285** When the window asks `atril:harness:get` with a repo id, main shall answer `{ items }` (ten items, each `{ id, group, ok, detail?, n?, big?, doc? }`, language-free data, where `doc: true` is present exactly on the items whose id is in main's docs list) for that registered repo; for an id no repo has it shall answer `{ error: 'unknown' }`, and for a repo whose `repoHealth` is `missing` or not `ok` it shall answer `{ error: 'missing' }`, in both cases reading nothing. When the window asks `atril:harness:doc` with an item id that has a docs page, main shall open that page from its fixed list with `shell.openExternal` and answer true; any other value shall open nothing and answer false. One test holds every clause, calling the exported `harnessGet` and `openDoc` with injected `readRepos`, `health` and `open`.
-  Proof: src/main/repoharness.test.ts "the get handler answers by repo id and the doc handler opens only listed pages"
-- **W286** When the person presses «Harness» on a repo row, the card shall read that repo and show «Harness · N of 10», the three groups, and for each item a tick or a gap written as text («Found» / «Missing», not colour alone), its name, its detail when found and one line on why it matters; each gap whose item has `doc: true` shall show one button «How to set it up» that asks main to open it; no found item shall show a button; each row owns its own card, so several can be open, and closing then opening a card reads again; a reply that arrives after its card was closed, or after a newer read of the same card began, shall be dropped; if the read rejects or answers `{ error }`, then the card shall show a `Problem` with «Check again». One test holds every clause.
-  Proof: src/renderer/harness/harness.test.tsx "the Harness card lists found and missing items and offers a doc for each gap"
+  Proof: src/main/repoharness.test.ts the get handler answers by repo id and the doc handler opens only listed pages
+- **W286** When the person presses «Harness» on a repo row, the card shall read that repo and show «Harness · N of 10», the three groups, and for each item a tick or a gap written as text («Found» / «Missing», not colour alone), its name, its detail when found and one line on why it matters; each gap whose item has `doc: true` shall show one button «How to set it up» that asks main to open it; no found item shall show a button; each row owns its own card, so several can be open, and closing then opening a card reads again. One test holds every clause.
+  Proof: src/renderer/harness/harness.test.tsx the Harness card lists found and missing items and offers a doc for each gap
 - **W287** While a repo row's `health` is `missing` or `not-git`, the row shall show no «Harness» button.
-  Proof: src/renderer/harness/harness.test.tsx "a broken repo row has no Harness button"
+  Proof: src/renderer/harness/harness.test.tsx a broken repo row has no Harness button
+- **W288** When an item carries a count or a size, the card shall write its detail in words: «{file} · {n} lines» (singular «1 line»), «{file} · over 1 MB» when `big`, «{n} skills» (singular «1 skill»), and «Could not read the file» when the detail is `unreadable`.
+  Proof: src/renderer/harness/harness.test.tsx the Harness card writes counts, singular, size and unreadable files in words
+- **W289** While a read of the card is outstanding and a newer read of the same card begins (another repo id), the card shall drop the older read's reply when it arrives.
+  Proof: src/renderer/harness/harness.test.tsx the Harness card ignores the reply of an older read of the same card
+- **W290** If the read rejects or answers `{ error }`, then the card shall show a `Problem` saying what happened, that nothing was changed and a «Check again» button that reads again, with the technical text only under «Show detail».
+  Proof: src/renderer/harness/harness.test.tsx the Harness card shows a Problem when the read fails or answers an error
 
 ## Approach
 
@@ -146,13 +152,13 @@ The window: `HarnessCard({ repoId })` calls `window.atril.harness.get(repoId)` o
 | The docs URLs rot or are wrong | The `DOCS` list is fixed and checked with `curl -I` at build; W285's test only proves that listed ids open and others do not. Accepted: a page that moves later opens a stale link until someone updates the list. |
 | Atril's real repo is used by a test and gets touched | Tests build their repo in a temp folder; W284 compares the tree before and after. |
 | The card claims a harness exists when a script is a no-op (`"lint": "true"`) | Accepted: presence, not quality, is the promise (named Out). |
-| A stale reply lands in a card that was closed or re-read | The request counter bumped on unmount and on each read; W286's test resolves the first reply after a re-read and after a close. |
+| A stale reply lands in a card that was re-read for another repo | The request counter, bumped on each read and on unmount; W289's test resolves the older reply after the newer one. |
 
 ### Validation and rollback
 
 - Gates: typecheck, lint and the full suite behind an `if`, all three exit codes read.
-- New tests: `src/main/repoharness.test.ts` (W280–W285) and `src/renderer/harness/harness.test.tsx` (W286, W287). Tests first, red.
-- Would pass for the wrong reason: W284's no-write check passes trivially if the comparison walks nothing, so force it red by making a probe write a file; its link test passes if the link target is missing, so the target must exist outside the repo. W286's stale-reply clause must be seen red with the counter removed.
+- New tests: `src/main/repoharness.test.ts` (W280–W285) and `src/renderer/harness/harness.test.tsx` (W286–W290). Tests first, red.
+- Would pass for the wrong reason: W284's no-write check passes trivially if the comparison walks nothing, so force it red by making a probe write a file; its link test passes if the link target is missing, so the target must exist outside the repo. W289's test must be seen red with the counter check removed.
 - Real app: drive it with Playwright against a sample repo in a temp folder (one with everything, one bare, one with a damaged `.claude/settings.json`, one with a symlinked `CLAUDE.md` out of the repo) before landing; photo goes into `bocetos/novedades/`.
 - Rollback: one revert; nothing migrates and nothing is stored.
 
@@ -166,5 +172,5 @@ The window: `HarnessCard({ repoId })` calls `window.atril.harness.get(repoId)` o
 - [x] detector core: `detectHarness(root)` with the safe-read helpers and the `memory`, `skills`, `lint`, `typecheck` and `test` items, tests first and seen red (including the link and no-write cases forced red on purpose) · Closes: W280, W281, W284 · evidence: src/main/repoharness.test.ts, 3 tests green; link check forced red
 - [x] the `precommit`, `prepush`, `ci`, `hooks` and `permissions` items, same tests-first rule · waits on box 1 · Closes: W282, W283 · evidence: src/main/repoharness.test.ts, 6 tests green; guardrail clauses forced red
 - [x] `atril:harness:get` and `atril:harness:doc` in main, `DOCS` list (URLs checked with `curl -I`), preload, `api.ts` and `mockApi` · waits on box 2 · Closes: W285 · evidence: src/main/repoharness.test.ts, 7 tests green; allowlist forced red; the five doc URLs answered 200 to `curl -I`
-- [ ] the Harness card and the «Harness» toggle on healthy Repos rows, Spanish entries in `i18n-es.ts`, tests first, stale-reply clause forced red · waits on box 3 · Closes: W286, W287
+- [x] the Harness card and the «Harness» toggle on healthy Repos rows, Spanish entries in `i18n-es.ts`, tests first, stale-reply clause forced red · waits on box 3 · Closes: W286–W290 · evidence: src/renderer/harness/harness.test.tsx, 5 tests green plus the i18n scans; stale-reply guard forced red; W286 split into W286–W290 so each clause has its own cited test
 - [ ] drive it in the real app with Playwright against sample repos (full, bare, damaged settings, symlinked `CLAUDE.md`), dev snapshot view, photo, `bocetos/novedades.html` and `bocetos/fase1-nucleo.html`, lessons · waits on box 4 · Closes: the Outcomes paragraph

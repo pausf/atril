@@ -5304,3 +5304,43 @@ button.skct[aria-pressed='true'] {
   border-radius: 2px;
   background: var(--run);
 }
+
+.repo-rows .harness {
+  flex-basis: 100%;
+  font-size: 13px;
+}
+.harness h4 {
+  margin: 10px 0 4px;
+  font-size: 12px;
+  color: var(--sub);
+}
+.harness ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.harness li {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 4px 0;
+  border: 0;
+}
+.hz-mark {
+  width: 1.2em;
+  text-align: center;
+}
+.hz-body {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.hz-state,
+.hz-detail,
+.hz-why {
+  font-size: 12px;
+  color: var(--sub);
+}
+.hz-gap .hz-state {
+  color: var(--text);
+  font-weight: 600;
+}
