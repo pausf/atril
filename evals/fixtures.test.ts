@@ -15,7 +15,7 @@ const copy = (): string => {
 const nodeTest = (cwd: string) => spawnSync(process.execPath, ['--test'], { cwd, encoding: 'utf8' })
 
 describe('evals fixtures', () => {
-  it('the sample is green and every task starts red', () => {
+  it("the sample is green and every task starts red", () => {
     const base = nodeTest(copy())
     expect(base.status, base.stdout + base.stderr).toBe(0)
 

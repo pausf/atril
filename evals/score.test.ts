@@ -24,7 +24,7 @@ const evidence = {
 const why = (e: object, check: string): string => (scoreRun(task, { ...evidence, ...e }).checks as Record<string, { ok: boolean; why: string }>)[check]!.why
 
 describe('evals scoring', () => {
-  it('the spec check wants shall criteria each followed by a Proof', () => {
+  it("the spec check wants shall criteria each followed by a Proof", () => {
     expect(scoreRun(task, evidence).checks.spec).toEqual({ ok: true, why: '' })
     expect(why({ added: '- nothing to see here\n# title' }, 'spec')).toMatch(/no criterion/)
     const noProof = good.replace('  Proof: test/coupon.test.js "refuses an unknown code"', '- **C3** The cart shall exist.')
@@ -35,7 +35,7 @@ describe('evals scoring', () => {
     expect(scoreRun(task, { ...evidence, added: bare }).checks.spec.ok).toBe(false)
   })
 
-  it('tests come before source in the write order', () => {
+  it("tests come before source in the write order", () => {
     expect(scoreRun(task, evidence).checks['tests-first']).toEqual({ ok: true, why: '' })
     expect(why({ writes: ['src/coupon.js', 'test/coupon.test.js'] }, 'tests-first')).toMatch(/src\/coupon\.js.*before/)
     expect(why({ writes: ['src/coupon.js'] }, 'tests-first')).toMatch(/no test/)
@@ -47,7 +47,7 @@ describe('evals scoring', () => {
     expect(scoreRun(task, { ...evidence, writes: ['__tests__/a.js', 'src/a.js'] }).checks['tests-first'].ok).toBe(true)
   })
 
-  it('scores files, acceptance and gates from the evidence', () => {
+  it("scores files, acceptance and gates from the evidence", () => {
     const bad = scoreRun(task, { ...evidence, existing: ['src/coupon.js'], acceptanceExit: 1, gatesExit: 124 }).checks
     expect(bad.files.why).toBe('missing: test/coupon.test.js')
     expect(bad.acceptance).toEqual({ ok: false, why: 'the hidden acceptance test exited 1' })
@@ -57,7 +57,7 @@ describe('evals scoring', () => {
     expect([ok.files.ok, ok.acceptance.ok, ok.gates.ok]).toEqual([true, true, true])
   })
 
-  it('a run passes only when every check passes and totals read x of N', () => {
+  it("a run passes only when every check passes and totals read x of N", () => {
     const pass = scoreRun(task, evidence)
     const noTests = scoreRun(task, { ...evidence, writes: ['src/coupon.js'] })
     const noAccept = scoreRun(task, { ...evidence, acceptanceExit: 1 })
@@ -82,7 +82,7 @@ describe('evals scoring', () => {
 })
 
 describe('evals transcript and report', () => {
-  it('reads the write order and the cost from a stream', () => {
+  it("reads the write order and the cost from a stream", () => {
     const root = mkdtempSync(join(tmpdir(), 'evals-t-'))
     const real = join(root, 'real')
     mkdirSync(real)
@@ -111,7 +111,7 @@ describe('evals transcript and report', () => {
     expect(parseTranscript(use('Write', { file_path: join(real, 'x.js') }), real)).toEqual({ writes: ['x.js'], skills: [], cost: null, turns: null, durationMs: null })
   })
 
-  it('writes JSON and Markdown that show x of N per task', () => {
+  it("writes JSON and Markdown that show x of N per task", () => {
     const run = (task: string, ok: boolean) => ({
       task,
       passed: ok,

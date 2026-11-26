@@ -24,7 +24,7 @@ const io = (answer: string) => {
 }
 
 describe('evals runner arguments', () => {
-  it('prints the run estimate and waits for a yes', async () => {
+  it("prints the run estimate and waits for a yes", async () => {
     const opts = ok(['--model', 'haiku', '--tasks', 'add-coupon,fix-rounding', '--runs', '2'])
     expect(opts).toMatchObject({ model: 'haiku', tasks: ['add-coupon', 'fix-rounding'], runs: 2, yes: false, estimate: 4 })
     expect(opts).toMatchObject({ timeoutMin: 20, budget: 3, command: '/libretto:libretto-attacca', claude: 'claude', keep: false, extra: [] })
@@ -54,7 +54,7 @@ describe('evals runner arguments', () => {
     expect(auto.out.join('')).toMatch(/9 runs/)
   })
 
-  it('refuses to start without a model, with an unknown task, with bad numbers or without a terminal', () => {
+  it("refuses to start without a model, with an unknown task, with bad numbers or without a terminal", () => {
     expect(bad([])).toMatch(/--model/)
     expect(bad(['--model', 'haiku', '--tasks', 'add-coupon,nope'])).toMatch(/unknown task "nope".*add-coupon/)
     for (const runs of ['0', '-1', '1.5', 'many']) expect(bad(['--model', 'haiku', '--runs', runs])).toMatch(/--runs/)
@@ -98,7 +98,7 @@ afterEach(() => {
 chmodSync(FAKE, 0o755)
 
 describe('evals one attempt', () => {
-  it('runs each attempt in a fresh git repo with the headless flags', async () => {
+  it("runs each attempt in a fresh git repo with the headless flags", async () => {
     const files = env('solve')
     const t = task('add-coupon')
     const kept = await runOnce(t, { ...base, keep: true, extra: ['--setting-sources', 'project,local'] })
@@ -120,7 +120,7 @@ describe('evals one attempt', () => {
     expect(gone.dir).toBeUndefined()
   })
 
-  it('collects the evidence from the final tree even when the proposal was landed', async () => {
+  it("collects the evidence from the final tree even when the proposal was landed", async () => {
     env('solve')
     const landed = await runOnce(task('add-coupon'), base)
     expect(landed.checks).toMatchObject({ files: { ok: true }, gates: { ok: true }, acceptance: { ok: true }, spec: { ok: true }, 'tests-first': { ok: true } })
@@ -139,7 +139,7 @@ describe('evals one attempt', () => {
     expect(nothing.checks.spec.why).toMatch(/no criterion/)
   })
 
-  it('kills a run past the timeout and scores what is on disk', async () => {
+  it("kills a run past the timeout and scores what is on disk", async () => {
     const files = env('hang')
     const r = await runOnce(task('add-coupon'), { ...base, timeoutMin: 0.03 })
     expect(r.timedOut).toBe(true)
@@ -151,7 +151,7 @@ describe('evals one attempt', () => {
     expect(() => process.kill(pid, 0)).toThrow(/ESRCH/)
   })
 
-  it('a missing or failing claude is a scored failure, not a thrown stack', async () => {
+  it("a missing or failing claude is a scored failure, not a thrown stack", async () => {
     env('solve')
     const missing = await runOnce(task('add-coupon'), { ...base, claude: '/nonexistent/claude' })
     expect(missing.passed).toBe(false)
@@ -165,14 +165,14 @@ describe('evals one attempt', () => {
     expect(failing.checks.files.ok).toBe(false)
   })
 
-  it('importing the runner starts nothing', () => {
+  it("importing the runner starts nothing", () => {
     const r = spawnSync(process.execPath, ['-e', `import(${JSON.stringify(RUN)}).then(() => console.log('imported'))`], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] })
     expect(r.stdout.trim()).toBe('imported')
     expect(r.stderr).toBe('')
     expect(r.status).toBe(0)
   })
 
-  it('nothing in the repo starts the evals by itself', () => {
+  it("nothing in the repo starts the evals by itself", () => {
     const root = join(here, '..')
     const texts = [Object.values(JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')).scripts).join('\n')]
     for (const dir of ['.githooks', '.github/workflows']) {
@@ -182,7 +182,7 @@ describe('evals one attempt', () => {
     for (const text of texts) expect(text).not.toMatch(/evals\/run/)
   })
 
-  it('main runs the whole loop and writes the report', () => {
+  it("main runs the whole loop and writes the report", () => {
     env('solve')
     const out = join(mkdtempSync(join(tmpdir(), 'evals-o-')), 'reports')
     const r = spawnSync(process.execPath, [RUN, '--model', 'haiku', '--tasks', 'add-coupon', '--runs', '1', '--yes', '--claude', FAKE, '--out', out], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] })
