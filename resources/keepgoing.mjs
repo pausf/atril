@@ -65,6 +65,17 @@ export function openBoxes(cwd) {
   return out
 }
 
+const EDGE = /^[\s*_`"'»”)]+|[\s*_`"'»”)]+$/g
+
+/** W219: the last line of the agent's words when they end with a question to the person, else ''. */
+export function proseQuestion(text) {
+  const end = typeof text === 'string' ? text.replace(/[\s*_`"'»”)]+$/, '') : ''
+  if (!end.endsWith('?')) return ''
+  const last = end.split('\n').filter((l) => l.trim()).at(-1) ?? ''
+  const q = last.replace(/\s+/g, ' ').replace(EDGE, '')
+  return q.length > 200 ? `${q.slice(0, 199)}…` : q
+}
+
 /** W217: the instruction Claude continues with; English, never shown to the person. */
 export const reason = (open) =>
   `Not done yet: ${open.map((c) => `.agents/changes/${c.change}/proposal.md has ${c.open} open box${c.open === 1 ? '' : 'es'} under ## Checklist`).join('; ')}. ` +

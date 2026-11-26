@@ -114,6 +114,16 @@ describe('agent card', () => {
     expect(within(strip).getByText('Quiere ejecutar ls')).toBeTruthy()
   })
 
+  it('a question in prose shows without buttons', async () => {
+    wait = { kind: 'question', text: 'Te pregunta: ¿Hago push?', questions: [{ question: '¿Hago push?', header: '', options: [], multiSelect: false }], next: 0, idle: false }
+    render(createElement(AgentCard, { workspaceId: 'w1', activityAt: 1 }))
+    await screen.findByText('¿Hago push?')
+    expect(card().querySelector('.ask-q')?.textContent).toBe('¿Hago push?')
+    expect(card().querySelector('.ask-head')).toBeNull()
+    expect(within(card()).queryAllByRole('button')).toEqual([])
+    cleanup()
+  })
+
   it('a question card answers with its options', async () => {
     const user = userEvent.setup()
     wait = {

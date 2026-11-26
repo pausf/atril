@@ -623,6 +623,21 @@ describe('automatic', () => {
     expect(sent.filter((x) => x.includes('paste-buffer')).every((x) => x.includes(a.paneId))).toBe(true)
   }, 30_000)
 
+  it('automatic leaves a question in prose to the person', async () => {
+    const { createStatus } = await import('./status')
+    const a = await openAuto('feat/auto-prose')
+    const { run, sent } = await spied()
+    const notify = vi.fn()
+    const status = createStatus({ run, onChange: () => {}, notify })
+    await status.refresh()
+    wait(a.session, { at: 5, kind: 'question', text: 'Te pregunta: ¿Hago push?', questions: [{ question: '¿Hago push?', header: '', options: [], multiSelect: false }] })
+    await status.refresh()
+    await status.refresh()
+    expect(sent).toEqual([])
+    expect(status.states()[a.id]).toBe('needs-you')
+    expect(notify.mock.calls.map((c) => [c[1], c[2]])).toEqual([['ask', 'Te pregunta: ¿Hago push?']])
+  }, 30_000)
+
   it('automatic never grants a permission by itself', async () => {
     const { createStatus } = await import('./status')
     const a = await openAuto('feat/auto-p')

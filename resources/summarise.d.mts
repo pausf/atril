@@ -3,3 +3,4 @@ export interface Summary {
   text: string
 }
 export function summarise(event: string, payload: unknown, readTranscriptTail: (path: string) => string): Summary | null
+export function lastText(tail: string): string

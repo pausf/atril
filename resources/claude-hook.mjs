@@ -7,9 +7,9 @@ import { homedir } from 'node:os'
 import { join } from 'node:path'
 import process from 'node:process'
 import { Buffer } from 'node:buffer'
-import { summarise } from './summarise.mjs'
+import { lastText, summarise } from './summarise.mjs'
 import { claimSize } from './branchsize.mjs'
-import { decideStop, openBoxes, reason } from './keepgoing.mjs'
+import { decideStop, openBoxes, proseQuestion, reason } from './keepgoing.mjs'
 
 // W59: pushes and request creation in an automatic workspace need the person.
 // ponytail: any git … push in one command segment; a `push` word in a commit message only adds a question.
@@ -226,7 +226,16 @@ try {
   let blocks = event === 'UserPromptSubmit' ? 0 : Number.isInteger(prev.blocks) ? prev.blocks : 0
   // W44: Claude's question tool is a stop (Libretto's before code is one): it waits for the person.
   let state = event === 'PreToolUse' && payload?.tool_name === 'AskUserQuestion' ? 'needs-you' : STATES[event]
-  if (event === 'Stop') {
+  // W219: a question to the person in prose is a wait, whatever is left to do.
+  let asked = ''
+  if (event === 'Stop' && typeof payload?.transcript_path === 'string') {
+    try {
+      asked = proseQuestion(lastText(readTail(payload.transcript_path)))
+    } catch {
+      /* unreadable transcript: no question */
+    }
+  }
+  if (event === 'Stop' && !asked) {
     const open = openBoxes(payload?.cwd)
     const stop = decideStop({ open, active: payload?.stop_hook_active, blocks, paused: existsSync(join(home, 'paused', name)) })
     blocks = stop.blocks
@@ -244,8 +253,9 @@ try {
   // W195: the idle reminder is no new question; a waiting state keeps everything and only says it has been a while.
   if (idle && prev.state === 'needs-you') replace(stateFile, JSON.stringify({ ...prev, idle: true }) + '\n')
   else {
-    const body = state === 'needs-you' && line ? { text: line.text } : {}
-    replace(stateFile, JSON.stringify({ state, at, ...body, ...details(event, state, payload, prev, lastTool), ...(idle && { idle: true }), blocks }) + '\n')
+    const body = asked ? { text: `Te pregunta: ${asked}` } : state === 'needs-you' && line ? { text: line.text } : {}
+    const kind = asked ? { kind: 'question', questions: [{ question: asked, header: '', options: [], multiSelect: false }] } : details(event, state, payload, prev, lastTool)
+    replace(stateFile, JSON.stringify({ state, at, ...body, ...kind, ...(idle && { idle: true }), blocks }) + '\n')
   }
 
   try {

@@ -501,6 +501,29 @@ describe('subagents hook', () => {
     expect(stateOf(session)).toMatchObject({ state: 'needs-you', kind: 'turn-end' })
   }, 30000)
 
+  it('a question in prose is a question wait', async () => {
+    const said = (text: string): string => {
+      const path = join(tmp(), 't.jsonl')
+      writeFileSync(path, JSON.stringify({ type: 'assistant', message: { role: 'assistant', content: [{ type: 'text', text }] } }) + '\n')
+      return path
+    }
+    const stopSaying = (text: string, cwd = repoWithBoxes(2)): [string, object] => ['Stop', { cwd, stop_hook_active: false, transcript_path: said(text) }]
+    // Open boxes or not, a question to the person is a wait, never a block.
+    const { session, outs } = await fireIn([stopSaying('Fase 7 hecha.\n\n  **¿Hago   push y abro la MR?**  \n')])
+    expect(outs[0]).toBe('')
+    expect(stateOf(session)).toMatchObject({
+      state: 'needs-you',
+      kind: 'question',
+      text: 'Te pregunta: ¿Hago push y abro la MR?',
+      questions: [{ question: '¿Hago push y abro la MR?', header: '', options: [], multiSelect: false }]
+    })
+    const long = `¿${'muy '.repeat(80)}largo?`
+    expect((stateOf((await fireIn([stopSaying(long)])).session)['questions'] as { question: string }[])[0]!.question).toHaveLength(200)
+    // A question mark that is not at the end is no question: the open boxes keep it going.
+    const told = await fireIn([stopSaying('¿Sigo? Sí, sigo con la casilla 2.')])
+    expect(JSON.parse(told.outs[0] ?? '').decision).toBe('block')
+  }, 60000)
+
   it('the hook says what kind of wait it is', async () => {
     const q = { question: '¿Sigo?', header: 'Seguir', options: [{ label: 'Sí' }, { label: 'No' }] }
     expect(stateOf((await fireIn([ask([q])])).session)).toMatchObject({ state: 'needs-you', kind: 'question' })

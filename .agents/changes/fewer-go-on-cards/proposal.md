@@ -88,7 +88,7 @@ Durable decisions: the six in Prior decisions below
 - **W225** If a `Stop` would block under W217 but 5 blocks are already in a row, or the session has a pause mark, then the hook shall print nothing and write `needs-you` with `kind: turn-end`, as before this change.
   Proof: src/main/agent.test.ts keeping going stops after five blocks in a row
   Proof: src/main/agent.test.ts a paused agent is never kept going
-- **W219** When the hook gets `Stop` and the newest assistant text in the transcript tail, after removing trailing whitespace and the characters `` *_`"'»”) ``, ends with `?`, the hook shall write `needs-you` with `kind: question`, `text` «Te pregunta: <q>» and `questions: [{ question: q, header: '', options: [], multiSelect: false }]`, where q is that text's last non-empty line with whitespace collapsed and clipped to 200 characters; it shall not block, whatever boxes are open.
+- **W219** When the hook gets `Stop` and the newest assistant text in the transcript tail, after removing trailing whitespace and the characters `` *_`"'»”) ``, ends with `?`, the hook shall write `needs-you` with `kind: question`, `text` «Te pregunta: <q>» and `questions: [{ question: q, header: '', options: [], multiSelect: false }]`, where q is that text's last non-empty line with whitespace collapsed, the same characters and a leading `*_` trimmed from both ends, and clipped to 200 characters; it shall not block, whatever boxes are open.
   Proof: src/main/agent.test.ts a question in prose is a question wait
 - **W223** While a question wait's due question has no options, the card shall show q exactly as its head, no header and no buttons.
   Proof: src/renderer/components/agentcard.test.tsx a question in prose shows without buttons
@@ -170,7 +170,7 @@ New tests (red first): the four hook cases in `agent.test.ts`, three in `status.
 ## Checklist
 
 - [x] Keep going on its own: `keepgoing.mjs` (`openBoxes`, `decideStop`, reason), the hook blocks a `Stop` with open boxes, carries `blocks` and `turn`, stops blocking after 5 or under a pause mark (today's turn-end otherwise) · Closes: W217, W218, W225
-- [ ] A question in prose: `summarise.mjs` `lastText`, `proseQuestion`, the hook writes a question wait with one option-less question; the card shows it without buttons; Automático leaves it · waits on box 1 · Closes: W219, W223, W226
+- [x] A question in prose: `summarise.mjs` `lastText`, `proseQuestion`, the hook writes a question wait with one option-less question; the card shows it without buttons; Automático leaves it · waits on box 1 · Closes: W219, W223, W226
 - [ ] Done: the hook writes `state: done` when nothing is open and nothing is asked; `AgentState` `done` through main (state, `done` notice, no V11 expiry, Automático ignores it, out of «Siguiente») and the renderer («terminado», icon, «Todos» order) · waits on box 2 · Closes: W220, W227, W199, W197, W15, W27, W222, W224, V11, F51
 - [ ] One notice per turn end: main remembers the last notified `turn|kind|text` per workspace and skips an identical entry · waits on box 3 · Closes: W221
 - [ ] Shown in the real app and recorded: drive a fake hook state through `done` and a prose question in dev, photo of the window in `bocetos/novedades/`, `bocetos/novedades.html` and `bocetos/fase1-nucleo.html`, the real-Claude check under «Sin probar» in CLAUDE.md · waits on box 4
