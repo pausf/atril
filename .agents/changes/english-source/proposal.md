@@ -34,9 +34,10 @@ Durable decisions: the two in Prior decisions below
 
 ## Scope boundaries
 
-**In:** `src/preload/i18n.ts` (`translate` reads `ES`), new `src/preload/i18n-es.ts`, deletion of `src/preload/i18n-en.ts`; every `t()`/`useT()`/`translate()` call with a literal key in `src/**` (main, renderer, preload, tests that pass keys); `src/preload/activity-i18n.ts` (matches Spanish hook lines, returns English keys); `src/preload/i18n.test.ts` and `src/main/i18n.test.ts` (keys flipped, the missing-from-Spanish test); `CLAUDE.md` line on «Textos».
+**In:** `src/preload/i18n.ts` (`translate` reads `ES`), new `src/preload/i18n-es.ts`, deletion of `src/preload/i18n-en.ts`; every `t()`/`useT()`/`translate()` call with a literal key in `src/**` (main, renderer, preload, tests that pass keys); `src/preload/activity-i18n.ts` (matches Spanish hook lines, returns English keys); `src/preload/i18n.test.ts` and `src/main/i18n.test.ts` (keys flipped, the missing-from-Spanish test); `CLAUDE.md` line on «Textos»; the settings spec's lines «a text with no English entry shows in Spanish rather than empty» and «Every text through `useT()` with its English entry», amended by hand at landing; the S19 scan's file filter (`i18n-en.ts` out, `i18n-es.ts` in).
+Ownership: `src/preload/i18n-es.ts` is governed by the settings spec like `i18n-en.ts` was (S16/S19 live there), though `src/preload/**` is in workspaces' `Governs:`; unchanged by this change.
 
-**Out (named):** translating specs, docs or test names (the ask); the hook `resources/summarise.mjs` and the Spanish activity lines main stores; Claude prompts (`LESSONS_NOTE`, `CONTINUE`, `SPLIT`) and demo data marked `// i18n-ignore`; a third language; any rewording of an English text; i18n libraries.
+**Out (named):** translating specs, docs or test names (the ask); the hook `resources/summarise.mjs` and the Spanish activity lines main stores (every `// i18n-ignore` line in `status.ts`, `notify.ts` and `activity-i18n.ts` keeps its Spanish literal; only the `t()` keys beside them flip); Claude prompts (`LESSONS_NOTE`, `CONTINUE`, `SPLIT`) and demo data marked `// i18n-ignore`; a third language; any rewording of an English text; i18n libraries.
 
 **Never scoped out:** the Spanish a person sees stays byte-identical, including punctuation and `{placeholders}`; a missing Spanish entry never shows an empty string (falls back to the English key).
 
@@ -45,6 +46,7 @@ Durable decisions: the two in Prior decisions below
 - `t()` keys stay literals (S16: no template literals); the AST walk finds `t(`, `translate(lang, `, and `useT()`'s `t`.
 - Colliding English texts need distinct keys; the context suffix is `@@word`, matched as `/@@\w+$/`, and no real English text ends that way.
 - Tests assert Spanish through the Spanish Mac mock (`language: 'es'`); they must stay green unmodified except where they pass a Spanish key to `t()`/`translate()`.
+- A test that flakes under load (`openmr.test.ts`, `pause.test.ts`) and passes alone counts as green, and is reported as such.
 - Gates: `pnpm -s typecheck`, `pnpm -s lint`, `pnpm -s test` (the hook runs the first two). Never `pnpm build`.
 - Comment density as in neighbouring files; `ponytail:` comments in English.
 
@@ -65,13 +67,15 @@ Durable decisions: the two in Prior decisions below
 
 ## Verification criteria
 
-- **S48** The `translate` function shall return, for language `es`, the entry of `ES` for the key (with its `{placeholders}` replaced), and for `en` the key itself without any context suffix; a key with no `ES` entry shall show as the English key.
+- **S48** The `translate` function shall return, for language `es`, the entry of `ES` for the key (with its `{placeholders}` replaced), and for `en` the key itself without any context suffix; a key with no `ES` entry shall show as the English text, suffix stripped, in either language.
   Proof: src/preload/i18n.test.ts english is the key and spanish is the catalog
 - **S49** Where two Spanish texts share one English text, the two keys shall differ by a context suffix, English shall show both without it, and Spanish shall show each its own text.
   Proof: src/preload/i18n.test.ts same english two spanish
 - **S16** (amended) Every literal key passed to `t()` or `translate()` in `src/` shall have a Spanish entry in `ES` with the same `{placeholders}` as the key, no key shall be a template literal, and the catalog shall hold no entry that no call uses.
+  Ceiling named: one test holds the four promises, in four separate `expect`s (missing, placeholders, template literal, unused), each forced red once before it is believed.
   Proof: src/preload/i18n.test.ts every text has its spanish
-- **S50** While the language is Spanish, the rail, Trabajo, Tareas, Ajustes and the Nueva tarea dialog shall show the same Spanish they showed before English became the source.
+- **S50** While the language is Spanish, the rail, Trabajo, Tareas, Ajustes and the Nueva tarea dialog shall show the Spanish they showed before English became the source, asserted as literal Spanish strings.
+  Ceiling named: this samples five screens; the whole-catalog proof is the script's equivalence report (old Spanish equals `ES[new key]` for all ~1,110 keys), which is pasted into the commit message of box 1 because the script is throwaway.
   Proof: src/renderer/settings/language.test.ts the window shows spanish after the flip
 
 ## Approach
@@ -88,10 +92,10 @@ TypeScript 5 with `typescript` already a devDependency (AST via `ts.createSource
 
 1. Script, run from the repo root with `node --experimental-strip-types`, in the scratchpad (not committed).
 2. Build `key map`: for each `[es, en]` of `EN`, new key = `en`; when several `es` share an `en`, the first in file order keeps it plain and the others get `en@@<word>` from a table written in the script (reviewed in the diff of `i18n-es.ts`).
-3. Walk every `.ts/.tsx` under `src/` with the TS AST; a call whose callee is `t` or `translate` (second argument for `translate`) with a string-literal key is rewritten at that node's range, keeping the quote style the file's neighbours use and escaping as needed. A key not in `EN` (a test's own fixture) is reported, not guessed.
+3. Walk every `.ts/.tsx` under `src/` with the TS AST; a call whose callee is `t` or `translate` (second argument for `translate`) with a string-literal key is rewritten at that node's range, keeping the quote style the file's neighbours use and escaping as needed. A key not in `EN` (a test's own fixture, or anything else) aborts the script with the list and a non-zero exit; nothing is guessed and no file is written.
 4. Emit `src/preload/i18n-es.ts` (`ES[newKey] = oldEs`), identity entries included.
 5. Equivalence check inside the script: for every old key, old Spanish equals `ES[new]`, and old English equals `new` without suffix; for the AST rewrite, the multiset of old keys found equals that of new keys.
-6. By hand, small: `translate`, `activity-i18n.ts` (matches Spanish data, returns English keys; the `i18n-ignore` Spanish literals stay), the two i18n tests, `CLAUDE.md`; delete `i18n-en.ts`.
+6. By hand, small: `translate`, `activity-i18n.ts` (matches Spanish data, returns English keys; the `i18n-ignore` Spanish literals stay), the two i18n tests (incl. the S19 file filter), `CLAUDE.md`; delete `i18n-en.ts`.
 
 ### The alternatives it beat
 
