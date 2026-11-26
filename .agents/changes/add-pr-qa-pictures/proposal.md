@@ -192,4 +192,4 @@ New tests: `qa-pictures.test.ts`, `forge/qa-hosting.test.ts`, cases in `qa-repor
 - [x] `forge/qa-hosting.ts`: read the MR (description, target branch), GitHub orphan `atril-qa` commit, GitLab uploads, block build with scrubbed text, splice, write · waits on box 2 · Closes: W246, W247, W248, W252
 - [x] `qa-publish.ts` prepare/publish wired through main and preload: preview without forge or claude, fallback to the W170 comment, views ledger and Before by ancestry · waits on boxes 1–3 · Closes: W241, W249, W250
 - [x] QA screen sheet: rows with thumbnail and reason, «Enviar {n} imágenes» / «Publicar sin imágenes», Escape, W150 problem, English strings · waits on box 4 · Closes: W251
-- [ ] real-app drive with a seeded report (one PNG showing `localhost:5173`) and a fake forge; photo; novedades and fase1 bocetos · waits on box 5 · Closes: W241, W243, W251
+- [x] real-app drive with a seeded report (one PNG showing `localhost:5173`) and a fake forge; photo; novedades and fase1 bocetos · waits on box 5 · Closes: W241, W243, W251

@@ -112,7 +112,7 @@ function fakeQaForge() {
     target: (u: string) => (u === url ? mr : undefined),
     post: async (_u: string, body: string) => (await writeFile(file(), `${await read()}\n\n---\nCOMMENT\n${body}`), { comment: { id: '1', author: 'you', body, at: '', mine: true } }) as unknown as MrReply,
     hosting: {
-      readMr: async () => ({ description: await read(), target: 'main', merged: false }),
+      readMr: async (m: { ref: string }) => (m.ref === mr.ref ? { description: await read(), target: 'main', merged: false } : { description: '', target: 'main', merged: true }),
       host: async (_m: unknown, pics: Array<{ name: string }>) => Object.fromEntries(pics.map((p) => [p.name, `https://github.com/acme/shop-web/blob/fake/qa/${p.name}?raw=true`])),
       replaceBlock: async (_m: unknown, _e: string | null, block: string) => (await writeFile(file(), splice(await read(), block)), { ok: true as const })
     }
