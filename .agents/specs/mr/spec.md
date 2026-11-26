@@ -45,7 +45,7 @@ the projects you follow. Phase 2 of Atril; scores, threads and notifications bui
 
 - On an MR whose CI is «Falla» and whose job is alive in Atril, «Arreglar CI con Claude» types the request into the
   terminal of that agent and says «Enviado a {rama}».
-- Without a single job in Atril, the button does not show.
+- Without exactly one job in Atril, the button does not show.
 
 ### Open an MR in Atril (open-work-from-mr, 10 nov 2026)
 
