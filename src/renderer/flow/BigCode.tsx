@@ -49,18 +49,18 @@ export function BigCode({ workspaceId, box, tick, start, onClose }: Props) {
   const lines = (diff ?? '').replace(/\n$/, '').split('\n')
   const chosen = files.find((f) => f.path === file)
   return (
-    <section className="bigcode" role="region" aria-label={t('Código ampliado')} ref={root} tabIndex={-1}>
+    <section className="bigcode" role="region" aria-label={t('Enlarged code')} ref={root} tabIndex={-1}>
       <div className="edhead">
         <h3>{box.text}</h3>
         <span className="docchange">{file}</span>
         <span className="sp" />
         <button type="button" className="btn" onClick={onClose}>
-          {t('Volver al terminal ⌘⇧E')}
+          {t('Back to the terminal ⌘⇧E')}
         </button>
       </div>
       <div className="doc-editor">
-        <nav className="outline" aria-label={t('Archivos')}>
-          <span className="olh">{t('Archivos')}</span>
+        <nav className="outline" aria-label={t('Files')}>
+          <span className="olh">{t('Files')}</span>
           {files.map((f) => (
             <button key={f.path} type="button" className={f.path === file ? 'on' : undefined} title={f.path} onClick={() => setPick(f.path)}>
               <span className={`fst ${f.status}`}>{f.status}</span> {f.path.split('/').pop()}
@@ -72,21 +72,21 @@ export function BigCode({ workspaceId, box, tick, start, onClose }: Props) {
             {lines.map((_, i) => i + 1).join('\n')}
           </div>
           <div className="ed">
-            <pre className="hl diffview" tabIndex={0} aria-label={t('Diff de {file}', { file: file ?? '' })}>
-              {!file ? t('Sin cambios de código.') : diff === null ? t('Cargando…') : diff === '' ? t('Este archivo ya no tiene cambios.') : diffLines(diff)}
+            <pre className="hl diffview" tabIndex={0} aria-label={t('Diff of {file}', { file: file ?? '' })}>
+              {!file ? t('No code changes.') : diff === null ? t('Loading…') : diff === '' ? t('This file has no changes any more.') : diffLines(diff)}
             </pre>
           </div>
         </div>
       </div>
       <div className="edstatus">
-        <span className="ro">{t('solo lectura · lo que cambió esta casilla')}</span>
+        <span className="ro">{t('read only · what this box changed')}</span>
         {chosen && (
           <span>
             <span className="fa">+{chosen.added}</span> <span className="fd">−{chosen.removed}</span>
           </span>
         )}
         <span className="sp" />
-        {live && <span>{t('en vivo')}</span>}
+        {live && <span>{t('live')}</span>}
       </div>
     </section>
   )

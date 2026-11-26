@@ -32,20 +32,20 @@ export interface PaletteSources {
 export function paletteItems(s: PaletteSources): PaletteItem[] {
   const { t } = s
   const screens: [Screen, string][] = [
-    ['work', t('Trabajo')],
-    ['tasks', t('Tareas')],
+    ['work', t('Work')],
+    ['tasks', t('Tasks')],
     ['mr', t('MR')],
     ['libretto', t('Libretto')],
     ['qa', t('QA')],
-    ['avisos', t('Avisos')],
+    ['avisos', t('Notices')],
     ['skills', t('Skills')],
-    ['settings', t('Ajustes')]
+    ['settings', t('Settings')]
   ]
   const actions: [string, string, () => void][] = [
-    ['new-work', t('Nuevo trabajo'), s.newWork],
-    ['new-task', t('Nueva tarea'), s.newTask],
-    ['refresh-mrs', t('Actualizar MR'), s.refreshMrs],
-    ['mark-read', t('Marcar avisos leídos'), s.markAllRead],
+    ['new-work', t('New work'), s.newWork],
+    ['new-task', t('New task'), s.newTask],
+    ['refresh-mrs', t('Refresh MRs'), s.refreshMrs],
+    ['mark-read', t('Mark notices read'), s.markAllRead],
     ['tutorial', t('Tutorial'), s.tutorial]
   ]
   const r = s.mrs

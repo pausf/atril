@@ -49,15 +49,15 @@ Governs: src/main/jira/** src/renderer/inbox/**
   «Nuevo trabajo» in Trabajo (text optional; without text the agent is plain Claude).
 - With no repo registered, the dialog points to Ajustes → Repos with a button that goes there.
 
-### Jira, GitHub y GitLab (net-errors, 11 nov 2026)
+### Jira, GitHub and GitLab (net-errors, 11 nov 2026)
 
-- Tareas y MR dicen qué falló de verdad (token, permiso, dirección, saturado, caído, sin red) con su botón y el código plegado.
-- Con la lista de MRs fallida no sale «Ninguna MR.».
-- Conectar GitHub o GitLab dice la causa sin nombres de excepción, como ya hace Jira (S32).
+- Tareas and MR say what really failed (token, permission, address, overloaded, down, no network) with their button and the code folded.
+- With the MR list failed, «Ninguna MR.» does not appear.
+- Connecting GitHub or GitLab states the cause without exception names, as Jira already does (S32).
 
-### Afinar la petición (refine-request, 20 nov 2026)
+### Refining the request (refine-request, 20 nov 2026)
 
-Quien crea una tarea puede, si quiere, contestar cuatro preguntas fijas o pedir a Claude Haiku 3–5 preguntas sobre su petición, y lo contestado viaja con la petición al agente. Sin tocarlo, todo es como hoy.
+Whoever creates a task can, if they want, answer four fixed questions or ask Claude Haiku for 3–5 questions about their request, and what is answered travels with the request to the agent. Left untouched, everything is as today.
 
 ## Scope boundaries
 
@@ -105,9 +105,9 @@ keyboard-reachable (Tab cycles inside it, Escape closes, ⌘↩ submits from the
 **In:** the optional text, the plain-Claude path, the no-repo pointer. **Out:** anything else in
 the dialog.
 
-### Jira, GitHub y GitLab (net-errors, 11 nov 2026)
+### Jira, GitHub and GitLab (net-errors, 11 nov 2026)
 
-**In:** `src/main/net-problem.ts` (nuevo), `src/main/jira/inbox.ts`, `src/main/forge/mrs.ts` (`statusText`, `networkText`, la lista), `src/main/credentials/forge.ts`, `src/renderer/inbox/Inbox.tsx`, `src/renderer/mr/MrScreen.tsx`, `src/renderer/settings/Forges.tsx` y `Connection.tsx`, i18n. **Out:** botones en hilos, puntuaciones, lentes y comentarios en línea (rediseño de la MR); el tablero de Jira en Libretto; GitHub contra un servidor propio.
+**In:** `src/main/net-problem.ts` (new), `src/main/jira/inbox.ts`, `src/main/forge/mrs.ts` (`statusText`, `networkText`, the list), `src/main/credentials/forge.ts`, `src/renderer/inbox/Inbox.tsx`, `src/renderer/mr/MrScreen.tsx`, `src/renderer/settings/Forges.tsx` and `Connection.tsx`, i18n. **Out:** buttons in threads, scores, lenses and inline comments (MR redesign); the Jira board in Libretto; GitHub against a self-hosted server.
 
 ## Constraints
 
@@ -143,16 +143,16 @@ the dialog.
 
 - Plain work calls `workspaces.open` without a task, as the old «+ trabajo» did.
 
-### Jira, GitHub y GitLab (net-errors, 11 nov 2026)
+### Jira, GitHub and GitLab (net-errors, 11 nov 2026)
 
-- `err.message` nunca llega a la ventana; solo códigos de lista (`ENOTFOUND`…), el nombre de la excepción o `HTTP <n>`, y solo en el detalle.
-- Los tokens no salen de main.
+- `err.message` never reaches the window; only list codes (`ENOTFOUND`…), the exception name or `HTTP <n>`, and only in the detail.
+- Tokens do not leave main.
 
-### Afinar la petición (refine-request, 20 nov 2026)
+### Refining the request (refine-request, 20 nov 2026)
 
-- Nada de llamadas a Claude sin pulsar el botón (CLAUDE.md, cuota).
-- Textos por `t()` con su entrada inglesa; errores con `Problem`.
-- La llamada usa el mismo `run` que las puntuaciones (`claude -p … --tools '' --no-session-persistence --json-schema`), con la petición por stdin, nunca en argv.
+- No calls to Claude without pressing the button (CLAUDE.md, quota).
+- Texts through `t()` with their English entry; errors with `Problem`.
+- The call uses the same `run` as the scores (`claude -p … --tools '' --no-session-persistence --json-schema`), with the request on stdin, never in argv.
 
 ## Prior decisions
 
@@ -191,22 +191,22 @@ the dialog.
 
 #### Decision log, answers as given (2026-11-09)
 - Q: «No le preguntes, tú sigue» stands → decisions below are taken with the recommended option and marked (assumed).
-- Q: ¿Qué tablero? → A: el que la persona elige en Ajustes, con un buscador por nombre; uno solo (assumed). Si es falso: varios tableros a la vez o uno por proyecto.
-- Q: ¿Y las tareas que no están en ninguna columna del tablero? → A: grupo «Fuera del tablero», al final y plegado (assumed).
-- Q: ¿Qué columna viene plegada? → A: la primera columna desplegada; las que el tablero llama Done/Hecho no salen (la consulta ya excluye lo terminado); el resto desplegadas salvo «Fuera del tablero» (assumed).
-- Q: (spec-reviewer) ¿Y si falla la lectura del tablero? → A: vuelve a los grupos por categoría y avisa «No se pudo leer el tablero (…)» (assumed). Si es falso: I18 mostraría un error en lugar de grupos.
-- Q: (spec-reviewer) ¿Qué columnas vienen plegadas? → A: todas abiertas; solo «Fuera del tablero» plegada (assumed).
-- Q: (spec-reviewer) ¿Borrar el token de Jira olvida el tablero? → A: sí; Reemplazar lo conserva (assumed).
-- Q: (spec-reviewer) ¿Dónde vive la búsqueda de tableros y cómo se busca? → A: `src/main/credentials/boards.ts`; desde 2 letras, 300 ms tras dejar de escribir, «Ningún tablero coincide» si no hay resultados (assumed).
-- Q: ¿Qué tareas salen? → A: «solo debería salir las tareas que me estén asignadas a mí. a desarrollar utilizaremos cualquiera, pero cuando esté el producto final solamente tiene que salir las que están relacionadas a mí» — el tablero solo da las columnas; las tareas son siempre las asignadas a quien tiene el token; los datos inventados solo existen en las capturas de desarrollo y nunca en la app empaquetada.
-- Q: (work-reviewer) ¿«primera columna» es la del tablero aunque esté vacía? → A: sí, la primera columna del tablero; vacía significa nada por empezar (assumed).
-- Q: ¿Sin tablero elegido? → A: la agrupación actual por categoría, con un aviso «Elige tu tablero en Ajustes para ver sus columnas» (assumed).
+- Q: Which board? → A: the one the person picks in Ajustes, with a search by name; just one (assumed). If wrong: several boards at once or one per project.
+- Q: And the tasks that are in no column of the board? → A: a «Fuera del tablero» group, at the end and folded (assumed).
+- Q: Which column comes folded? → A: the first column unfolded; the ones the board calls Done/Hecho are not shown (the query already excludes finished work); the rest unfolded except «Fuera del tablero» (assumed).
+- Q: (spec-reviewer) And if reading the board fails? → A: it goes back to the category groups and warns «No se pudo leer el tablero (…)» (assumed). If wrong: I18 would show an error instead of groups.
+- Q: (spec-reviewer) Which columns come folded? → A: all open; only «Fuera del tablero» folded (assumed).
+- Q: (spec-reviewer) Does deleting the Jira token forget the board? → A: yes; Replace keeps it (assumed).
+- Q: (spec-reviewer) Where does the board search live and how does it search? → A: `src/main/credentials/boards.ts`; from 2 letters, 300 ms after typing stops, «Ningún tablero coincide» when there are no results (assumed).
+- Q: Which tasks appear? → A: «solo debería salir las tareas que me estén asignadas a mí. a desarrollar utilizaremos cualquiera, pero cuando esté el producto final solamente tiene que salir las que están relacionadas a mí» — the board only gives the columns; the tasks are always the ones assigned to whoever holds the token; invented data exists only in development screenshots and never in the packaged app.
+- Q: (work-reviewer) Is "first column" the board's one even if it is empty? → A: yes, the board's first column; empty means nothing to start (assumed).
+- Q: No board picked? → A: the current grouping by category, with a notice «Elige tu tablero en Ajustes para ver sus columnas» (assumed).
 
 ### Next up (add-next-up, 9 nov 2026)
 
 - **One click for a known project** — Pau, 9 nov, usability batch («si» to item 4). The first
   task of a project still picks its repo in the dialog, so one click never guesses a repo.
-- Q: (spec-reviewer) ¿Y el «deshacer»? → A: fuera de alcance: «Quitar» ya cierra un trabajo recién abierto (assumed).
+- Q: (spec-reviewer) And the "undo"? → A: out of scope: «Quitar» already closes a freshly opened work (assumed).
 
 ### Own tasks (add-own-tasks, 9 nov 2026)
 
@@ -225,65 +225,65 @@ the dialog.
 
 #### Decision log, answers as given (2026-11-09)
 - Q: «No le preguntes, tú sigue» stands → decisions taken with the recommended option, marked (assumed).
-- Q: ¿Dónde se escribe la tarea propia? → A: botón «Nueva tarea» en la cabecera de Tareas («desde el mismo panel»), que abre un diálogo: texto, repo, rama y modelo (assumed).
-- Q: ¿Qué recibe el agente? → A: `/libretto:libretto-flow <texto>` como un único argumento; Libretto ya toma «lo que dijo el usuario» como fuente y lo guarda literal en su proposal (assumed).
-- Q: ¿Y la rama? → A: se propone a partir de las primeras palabras (minúsculas, sin acentos, guiones, máx. 40) y se puede editar; deja de seguir al texto en cuanto la tocas (assumed).
-- Q: ¿Límite del texto? → A: 2000 caracteres; Libretto escribe el resto en la spec, no hace falta más en una línea de comandos (assumed).
-- Q: (spec-reviewer) ¿Qué es una «palabra» para la rama? → A: un tramo de `[a-z0-9]` tras quitar acentos y pasar a minúsculas; la puntuación separa palabras. «Editada» = cualquier cambio tuyo en el campo, aunque lo vacíes (assumed).
-- Q: (spec-reviewer) ¿«Nueva tarea» sin Jira conectado? → A: sí, se ve y funciona: la cabecera de Tareas queda fuera del estado «Conecta…» (assumed, I25).
-- Q: (spec-reviewer) ¿Qué agente? → A: siempre `claude` (assumed).
-- Q: (spec-reviewer) ¿Dónde se nota el límite de 2000? → A: el área de texto no deja escribir más (`maxLength`, unidades UTF-16, igual que `.length` en main) (assumed).
-- Q: (spec-reviewer) ¿Se extrae el atrapado de foco del diálogo de Empezar? → A: no: el diálogo nuevo lleva el suyo y el de Empezar no se toca, así no puede romperse sin prueba (assumed).
-- Q: ¿Se listan las tareas propias aparte? → A: no: cada una es un trabajo más en Trabajo, con su rama; una lista aparte sería una segunda fuente de verdad (assumed).
+- Q: Where is the own task written? → A: a «Nueva tarea» button in the Tareas header («desde el mismo panel»), which opens a dialog: text, repo, branch and model (assumed).
+- Q: What does the agent receive? → A: `/libretto:libretto-flow <text>` as a single argument; Libretto already takes «lo que dijo el usuario» as its source and stores it verbatim in its proposal (assumed).
+- Q: And the branch? → A: it is proposed from the first words (lower case, no accents, hyphens, max 40) and can be edited; it stops following the text as soon as you touch it (assumed).
+- Q: Text limit? → A: 2000 characters; Libretto writes the rest in the spec, no more is needed on a command line (assumed).
+- Q: (spec-reviewer) What is a "word" for the branch? → A: a run of `[a-z0-9]` after removing accents and lower-casing; punctuation separates words. "Edited" = any change of yours in the field, even if you empty it (assumed).
+- Q: (spec-reviewer) «Nueva tarea» without Jira connected? → A: yes, it shows and works: the Tareas header stays outside the «Conecta…» state (assumed, I25).
+- Q: (spec-reviewer) Which agent? → A: always `claude` (assumed).
+- Q: (spec-reviewer) Where is the 2000 limit noticed? → A: the text area does not let you type more (`maxLength`, UTF-16 units, same as `.length` in main) (assumed).
+- Q: (spec-reviewer) Is the focus trap extracted from the Empezar dialog? → A: no: the new dialog carries its own and the Empezar one is not touched, so it cannot break without a test (assumed).
+- Q: Are own tasks listed apart? → A: no: each is one more work in Trabajo, with its branch; a separate list would be a second source of truth (assumed).
 
-### Jira, GitHub y GitLab (net-errors, 11 nov 2026)
+### Jira, GitHub and GitLab (net-errors, 11 nov 2026)
 
-- Un fallo de red o de un servicio dice la causa por estado o por código, con «Volver a comprobar» si es pasajero y «Abrir Ajustes» si lo arregla la persona; el código, plegado.
+- A network or service failure states the cause by status or by code, with «Volver a comprobar» if it is transient and «Abrir Ajustes» if the person fixes it; the code, folded.
 
 #### Alternatives that lost
 
 | Considered | Why it lost |
 |---|---|
-| Una frase por pantalla | tres copias que divergen; ya pasaba con «ha rechazado el token» |
-| Reintentos automáticos | gastan cuota de la API de la persona sin que lo pida; «Volver a comprobar» es un clic |
+| One sentence per screen | three copies that diverge; it already happened with «ha rechazado el token» |
+| Automatic retries | they burn the person's API quota without being asked; «Volver a comprobar» is one click |
 
 #### Decision log, answers as given (2026-11-11)
-- Q: (revisión en frío) ¿Quién gobierna `net-problem.ts`? → A: workspaces (`src/main/**`): su criterio es W150 en `spec-workspaces.md`; inbox, mr y settings lo citan.
-- Q: (revisión en frío) ¿Una dirección que no existe o un certificado malo? → A: «Abrir Ajustes», porque la arregla la persona.
-- Q: (revisión en frío) ¿Y la lista de MRs con una forja caída? → A: el problema de cada forja caída va encima de las secciones; cada sección enseña sus filas, y «Ninguna MR.» solo sale si ninguna forja falló (assumed).
-- Q: (revisión en frío) ¿Y el Jira de Ajustes (S32)? → A: se queda como está; S34 es solo para GitHub y GitLab. En Ajustes no hay botón de arreglo: el formulario ya trae «Guardar y comprobar» (assumed).
-- Q: ¿Una frase por servicio o una ayuda común? → A: una ayuda común en main (`src/main/net-problem.ts`) para Jira, GitHub y GitLab, con frase por estado y por causa de red (assumed).
-- Q: ¿Qué botones? → A: «Volver a comprobar» para lo pasajero (429, 5xx, red) y «Abrir Ajustes» para lo que arregla la persona (401, 403, 404) (assumed).
-- Q: ¿Y los hilos, puntuaciones y comentarios en línea, que también usan estas frases? → A: toman las frases nuevas (sin códigos), sin botón nuevo: van en el rediseño de la MR (assumed).
-- Q: (constructor) ¿Qué código lleva un timeout? → A: el nombre de la excepción, `TimeoutError` (W150); `networkCode` deja de traducirlo a `timeout`, y `UND_ERR_CONNECT_TIMEOUT` también cuenta como timeout (assumed).
-- Q: (constructor) ¿Y si falla el puente con main al leer Tareas? → A: «No llego a Jira: ¿hay conexión?» con «Volver a comprobar» y el nombre de la excepción en el detalle, nunca su mensaje (assumed).
-- Q: (constructor) ¿Y un id de tablero no válido o una configuración sin columnas? → A: se quedan con su texto de antes tras «No puedo leer el tablero:», sin detalle; no son fallos de red (assumed).
+- Q: (cold review) Who governs `net-problem.ts`? → A: workspaces (`src/main/**`): its criterion is W150 in `spec-workspaces.md`; inbox, mr and settings cite it.
+- Q: (cold review) An address that does not exist or a bad certificate? → A: «Abrir Ajustes», because the person fixes it.
+- Q: (cold review) And the MR list with a forge down? → A: each downed forge's problem goes above the sections; each section shows its rows, and «Ninguna MR.» appears only if no forge failed (assumed).
+- Q: (cold review) And Ajustes' Jira (S32)? → A: it stays as it is; S34 is only for GitHub and GitLab. Ajustes has no fix button: the form already carries «Guardar y comprobar» (assumed).
+- Q: One sentence per service or a shared helper? → A: a shared helper in main (`src/main/net-problem.ts`) for Jira, GitHub and GitLab, with a sentence per status and per network cause (assumed).
+- Q: Which buttons? → A: «Volver a comprobar» for the transient (429, 5xx, network) and «Abrir Ajustes» for what the person fixes (401, 403, 404) (assumed).
+- Q: And threads, scores and inline comments, which also use these sentences? → A: they take the new sentences (no codes), with no new button: they go in the MR redesign (assumed).
+- Q: (builder) Which code does a timeout carry? → A: the exception name, `TimeoutError` (W150); `networkCode` stops translating it to `timeout`, and `UND_ERR_CONNECT_TIMEOUT` also counts as a timeout (assumed).
+- Q: (builder) And if the bridge to main fails when reading Tareas? → A: «No llego a Jira: ¿hay conexión?» with «Volver a comprobar» and the exception name in the detail, never its message (assumed).
+- Q: (builder) And an invalid board id or a configuration with no columns? → A: they keep their earlier text after «No puedo leer el tablero:», without detail; they are not network failures (assumed).
 
-### Afinar la petición (refine-request, 20 nov 2026)
+### Refining the request (refine-request, 20 nov 2026)
 
-- (2026-11-16, refine-request) Las respuestas de afinar viajan dentro del texto de la petición, no como campo aparte: Libretto las recibe en `The ask, verbatim` sin cambiar nada de Libretto.
-- (2026-11-16, refine-request) «Que Claude me pregunte» usa Haiku y solo corre al pulsarlo; ninguna otra acción del diálogo llama a Claude.
+- (2026-11-16, refine-request) The refine answers travel inside the request text, not as a separate field: Libretto receives them in `The ask, verbatim` without changing anything in Libretto.
+- (2026-11-16, refine-request) «Que Claude me pregunte» uses Haiku and only runs when pressed; no other action of the dialog calls Claude.
 
 #### Alternatives that lost
 
 | Considered | Why it lost |
 |---|---|
-| Mandar las respuestas como campo aparte a main y que main las pegue | main tendría que conocer el formato; el texto compuesto en el diálogo es lo que la persona ve en «Lanza» |
-| Subir el tope de 2000 en main | toca `workspaces` y su criterio; el caso es raro y el aviso basta |
-| Sonnet para las preguntas | el boceto dice Haiku; preguntas cortas no necesitan más |
+| Send the answers as a separate field to main and have main paste them | main would have to know the format; the text composed in the dialog is what the person sees in «Lanza» |
+| Raise the 2000 cap in main | it touches `workspaces` and its criterion; the case is rare and the notice is enough |
+| Sonnet for the questions | the sketch says Haiku; short questions need no more |
 
 #### Decision log, answers as given (2026-11-20)
-- Q: ¿Dónde vive? → A: en «Nueva tarea» y «Nuevo trabajo», plegado y opcional, como el boceto; solo se enseña con texto escrito, igual que Modo (assumed).
-- Q: ¿Cómo llegan las respuestas al agente? → A: pegadas al texto de la petición tras una línea en blanco, una por línea: las fijas como «Hecho cuando: …», las de Claude como «¿pregunta? respuesta». Las vacías no se mandan (assumed; así Libretto las lee en `The ask, verbatim` sin tocar Libretto).
-- Q: ¿Y si el texto con respuestas pasa de 2000 caracteres (el tope de main, W-MAX_TASK)? → A: el diálogo lo dice y deshabilita Empezar; main no cambia (assumed). Si es incorrecto: sube el tope en `workspaces.ts`.
-- Q: ¿Qué modelo y cuándo? → A: Haiku, solo al pulsar «Que Claude me pregunte»; nunca automático (regla de cuota de CLAUDE.md) (assumed).
-- Q: ¿«Volver a preguntar» borra lo contestado? → A: sustituye las preguntas de Claude y sus respuestas; las cuatro fijas se quedan (assumed).
-- Q: (spec-reviewer) ¿Quién gobierna `refine.ts`? → A: `workspaces`, que gobierna `src/main/**`; I35/I36 pasan a W208/W209 en `spec-workspaces.md` (assumed).
-- Q: (spec-reviewer) ¿Qué dice el error de Claude? → A: frase fija y el código en `detail` («Ver detalle»), nunca la salida de Claude, como M16 (assumed).
-- Q: (spec-reviewer) ¿Respuestas escondidas si se borra el texto? → A: con texto en blanco no se manda nada de afinar (I27 abre Claude a secas); lo contestado se queda en el diálogo y vuelve a verse al escribir (assumed).
-- Q: (spec-reviewer) ¿Comparte la cola de puntuaciones? → A: no: Haiku corre a su lado, una pregunta a la vez; esperar a una puntuación de 3 min para unas preguntas no tiene sentido (assumed).
-- Q: (work-reviewer) ¿La vista de foto de `App.tsx` entra? → A: sí, solo en desarrollo, para la foto de la casilla 4; añadida a Scope (assumed).
-- Q: ¿Enter en un campo de afinar empieza la tarea, como Enter en Rama? → A: no: pasa al campo siguiente; ⌘↩ sigue empezando (assumed; empezar a medio contestar sería un susto).
+- Q: Where does it live? → A: in «Nueva tarea» and «Nuevo trabajo», folded and optional, as in the sketch; shown only with text written, like Modo (assumed).
+- Q: How do the answers reach the agent? → A: pasted onto the request text after a blank line, one per line: the fixed ones as «Hecho cuando: …», Claude's as «¿pregunta? respuesta». Empty ones are not sent (assumed; this way Libretto reads them in `The ask, verbatim` without touching Libretto).
+- Q: And if the text with answers exceeds 2000 characters (main's cap, W-MAX_TASK)? → A: the dialog says so and disables Empezar; main does not change (assumed). If wrong: the cap goes up in `workspaces.ts`.
+- Q: Which model and when? → A: Haiku, only when «Que Claude me pregunte» is pressed; never automatic (CLAUDE.md quota rule) (assumed).
+- Q: Does «Volver a preguntar» erase what was answered? → A: it replaces Claude's questions and their answers; the four fixed ones stay (assumed).
+- Q: (spec-reviewer) Who governs `refine.ts`? → A: `workspaces`, which governs `src/main/**`; I35/I36 become W208/W209 in `spec-workspaces.md` (assumed).
+- Q: (spec-reviewer) What does Claude's error say? → A: a fixed sentence and the code in `detail` («Ver detalle»), never Claude's output, like M16 (assumed).
+- Q: (spec-reviewer) Answers hidden if the text is deleted? → A: with blank text nothing of refining is sent (I27 opens plain Claude); what was answered stays in the dialog and shows again when typing (assumed).
+- Q: (spec-reviewer) Does it share the score queue? → A: no: Haiku runs beside it, one question at a time; waiting for a 3-minute score to ask a few questions makes no sense (assumed).
+- Q: (work-reviewer) Does `App.tsx`'s photo view belong? → A: yes, in development only, for box 4's photo; added to Scope (assumed).
+- Q: Does Enter in a refine field start the task, like Enter in Rama? → A: no: it moves to the next field; ⌘↩ still starts (assumed; starting half-answered would be a scare).
 
 ## Task breakdown
 
@@ -408,7 +408,7 @@ the dialog.
   Proof: src/main/jira/inbox.test.ts a jira failure says its cause and fix
   Proof: src/renderer/inbox/inbox.test.ts a connected jira failure shows its problem and button
 
-### Afinar la petición (refine-request, 20 nov 2026)
+### Refining the request (refine-request, 20 nov 2026)
 
 - **I30** (amends what I22 and I27 call «the text»: from here it is the composed text below) While the text of «Nueva tarea» or «Nuevo trabajo» is not blank, the dialog shall show a folded `<details>` «Afinar la petición · opcional»; opened, it shall hold four fields — «¿Qué tiene que pasar cuando esté hecho?», «¿Qué no entra?», «¿Dónde se toca? (pantalla, archivos)», «Un ejemplo». The composed text shall be the request as typed, then — only if any answer (fixed or Claude's, I31) is filled — a blank line and one line per filled answer: the fixed ones first, in that order, as «Hecho cuando: …», «No entra: …», «Dónde: …», «Ejemplo: …», then Claude's (I31). Every answer shall be trimmed with inner newlines turned into spaces; blank ones add nothing. While the text is blank the section shall be hidden and nothing of it sent (I27 opens plain Claude), its answers kept in the dialog. Empezar shall send the composed text, and the «Lanza» line shall show the template with the composed text in place of «tu texto» whenever the text is not blank. The `<details>` summary shall add «1 respuesta añadida» or «{n} respuestas añadidas», n counting fixed and Claude's filled answers, and nothing at 0.
   Proof: src/renderer/inbox/refine.test.tsx the fixed questions add their answers to the request

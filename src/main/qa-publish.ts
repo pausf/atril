@@ -15,15 +15,15 @@ const PLATFORM = { chrome: 'Chrome', safari: 'Safari', android: 'Android', ios: 
 export function qaSummary(report: QaReport, t: T): string {
   const x = report.target
   const target = x ? (x.dir ? `${PLATFORM[x.platform]} · ${x.dir}` : PLATFORM[x.platform]) : null
-  const lines = [target ? t('Pruebas en vivo con Atril · {target}', { target }) : t('Pruebas en vivo con Atril')]
+  const lines = [target ? t('Live tests with Atril · {target}', { target }) : t('Live tests with Atril')]
   for (const c of report.criteria) {
     const e = report.entries.find((x) => x.id === c.id)
     const status = e?.status ?? 'untested'
-    const word = status === 'pass' ? t('Pasa') : status === 'fail' ? t('Falla') : t('Sin probar')
+    const word = status === 'pass' ? t('Passing') : status === 'fail' ? t('Failing') : t('Untested')
     const why = status === 'fail' ? (e!.note || e!.steps.at(-1)?.text || '').replace(/\s+/g, ' ').trim() : ''
     lines.push(`${word} · ${c.text}${why ? `\n> ${why}` : ''}`)
   }
-  lines.push(t('Las capturas están en Atril.'))
+  lines.push(t('The screenshots are in Atril.'))
   return lines.join('\n\n')
 }
 
@@ -57,7 +57,7 @@ export function createQaPublish({ run, last, list, post, now = Date.now }: Deps)
     async publish(id: string): Promise<QaPublishResult> {
       const mr = await mrFor(id)
       const report = mr && (await qaReport(id, run))
-      if (!mr || !report) return { error: t('Abre la MR para poder publicar aquí la QA.') }
+      if (!mr || !report) return { error: t('Open the MR to publish the QA here.') }
       const r = await post(mr.url, qaSummary(report, t))
       return 'error' in r ? r : { url: mr.url }
     }

@@ -30,7 +30,7 @@ export function SkillNewDialog({ origin, create, onNo }: { origin: 'personal' | 
       setBusy(false)
     }
   }
-  const title = origin === 'personal' ? t('Nueva skill personal') : t('Nueva skill de proyecto')
+  const title = origin === 'personal' ? t('New personal skill') : t('New project skill')
   return (
     <div className="skw-back">
       <form
@@ -45,19 +45,19 @@ export function SkillNewDialog({ origin, create, onNo }: { origin: 'personal' | 
       >
         <h2>{title}</h2>
         <label>
-          {t('Nombre')}
+          {t('Name')}
           <input ref={input} type="text" value={name} onChange={(e) => setName(e.target.value)} aria-describedby="sk-new-rule" autoComplete="off" spellCheck={false} />
         </label>
         <p id="sk-new-rule" className="where">
-          {t('Minúsculas, números y guiones.')}
+          {t('Lowercase letters, numbers and hyphens.')}
         </p>
         {error !== null && <p role="alert">{error}</p>}
         <div className="skw-act">
           <button type="button" className="btn" onClick={onNo}>
-            {t('Cancelar')}
+            {t('Cancel')}
           </button>
           <button type="submit" className="btn primary" disabled={!NAME.test(name) || busy}>
-            {t('Crear')}
+            {t('Create')}
           </button>
         </div>
       </form>

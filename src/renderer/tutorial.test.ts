@@ -6,8 +6,10 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { menuTemplate } from '../main/menu'
 import { App } from './App'
 import { issue, mockApi, mockSystemTheme, workspace } from './mockApi'
-import { STEPS } from './tour/Tour'
+import { translate } from '../preload/i18n'
+import { stepsOf } from './tour/Tour'
 
+const STEPS = stepsOf((k) => translate('es', k))
 const data = { workspaces: [workspace('aaaaaaa1', 'PF-1', false)], issues: [issue('PF-10', 'todo')] }
 
 beforeEach(() => mockSystemTheme(false))

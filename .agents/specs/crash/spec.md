@@ -9,7 +9,7 @@ and, when the person has turned it on, proposes it as a pull request to the offi
 
 ### Crash reports (crash-reports, 26 nov 2026)
 
-Cuando Atril falla de una forma que no esperaba y la persona lo ha activado, aparece solo un PR en `pausf/atril` con un archivo que describe el fallo, sin datos privados y sin gastar cuota de Claude; el mismo fallo en la misma versión no abre dos PR (aunque venga de dos Macs) y nada se envía sin haberlo activado y quien lo activa sabe que el PR es público.
+When Atril fails in a way it did not expect and the person has turned it on, a PR appears by itself in `pausf/atril` with a file describing the failure, without private data and without spending Claude quota; the same failure in the same version does not open two PRs (even if it comes from two Macs), and nothing is sent unless it was turned on, and whoever turns it on knows the PR is public.
 
 ## Scope boundaries
 
@@ -17,58 +17,58 @@ Cuando Atril falla de una forma que no esperaba y la persona lo ha activado, apa
 
 ### Crash reports (crash-reports, 26 nov 2026)
 
-- Ninguna llamada a Claude; ninguna dependencia nueva.
-- El token solo se lee en main y solo va a `api.github.com` con `redirect: 'error'`.
-- Un fallo dentro del envío nunca se envía a sí mismo ni tumba la app.
-- Textos por `t()` con entrada inglesa; colores por tokens; errores con `Problem`.
-- Tests con `ATRIL_HOME` temporal y un `fetch` falso; nunca la red real.
+- No call to Claude; no new dependency.
+- The token is read only in main and goes only to `api.github.com` with `redirect: 'error'`.
+- A failure inside the sender never reports itself and never takes the app down.
+- Texts through `t()` with an English entry; colors through tokens; errors with `Problem`.
+- Tests with a temporary `ATRIL_HOME` and a fake `fetch`; never the real network.
 
 ## Prior decisions
 
 ### Crash reports (crash-reports, 26 nov 2026)
 
-- (2026-11-26, crash-reports) Un fallo se envía sin Claude como issue a `pausf/atril` y el workflow `crash-report.yml` del repo lo convierte en PR: rama `atril-crash/<firma>`, archivo `crash-reports/<firma>.md`, todo en inglés; quien envía no necesita permiso de escritura ni copia del repo.
-- (2026-11-26, crash-reports) Se envía con la cuenta de GitHub conectada en Atril; nunca un token incrustado.
-- (2026-11-26, crash-reports) Apagado por defecto; encenderlo pide confirmar qué se envía.
-- (2026-11-26, crash-reports) Antes de salir del Mac, el informe se limpia de rutas, tokens, correos, direcciones y claves de Jira.
-- (2026-11-26, crash-reports) Una firma, un PR; como mucho 5 PR al día — ponytail: tope fijo, configurable si alguien lo pide.
+- (2026-11-26, crash-reports) A failure is sent without Claude as an issue to `pausf/atril` and the repo's `crash-report.yml` workflow turns it into a PR: branch `atril-crash/<firma>`, file `crash-reports/<firma>.md`, all in English; the sender needs neither write permission nor a copy of the repo.
+- (2026-11-26, crash-reports) It is sent with the GitHub account connected in Atril; never an embedded token.
+- (2026-11-26, crash-reports) Off by default; turning it on asks to confirm what is sent.
+- (2026-11-26, crash-reports) Before leaving the Mac, the report is scrubbed of paths, tokens, e-mails, addresses and Jira keys.
+- (2026-11-26, crash-reports) One signature, one PR; at most 5 PRs a day — ponytail: fixed cap, configurable if anyone asks.
 
 #### Alternatives that lost
 
 | Considered | Why it lost |
 |---|---|
-| Issue en vez de PR | Pau pidió PR |
-| Token incrustado o de la app | cualquiera lo extrae y escribe en el repo |
-| Servidor intermediario | infraestructura que mantener; con la cuenta de la persona basta para quien tiene acceso |
-| Claude escribe el arreglo | gasta cuota sin pedirlo; Pau dijo «sin claude» |
-| Encendido por defecto | manda datos del Mac a un servicio externo sin preguntar |
+| Issue instead of PR | Pau asked for a PR |
+| Embedded or app-owned token | anyone can extract it and write to the repo |
+| Intermediary server | infrastructure to maintain; the person's own account is enough for whoever has access |
+| Claude writes the fix | spends quota without being asked; Pau said «sin claude» |
+| On by default | sends data from the Mac to an external service without asking |
 
 #### Decision log, answers as given (2026-11-26)
-- Q: ¿Issue o PR? → A: PR, sin Claude: una rama con un archivo de informe y un PR que lo propone, en el repo oficial `pausf/atril` (Pau).
-- Q: ¿Con qué cuenta? → A: con el GitHub que la persona ya conectó en Atril (el token se lee en main, como en `forge/create.ts`); ningún token va dentro de la app (assumed: un token incrustado lo saca cualquiera; sin acceso al repo, el envío falla y se dice en Ajustes).
-- Q: ¿Qué es un fallo? → A: lo que Atril no esperaba: una excepción o promesa rechazada sin capturar en main o en la ventana, un error de render de React y una ventana o proceso hijo que muere. Un `Problem` previsto (token caducado, red caída) no lo es (assumed).
-- Q: ¿Qué lleva? → A: el mensaje, la traza, dónde pasó (main, ventana, proceso), la versión de Atril, de Electron y de macOS, y la hora; limpio de rutas, tokens, correos, direcciones y claves de Jira (assumed: Atril no tiene archivo de registro; añadirlo es otro cambio).
-- Q: ¿Repetidos? → A: un fallo tiene una firma (SHA-256 del mensaje limpio con los números como `N` y la primera línea de la traza, 12 hex); una firma ya enviada no abre otro PR; como mucho 5 PR al día por Mac (assumed).
-- Q: ¿Consentimiento? → A: apagado por defecto; en Ajustes, tarjeta «Fallos» con «Enviar los fallos a GitHub como PR»; la primera vez que se enciende, un diálogo dice qué se envía y qué se quita, con «Activar» y «Cancelar» (assumed: es información del Mac de la persona camino de un servicio externo).
-- Q: ¿Y si el envío falla? → A: no se reintenta; la tarjeta enseña «No he podido enviar el último fallo: {motivo}.»; la firma no se marca como enviada, así que el siguiente igual lo vuelve a intentar (assumed).
-- Q: (spec-reviewer) ¿Quién es dueño de `index.ts`, preload y `ui.json`? → A: workspaces, como en skills: su `Governs:` excluye `src/main/crash/** src/renderer/crash/**` y los campos de `ui.json` van como W216 en `spec-workspaces.md`; la tarjeta va en Ajustes tras «Repos» y lo apunta S47 en `spec-settings.md` (assumed).
-- Q: (spec-reviewer) ¿La limpieza es completa? → A: no, es lo mejor posible, y el diálogo lo dice; además, el mensaje pierde todo texto entre comillas (`"…"`, `'…'`, `«…»`), que es donde un error suele repetir datos (títulos, contenido de archivos) (assumed).
-- Q: (spec-reviewer) ¿«direcciones»? → A: de servidores: toda URL, IPv4, IPv6, `host:puerto` y `git@host:` pasan a `<url>`; el diálogo dice «direcciones de servidores» (assumed).
-- Q: (spec-reviewer) ¿Y si `pausf/atril` se hace público? → A: ~~no se envía~~ → Pau, 26 nov: «pausf/atril lo haría público ahora» y «licencia MIT». Se envía igual y el diálogo dice que es público y que cualquiera puede leer el PR.
-- Q: ¿Y quien no puede escribir en `pausf/atril`? → A: ~~su copia (fork)~~ → Pau, 26 nov: «crea PR pero no tiene que tener copia del repo, si no que se haga de otra manera». Atril abre un issue público con el informe (cualquiera puede en un repo público) y un GitHub Action del propio repo, `.github/workflows/fallos.yml`, lo convierte en rama, archivo y PR con su `GITHUB_TOKEN` (assumed: sin servidor que mantener; sin permiso de escritura no hay otra forma de que salga un PR).
-- Q: ¿Cómo se evita el duplicado entre personas? → A: la firma va en el título («Fallo <firma>: …») y antes de enviar se busca un issue o PR con ella en `pausf/atril` en cualquier estado (assumed).
-- Q: ¿Y si alguien abre a mano un issue con ese formato? → A: el robot lo convierte igual en un PR que solo añade `fallos/<firma>.md`; nada se fusiona solo (assumed: es spam que se cierra, sin riesgo para el código).
-- Q: (spec-reviewer) ¿Tope de intentos? → A: el tope de 5 al día cuenta intentos, salgan bien o mal; una firma que falló no se reintenta en 24 h (assumed).
-- Q: (spec-reviewer) ¿Un envío a medias? → A: se retoma: primero se buscan PR de esa rama (abiertos o cerrados) y, si hay, la firma queda enviada con su URL, sin otro PR (así tampoco dos Macs abren dos); rama ya creada o archivo ya en la rama se saltan (assumed).
-- Q: (spec-reviewer) ¿La firma incluye la versión? → A: sí: un fallo que vuelve en otra versión vuelve a avisar (assumed).
-- Q: (spec-reviewer) ¿Mensaje de un proceso muerto? → A: `{type} {reason} (exit {exitCode})`, sin traza; `clean-exit` y `killed` no cuentan (assumed: `killed` es salir de la app).
-- Q: (spec-reviewer) ¿Tiempo máximo? → A: 20 s por petición con `AbortSignal.timeout`; `busy` se suelta siempre en `finally` (assumed: como `forge/create.ts`).
-- Q: (spec-reviewer) ¿Qué hace main tras una excepción sin capturar? → A: la informa, la escribe con `console.error` y sigue, como hace Electron sin el diálogo (assumed).
-- Q: (spec-reviewer) ¿Un fallo antes de `ready`? → A: espera en memoria (como mucho 5) a `app.whenReady()` y luego pasa por las puertas (assumed).
-- Q: (spec-reviewer) ¿Menciones y bloques? → A: mensaje y traza van en bloques con una valla más larga que cualquier racha de comillas invertidas que contengan; el título pierde `@`, `` ` ``, `<`, `>`, `[` y `]` (assumed: dentro de un bloque no hay menciones ni enlaces).
-- Q: (spec-reviewer) ¿Qué error se guarda? → A: el `message` de GitHub (200 caracteres) o `networkCode(err)`, nunca `err.message` (assumed: puede repetir la petición).
-- Q: (spec-reviewer) ¿Cómo sabe la tarjeta si hay GitHub? → A: con `atril:settings:forge:status` que ya existe (assumed).
-- Q: ¿Idioma de lo público? → A: Pau, 26 nov: «todo en inglés lo público, no lo llames fallos». Workflow, rama, carpeta, títulos e informe en inglés; la interfaz sigue en español por `t()`.
+- Q: Issue or PR? → A: PR, without Claude: a branch with a report file and a PR that proposes it, in the official repo `pausf/atril` (Pau).
+- Q: With which account? → A: with the GitHub the person already connected in Atril (the token is read in main, as in `forge/create.ts`); no token goes inside the app (assumed: anyone can extract an embedded token; without access to the repo, the send fails and Settings says so).
+- Q: What is a failure? → A: what Atril did not expect: an uncaught exception or rejected promise in main or in the window, a React render error, and a window or child process that dies. An expected `Problem` (expired token, network down) is not one (assumed).
+- Q: What does it carry? → A: the message, the stack, where it happened (main, window, process), the Atril, Electron and macOS versions, and the time; scrubbed of paths, tokens, e-mails, addresses and Jira keys (assumed: Atril has no log file; adding one is another change).
+- Q: Repeats? → A: a failure has a signature (SHA-256 of the scrubbed message with numbers as `N` and the first line of the stack, 12 hex); an already-sent signature does not open another PR; at most 5 PRs a day per Mac (assumed).
+- Q: Consent? → A: off by default; in Settings, a «Fallos» card with «Enviar los fallos a GitHub como PR»; the first time it is turned on, a dialog says what is sent and what is removed, with «Activar» and «Cancelar» (assumed: it is information from the person's Mac on its way to an external service).
+- Q: And if the send fails? → A: no retry; the card shows «No he podido enviar el último fallo: {motivo}.»; the signature is not marked as sent, so the next occurrence tries again (assumed).
+- Q: (spec-reviewer) Who owns `index.ts`, preload and `ui.json`? → A: workspaces, as in skills: its `Governs:` excludes `src/main/crash/** src/renderer/crash/**` and the `ui.json` fields go as W216 in `spec-workspaces.md`; the card goes in Settings after «Repos» and S47 in `spec-settings.md` records it (assumed).
+- Q: (spec-reviewer) Is the scrubbing complete? → A: no, it is best effort, and the dialog says so; also, the message loses all text between quotes (`"…"`, `'…'`, `«…»`), which is where an error usually repeats data (titles, file contents) (assumed).
+- Q: (spec-reviewer) What are «direcciones»? → A: server ones: every URL, IPv4, IPv6, `host:port` and `git@host:` becomes `<url>`; the dialog says «direcciones de servidores» (assumed).
+- Q: (spec-reviewer) And if `pausf/atril` becomes public? → A: ~~it is not sent~~ → Pau, 26 nov: «pausf/atril lo haría público ahora» and «licencia MIT». It is sent anyway and the dialog says it is public and that anyone can read the PR.
+- Q: And whoever cannot write to `pausf/atril`? → A: ~~their copy (fork)~~ → Pau, 26 nov: «crea PR pero no tiene que tener copia del repo, si no que se haga de otra manera». Atril opens a public issue with the report (anyone can in a public repo) and a GitHub Action in the repo itself, `.github/workflows/crash-report.yml`, turns it into a branch, file and PR with its own `GITHUB_TOKEN` (assumed: no server to maintain; without write permission there is no other way for a PR to come out).
+- Q: How is a duplicate between people avoided? → A: the signature goes in the title («Fallo <firma>: …») and before sending, an issue or PR carrying it is searched in `pausf/atril` in any state (assumed).
+- Q: And if someone opens an issue by hand in that format? → A: the bot turns it into a PR anyway that only adds `fallos/<firma>.md`; nothing merges by itself (assumed: it is spam that gets closed, with no risk to the code).
+- Q: (spec-reviewer) Cap on attempts? → A: the cap of 5 a day counts attempts, whether they succeed or fail; a signature that failed is not retried within 24 h (assumed).
+- Q: (spec-reviewer) A half-done send? → A: it is resumed: first the PRs of that branch (open or closed) are searched and, if there is one, the signature is marked sent with its URL, with no other PR (so two Macs do not open two either); a branch already created or a file already on the branch is skipped (assumed).
+- Q: (spec-reviewer) Does the signature include the version? → A: yes: a failure that returns in another version notifies again (assumed).
+- Q: (spec-reviewer) Message of a dead process? → A: `{type} {reason} (exit {exitCode})`, no stack; `clean-exit` and `killed` do not count (assumed: `killed` is quitting the app).
+- Q: (spec-reviewer) Maximum time? → A: 20 s per request with `AbortSignal.timeout`; `busy` is always released in `finally` (assumed: as in `forge/create.ts`).
+- Q: (spec-reviewer) What does main do after an uncaught exception? → A: it reports it, writes it with `console.error` and keeps running, as Electron does without the dialog (assumed).
+- Q: (spec-reviewer) A failure before `ready`? → A: it waits in memory (at most 5) for `app.whenReady()` and then goes through the gates (assumed).
+- Q: (spec-reviewer) Mentions and blocks? → A: message and stack go in blocks with a fence longer than any run of backticks they contain; the title loses `@`, `` ` ``, `<`, `>`, `[` and `]` (assumed: inside a block there are no mentions or links).
+- Q: (spec-reviewer) Which error is stored? → A: GitHub's `message` (200 characters) or `networkCode(err)`, never `err.message` (assumed: it may repeat the request).
+- Q: (spec-reviewer) How does the card know whether GitHub is connected? → A: with the existing `atril:settings:forge:status` (assumed).
+- Q: Language of the public side? → A: Pau, 26 nov: «todo en inglés lo público, no lo llames fallos». Workflow, branch, folder, titles and report in English; the interface stays in Spanish through `t()`.
 - Q: (work-reviewer) Gaps in the scrubber, a slow regex, a damaged ledger and ResizeObserver noise? → A: all fixed in R1, R4 and R5 (assumed). The pinned `actions/github-script` SHA was checked with `gh api`: v7.0.1.
 
 ## Task breakdown

@@ -22,11 +22,11 @@ export function Sidebar({ workspaces, problem, selected, onSelect, onRemove, onF
   return (
     <aside className="col left">
       <button type="button" className="new-work" onClick={onNewWork} data-tour="new-work">
-        {t('＋ Nuevo trabajo')}
+        {t('＋ New work')}
       </button>
       <JiraSummary inbox={inbox} onOpen={onOpenTasks} />
-      <FoldSection id="work" title={t('Trabajo en marcha')} count={workspaces.length} tour="workspaces">
-        <p className="lead">{t('Cada trabajo, con su agente.')}</p>
+      <FoldSection id="work" title={t('Work in progress')} count={workspaces.length} tour="workspaces">
+        <p className="lead">{t('Each workspace, with its agent.')}</p>
         <WorkspaceList workspaces={workspaces} problem={problem} selected={selected} onSelect={onSelect} onRemove={onRemove} onForget={onForget} />
       </FoldSection>
       <History />

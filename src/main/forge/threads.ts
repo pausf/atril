@@ -138,9 +138,9 @@ interface Deps {
 export function createThreads({ store, fetchImpl = fetch, target }: Deps) {
   async function session(url: string) {
     const tgt = target(url)
-    if (!tgt) throw new Failure({ error: t('Esta MR ya no está en la lista: actualiza') })
+    if (!tgt) throw new Failure({ error: t('This MR is no longer in the list: refresh') })
     const secret = await store.readSecret(tgt.forge).catch(() => null)
-    if (!secret?.['token']) throw new Failure({ error: t('Conecta GitHub o GitLab en Ajustes'), fix: 'settings' })
+    if (!secret?.['token']) throw new Failure({ error: t('Connect GitHub or GitLab in Settings'), fix: 'settings' })
     const name = FORGE_NAME[tgt.forge]
     const { base, headers } = forgeApi(tgt.forge, secret['site'] ?? 'https://gitlab.com', secret['token'])
     const call = async (path: string, init: RequestInit = {}): Promise<Response> => {
@@ -194,10 +194,10 @@ export function createThreads({ store, fetchImpl = fetch, target }: Deps) {
     /** M21: one request per call; the window disables Enviar while it runs. */
     async reply(url: string, threadId: string, body: string): Promise<MrReply> {
       try {
-        if (!body.trim()) throw new Failure({ error: t('Escribe una respuesta') })
+        if (!body.trim()) throw new Failure({ error: t('Write a reply') })
         const { tgt, call } = await session(url)
         const valid = threadId === GENERAL || (tgt.forge === 'github' ? /^\d+$/ : /^[0-9a-f]+$/).test(threadId)
-        if (!valid) throw new Failure({ error: t('Ese hilo no es de esta MR') })
+        if (!valid) throw new Failure({ error: t('That thread is not in this MR') })
         const path =
           tgt.forge === 'github'
             ? threadId === GENERAL ? `${issueRef(tgt.ref)}/comments` : `${tgt.ref}/comments/${threadId}/replies`

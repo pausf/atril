@@ -5,3 +5,6 @@ dist
 # old mr-cockpit concept: holds work data, never publish
 caso-*
 flujo-mr*
+
+# local design sketches, not published
+bocetos/

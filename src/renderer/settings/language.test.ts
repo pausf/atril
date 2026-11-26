@@ -56,6 +56,24 @@ describe('language', () => {
     expect(await screen.findByRole('button', { name: '＋ New work' })).toBeTruthy()
   })
 
+  it('the window shows spanish after the flip', async () => {
+    mockApi({ repos: [], issues: [] })
+    const user = userEvent.setup()
+    render(createElement(App))
+    await user.click(rail(/^Ajustes/))
+    await screen.findByRole('heading', { name: 'Ajustes' })
+    expect(rail(/^Trabajo/)).toBeTruthy()
+    expect(rail(/^Tareas/)).toBeTruthy()
+    expect(screen.getByRole('heading', { name: 'Apariencia' })).toBeTruthy()
+    await user.click(rail(/^Tareas/))
+    await user.click(await screen.findByRole('button', { name: 'Nueva tarea' }))
+    const dialog = await screen.findByRole('dialog', { name: 'Nueva tarea' })
+    expect(within(dialog).getByRole('button', { name: 'Cancelar' })).toBeTruthy()
+    await user.keyboard('{Escape}')
+    await user.click(rail(/^Trabajo/))
+    expect(await screen.findByRole('button', { name: '＋ Nuevo trabajo' })).toBeTruthy()
+  })
+
   it('claude and jira text stay as written', async () => {
     const now = Math.floor(Date.now() / 1000)
     mockApi({

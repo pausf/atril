@@ -15,7 +15,7 @@ export function platformLabel(t: T, platform: QaPlatform | null | undefined): st
     case 'ios':
       return t('iOS')
     default:
-      return t('sin detectar')
+      return t('not detected')
   }
 }
 
@@ -26,18 +26,18 @@ export const targetLabel = (t: T, x: QaTarget): string => (x.dir ? `${platformLa
 export function fixLabel(t: T, fix: QaFix): string {
   switch (fix) {
     case 'pick-manual':
-      return t('Elegir a mano')
+      return t('Pick by hand')
     case 'install-node':
-      return t('Instalar Node')
+      return t('Install Node')
     case 'install-android-studio':
-      return t('Instalar Android Studio')
+      return t('Install Android Studio')
     case 'create-avd':
-      return t('Crear un Pixel 8')
+      return t('Create a Pixel 8')
     case 'update-xcode':
-      return t('Actualizar Xcode')
+      return t('Update Xcode')
     case 'open-xcode':
-      return t('Abrir Xcode')
+      return t('Open Xcode')
     case 'open-workspace':
-      return t('Ver el otro QA')
+      return t('See the other QA')
   }
 }

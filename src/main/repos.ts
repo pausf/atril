@@ -67,7 +67,7 @@ export async function detectMode(path: string, run: Runner): Promise<Detected> {
 
   // Only files are a signal (.env, web/config.local); ignored folders are build output and caches.
   const survivor = ignored.find((e) => !e.endsWith('/') && !segments(e).some((s) => NOISE.has(s)) && !e.endsWith('.log'))
-  if (survivor) return { mode: 'in-place', reason: t('{path} no está versionado', { path: survivor }) }
+  if (survivor) return { mode: 'in-place', reason: t('{path} is not versioned', { path: survivor }) }
 
   const depDirs = ignored.filter((e) => DEP_DIRS.has(segments(e).at(-1) ?? '')).map((e) => join(path, e))
   if (depDirs.length > 0) {
@@ -78,14 +78,14 @@ export async function detectMode(path: string, run: Runner): Promise<Detected> {
       .filter(Boolean)
       .reduce((sum, line) => sum + (parseInt(line, 10) || 0), 0)
     if (kb > HEAVY_DEPS_KB) {
-      return { mode: 'in-place', reason: t('node_modules y vendor pesan {gb} GB', { gb: (kb / 1024 / 1024).toFixed(1) }) }
+      return { mode: 'in-place', reason: t('node_modules and vendor weigh {gb} GB', { gb: (kb / 1024 / 1024).toFixed(1) }) }
     }
   }
-  return { mode: 'worktree', reason: t('ninguna señal: cada trabajo en su propio worktree') }
+  return { mode: 'worktree', reason: t('no signal: each workspace in its own worktree') }
 }
 
 export function effectiveMode(repo: Repo, detected: Detected): Detected {
-  return repo.override ? { mode: repo.override, reason: t('elegido por ti') } : detected
+  return repo.override ? { mode: repo.override, reason: t('chosen by you') } : detected
 }
 
 /** W154: a git that cannot run leaves `ok`; only git's own «not a git repository» says the folder is not one. */
@@ -152,8 +152,8 @@ export const removeRepo = (id: string): Promise<RepoResult> =>
   orProblem(async () => {
     const works = (await readStrict('workspaces')).workspaces
     const state = await readState()
-    if (!state.repos.some((r) => r.id === id)) return { error: t('No hay ningún repo «{id}»', { id }) }
-    if (works.some((w) => w.repoId === id)) return { error: t('{repo} tiene trabajos abiertos: ciérralos antes.', { repo: id }) }
+    if (!state.repos.some((r) => r.id === id)) return { error: t('There is no repo “{id}”', { id }) }
+    if (works.some((w) => w.repoId === id)) return { error: t('{repo} has open works: close them first.', { repo: id }) }
     await writeState({ ...state, repos: state.repos.filter((r) => r.id !== id) })
     return { ok: true as const }
   })
@@ -164,12 +164,12 @@ export async function relocateRepo(id: string, pick: () => Promise<string | null
   if (path === null) return null
   return orProblem(async () => {
     const top = await run('git', ['-C', path, 'rev-parse', '--show-toplevel'])
-    if (top.code !== 0) return { error: t('Esa carpeta no es un repositorio git.') }
+    if (top.code !== 0) return { error: t('That folder is not a git repository.') }
     const toplevel = top.stdout.trim()
     const state = await readState()
-    if (!state.repos.some((r) => r.id === id)) return { error: t('No hay ningún repo «{id}»', { id }) }
+    if (!state.repos.some((r) => r.id === id)) return { error: t('There is no repo “{id}”', { id }) }
     const taken = state.repos.find((r) => r.path === toplevel && r.id !== id)
-    if (taken) return { error: t('Esa carpeta ya es el repo {id}.', { id: taken.id }) }
+    if (taken) return { error: t('That folder is already the repo {id}.', { id: taken.id }) }
     await writeState({ ...state, repos: state.repos.map((r) => (r.id === id ? { ...r, path: toplevel } : r)) })
     return { ok: true as const }
   })

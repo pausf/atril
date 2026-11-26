@@ -2,15 +2,16 @@
 
 Mac app (Electron + TypeScript + React 19, pnpm) that takes each Jira task through the Libretto flow
 with Claude Code agents in tmux, and manages GitHub/GitLab MRs. Remote `github.com/pausf/atril`
-(currently private; git identity `pausf`, noreply email). History lives in `git log` and
-`.agents/specs/`, not here.
+(public, MIT; git identity `pausf`, noreply email). History lives in `git log` and
+`.agents/specs/`, not here. `bocetos/` (design sketches) is local-only and gitignored: the references to it
+below point at files on Pau's disk, not in the repo.
 
 ## Last landed
 
-`crash-reports` (26 Nov): opt-in in Settings → «Fallos». An unexpected failure is scrubbed and opened
+`crash-reports` (26 Nov): opt-in in Settings → "Failures". An unexpected failure is scrubbed and opened
 as an English issue `Crash <sig>:` in pausf/atril with the person's GitHub token;
 `.github/workflows/crash-report.yml` turns it into branch `atril-crash/<sig>`, file
-`crash-reports/<sig>.md` and a PR. Branches are stacked: each one leaves the previous, `main` has not moved.
+`crash-reports/<sig>.md` and a PR.
 
 ## Next
 
@@ -26,10 +27,10 @@ as an English issue `Crash <sig>:` in pausf/atril with the person's GitHub token
 - A real forge: listing MRs, a score, Libretto drafts, publishing a draft on its line, merging (GitHub
   squash, GitLab), GitLab fields (`detailed_merge_status`, `has_conflicts`, `target_branch`), reviewers, old-side threads.
 - Crash reports against real GitHub; plugin commands against the real `claude` CLI; refine-request with real Claude.
-- Claude Code's option selector taking a typed digit + Enter (quick replies, «Allow» = 1); Esc pausing Claude
-  cleanly; «Sigue donde lo dejaste.» read as a new message; a lens review reading the request as context.
-- Live QA with a real agent, browser and emulator (only doubles so far); «Empezar» sending
-  `/libretto:write-spec <name>`; «Pasar a Jira»; the Jira board; auto mode asking before a push; replying from a Mac notice.
+- Claude Code's option selector taking a typed digit + Enter (quick replies, "Allow" = 1); Esc pausing Claude
+  cleanly; "Pick up where you left off." read as a new message; a lens review reading the request as context.
+- Live QA with a real agent, browser and emulator (only doubles so far); "Start" sending
+  `/libretto:write-spec <name>`; "Pass to Jira"; the Jira board; auto mode asking before a push; replying from a Mac notice.
 - `pnpm dist` and the installed `.dmg` (`bocetos/instalar.html` §4).
 - `openmr.test.ts` and `pause.test.ts` sometimes fail in the full suite under git load: look in the QA round.
 
@@ -56,9 +57,9 @@ as an English issue `Crash <sig>:` in pausf/atril with the person's GitHub token
   `screencapture` the whole screen: only Atril's window (`page.screenshot` over CDP, or `screencapture -l <windowid>`).
 - **Fake `claude` in tests:** Atril puts your login shell's PATH first, so a fake only in `PATH` loses and the real one
   runs (spends quota). Launch with `SHELL` pointing at a fake shell that, with `-ilc`, prepends the doubles folder.
-- **Errors:** never a bare «error 500». Say what happened, what you can't do because of it, and one button that fixes
-  it (Terminal with the command, token page, Settings, «Volver a comprobar»); the code only under a folded «Ver detalle». Catalog: `bocetos/errores.html`.
-- **Texts** go through `t()`/`useT()` with an English entry in `src/preload/i18n-en.ts` (scans S16/S19). **Colours**
-  only as tokens in `:root` and `[data-theme='dark']`.
+- **Errors:** never a bare "error 500". Say what happened, what you can't do because of it, and one button that fixes
+  it (Terminal with the command, token page, Settings, "Check again"); the code only under a folded "See detail". Catalog: `bocetos/errores.html`.
+- **Texts** go through `t()`/`useT()`; the key is the English text and its Spanish entry lives in
+  `src/preload/i18n-es.ts` (scans S16/S19). **Colours** only as tokens in `:root` and `[data-theme='dark']`.
 - **Landing:** `python3 scripts/land.py <change> "<Label>"`, then in the same commit `git rm -r .agents/changes/<change>`,
   `libretto wiki`, `libretto land`. `(amended)` criteria replace the existing one.

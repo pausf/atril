@@ -13,9 +13,9 @@ export type BoardRead = { columns: BoardColumn[] } | { error: string; detail?: s
 export const isBoardId = (id: unknown): id is number => typeof id === 'number' && Number.isInteger(id) && id > 0
 
 const categories = (): ReadonlyArray<[JiraIssue['group'], string, boolean]> => [
-  ['todo', t('Por empezar'), false],
-  ['doing', t('En curso'), false],
-  ['review', t('En revisión y despliegue'), true]
+  ['todo', t('To start'), false],
+  ['doing', t('In progress'), false],
+  ['review', t('In review and deployment'), true]
 ]
 
 export function groupsByCategory(issues: JiraIssue[]): InboxGroup[] {
@@ -36,11 +36,11 @@ export function groupByBoard(issues: JiraIssue[], columns: BoardColumn[]): Inbox
     else keys[n]!.push(i.key)
   }
   const groups = columns.map((c, n): InboxGroup => ({ id: `col-${n}`, title: c.name, folded: false, keys: keys[n]! }))
-  return [...groups, { id: 'outside', title: t('Fuera del tablero'), folded: true, keys: outside }].filter((g) => g.keys.length > 0)
+  return [...groups, { id: 'outside', title: t('Outside the board'), folded: true, keys: outside }].filter((g) => g.keys.length > 0)
 }
 
 export async function readBoardColumns(creds: JiraCreds, id: unknown, fetchImpl: typeof fetch = fetch): Promise<BoardRead> {
-  if (!isBoardId(id)) return { error: t('id no válido') }
+  if (!isBoardId(id)) return { error: t('invalid id') }
   const url = new URL(`/rest/agile/1.0/board/${id}/configuration`, new URL(creds.site.trim()).origin)
   try {
     const res = await fetchImpl(url, {
@@ -53,7 +53,7 @@ export async function readBoardColumns(creds: JiraCreds, id: unknown, fetchImpl:
     if (!res.ok) return netProblem('Jira', { status: res.status })
     const body = (await res.json()) as { columnConfig?: { columns?: Array<{ name?: unknown; statuses?: Array<{ id?: unknown }> }> } }
     const raw = body.columnConfig?.columns
-    if (!Array.isArray(raw) || raw.length === 0) return { error: t('respuesta inesperada') }
+    if (!Array.isArray(raw) || raw.length === 0) return { error: t('unexpected response') }
     return {
       columns: raw.map((c) => ({
         name: typeof c.name === 'string' ? c.name : '',
@@ -72,9 +72,9 @@ export async function inboxGroups(
   issues: JiraIssue[],
   fetchImpl: typeof fetch = fetch
 ): Promise<{ groups: InboxGroup[]; notice?: InboxNotice }> {
-  if (!board) return { groups: groupsByCategory(issues), notice: { text: t('Elige tu tablero en Ajustes para ver sus columnas'), settings: true } }
+  if (!board) return { groups: groupsByCategory(issues), notice: { text: t('Pick your board in Settings to see its columns'), settings: true } }
   const read = await readBoardColumns(creds, board.id, fetchImpl)
   if ('error' in read)
-    return { groups: groupsByCategory(issues), notice: { text: t('No puedo leer el tablero: {problem}', { problem: read.error }), ...(read.detail && { detail: read.detail }) } }
+    return { groups: groupsByCategory(issues), notice: { text: t("I can't read the board: {problem}", { problem: read.error }), ...(read.detail && { detail: read.detail }) } }
   return { groups: groupByBoard(issues, read.columns) }
 }

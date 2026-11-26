@@ -55,21 +55,21 @@ function line(t: T, n: Aviso): string {
   const work = n.title
   switch (n.kind) {
     case 'agent':
-      return t('{branch} te necesita', { branch: work })
+      return t('{branch} needs you', { branch: work })
     case 'ask':
-      return t('{work} te pregunta', { work })
+      return t('{work} asks you', { work })
     case 'done':
-      return t('{work} ha terminado su turno', { work })
+      return t('{work} finished its turn', { work })
     case 'stopped':
-      return t('{work} se ha parado', { work })
+      return t('{work} has stopped', { work })
     case 'idle':
-      return t('{work} te espera', { work })
+      return t('{work} is waiting for you', { work })
     case 'radar':
-      return t('{work} choca con otro trabajo', { work })
+      return t('{work} clashes with another work', { work })
     case 'qa':
-      return t('QA terminada en {work}', { work })
+      return t('QA finished in {work}', { work })
     case 'quota':
-      return t('Cuota de Claude al 80 %')
+      return t('Claude quota at 80 %')
     default:
       return n.title
   }
@@ -82,23 +82,23 @@ export function Avisos({ avisos, open }: { avisos: AvisosState; open: (to: Aviso
   const [said, setSaid] = useState<string | null>(null)
   const [closable, setClosable] = useState<Record<string, string>>({})
   const label: Record<AvisoKind, string> = {
-    review: t('Te piden revisión'),
-    comment: t('Comentario nuevo'),
-    ci: t('La CI falla'),
-    following: t('MR nueva en lo que sigues'),
-    opened: t('Has abierto una MR'),
-    gone: t('Ya no está abierta'),
-    agent: t('Agente'),
-    cipass: t('La CI vuelve a pasar'),
-    merged: t('MR fusionada'),
-    closed: t('MR cerrada'),
-    ask: t('Te pregunta algo'),
-    done: t('Ha terminado su turno'),
-    stopped: t('Se ha parado'),
-    idle: t('Te espera'),
-    radar: t('Choca con otro trabajo'),
-    qa: t('QA terminada'),
-    quota: t('Cuota de Claude')
+    review: t('Review requested'),
+    comment: t('New comment'),
+    ci: t('CI is failing'),
+    following: t('New MR in what you follow'),
+    opened: t('You opened an MR'),
+    gone: t('No longer open'),
+    agent: t('Agent'),
+    cipass: t('CI passes again'),
+    merged: t('MR merged'),
+    closed: t('MR closed'),
+    ask: t('Asks you something'),
+    done: t('Finished its turn'),
+    stopped: t('Has stopped'),
+    idle: t('Waiting for you'),
+    radar: t('Clashes with another work'),
+    qa: t('QA finished'),
+    quota: t('Claude quota')
   }
   // V15: main says which merged or closed MR still has a work open on its branch.
   const ends = avisos.items
@@ -125,15 +125,15 @@ export function Avisos({ avisos, open }: { avisos: AvisosState; open: (to: Aviso
   return (
     <section className="tasks-screen avisos" data-tour="avisos">
       <h1>
-        {t('Avisos')}
+        {t('Notices')}
         <button className="refresh" onClick={() => avisos.markRead('all')} disabled={avisos.unread === 0}>
-          {t('Marcar todo leído')}
+          {t('Mark all read')}
         </button>
       </h1>
-      <p className="lead">{t('Lo que ha cambiado en tus MR y en tus agentes desde la última vez.')}</p>
-      <div className="seg avisos-filter" role="group" aria-label={t('Filtrar por tipo')}>
+      <p className="lead">{t('What changed in your MRs and your agents since last time.')}</p>
+      <div className="seg avisos-filter" role="group" aria-label={t('Filter by kind')}>
         <button type="button" aria-pressed={filter === null} onClick={() => setFilter(null)}>
-          {t('Todos')}
+          {t('All')}
         </button>
         {kinds.map((k) => (
           <button key={k} type="button" aria-pressed={filter === k} onClick={() => setFilter(k)}>
@@ -146,8 +146,8 @@ export function Avisos({ avisos, open }: { avisos: AvisosState; open: (to: Aviso
           {said}
         </p>
       )}
-      {shown.length === 0 && <div className="empty">{t('Ningún aviso.')}</div>}
-      <ul className="avisos-list" aria-label={t('Avisos')}>
+      {shown.length === 0 && <div className="empty">{t('No notices.')}</div>}
+      <ul className="avisos-list" aria-label={t('Notices')}>
         {shown.map((n) => {
           const detail = (n.kind === 'ask' || n.kind === 'done') && n.detail ? localiseActivity(n.detail, t) : null
           const ws = closable[n.id]
@@ -163,7 +163,7 @@ export function Avisos({ avisos, open }: { avisos: AvisosState; open: (to: Aviso
               </button>
               {ws && (
                 <button type="button" className="btn aviso-close" onClick={() => setSaid(open({ kind: 'close', id: ws }))}>
-                  {t('Cerrar su trabajo')}
+                  {t('Close its work')}
                 </button>
               )}
             </li>
