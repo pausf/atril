@@ -1,5 +1,6 @@
 import { useT } from '../ui'
 import { StateLabel } from './StateLabel'
+import { Icon } from './Icon'
 import { useContext, useEffect, useState } from 'react'
 import type { RadarHit, RemoveResult, StateProblem, WorkspaceView } from '../../preload/api'
 import { stateOf, useAgentStates, useLatestActivity } from '../agents'
@@ -10,16 +11,26 @@ import { fixLabel, Problem, sharedFix } from './Problem'
 import { NavigationContext } from '../settings/navigation'
 import { useRadar } from '../radar'
 
-/** W168: the first collision, how many files more, and every one of them on hover. */
+/** W168, W311: the first collision with files and how many more; the first with ids; every one of them on hover. */
 function RadarLine({ hits = [] }: { hits?: RadarHit[] }) {
   const t = useT()
-  const first = hits[0]
-  if (!first?.files[0]) return null
-  const vars = { branch: first.branch, file: first.files[0], n: hits.reduce((n, h) => n + h.files.length, 0) - 1 }
+  const withFile = hits.find((h) => h.files.length > 0)
+  const withIds = hits.find((h) => (h.ids ?? []).length > 0)
+  const files = withFile && { branch: withFile.branch, file: withFile.files[0]!, n: hits.reduce((n, h) => n + h.files.length, 0) - 1 }
+  const ids = withIds && { branch: withIds.branch, id: withIds.ids![0]!, n: withIds.ids!.length - 1 }
   return (
-    <span className="ws-radar" title={hits.flatMap((h) => h.files.map((f) => `${h.branch}: ${f}`)).join('\n')}>
-      {vars.n > 0 ? t('Clashes with {branch} in {file} and {n} more', vars) : t('Clashes with {branch} in {file}', vars)}
-    </span>
+    <>
+      {files && (
+        <span className="ws-radar" title={hits.flatMap((h) => h.files.map((f) => `${h.branch}: ${f}`)).join('\n')}>
+          {files.n > 0 ? t('Clashes with {branch} in {file} and {n} more', files) : t('Clashes with {branch} in {file}', files)}
+        </span>
+      )}
+      {ids && (
+        <span className="ws-radar ids" title={hits.flatMap((h) => (h.ids ?? []).map((i) => `${h.branch}: ${i}`)).join('\n')}>
+          {ids.n > 0 ? t('Criterion ids {id} and {n} more also in {branch}', ids) : t('Criterion id {id} also in {branch}', ids)}
+        </span>
+      )}
+    </>
   )
 }
 
@@ -102,7 +113,14 @@ export function WorkspaceList({ workspaces, problem, selected, onSelect, onRemov
                 </>
               )}
             </span>
-            <StateLabel state={stateOf(states, w)} />
+            {/* W309: a merged work says so instead of what its agent is doing. */}
+            {w.merged ? (
+              <span className="state done">
+                <Icon name="done" size={16} /> {t('Merged')}
+              </span>
+            ) : (
+              <StateLabel state={stateOf(states, w)} />
+            )}
             <RadarLine hits={radar[w.id]} />
             {runningCount(subs[w.id]) > 0 && <span className="ws-subs">{runningCount(subs[w.id]) === 1 ? t('1 subagent') : t('{n} subagents', { n: runningCount(subs[w.id]) })}</span>}
             {latest[w.id] && !asking.has(w.id) && (
@@ -111,7 +129,7 @@ export function WorkspaceList({ workspaces, problem, selected, onSelect, onRemov
               </span>
             )}
           </button>
-          {states[w.id] === 'needs-you' && (
+          {stateOf(states, w) === 'needs-you' && (
             <AgentCard workspaceId={w.id} activityAt={latest[w.id]?.at} onShown={(shown) => markAsking(w.id, shown)} />
           )}
           <button

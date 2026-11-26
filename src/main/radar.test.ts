@@ -1,8 +1,8 @@
-import { mkdirSync, writeFileSync } from 'node:fs'
+import { mkdirSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { run, type Runner } from './run'
-import { cleanTmp, git, tmp } from './test-helpers'
+import { cleanTmp, git, tmp, workThatMergedMain } from './test-helpers'
 import { clock, closeQuiet, openWatchers } from './flow/quiet'
 import { createClashWatch, radar } from './radar'
 import type { RadarHit } from '../preload/api'
@@ -105,12 +105,68 @@ describe('the radar', () => {
     three()
     const hits = await radar(run)
     expect(hits).toEqual({
-      aaaa0001: [{ id: 'aaaa0002', branch: 'feat/b', files: ['.agents/notes.md', 'src/cart.ts'] }],
-      aaaa0002: [{ id: 'aaaa0001', branch: 'feat/a', files: ['.agents/notes.md', 'src/cart.ts'] }],
+      aaaa0001: [{ id: 'aaaa0002', branch: 'feat/b', files: ['.agents/notes.md', 'src/cart.ts'], ids: [] }],
+      aaaa0002: [{ id: 'aaaa0001', branch: 'feat/a', files: ['.agents/notes.md', 'src/cart.ts'], ids: [] }],
       aaaa0003: [],
       oooo0001: []
     })
   }, 90_000)
+
+  it("a work that merged origin's default branch clashes only on its own files", async () => {
+    const w = workThatMergedMain(3, 2)
+    // b starts from the newer main and edits main.txt, which w only has through the merge, and own.txt, which w wrote.
+    const b = join(tmp(), 'wt')
+    git(w.root, 'worktree', 'add', '-q', '--no-track', '-b', 'feat/b', b, 'origin/main')
+    put(b, 'main.txt', 'changed\n')
+    put(b, 'own.txt', 'b\n')
+    writeFileSync(
+      join(home, 'workspaces.json'),
+      JSON.stringify({ workspaces: [{ ...rec('w1', 'shop', 'feat/w', w.path, w.base), baseRef: 'origin/main' }, { ...rec('b1', 'shop', 'feat/b', b, w.main), baseRef: 'origin/main' }] })
+    )
+    const hits = await radar(run)
+    expect(hits['w1']?.map((h) => [h.id, h.files])).toEqual([['b1', ['own.txt']]])
+    expect(hits['b1']?.map((h) => [h.id, h.files])).toEqual([['w1', ['own.txt']]])
+  }, 30_000)
+
+  it('a merged work is out of the clash check', async () => {
+    three()
+    const file = join(home, 'workspaces.json')
+    const all = JSON.parse(readFileSync(file, 'utf8')) as { workspaces: Array<Record<string, unknown>> }
+    // a and b share src/cart.ts; once a is merged neither side sees it.
+    all.workspaces[0]!['merged'] = true
+    writeFileSync(file, JSON.stringify(all))
+    const hits = await radar(run)
+    expect(hits['aaaa0001']).toBeUndefined()
+    expect(hits['aaaa0002']?.map((h) => h.id)).toEqual([])
+  })
+
+  it('two works defining the same new criterion ids clash on those ids', async () => {
+    const shop = repo()
+    // W5 is already defined on the base: nobody owns it.
+    put(shop.root, '.agents/specs/x/spec.md', '- **W5** old\n')
+    git(shop.root, 'add', '.')
+    git(shop.root, 'commit', '-q', '-m', 'spec')
+    const base = git(shop.root, 'rev-parse', 'HEAD').trim()
+    const doc = (ids: string[]): string => ids.map((i) => `- **${i}** shall\n  Proof: x\n`).join('')
+    const a = worktree(shop.root, 'feat/a')
+    put(a, '.agents/changes/a/proposal.md', doc(['W5', 'W10', 'W9', 'F18', 'W99']) + '- **W7** (amended) shall\n')
+    const b = worktree(shop.root, 'feat/b')
+    put(b, '.agents/changes/b/proposal.md', doc(['W5', 'W9', 'W10', 'F18']) + '- **W7** (amended) shall\n')
+    // A huge document is skipped; a link is not followed.
+    put(b, '.agents/changes/b/huge.md', doc(['W99']) + 'x'.repeat(1024 * 1024))
+    const c = worktree(shop.root, 'feat/c')
+    mkdirSync(join(c, '.agents/changes/c'), { recursive: true })
+    symlinkSync(join(a, '.agents/changes/a/proposal.md'), join(c, '.agents/changes/c/proposal.md'))
+    writeFileSync(
+      join(home, 'workspaces.json'),
+      JSON.stringify({ workspaces: [rec('aaaa0001', 'shop', 'feat/a', a, base), rec('aaaa0002', 'shop', 'feat/b', b, base), rec('aaaa0003', 'shop', 'feat/c', c, base)] })
+    )
+    const hits = await radar(run)
+    // Only Libretto's documents differ, so no file is shared outside .agents; ids are numeric-sorted.
+    expect(hits['aaaa0001']?.map((h) => [h.id, h.ids])).toEqual([['aaaa0002', ['F18', 'W9', 'W10']]])
+    expect(hits['aaaa0002']?.map((h) => [h.id, h.ids])).toEqual([['aaaa0001', ['F18', 'W9', 'W10']]])
+    expect(hits['aaaa0003']).toEqual([])
+  })
 
   it('the radar costs nothing while nothing changes', async () => {
     three()

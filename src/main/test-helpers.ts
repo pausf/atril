@@ -57,3 +57,35 @@ export function agentSpy(run: Runner): { run: Runner; argvs: string[][] } {
   }
   return { run: spy, argvs }
 }
+
+/**
+ * W303–W305: a work on `feat/w` that started at origin/main (`base`), then origin/main gained `main.txt` (`onMain`
+ * lines, `main`), and the work committed `own.txt` (`own` lines) and merged origin/main.
+ */
+export function workThatMergedMain(onMain: number, own: number): { root: string; path: string; base: string; main: string } {
+  const root = tmp()
+  git(root, 'init', '-q', '-b', 'main')
+  writeFileSync(join(root, 'a.txt'), 'x\n')
+  git(root, 'add', '.')
+  git(root, 'commit', '-q', '-m', 'init')
+  const bare = tmp()
+  git(bare, 'init', '--bare', '-q', '-b', 'main')
+  git(root, 'remote', 'add', 'origin', bare)
+  git(root, 'push', '-q', 'origin', 'main')
+  git(root, 'fetch', '-q', 'origin')
+  const path = join(tmp(), 'wt')
+  git(root, 'worktree', 'add', '-q', '--no-track', '-b', 'feat/w', path, 'origin/main')
+  const base = git(path, 'rev-parse', 'HEAD').trim()
+  const other = tmp()
+  git(other, 'clone', '-q', bare, '.')
+  writeFileSync(join(other, 'main.txt'), 'm\n'.repeat(onMain))
+  git(other, 'add', '.')
+  git(other, 'commit', '-q', '-m', 'landed elsewhere')
+  git(other, 'push', '-q', 'origin', 'main')
+  writeFileSync(join(path, 'own.txt'), 'o\n'.repeat(own))
+  git(path, 'add', '.')
+  git(path, 'commit', '-q', '-m', 'own')
+  git(path, 'fetch', '-q', 'origin')
+  git(path, 'merge', '-q', '--no-edit', 'origin/main')
+  return { root, path, base, main: git(root, 'rev-parse', 'origin/main').trim() }
+}

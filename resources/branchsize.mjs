@@ -37,6 +37,16 @@ export function branchSize(path, base) {
   return total
 }
 
+/** W304: like main's workBase (W303); any git failure falls back to baseCommit. */
+function baseOf(ws) {
+  if (typeof ws.baseRef !== 'string') return ws.baseCommit
+  try {
+    return git(ws.path, ['merge-base', 'HEAD', ws.baseRef]).trim() || ws.baseCommit
+  } catch {
+    return ws.baseCommit
+  }
+}
+
 /** The threshold k this call claims, or null; each k is claimed once per session. Claude is told nothing: F25 asks the person. */
 export function claimSize({ home, session, event, tool }) {
   if (event !== 'PostToolUse' || !TOOLS.has(tool)) return null
@@ -47,7 +57,7 @@ export function claimSize({ home, session, event, tool }) {
     return null
   }
   if (!ws?.path || !ws.baseCommit) return null
-  const total = branchSize(ws.path, ws.baseCommit)
+  const total = branchSize(ws.path, baseOf(ws))
   const k = Math.floor((total - 1) / THRESHOLD)
   if (k < 1) return null
   const dir = join(home, 'size', session)

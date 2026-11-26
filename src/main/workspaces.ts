@@ -2,7 +2,9 @@ import { randomInt } from 'node:crypto'
 import { existsSync } from 'node:fs'
 import { mkdir, rename, rm as unlink, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
-import type { Agent, Effort, Model, RemoveResult, WorkRefusal, WorkspaceRecord, WorkspaceResult, WorkspaceView } from '../preload/api'
+import type { Agent, Aviso, Effort, FlowBoxes, Model, RemoveResult, WorkRefusal, WorkspaceRecord, WorkspaceResult, WorkspaceView } from '../preload/api'
+import { boxDiff, boxRanges } from './flow/boxes'
+import { quietly } from './flow/quiet'
 import { agentArgv, hasLessons, EFFORTS } from './agent'
 import { detectMode, effectiveMode, gitBroken, readRepos, repoHealth } from './repos'
 import { readState, StateError, stateBlock, stateProblem, statePath } from './state'
@@ -67,6 +69,67 @@ export async function writeRecords(workspaces: WorkspaceRecord[]): Promise<void>
   const temp = `${file}.${process.pid}.${newId()}.tmp`
   await writeFile(temp, JSON.stringify({ workspaces }, null, 2) + '\n')
   await rename(temp, file)
+}
+
+/** W300, W302: origin's default branch after a fetch (or as last fetched); null without origin or any of its refs. */
+async function defaultRef(path: string, run: Runner): Promise<{ ref: string; sha: string; fetched: boolean } | null> {
+  if ((await run('git', ['-C', path, 'remote', 'get-url', 'origin'])).code !== 0) return null
+  const fetched = (await run('git', ['-C', path, 'fetch', 'origin'], { timeoutMs: 15_000 })).code === 0
+  const head = await run('git', ['-C', path, 'symbolic-ref', '--short', 'refs/remotes/origin/HEAD'])
+  for (const ref of [...(head.code === 0 && head.stdout.trim() ? [head.stdout.trim()] : []), 'origin/main', 'origin/master']) {
+    const sha = await run('git', ['-C', path, 'rev-parse', '--verify', '--quiet', `refs/remotes/${ref}^{commit}`])
+    if (sha.code === 0 && sha.stdout.trim()) return { ref, sha: sha.stdout.trim(), fetched }
+  }
+  return null
+}
+
+type Based = Pick<WorkspaceRecord, 'path' | 'baseCommit' | 'baseRef'>
+
+/** W303: where HEAD left the work's base ref; `baseCommit` without one. Cached per work until its git refs move. */
+export const workBase = (rec: Based, run: Runner = defaultRun): Promise<string> =>
+  rec.baseRef
+    ? quietly(rec.path, `base:${rec.baseCommit}:${rec.baseRef}`, run, async () => {
+        const mb = await run('git', ['-C', rec.path, 'merge-base', 'HEAD', rec.baseRef!])
+        return (mb.code === 0 && mb.stdout.trim()) || rec.baseCommit
+      })
+    : Promise.resolve(rec.baseCommit)
+
+/** W312: the panel measures from the same base as the hook (W46). */
+export const panelBoxes = async (ws: Based, change: string | undefined, run: Runner = defaultRun): Promise<FlowBoxes> =>
+  boxRanges(ws.path, await workBase(ws, run), change, run)
+export const panelBoxDiff = async (ws: Based, change: string | undefined, index: number, file: string, run: Runner = defaultRun): Promise<string> =>
+  boxDiff(ws.path, await workBase(ws, run), change, index, file, run)
+
+/** W306, W307: marks these records merged; re-reads first so a record written meanwhile is kept. */
+async function setMerged(ids: Set<string>): Promise<void> {
+  if (ids.size === 0) return
+  const recs = await readRecords()
+  if (!recs.some((r) => ids.has(r.id) && !r.merged)) return
+  await writeRecords(recs.map((r) => (ids.has(r.id) ? { ...r, merged: true as const } : r)))
+}
+
+/** W306: the work each added `merged` notice belongs to, by W187's match. */
+export async function markMergedFrom(added: Aviso[], closable: (a: Aviso) => Promise<string | undefined>): Promise<void> {
+  const ids = new Set<string>()
+  for (const a of added) {
+    if (a.kind !== 'merged') continue
+    const id = await closable(a)
+    if (id) ids.add(id)
+  }
+  await setMerged(ids)
+}
+
+/** W307: sibling works of the repo whose own commits are all in the default ref by now. */
+async function markLanded(repoId: string, repoPath: string, ref: string, run: Runner): Promise<void> {
+  const ids = new Set<string>()
+  for (const r of await readRecords()) {
+    if (r.repoId !== repoId || r.mode === 'review' || r.merged) continue
+    const tip = `refs/heads/${r.branch}`
+    const own = await run('git', ['-C', repoPath, 'rev-list', '--count', `${r.baseCommit}..${tip}`])
+    if (own.code !== 0 || Number(own.stdout.trim()) < 1) continue
+    if ((await run('git', ['-C', repoPath, 'merge-base', '--is-ancestor', tip, ref])).code === 0) ids.add(r.id)
+  }
+  await setMerged(ids)
 }
 
 const MAX_TASK = 2000
@@ -142,6 +205,7 @@ export async function openWorktree(
   let previousBranch: string | undefined
   let fetched: string | undefined
   let madeBranch = !review && input.existing !== true
+  let base = madeBranch ? await defaultRef(repo.path, run) : null
   if (review) {
     path = repo.path
   } else if (inPlace) {
@@ -166,12 +230,15 @@ export async function openWorktree(
     previousBranch = current || (await run('git', ['-C', repo.path, 'rev-parse', 'HEAD'])).stdout.trim()
     const exists = (await run('git', ['-C', repo.path, 'rev-parse', '--verify', '--quiet', `refs/heads/${branch}`])).code === 0
     madeBranch = !exists
-    const sw = await run('git', ['-C', repo.path, 'switch', ...(exists ? [] : ['-c']), branch])
+    // A branch already there is switched to as it is: it started from wherever it started.
+    if (exists) base = null
+    const target = exists ? [branch] : base ? ['--no-track', '-c', branch, base.ref] : ['-c', branch]
+    const sw = await run('git', ['-C', repo.path, 'switch', ...target])
     if (sw.code !== 0) return gitFailed(sw, t('git will not let me switch your copy to {branch}.', { branch }))
     path = repo.path
   } else {
     path = worktreePath(repoId, branch)
-    let where = ['-b', branch, path]
+    let where = base ? ['--no-track', '-b', branch, path, base.ref] : ['-b', branch, path]
     if (input.existing === true) {
       const remote = input.remote ?? 'origin'
       const fetch = await run('git', ['-C', repo.path, 'fetch', remote, branch])
@@ -216,7 +283,7 @@ export async function openWorktree(
     return { error: prepared }
   }
 
-  const head = fetched === undefined ? (await run('git', ['-C', repo.path, 'rev-parse', 'HEAD'])).stdout.trim() : fetched
+  const head = fetched ?? base?.sha ?? (await run('git', ['-C', repo.path, 'rev-parse', 'HEAD'])).stdout.trim()
   const id = newId()
   // Only folders Atril created: in-place and review run in the person's own checkout, never touched (W31).
   if (!inPlace && !review) await trustFolder(path)
@@ -244,6 +311,7 @@ export async function openWorktree(
     mode: review ? 'review' : inPlace ? 'in-place' : 'worktree',
     path,
     baseCommit: head,
+    ...(base && { baseRef: base.ref }),
     ...(previousBranch !== undefined && { previousBranch }),
     agent,
     ...(input.model && { model: input.model }),
@@ -263,6 +331,8 @@ export async function openWorktree(
     await undo()
     return unwritable(err, t("I couldn't save the workspace."))!
   }
+  // A mark that fails to save costs only the label: the work itself is open.
+  if (base?.fetched) await markLanded(repoId, repo.path, base.ref, run).catch(() => undefined)
   return { workspace: { ...record, alive: true } }
 }
 

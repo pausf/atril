@@ -12,7 +12,9 @@ export function useAgentStates(): Record<string, AgentState> {
 }
 
 /** Without a state file, a live tmux session counts as working. */
-export const stateOf = (states: Record<string, AgentState>, w: WorkspaceView): AgentState => states[w.id] ?? (w.alive ? 'working' : 'stopped')
+/** W313: a merged work is done, whatever its agent says. */
+export const stateOf = (states: Record<string, AgentState>, w: WorkspaceView): AgentState =>
+  w.merged ? 'done' : (states[w.id] ?? (w.alive ? 'working' : 'stopped'))
 
 /** The newest activity line of every workspace that has one. */
 export function useLatestActivity(): Record<string, ActivityLine> {

@@ -537,3 +537,12 @@ I told Pau his brief was wrong («there is no `i18n-es.ts`») after checking onl
 
 ## 2026-11-26 · fix-cdp-isolation · 6→7
 Reviewer found nothing against the contract (12 proofs re-run, typecheck and lint green). It did not drive the real app, so the busy-port exit and the free-port start rest on the builder's own drive (logged above); that drive is what found W331, which no unit test would have.
+
+## 2026-11-26 · work-vs-main · 6→7
+Reviewer found nothing against the contract (17 proofs re-run, typecheck and lint green); it read the main-side diffs, not the renderer ones. Before it, the cold spec review caught that W310's «ids both works define» would have made every pair clash on change documents already on main: a work's ids are only those its base does not define. A rule that compares two branches compares what each added, never what they share by ancestry.
+
+## 2026-11-26 · work-vs-main · real app
+The shared-ids line passed its test and, at the sidebar's width, cut the id itself («…que feat/b: W30…»). Text that ends in the one value it exists to show gets that value first, so an ellipsis eats the context and not the point. Seen only in the real window.
+
+## 2026-11-26 · work-vs-main · 1
+This work was itself created from a stale local checkout (the bug it fixes, #11): reset onto origin/main before anything else. Until this change lands, a work started from «New work» should `git fetch` and check `git log origin/main..HEAD` before building.

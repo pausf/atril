@@ -94,6 +94,10 @@ export interface WorkspaceRecord {
   mode: Mode | 'review'
   path: string
   baseCommit: string
+  /** W300: origin's default branch the work started from (`origin/main`); a size is measured from where HEAD left it (W303). */
+  baseRef?: string
+  /** W306, W307: its branch has landed; sticky. */
+  merged?: true
   previousBranch?: string
   agent: Agent
   model?: Model
@@ -1079,6 +1083,8 @@ export interface RadarHit {
   id: string
   branch: string
   files: string[]
+  /** W310: criterion ids both works own; main always sends it, older fixtures may not. */
+  ids?: string[]
 }
 
 export interface RadarApi {

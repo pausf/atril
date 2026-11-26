@@ -380,6 +380,13 @@ In Settings → Repos, each healthy repo row has a «Harness» button. Opening i
 - A driver cannot read anything from an Atril it did not launch: it proves the page carries the token it handed to the launch before reading, and otherwise disconnects and throws.
 - A packaged app ignores all of it.
 
+### Work vs main (#11, #10, #8) (work-vs-main, 26 nov 2026)
+
+- «New work» in a repo whose checkout sits on an old branch creates a branch whose first commit is `origin`'s current default branch, not the checkout's HEAD; the person's checkout is not moved.
+- A work that later merges or rebases onto a newer `origin/main` reports a size, a panel total and clashes counted only from where it left `origin/main`.
+- A work whose PR has been merged reads «Merged», shows no «needs you» card, drops out of every clash, and can be removed as before.
+- Two open works of one repo that define the same new criterion id say so on their rows.
+
 ## Scope boundaries
 
 **In:** the three columns and footer of `bocetos/fase1-nucleo.html` (boceto 8), the
@@ -815,6 +822,23 @@ Out, named so it is not added quietly:
 
 Never scoped out: the gate and the driver check are a trust boundary (what a driver may read); an error line never carries the token.
 
+### Work vs main (#11, #10, #8) (work-vs-main, 26 nov 2026)
+
+**In:** `src/main/workspaces.ts` (base choice, `workBase`, merged marks); `src/main/radar.ts` (base, merged, ids);
+`src/main/index.ts` (boxes/boxdiff base, merged notices); `resources/branchsize.mjs` (size base);
+`src/preload/api.ts` (`baseRef`, `merged`, `RadarHit.ids`); `src/renderer/agents.ts` (`stateOf`);
+`src/renderer/components/WorkspaceList.tsx` (row); `src/renderer/mockApi.ts` if a fixture needs it;
+`src/preload/i18n-es.ts` (new texts); tests beside each.
+
+**Out:**
+- Showing the base in the «New work» dialog (#11's alternative): the base is now right, so there is nothing to choose.
+- Renumbering ids on landing (`scripts/land.py`) and telling the agent about reserved ids: Atril never types into an agent on its own.
+- A Mac notice for shared ids (W182 stays files only).
+- Asking the forge for a work's PR state: the notice and git already carry it.
+- Closed (not merged) PRs: unchanged.
+- Re-basing records made before this change: they keep `baseCommit` and no `baseRef`.
+- `stageOf`, history, QA prompts: keep `baseCommit`.
+
 ## Constraints
 
 - Electron (current stable) + TypeScript in strict mode, pnpm, Node 24 (installed:
@@ -1076,6 +1100,15 @@ Texts through `t()`.
 - Tests run with no Electron: logic is plain functions over injected `fetch`, `sleep`, `err` and `exit`, or over a real `node:http` server on port 0.
 - Module-level code that runs before `whenReady` (secret store, crash hooks) still runs; they do no network or agent work before their gates.
 - `pnpm build` is never run (W233).
+
+### Work vs main (#11, #10, #8) (work-vs-main, 26 nov 2026)
+
+- Every git call through the `Runner`; the fetch with a 15 s timeout so a dead network cannot hang «New work».
+- W167/F46: a quiet work spawns nothing: the merge-base is computed inside the work's `quietly` cache (its watcher sees `refs/` of the common dir, so a fetch invalidates it).
+- W46: the hook's count equals the panel's total for the same tree, so both use the same base.
+- `src/main/flow/**` belongs to flow-status and does not change: the base is resolved before calling it.
+- Texts through `t()` with the English key; Spanish in `src/preload/i18n-es.ts`.
+- Reading `.agents/changes/*/*.md` of a worktree: `lstat`, no links followed, files over 1 MB skipped.
 
 ## Prior decisions
 
@@ -2683,6 +2716,40 @@ Zero questions asked: the repo's autonomy rule says take the recommended option 
 - Q: (stop before code, asked by the cold review's finding 6) where does main's guard run: after the window loads (about 1 s after startup) or before the app's startup? → A: «Reordenar el guard antes de whenReady» (user, 2026-11-26): the guard runs before the rest of the startup. Mechanism chosen by the session (assumed): at the very start of the `whenReady` callback a hidden probe window loads `about:blank?launch=<token>`, main asks its own port for it, and only then continues. If wrong: the probe URL form may not survive Chromium; the real-app drive tells, and a `file:` URL replaces it.
 - Q: do the criteria need a new capability? → A: no, `workspaces` already governs `src/main/**`; `Governs:` gains `scripts/cdp-drive.mjs` by a hand edit of `.agents/specs/workspaces/spec.md` in the landing commit, because `land.py` does not apply `Governs:` lines (assumed).
 
+### Work vs main (#11, #10, #8) (work-vs-main, 26 nov 2026)
+
+- (2026-11-26, work-vs-main) Base = `origin`'s default branch after a fetch, `--no-track`; fallback to the last fetched ref, then to the local HEAD with no `baseRef` (assumed; if wrong, a dialog line naming the base).
+- (2026-11-26, work-vs-main) Size, panel total, boxes and radar measure from `merge-base HEAD <baseRef>`; `stageOf`, history and QA keep `baseCommit` (assumed).
+- (2026-11-26, work-vs-main) `merged: true` is sticky in the record, set by a matched `merged` notice or by ancestry after a new work's fetch. Ceiling: a squash-merged PR with forges disconnected is never seen as merged; the person removes it by hand.
+- (2026-11-26, work-vs-main) Shared criterion ids are a radar warning, not a renumbering (assumed). A work's ids are those its change documents define and its base does not.
+- (2026-11-26, work-vs-main) Ceilings of the merged mark: with `merged` notices muted the forge is not asked about vanished MRs (`avisos.ts`), so only ancestry marks; a fetch that fails marks nothing; a reopened merged work keeps reading «Merged» until removed. The hook falls back to `baseCommit` after its own 5 s timeout while the panel may already have the merge-base: the two can differ for one read.
+
+#### Alternatives that lost
+
+| Considered | Why it lost |
+|---|---|
+| Thread a `ref` argument through `boxRanges`/`boxDiff` in `src/main/flow/**` | Touches flow-status for a value its functions never need to know: they already take a base. |
+| Rewrite `baseCommit` in the record when main moves | A stored base goes stale again at the next merge; the merge-base is always current and cached by the watcher. |
+| Poll the forge for each work's PR state | A new request per work per poll and a second path beside the notices that already arrive. |
+| Renumber criterion ids in `scripts/land.py` | Fixes only this repo, not Atril's users; and silently rewrites ids other documents cite. |
+| Show the base in the «New work» dialog (#11's alternative) | Asks the person to choose what has one right answer. Comes back if a repo needs another base. |
+
+#### Decision log, answers as given (2026-11-26)
+- Q: Which base does a new work take? → A: `origin`'s default branch after `git fetch origin`: the target of `refs/remotes/origin/HEAD`, else `origin/main`, else `origin/master` (assumed; a remote not called `origin` falls back to the local HEAD).
+- Q: And when the fetch fails (offline)? → A: the default ref as last fetched, with no message; no `origin` or no ref at all → the local HEAD as before (assumed; if Pau wants to see the base, the dialog line in #11 comes back as its own change).
+- Q: Does the new branch track `origin/main`? → A: no, `--no-track`: a branch tracking `main` under another name makes `git push` refuse or, worse, aim at `main` (assumed).
+- Q: In-place repos too? → A: yes, `git switch --no-track -c <branch> <ref>` (assumed; the copy is already required clean).
+- Q: What is the size measured against? → A: `git merge-base HEAD <baseRef>` while the record has `baseRef`, else `baseCommit`; the same base for the hook's size, the panel's total and boxes, and the radar. `stageOf`, history and QA keep `baseCommit` (assumed; they count or show commits, not a size).
+- Q: How does Atril learn a PR is merged? → A: two signals, either one: a `merged` notice matched to a work by W187's rule, and, after a new work's fetch, a sibling branch with commits of its own that are all in the default ref. The mark is sticky (`merged: true` in the record) (assumed; squash merges are seen only through the notice).
+- Q: What does a merged work look like? → A: «Merged» in place of its state, no agent card, counted as done; «Remove» stays as it is (assumed).
+- Q: #8, warn or renumber? → A: warn, in the radar, like files: «Criterion ids W217 and 7 more also in {branch}» (wording from the real-app drive: the id comes first so the sidebar's cut never hides it). `scripts/land.py` renumbering is out: it is this repo's script, not Atril (assumed).
+
+- Q: (phase 5) How is it built? → A: resolve the base in workspaces (one `defaultRef` + `workBase` in `workspaces.ts`) and pass the resolved base into the unchanged flow functions; merged is a record field; ids ride the radar (assumed; rejected: a `base` argument threaded through `src/main/flow/**`, and a separate «merged» poll of the forge).
+
+- Q: (spec-reviewer) Which ids are a work's own? → A: ids defined in its `.agents/changes/*/*.md` that no `- **<id>**` line under `.agents/` defines at the work's base (W303); ids already on main are nobody's to clash on (assumed).
+- Q: (spec-reviewer) W166/W168 contradicted? → A: both amended in this change; the hook-equals-panel equality gets W312 through one helper `panelBoxes`/`panelBoxDiff` that index.ts calls; `stateOf` gets W313 (assumed).
+- Q: (spec-reviewer) Muted merged notices, reopening a merged work, a failed fetch? → A: ceilings, named in Prior decisions; no extra code (assumed).
+
 ## Task breakdown
 
 - App shell: Electron main, preload bridge, renderer with sidebar / centre / right panel /
@@ -3485,14 +3552,13 @@ Zero questions asked: the repo's autonomy rule says take the recommended option 
 
 ### Collision radar (radar, 11 nov 2026)
 
-- **W166** Main shall answer, for every workspace record that is not a review, the other non-review records of the same repo that change at least one of the same files against their own `baseCommit` (committed or not), as `{ id, branch, files }` with repo-relative files sorted; records of different repos never collide, and a record sharing no file gets an empty list.
+- **W166** Main shall answer, for every workspace record that is neither a review nor `merged` (W308), the other such records of the same repo that change at least one of the same files against W303's base (committed or not) or own at least one of the same criterion ids (W310), as `{ id, branch, files, ids }` with repo-relative files sorted; records of different repos never collide, and a record sharing no file and no id gets an empty list.
   Proof: src/main/radar.test.ts two works on one file collide and nothing else does
 - **W167** While nothing counted (F46) changed in any workspace, asking the radar again within 30 s of the last computation shall run no process; after that, each workspace computes again at most once per 30 s.
   Proof: src/main/radar.test.ts the radar costs nothing while nothing changes
-- **W168** A workspace row with collisions shall show, under its repo line and in the secondary grey, «Choca con {branch} en {file}» for its first collision's first file, followed by « y {n} más» where n is the total of files across all its collisions minus one, with every «{branch}: {file}» as the line's title; a row without collisions shows no such line. The window asks the radar every 10 s.
+- **W168** A workspace row whose collisions share files shall show, under its repo line and in the secondary grey, «Clashes with {branch} in {file}» for the first collision with files and its first file, followed by « and {n} more» where n is the total of files across all its collisions minus one, with every «{branch}: {file}» as the line's title; a row without shared files shows no such line. The window asks the radar every 10 s.
   Proof: src/renderer/radar.test.ts a colliding row says with whom and where
   Proof: src/renderer/radar.test.ts a row without collisions shows nothing new
-
 ### Lessons for every agent (lessons-first, 11 nov 2026)
 
 - **W169** `agentArgv({ lessons: true })` shall add `--append-system-prompt` with «Este repo guarda en .agents/lessons.md los errores que ya se pagaron aquí. Léelo antes de empezar y no los repitas.» before the prompt, and nothing without it.
@@ -3737,26 +3803,57 @@ Zero questions asked: the repo's autonomy rule says take the recommended option 
 ### CDP isolation (fix-cdp-isolation, 26 nov 2026)
 
 - **W320** While the app is not packaged, `ATRIL_CDP_PORT` is a whole number from 1024 to 65535 and `ATRIL_LAUNCH_TOKEN` is 16 to 128 characters of `A-Z a-z 0-9 _ -`, `cdpConfig` shall answer `{ port, token }`.
-  Proof: src/main/cdp.test.ts cdpConfig enables only in dev with a port and a token
+  Proof: src/main/cdp.test.ts enables only in dev with a port and a token
 - **W321** While the app is packaged, or `ATRIL_CDP_PORT` is unset or empty, `cdpConfig` shall answer nothing, whatever `ATRIL_LAUNCH_TOKEN` holds.
-  Proof: src/main/cdp.test.ts cdpConfig answers nothing when packaged or without a port
+  Proof: src/main/cdp.test.ts answers nothing when packaged or without a port
 - **W322** If `ATRIL_CDP_PORT` is set and not empty in a dev start and is not a whole number from 1024 to 65535, or `ATRIL_LAUNCH_TOKEN` is missing or not as W320 says, then `cdpConfig` shall answer an error that names the variable at fault and never contains the token.
-  Proof: src/main/cdp.test.ts cdpConfig refuses a bad port or token without echoing the token
+  Proof: src/main/cdp.test.ts refuses a bad port or token without echoing the token
 - **W323** When given a URL and a token, `withLaunch` shall answer that URL with the query parameter `launch` set to the token, keeping any other parameter, and shall answer the same value for a `file:` URL.
-  Proof: src/main/cdp.test.ts withLaunch sets the launch parameter and keeps the rest
+  Proof: src/main/cdp.test.ts sets the launch parameter and keeps the rest
 - **W324** When `/json/list` on `127.0.0.1:<port>` returns a page target whose `url`, parsed with `URL`, has the parameter `launch` equal to the token, `verifyOwnTarget(port, token)` shall answer true, whatever other targets it lists.
-  Proof: src/main/cdp.test.ts verifyOwnTarget finds its own page on a real server
+  Proof: src/main/cdp.test.ts finds its own page on a real server
 - **W325** If that list has no page with that exact parameter (another Atril's pages, a page whose token only starts with ours, a non-JSON body, an error status, or nothing answering), then `verifyOwnTarget` shall answer false.
-  Proof: src/main/cdp.test.ts verifyOwnTarget refuses a port another Atril holds
+  Proof: src/main/cdp.test.ts refuses a port another Atril holds
 - **W326** When `guardCdp` is given a `verify`, an attempt count, a delay and a `sleep`, it shall ask until `verify` answers true or the attempts are spent, printing nothing and not exiting on a true; if every attempt answers false, then it shall print one line on stderr naming the port and never the token, and call `exit(1)`.
-  Proof: src/main/cdp.test.ts guardCdp retries then exits on a port another Atril holds
+  Proof: src/main/cdp.test.ts retries then exits on a port another Atril holds
 - **W327** When CDP is enabled, the first statement in `src/main/index.ts`'s `app.whenReady().then(async () => {` callback shall be `await cdpGate(`, so that the guard passes before `loginPath`, any handler or any window.
   Proof: src/main/cdp.test.ts index runs the cdp gate before any other startup
 - **W328** If no page of any context of the browser has the parameter `launch` equal to the token, then `attachVerified(connect, port, token)` shall close the connection and throw an error that names the port, without calling `content`, `evaluate`, `title`, `screenshot` or any read other than `url()` on any page.
-  Proof: scripts/cdp-drive.test.ts attachVerified refuses a browser that is not ours without reading it
+  Proof: scripts/cdp-drive.test.ts refuses a browser that is not ours without reading it
 - **W329** While the browser also holds pages of another Atril, `attachVerified` shall never return or read them and shall return the one page carrying the token; if two pages carry it, then it shall close the connection and throw.
-  Proof: scripts/cdp-drive.test.ts attachVerified ignores the pages of another Atril
+  Proof: scripts/cdp-drive.test.ts ignores the pages of another Atril
 - **W330** The query name `scripts/cdp-drive.mjs` looks for shall equal `LAUNCH_QUERY` of `src/main/cdp.ts` (the script repeats it, because a `.mjs` cannot import the `.ts`), so that a rename in one breaks a test, not a drive.
-  Proof: scripts/cdp-drive.test.ts attachVerified uses the query name main writes
+  Proof: scripts/cdp-drive.test.ts uses the query name main writes
 - **W331** While the app has not yet created its first real window, closing the hidden probe of W327's gate shall not quit the app: `window-all-closed` quits only once `createWindow` has run. (Found by the real-app drive of box 1: destroying the probe, the only window, quit the app before the real window existed.)
   Proof: src/main/cdp.test.ts index keeps running when the probe closes before the first real window
+
+### Work vs main (#11, #10, #8) (work-vs-main, 26 nov 2026)
+
+- **W300** When a new work (not `existing`, not a review) opens in a worktree of a repo that has a remote named `origin`, main shall run `git fetch origin` with a 15 s timeout and create the branch with `--no-track` from `origin`'s default ref — the target of `refs/remotes/origin/HEAD`, else `refs/remotes/origin/main`, else `refs/remotes/origin/master` — recording that commit as `baseCommit` and the ref's short name (`origin/main`) as `baseRef`; the person's checkout keeps its branch and HEAD.
+  Proof: src/main/workspaces.test.ts a new work branches from origin's default branch, not the local checkout
+- **W301** When a new work opens in place (W7), main shall do W300's fetch and switch the person's copy with `git switch --no-track -c <branch> <ref>` from the same default ref, recording the same `baseCommit` and `baseRef`; a branch that already exists locally is switched to as it is, with its HEAD as `baseCommit` and no `baseRef`.
+  Proof: src/main/workspaces.test.ts an in-place new work starts from origin's default branch
+- **W302** If W300's or W301's fetch fails or times out, then main shall branch from the default ref as last fetched; if the repo has no `origin` remote or none of the three refs resolves, then it shall branch from the local HEAD as before this change and record no `baseRef`.
+  Proof: src/main/workspaces.test.ts without a reachable origin a new work uses the last fetched default branch or the local HEAD
+- **W303** `workBase(record)` shall answer `git merge-base HEAD <baseRef>` run in the work's folder while the record has `baseRef` and that command answers a commit, and `baseCommit` otherwise; while nothing counted (F46) changes in the work, asking again shall run no process.
+  Proof: src/main/workspaces.test.ts workBase answers where the work left its base ref and spawns nothing while quiet
+- **W304** While a record has `baseRef`, the branch size the hook claims (W45) shall be counted against the same base as W303.
+  Proof: src/main/agent.test.ts the branch size counts from where the work left origin's default branch
+- **W305** The radar (W166) shall list each work's files against W303's base, so a work that merged a newer `origin/main` clashes only on files it changed itself.
+  Proof: src/main/radar.test.ts a work that merged origin's default branch clashes only on its own files
+- **W312** The panel's boxes and total (`atril:flow:boxes`) and a box's diff (`atril:flow:boxdiff`) shall be computed against W303's base, through `panelBoxes` and `panelBoxDiff`, so the panel's total equals the hook's count (W46) for a work with `baseRef`.
+  Proof: src/main/workspaces.test.ts the panel's total counts from the same base as the hook
+- **W306** When a `merged` notice is added and W187's rule matches it to a work, main shall set `merged: true` on that work's record; a `closed` notice or a notice with no match changes no record.
+  Proof: src/main/workspaces.test.ts a merged notice marks its work merged and nothing else
+- **W307** When W300's or W301's fetch succeeds, main shall set `merged: true` on every other non-review record of that repo whose branch (`refs/heads/<branch>` in the repo) has at least one commit after its `baseCommit` and is an ancestor of the default ref; a branch with no commits of its own, with a commit not in the default ref, or missing, stays as it is; a failed fetch marks nothing.
+  Proof: src/main/workspaces.test.ts a new work's fetch marks siblings whose branch already landed
+- **W308** The radar shall leave every `merged` record out on both sides: it gets an empty list and appears in nobody's.
+  Proof: src/main/radar.test.ts a merged work is out of the clash check
+- **W309** While a work's record is `merged`, its row shall show «Merged» in place of its agent state and no agent card even while its agent waits for the person; «Remove» behaves as before (W136).
+  Proof: src/renderer/radar.test.ts a merged work reads Merged with no agent card
+- **W313** `stateOf` shall answer `done` for a `merged` work whatever its agent's state.
+  Proof: src/renderer/agents.test.ts a merged work counts as done
+- **W310** Each radar hit shall carry `ids`: the ids both works own, where a work owns an id defined by a line starting `- **<capital letters><digits>**` that does not carry the amended marker, in one of its `.agents/changes/*/*.md`, and that no such line anywhere under `.agents/` defines in the work's base commit (W303); sorted by `localeCompare` with `numeric: true`; files are read with `lstat`, links are not followed and files over 1 MB are skipped.
+  Proof: src/main/radar.test.ts two works defining the same new criterion ids clash on those ids
+- **W311** When a row's hits share ids, the row shall show, under the file line, «Criterion id {id} also in {branch}» for the first hit with ids and its first id, or «Criterion ids {id} and {n} more also in {branch}» where n is that hit's ids minus one, the id before the branch so a cut line keeps it, with every «{branch}: {id}» of every hit as the line's title.
+  Proof: src/renderer/radar.test.ts a row with shared criterion ids says which and with whom
