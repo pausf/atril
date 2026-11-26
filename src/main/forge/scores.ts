@@ -179,7 +179,7 @@ export function forgeGet(tgt: ScoreTarget, secret: Record<string, string> | null
       throw new Failure(networkText(name, err))
     }
     if (res.ok) return res
-    throw new Failure(res.status === 406 && tgt.forge === 'github' ? t('es demasiado grande para {forge}', { forge: name }) : statusText(name, res.status))
+    throw new Failure(res.status === 406 && tgt.forge === 'github' ? t('it is too large for {forge}', { forge: name }) : statusText(name, res.status))
   }
 }
 
@@ -214,7 +214,7 @@ export function createScorer({ store, run, fetchImpl = fetch, target, emit, queu
     let head = tgt.head
     let diff: string
     try {
-      if (!secret?.['token']) throw new Failure(t('Conecta GitHub o GitLab en Ajustes'))
+      if (!secret?.['token']) throw new Failure(t('Connect GitHub or GitLab in Settings'))
       // GitHub: the head of the diff about to be scored, read now rather than from the listing.
       if (tgt.forge === 'github') head = ((await (await get(tgt.ref)).json()) as { head?: { sha?: string } }).head?.sha
       const cached = head ? await readStored<MrScore>('scores', url) : null
@@ -222,7 +222,7 @@ export function createScorer({ store, run, fetchImpl = fetch, target, emit, queu
       diff = await fetchDiff(get, tgt)
     } catch (err) {
       if (!(err instanceof Failure)) throw err
-      return { state: 'error', text: t('No se ha podido traer el diff: {detail}', { detail: err.message }) }
+      return { state: 'error', text: t('Could not fetch the diff: {detail}', { detail: err.message }) }
     }
 
     const m = metrics(diff)
@@ -231,16 +231,16 @@ export function createScorer({ store, run, fetchImpl = fetch, target, emit, queu
     const args = ['-p', '--model', 'sonnet', '--output-format', 'json', '--tools', '', '--no-session-persistence', '--json-schema', JSON.stringify(SCHEMA), instruction(lang, m)]
     const r = await run('claude', args, { input: text, timeoutMs: CLAUDE_MS, secret: true })
     // M16: a code or a fixed word, never Claude's own output.
-    const fail = (detail: string | number): MrScoreState => ({ state: 'error', text: t('Claude no ha podido puntuar esta MR ({detail})', { detail }) })
-    if (r.code === 124) return fail(t('tiempo agotado'))
+    const fail = (detail: string | number): MrScoreState => ({ state: 'error', text: t('Claude could not score this MR ({detail})', { detail }) })
+    if (r.code === 124) return fail(t('timed out'))
     if (r.code !== 0) return fail(r.code)
     let answer: { is_error?: unknown; structured_output?: unknown }
     try {
       answer = JSON.parse(r.stdout)
     } catch {
-      return fail(t('respuesta fuera del esquema'))
+      return fail(t('answer outside the schema'))
     }
-    if (answer?.is_error !== false || !validAi(answer.structured_output)) return fail(t('respuesta fuera del esquema'))
+    if (answer?.is_error !== false || !validAi(answer.structured_output)) return fail(t('answer outside the schema'))
 
     const score: MrScore = { ...(head && { head }), metrics: m, ai: answer.structured_output, lang, ...(cut && { cut }), at: new Date().toISOString() }
     await writeStored('scores', url, score)
@@ -252,10 +252,10 @@ export function createScorer({ store, run, fetchImpl = fetch, target, emit, queu
       const running = pending.get(url)
       if (running) return running.promise
       const tgt = target(url)
-      if (!tgt) return Promise.resolve({ state: 'error', text: t('Solo se pueden puntuar tus MR y las que te toca revisar') })
+      if (!tgt) return Promise.resolve({ state: 'error', text: t('Only your MRs and the ones you have to review can be scored') })
       failed.delete(url)
       const promise = queue(() => work(url, tgt))
-        .catch((): MrScoreState => ({ state: 'error', text: t('Claude no ha podido puntuar esta MR ({detail})', { detail: 'error' }) }))
+        .catch((): MrScoreState => ({ state: 'error', text: t('Claude could not score this MR ({detail})', { detail: 'error' }) }))
         .then((state) => {
           pending.delete(url)
           if (state.state === 'error') failed.set(url, state)

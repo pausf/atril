@@ -20,18 +20,18 @@ export function Steps({ ws, flow }: { ws: WorkspaceView; flow: FlowStage | null 
   if (!flow?.change) return null
 
   const steps: { name: Exclude<StageName, 'sin-libretto'>; label: string }[] = [
-    { name: 'entrada', label: t('Entrada') },
+    { name: 'entrada', label: t('Intake') },
     { name: 'spec', label: t('Spec') },
     { name: 'plan', label: t('Plan') },
-    { name: 'construir', label: t('Construir') },
-    { name: 'terminado', label: t('Revisar') },
-    { name: 'aterrizado', label: t('Aterrizar') }
+    { name: 'construir', label: t('Build') },
+    { name: 'terminado', label: t('Review') },
+    { name: 'aterrizado', label: t('Land') }
   ]
   const current = steps.findIndex((s) => s.name === flow.stage)
   const c = flow.checklist
   return (
     <>
-      <div className="seg6" role="group" aria-label={t('Pasos de Libretto')} data-tour="stages">
+      <div className="seg6" role="group" aria-label={t('Libretto steps')} data-tour="stages">
         {steps.map((s, i) => {
           const now = i === current
           const counting = now && s.name === 'construir' && c !== undefined && c.total > 0
@@ -40,14 +40,14 @@ export function Steps({ ws, flow }: { ws: WorkspaceView; flow: FlowStage | null 
           return (
             <div className={`stp ${i < current ? 'd' : now ? 'c' : 'p'}`} key={s.name} aria-current={now ? 'step' : undefined}>
               {part && i <= current ? (
-                <button type="button" className="dk" title={t('Ver y editar lo que ha escrito Claude')} onClick={() => setDoc(part)}>
+                <button type="button" className="dk" title={t('View and edit what Claude wrote')} onClick={() => setDoc(part)}>
                   <Icon name="s-spec" size={11} />
                   {s.label}
                 </button>
               ) : (
                 <span className="stp-n">{counting ? `${s.label} ${t('{closed}/{total}', { closed: c.closed, total: c.total })}` : s.label}</span>
               )}
-              <span className="sr-only"> {i < current ? t('hecho') : now ? t('ahora') : t('pendiente')}</span>
+              <span className="sr-only"> {i < current ? t('done') : now ? t('now') : t('pending')}</span>
               <i className="stp-bar">
                 <b style={{ width: `${fill}%` }} />
               </i>

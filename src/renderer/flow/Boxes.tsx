@@ -26,7 +26,7 @@ function BoxCode({ workspaceId, box, version, onBig }: { workspaceId: string; bo
     void window.atril.flow.boxDiff(workspaceId, box.index, file).then((text) => asked.current === key && setShown({ file, text }))
   }, [workspaceId, box.index, file, version])
 
-  if (files.length === 0) return <p className="fx-m">{t('Sin cambios de código.')}</p>
+  if (files.length === 0) return <p className="fx-m">{t('No code changes.')}</p>
   const diff = shown && shown.file === file ? shown.text : null
   return (
     <>
@@ -56,14 +56,14 @@ function BoxCode({ workspaceId, box, version, onBig }: { workspaceId: string; bo
       </ul>
       <div className="fx-mh">
         <span className="fx-m">{file?.split('/').pop()}</span>
-        <button type="button" className="lnk" title={t('Ampliar (⌘⇧E)')} onClick={() => onBig(box.index, file)}>
+        <button type="button" className="lnk" title={t('Enlarge (⌘⇧E)')} onClick={() => onBig(box.index, file)}>
           <span aria-hidden="true">⤢ </span>
-          {t('Ampliar')}
+          {t('Enlarge')}
         </button>
       </div>
       <div className="fx-mini">
-        <pre className="hl diffview fx-diff" tabIndex={0} aria-label={t('Diff de {file}', { file: file ?? '' })}>
-          {diff === null ? t('Cargando…') : diff === '' ? t('Este archivo ya no tiene cambios.') : diffLines(diff)}
+        <pre className="hl diffview fx-diff" tabIndex={0} aria-label={t('Diff of {file}', { file: file ?? '' })}>
+          {diff === null ? t('Loading…') : diff === '' ? t('This file has no changes any more.') : diffLines(diff)}
         </pre>
       </div>
     </>
@@ -79,7 +79,7 @@ function ClosedBox({ workspaceId, box, onBig }: { workspaceId: string; box: Flow
       <button type="button" className="fx-bt" aria-expanded={open} aria-controls={body} onClick={() => setOpen(!open)}>
         <span aria-hidden="true">✓ </span>
         {box.text}
-        <span className="sr-only"> {t('hecho')}</span>
+        <span className="sr-only"> {t('done')}</span>
         {box.commit && <small className="fx-m"> {box.commit}</small>}
       </button>
       <div id={body} hidden={!open}>
@@ -96,7 +96,7 @@ export function Boxes({ workspaceId, boxes, tick, onBig, subs }: { workspaceId: 
   const hidden = pending.length - PENDING_SHOWN
   const shownPending = new Set(pending.slice(0, PENDING_SHOWN).map((b) => b.index))
   return (
-    <ol className="fx-tl" aria-label={t('Casillas del checklist')} data-tour="flow-checklist">
+    <ol className="fx-tl" aria-label={t('Checklist boxes')} data-tour="flow-checklist">
       {boxes.map((b) => {
         if (b.state === 'closed') return <ClosedBox key={b.index} workspaceId={workspaceId} box={b} onBig={onBig} />
         if (b.state === 'current')
@@ -104,7 +104,7 @@ export function Boxes({ workspaceId, boxes, tick, onBig, subs }: { workspaceId: 
             <li className="fx-bx c" key={b.index}>
               <span className="fx-bt">
                 {b.text}
-                <span className="sr-only"> {t('ahora')}</span>
+                <span className="sr-only"> {t('now')}</span>
               </span>
               {subs && <Branches view={subs} />}
               <BoxCode workspaceId={workspaceId} box={b} version={tick} onBig={onBig} />
@@ -114,12 +114,12 @@ export function Boxes({ workspaceId, boxes, tick, onBig, subs }: { workspaceId: 
           <li className="fx-bx p" key={b.index}>
             <span className="fx-bt">
               {b.text}
-              <span className="sr-only"> {t('pendiente')}</span>
+              <span className="sr-only"> {t('pending')}</span>
             </span>
           </li>
         ) : null
       })}
-      {hidden > 0 && <li className="fx-fold">{t('+{n} más', { n: hidden })}</li>}
+      {hidden > 0 && <li className="fx-fold">{t('+{n} more', { n: hidden })}</li>}
     </ol>
   )
 }

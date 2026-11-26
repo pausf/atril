@@ -33,7 +33,7 @@ export function useSubagentView(workspaceId: string | null): { view: SubView | n
   }, [firstRunning])
 
   const state = (e: SubagentEntry): string =>
-    e.endedAt === undefined ? t('trabajando · {d}', { d: duration(t, now / 1000 - e.startedAt) }) : t('terminado · {d}', { d: duration(t, e.endedAt - e.startedAt) })
+    e.endedAt === undefined ? t('working · {d}', { d: duration(t, now / 1000 - e.startedAt) }) : t('finished · {d}', { d: duration(t, e.endedAt - e.startedAt) })
   // An entry that left the list (W64) takes its modal with it.
   const shown = entries.find((e) => e.id === open)
   return {

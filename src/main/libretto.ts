@@ -86,9 +86,9 @@ async function freeName(dir: string, text: string): Promise<string> {
 /** What `/libretto-queue` does in its steps 2–3, without a model. The commit names the file so nothing else staged rides along. */
 export async function queueIdea(repoPath: string, text: string, run: Runner = defaultRun): Promise<{ name: string } | { error: string }> {
   const ask = text.trim()
-  if (ask === '') return { error: t('Escribe la idea antes de encolarla.') }
+  if (ask === '') return { error: t('Write the idea before queueing it.') }
   const dir = changesDir(repoPath)
-  if (!(await stat(dir).then((s) => s.isDirectory(), () => false))) return { error: t('Este repo no usa Libretto') }
+  if (!(await stat(dir).then((s) => s.isDirectory(), () => false))) return { error: t('This repo does not use Libretto') }
 
   const name = await freeName(dir, ask)
   await mkdir(join(dir, name))
@@ -98,7 +98,7 @@ export async function queueIdea(repoPath: string, text: string, run: Runner = de
   if (commit.code !== 0) {
     await run('git', ['-C', repoPath, 'reset', '-q', '--', rel(name)])
     await rm(join(dir, name), { recursive: true, force: true })
-    return { error: commit.stderr.trim() || t('git commit falló') }
+    return { error: commit.stderr.trim() || t('git commit failed') }
   }
   return { name }
 }
@@ -108,17 +108,17 @@ export async function queueIdea(repoPath: string, text: string, run: Runner = de
  * message is step 4. The commit runs before the agent exists, so its first message is the argv prompt, not a typed reply.
  */
 export async function startQueued(repoId: string, name: string, run: Runner = defaultRun): Promise<WorkspaceResult> {
-  if (typeof name !== 'string' || !SAFE_NAME.test(name) || name.includes('..')) return { error: t('Esa idea no existe') }
+  if (typeof name !== 'string' || !SAFE_NAME.test(name) || name.includes('..')) return { error: t('That idea does not exist') }
   const repo = (await readRepos()).find((r) => r.id === repoId)
-  if (!repo) return { error: t('No hay ningún repo «{id}»', { id: repoId }) }
+  if (!repo) return { error: t('There is no repo “{id}”', { id: repoId }) }
   const prepare = async (path: string): Promise<string | undefined> => {
     const file = join(path, rel(name))
     const text = await readFile(file, 'utf8').catch(() => null)
-    if (text === null || !QUEUED.test(header(text))) return t('Esa idea no existe')
+    if (text === null || !QUEUED.test(header(text))) return t('That idea does not exist')
     const [head, ...rest] = text.split(/^## /m)
     await writeFile(file, [(head ?? '').replace(QUEUED, '').replace(/\n{3,}/g, '\n\n'), ...rest].join('## '))
     const commit = await run('git', ['-C', path, 'commit', '-q', '-m', `docs(queue): start ${name}`, '--', rel(name)])
-    return commit.code === 0 ? undefined : commit.stderr.trim() || t('git commit falló')
+    return commit.code === 0 ? undefined : commit.stderr.trim() || t('git commit failed')
   }
   return openWorktree({ repoId, branch: `feat/${name}`, agent: 'claude', prompt: `/libretto:write-spec ${name}` }, run, prepare)
 }
@@ -127,21 +127,21 @@ const unsafe = (name: unknown): boolean => typeof name !== 'string' || !SAFE_NAM
 
 /** Only an idea that is still queued may be edited, dropped or sent: a `Queued:` line and no `feat/<name>` branch. */
 async function queuedProposal(repoPath: string, name: string, run: Runner): Promise<{ file: string; text: string } | { error: string }> {
-  const missing = { error: t('Esa idea no existe') }
+  const missing = { error: t('That idea does not exist') }
   if (unsafe(name)) return missing
   const file = join(repoPath, rel(name))
   const text = await readFile(file, 'utf8').catch(() => null)
   if (text === null || !QUEUED.test(header(text))) return missing
   const branch = await run('git', ['-C', repoPath, 'rev-parse', '--verify', '--quiet', `refs/heads/feat/${name}`])
-  return branch.code === 0 ? { error: t('Esa idea ya está empezada') } : { file, text }
+  return branch.code === 0 ? { error: t('That idea is already started') } : { file, text }
 }
 
 export async function editIdea(repoPath: string, name: string, text: string, run: Runner = defaultRun): Promise<IdeaResult> {
   const ask = typeof text === 'string' ? text.trim() : ''
-  if (ask === '') return { error: t('Escribe la idea antes de guardarla.') }
+  if (ask === '') return { error: t('Write the idea before saving it.') }
   const found = await queuedProposal(repoPath, name, run)
   if ('error' in found) return found
-  if (!ASK.test(found.text)) return { error: t('Esa idea no existe') }
+  if (!ASK.test(found.text)) return { error: t('That idea does not exist') }
   // A replacer function: the request may hold «$&» and the like.
   const next = found.text.replace(ASK, () => `## The ask, verbatim\n\n${quote(ask)}\n\n`)
   if (next === found.text) return { ok: true }
@@ -149,7 +149,7 @@ export async function editIdea(repoPath: string, name: string, text: string, run
   const commit = await run('git', ['-C', repoPath, 'commit', '-q', '-m', `docs(queue): edit ${name}`, '--', rel(name)])
   if (commit.code === 0) return { ok: true }
   await writeFile(found.file, found.text)
-  return { error: commit.stderr.trim() || t('git commit falló') }
+  return { error: commit.stderr.trim() || t('git commit failed') }
 }
 
 export async function dropIdea(repoPath: string, name: string, run: Runner = defaultRun, message = `docs(queue): drop ${name}`): Promise<IdeaResult> {
@@ -161,7 +161,7 @@ export async function dropIdea(repoPath: string, name: string, run: Runner = def
   if (commit.code !== 0) {
     await run('git', ['-C', repoPath, 'reset', '-q', '--', folder])
     await run('git', ['-C', repoPath, 'checkout', '--', folder])
-    return { error: commit.stderr.trim() || t('git commit falló') }
+    return { error: commit.stderr.trim() || t('git commit failed') }
   }
   await rm(join(repoPath, folder), { recursive: true, force: true })
   return { ok: true }
@@ -202,11 +202,11 @@ export async function createIssue(creds: JiraCreds, board: JiraBoard, summary: s
   }
   try {
     const projectKey = ((await call(`/rest/agile/1.0/board/${board.id}`)) as { location?: { projectKey?: unknown } }).location?.projectKey
-    if (typeof projectKey !== 'string') return { error: t('El tablero no tiene un proyecto.') }
+    if (typeof projectKey !== 'string') return { error: t('The board has no project.') }
     const meta = (await call(`/rest/api/3/issue/createmeta/${encodeURIComponent(projectKey)}/issuetypes`)) as { issueTypes?: IssueType[]; values?: IssueType[] }
     const types = meta.issueTypes ?? meta.values ?? []
     const pick = types.find((x) => x.name === 'Task') ?? types.find((x) => x.subtask === false)
-    if (typeof pick?.id !== 'string') return { error: t('El proyecto no admite tareas.') }
+    if (typeof pick?.id !== 'string') return { error: t('The project does not take tasks.') }
     const created = (await call('/rest/api/3/issue', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -219,10 +219,10 @@ export async function createIssue(creds: JiraCreds, board: JiraBoard, summary: s
         }
       })
     })) as { key?: unknown }
-    return typeof created.key === 'string' ? { key: created.key } : { error: t('Jira no devolvió la clave.') }
+    return typeof created.key === 'string' ? { key: created.key } : { error: t('Jira did not return the key.') }
   } catch (err) {
     if (err instanceof JiraStatus) return { error: err.message }
-    return { error: err instanceof Error && err.name === 'TimeoutError' ? t('Jira no ha respondido en 10 s.') : t('No se ha podido conectar con Jira.') }
+    return { error: err instanceof Error && err.name === 'TimeoutError' ? t('Jira did not answer in 10 s.') : t('Could not connect to Jira.') }
   }
 }
 
@@ -230,7 +230,7 @@ export async function ideaToJira(repoPath: string, name: string, deps: JiraDeps)
   const { run = defaultRun, creds, board, fetchImpl = fetch } = deps
   const found = await queuedProposal(repoPath, name, run)
   if ('error' in found) return found
-  if (!creds || !board) return { error: t('Conecta Jira y elige un tablero en Ajustes.') }
+  if (!creds || !board) return { error: t('Connect Jira and pick a board in Settings.') }
   const request = askText(found.text)
   const issue = await createIssue(creds, board, request.split('\n')[0] ?? '', request, fetchImpl)
   if ('error' in issue) return issue

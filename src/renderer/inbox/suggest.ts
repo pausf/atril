@@ -14,7 +14,7 @@ const BIG = /(?<!\p{L})(refactor|migra|arquitectura|reescrib|rediseñ)/iu // i18
 /** Fixed rules over the task's text and its Jira type; never calls Claude. */
 export function suggest(t: T, text: string, issueType?: string): Suggestion | null {
   if (issueType?.toLowerCase() === 'bug' || FIX.test(text))
-    return { model: 'sonnet', effort: 'medium', why: t('Un arreglo acotado: Sonnet lo hace bien a mitad de precio que Opus.') }
-  if (BIG.test(text)) return { model: 'opus', effort: 'high', why: t('Un cambio grande: mejor Opus con más esfuerzo.') }
+    return { model: 'sonnet', effort: 'medium', why: t("A contained fix: Sonnet does it well at half Opus's price.") }
+  if (BIG.test(text)) return { model: 'opus', effort: 'high', why: t('A big change: better Opus with more effort.') }
   return null
 }

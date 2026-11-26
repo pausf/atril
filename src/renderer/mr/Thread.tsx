@@ -16,8 +16,8 @@ export function Thread({ th, title, note, onLine, reply, onType, onSend }: { th:
     <article className={`mr-thread${th.yourTurn ? ' you' : ''}`} aria-labelledby={`th-${th.id}`}>
       <h4 id={`th-${th.id}`}>
         {title ?? (th.id === 'general' ? t('General') : th.line === undefined ? th.file : `${th.file}:${th.line}`)}
-        {th.resolved !== undefined && <span className="tag">{th.resolved ? t('Resuelto') : t('Sin resolver')}</span>}
-        {th.yourTurn && <span className="tag your-turn">{t('Te toca responder')}</span>}
+        {th.resolved !== undefined && <span className="tag">{th.resolved ? t('Resolved') : t('Unresolved')}</span>}
+        {th.yourTurn && <span className="tag your-turn">{t('Your turn to reply')}</span>}
       </h4>
       {note && <p className="f-note">{note}</p>}
       {th.code && !onLine && <pre className="mr-code">{th.code}</pre>}
@@ -27,14 +27,14 @@ export function Thread({ th, title, note, onLine, reply, onType, onSend }: { th:
           <p>{cm.body}</p>
         </div>
       ))}
-      <textarea aria-label={t('Responder')} rows={2} value={reply.text} onChange={(e) => onType(e.target.value)} />
+      <textarea aria-label={t('Reply')} rows={2} value={reply.text} onChange={(e) => onType(e.target.value)} />
       {reply.error && (
         <p className="mr-score-error" role="alert">
           {reply.error}
         </p>
       )}
       <button type="button" className="btn" onClick={onSend} disabled={!reply.text.trim() || reply.sending}>
-        {t('Enviar')}
+        {t('Send')}
       </button>
     </article>
   )

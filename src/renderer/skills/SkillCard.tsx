@@ -5,7 +5,7 @@ import { useT, type T } from '../ui'
 export const fullName = (i: SkillItem): string => (i.plugin ? `/${i.plugin.split('@')[0]}:${i.name}` : `/${i.name}`)
 
 export const stateLabel = (t: T, s: SkillState): string =>
-  s === 'on' ? t('Activa') : s === 'name-only' ? t('Solo el nombre') : s === 'user-invocable-only' ? t('Solo si la llamas tú') : t('Apagada')
+  s === 'on' ? t('On@@fem') : s === 'name-only' ? t('Name only') : s === 'user-invocable-only' ? t('Only when you call it') : t('Off')
 
 export const originLabel = (t: T, i: SkillItem, repo: string): string =>
   i.origin === 'personal' ? t('Personal') : i.origin === 'project' ? repo : i.origin === 'atril' ? t('Atril') : (i.plugin ?? '').split('@')[0]!
@@ -13,7 +13,7 @@ export const originLabel = (t: T, i: SkillItem, repo: string): string =>
 /** K37: undefined while the usage has not answered (say nothing), null when the name was not used. */
 export const lastUsed = (t: T, use: SkillUse | null): string => {
   const k = use ? use.days.findIndex((n) => n > 0) : -1
-  return k < 0 ? t('sin usar en 30 días') : k === 0 ? t('usada hoy') : k === 1 ? t('usada hace 1 día') : t('usada hace {n} días', { n: k })
+  return k < 0 ? t('unused in 30 days') : k === 0 ? t('used today') : k === 1 ? t('used 1 day ago') : t('used {n} days ago', { n: k })
 }
 
 /** One skill or command; activating it opens its detail (K7). */
@@ -40,7 +40,7 @@ export function SkillCard({
           <b>{name}</b>
           <span id={id} className="skc-chips">
             <span className="tag">{originLabel(t, item, repo)}</span>
-            {item.kind === 'command' && <span className="tag">{t('comando')}</span>}
+            {item.kind === 'command' && <span className="tag">{t('command')}</span>}
             <span className={`tag st-${item.state}`}>{stateLabel(t, item.state)}</span>
           </span>
         </span>
@@ -48,9 +48,9 @@ export function SkillCard({
           {item.description ?? ''}
         </span>
         <span className="skc-m">
-          {item.shadowedBy && <span className="skmark lose">{item.shadowedBy === 'personal' ? t('No se carga: gana la personal') : t('No se carga: gana la skill')}</span>}
-          {item.disableModelInvocation && <span className="skmark">{t('Claude no la usa sola')}</span>}
-          {item.broken && <span className="skmark lose">{t('Cabecera ilegible')}</span>}
+          {item.shadowedBy && <span className="skmark lose">{item.shadowedBy === 'personal' ? t('Not loaded: the personal one wins') : t('Not loaded: the skill wins')}</span>}
+          {item.disableModelInvocation && <span className="skmark">{t('Claude does not use it on its own')}</span>}
+          {item.broken && <span className="skmark lose">{t('Unreadable header')}</span>}
           {use !== undefined && !item.shadowedBy && <span className="skmark">{lastUsed(t, use)}</span>}
         </span>
       </button>

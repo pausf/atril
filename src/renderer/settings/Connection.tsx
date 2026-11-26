@@ -6,10 +6,10 @@ type Saved = { saved: false } | { saved: true; account?: string; site?: string }
 /** S29: «Cargando…», «Sin conectar» or «Conectado · cuenta», plus the site when there is one. */
 export function useConnectionState(status: Saved | null, withSite: boolean): string {
   const t = useT()
-  if (!status) return t('Cargando…')
-  if (!status.saved) return t('Sin conectar')
+  if (!status) return t('Loading…')
+  if (!status.saved) return t('Not connected')
   const site = withSite && status.site ? ` · ${status.site.replace(/^https:\/\//, '')}` : ''
-  return t('Conectado · {account}', { account: status.account ?? '' }) + site
+  return t('Connected · {account}', { account: status.account ?? '' }) + site
 }
 
 /** S29: one row per service; its body shows only once the row's single button is pressed. */
@@ -35,7 +35,7 @@ export function ConnectionRow(p: {
         <span className="conn-state">{p.state}</span>
         {p.saved !== null && (
           <button type="button" className="btn" aria-expanded={p.open} aria-controls={`${p.id}-body`} onClick={p.onToggle}>
-            {p.saved ? t('Gestionar') : t('Conectar')}
+            {p.saved ? t('Manage') : t('Connect')}
           </button>
         )}
       </div>
@@ -83,7 +83,7 @@ export function ConnectSteps(p: {
     <form className="steps-form" noValidate onSubmit={p.onSubmit}>
       <ol className="steps">
         <li>
-          <b>{t('Crea el token')}</b>
+          <b>{t('Create the token')}</b>
           <div className="step-line">
             <button type="button" className="btn" onClick={p.onCreate}>
               {p.createLabel}
@@ -92,17 +92,17 @@ export function ConnectSteps(p: {
           </div>
         </li>
         <li>
-          <b>{t('Pégalo aquí')}</b>
+          <b>{t('Paste it here')}</b>
           {p.fields}
         </li>
         <li>
-          <b>{t('Comprueba y guarda')}</b>
+          <b>{t('Check and save')}</b>
           {p.error && (
             <div className="serr" role="alert">
               ✕ {p.error}
               {p.detail && (
                 <details>
-                  <summary>{t('Ver detalle')}</summary>
+                  <summary>{t('Show detail')}</summary>
                   <code>{p.detail}</code>
                 </details>
               )}
@@ -110,11 +110,11 @@ export function ConnectSteps(p: {
           )}
           <div className="sactions">
             <button type="submit" className="btn p" disabled={p.checking}>
-              {p.checking ? t('Comprobando…') : t('Guardar y comprobar')}
+              {p.checking ? t('Checking…') : t('Save and check')}
             </button>
             {p.onCancel && (
               <button type="button" className="btn" onClick={p.onCancel}>
-                {t('Cancelar')}
+                {t('Cancel')}
               </button>
             )}
           </div>
@@ -131,10 +131,10 @@ export function Manage({ note, onReplace, onRemove, children }: { note: string; 
     <div className="manage">
       <div className="sactions">
         <button type="button" className="btn" onClick={onReplace}>
-          {t('Reemplazar')}
+          {t('Replace')}
         </button>
         <button type="button" className="btn" onClick={onRemove}>
-          {t('Borrar')}
+          {t('Delete')}
         </button>
       </div>
       <div className="lockn">{note}</div>

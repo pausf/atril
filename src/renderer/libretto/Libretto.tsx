@@ -128,11 +128,11 @@ export function Libretto() {
         <h1>
           {t('Libretto')}
           <button className="refresh" onClick={() => void read()} disabled={repoId === null}>
-            {t('Actualizar')}
+            {t('Refresh')}
           </button>
         </h1>
-        <p className="lead">{t('La cola de ideas y lo que está en curso en cada repo, leído de su carpeta .agents.')}</p>
-        {repos !== null && repos.length === 0 && <div className="empty">{t('Añade un repo en Ajustes para ver su Libretto.')}</div>}
+        <p className="lead">{t('The idea queue and what is in flight in each repo, read from its .agents folder.')}</p>
+        {repos !== null && repos.length === 0 && <div className="empty">{t('Add a repo in Settings to see its Libretto.')}</div>}
         {repoId !== null && repos !== null && (
           <div className="lbrepos" role="group" aria-label={t('Repo')}>
             {repos.map((r) => {
@@ -140,7 +140,7 @@ export function Libretto() {
               return (
                 <button key={r.id} type="button" className={`lbrepo${c?.none ? ' off' : ''}`} aria-pressed={r.id === repoId} onClick={() => setLibrettoRepo(r.id)}>
                   <b>{r.id}</b>
-                  {c !== undefined && <span>{c.none ? t('sin Libretto') : [c.queued > 0 && t('{n} en cola', { n: c.queued }), c.inFlight > 0 && t('{n} en curso', { n: c.inFlight })].filter(Boolean).join(' · ') || t('nada en marcha')}</span>}
+                  {c !== undefined && <span>{c.none ? t('no Libretto') : [c.queued > 0 && t('{n} queued', { n: c.queued }), c.inFlight > 0 && t('{n} in flight', { n: c.inFlight })].filter(Boolean).join(' · ') || t('nothing going on')}</span>}
                 </button>
               )
             })}
@@ -151,13 +151,13 @@ export function Libretto() {
             {loadError}
           </p>
         )}
-        {state !== null && 'none' in state && <div className="empty">{t('Este repo no usa Libretto')}</div>}
+        {state !== null && 'none' in state && <div className="empty">{t('This repo does not use Libretto')}</div>}
         {state !== null && 'queued' in state && (
           <>
             <div className="lbcomp">
               <textarea
-                aria-label={t('Nueva idea')}
-                placeholder={t('Apunta una idea… se guarda tal cual la escribas')}
+                aria-label={t('New idea')}
+                placeholder={t('Jot down an idea… it is saved exactly as you write it')}
                 rows={1}
                 value={text}
                 onChange={(e) => {
@@ -170,7 +170,7 @@ export function Libretto() {
                 }}
               />
               <button type="button" className="refresh" disabled={text.trim() === '' || busy} onClick={() => void queue()}>
-                {t('Encolar')}
+                {t('Queue')}
               </button>
             </div>
             {queueError !== null && (
@@ -179,11 +179,11 @@ export function Libretto() {
               </p>
             )}
             <h2 className="lbh">
-              {t('En cola')}
+              {t('Queued')}
               <span className="n">{state.queued.length}</span>
             </h2>
-            {state.queued.length === 0 && <div className="empty">{t('Nada en cola.')}</div>}
-            <ul className="lb-list" aria-label={t('En cola')}>
+            {state.queued.length === 0 && <div className="empty">{t('Nothing queued.')}</div>}
+            <ul className="lb-list" aria-label={t('Queued')}>
               {state.queued.map((q) => {
                 const mine = row?.name === q.name ? row.mode : null
                 const wait = pending === q.name
@@ -193,28 +193,28 @@ export function Libretto() {
                     <div>
                       <b>{q.name}</b>
                       {mine === 'edit' ? (
-                        <textarea className="lb-edit" aria-label={t('Editar petición')} rows={3} value={draft} onChange={(e) => setDraft(e.target.value)} />
+                        <textarea className="lb-edit" aria-label={t('Edit request')} rows={3} value={draft} onChange={(e) => setDraft(e.target.value)} />
                       ) : (
                         <span>{q.reading !== undefined ? `${day(q.date)} · ${q.reading}` : day(q.date)}</span>
                       )}
                     </div>
                     <span className="lbact">
                       {q.started ? (
-                        <span className="k">{t('Empezada · {branch}', { branch: `feat/${q.name}` })}</span>
+                        <span className="k">{t('Started · {branch}', { branch: `feat/${q.name}` })}</span>
                       ) : mine === 'edit' ? (
                         <Fragment key="edit">
                           <button type="button" className="lnk" disabled={wait || draft.trim() === ''} onClick={() => void save(q.name)}>
-                            {t('Guardar')}
+                            {t('Save')}
                           </button>
                           <button type="button" className="lnk" disabled={wait} onClick={() => setRow(null)}>
-                            {t('Cancelar')}
+                            {t('Cancel')}
                           </button>
                         </Fragment>
                       ) : mine === 'confirm' ? (
                         <Fragment key="confirm">
-                          <span className="k">{t('¿Borrar {name}?', { name: q.name })}</span>
+                          <span className="k">{t('Delete {name}?', { name: q.name })}</span>
                           <button type="button" className="lnk" disabled={wait} onClick={() => void drop(q.name)}>
-                            {t('Sí')}
+                            {t('Yes')}
                           </button>
                           <button type="button" className="lnk" ref={noRef} disabled={wait} onClick={() => setRow(null)}>
                             {t('No')}
@@ -222,7 +222,7 @@ export function Libretto() {
                         </Fragment>
                       ) : (
                         <Fragment key="idle">
-                          {key !== undefined && <span className="k">{t('Creada {key}', { key })}</span>}
+                          {key !== undefined && <span className="k">{t('Created {key}', { key })}</span>}
                           <button
                             type="button"
                             className="lnk"
@@ -233,7 +233,7 @@ export function Libretto() {
                               setRow({ name: q.name, mode: 'edit' })
                             }}
                           >
-                            {t('Editar')}
+                            {t('Edit@@action')}
                           </button>
                           <button
                             type="button"
@@ -244,15 +244,15 @@ export function Libretto() {
                               setRow({ name: q.name, mode: 'confirm' })
                             }}
                           >
-                            {t('Borrar')}
+                            {t('Delete')}
                           </button>
                           {jiraReady && key === undefined && (
                             <button type="button" className="lnk" disabled={wait} onClick={() => void toJira(q.name)}>
-                              {t('Pasar a Jira')}
+                              {t('Send to Jira')}
                             </button>
                           )}
                           <button type="button" className="refresh" disabled={wait} onClick={() => void start(q.name)}>
-                            {t('Empezar')}
+                            {t('Start')}
                           </button>
                         </Fragment>
                       )}
@@ -271,22 +271,22 @@ export function Libretto() {
                   <li key={name} className="lbr">
                     <div>
                       <b>{name}</b>
-                      <span>{t('Creada {key}', { key })}</span>
+                      <span>{t('Created {key}', { key })}</span>
                     </div>
                   </li>
                 ))}
             </ul>
             <h2 className="lbh">
-              {t('En curso')}
+              {t('In progress')}
               <span className="n">{state.inFlight.length}</span>
             </h2>
-            {state.inFlight.length === 0 && <div className="empty">{t('Nada en curso.')}</div>}
-            <ul className="lb-list" aria-label={t('En curso')}>
+            {state.inFlight.length === 0 && <div className="empty">{t('Nothing in flight.')}</div>}
+            <ul className="lb-list" aria-label={t('In progress')}>
               {state.inFlight.map((f) => (
                 <li key={f.name} className="lbr">
                   <div>
                     <b>{f.name}</b>
-                    <span>{f.total === 0 ? t('Sin checklist') : f.closed === f.total ? t('Lista para aterrizar') : `${t('Siguiente:')} ${f.firstOpen ?? ''}`}</span>
+                    <span>{f.total === 0 ? t('No checklist') : f.closed === f.total ? t('Ready to land') : `${t('Next:')} ${f.firstOpen ?? ''}`}</span>
                   </div>
                   {f.total > 0 && <span className="k">{`${f.closed}/${f.total}`}</span>}
                 </li>

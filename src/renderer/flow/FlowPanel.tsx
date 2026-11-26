@@ -11,8 +11,8 @@ import { WARN_AT } from './warn'
 
 const tabsOf = (t: T) =>
   [
-    { id: 'libretto', label: 'Libretto', title: t('Flujo de Libretto') },
-    { id: 'activity', label: t('Actividad'), title: t('Actividad') }
+    { id: 'libretto', label: 'Libretto', title: t('Libretto flow') },
+    { id: 'activity', label: t('Activity'), title: t('Activity') }
   ] as const
 type TabId = ReturnType<typeof tabsOf>[number]['id']
 
@@ -49,7 +49,7 @@ export function FlowPanel({ workspaceId, flow, boxes, onBig, onOpenLibretto }: P
   return (
     <aside className="col right" data-tour="flow">
       <h2 tabIndex={-1}>{TABS.find((x) => x.id === tab)?.title}</h2>
-      <div className="tabs" role="tablist" aria-label={t('Panel derecho')} onKeyDown={onTabKey}>
+      <div className="tabs" role="tablist" aria-label={t('Right panel')} onKeyDown={onTabKey}>
         {TABS.map((x) => (
           <button
             type="button"
@@ -89,15 +89,15 @@ function LibrettoFlow({ flow, workspaceId, boxes, subs, onBig, onOpenLibretto }:
   const hung = timeline && boxes.boxes.some((b) => b.state === 'current')
   const lone = subs && !flow?.change
   // F49: never blank while the first answer is on its way.
-  if (workspaceId && flow === undefined) return <div className="empty">{t('Leyendo el flujo de este trabajo…')}</div>
+  if (workspaceId && flow === undefined) return <div className="empty">{t("Reading this work's flow…")}</div>
   // A review session (or a work main no longer knows) has no flow: say so instead of a blank tab.
-  if (workspaceId && flow === null && !subs) return <div className="empty">{t('Este trabajo no sigue el flujo de Libretto.')}</div>
+  if (workspaceId && flow === null && !subs) return <div className="empty">{t('This work does not follow the Libretto flow.')}</div>
   // F50: before the checklist exists, say why there are no boxes.
   const early = flow && (['entrada', 'spec', 'plan'].includes(flow.stage) || (flow.stage === 'construir' && boxes.boxes.length === 0))
   if (flow?.stage === 'sin-libretto')
     return (
       <>
-        <div className="empty">{t('sin Libretto: este trabajo no tiene carpeta .agents')}</div>
+        <div className="empty">{t('no Libretto: this work has no .agents folder')}</div>
         {subs && <Branches view={subs} />}
       </>
     )
@@ -107,23 +107,23 @@ function LibrettoFlow({ flow, workspaceId, boxes, subs, onBig, onOpenLibretto }:
       {flow?.change && (
         <p className="fmeta crow">
           <span className="cname" title={flow.change}>
-            {t('Cambio:')} <b>{flow.change}</b>
+            {t('Change:')} <b>{flow.change}</b>
           </span>
         </p>
       )}
       {early && (
         <p className="fmeta">
-          {flow.change ? t('Aún no hay casillas: salen cuando el plan tenga su checklist.') : t('Este trabajo aún no tiene cambio de Libretto: lo crea el primer paso.')}
+          {flow.change ? t('No boxes yet: they appear once the plan has its checklist.') : t('This work has no Libretto change yet: the first step creates it.')}
         </p>
       )}
-      {lone && <p className="fmeta crow">{t('Subagentes')}</p>}
+      {lone && <p className="fmeta crow">{t('Subagents')}</p>}
       {subs && !hung && <Branches view={subs} />}
       {timeline && <Boxes workspaceId={workspaceId} boxes={boxes.boxes} tick={boxes.tick} onBig={onBig} subs={subs} />}
       {flow && flow.others.length > 0 && (
         <p className="fmeta crow">
-          <span>{flow.others.length === 1 ? t('1 cambio más en este repo') : t('{n} cambios más en este repo', { n: flow.others.length })}</span>
+          <span>{flow.others.length === 1 ? t('1 more change in this repo') : t('{n} more changes in this repo', { n: flow.others.length })}</span>
           <button type="button" className="fmore" onClick={onOpenLibretto}>
-            {t('Ver en Libretto')}
+            {t('Open in Libretto')}
           </button>
         </p>
       )}
@@ -149,7 +149,7 @@ function BigWarning({ lines, workspaceId }: { lines: number; workspaceId: string
     setSent('')
     setFailed(null)
     void window.atril.status.compose(workspaceId, SPLIT).then((r) => {
-      setSent('ok' in r ? t('Enviado') : null)
+      setSent('ok' in r ? t('Sent') : null)
       if (!('ok' in r)) setFailed(r.error)
     })
   }
@@ -159,17 +159,17 @@ function BigWarning({ lines, workspaceId }: { lines: number; workspaceId: string
   }
   return (
     <div className="fbig" role="status">
-      <span className="fbig-text">{t('⚠ {lines} líneas: rama grande (más de {max}).', { lines, max: WARN_AT })}</span>
+      <span className="fbig-text">{t('⚠ {lines} lines: big branch (more than {max}).', { lines, max: WARN_AT })}</span>
       <span className="fbig-acts">
         <button type="button" className="btn" disabled={sent === ''} onClick={split}>
-          {t('Separar en MRs encadenadas')}
+          {t('Split into chained MRs')}
         </button>
         <button type="button" className="btn" onClick={leave}>
-          {t('Dejarla así')}
+          {t('Leave it as it is')}
         </button>
         {sent && <span className="fbig-sent">{sent}</span>}
       </span>
-      {failed && <Problem what={failed} cant={t('La rama sigue entera.')} fix={t('Volver a intentar')} onFix={split} detail="" />}
+      {failed && <Problem what={failed} cant={t('The branch is still in one piece.')} fix={t('Try again')} onFix={split} detail="" />}
     </div>
   )
 }

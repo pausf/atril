@@ -12,31 +12,31 @@ export function ScoreView({ m, score, onScore }: { m: MrItem; score: MrScore; on
     <div className="score-body">
       {isStale(m, score) && (
         <p className="score-stale">
-          {t('De un commit anterior')}{' '}
+          {t('From an earlier commit')}{' '}
           <button type="button" className="linklike" onClick={onScore}>
-            {t('Puntuar de nuevo')}
+            {t('Score again')}
           </button>
         </p>
       )}
-      <h4>{t('Lo que mide Atril')}</h4>
+      <h4>{t('What Atril measures')}</h4>
       <ul className="score-measures">
-        <li>{t('Tamaño {size}', { size: metrics.size })}</li>
+        <li>{t('Size {size}', { size: metrics.size })}</li>
         <li>{`+${metrics.added} −${metrics.removed}`}</li>
-        <li>{t('{n} archivos', { n: metrics.files })}</li>
-        <li>{metrics.tests ? t('Cambia tests') : t('No cambia tests')}</li>
+        <li>{t('{n} files', { n: metrics.files })}</li>
+        <li>{metrics.tests ? t('Changes tests') : t('No test changes')}</li>
       </ul>
-      <h4>{t('Lo que dice Claude')}</h4>
+      <h4>{t('What Claude says')}</h4>
       <ul className="score-measures">
-        <li>{t('Dificultad {n} de 5', { n: ai.difficulty })}</li>
-        <li>{t('Riesgo {n} de 5', { n: ai.risk })}</li>
+        <li>{t('Difficulty {n} of 5', { n: ai.difficulty })}</li>
+        <li>{t('Risk {n} of 5', { n: ai.risk })}</li>
       </ul>
-      <h5>{t('Qué hace')}</h5>
+      <h5>{t('What it does')}</h5>
       <p>{ai.what}</p>
-      <h5>{t('Por qué')}</h5>
+      <h5>{t('Why')}</h5>
       <p>{ai.why}</p>
       {ai.where.length > 0 && (
         <>
-          <h5>{t('Dónde mirar')}</h5>
+          <h5>{t('Where to look')}</h5>
           <ul>
             {ai.where.map((w) => (
               <li key={w}>{w}</li>
@@ -44,7 +44,7 @@ export function ScoreView({ m, score, onScore }: { m: MrItem; score: MrScore; on
           </ul>
         </>
       )}
-      {cut && <p className="f-note">{t('Claude vio {seen} de {total} KB', { seen: cut.seen, total: cut.total })}</p>}
+      {cut && <p className="f-note">{t('Claude saw {seen} of {total} KB', { seen: cut.seen, total: cut.total })}</p>}
     </div>
   )
 }

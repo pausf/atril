@@ -28,7 +28,7 @@ function BoardField({ board, onPicked }: { board?: JiraBoard; onPicked: () => Pr
     const timer = setTimeout(() => {
       window.atril.settings.jira.searchBoards(q).then(
         (r) => live && setFound(r),
-        () => live && setFound({ error: t('No se pudo buscar tableros.') })
+        () => live && setFound({ error: t('Could not search boards.') })
       )
     }, DEBOUNCE_MS)
     return () => {
@@ -52,22 +52,22 @@ function BoardField({ board, onPicked }: { board?: JiraBoard; onPicked: () => Pr
   if (board && !changing)
     return (
       <div className="board-field">
-        <span>{t('Tablero: {name}', { name: board.name })}</span>
+        <span>{t('Board: {name}', { name: board.name })}</span>
         <button className="btn" onClick={() => setChanging(true)}>
-          {t('Cambiar')}
+          {t('Change')}
         </button>
       </div>
     )
   return (
     <div className="board-field">
       <div className="srow">
-        <label htmlFor="jira-board">{t('Tablero')}</label>
+        <label htmlFor="jira-board">{t('Board')}</label>
         <input
           id="jira-board"
           type="search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder={t('Busca por nombre')}
+          placeholder={t('Search by name')}
           autoComplete="off"
           spellCheck={false}
         />
@@ -77,7 +77,7 @@ function BoardField({ board, onPicked }: { board?: JiraBoard; onPicked: () => Pr
           ✕ {found.error}
         </div>
       )}
-      {found && Array.isArray(found) && found.length === 0 && <div className="lockn">{t('Ningún tablero coincide')}</div>}
+      {found && Array.isArray(found) && found.length === 0 && <div className="lockn">{t('No board matches')}</div>}
       {found && Array.isArray(found) && found.length > 0 && (
         <ul className="board-list">
           {found.map((b) => (
@@ -89,7 +89,7 @@ function BoardField({ board, onPicked }: { board?: JiraBoard; onPicked: () => Pr
       )}
       {board && (
         <button className="btn" onClick={() => setChanging(false)}>
-          {t('Mantener {name}', { name: board.name })}
+          {t('Keep {name}', { name: board.name })}
         </button>
       )}
     </div>
@@ -167,7 +167,7 @@ function JiraCard() {
     <ConnectionRow
       id="jira"
       name="Jira"
-      purpose={t('Tus tareas y empezar trabajos')}
+      purpose={t('Your tasks, and starting workspaces')}
       state={state}
       saved={status && status.saved}
       open={open}
@@ -177,19 +177,19 @@ function JiraCard() {
       }}
     >
       {status?.saved && !replacing ? (
-        <Manage note={t('El token no se muestra nunca. Si lo pierdes, crea uno nuevo en Atlassian y pulsa Reemplazar.')} onReplace={startReplacing} onRemove={() => void remove()}>
+        <Manage note={t('The token is never shown. If you lose it, create a new one in Atlassian and press Replace.')} onReplace={startReplacing} onRemove={() => void remove()}>
           <BoardField key={status.board?.id ?? 'none'} board={status.board} onPicked={refresh} />
         </Manage>
       ) : (
         <ConnectSteps
-          createLabel={t('Crear token en Atlassian')}
-          createNote={t('un token de API de Atlassian')}
+          createLabel={t('Create token in Atlassian')}
+          createNote={t('an Atlassian API token')}
           onCreate={() => void window.atril.settings.openTokenPage()}
           fields={
             <>
-              <Field id="jira-site" label={t('Dirección')} value={site} onChange={(e) => setSite(e.target.value)} placeholder={t('https://tuempresa.atlassian.net')} error={need(site, t('Falta la dirección.'))} />
-              <Field id="jira-email" label={t('Correo')} type="email" value={email} onChange={(e) => setEmail(e.target.value)} error={need(email, t('Falta el correo.'))} />
-              <Field id="jira-token" label={t('Token')} type="password" value={token} onChange={(e) => setToken(e.target.value)} error={need(token, t('Falta el token.'))} />
+              <Field id="jira-site" label={t('Address')} value={site} onChange={(e) => setSite(e.target.value)} placeholder={t('https://yourcompany.atlassian.net')} error={need(site, t('The address is missing.'))} />
+              <Field id="jira-email" label={t('Email')} type="email" value={email} onChange={(e) => setEmail(e.target.value)} error={need(email, t('The email is missing.'))} />
+              <Field id="jira-token" label={t('Token')} type="password" value={token} onChange={(e) => setToken(e.target.value)} error={need(token, t('The token is missing.'))} />
             </>
           }
           error={error}
@@ -208,15 +208,15 @@ export function Ajustes({ children }: { children?: ReactNode }) {
   return (
     <main className="ajustes">
       <header className="ajustes-head">
-        <h1>{t('Ajustes')}</h1>
+        <h1>{t('Settings')}</h1>
         <p className="intro">
-          {t('Tus tokens se guardan cifrados en el Llavero de tu Mac.')} <b>{t('Una vez guardados no se pueden volver a ver')}</b>
-          {t(': solo reemplazar o borrar. Tus agentes nunca los reciben.')}
+          {t("Your tokens are stored encrypted in your Mac's Keychain.")} <b>{t('Once saved they cannot be seen again')}</b>
+          {t(': only replace or delete. Your agents never receive them.')}
         </p>
       </header>
       <div className="ajustes-col">
         <section className="scard conns" aria-labelledby="conns-h" data-tour="connections">
-          <h3 id="conns-h">{t('Conexiones')}</h3>
+          <h3 id="conns-h">{t('Connections')}</h3>
           <JiraCard />
           <ForgeCard forge="github" />
           <ForgeCard forge="gitlab" />

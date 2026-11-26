@@ -147,7 +147,7 @@ export function plainWait(text: string): string {
 /** The agent's own words written with the state change (A4), else today's body. */
 export async function notificationBody(ws: WorkspaceView): Promise<string> {
   const { text } = await hookFile(ws.session)
-  return typeof text === 'string' && text ? localiseActivity(plainWait(text), t) : t('{branch} te necesita', { branch: ws.branch })
+  return typeof text === 'string' && text ? localiseActivity(plainWait(text), t) : t('{branch} needs you', { branch: ws.branch })
 }
 
 export async function agentState(ws: WorkspaceView, run: Runner = defaultRun): Promise<AgentState> {
@@ -156,8 +156,8 @@ export async function agentState(ws: WorkspaceView, run: Runner = defaultRun): P
 }
 
 // Functions, not constants: the text must be in the language of the moment it is shown (W48).
-export const replyPlaceholder = (): string => t('Responde a Claude…')
-export const replyGone = (): string => t('No se pudo enviar: ese trabajo ya no está')
+export const replyPlaceholder = (): string => t('Reply to Claude…')
+export const replyGone = (): string => t('Could not send: that workspace is gone')
 
 export type ReplyPlan = { kind: 'send'; paneId: string; text: string } | { kind: 'ignore' } | { kind: 'gone' }
 
@@ -232,12 +232,12 @@ const isChoice = (c: unknown): c is QuickChoice => {
 
 /** W75: re-reads the state, then turns the choice into keys for that workspace's pane. */
 export async function answerAgent(id: string, choice: QuickChoice, run: Runner = defaultRun): Promise<QuickAnswer> {
-  const noOption = { error: t('Esa opción ya no existe.') }
+  const noOption = { error: t('That option no longer exists.') }
   if (!isChoice(choice)) return noOption
   const ws = await actingWorkspace(id, run)
   if (!ws?.alive || !/^%\d+$/.test(ws.paneId) || (await paneDead(ws.paneId, run))) return { error: replyGone() }
   const file = await hookFile(ws.session)
-  if (file.state !== 'needs-you') return { error: t('Ese agente ya no está esperando una respuesta.') }
+  if (file.state !== 'needs-you') return { error: t('That agent is no longer waiting for an answer.') }
   const sent = (ok: boolean): QuickAnswer => (ok ? { ok: true } : { error: replyGone() })
   if ('continue' in choice) return sent(await pasteText(ws.paneId, CONTINUE, run))
   if ('allow' in choice || 'deny' in choice) {
@@ -257,7 +257,7 @@ export async function answerAgent(id: string, choice: QuickChoice, run: Runner =
 /** W204: the composer's trimmed text as a bracketed paste, then Enter, into that workspace's own pane. */
 export async function composeAgent(id: string, text: string, run: Runner = defaultRun): Promise<QuickAnswer> {
   const line = text.trim()
-  if (!line) return { error: t('No hay nada que enviar.') }
+  if (!line) return { error: t('There is nothing to send.') }
   const ws = await liveWorkspace(id, run)
   if (!ws) return { error: replyGone() }
   return (await pasteText(ws.paneId, line, run)) ? { ok: true } : { error: replyGone() }
@@ -274,7 +274,7 @@ export async function pauseAgent(id: string, run: Runner = defaultRun): Promise<
   if ('error' in blocked) return { error: blocked.error }
   const ws = await liveWorkspace(id, run)
   if (!ws) return { error: replyGone() }
-  if ((await hookState(ws.session)) !== 'working') return { error: t('Ese agente no está trabajando.') }
+  if ((await hookState(ws.session)) !== 'working') return { error: t('That agent is not working.') }
   if (!(await pressKey(ws.paneId, 'Escape', run))) return { error: replyGone() }
   await mkdir(join(atrilHome(), 'paused'), { recursive: true })
   await writeFile(pauseFile(ws.session), String(Math.floor(Date.now() / 1000)))
@@ -287,8 +287,8 @@ export async function resumeAgent(id: string, run: Runner = defaultRun): Promise
   if ('error' in blocked) return { error: blocked.error }
   const ws = await liveWorkspace(id, run)
   if (!ws) return { error: replyGone() }
-  if ((await hookState(ws.session)) !== 'paused') return { error: t('Ese agente no está en pausa.') }
-  if (!(await sendText(ws.paneId, t('Sigue donde lo dejaste.'), run))) return { error: replyGone() }
+  if ((await hookState(ws.session)) !== 'paused') return { error: t('That agent is not paused.') }
+  if (!(await sendText(ws.paneId, t('Carry on where you left off.'), run))) return { error: replyGone() }
   await rm(pauseFile(ws.session), { force: true })
   return { ok: true }
 }

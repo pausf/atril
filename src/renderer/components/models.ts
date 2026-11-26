@@ -3,16 +3,16 @@ import type { Effort, Model } from '../../preload/api'
 type T = (es: string) => string
 
 export const modelOptions = (t: T): ReadonlyArray<{ value: Model; label: string }> => [
-  { value: 'default', label: t('Por defecto (tu Claude Code)') },
-  { value: 'opus', label: t('Opus · el más capaz') },
-  { value: 'sonnet', label: t('Sonnet · equilibrado') },
-  { value: 'haiku', label: t('Haiku · rápido y barato') }
+  { value: 'default', label: t('Default (your Claude Code)') },
+  { value: 'opus', label: t('Opus · the most capable') },
+  { value: 'sonnet', label: t('Sonnet · balanced') },
+  { value: 'haiku', label: t('Haiku · fast and cheap') }
 ]
 
 export const effortOptions = (t: T): ReadonlyArray<{ value: Effort; label: string }> => [
-  { value: 'default', label: t('Por defecto') },
-  { value: 'low', label: t('Bajo') },
-  { value: 'medium', label: t('Medio') },
-  { value: 'high', label: t('Alto') },
-  { value: 'xhigh', label: t('Muy alto') }
+  { value: 'default', label: t('Default') },
+  { value: 'low', label: t('Low@@masc') },
+  { value: 'medium', label: t('Medium@@masc') },
+  { value: 'high', label: t('High@@masc') },
+  { value: 'xhigh', label: t('Very high') }
 ]

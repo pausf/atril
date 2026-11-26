@@ -17,22 +17,22 @@ export function FocusBar({ waiting, back, onJump, onBack, onExit }: Props) {
   const [first] = waiting
   return (
     <div className="focusbar">
-      <b>{t('Modo foco')}</b>
+      <b>{t('Focus mode')}</b>
       {first && (
         <span className="fpill">
           <button type="button" className="nx agent" onClick={() => onJump(first.id)}>
-            {t('{branch} te necesita', { branch: first.branch })}
+            {t('{branch} needs you', { branch: first.branch })}
           </button>
           {waiting.length > 1 && <span className="more">+{waiting.length - 1}</span>}
         </span>
       )}
       {back && (
         <button type="button" className="back" onClick={onBack}>
-          {t('Volver a {branch}', { branch: back.branch })}
+          {t('Back to {branch}', { branch: back.branch })}
         </button>
       )}
       <button type="button" className="exit" onClick={onExit}>
-        {t('Salir del foco')}
+        {t('Leave focus')}
       </button>
     </div>
   )

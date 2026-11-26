@@ -44,10 +44,10 @@ export function CreateRepoDialog({ onClose, onRegistered }: { onClose: () => voi
   return (
     <div className="modal" onKeyDown={(e) => void keys(e)}>
       <div className="dlg" role="dialog" aria-modal="true" aria-labelledby="newrepo-title" ref={dialog} tabIndex={-1}>
-        <h3 id="newrepo-title">{t('Crear repo')}</h3>
-        {connected?.length === 0 && <p className="f-note">{t('Conecta GitHub o GitLab en Ajustes')}</p>}
+        <h3 id="newrepo-title">{t('Create repo')}</h3>
+        {connected?.length === 0 && <p className="f-note">{t('Connect GitHub or GitLab in Settings')}</p>}
         <div className="f">
-          <label htmlFor="newrepo-forge">{t('Dónde')}</label>
+          <label htmlFor="newrepo-forge">{t('Where')}</label>
           <select id="newrepo-forge" value={forge} onChange={(e) => setForge(e.target.value as ForgeId)} disabled={!connected?.length}>
             {(connected ?? []).map((c) => (
               <option key={c.id} value={c.id}>
@@ -58,41 +58,41 @@ export function CreateRepoDialog({ onClose, onRegistered }: { onClose: () => voi
           </select>
         </div>
         <div className="f">
-          <label htmlFor="newrepo-name">{t('Nombre')}</label>
+          <label htmlFor="newrepo-name">{t('Name')}</label>
           <input id="newrepo-name" value={name} onChange={(e) => setName(e.target.value)} spellCheck={false} autoComplete="off" />
         </div>
         <div className="f">
-          <label htmlFor="newrepo-desc">{t('Descripción')}</label>
+          <label htmlFor="newrepo-desc">{t('Description')}</label>
           <input id="newrepo-desc" value={description} onChange={(e) => setDescription(e.target.value)} autoComplete="off" />
         </div>
         <div className="f vis" role="radiogroup" aria-labelledby="newrepo-vis-l">
           <span className="lbl" id="newrepo-vis-l">
-            {t('Visibilidad')}
+            {t('Visibility')}
           </span>
           <span>
             <label>
-              <input type="radio" name="newrepo-vis" checked={!isPublic} onChange={() => setPublic(false)} /> {t('Privado')}
+              <input type="radio" name="newrepo-vis" checked={!isPublic} onChange={() => setPublic(false)} /> {t('Private')}
             </label>{' '}
             <label>
-              <input type="radio" name="newrepo-vis" checked={isPublic} onChange={() => setPublic(true)} /> {t('Público')}
+              <input type="radio" name="newrepo-vis" checked={isPublic} onChange={() => setPublic(true)} /> {t('Public')}
             </label>
           </span>
         </div>
         {isPublic && (
           <label className="f-check warn">
-            <input type="checkbox" checked={understood} onChange={(e) => setUnderstood(e.target.checked)} /> {t('Entiendo que cualquiera podrá verlo')}
+            <input type="checkbox" checked={understood} onChange={(e) => setUnderstood(e.target.checked)} /> {t('I understand anyone will be able to see it')}
           </label>
         )}
         <label className="f-check">
-          <input type="checkbox" checked={clone} onChange={(e) => setClone(e.target.checked)} /> {t('Clonar y añadir a Atril')}
+          <input type="checkbox" checked={clone} onChange={(e) => setClone(e.target.checked)} /> {t('Clone and add to Atril')}
         </label>
         {clone && (
           <div className="f">
-            <span className="lbl">{t('En')}</span>
+            <span className="lbl">{t('In')}</span>
             <span>
-              <code>{folder ?? t('elige una carpeta')}</code>{' '}
+              <code>{folder ?? t('pick a folder')}</code>{' '}
               <button type="button" className="btn" onClick={() => void window.atril.forge.pickFolder().then((f) => f && setFolder(f))}>
-                {t('Elegir…')}
+                {t('Choose…')}
               </button>
             </span>
           </div>
@@ -104,11 +104,11 @@ export function CreateRepoDialog({ onClose, onRegistered }: { onClose: () => voi
         )}
         {result && 'url' in result && (
           <div className="f-note" role="status">
-            {t('Creado:')}{' '}
+            {t('Created:')}{' '}
             <button type="button" className="linklike" onClick={() => void window.atril.forge.open(result.url)}>
               {result.url}
             </button>
-            {result.registered && <div>{t('Clonado y añadido a Atril como «{id}».', { id: result.registered })}</div>}
+            {result.registered && <div>{t('Cloned and added to Atril as “{id}”.', { id: result.registered })}</div>}
             {result.cloneError && (
               <div className="bad">
                 {result.cloneError} <code>{result.cloneCommand}</code>
@@ -118,11 +118,11 @@ export function CreateRepoDialog({ onClose, onRegistered }: { onClose: () => voi
         )}
         <div className="btns">
           <button type="button" className="btn" onClick={onClose}>
-            {result && 'url' in result ? t('Cerrar') : t('Cancelar')}
+            {result && 'url' in result ? t('Close') : t('Cancel')}
           </button>
           {!(result && 'url' in result) && (
             <button type="button" className="btn p" disabled={!ready} onClick={() => void submit()}>
-              {busy ? t('Creando…') : t('Crear')}
+              {busy ? t('Creating…') : t('Create')}
             </button>
           )}
         </div>
