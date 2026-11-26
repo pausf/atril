@@ -39,6 +39,9 @@ export interface HarnessItem {
   doc?: true
 }
 
+/** W285: what `harness.get` answers. */
+export type HarnessResult = { items: HarnessItem[] } | { error: 'unknown' | 'missing' }
+
 /** W144/W148: Atril's two state files; the window names one to reveal, never a path. */
 export type StateFile = 'workspaces' | 'repos'
 /** A state file that exists but cannot be used: nothing is written over it until the person fixes it. */
@@ -56,6 +59,12 @@ export type AddRepoResult =
   | { error: 'not-a-git-repo' }
   | { error: 'invalid-id' }
   | { error: 'id-taken'; suggested: string }
+
+/** W285 */
+export interface HarnessApi {
+  get(repoId: string): Promise<HarnessResult>
+  doc(id: string): Promise<boolean>
+}
 
 export interface ReposApi {
   list(): Promise<Listed<RepoView>>
@@ -1211,6 +1220,7 @@ export interface AtrilApi {
   doctor(): Promise<DoctorReport>
   installTool(tool: string): Promise<{ ok: true } | { error: string }>
   repos: ReposApi
+  harness: HarnessApi
   workspaces: WorkspacesApi
   /** W147: shows that state file in Finder (Atril's folder if it is missing); any other name shows nothing. */
   revealState(file: StateFile): Promise<boolean>

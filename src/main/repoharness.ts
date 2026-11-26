@@ -1,7 +1,8 @@
 import { lstat, open, readdir, realpath } from 'node:fs/promises'
 import type { Stats } from 'node:fs'
 import { join, sep } from 'node:path'
-import type { HarnessItem } from '../preload/api'
+import type { HarnessItem, HarnessResult, RepoHealth } from '../preload/api'
+import type { Repo } from './repos'
 
 const MAX_BYTES = 1024 * 1024
 const MAX_SKILLS = 300
@@ -181,4 +182,35 @@ export async function detectHarness(root: string): Promise<HarnessItem[]> {
     permissions,
     push
   ]
+}
+
+/** W285: the pages main may open, by item id. The window never sends a URL. */
+export const DOCS = {
+  memory: 'https://code.claude.com/docs/en/memory',
+  skills: 'https://code.claude.com/docs/en/skills',
+  hooks: 'https://code.claude.com/docs/en/hooks',
+  permissions: 'https://code.claude.com/docs/en/permissions',
+  precommit: 'https://git-scm.com/docs/githooks',
+  prepush: 'https://git-scm.com/docs/githooks'
+} as const satisfies Partial<Record<HarnessItem['id'], string>>
+
+export interface HarnessDeps {
+  readRepos: () => Promise<Pick<Repo, 'id' | 'path'>[]>
+  health: (path: string) => Promise<RepoHealth | { broken: string }>
+}
+
+/** W285: by repo id, never a path; an unhealthy folder is not read. `health` is the one place a process may run. */
+export async function harnessGet(id: unknown, deps: HarnessDeps): Promise<HarnessResult> {
+  const repo = (await deps.readRepos()).find((r) => r.id === id)
+  if (!repo) return { error: 'unknown' }
+  if ((await deps.health(repo.path)) !== 'ok') return { error: 'missing' }
+  const items = await detectHarness(repo.path)
+  return { items: items.map((i) => (Object.hasOwn(DOCS, i.id) ? { ...i, doc: true as const } : i)) }
+}
+
+/** W285: opens the page of a listed item id and nothing else. */
+export function openDoc(id: unknown, open: (url: string) => void): boolean {
+  if (typeof id !== 'string' || !Object.hasOwn(DOCS, id)) return false
+  open(DOCS[id as keyof typeof DOCS])
+  return true
 }

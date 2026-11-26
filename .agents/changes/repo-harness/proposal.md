@@ -165,6 +165,6 @@ The window: `HarnessCard({ repoId })` calls `window.atril.harness.get(repoId)` o
 
 - [x] detector core: `detectHarness(root)` with the safe-read helpers and the `memory`, `skills`, `lint`, `typecheck` and `test` items, tests first and seen red (including the link and no-write cases forced red on purpose) · Closes: W280, W281, W284 · evidence: src/main/repoharness.test.ts, 3 tests green; link check forced red
 - [x] the `precommit`, `prepush`, `ci`, `hooks` and `permissions` items, same tests-first rule · waits on box 1 · Closes: W282, W283 · evidence: src/main/repoharness.test.ts, 6 tests green; guardrail clauses forced red
-- [ ] `atril:harness:get` and `atril:harness:doc` in main, `DOCS` list (URLs checked with `curl -I`), preload, `api.ts` and `mockApi` · waits on box 2 · Closes: W285
+- [x] `atril:harness:get` and `atril:harness:doc` in main, `DOCS` list (URLs checked with `curl -I`), preload, `api.ts` and `mockApi` · waits on box 2 · Closes: W285 · evidence: src/main/repoharness.test.ts, 7 tests green; allowlist forced red; the five doc URLs answered 200 to `curl -I`
 - [ ] the Harness card and the «Harness» toggle on healthy Repos rows, Spanish entries in `i18n-es.ts`, tests first, stale-reply clause forced red · waits on box 3 · Closes: W286, W287
 - [ ] drive it in the real app with Playwright against sample repos (full, bare, damaged settings, symlinked `CLAUDE.md`), dev snapshot view, photo, `bocetos/novedades.html` and `bocetos/fase1-nucleo.html`, lessons · waits on box 4 · Closes: the Outcomes paragraph

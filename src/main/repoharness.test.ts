@@ -3,7 +3,8 @@ import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { HarnessItem } from '../preload/api'
-import { detectHarness } from './repoharness'
+import type { RepoHealth } from '../preload/api'
+import { detectHarness, DOCS, harnessGet, openDoc } from './repoharness'
 
 // W284: the detector spawns nothing; any attempt throws.
 vi.mock('node:child_process', () => {
@@ -254,5 +255,50 @@ describe('detectHarness', () => {
     const local = tmp()
     put(local, '.claude/settings.local.json', JSON.stringify({ hooks: { Stop: [{}] }, permissions: { allow: ['Read'] } }))
     expect(get(await detectHarness(local), 'hooks').ok).toBe(false)
+  })
+})
+
+// W285
+describe('the harness handlers', () => {
+  const repoAt = (root: string, health: RepoHealth | { broken: string } = 'ok') => {
+    const check = vi.fn(async () => health)
+    return { deps: { readRepos: async () => [{ id: 'shop-web', path: root }], health: check }, check }
+  }
+
+  it('the get handler answers by repo id and the doc handler opens only listed pages', async () => {
+    const root = tmp()
+    put(root, 'CLAUDE.md', 'a\n')
+    const ok = repoAt(root)
+    const got = await harnessGet('shop-web', ok.deps)
+    if (!('items' in got)) throw new Error('expected items')
+    expect(got.items).toHaveLength(10)
+    expect(get(got.items, 'memory')).toMatchObject({ ok: true, detail: 'CLAUDE.md', n: 1 })
+    // doc is present exactly on the items main has a page for, found or not
+    expect(got.items.filter((i) => i.doc).map((i) => i.id).sort()).toEqual(['hooks', 'memory', 'permissions', 'precommit', 'prepush', 'skills'])
+    expect(ok.check).toHaveBeenCalledWith(root)
+
+    // an id no repo has: nothing is checked, nothing is read
+    const none = repoAt(root)
+    expect(await harnessGet('nope', none.deps)).toEqual({ error: 'unknown' })
+    expect(await harnessGet('constructor', none.deps)).toEqual({ error: 'unknown' })
+    expect(none.check).not.toHaveBeenCalled()
+
+    // a folder that is missing, not git or whose git is broken answers missing and is not read
+    for (const health of ['missing', 'not-git', { broken: 'xcode-select' }] as const) {
+      expect(await harnessGet('shop-web', repoAt(root, health).deps)).toEqual({ error: 'missing' })
+    }
+
+    // docs: only listed ids open, only https pages, once each
+    const open = vi.fn()
+    for (const id of Object.keys(DOCS)) {
+      expect(DOCS[id as keyof typeof DOCS]).toMatch(/^https:\/\/(code\.claude\.com|git-scm\.com)\//)
+      expect(openDoc(id, open)).toBe(true)
+    }
+    expect(open).toHaveBeenCalledTimes(Object.keys(DOCS).length)
+    open.mockClear()
+    for (const id of ['lint', 'ci', 'constructor', '__proto__', 'toString', '', 'https://evil.example']) expect(openDoc(id, open)).toBe(false)
+    expect(openDoc(42, open)).toBe(false)
+    expect(openDoc(undefined, open)).toBe(false)
+    expect(open).not.toHaveBeenCalled()
   })
 })
