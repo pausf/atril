@@ -164,13 +164,13 @@ describe('pause', () => {
     // Not paused (never, or no longer): the message names it.
     expect(await resumeAgent(b.id, run)).toEqual({ error: 'Ese agente no está en pausa.' })
 
-    // A UserPromptSubmit (the person typing) or a needs-you state from the real hook removes the mark too.
+    // A UserPromptSubmit (the person typing) or a needs-you or done state from the real hook removes the mark too.
     const c = await open('feat/rc', hookSteps(['UserPromptSubmit'], ['Notification'], ['Stop'], ['Notification:idle']))
     const marked = (): void => {
       mkdirSync(join(home, 'paused'), { recursive: true })
       writeFileSync(join(home, 'paused', c.session), '1')
     }
-    for (const [i, want] of ['working', 'needs-you', 'needs-you'].entries()) {
+    for (const [i, want] of ['working', 'needs-you', 'done'].entries()) {
       marked()
       expect(await agentState(c, run)).toBe('paused')
       tmuxOut(sock, 'send-keys', '-t', c.paneId, 'Enter')
