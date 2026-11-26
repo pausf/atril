@@ -73,7 +73,7 @@ describe('Fallos card', () => {
     let dialog = screen.getByRole('dialog', { name: '¿Enviar los fallos a GitHub?' })
     expect(
       within(dialog).getByText(
-        'Se envía: el error, su traza, la versión de Atril y de macOS. Se quitan tus rutas, tokens, correos, direcciones de servidores, claves de Jira y lo que va entre comillas; la limpieza es automática y puede dejarse algo. Va con tu cuenta de GitHub a pausf/atril, que es público: cualquiera puede leer el PR.'
+        'Se envía: el error, su traza, la versión de Atril y de macOS. Se quitan tus rutas, tokens, correos, direcciones de servidores, claves de Jira y lo que va entre comillas; la limpieza es automática y puede dejarse algo. Va con tu cuenta de GitHub como un issue en pausf/atril, que es público: cualquiera puede leerlo; el proyecto lo convierte en PR.'
       )
     ).toBeTruthy()
     expect(sw.getAttribute('aria-checked')).toBe('false')

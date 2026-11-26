@@ -20,6 +20,8 @@ export interface Report {
 }
 
 const MAX = 4000
+/** The report is public, so it is written in English. */
+const WHERE: Record<CrashWhere, string> = { main: 'main', ventana: 'window', proceso: 'process' }
 const PATH_CH = String.raw`[^\s'"()<>,;]*`
 const KEEP = /app\.asar\/|out\/(?:main|preload|renderer)\//
 const CODE_EXT = /\.(?:[cm]?js|tsx?|jsx|json|node|html|css|md|map)$/
@@ -27,7 +29,7 @@ const CODE_EXT = /\.(?:[cm]?js|tsx?|jsx|json|node|html|css|md|map)$/
 /** The app's own files keep the part from `app.asar/` or `out/<part>/` on: that is what points at the bug. */
 const path = (p: string): string => {
   const m = KEEP.exec(p)
-  return m ? `<ruta>/${p.slice(m.index)}` : '<ruta>'
+  return m ? `<path>/${p.slice(m.index)}` : '<path>'
 }
 
 const escape = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
@@ -42,7 +44,7 @@ const RULES: Rule[] = [
   [/token=[^\s&'"]+/g, '<token>'],
   // Long base64 or hex runs; a digit inside keeps long identifiers out.
   [/[A-Za-z0-9+=_-]{32,}/g, (m) => (/\d/.test(m) ? '<token>' : m)],
-  [/[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}\b(?!:)/g, '<correo>'],
+  [/[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}\b(?!:)/g, '<email>'],
   [/\b[a-z][a-z0-9+.-]*:\/\/[^\s'"`)\]]+/g, (m) => (m.startsWith('file:') && KEEP.test(m) ? path(m) : '<url>')],
   [/\bgit@[\w.-]+:[^\s'"`)]*/g, '<url>'],
   // IPv6 needs `::` or most of its groups, so times and line:column stay.
@@ -50,7 +52,7 @@ const RULES: Rule[] = [
   [/(?<![\w.])\d{1,3}(?:\.\d{1,3}){3}(?::\d{1,5})?(?![\w.])/g, '<url>'],
   [/(?<![\w/.@-])(?:localhost|[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+):\d{1,5}(?![\d:])/g, (m) => (CODE_EXT.test(m.slice(0, m.lastIndexOf(':'))) ? m : '<url>')],
   [new RegExp(String.raw`(?:(?<![\w.~])\/(?:Users|home|private|var|tmp|Volumes)\/|\b[A-Za-z]:\\|(?<![\w/])~\/)${PATH_CH}`, 'g'), path],
-  [/\b[A-Z][A-Z0-9]+-\d+\b/g, '<clave>']
+  [/\b[A-Z][A-Z0-9]+-\d+\b/g, '<key>']
 ]
 const QUOTED = /"[^"\n]*"|'[^'\n]*'|«[^»\n]*»/g // i18n-ignore
 
@@ -58,7 +60,7 @@ const QUOTED = /"[^"\n]*"|'[^'\n]*'|«[^»\n]*»/g // i18n-ignore
 export function scrub(text: string, home: string, quotes: boolean): string {
   let out = home.length > 1 ? text.replace(new RegExp(escape(home) + PATH_CH, 'g'), path) : text
   for (const [re, to] of RULES) out = out.replace(re, to as (m: string) => string)
-  if (quotes) out = out.replace(QUOTED, '<texto>')
+  if (quotes) out = out.replace(QUOTED, '<text>')
   return out.slice(0, MAX)
 }
 
@@ -77,22 +79,22 @@ export function signature(version: string, message: string, stack: string): stri
 export function buildReport(raw: RawCrash, ctx: { home: string; versions: Versions }): Report {
   const message = scrub(raw.message, ctx.home, true)
   const stack = scrub(raw.stack ?? '', ctx.home, false)
-  const title = `Fallo: ${(message.split('\n')[0] ?? '').replace(/[@`<>[\]]/g, '').slice(0, 72)}`
+  const title = `Crash: ${(message.split('\n')[0] ?? '').replace(/[@`<>[\]]/g, '').slice(0, 72)}`
   const v = ctx.versions
   const markdown = [
     `# ${title}`,
     '',
-    `- Dónde: ${raw.where}`, // i18n-ignore
+    `- Where: ${WHERE[raw.where]}`,
     `- Atril: ${v.atril}`,
     `- Electron: ${v.electron}`,
     `- macOS: ${v.macos}`,
-    `- Hora: ${new Date(raw.at).toISOString()}`,
+    `- Time: ${new Date(raw.at).toISOString()}`,
     '',
-    '## Mensaje',
+    '## Message',
     '',
     fenced(message),
     '',
-    '## Traza',
+    '## Stack',
     '',
     fenced(stack),
     ''

@@ -1,0 +1,50 @@
+# crash R8: Atril opens an issue with a crash report; this turns it into a branch, a file and a PR.
+# Anyone can open an issue, so the issue is read only from context.payload, never through ${{ }}.
+name: crash-report
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  crash:
+    if: startsWith(github.event.issue.title, 'Crash ') && contains(github.event.issue.body, '<!-- atril-crash ')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+        with:
+          script: |
+            const issue = context.payload.issue
+            const m = /^Crash ([0-9a-f]{12}): /.exec(issue.title || '')
+            if (!m) return core.info('Not a crash report.')
+            const sig = m[1]
+            const body = issue.body || ''
+            if (!body.includes(`<!-- atril-crash ${sig} -->`)) return core.info('No marker for this signature.')
+            if (body.length > 65536) return core.info('Body too long; skipped.')
+            const { owner, repo } = context.repo
+            const base = context.payload.repository.default_branch
+            const branch = `atril-crash/${sig}`
+            const path = `crash-reports/${sig}.md`
+            const exists = async (read) => {
+              try {
+                await read()
+                return true
+              } catch (e) {
+                if (e.status === 404) return false
+                throw e
+              }
+            }
+            if (!(await exists(() => github.rest.git.getRef({ owner, repo, ref: `heads/${branch}` })))) {
+              const head = await github.rest.git.getRef({ owner, repo, ref: `heads/${base}` })
+              await github.rest.git.createRef({ owner, repo, ref: `refs/heads/${branch}`, sha: head.data.object.sha })
+            }
+            if (!(await exists(() => github.rest.repos.getContent({ owner, repo, path, ref: branch })))) {
+              await github.rest.repos.createOrUpdateFileContents({ owner, repo, path, branch, message: `docs(crash): ${sig}`, content: Buffer.from(body).toString('base64') })
+            }
+            const pr = await github.rest.pulls.create({ owner, repo, title: issue.title, head: branch, base, body: `From #${issue.number}.` })
+            await github.rest.issues.createComment({ owner, repo, issue_number: issue.number, body: pr.data.html_url })

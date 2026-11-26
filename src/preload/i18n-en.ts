@@ -1103,8 +1103,8 @@ export const EN: Record<string, string> = {
   'Algo ha fallado en esta pantalla.': 'Something failed on this screen.',
   'Volver a cargar': 'Reload',
   '¿Enviar los fallos a GitHub?': 'Send failures to GitHub?',
-  'Se envía: el error, su traza, la versión de Atril y de macOS. Se quitan tus rutas, tokens, correos, direcciones de servidores, claves de Jira y lo que va entre comillas; la limpieza es automática y puede dejarse algo. Va con tu cuenta de GitHub a pausf/atril, que es público: cualquiera puede leer el PR.':
-    'What is sent: the error, its stack trace, the Atril and macOS versions. Your paths, tokens, e-mails, server addresses, Jira keys and anything in quotes are removed; the cleaning is automatic and may miss something. It goes with your GitHub account to pausf/atril, which is public: anyone can read the PR.',
+  'Se envía: el error, su traza, la versión de Atril y de macOS. Se quitan tus rutas, tokens, correos, direcciones de servidores, claves de Jira y lo que va entre comillas; la limpieza es automática y puede dejarse algo. Va con tu cuenta de GitHub como un issue en pausf/atril, que es público: cualquiera puede leerlo; el proyecto lo convierte en PR.':
+    'What is sent: the error, its stack trace, the Atril and macOS versions. Your paths, tokens, e-mails, server addresses, Jira keys and anything in quotes are removed; the cleaning is automatic and may miss something. It goes with your GitHub account as an issue on pausf/atril, which is public: anyone can read it; the project turns it into a PR.',
   'Activar': 'Turn on',
   'Fallos': 'Failures',
   'Si Atril falla de una forma que no esperaba, puede abrir un PR en el proyecto con el error, sin tus datos.': 'If Atril fails in a way it did not expect, it can open a PR on the project with the error, without your data.',

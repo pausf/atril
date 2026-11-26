@@ -820,7 +820,7 @@ app.whenReady().then(async () => {
   ipcMain.handle('atril:snapshot-ws', () => Boolean(SNAPSHOT))
   ipcMain.handle('atril:crash:openLast', async () => {
     const last = (await readUi()).crashLast
-    if (last && 'url' in last && last.url.startsWith(`https://github.com/${OFFICIAL_REPO}/pull/`)) await shell.openExternal(last.url)
+    if (last && 'url' in last && [`https://github.com/${OFFICIAL_REPO}/issues/`, `https://github.com/${OFFICIAL_REPO}/pull/`].some((p) => last.url.startsWith(p))) await shell.openExternal(last.url)
   })
   const menu = { selected: null as string | null, count: 0, nextEnabled: false, focusOn: false, focusAvailable: false, overviewAvailable: false, bigAvailable: false }
   // Filled once status exists; the menu is first built before it.

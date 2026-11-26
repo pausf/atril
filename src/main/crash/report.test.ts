@@ -7,14 +7,14 @@ const at = Date.UTC(2026, 10, 26, 10, 30)
 const raw = (message: string, stack = ''): RawCrash => ({ where: 'main', message, stack, at })
 const msg = (message: string): string => {
   const md = buildReport(raw(message), ctx).markdown
-  return md.split('## Mensaje\n\n')[1]!.split('\n')[1]!
+  return md.split('## Message\n\n')[1]!.split('\n')[1]!
 }
-const trace = (stack: string): string => buildReport(raw('x', stack), ctx).markdown.split('## Traza\n\n')[1]!
+const trace = (stack: string): string => buildReport(raw('x', stack), ctx).markdown.split('## Stack\n\n')[1]!
 
 describe('crash report', () => {
   it("scrubs paths, tokens, mails, hosts and keys from a report", () => {
     // Home directory, spaces included.
-    expect(msg(`ENOENT at ${HOME}/gitrepos/shop-web/a.ts`)).toBe('ENOENT at <ruta>')
+    expect(msg(`ENOENT at ${HOME}/gitrepos/shop-web/a.ts`)).toBe('ENOENT at <path>')
     // Tokens.
     for (const secret of [
       'ghp_abcdEFGH1234abcdEFGH1234',
@@ -34,22 +34,22 @@ describe('crash report', () => {
     ])
       expect(msg(`failed with ${secret} now`), secret).toBe('failed with <token> now')
     // E-mail addresses.
-    expect(msg('no user ana.maria+x@acme.example.com here')).toBe('no user <correo> here')
+    expect(msg('no user ana.maria+x@acme.example.com here')).toBe('no user <email> here')
     // Server addresses.
     for (const host of ['https://jira.acme.example/rest/api/2?x=1', 'ssh://git@acme.example/x.git', '10.0.0.12', '10.0.0.12:8080', '::1', 'fe80::1ff:fe23:4567:890a', 'api.acme.example:443', 'localhost:5173', 'git@github.com:acme/shop-web.git'])
       expect(msg(`connect ${host} refused`), host).toBe('connect <url> refused')
     // Other absolute paths and ~/ paths; the app's own files keep their tail.
     for (const path of ['/Users/otra/x.ts', '/home/otra/x.ts', '/private/var/folders/ab/T/x', '/var/log/x.log', '/tmp/x', '/Volumes/Disco/x', 'C:\\Users\\otra\\x.ts', '~/gitrepos/shop-web'])
-      expect(msg(`open ${path} failed`), path).toBe('open <ruta> failed')
+      expect(msg(`open ${path} failed`), path).toBe('open <path> failed')
     expect(trace(`Error: x\n    at f (${HOME}/Applications/Atril.app/Contents/Resources/app.asar/out/main/index.js:12:3)\n    at g (/Users/otra/dev/atril/out/renderer/assets/index.js:1:2)`)).toContain(
-      'at f (<ruta>/app.asar/out/main/index.js:12:3)\n    at g (<ruta>/out/renderer/assets/index.js:1:2)'
+      'at f (<path>/app.asar/out/main/index.js:12:3)\n    at g (<path>/out/renderer/assets/index.js:1:2)'
     )
     // Stack positions are not hosts or addresses.
     expect(trace('Error: x\n    at h (node:internal/x.js:12:34)')).toContain('node:internal/x.js:12:34')
     // Jira-like keys.
-    expect(msg('issue SHOP-1234 failed')).toBe('issue <clave> failed')
+    expect(msg('issue SHOP-1234 failed')).toBe('issue <key> failed')
     // In the message only, quoted text.
-    expect(msg('bad "secret title" and \'other\' and «más»')).toBe('bad <texto> and <texto> and <texto>')
+    expect(msg('bad "secret title" and \'other\' and «más»')).toBe('bad <text> and <text> and <text>')
     expect(trace('Error: x\n    at "kept"')).toContain('"kept"')
     // Cut to 4 000 characters each.
     const long = buildReport(raw('m'.repeat(5000), 's'.repeat(5000)), ctx).markdown
@@ -63,13 +63,11 @@ describe('crash report', () => {
   it('writes the title, versions and fenced blocks', () => {
     const r = buildReport({ where: 'ventana', message: 'Cannot read @x `y` <b> [c] of undefined and a very long tail that goes past the limit of the title', stack: 'Error\n    at a ```` b', at }, ctx)
     const lines = r.markdown.split('\n')
-    expect(lines[0]).toBe('# Fallo: ' + 'Cannot read x y b c of undefined and a very long tail that goes past the limit of the title'.slice(0, 72))
+    expect(lines[0]).toBe('# Crash: ' + 'Cannot read x y b c of undefined and a very long tail that goes past the limit of the title'.slice(0, 72))
     expect(r.title).toBe(lines[0]!.slice(2))
-    expect(r.markdown).toContain('ventana')
-    expect(r.markdown).toContain('0.9.0')
-    expect(r.markdown).toContain('45.1.0')
-    expect(r.markdown).toContain('15.3.1')
-    expect(r.markdown).toContain('2026-11-26T10:30:00.000Z')
+    // Public text: English labels, and `where` in English too.
+    expect(r.markdown).toContain('\n- Where: window\n- Atril: 0.9.0\n- Electron: 45.1.0\n- macOS: 15.3.1\n- Time: 2026-11-26T10:30:00.000Z\n')
+    expect(buildReport({ where: 'proceso', message: 'x', at }, ctx).markdown).toContain('- Where: process\n')
     expect(r.markdown).toContain('\n`````\nError\n    at a ```` b\n`````')
     expect(r.markdown).toContain('\n```\nCannot read')
   })
