@@ -152,8 +152,8 @@ New tests: K40–K44 plus the amended K5/K37 assertions, written first and seen 
 
 ## Checklist
 
-- [ ] Rows and fold groups replace the cards: `SkillRow`, `SkillGroup` with plugin controls in the header, the «Plugins» line, 36 px CSS, existing tests' queries moved to rows (assertions changed only where an amended criterion says so) · Closes: K5, K6, K7, K15, K24, K33, K37, K40, K44
-- [ ] Sort «Recientes» / «Nombre» inside each group · waits on box 1 · Closes: K41
-- [ ] Tiles as filter buttons sharing state with Todas/Activas/Apagadas, plus «Choques» · waits on box 1 · Closes: K42
-- [ ] ↑/↓ between rows and «/» to search · waits on box 1 · Closes: K43
-- [ ] Real-app drive at 1440×884 with a seeded catalog of 171 example skills (`scripts/seed-skills.mjs`), at least 20 whole rows counted on the photo, photo `bocetos/novedades/skills-densa.png`, `bocetos/novedades.html` section and history, `bocetos/fase1-nucleo.html` · waits on boxes 1–4 · Closes: the outcome «20+ rows on a screen»
+- [x] Rows and fold groups replace the cards: `SkillRow`, `SkillGroup` with plugin controls in the header, the «Plugins» line, 36 px CSS, existing tests' queries moved to rows (assertions changed only where an amended criterion says so) · Closes: K5, K6, K7, K15, K24, K33, K37, K40, K44
+- [x] Sort «Recientes» / «Nombre» inside each group · waits on box 1 · Closes: K41
+- [x] Tiles as filter buttons sharing state with Todas/Activas/Apagadas, plus «Choques» · waits on box 1 · Closes: K42
+- [x] ↑/↓ between rows and «/» to search · waits on box 1 · Closes: K43
+- [x] Real-app drive at 1440×884 with a seeded catalog of 171 example skills (`scripts/seed-skills.mjs`), at least 20 whole rows counted on the photo, photo `bocetos/novedades/skills-densa.png`, `bocetos/novedades.html` section and history, `bocetos/fase1-nucleo.html` · waits on boxes 1–4 · Closes: the outcome «20+ rows on a screen»

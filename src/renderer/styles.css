@@ -4972,12 +4972,16 @@ button.fx-bt {
   gap: 6px;
 }
 .skg-fold::before {
-  content: '▸';
+  content: '›';
+  display: inline-block;
+  width: 10px;
   color: var(--sub);
-  font-size: 10px;
+  font-size: 15px;
+  line-height: 1;
+  transition: transform 0.12s;
 }
 .skg-fold[aria-expanded='true']::before {
-  content: '▾';
+  transform: rotate(90deg);
 }
 .skg-fold:disabled {
   cursor: default;
