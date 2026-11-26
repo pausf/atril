@@ -1,6 +1,6 @@
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
-import type { Palette, Theme, UiState } from '../preload/api'
+import type { CrashLast, Palette, Theme, UiState } from '../preload/api'
 import { LANG_CHOICES, type LangChoice } from '../preload/i18n'
 import { atrilHome } from './paths'
 
@@ -9,6 +9,14 @@ const THEMES: readonly Theme[] = ['light', 'dark', 'auto']
 const PALETTES: readonly Palette[] = ['original', 'grafito']
 
 const file = (): string => join(atrilHome(), 'ui.json')
+
+function crashLast(v: unknown): CrashLast | undefined {
+  const o = (typeof v === 'object' && v !== null ? v : {}) as Record<string, unknown>
+  if (typeof o['at'] !== 'number') return undefined
+  if (typeof o['url'] === 'string') return { at: o['at'], url: o['url'] }
+  if (typeof o['error'] === 'string') return { at: o['at'], error: o['error'] }
+  return undefined
+}
 
 function clean(raw: unknown): UiState {
   const r = (typeof raw === 'object' && raw !== null ? raw : {}) as Record<string, unknown>
@@ -20,6 +28,7 @@ function clean(raw: unknown): UiState {
   if (typeof r['bigDismissed'] === 'object' && r['bigDismissed'] !== null) {
     for (const [k, v] of Object.entries(r['bigDismissed'])) if (Number.isInteger(v) && (v as number) > 0) big[k] = v as number
   }
+  const last = crashLast(r['crashLast'])
   return {
     tutorialSeen: r['tutorialSeen'] === true,
     theme: THEMES.includes(r['theme'] as Theme) ? (r['theme'] as Theme) : DEFAULT_UI.theme,
@@ -29,7 +38,9 @@ function clean(raw: unknown): UiState {
     ...(r['setupDismissed'] === true ? { setupDismissed: true } : {}),
     ...(r['skillsWriteOk'] === true ? { skillsWriteOk: true as const } : {}),
     ...(typeof r['librettoRepo'] === 'string' && r['librettoRepo'] !== '' ? { librettoRepo: r['librettoRepo'] } : {}),
-    ...(Object.keys(big).length > 0 ? { bigDismissed: big } : {})
+    ...(Object.keys(big).length > 0 ? { bigDismissed: big } : {}),
+    ...(r['crashReports'] === 'on' ? { crashReports: 'on' as const } : {}),
+    ...(last ? { crashLast: last } : {})
   }
 }
 

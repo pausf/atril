@@ -34,6 +34,8 @@ import { writeFile } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { createSecretStore } from './credentials/store'
+import { installCrashHooks } from './crash/hooks'
+import { createCrash, OFFICIAL_REPO } from './crash/send'
 import { jiraSettings } from './credentials/jira'
 import { searchBoards } from './credentials/boards'
 import type { JiraCreds } from './credentials/check'
@@ -300,6 +302,22 @@ function createWindow(): void {
   }
 }
 
+const secretStore = createSecretStore({
+  isAvailable: () => safeStorage.isEncryptionAvailable(),
+  encrypt: (s) => safeStorage.encryptString(s),
+  decrypt: (b) => safeStorage.decryptString(b)
+})
+
+// crash R5: hooked before ready so an early failure waits for the gates instead of being lost.
+const crash = createCrash({
+  store: secretStore,
+  fetch,
+  now: Date.now,
+  home: app.getPath('home'),
+  versions: { atril: app.getVersion(), electron: process.versions.electron ?? '', macos: process.getSystemVersion() }
+})
+installCrashHooks({ proc: process, app, ipc: ipcMain, isOwnWindow: (s) => BrowserWindow.getAllWindows().some((w) => w.webContents === s), crash })
+
 app.whenReady().then(async () => {
   // W128: before the doctor or any agent spawns anything.
   process.env['PATH'] = await loginPath(run)
@@ -337,11 +355,6 @@ app.whenReady().then(async () => {
     )
   )
   ipcMain.handle('atril:state:reveal', (_e, file: unknown) => revealState(file, (path) => shell.showItemInFolder(path)))
-  const secretStore = createSecretStore({
-    isAvailable: () => safeStorage.isEncryptionAvailable(),
-    encrypt: (s) => safeStorage.encryptString(s),
-    decrypt: (b) => safeStorage.decryptString(b)
-  })
   const jiraCreds = jiraSettings(secretStore)
   // ponytail: dev-only, ATRIL_SNAPSHOT_VIEW=settings-board photographs the Jira card with a picked board.
   ipcMain.handle('atril:settings:jira:status', () =>
@@ -805,6 +818,10 @@ app.whenReady().then(async () => {
     return ui
   })
   ipcMain.handle('atril:snapshot-ws', () => Boolean(SNAPSHOT))
+  ipcMain.handle('atril:crash:openLast', async () => {
+    const last = (await readUi()).crashLast
+    if (last && 'url' in last && last.url.startsWith(`https://github.com/${OFFICIAL_REPO}/pull/`)) await shell.openExternal(last.url)
+  })
   const menu = { selected: null as string | null, count: 0, nextEnabled: false, focusOn: false, focusAvailable: false, overviewAvailable: false, bigAvailable: false }
   // Filled once status exists; the menu is first built before it.
   let states = (): Record<string, AgentState> => ({})

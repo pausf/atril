@@ -498,6 +498,7 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
       marketplace: vi.fn(async () => ({ catalog: { installed: [], available: [] } })),
       pluginTerminal: vi.fn(async () => ({ ok: true as const }))
     },
+    crash: { report: vi.fn(), openLast: vi.fn(async () => undefined) },
     revealState: vi.fn(async () => true),
     snapshotView: async () => null,
     snapshotWorkspace: async () => false

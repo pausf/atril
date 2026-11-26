@@ -14,6 +14,10 @@ const api: AtrilApi = {
       return () => ipcRenderer.removeListener('atril:menu:action', h)
     }
   },
+  crash: {
+    report: (r) => ipcRenderer.send('atril:crash:report', r),
+    openLast: () => ipcRenderer.invoke('atril:crash:openLast')
+  },
   ui: {
     get: () => ipcRenderer.invoke('atril:ui:get'),
     set: (patch) => ipcRenderer.invoke('atril:ui:set', patch)

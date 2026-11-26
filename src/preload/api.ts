@@ -991,7 +991,13 @@ export interface UiState {
   bigDismissed?: Record<string, number>
   /** K16: the person ticked «No volver a preguntar» on the first skills write; only `true` is kept. */
   skillsWriteOk?: true
+  /** W216: «Enviar los fallos a GitHub como PR» (crash R6); only `'on'` is kept, anything else reads as off. */
+  crashReports?: 'on'
+  /** crash R3/R7: the last send, with the PR's URL or why it failed; main writes it. */
+  crashLast?: CrashLast
 }
+
+export type CrashLast = { at: number; url: string } | { at: number; error: string }
 
 export interface UiApi {
   get(): Promise<UiState>
@@ -1158,8 +1164,16 @@ export interface SkillsApi {
   create(req: SkillCreate): Promise<SkillsList>
 }
 
+/** crash R5/R6: the window's own failures to main, and the last sent PR opened in the browser. */
+export interface CrashApi {
+  report(r: { message: string; stack: string }): void
+  /** Opens `crashLast.url` when it is a PR of the official repo; anything else opens nothing. */
+  openLast(): Promise<void>
+}
+
 export interface AtrilApi {
   menu: MenuApi
+  crash: CrashApi
   ui: UiApi
   usage: UsageApi
   flow: FlowApi

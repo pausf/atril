@@ -1100,4 +1100,7 @@ export const EN: Record<string, string> = {
   'Herramientas': 'Tools',
   'Claude la usa solo': 'Claude uses it on its own',
   'Se llama con /': 'Called with /',
+  'pausf/atril no es privado: no envío fallos ahí.': 'pausf/atril is not private: no failures are sent there.',
+  'Algo ha fallado en esta pantalla.': 'Something failed on this screen.',
+  'Volver a cargar': 'Reload',
 }

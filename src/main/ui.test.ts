@@ -62,4 +62,25 @@ describe('ui store', () => {
     await patchUi({ skillsWriteOk: 1 })
     expect((await readUi()).skillsWriteOk).toBeUndefined()
   })
+
+  it("remembers crash report consent and the last send", async () => {
+    await patchUi({ crashReports: 'on' })
+    await patchUi({ theme: 'dark' })
+    expect((await readUi()).crashReports).toBe('on')
+    await patchUi({ crashReports: 'yes' })
+    expect((await readUi()).crashReports).toBeUndefined()
+    writeFileSync(join(process.env['ATRIL_HOME']!, 'ui.json'), JSON.stringify({ crashReports: true }))
+    expect((await readUi()).crashReports).toBeUndefined()
+
+    await patchUi({ crashLast: { at: 5, url: 'https://github.com/pausf/atril/pull/7' } })
+    await patchUi({ theme: 'light' })
+    expect((await readUi()).crashLast).toEqual({ at: 5, url: 'https://github.com/pausf/atril/pull/7' })
+    await patchUi({ crashLast: { at: 6, error: 'Not Found' } })
+    expect((await readUi()).crashLast).toEqual({ at: 6, error: 'Not Found' })
+    for (const bad of ['x', { at: '6', url: 'u' }, { at: 6 }, { at: 6, url: 7 }, { url: 'u' }, null]) {
+      await patchUi({ crashLast: { at: 6, error: 'Not Found' } })
+      await patchUi({ crashLast: bad })
+      expect((await readUi()).crashLast, JSON.stringify(bad)).toBeUndefined()
+    }
+  })
 })
