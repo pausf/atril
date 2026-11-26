@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react'
-import type { QaCriterion, QaEntry, QaLaunchResult, QaMr, QaProblem, QaPublishResult, QaReport, QaShot, QaStatus, QaTargets, WorkspaceView } from '../../preload/api'
+import type { QaCriterion, QaEntry, QaLaunchResult, QaMr, QaPictureRow, QaProblem, QaPublishResult, QaReport, QaShot, QaStatus, QaTargets, WorkspaceView } from '../../preload/api'
 import { fixLabel as netFixLabel, Problem } from '../components/Problem'
 import { useLocale, useT } from '../ui'
 import { useModalKeys } from '../flow/modalKeys'
@@ -7,6 +7,7 @@ import { QaBug } from './QaBug'
 import { QaHow } from './QaHow'
 import { fixLabel, platformLabel, targetLabel } from './kinds'
 import { QaPick } from './QaPick'
+import { QaSheet } from './QaSheet'
 import { settled, TESTING_MS, type QaPending } from './pending'
 
 const POLL_MS = 3000
@@ -30,6 +31,9 @@ export function QaScreen({ workspaces, selected, pending, setPending, openSettin
   const [posting, setPosting] = useState(false)
   const [published, setPublished] = useState<Record<string, string>>({})
   const [postFail, setPostFail] = useState<Exclude<QaPublishResult, { url: string }> | null>(null)
+  const [preparing, setPreparing] = useState(false)
+  const [sheet, setSheet] = useState<{ rows: QaPictureRow[]; token: string } | null>(null)
+  const [sheetFail, setSheetFail] = useState<Exclude<QaPublishResult, { url: string }> | null>(null)
   const mounted = useRef(true)
   const asked = useRef(new Set<string>())
   const idsKey = list.map((w) => w.id).join(',')
@@ -162,15 +166,38 @@ export function QaScreen({ workspaces, selected, pending, setPending, openSettin
   }
 
   // W170/W171: one post per press; the disabled button keeps a second press from sending another.
-  const publish = async (): Promise<void> => {
+  // W170 without a token; with one, the sheet's pictures (W245–W249).
+  const send = async (token?: string): Promise<void> => {
     if (id === null || posting) return
     setPosting(true)
     setPostFail(null)
-    const r = await window.atril.qa.publish(id)
+    setSheetFail(null)
+    const r = await window.atril.qa.publish(id, token)
     if (!mounted.current) return
     setPosting(false)
-    if ('url' in r) setPublished((x) => ({ ...x, [id]: r.url }))
+    if ('url' in r) {
+      setPublished((x) => ({ ...x, [id]: r.url }))
+      setSheet(null)
+    } else if (token) setSheetFail(r)
     else setPostFail(r)
+  }
+
+  // W241/W251: main checks the pictures first; with no shots it is W170 as before.
+  const publish = async (): Promise<void> => {
+    if (id === null || posting || preparing) return
+    setPreparing(true)
+    setPostFail(null)
+    setSheetFail(null)
+    const p = await window.atril.qa.preparePublish(id)
+    if (!mounted.current) return
+    setPreparing(false)
+    if ('error' in p) {
+      setSheet(null)
+      setPostFail(p)
+    } else if (p.token === null) {
+      setSheet(null)
+      await send()
+    } else setSheet({ rows: p.rows, token: p.token })
   }
 
   const crit = (cid: string | null): QaCriterion | undefined => report?.criteria.find((c) => c.id === cid)
@@ -269,8 +296,8 @@ export function QaScreen({ workspaces, selected, pending, setPending, openSettin
                         {t('Publicado en la MR')}
                       </button>
                     )}
-                    <button type="button" className="btn" disabled={posting} onClick={() => void publish()}>
-                      {published[id] ? t('Publicar de nuevo') : t('Publicar en la MR')}
+                    <button type="button" className="btn" disabled={posting || preparing} onClick={() => void publish()}>
+                      {preparing ? t('Revisando las capturas…') : published[id] ? t('Publicar de nuevo') : t('Publicar en la MR')}
                     </button>
                   </>
                 ) : (
@@ -278,11 +305,25 @@ export function QaScreen({ workspaces, selected, pending, setPending, openSettin
                 )}
               </div>
             )}
+            {sheet && report && (
+              <QaSheet
+                rows={sheet.rows}
+                criteria={report.criteria}
+                busy={posting || preparing}
+                fail={sheetFail}
+                onSend={() => void send(sheet.token)}
+                onFix={() => (sheetFail?.fix === 'recheck' ? void publish() : sheetFail?.fix === 'settings' ? openSettings() : void send(sheet.token))}
+                onClose={() => {
+                  setSheet(null)
+                  setSheetFail(null)
+                }}
+              />
+            )}
             {postFail && (
               <Problem
                 what={postFail.error}
                 cant={t('La QA no ha llegado a la MR.')}
-                fix={netFixLabel(t, postFail.fix)}
+                fix={postFail.fix === 'recheck' ? t('Revisar otra vez') : netFixLabel(t, postFail.fix)}
                 busy={posting}
                 onFix={() => (postFail.fix === 'settings' ? openSettings() : void publish())}
                 detail={postFail.detail ?? ''}

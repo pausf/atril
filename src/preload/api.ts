@@ -813,7 +813,10 @@ export interface QaPictureRow {
 }
 
 /** W170/W171: the MR it reached, or W150's sentence with its fix and folded code. */
-export type QaPublishResult = { url: string } | { error: string; detail?: string; fix?: NetFix }
+export type QaPublishResult = { url: string } | { error: string; detail?: string; fix?: NetFix | 'recheck' }
+
+/** W241: no rows and no token when no criterion has a shot. */
+export type QaPrepared = { rows: QaPictureRow[]; token: string | null } | { error: string; detail?: string; fix?: NetFix | 'recheck' }
 
 export interface QaApi {
   /** null: no such workspace. */
@@ -836,7 +839,10 @@ export interface QaApi {
   /** W174: the work's MR among the person's own (Mías), by repo and branch. */
   mrFor(workspaceId: string): Promise<QaMr>
   /** W170: one general comment with the QA's result on that MR. */
-  publish(workspaceId: string): Promise<QaPublishResult>
+  /** W241: the pictures that would go, checked on this Mac; nothing is written anywhere. */
+  preparePublish(workspaceId: string): Promise<QaPrepared>
+  /** W170 without a token; W245–W249 with the token preparePublish gave. */
+  publish(workspaceId: string, token?: string): Promise<QaPublishResult>
 }
 
 export type StageName = 'sin-libretto' | 'entrada' | 'spec' | 'plan' | 'construir' | 'terminado' | 'aterrizado'

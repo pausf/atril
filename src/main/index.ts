@@ -25,6 +25,8 @@ import { createThreads } from './forge/threads'
 import { createPage, parseDiff } from './forge/page'
 import { createMerge } from './forge/merge'
 import { createQaPublish } from './qa-publish'
+import { ocrText } from './qa-pictures'
+import { createQaHosting } from './forge/qa-hosting'
 import { boxDiff, boxRanges, forgetPlans } from './flow/boxes'
 import { closeQuiet } from './flow/quiet'
 import { createClashWatch, radar } from './radar'
@@ -32,7 +34,8 @@ import { changeFolders } from './flow/stage'
 import { nextUp } from './nextup'
 import { writeFile } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
-import { dirname, join } from 'node:path'
+import { hostname } from 'node:os'
+import { basename, dirname, join } from 'node:path'
 import { createSecretStore } from './credentials/store'
 import { installCrashHooks } from './crash/hooks'
 import { createCrash, OFFICIAL_REPO } from './crash/send'
@@ -64,6 +67,7 @@ import { createFlowHub } from './flow/watch'
 import { installMenu } from './menu'
 import { createNotifier, parseNcprefs } from './notify'
 import { patchUi, readUi } from './ui'
+import { userHome } from './paths'
 import type { Agent, AgentState, QuickAnswer, QuickChoice } from '../preload/api'
 
 // Dev-only evidence hooks (screenshots for review). A packaged app ignores them all, so no
@@ -566,9 +570,21 @@ app.whenReady().then(async () => {
     SNAPSHOT && /^mr-(thread|lens)$/.test(process.env['ATRIL_SNAPSHOT_VIEW'] ?? '') ? Promise.resolve(fakeThreads()) : threads.read(typeof url === 'string' ? url : '')
   )
   // W174: the QA screen's MR, from the last listing when it is under a minute old.
-  const qaPublish = createQaPublish({ run, last: () => lastMrs, list: listAllMrs, post: (url, body) => threads.reply(url, 'general', body) })
+  const qaPublish = createQaPublish({
+    run,
+    last: () => lastMrs,
+    list: listAllMrs,
+    post: (url, body) => threads.reply(url, 'general', body),
+    ocr: (file) => ocrText(file, run),
+    host: hostname(),
+    user: basename(userHome()),
+    hosting: createQaHosting({ store: secretStore }),
+    target: guards.threadTarget,
+    home: userHome()
+  })
   ipcMain.handle('atril:qa:mrFor', (_e, id: unknown) => qaPublish.mrFor(String(id)))
-  ipcMain.handle('atril:qa:publish', (_e, id: unknown) => qaPublish.publish(String(id)))
+  ipcMain.handle('atril:qa:preparePublish', (_e, id: unknown) => qaPublish.preparePublish(String(id)))
+  ipcMain.handle('atril:qa:publish', (_e, id: unknown, token: unknown) => qaPublish.publish(String(id), typeof token === 'string' ? token : undefined))
   ipcMain.handle('atril:mr:reply', (_e, url: unknown, threadId: unknown, body: unknown) =>
     typeof url === 'string' && typeof threadId === 'string' && typeof body === 'string' ? threads.reply(url, threadId, body) : { error: t('Escribe una respuesta') }
   )
