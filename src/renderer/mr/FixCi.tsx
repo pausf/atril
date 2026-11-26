@@ -35,16 +35,16 @@ export function FixCi({ m }: { m: MrItem }) {
   }, [m.url])
 
   if (!m.ci) return null
-  const ci: Record<CiState, string> = { pass: t('Pasa'), fail: t('Falla'), running: t('En curso'), none: t('Sin CI') }
+  const ci: Record<CiState, string> = { pass: t('Passing'), fail: t('Failing'), running: t('In progress'), none: t('No CI') }
   return (
     <span className="mr-ci">
       <span className={`tag ci-${m.ci}`}>{ci[m.ci]}</span>
       {m.ci === 'fail' && branch && (
         <button type="button" className="btn" disabled={busy} onClick={() => void fix()}>
-          {t('Arreglar CI con Claude')}
+          {t('Fix CI with Claude')}
         </button>
       )}
-      {result && 'sent' in result && <span role="status">{t('Enviado a {rama}', { rama: result.sent })}</span>}
+      {result && 'sent' in result && <span role="status">{t('Sent to {rama}', { rama: result.sent })}</span>}
       {result && 'error' in result && (
         <span className="mr-score-error" role="alert">
           {result.error}

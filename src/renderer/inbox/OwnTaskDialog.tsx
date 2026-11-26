@@ -67,7 +67,7 @@ export function OwnTaskDialog({ seed, textOptional = false, onClose, onOpenSetti
   const composed = withAnswers(text, pairs)
   // I33: main refuses past 2000; the dialog says so before Empezar.
   const tooLong = !blank && composed.length > MAX_TEXT
-  const title = textOptional ? t('Nuevo trabajo') : t('Nueva tarea')
+  const title = textOptional ? t('New work') : t('New task')
   const ready = (textOptional || !blank) && repoId !== '' && branch.trim() !== '' && !busy && !tooLong
 
   const submit = async (worktree = false): Promise<void> => {
@@ -119,13 +119,13 @@ export function OwnTaskDialog({ seed, textOptional = false, onClose, onOpenSetti
         <h3 id="own-title">{title}</h3>
         <p>
           {textOptional
-            ? t('Con texto, Libretto lo toma como petición y empieza por la spec; sin texto, abre Claude a secas.')
-            : t('Escribe lo que hay que hacer: Libretto lo toma como petición y empieza por la spec.')}
+            ? t('With text, Libretto takes it as a request and starts with the spec; without text, it opens plain Claude.')
+            : t('Write what needs doing: Libretto takes it as a request and starts with the spec.')}
         </p>
 
         <div className="f stack">
-          <label htmlFor="own-text">{textOptional ? t('¿Qué hay que hacer? (opcional)') : t('¿Qué hay que hacer?')}</label>
-          <textarea id="own-text" rows={5} maxLength={2000} value={text} onChange={(e) => setText(e.target.value)} placeholder={t('Añadir filtro de laboratorios al listado…')} />
+          <label htmlFor="own-text">{textOptional ? t('What needs doing? (optional)') : t('What needs doing?')}</label>
+          <textarea id="own-text" rows={5} maxLength={2000} value={text} onChange={(e) => setText(e.target.value)} placeholder={t('Add a laboratory filter to the list…')} />
         </div>
 
         {!blank && <Refine startOpen={seed !== undefined} text={text} fixed={fixed} onFixed={setFixed} asked={asked} onAsked={setAsked} count={pairs.length} />}
@@ -133,7 +133,7 @@ export function OwnTaskDialog({ seed, textOptional = false, onClose, onOpenSetti
         <div className="f">
           <label htmlFor="own-repo">{t('Repo')}</label>
           <select id="own-repo" value={repoId} onChange={(e) => setRepoId(e.target.value)} disabled={!repos?.length}>
-            {repoId === '' && <option value="">{repos?.length === 0 ? t('No hay repos registrados') : t('Elige un repo…')}</option>}
+            {repoId === '' && <option value="">{repos?.length === 0 ? t('No repos registered') : t('Pick a repo…')}</option>}
             {(repos ?? []).map((r) => (
               <option key={r.id} value={r.id}>
                 {r.id}
@@ -143,20 +143,20 @@ export function OwnTaskDialog({ seed, textOptional = false, onClose, onOpenSetti
         </div>
         {repos?.length === 0 && (
           <div className="f-note">
-            {t('Añade un repo en Ajustes → Repos')}{' '}
+            {t('Add a repo in Settings → Repos')}{' '}
             <button type="button" className="linklike" onClick={onOpenSettings}>
-              {t('Ir a Ajustes')}
+              {t('Go to Settings')}
             </button>
           </div>
         )}
 
         <div className="f">
-          <label htmlFor="own-branch">{t('Rama')}</label>
+          <label htmlFor="own-branch">{t('Branch')}</label>
           <input id="own-branch" value={branch} onChange={(e) => setEdited(e.target.value)} spellCheck={false} />
         </div>
 
         <div className="f">
-          <label htmlFor="own-model">{t('Modelo')}</label>
+          <label htmlFor="own-model">{t('Model')}</label>
           <select id="own-model" value={model} onChange={(e) => setModel(e.target.value as Model)}>
             {modelOptions(t).map((m) => (
               <option key={m.value} value={m.value}>
@@ -167,7 +167,7 @@ export function OwnTaskDialog({ seed, textOptional = false, onClose, onOpenSetti
         </div>
 
         <div className="f">
-          <label htmlFor="own-effort">{t('Esfuerzo')}</label>
+          <label htmlFor="own-effort">{t('Effort')}</label>
           <select id="own-effort" value={effort} onChange={(e) => setEffort(e.target.value as Effort)}>
             {effortOptions(t).map((o) => (
               <option key={o.value} value={o.value}>
@@ -181,18 +181,18 @@ export function OwnTaskDialog({ seed, textOptional = false, onClose, onOpenSetti
         {!blank && <ModePicker auto={auto} onChange={setAuto} />}
 
         <div className="f">
-          <span className="lbl">{t('Lanza')}</span>
-          <code className="launch" aria-label={t('Comando que se ejecutará')}>{blank && textOptional
+          <span className="lbl">{t('Runs')}</span>
+          <code className="launch" aria-label={t('Command that will run')}>{blank && textOptional
               ? 'claude'
               : blank
-                ? auto ? t('/libretto:libretto-attacca «tu texto»') : t('/libretto:libretto-flow «tu texto»')
-                : auto ? t('/libretto:libretto-attacca «{text}»', { text: composed }) : t('/libretto:libretto-flow «{text}»', { text: composed })}</code>
+                ? auto ? t('/libretto:libretto-attacca “your text”') : t('/libretto:libretto-flow “your text”')
+                : auto ? t('/libretto:libretto-attacca “{text}”', { text: composed }) : t('/libretto:libretto-flow “{text}”', { text: composed })}</code>
         </div>
 
         {problem && (
           <Problem
             what={problem.error}
-            cant={t('No he creado el trabajo.')}
+            cant={t("I haven't created the work.")}
             fix={fixLabel(t, problem.fix)}
             busy={busy}
             onFix={() => sharedFix(problem.fix, onOpenSettings) || void (problem.fix === 'worktree' ? submit(true) : problem.fix === 'reveal' ? window.atril.revealState(problem.file ?? 'repos') : openTerminal())}
@@ -201,7 +201,7 @@ export function OwnTaskDialog({ seed, textOptional = false, onClose, onOpenSetti
         )}
         {tooLong && (
           <div className="bad" role="alert">
-            {t('Con las respuestas pasa de 2000 caracteres: acorta algo.')}
+            {t('With the answers it goes over 2000 characters: shorten something.')}
           </div>
         )}
         {error && (
@@ -212,10 +212,10 @@ export function OwnTaskDialog({ seed, textOptional = false, onClose, onOpenSetti
 
         <div className="btns">
           <button type="button" className="btn" onClick={onClose}>
-            {t('Cancelar')}
+            {t('Cancel')}
           </button>
           <button type="button" className="btn p" disabled={!ready} onClick={() => void submit()}>
-            {busy ? t('Empezando…') : t('Empezar')}
+            {busy ? t('Starting…') : t('Start')}
           </button>
         </div>
       </div>

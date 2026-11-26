@@ -24,14 +24,14 @@ export function QaPick({ workspaceId, onSaved, onCancel }: { workspaceId: string
   return (
     <form
       className="qat-pick"
-      aria-label={t('Elegir a mano')}
+      aria-label={t('Pick by hand')}
       onSubmit={(e) => {
         e.preventDefault()
         void save()
       }}
     >
       <div className="f stack">
-        <label htmlFor="qat-platform">{t('Plataforma')}</label>
+        <label htmlFor="qat-platform">{t('Platform')}</label>
         <select id="qat-platform" value={platform} onChange={(e) => setPlatform(e.target.value as QaPlatform)}>
           {PLATFORMS.map((p) => (
             <option key={p} value={p}>
@@ -41,11 +41,11 @@ export function QaPick({ workspaceId, onSaved, onCancel }: { workspaceId: string
         </select>
       </div>
       <div className="f stack">
-        <label htmlFor="qat-dir">{t('Carpeta')}</label>
-        <input id="qat-dir" value={dir} spellCheck={false} placeholder={t('Vacía: la raíz del trabajo')} onChange={(e) => setDir(e.target.value)} />
+        <label htmlFor="qat-dir">{t('Folder')}</label>
+        <input id="qat-dir" value={dir} spellCheck={false} placeholder={t("Empty: the workspace's root")} onChange={(e) => setDir(e.target.value)} />
       </div>
       <div className="f stack">
-        <label htmlFor="qat-command">{t('Comando')}</label>
+        <label htmlFor="qat-command">{t('Command')}</label>
         <input id="qat-command" value={command} spellCheck={false} placeholder="pnpm run dev" onChange={(e) => setCommand(e.target.value)} />
       </div>
       {error && (
@@ -55,10 +55,10 @@ export function QaPick({ workspaceId, onSaved, onCancel }: { workspaceId: string
       )}
       <div className="btns">
         <button type="button" className="btn" onClick={onCancel}>
-          {t('Cancelar')}
+          {t('Cancel')}
         </button>
         <button type="submit" className="btn p" disabled={busy || command.trim() === ''}>
-          {t('Guardar')}
+          {t('Save')}
         </button>
       </div>
     </form>

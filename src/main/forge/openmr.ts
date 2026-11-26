@@ -38,17 +38,17 @@ export async function remoteNaming(run: Runner, path: string, project: string, h
 export function createOpenMr({ latest, run }: Deps) {
   async function find(url: string): Promise<Found> {
     const mr = latest(url)
-    if (!mr) return { kind: 'none', reason: t('Esta MR ya no está en la lista: actualiza') }
+    if (!mr) return { kind: 'none', reason: t('This MR is no longer in the list: refresh') }
     const { branch } = mr
-    if (!branch) return { kind: 'none', reason: t('No se sabe la rama de esta MR: actualiza') }
+    if (!branch) return { kind: 'none', reason: t('The branch of this MR is unknown: refresh') }
     const host = new URL(url).hostname
     const matches: Array<{ repo: Repo; remote: string }> = []
     for (const repo of await readRepos()) {
       const remote = await remoteNaming(run, repo.path, mr.project, host)
       if (remote) matches.push({ repo, remote })
     }
-    if (matches.length === 0) return { kind: 'none', reason: t('Añade el repo de {project} en Ajustes', { project: mr.project }) }
-    if (matches.length > 1) return { kind: 'none', reason: t('Varios repos registrados son de {project}', { project: mr.project }) }
+    if (matches.length === 0) return { kind: 'none', reason: t('Add the repo of {project} in Settings', { project: mr.project }) }
+    if (matches.length > 1) return { kind: 'none', reason: t('Several registered repos are {project}', { project: mr.project }) }
     // An MR in Mías is yours to continue, wherever else it also shows.
     return { kind: mr.list === 'mine' ? 'continue' : 'review', mr: { ...mr, branch }, ...matches[0]! }
   }
@@ -61,7 +61,7 @@ export function createOpenMr({ latest, run }: Deps) {
 
   return {
     async workFor(url: string): Promise<MrWork> {
-      if (!validUrl(url)) return { kind: 'none', reason: t('Esta MR ya no está en la lista: actualiza') }
+      if (!validUrl(url)) return { kind: 'none', reason: t('This MR is no longer in the list: refresh') }
       const found = await find(url)
       if (found.kind === 'none') return found
       const id = await existing(found)
@@ -69,7 +69,7 @@ export function createOpenMr({ latest, run }: Deps) {
     },
 
     async open(url: unknown): Promise<WorkspaceResult> {
-      if (!validUrl(url)) return { error: t('Esta MR ya no está en la lista: actualiza') }
+      if (!validUrl(url)) return { error: t('This MR is no longer in the list: refresh') }
       const found = await find(url)
       if (found.kind === 'none') return { error: found.reason }
       // A second press finds what the first one opened.

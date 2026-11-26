@@ -69,10 +69,11 @@ describe('status', () => {
     expect(typeof file.at).toBe('number')
   })
 
-  it('stop marks needs-you and prompt submit marks working', async () => {
+  it('stop marks done and prompt submit marks working', async () => {
     const { agentState } = await import('./status')
+    // No checklist and no question: done (W220).
     const stopped = await open(runHooks('Stop'), 'feat/stop')
-    expect(await until(() => agentState(stopped), (s) => s === 'needs-you')).toBe('needs-you')
+    expect(await until(() => agentState(stopped), (s) => s === 'done')).toBe('done')
 
     const resumed = await open(runHooks('Stop', 'UserPromptSubmit'), 'feat/resume')
     const file = join(home, 'state', `${resumed.session}.json`)
@@ -457,6 +458,108 @@ describe('answers', () => {
     expect(sent).toEqual([])
   }, 30_000)
 
+  it('entering done adds one done notice', async () => {
+    const { createStatus, leftWait } = await import('./status')
+    const ws = await open(SLEEP)
+    const notify = vi.fn()
+    const status = createStatus({ onChange: () => {}, notify })
+    await status.refresh()
+    wait(ws.session, { state: 'done', at: 3, text: 'Claude dice: listo' })
+    await status.refresh()
+    await status.refresh()
+    expect(notify.mock.calls.map((c) => [c[1], c[2]])).toEqual([['done', 'Claude dice: listo']])
+    // V11: entering done marks nothing read; leaving it, or needs-you, for any other state does.
+    expect(leftWait('done')).toBe(false)
+    expect(leftWait('needs-you')).toBe(false)
+    for (const s of ['working', 'paused', 'stopped'] as const) expect(leftWait(s)).toBe(true)
+  }, 30_000)
+
+  it('the same turn end notifies once', async () => {
+    const { createStatus } = await import('./status')
+    const ws = await open(SLEEP)
+    const notify = vi.fn()
+    const status = createStatus({ onChange: () => {}, notify })
+    await status.refresh()
+    let at = 1
+    const step = async (body: object): Promise<void> => {
+      wait(ws.session, { at: at++, ...body })
+      await status.refresh()
+    }
+    const calls = (): unknown[] => notify.mock.calls.map((c) => [c[1], c[2]])
+    await step({ state: 'done', turn: 10, text: 'Claude dice: listo' })
+    await step({ state: 'working', turn: 10 })
+    // The same turn, the same end: no second notice.
+    await step({ state: 'done', turn: 10, text: 'Claude dice: listo' })
+    expect(calls()).toEqual([['done', 'Claude dice: listo']])
+    // Another kind in that turn is news; so is the same end in a new turn.
+    await step({ state: 'working', turn: 10 })
+    await step({ kind: 'turn-end', turn: 10, text: 'Claude dice: listo' })
+    await step({ state: 'working', turn: 11 })
+    await step({ state: 'done', turn: 11, text: 'Claude dice: listo' })
+    expect(calls()).toHaveLength(3)
+    // Without a turn, nothing matches: W27 as before.
+    for (let i = 0; i < 2; i++) {
+      await step({ state: 'working' })
+      await step({ state: 'done', text: 'Claude dice: listo' })
+    }
+    expect(calls()).toHaveLength(5)
+  }, 30_000)
+
+  it('a stop behind a background shell shows what it waits for', async () => {
+    const { createStatus, waitingLine } = await import('./status')
+    const { readActivity } = await import('./activity')
+    const ws = await open(SLEEP)
+    const notify = vi.fn()
+    const status = createStatus({ onChange: () => {}, notify })
+    await status.refresh()
+    wait(ws.session, { state: 'working', at: 5, waiting: 'shell' })
+    await status.refresh()
+    expect(status.states()[ws.id]).toBe('working')
+    expect(await waitingLine(ws.session)).toEqual({ at: 5, text: 'Esperando a una shell en segundo plano' })
+    expect((await readActivity(ws.session))[0]).toMatchObject({ text: 'Esperando a una shell en segundo plano' })
+    expect(notify).not.toHaveBeenCalled()
+    // Plain working says nothing of the kind.
+    wait(ws.session, { state: 'working', at: 6 })
+    expect(await waitingLine(ws.session)).toBeNull()
+  }, 30_000)
+
+  it('the wait carries why the agent stopped', async () => {
+    const { waitOf } = await import('./status')
+    const ws = await open(SLEEP)
+    wait(ws.session, { kind: 'turn-end', text: 'Claude dice: x', said: 'Espero la suite.', repeat: 1, why: 'cap', box: 'B' })
+    expect(await waitOf(ws.session)).toMatchObject({ why: 'loop', said: 'Espero la suite.' })
+    wait(ws.session, { kind: 'turn-end', text: 'Claude dice: x', said: 'Sigo.', repeat: 0, why: 'cap', box: 'Apply the coupon' })
+    expect(await waitOf(ws.session)).toMatchObject({ why: 'cap', box: 'Apply the coupon', said: 'Sigo.' })
+    wait(ws.session, { kind: 'turn-end', text: 'Claude dice: x', said: 'Sigo.' })
+    const plain = await waitOf(ws.session)
+    expect(plain).toMatchObject({ said: 'Sigo.' })
+    expect(plain).not.toHaveProperty('why')
+    // Only a turn end carries a reason.
+    wait(ws.session, { kind: 'question', text: 'Te pregunta: ¿?', questions: [q('¿?', ['A'])], said: 'x', repeat: 3 })
+    expect(await waitOf(ws.session)).not.toHaveProperty('why')
+  }, 30_000)
+
+  it('a done agent waits for its subagents too', async () => {
+    const { createStatus } = await import('./status')
+    const ws = await open(SLEEP)
+    const notify = vi.fn()
+    const status = createStatus({ onChange: () => {}, notify })
+    await status.refresh()
+    const subs = (entries: object[]): void => {
+      mkdirSync(join(home, 'subagents'), { recursive: true })
+      writeFileSync(join(home, 'subagents', `${ws.session}.json`), JSON.stringify({ entries }))
+    }
+    subs([{ id: 'a1', type: 'explorer', startedAt: 1 }])
+    wait(ws.session, { state: 'done', at: 7, text: 'Claude dice: listo' })
+    await status.refresh()
+    expect(status.states()[ws.id]).toBe('working')
+    expect(notify).not.toHaveBeenCalled()
+    subs([{ id: 'a1', type: 'explorer', startedAt: 1, endedAt: 9 }])
+    await status.refresh()
+    expect(status.states()[ws.id]).toBe('done')
+    expect(notify.mock.calls.map((c) => c[1])).toEqual(['done'])
+  }, 30_000)
+
   it('a turn end with a subagent still running is working', async () => {
     const { createStatus } = await import('./status')
     const { readActivity } = await import('./activity')
@@ -621,6 +724,40 @@ describe('automatic', () => {
     expect(pastes()).toBe(4)
     expect(status.states()[a.id]).toBe('working')
     expect(sent.filter((x) => x.includes('paste-buffer')).every((x) => x.includes(a.paneId))).toBe(true)
+  }, 30_000)
+
+  it('a done agent is done, not a wait', async () => {
+    const { agentState, createStatus, waitOf } = await import('./status')
+    const { nextUp } = await import('./nextup')
+    const ws = await open(SLEEP)
+    wait(ws.session, { state: 'done', at: 3, text: 'Claude dice: listo' })
+    expect(await agentState(ws)).toBe('done')
+    expect(await waitOf(ws.session)).toBeNull()
+    expect(nextUp([{ id: ws.id, state: 'done', at: 3 }], null, [])).toEqual([])
+    // Automático sends nothing to a done agent.
+    const a = await openAuto('feat/auto-done')
+    const { run, sent } = await spied()
+    const status = createStatus({ run, onChange: () => {}, notify: () => {} })
+    wait(a.session, { state: 'done', at: 4, text: 'Claude dice: listo' })
+    await status.refresh()
+    await status.refresh()
+    expect(sent).toEqual([])
+    expect(status.states()[a.id]).toBe('done')
+  }, 30_000)
+
+  it('automatic leaves a question in prose to the person', async () => {
+    const { createStatus } = await import('./status')
+    const a = await openAuto('feat/auto-prose')
+    const { run, sent } = await spied()
+    const notify = vi.fn()
+    const status = createStatus({ run, onChange: () => {}, notify })
+    await status.refresh()
+    wait(a.session, { at: 5, kind: 'question', text: 'Te pregunta: ¿Hago push?', questions: [{ question: '¿Hago push?', header: '', options: [], multiSelect: false }] })
+    await status.refresh()
+    await status.refresh()
+    expect(sent).toEqual([])
+    expect(status.states()[a.id]).toBe('needs-you')
+    expect(notify.mock.calls.map((c) => [c[1], c[2]])).toEqual([['ask', 'Te pregunta: ¿Hago push?']])
   }, 30_000)
 
   it('automatic never grants a permission by itself', async () => {

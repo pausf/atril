@@ -6,7 +6,7 @@ import { useT } from '../ui'
 export function PluginProblem({ what, failure, fix, onFix, onClose }: { what: string; failure: PluginFailure; fix?: string; onFix?: () => void; onClose?: () => void }) {
   const t = useT()
   if (failure.code === 'missing') {
-    return <Problem what={t('No encuentro Claude Code en este Mac.')} fix={t('Instalar Claude Code')} onFix={() => void window.atril.installTool('claude')} onClose={onClose} detail={failure.error} />
+    return <Problem what={t('I cannot find Claude Code on this Mac.')} fix={t('Install Claude Code')} onFix={() => void window.atril.installTool('claude')} onClose={onClose} detail={failure.error} />
   }
   return <Problem what={what} fix={fix} onFix={onFix} onClose={onClose} detail={failure.error} />
 }

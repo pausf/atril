@@ -28,7 +28,7 @@ export function networkCode(err: unknown): string {
 }
 
 /** S34: the W150 sentence and «No se ha guardado.»; the code goes to the folded detail. */
-const notSaved = (p: NetProblem): { error: string; detail: string } => ({ error: `${p.error} ${t('No se ha guardado.')}`, detail: p.detail })
+const notSaved = (p: NetProblem): { error: string; detail: string } => ({ error: `${p.error} ${t('It was not saved.')}`, detail: p.detail })
 
 async function check(forge: ForgeId, site: string, token: string, fetchImpl: typeof fetch): Promise<{ account: string } | { error: string; detail?: string }> {
   const name = FORGE_NAME[forge]
@@ -58,9 +58,9 @@ export const forgeSettings = (store: SecretStore, fetchImpl: typeof fetch = fetc
       try {
         url = new URL((creds.site || 'https://gitlab.com').trim())
       } catch {
-        return { error: t('La dirección de GitLab no es válida.') }
+        return { error: t('The GitLab address is not valid.') }
       }
-      if (url.protocol !== 'https:') return { error: t('La dirección de GitLab debe empezar por https://') }
+      if (url.protocol !== 'https:') return { error: t('The GitLab address must start with https://') }
       site = url.origin
     }
     const checked = await check(forge, site, creds.token.trim(), fetchImpl)

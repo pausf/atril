@@ -46,8 +46,8 @@ export function DocEditor({ text, readOnly, onChange, cursor }: Props) {
   const lines = text.split('\n').length
   return (
     <div className="doc-editor">
-      <nav className="outline" aria-label={t('Esquema')}>
-        <span className="olh">{t('Esquema')}</span>
+      <nav className="outline" aria-label={t('Outline')}>
+        <span className="olh">{t('Outline')}</span>
         {headings(text).map((h) => (
           <button key={h.offset} type="button" className={h.level === 3 ? 'l3' : undefined} onClick={() => go(h.offset)}>
             {h.title}
@@ -65,7 +65,7 @@ export function DocEditor({ text, readOnly, onChange, cursor }: Props) {
           <textarea
             ref={area}
             className="src"
-            aria-label={t('Contenido del archivo')}
+            aria-label={t('File contents')}
             spellCheck={false}
             wrap="off"
             readOnly={readOnly}

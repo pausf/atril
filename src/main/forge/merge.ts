@@ -25,7 +25,7 @@ interface Deps {
 /** M41, M50: merges an MR of Mías once, only confirmed and only when the forge said it could. */
 export function createMerge({ store, fetchImpl = fetch, entry, relist }: Deps) {
   const busy = new Set<string>()
-  const refused = (): MrMergeResult => ({ error: t('Esta MR no se puede fusionar desde Atril ahora: actualiza'), fix: 'retry' })
+  const refused = (): MrMergeResult => ({ error: t('This MR cannot be merged from Atril right now: refresh'), fix: 'retry' })
 
   async function put(e: MergeEntry & { head: string }): Promise<MrMergeResult> {
     const secret = await store.readSecret(e.forge).catch(() => null)
@@ -41,17 +41,17 @@ export function createMerge({ store, fetchImpl = fetch, entry, relist }: Deps) {
     } catch (err) {
       return netProblem(name, { error: err })
     }
-    if (res.status === 409) return { error: t('La MR ha cambiado desde que la abriste: actualiza y vuelve a mirarla.'), fix: 'retry' }
-    if ([405, 406, 422].includes(res.status)) return { error: t('{forge} no ha dejado fusionar esta MR.', { forge: name }), fix: 'forge' }
+    if (res.status === 409) return { error: t('The MR has changed since you opened it: refresh and look at it again.'), fix: 'retry' }
+    if ([405, 406, 422].includes(res.status)) return { error: t('{forge} did not let this MR merge.', { forge: name }), fix: 'forge' }
     if (!res.ok) return netProblem(name, { status: res.status })
     const listed = await relist().catch(() => null)
-    const failed = listed ? listed.errors[0] : { error: t('No he podido volver a listar tus MR.'), detail: 'Error', fix: 'retry' as const }
+    const failed = listed ? listed.errors[0] : { error: t('I could not list your MRs again.'), detail: 'Error', fix: 'retry' as const }
     return failed ? { merged: true, list: { error: failed.error, detail: failed.detail, fix: failed.fix } } : { merged: true }
   }
 
   return {
     async merge(url: string, confirmed: boolean): Promise<MrMergeResult> {
-      if (busy.has(url)) return { error: t('Ya se está fusionando esta MR'), fix: 'retry' }
+      if (busy.has(url)) return { error: t('This MR is already merging'), fix: 'retry' }
       const e = entry(url)
       if (confirmed !== true || !e || e.list !== 'mine' || e.mergeable !== true || !e.head) return refused()
       busy.add(url)

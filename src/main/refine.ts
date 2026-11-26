@@ -42,10 +42,10 @@ export function createRefiner({ run }: { run: Runner }) {
     const args = ['-p', '--model', 'haiku', '--output-format', 'json', '--tools', '', '--no-session-persistence', '--json-schema', JSON.stringify(SCHEMA), instruction(getLang())]
     const r = await run('claude', args, { input: text, timeoutMs: CLAUDE_MS, secret: true })
     // W209: a fixed sentence and a code, never Claude's own output.
-    if (r.code === 124) return fail(t('Claude no ha contestado a tiempo.'), 'timeout')
-    if (r.code === 127) return fail(t('No encuentro Claude Code en este Mac.'), 'claude')
-    if (r.code !== 0) return fail(t('Claude ha fallado.'), `exit ${r.code}`)
-    const none = t('Claude no ha devuelto preguntas.')
+    if (r.code === 124) return fail(t('Claude did not answer in time.'), 'timeout')
+    if (r.code === 127) return fail(t('I cannot find Claude Code on this Mac.'), 'claude')
+    if (r.code !== 0) return fail(t('Claude failed.'), `exit ${r.code}`)
+    const none = t('Claude did not return any questions.')
     let answer: { is_error?: unknown; structured_output?: { questions?: unknown } }
     try {
       answer = JSON.parse(r.stdout)
@@ -63,13 +63,13 @@ export function createRefiner({ run }: { run: Runner }) {
   return {
     async ask(text: unknown): Promise<RefineResult> {
       const trimmed = typeof text === 'string' ? text.trim() : ''
-      if (!trimmed || trimmed.length > MAX_TEXT || trimmed.includes('\0')) return fail(t('No hay petición que afinar.'), 'argument')
-      if (busy) return fail(t('Ya está preguntando.'), 'busy')
+      if (!trimmed || trimmed.length > MAX_TEXT || trimmed.includes('\0')) return fail(t('There is no request to refine.'), 'argument')
+      if (busy) return fail(t('Already asking.'), 'busy')
       busy = true
       try {
         return await work(trimmed)
       } catch {
-        return fail(t('Claude ha fallado.'), 'error')
+        return fail(t('Claude failed.'), 'error')
       } finally {
         busy = false
       }

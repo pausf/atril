@@ -13,14 +13,14 @@ export function PluginRemoveDialog({ plugin, onYes, onNo }: { plugin: string; on
   }, [onNo])
   return (
     <div className="skw-back">
-      <div className="skw" role="dialog" aria-modal="true" aria-label={t('Quitar plugin')}>
-        <h2>{t('¿Quitar {plugin}? Sus skills dejan de cargarse.', { plugin })}</h2>
+      <div className="skw" role="dialog" aria-modal="true" aria-label={t('Remove plugin')}>
+        <h2>{t('Remove {plugin}? Its skills stop loading.', { plugin })}</h2>
         <div className="skw-act">
           <button type="button" className="btn" onClick={onNo} autoFocus>
-            {t('Cancelar')}
+            {t('Cancel')}
           </button>
           <button type="button" className="btn primary" onClick={onYes}>
-            {t('Quitar')}
+            {t('Remove')}
           </button>
         </div>
       </div>

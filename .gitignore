@@ -6,3 +6,6 @@ dist
 caso-*
 flujo-mr*
 evals/reports/
+
+# local design sketches, not published
+bocetos/

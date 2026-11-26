@@ -9,7 +9,7 @@ import { createQaDone, qaBug, qaReport, qaRetest } from './qa-report'
 import { runFix } from './qa-fix'
 import { addManual, chooseTarget, removeManual } from './qa-targets'
 import { createAvisos, NOTIFY_DEFAULTS, patchNotifySettings, readNotifySettings, workName } from './avisos'
-import { agentState, answerAgent, createStatus, optionCount, pauseAgent, replyFromNotice, replyToAgent, resumeAgent, waitOf, composeAgent } from './status'
+import { agentState, answerAgent, createStatus, leftWait, optionCount, pauseAgent, replyFromNotice, replyToAgent, resumeAgent, waitOf, composeAgent } from './status'
 import { getLang, setLang, t } from './lang'
 import { resolveLang } from '../preload/i18n'
 import { readDocs, saveDoc } from './flow/document'
@@ -368,7 +368,7 @@ app.whenReady().then(async () => {
   ipcMain.handle('atril:settings:jira:delete', () => jiraCreds.delete())
   ipcMain.handle('atril:settings:jira:searchBoards', async (_e, query: unknown) => {
     const creds = await savedJira()
-    return creds ? searchBoards(creds, String(query).trim(), fetch) : { error: t('Conecta Jira en Ajustes.') }
+    return creds ? searchBoards(creds, String(query).trim(), fetch) : { error: t('Connect Jira in Settings.') }
   })
   ipcMain.handle('atril:settings:jira:pickBoard', (_e, board: { id: unknown; name: unknown } | null) =>
     jiraCreds.pickBoard(board && { id: Number(board.id), name: String(board.name) })
@@ -382,11 +382,11 @@ app.whenReady().then(async () => {
   ipcMain.handle('atril:settings:forge:save', (_e, f: unknown, creds: { site?: unknown; token?: unknown }) =>
     isForge(f) && typeof creds?.token === 'string' && creds.token.trim() !== ''
       ? forges.save(f, { token: creds.token, ...(typeof creds.site === 'string' && { site: creds.site }) })
-      : { error: t('Falta el token.') }
+      : { error: t('The token is missing.') }
   )
   const guards = createForgeGuards()
   ipcMain.handle('atril:forge:create', async (_e, req: Partial<CreateRepoRequest> | null, clone?: unknown) => {
-    if (!req || !isForge(req.forge) || typeof req.name !== 'string') return { error: t('Nombre de repo no válido') }
+    if (!req || !isForge(req.forge) || typeof req.name !== 'string') return { error: t('Invalid repo name') }
     const created = await createRepo(secretStore, {
       forge: req.forge,
       name: req.name,
@@ -495,7 +495,7 @@ app.whenReady().then(async () => {
   ipcMain.handle('atril:notify:get', () => readNotifySettings())
   ipcMain.handle('atril:notify:set', (_e, patch: unknown) =>
     patchNotifySettings(patch as NotifyPatch).catch((err: unknown) => ({
-      error: t('No he podido guardar tus avisos: siguen como estaban.'),
+      error: t('I could not save your notification settings: they stay as they were.'),
       detail: (err as { code?: unknown })?.code ? String((err as { code: unknown }).code) : err instanceof Error ? err.name : 'Error'
     }))
   )
@@ -570,7 +570,7 @@ app.whenReady().then(async () => {
   ipcMain.handle('atril:qa:mrFor', (_e, id: unknown) => qaPublish.mrFor(String(id)))
   ipcMain.handle('atril:qa:publish', (_e, id: unknown) => qaPublish.publish(String(id)))
   ipcMain.handle('atril:mr:reply', (_e, url: unknown, threadId: unknown, body: unknown) =>
-    typeof url === 'string' && typeof threadId === 'string' && typeof body === 'string' ? threads.reply(url, threadId, body) : { error: t('Escribe una respuesta') }
+    typeof url === 'string' && typeof threadId === 'string' && typeof body === 'string' ? threads.reply(url, threadId, body) : { error: t('Write a reply') }
   )
   const lenses = createLenses({
     store: secretStore,
@@ -585,7 +585,7 @@ app.whenReady().then(async () => {
   // ponytail: dev-only, ATRIL_SNAPSHOT_VIEW=mr-lens photographs believable drafts without Claude or a forge.
   const fakeLens = SNAPSHOT && process.env['ATRIL_SNAPSHOT_VIEW'] === 'mr-lens'
   const text = (v: unknown): string => (typeof v === 'string' ? v : '')
-  const refused = (): MrDraftsResult => ({ error: t('Ese borrador ya no está abierto') })
+  const refused = (): MrDraftsResult => ({ error: t('That draft is no longer open') })
   ipcMain.handle('atril:mr:review', (_e, url: unknown): Promise<MrDraftsResult> => (fakeLens ? Promise.resolve(fakeDrafts()) : lenses.review(text(url))))
   ipcMain.handle('atril:mr:draftsOf', (_e, url: unknown): Promise<MrDraftsResult> => (fakeLens ? Promise.resolve(fakeDrafts()) : lenses.draftsOf(text(url))))
   ipcMain.handle('atril:mr:publishDraft', (_e, url: unknown, id: unknown) => (fakeLens ? refused() : lenses.publish(text(url), text(id))))
@@ -645,7 +645,7 @@ app.whenReady().then(async () => {
     emit: (id, stage) => BrowserWindow.getAllWindows().forEach((w) => w.webContents.send('atril:flow:changed', id, stage))
   })
   const repoPath = async (id: unknown): Promise<string | undefined> => (await readRepos()).find((r) => r.id === id)?.path
-  const noRepo = (id: unknown): { error: string } => ({ error: t('No hay ningún repo «{id}»', { id: String(id) }) })
+  const noRepo = (id: unknown): { error: string } => ({ error: t('There is no repo “{id}”', { id: String(id) }) })
   ipcMain.handle('atril:libretto:state', async (_e, id: unknown) => {
     const path = await repoPath(id)
     return path === undefined ? noRepo(id) : librettoState(path, run)
@@ -653,7 +653,7 @@ app.whenReady().then(async () => {
   ipcMain.handle('atril:libretto:queue', async (_e, id: unknown, text: unknown) => {
     const path = await repoPath(id)
     if (path === undefined) return noRepo(id)
-    return typeof text === 'string' ? queueIdea(path, text, run) : { error: t('Escribe la idea antes de encolarla.') }
+    return typeof text === 'string' ? queueIdea(path, text, run) : { error: t('Write the idea before queueing it.') }
   })
   ipcMain.handle('atril:libretto:start', (_e, id: unknown, name: unknown) => startQueued(String(id), name as string, run))
   ipcMain.handle('atril:libretto:repos', async () =>
@@ -693,7 +693,7 @@ app.whenReady().then(async () => {
   ipcMain.handle('atril:flow:save', async (_e, id: string, change: unknown, name: unknown, text: unknown, mtimeMs: unknown) => {
     const ws = await flowWorkspace(id, run)
     if (!ws || typeof change !== 'string' || typeof name !== 'string' || typeof text !== 'string' || typeof mtimeMs !== 'number') {
-      return { error: t('Ese archivo no se puede editar desde Atril') }
+      return { error: t('That file cannot be edited from Atril') }
     }
     return saveDoc(ws.path, await agentState(ws, run), change, name, text, mtimeMs)
   })
@@ -786,7 +786,7 @@ app.whenReady().then(async () => {
     const r = pty.attach(id, ws.path, cols, rows, (d) => {
       if (!e.sender.isDestroyed()) e.sender.send('atril:term:data', id, d)
     })
-    return 'ok' in r ? r : { error: t('No he podido abrir la terminal de {branch}.', { branch: ws.branch }), detail: r.error }
+    return 'ok' in r ? r : { error: t("I couldn't open {branch}'s terminal.", { branch: ws.branch }), detail: r.error }
   })
   ipcMain.on('atril:term:resize', (_e, id: string, c: number, r: number) => pty.resize(id, c, r))
   ipcMain.on('atril:term:detach', (_e, id: string) => pty.detach(id))
@@ -865,7 +865,7 @@ app.whenReady().then(async () => {
     onChange: (id, state) => {
       BrowserWindow.getAllWindows().forEach((w) => w.webContents.send('atril:status:change', id, state))
       // V11: leaving needs-you means its questions were answered.
-      if (state !== 'needs-you') void avisos.expire(id).catch(() => undefined)
+      if (leftWait(state)) void avisos.expire(id).catch(() => undefined)
       if (id === menu.selected) refreshMenu()
       void pushNext()
     },

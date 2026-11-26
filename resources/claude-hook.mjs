@@ -7,8 +7,9 @@ import { homedir } from 'node:os'
 import { join } from 'node:path'
 import process from 'node:process'
 import { Buffer } from 'node:buffer'
-import { summarise } from './summarise.mjs'
+import { lastText, summarise } from './summarise.mjs'
 import { claimSize } from './branchsize.mjs'
+import { boxOf, decideStop, lastSentence, openBoxes, proseQuestion, reason, shellsRunning } from './keepgoing.mjs'
 
 // W59: pushes and request creation in an automatic workspace need the person.
 // ponytail: any git … push in one command segment; a `push` word in a commit message only adds a question.
@@ -183,8 +184,6 @@ try {
   } catch {
     /* no stdin or not JSON: the state still counts */
   }
-  // W44: Claude's question tool is a stop (Libretto's before code is one): it waits for the person.
-  const state = event === 'PreToolUse' && payload?.tool_name === 'AskUserQuestion' ? 'needs-you' : STATES[event]
 
   const { name, lastTool } = session(event === 'PreToolUse' ? toolOf(payload) : undefined)
   if (!name) process.exit(0)
@@ -218,20 +217,71 @@ try {
     replace(file, [...kept, JSON.stringify({ at, ...line })].join('\n') + '\n')
   }
 
-  // W87: Atril's pause mark goes when the person types or the agent waits; a late tool event keeps it.
-  // Claude Code's idle reminder after a minute at the prompt is not a question: a pause survives it (W87).
-  const idle = event === 'Notification' && (payload?.notification_type === 'idle_prompt' || /waiting for your input/i.test(text(payload?.message)))
-  if (event === 'UserPromptSubmit' || (state === 'needs-you' && !idle)) rmSync(join(home, 'paused', name), { force: true })
-
   const dir = join(home, 'state')
   mkdirSync(dir, { recursive: true })
   const stateFile = join(dir, `${name}.json`)
   const prev = readState(stateFile)
+
+  // W217, W218, W225: a stop with open boxes is answered here and the agent keeps going.
+  let blocks = event === 'UserPromptSubmit' ? 0 : Number.isInteger(prev.blocks) ? prev.blocks : 0
+  // W221: the turn a state belongs to, so main can tell one turn end notified twice.
+  const turn = event === 'UserPromptSubmit' ? at : Number.isInteger(prev.turn) ? prev.turn : undefined
+  // W44: Claude's question tool is a stop (Libretto's before code is one): it waits for the person.
+  let state = event === 'PreToolUse' && payload?.tool_name === 'AskUserQuestion' ? 'needs-you' : STATES[event]
+  // W219: a question to the person in prose is a wait, whatever is left to do.
+  // W228: a stop while a question or permission still waits stays that wait's turn end, as before.
+  const pending = prev.state === 'needs-you' && (prev.kind === 'question' || prev.kind === 'permission')
+  let tail = ''
+  if (event === 'Stop' && typeof payload?.transcript_path === 'string') {
+    try {
+      tail = readTail(payload.transcript_path)
+    } catch {
+      /* unreadable transcript: no shell, no question */
+    }
+  }
+  // W229: Claude Code resumes by itself when its background shell ends; that stop is no wait.
+  const shell = event === 'Stop' && !pending && shellsRunning(tail)
+  if (shell) state = 'working'
+  const asked = shell ? '' : proseQuestion(lastText(tail))
+  // W291: the cap's fallback says which box the agent is on.
+  let cap
+  if (event === 'Stop' && !asked && !pending && !shell) {
+    const open = openBoxes(payload?.cwd)
+    const stop = decideStop({ open, active: payload?.stop_hook_active, blocks, paused: existsSync(join(home, 'paused', name)) })
+    blocks = stop.blocks
+    if (stop.cap) cap = { why: 'cap', ...(boxOf(open) && { box: boxOf(open) }) }
+    if (stop.outcome === 'block') {
+      state = 'working'
+      process.stdout.write(JSON.stringify({ decision: 'block', reason: reason(open) }))
+    } else if (stop.outcome === undefined) state = 'done' // W220: nothing open, nothing asked
+
+  }
+
+  // W292: what it said on this stop, and how many stops in a row said it (or failed the same way).
+  let fail = typeof prev.fail === 'string' ? prev.fail : undefined
+  if (line?.kind === 'fail') fail = line.text
+  let lastStop = prev.lastStop && typeof prev.lastStop === 'object' ? prev.lastStop : undefined
+  let repeat = Number.isInteger(prev.repeat) ? prev.repeat : 0
+  let said = ''
+  if (event === 'Stop') {
+    said = lastSentence(lastText(tail))
+    repeat = (said && said === lastStop?.said) || (fail && fail === lastStop?.fail) ? repeat + 1 : 0
+    lastStop = { said, ...(fail && { fail }) }
+    fail = undefined
+  }
+  const memory = { ...(fail && { fail }), ...(lastStop && { lastStop }), repeat, ...(said && { said }), ...cap }
+
+  // W87: Atril's pause mark goes when the person types or the agent waits; a late tool event keeps it.
+  // Claude Code's idle reminder after a minute at the prompt is not a question: a pause survives it (W87).
+  const idle = event === 'Notification' && (payload?.notification_type === 'idle_prompt' || /waiting for your input/i.test(text(payload?.message)))
+  if (event === 'UserPromptSubmit' || ((state === 'needs-you' || state === 'done') && !idle)) rmSync(join(home, 'paused', name), { force: true })
+
   // W195: the idle reminder is no new question; a waiting state keeps everything and only says it has been a while.
-  if (idle && prev.state === 'needs-you') replace(stateFile, JSON.stringify({ ...prev, idle: true }) + '\n')
+  if (idle && (prev.state === 'needs-you' || prev.state === 'done')) replace(stateFile, JSON.stringify({ ...prev, idle: true }) + '\n')
   else {
-    const body = state === 'needs-you' && line ? { text: line.text } : {}
-    replace(stateFile, JSON.stringify({ state, at, ...body, ...details(event, state, payload, prev, lastTool), ...(idle && { idle: true }) }) + '\n')
+    const body = asked ? { text: `Te pregunta: ${asked}` } : (state === 'needs-you' || state === 'done') && line ? { text: line.text } : {}
+    const kind = asked ? { kind: 'question', questions: [{ question: asked, header: '', options: [], multiSelect: false }] } : details(event, state, payload, prev, lastTool)
+    replace(stateFile, JSON.stringify({ state, at, ...body, ...kind, ...(idle && { idle: true }), ...(shell && { waiting: 'shell' }), ...memory, blocks, ...(turn !== undefined && { turn }) }) + '\n')
   }
 
   try {

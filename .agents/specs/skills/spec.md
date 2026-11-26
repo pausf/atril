@@ -7,230 +7,291 @@ settings without calling Claude.
 
 ## Outcomes
 
-### Skills: listado (skills-list, 20 nov 2026)
+### Skills: list (skills-list, 20 nov 2026)
 
-La pantalla Skills, en el raíl, enseña todas las skills y comandos que Claude Code carga para cada repo de Atril, de dónde viene cada una, su estado según los ajustes, cuáles no se cargan porque otra con el mismo nombre gana, y el detalle de cada una. No escribe nada ni llama a Claude.
+The Skills screen, in the rail, shows every skill and command that Claude Code loads for each Atril repo, where each one comes from, its state according to the settings, which ones are not loaded because another with the same name wins, and the detail of each. It writes nothing and does not call Claude.
 
-### Skills: encender y apagar (skills-toggle, 23 nov 2026)
+### Skills: turning on and off (skills-toggle, 23 nov 2026)
 
-Desde la pantalla Skills la persona apaga, enciende o deja «solo el nombre» de una skill o comando, y apaga o enciende un plugin entero, sin abrir un JSON. Atril escribe solo la clave que cambia, en el archivo personal que de verdad decide, avisa la primera vez, nunca pisa un archivo que no entiende y nunca toca el `settings.json` que se sube al repo.
+From the Skills screen the person turns a skill or command off, on, or to «solo el nombre», and turns a whole plugin off or on, without opening a JSON. Atril writes only the key that changes, in the personal file that really decides, warns the first time, never overwrites a file it does not understand and never touches the `settings.json` that is committed to the repo.
 
 ### Skills: editor (skills-editor, 24 nov 2026)
 
-Desde Skills la persona cambia el texto de una skill o comando suyos, o crea una nueva, sin salir de Atril y sin perder lo que había: lo que cambió fuera no se pisa sin preguntar, una cabecera rota se avisa, y salir con cambios pregunta.
+From Skills the person changes the text of their own skill or command, or creates a new one, without leaving Atril and without losing what was there: what changed outside is not overwritten without asking, a broken header is flagged, and leaving with changes asks.
 
 ### Skills: plugins (skills-plugins, 24 nov 2026)
 
-Desde Skills la persona ve qué plugins ofrecen sus marketplaces, instala uno para ella en todos los repos o solo en uno, lo actualiza o lo quita, y añade un marketplace nuevo, sin abrir la terminal ni gastar cuota; lo que pida aceptar un comando de terceros se hace en Terminal, a la vista.
+From Skills the person sees which plugins their marketplaces offer, installs one for themselves in all repos or only in one, updates or removes it, and adds a new marketplace, without opening the terminal or spending quota; whatever asks to accept a third-party command is done in Terminal, in plain sight.
 
-### Skills: uso (skills-usage, 25 nov 2026)
+### Skills: usage (skills-usage, 25 nov 2026)
 
-En Skills la persona ve qué skills y comandos usa de verdad y cuáles llevan 30 días sin usarse, para decidir cuáles apagar, sin gastar cuota: Atril lo cuenta leyendo las sesiones que Claude Code ya guarda en el Mac.
+In Skills the person sees which skills and commands they really use and which have gone 30 days unused, to decide which to turn off, without spending quota: Atril counts it by reading the sessions that Claude Code already stores on the Mac.
+
+### Skills: dense list (skills-dense, 26 nov 2026)
+
+With 150+ skills, the Skills screen reads as a list: one 36 px line per skill with its name, its description, when it was last used, and a mark only when there is something to know (off, a clash, a command, a broken header). Groups by origin fold, with their counts. Plugins and Atril start folded, so a plugin's 40 skills do not bury the person's own. Rows are sorted by most recent use, or by name. The four tiles filter. ↑/↓, Enter and / work from the keyboard. Everything the screen did before still works: search, Todas/Activas/Apagadas, repo selector, detail, state, plugin switch, editor, «Nueva skill», plugins, and usage.
 
 ## Scope boundaries
 
+### Skills: dense list (skills-dense, 26 nov 2026)
+
+**In:** `src/renderer/skills/Skills.tsx`; `src/renderer/skills/SkillRow.tsx`, renamed from `SkillCard.tsx` (the card becomes a row; the file keeps `fullName`, `stateLabel`, `originLabel` and `lastUsed`, which the detail uses); `src/renderer/styles.css` (the `.sk*` rules); `src/preload/i18n-es.ts`; `src/renderer/skills/skills.test.tsx`; `bocetos/novedades.html`, `bocetos/novedades/skills-densa.png`, `bocetos/novedades/skills-densa-lista.png`, `bocetos/fase1-nucleo.html`; `scripts/seed-skills.mjs` (the seeded example catalog for the real-app drive); the amended K5, K6, K7, K15, K24, K33 and K37, and the new K40–K44 in the skills spec.
+**Out (named):** an on/off switch on each row; remembering folds or sort across visits; virtualised rendering (170 rows of plain buttons need none; if a list ever passes ~1000, window it); drag to reorder; bulk actions on several rows; changes in main or the IPC; the detail panel itself.
+
 ## Constraints
 
-### Skills: listado (skills-list, 20 nov 2026)
+### Skills: list (skills-list, 20 nov 2026)
 
-- Ninguna llamada a Claude; solo lectura de archivos.
-- `lstat`/`stat` con topes; un archivo ilegible no tumba la lista.
-- Textos por `t()` con entrada inglesa; colores por tokens; errores con `Problem`.
-- El cuerpo de una skill se enseña como texto, nunca como HTML.
+- No call to Claude; only file reads.
+- `lstat`/`stat` with caps; an unreadable file does not take the list down.
+- Texts through `t()` with an English entry; colors through tokens; errors with `Problem`.
+- A skill's body is shown as text, never as HTML.
 
-### Skills: encender y apagar (skills-toggle, 23 nov 2026)
+### Skills: turning on and off (skills-toggle, 23 nov 2026)
 
-- Nunca se reescribe el archivo entero desde la mezcla: se lee ese archivo, se cambia una clave y se guarda; el resto de claves y su orden siguen igual; 2 espacios y salto de línea final.
-- Escritura atómica: `<archivo>.tmp` y `rename`. Carpeta `.claude/` creada si no existe.
-- Ninguna llamada a Claude. Los tests usan `ATRIL_CLAUDE_DIR` y repos temporales; nunca el `~/.claude` real.
-- Textos por `t()` con entrada inglesa; colores por tokens; errores con `Problem`.
+- The whole file is never rewritten from the merge: that file is read, one key is changed and it is saved; the other keys and their order stay the same; 2 spaces and a final newline.
+- Atomic write: `<file>.tmp` and `rename`. `.claude/` folder created if it does not exist.
+- No call to Claude. Tests use `ATRIL_CLAUDE_DIR` and temporary repos; never the real `~/.claude`.
+- Texts through `t()` with an English entry; colors through tokens; errors with `Problem`.
 
 ### Skills: editor (skills-editor, 24 nov 2026)
 
-- Escritura atómica (`.tmp` + `rename`) a través de `realpath` cuando existe; carpeta creada al crear.
-- Tope de 256 KB al guardar (K9); por encima, no se guarda y se dice.
-- Ninguna llamada a Claude. Tests con `ATRIL_CLAUDE_DIR` y repos temporales.
-- Textos por `t()` con entrada inglesa; colores por tokens; errores con `Problem`.
+- Atomic write (`.tmp` + `rename`) through `realpath` when it exists; folder created on create.
+- Cap of 256 KB on save (K9); above it, nothing is saved and it says so.
+- No call to Claude. Tests with `ATRIL_CLAUDE_DIR` and temporary repos.
+- Texts through `t()` with an English entry; colors through tokens; errors with `Problem`.
 
 ### Skills: plugins (skills-plugins, 24 nov 2026)
 
-- Argumentos como array (`execFile`), nunca una cadena de shell; el nombre de plugin y la fuente se validan en main.
-- Tope de 120 s por operación; al pasarlo, error «Claude Code no ha contestado a tiempo.».
-- Ninguna llamada al modelo. Tests con un `Runner` falso que anota los argumentos; nunca el `claude` real.
-- Textos por `t()` con entrada inglesa; colores por tokens; errores con `Problem`.
+- Arguments as an array (`execFile`), never a shell string; the plugin name and the source are validated in main.
+- Cap of 120 s per operation; past it, the error «Claude Code no ha contestado a tiempo.».
+- No call to the model. Tests with a fake `Runner` that records the arguments; never the real `claude`.
+- Texts through `t()` with an English entry; colors through tokens; errors with `Problem`.
 
-### Skills: uso (skills-usage, 25 nov 2026)
+### Skills: usage (skills-usage, 25 nov 2026)
 
-- Ninguna llamada a Claude; nunca `~/.claude.json`. Solo lectura de `claudeDir()/projects`.
-- Lectura por líneas en streaming; una línea se mira con `JSON.parse` solo si contiene `"name":"Skill"` o `<command-name>`.
-- Textos por `t()` con entrada inglesa; colores por tokens.
-- Tests con `ATRIL_CLAUDE_DIR` temporal y sesiones sembradas.
+- No call to Claude; never `~/.claude.json`. Read-only on `claudeDir()/projects`.
+- Line-by-line streaming read; a line is looked at with `JSON.parse` only if it contains `"name":"Skill"` or `<command-name>`.
+- Texts through `t()` with an English entry; colors through tokens.
+- Tests with a temporary `ATRIL_CLAUDE_DIR` and seeded sessions.
+
+### Skills: dense list (skills-dense, 26 nov 2026)
+
+- Renderer only: no new IPC, no change to what main answers, no new dependency.
+- Minimal style: grey and the one accent, colours only as tokens; row height 36 px.
+- Texts through `t()` with an English entry; the S16/S19 scans stay green.
+- Keyboard and screen reader: group headers are buttons with `aria-expanded`; tiles are buttons with `aria-pressed`; rows stay buttons inside a list.
+- Test names cited by other criteria are not renamed (lesson mr-page-wide); new test names in double quotes (lesson skills-editor · 8).
 
 ## Prior decisions
 
-### Skills: listado (skills-list, 20 nov 2026)
+### Skills: list (skills-list, 20 nov 2026)
 
-- (2026-11-20, skills-list) Atril lee skills, comandos, plugins y su estado solo de los archivos que documenta Claude Code; nunca llama a Claude para eso.
-- (2026-11-20, skills-list) Con el mismo nombre, personal gana a proyecto y una skill a un comando del mismo origen; los plugins no chocan.
-- (2026-11-20, skills-list) `skillOverrides` no se aplica a skills de plugin; un plugin se apaga entero con `enabledPlugins`.
+- (2026-11-20, skills-list) Atril reads skills, commands, plugins and their state only from the files Claude Code documents; it never calls Claude for that.
+- (2026-11-20, skills-list) With the same name, personal wins over project and a skill over a command of the same origin; plugins do not clash.
+- (2026-11-20, skills-list) `skillOverrides` does not apply to plugin skills; a plugin is turned off whole with `enabledPlugins`.
 
 #### Alternatives that lost
 
 | Considered | Why it lost |
 |---|---|
-| Preguntar a `claude` (`/skills`, `claude plugin list`) | gasta cuota o arranca un proceso por pantalla; los archivos son la fuente documentada |
-| Librería YAML (`yaml`) | dependencia nueva para ~10 claves planas; si un día hace falta YAML entero, se cambia `frontmatter.ts` |
-| Escribir `skillOverrides` ya en este cambio | escribir en los ajustes de Claude Code pide su propia confirmación y su propio contrato |
+| Ask `claude` (`/skills`, `claude plugin list`) | spends quota or starts a process per screen; the files are the documented source |
+| YAML library (`yaml`) | a new dependency for ~10 flat keys; if full YAML is ever needed, `frontmatter.ts` is changed |
+| Write `skillOverrides` already in this change | writing to Claude Code's settings needs its own confirmation and its own contract |
 
 #### Decision log, answers as given (2026-11-20)
-- Q: ¿Todo el boceto de Skills en un cambio? → A: no: este es el listado, solo lectura (de dónde viene cada una, su estado, choques, búsqueda y detalle). Apagar (`skills-toggle`), crear y editar (`skills-editor`), plugins (`skills-plugins`) y uso (`skills-usage`) van después (assumed).
-- Q: ¿De dónde se leen? → A: lo que documenta Claude Code (code.claude.com/docs/en/skills, plugins/loading): personales en `~/.claude/skills/<n>/SKILL.md` y comandos en `~/.claude/commands/<n>.md`; de cada repo de Atril, `<repo>/.claude/skills` y `.claude/commands`; plugins desde `~/.claude/plugins/installed_plugins.json` (`installPath`), con `skills/<n>/SKILL.md` y `commands/<n>.md` dentro; los de Atril desde su `librettoDir()` (assumed).
-- Q: ¿El estado de una skill? → A: `skillOverrides` de los ajustes de Claude Code (`on`, `name-only`, `user-invocable-only`, `off`; sin clave = `on`), mezclado usuario < `.claude/settings.json` del repo < `.claude/settings.local.json` del repo; un plugin está apagado entero si `enabledPlugins["<plugin>@<marketplace>"]` es `false` en la misma mezcla. `skillOverrides` no afecta a skills de plugin (documentado) (assumed).
-- Q: ¿Quién gana con el mismo nombre? → A: lo documentado: personal gana a proyecto; dentro del mismo origen, una skill gana a un comando. Los plugins no chocan (van con `plugin:`) (assumed).
-- Q: ¿`~/.claude` en tests? → A: `claudeDir()` en `paths.ts` con `envPath('ATRIL_CLAUDE_DIR', …)`, como `ATRIL_HOME` (assumed).
-- Q: (spec-reviewer) ¿Dónde va en el raíl? → A: después de Avisos, para que W113 (QA entre Libretto y Avisos) siga cierto; y en ⌘K como Libretto y QA (assumed).
-- Q: (spec-reviewer) ¿Y `workspaces`, que gobierna `src/**`? → A: al aterrizar, su `Governs:` gana `!src/main/skills/** !src/renderer/skills/**` a mano (como en mr); `spec-workspaces.md` lo dice (assumed).
-- Q: (spec-reviewer) ¿Las de Atril siguen `skillOverrides`? → A: no: Atril carga Libretto con `--plugin-dir`, así que son de plugin: estado `on`, `enabled: true`, se ven como `/libretto:name` (assumed).
-- Q: (spec-reviewer) ¿Un comando del repo con el mismo nombre que una personal y que una skill del repo? → A: `shadowedBy` es el primero que gana: personal antes que skill. Un comando personal también lo tapa una skill personal (assumed).
-- Q: (spec-reviewer) ¿`skillOverrides` vale para comandos? → A: sí: Claude Code trata los comandos como skills de formato viejo; misma clave por nombre (assumed).
-- Q: (spec-reviewer) ¿Qué cuentan las tarjetas de resumen? → A: Activas = estado `on` o `name-only`, sin tapar y con su plugin encendido; Apagadas = estado `off` o plugin apagado; Choques = cuántas están tapadas. `user-invocable-only` no está en ninguna de las dos primeras. Los filtros «Activas» y «Apagadas» usan lo mismo (assumed).
-- Q: (spec-reviewer) ¿Qué repo sale al abrir? → A: el primero de la lista de Atril, sin recordar; sin repos, no hay selector ni grupo Proyecto y sale «Añade un repo en Ajustes → Repos para ver sus skills.»; si la lista de repos falla, el grupo Proyecto va vacío con un aviso (assumed).
-- Q: (spec-reviewer) ¿Nombre del plugin en `/{plugin}:name`? → A: la parte de `name@marketplace` antes de `@` (assumed).
-- Q: (spec-reviewer) ¿Comandos en subcarpetas (`commands/a/b.md`)? → A: fuera de este cambio; se ignoran (assumed).
-- Q: (spec-reviewer) ¿Buscar en `whenToUse`? → A: sí: nombre, descripción y `whenToUse`, sin distinguir mayúsculas (assumed).
-- Q: ¿Enlaces simbólicos en `~/.claude/skills`? → A: se siguen (es común enlazar skills), con topes: 300 entradas por carpeta (`skills/` y `commands/` cada una) y 256 KB por archivo; lo que pasa del tope no se lee y se dice (assumed).
+- Q: The whole Skills sketch in one change? → A: no: this one is the list, read-only (where each comes from, its state, clashes, search and detail). Turning off (`skills-toggle`), creating and editing (`skills-editor`), plugins (`skills-plugins`) and usage (`skills-usage`) come later (assumed).
+- Q: Where are they read from? → A: what Claude Code documents (code.claude.com/docs/en/skills, plugins/loading): personal ones in `~/.claude/skills/<n>/SKILL.md` and commands in `~/.claude/commands/<n>.md`; from each Atril repo, `<repo>/.claude/skills` and `.claude/commands`; plugins from `~/.claude/plugins/installed_plugins.json` (`installPath`), with `skills/<n>/SKILL.md` and `commands/<n>.md` inside; Atril's own from its `librettoDir()` (assumed).
+- Q: A skill's state? → A: `skillOverrides` from Claude Code's settings (`on`, `name-only`, `user-invocable-only`, `off`; no key = `on`), merged user < the repo's `.claude/settings.json` < the repo's `.claude/settings.local.json`; a plugin is turned off whole if `enabledPlugins["<plugin>@<marketplace>"]` is `false` in the same merge. `skillOverrides` does not affect plugin skills (documented) (assumed).
+- Q: Who wins with the same name? → A: what is documented: personal wins over project; within the same origin, a skill wins over a command. Plugins do not clash (they go with `plugin:`) (assumed).
+- Q: `~/.claude` in tests? → A: `claudeDir()` in `paths.ts` with `envPath('ATRIL_CLAUDE_DIR', …)`, like `ATRIL_HOME` (assumed).
+- Q: (spec-reviewer) Where does it go in the rail? → A: after Avisos, so that W113 (QA between Libretto and Avisos) stays true; and in ⌘K like Libretto and QA (assumed).
+- Q: (spec-reviewer) And `workspaces`, which governs `src/**`? → A: on landing, its `Governs:` gains `!src/main/skills/** !src/renderer/skills/**` by hand (as in mr); `spec-workspaces.md` says so (assumed).
+- Q: (spec-reviewer) Do Atril's own follow `skillOverrides`? → A: no: Atril loads Libretto with `--plugin-dir`, so they are plugin ones: state `on`, `enabled: true`, shown as `/libretto:name` (assumed).
+- Q: (spec-reviewer) A repo command with the same name as a personal one and as a repo skill? → A: `shadowedBy` is the first that wins: personal before skill. A personal command is also covered by a personal skill (assumed).
+- Q: (spec-reviewer) Does `skillOverrides` apply to commands? → A: yes: Claude Code treats commands as old-format skills; same key by name (assumed).
+- Q: (spec-reviewer) What do the summary tiles count? → A: Activas = state `on` or `name-only`, not shadowed and with its plugin on; Apagadas = state `off` or plugin off; Choques = how many are shadowed. `user-invocable-only` is in neither of the first two. The «Activas» and «Apagadas» filters use the same (assumed).
+- Q: (spec-reviewer) Which repo shows on open? → A: the first in Atril's list, without remembering; with no repos, there is no selector or Proyecto group and it shows «Añade un repo en Ajustes → Repos para ver sus skills.»; if the repo list fails, the Proyecto group is empty with a notice (assumed).
+- Q: (spec-reviewer) Plugin name in `/{plugin}:name`? → A: the part of `name@marketplace` before `@` (assumed).
+- Q: (spec-reviewer) Commands in subfolders (`commands/a/b.md`)? → A: outside this change; they are ignored (assumed).
+- Q: (spec-reviewer) Search in `whenToUse`? → A: yes: name, description and `whenToUse`, case-insensitive (assumed).
+- Q: Symbolic links in `~/.claude/skills`? → A: they are followed (linking skills is common), with caps: 300 entries per folder (`skills/` and `commands/` each) and 256 KB per file; whatever passes the cap is not read and it says so (assumed).
 
-### Skills: encender y apagar (skills-toggle, 23 nov 2026)
+### Skills: turning on and off (skills-toggle, 23 nov 2026)
 
-- (2026-11-20, skills-toggle) Atril escribe el estado de una skill en el archivo personal que gana (usuario para personales y plugins, `settings.local.json` del repo para las de proyecto) y nunca en el `settings.json` del repo.
-- (2026-11-20, skills-toggle) Si un archivo que gana más ya fija la clave, Atril no ofrece el cambio y dice qué archivo la fija.
-- (2026-11-20, skills-toggle) Un archivo de ajustes que no es JSON no se escribe nunca; se dice y se ofrece abrirlo.
+- (2026-11-20, skills-toggle) Atril writes a skill's state in the personal file that wins (user for personal ones and plugins, the repo's `settings.local.json` for project ones) and never in the repo's `settings.json`.
+- (2026-11-20, skills-toggle) If a file that wins over it already fixes the key, Atril does not offer the change and says which file fixes it.
+- (2026-11-20, skills-toggle) A settings file that is not JSON is never written; it says so and offers to open it.
 
 #### Alternatives that lost
 
 | Considered | Why it lost |
 |---|---|
-| Escribir siempre en `~/.claude/settings.json` | una skill de proyecto apagada ahí se apagaría en todos los repos con ese nombre |
-| Escribir en el `settings.json` del repo | es del equipo y se sube; un clic en Atril cambiaría el repo de todos |
-| Escribir en el archivo que gana aunque sea del repo | mismo problema; mejor decir «Lo fija …» |
-| Reescribir desde la mezcla | perdería claves de los otros archivos o las copiaría donde no van |
+| Always write to `~/.claude/settings.json` | a project skill turned off there would be turned off in every repo with that name |
+| Write to the repo's `settings.json` | it belongs to the team and is committed; one click in Atril would change the repo for everyone |
+| Write to the file that wins even if it is the repo's | same problem; better to say «Lo fija …» |
+| Rewrite from the merge | would lose keys from the other files or copy them where they do not belong |
 
 #### Decision log, answers as given (2026-11-23)
-- Q: ¿Dónde escribe Atril el estado de una skill? → A: en el archivo de la persona que gana en la mezcla de K3 sin tocar nada que se suba al repo: una skill o comando personal en `~/.claude/settings.json` (`ATRIL_CLAUDE_DIR`), uno de proyecto en `<repo>/.claude/settings.local.json`, siempre bajo `skillOverrides[name]` (assumed: `settings.local.json` es personal y gana a `settings.json` del repo; el `settings.json` del repo es de todo el equipo y no se toca).
-- Q: ¿Y un plugin? → A: `enabledPlugins["<plugin>"]` en `~/.claude/settings.json`; encendido escribe `true` (no borra la clave) (assumed).
-- Q: ¿Y si un archivo que gana más (el `settings.json` o el `settings.local.json` del repo, para una personal o un plugin) ya fija esa clave? → A: no se ofrece el cambio: el control sale desactivado con «Lo fija {archivo}» (ruta relativa al repo) (assumed: escribir donde no tiene efecto engaña).
-- Q: ¿Se pregunta antes de escribir? → A: la primera vez que Atril va a escribir en los ajustes de Claude Code, un diálogo «Atril va a cambiar tus ajustes de Claude Code» con el archivo, la clave y el valor, «Cambiar» y «Cancelar», y la casilla «No volver a preguntar»; marcada, se recuerda en el estado de Atril (`ui.json`, `skillsWriteOk: true`) (assumed).
-- Q: ¿Qué pasa con un archivo de ajustes ilegible o que no es JSON? → A: no se escribe nunca encima: `Problem` «No he podido cambiar tus ajustes de Claude Code.» con el archivo y «Abrir el archivo» (assumed: K10 lo trata como vacío para leer; escribir sobre él borraría lo que la persona tenga).
-- Q: ¿Dónde está el control? → A: en el panel de detalle (K7): «Estado» con cuatro opciones (Activa, Solo el nombre, Solo si la llamas tú, Apagada) para personal y proyecto; en la barra de cada plugin, un interruptor «Activo»; Atril sigue de solo lectura (assumed).
-- Q: (spec-reviewer) ¿El plugin sin repo? → A: la llamada lleva el repo elegido en la pantalla (`{ plugin, enabled, repoId? }`) y el bloqueo se calcula con él (assumed).
-- Q: (spec-reviewer) ¿Una skill que viene de un plugin? → A: se rechaza: `skillOverrides` no se aplica a skills de plugin (Prior decision de skills-list); el plugin se apaga entero (assumed).
-- Q: (spec-reviewer) ¿`skillOverrides` o `enabledPlugins` que ya existen y no son un objeto? → A: se rechaza como un JSON inválido; nunca se pisa (assumed).
-- Q: (spec-reviewer) ¿Dos con el mismo nombre (personal y proyecto, o skill y comando)? → A: `skillOverrides` va por nombre, así que el cambio vale para todas las de ese nombre que lee ese archivo; la lista que contesta main lo enseña tal cual y la nota dice «También cambia {n} más con el mismo nombre.» cuando las hay (assumed).
-- Q: (spec-reviewer) ¿Cómo sabe la pantalla el archivo? → A: main da a cada elemento que se puede cambiar `writesTo` (ruta absoluta del archivo destino) además de `lockedBy` (assumed).
-- Q: (spec-reviewer) ¿«Abrir el archivo»? → A: pasa a «Ver en Finder» con un IPC nuevo `atril:skills:reveal` que recibe el elemento, no una ruta, y enseña su `writesTo` en Finder (o su carpeta si no existe); sale siempre que el elemento tenga `writesTo` (assumed: main nunca abre una ruta que mande el renderer).
-- Q: (spec-reviewer) ¿`skillsWriteOk` sobrevive en `ui.json`? → A: sí, con W215 en `spec-workspaces.md` y su test en `src/main/ui.test.ts` (assumed).
-- Q: ¿Las sesiones abiertas lo notan? → A: no se promete: tras escribir, una nota «Hecho. Las sesiones nuevas de Claude Code ya lo cargan así.» (assumed: no está comprobado si Claude Code relee los ajustes en caliente).
+- Q: Where does Atril write a skill's state? → A: in the person's file that wins in K3's merge without touching anything that is committed to the repo: a personal skill or command in `~/.claude/settings.json` (`ATRIL_CLAUDE_DIR`), a project one in `<repo>/.claude/settings.local.json`, always under `skillOverrides[name]` (assumed: `settings.local.json` is personal and wins over the repo's `settings.json`; the repo's `settings.json` belongs to the whole team and is not touched).
+- Q: And a plugin? → A: `enabledPlugins["<plugin>"]` in `~/.claude/settings.json`; turning on writes `true` (does not delete the key) (assumed).
+- Q: And if a file that wins over it (the repo's `settings.json` or `settings.local.json`, for a personal one or a plugin) already fixes that key? → A: the change is not offered: the control comes out disabled with «Lo fija {archivo}» (path relative to the repo) (assumed: writing where it has no effect misleads).
+- Q: Is there a prompt before writing? → A: the first time Atril is about to write to Claude Code's settings, a dialog «Atril va a cambiar tus ajustes de Claude Code» with the file, the key and the value, «Cambiar» and «Cancelar», and the checkbox «No volver a preguntar»; when ticked, it is remembered in Atril's state (`ui.json`, `skillsWriteOk: true`) (assumed).
+- Q: What happens with an unreadable settings file or one that is not JSON? → A: it is never overwritten: `Problem` «No he podido cambiar tus ajustes de Claude Code.» with the file and «Abrir el archivo» (assumed: K10 treats it as empty for reading; writing over it would erase whatever the person has).
+- Q: Where is the control? → A: in the detail panel (K7): «Estado» with four options (Activa, Solo el nombre, Solo si la llamas tú, Apagada) for personal and project; in each plugin's bar, an «Activo» switch; Atril's own stays read-only (assumed).
+- Q: (spec-reviewer) The plugin with no repo? → A: the call carries the repo picked on the screen (`{ plugin, enabled, repoId? }`) and the lock is computed with it (assumed).
+- Q: (spec-reviewer) A skill that comes from a plugin? → A: it is rejected: `skillOverrides` does not apply to plugin skills (skills-list Prior decision); the plugin is turned off whole (assumed).
+- Q: (spec-reviewer) `skillOverrides` or `enabledPlugins` that already exist and are not an object? → A: rejected like invalid JSON; never overwritten (assumed).
+- Q: (spec-reviewer) Two with the same name (personal and project, or skill and command)? → A: `skillOverrides` goes by name, so the change holds for every one of that name that this file reads; the list main answers shows it as is and the note says «También cambia {n} más con el mismo nombre.» when there are any (assumed).
+- Q: (spec-reviewer) How does the screen know the file? → A: main gives each changeable item `writesTo` (absolute path of the target file) in addition to `lockedBy` (assumed).
+- Q: (spec-reviewer) «Abrir el archivo»? → A: it becomes «Ver en Finder» with a new IPC `atril:skills:reveal` that receives the item, not a path, and shows its `writesTo` in Finder (or its folder if it does not exist); it shows whenever the item has `writesTo` (assumed: main never opens a path the renderer sends).
+- Q: (spec-reviewer) Does `skillsWriteOk` survive in `ui.json`? → A: yes, with W215 in `spec-workspaces.md` and its test in `src/main/ui.test.ts` (assumed).
+- Q: Do open sessions notice? → A: not promised: after writing, a note «Hecho. Las sesiones nuevas de Claude Code ya lo cargan así.» (assumed: it is not verified whether Claude Code rereads settings live).
 
-- Q: (builder) ¿Cómo se fotografía el detalle? → A: vista dev-only `ATRIL_SNAPSHOT_VIEW=skills-estado` que abre la primera skill personal; nombrada en Scope (assumed).
+- Q: (builder) How is the detail photographed? → A: dev-only view `ATRIL_SNAPSHOT_VIEW=skills-estado` that opens the first personal skill; named in Scope (assumed).
 
 ### Skills: editor (skills-editor, 24 nov 2026)
 
-- (2026-11-24, skills-editor) Solo se editan skills y comandos personales y de proyecto; los de plugin y Atril son de solo lectura.
-- (2026-11-24, skills-editor) Atril no pisa un archivo que cambió fuera desde que se abrió sin que la persona elija «Guardar el mío encima».
-- (2026-11-24, skills-editor) Main solo lee o escribe la `path` de un elemento personal o de proyecto que él mismo lista, dentro de `claudeDir()` o del `.claude` del repo.
+- (2026-11-24, skills-editor) Only personal and project skills and commands are edited; plugin and Atril ones are read-only.
+- (2026-11-24, skills-editor) Atril does not overwrite a file that changed outside since it was opened unless the person chooses «Guardar el mío encima».
+- (2026-11-24, skills-editor) Main only reads or writes the `path` of a personal or project item that it lists itself, inside `claudeDir()` or the repo's `.claude`.
 
 #### Alternatives that lost
 
 | Considered | Why it lost |
 |---|---|
-| Abrir el archivo en el editor del sistema | sale de Atril y no se sabe cuándo termina; Pau quiere todo dentro |
-| CodeMirror/Monaco | dependencia grande para markdown con una cabecera |
-| Comparar por fecha de modificación | un `touch` o un checkout dan falso conflicto; el contenido es exacto |
-| Rechazar una cabecera rota | es el archivo de la persona; puede querer guardarlo a medias |
+| Open the file in the system editor | it leaves Atril and there is no telling when it ends; Pau wants everything inside |
+| CodeMirror/Monaco | a big dependency for markdown with a header |
+| Compare by modification date | a `touch` or a checkout gives a false conflict; content is exact |
+| Reject a broken header | it is the person's file; they may want to save it half-done |
 
 #### Decision log, answers as given (2026-11-24)
-- Q: ¿Qué se puede editar? → A: el archivo entero (cabecera y cuerpo) de las skills y comandos `personal` y `project`; los de plugin y Atril siguen de solo lectura (assumed: los de plugin los pisa la siguiente actualización del plugin; los de Atril vienen con la app).
-- Q: ¿Cómo? → A: «Editar» en el detalle (K7) cambia el texto por un área de texto monoespaciada con el archivo tal cual; «Guardar» y «Descartar»; ⌘S guarda (assumed: un editor de código con resaltado es una dependencia nueva para un archivo markdown).
-- Q: ¿Y si el archivo cambió en disco desde que se abrió? → A: no se guarda: «Este archivo ha cambiado fuera de Atril.» con «Cargar el de disco» (pierde lo escrito) y «Guardar el mío encima» (assumed: lo compara por contenido, no por fecha).
-- Q: ¿Y una cabecera rota? → A: se guarda igual, porque es el archivo de la persona, pero antes se avisa «La cabecera no se entiende: Claude Code puede ignorar esta skill.» con «Guardar igual» y «Seguir editando» (assumed).
-- Q: ¿Salir con cambios sin guardar? → A: Escape, «Cerrar», abrir otra tarjeta o cambiar de repo preguntan «Tienes cambios sin guardar. ¿Descartarlos?» (assumed: como M43).
-- Q: ¿Crear una nueva? → A: «Nueva skill» en los grupos Personal y Proyecto: un nombre (minúsculas, dígitos y guiones, 1–64, empieza por letra) y «Crear», que escribe `<carpeta>/skills/<nombre>/SKILL.md` con `name` y `description` vacía, y la abre en «Editar»; si ya existe una skill con ese nombre en ese origen, no se crea (assumed).
-- Q: ¿Borrar? → A: fuera de este cambio (assumed: un borrado pide papelera y deshacer; va aparte).
-- Q: (spec-reviewer) ¿Un enlace simbólico que sale fuera? → A: se escribe a través, como en skills-toggle; lo que se comprueba es que la ruta listada (sin resolver) cae dentro de `claudeDir()` o del `.claude` del repo (assumed).
-- Q: (spec-reviewer) ¿Qué es una cabecera rota para avisar? → A: la decide main con el mismo parser de K2: rota, o sin cabecera (`---` en la primera línea); el renderer no parsea (assumed: así no hay dos parsers que se separen y no se mueve `frontmatter.ts`).
-- Q: (spec-reviewer) ¿Salir de la pantalla con cambios? → A: el borrador se guarda en memoria por archivo; al volver y abrir esa skill, el editor sale con él y «Tienes cambios sin guardar de antes.» (assumed: no hace falta frenar el raíl ni ⌘K).
-- Q: (spec-reviewer) ¿De dónde sale el archivo entero? → A: un IPC `atril:skills:read` lo da; un archivo de más de 256 KB no se abre («Es demasiado grande para editarla aquí.») (assumed).
-- Q: (spec-reviewer) ¿Y si cambio `name:` en la cabecera? → A: el elemento se identifica por su `path` (que main comprueba contra la lista), no por el nombre, así que el panel sigue en el mismo archivo con el nombre nuevo (assumed).
-- Q: (spec-reviewer) ¿Bloquear el repo mientras guarda? → A: sí, como K18 (assumed).
-- Q: (builder) ¿La foto del editor? → A: una vista de foto `skills-editor` en `App.tsx` y `Skills.tsx`, como `skills-estado` (assumed: App.tsx cae fuera del Scope escrito, se añade).
-- Q: ¿Cómo sabe main qué archivo? → A: la petición lleva la `path` de un elemento y el `repoId`; main relee la lista y solo acepta una `path` que sea exactamente la de un elemento `personal` o `project` listado (assumed).
+- Q: What can be edited? → A: the whole file (header and body) of `personal` and `project` skills and commands; plugin and Atril ones stay read-only (assumed: plugin ones are overwritten by the plugin's next update; Atril's come with the app).
+- Q: How? → A: «Editar» in the detail (K7) swaps the text for a monospaced text area with the file as is; «Guardar» and «Descartar»; ⌘S saves (assumed: a code editor with highlighting is a new dependency for a markdown file).
+- Q: And if the file changed on disk since it was opened? → A: it is not saved: «Este archivo ha cambiado fuera de Atril.» with «Cargar el de disco» (loses what was typed) and «Guardar el mío encima» (assumed: it compares by content, not by date).
+- Q: And a broken header? → A: it is saved anyway, because it is the person's file, but first it warns «La cabecera no se entiende: Claude Code puede ignorar esta skill.» with «Guardar igual» and «Seguir editando» (assumed).
+- Q: Leaving with unsaved changes? → A: Escape, «Cerrar», opening another card or changing repo ask «Tienes cambios sin guardar. ¿Descartarlos?» (assumed: like M43).
+- Q: Creating a new one? → A: «Nueva skill» in the Personal and Proyecto groups: a name (lowercase, digits and hyphens, 1–64, starts with a letter) and «Crear», which writes `<carpeta>/skills/<nombre>/SKILL.md` with `name` and an empty `description`, and opens it in «Editar»; if a skill with that name already exists in that origin, it is not created (assumed).
+- Q: Deleting? → A: outside this change (assumed: a delete needs trash and undo; it goes separately).
+- Q: (spec-reviewer) A symbolic link that points outside? → A: it is written through, as in skills-toggle; what is checked is that the listed path (unresolved) falls inside `claudeDir()` or the repo's `.claude` (assumed).
+- Q: (spec-reviewer) What counts as a broken header worth a warning? → A: main decides it with K2's same parser: broken, or no header (`---` on the first line); the renderer does not parse (assumed: that way there are not two parsers that drift apart and `frontmatter.ts` does not move).
+- Q: (spec-reviewer) Leaving the screen with changes? → A: the draft is kept in memory per file; on returning and opening that skill, the editor comes up with it and «Tienes cambios sin guardar de antes.» (assumed: there is no need to stop the rail or ⌘K).
+- Q: (spec-reviewer) Where does the whole file come from? → A: an IPC `atril:skills:read` gives it; a file over 256 KB is not opened («Es demasiado grande para editarla aquí.») (assumed).
+- Q: (spec-reviewer) And if I change `name:` in the header? → A: the item is identified by its `path` (which main checks against the list), not by name, so the panel stays on the same file with the new name (assumed).
+- Q: (spec-reviewer) Lock the repo while saving? → A: yes, like K18 (assumed).
+- Q: (builder) The editor's photo? → A: a photo view `skills-editor` in `App.tsx` and `Skills.tsx`, like `skills-estado` (assumed: App.tsx falls outside the written Scope, it is added).
+- Q: How does main know which file? → A: the request carries an item's `path` and the `repoId`; main rereads the list and only accepts a `path` that is exactly that of a listed `personal` or `project` item (assumed).
 
 ### Skills: plugins (skills-plugins, 24 nov 2026)
 
-- (2026-11-24, skills-plugins) Atril gestiona plugins solo por `claude plugin … --json`, nunca escribiendo sus archivos.
-- (2026-11-24, skills-plugins) Atril nunca acepta por la persona el comando de un plugin (`-y`, `--accept-command`); eso se hace en Terminal.
-- (2026-11-24, skills-plugins) Ámbitos `user` y `local` solamente; nunca `project`.
+- (2026-11-24, skills-plugins) Atril manages plugins only through `claude plugin … --json`, never by writing their files.
+- (2026-11-24, skills-plugins) Atril never accepts a plugin's command on the person's behalf (`-y`, `--accept-command`); that is done in Terminal.
+- (2026-11-24, skills-plugins) `user` and `local` scopes only; never `project`.
 
 #### Alternatives that lost
 
 | Considered | Why it lost |
 |---|---|
-| Escribir `installed_plugins.json` y clonar a mano | la documentación dice que son registros internos; se rompería en cualquier versión |
-| Pasar `-y` para que no falle | aceptaría por la persona un comando de terceros |
-| Ámbito `project` | escribe el `settings.json` del repo, que se sube |
+| Write `installed_plugins.json` and clone by hand | the documentation says they are internal records; it would break in any version |
+| Pass `-y` so it does not fail | it would accept a third-party command on the person's behalf |
+| `project` scope | it writes the repo's `settings.json`, which is committed |
 
 #### Decision log, answers as given (2026-11-24)
-- Q: ¿Cómo instala Atril un plugin? → A: con la CLI documentada de Claude Code, `claude plugin … --json`, por el `Runner` de `src/main/run.ts`; nunca escribiendo a mano `installed_plugins.json` ni clonando (assumed: la documentación dice que esos archivos son «registros», no una API; `--json` sí es interfaz: un objeto en la última línea de stdout con `outcome`).
-- Q: ¿Gasta cuota? → A: no: según la documentación, install/uninstall/update/list y `marketplace add` son operaciones locales, de git y de red; solo `claude plugin eval` usa el modelo, y Atril no lo llama (assumed: la documentación no lo dice con todas las letras para cada comando).
-- Q: ¿En qué ámbito? → A: «Para mí, en todos los repos» (`--scope user`, por defecto) o «Solo para mí en {repo}» (`--scope local`, con el repo como directorio de trabajo); nunca `project`, que escribe el `settings.json` que se sube (assumed: misma regla que skills-toggle).
-- Q: ¿Y si el plugin pide aceptar un comando (`--accept-command`, `-y`)? → A: Atril nunca pasa `-y` ni `--accept-command`: si la CLI falla por eso, el error ofrece «Hacerlo en Terminal» con el comando exacto, para que la persona lo lea y acepte allí (assumed: aceptar un comando de terceros es una decisión que no se toma con un clic de Atril).
-- Q: ¿Qué se puede hacer? → A: ver el catálogo de los marketplaces añadidos con búsqueda e instalar; en cada plugin instalado, «Actualizar» y «Quitar» (con confirmación); añadir un marketplace por su fuente (`owner/repo` o URL) (assumed).
-- Q: ¿Qué queda fuera? → A: quitar marketplaces, actualizar marketplaces, auto-actualización, configurar plugins (`configure`), `eval`, ámbito `project` y `managed` (assumed).
-- Q: ¿Y si no está `claude`? → A: el `Problem` de siempre «No encuentro Claude Code en este Mac.» con el arreglo del doctor (assumed).
-- Q: ¿Varias a la vez? → A: no: una operación de plugins a la vez; los botones quedan desactivados mientras dura y el selector de repo también (K18) (assumed).
+- Q: How does Atril install a plugin? → A: with Claude Code's documented CLI, `claude plugin … --json`, through the `Runner` in `src/main/run.ts`; never by hand-writing `installed_plugins.json` or cloning (assumed: the documentation says those files are «records», not an API; `--json` is an interface: an object on the last line of stdout with `outcome`).
+- Q: Does it spend quota? → A: no: according to the documentation, install/uninstall/update/list and `marketplace add` are local, git and network operations; only `claude plugin eval` uses the model, and Atril does not call it (assumed: the documentation does not say it outright for every command).
+- Q: In which scope? → A: «Para mí, en todos los repos» (`--scope user`, the default) or «Solo para mí en {repo}» (`--scope local`, with the repo as working directory); never `project`, which writes the `settings.json` that is committed (assumed: same rule as skills-toggle).
+- Q: And if the plugin asks to accept a command (`--accept-command`, `-y`)? → A: Atril never passes `-y` or `--accept-command`: if the CLI fails for that, the error offers «Hacerlo en Terminal» with the exact command, so the person reads and accepts it there (assumed: accepting a third-party command is a decision not made with an Atril click).
+- Q: What can be done? → A: see the catalog of the added marketplaces with search and install; on each installed plugin, «Actualizar» and «Quitar» (with confirmation); add a marketplace by its source (`owner/repo` or URL) (assumed).
+- Q: What is left out? → A: removing marketplaces, updating marketplaces, auto-update, configuring plugins (`configure`), `eval`, `project` and `managed` scope (assumed).
+- Q: And if `claude` is missing? → A: the usual `Problem` «No encuentro Claude Code en este Mac.» with the doctor's fix (assumed).
+- Q: Several at once? → A: no: one plugin operation at a time; the buttons stay disabled while it lasts and so does the repo selector (K18) (assumed).
 
-- Q: (spec-reviewer) ¿Con qué ámbito actualiza o quita un plugin instalado? → A: lo dice la CLI: `installed` de K27 trae `scope` y `projectPath`; la barra usa la instalación `user`, o la `local` cuyo `projectPath` es el repo elegido; si solo hay otras (`project`, `managed`, `local` de otro repo), no hay botones y sale «Instalado en otro ámbito: se gestiona fuera de Atril.» (assumed: no se lee `installed_plugins.json` para esto).
-- Q: (spec-reviewer) ¿Cómo distingue la pantalla los fallos? → A: main no rechaza: contesta `{ list }`/`{ catalog }` o `{ error, code }` con `code` `invalid`, `missing`, `timeout`, `busy` o `failed`; con `missing`, el `Problem` es «No encuentro Claude Code en este Mac.» con el arreglo del doctor para `claude` (`atril:doctor:install`) y sin «Hacerlo en Terminal» (assumed).
-- Q: (spec-reviewer) ¿Terminal con ámbito `user` y sin repo? → A: sin `cd`; con repo, con `cd`; contesta `{ ok: true }` o `{ error }`, como `inTerminal` (assumed).
-- Q: (spec-reviewer) ¿Dos operaciones a la vez en main? → A: main también lo impide: una segunda K28/K29 mientras corre otra contesta `{ error, code: 'busy' }` sin ejecutar nada (assumed: como `refine.ts`).
-- Q: (builder) ¿Archivos fuera del Scope? → A: `bocetos/qa-final.html` (el paso «Plugins desde Atril contra la CLI real», pedido por el encargo) y `src/renderer/App.tsx` (una línea: la vista de foto `skills-plugins`); entran en Scope (assumed).
-- Q: (builder) ¿K27 bloquea con `busy`? → A: solo mientras corre una K28/K29; una lectura de catálogo no bloquea a otra, porque la pantalla y el diálogo lo piden a la vez (la foto lo destapó); un test lo cubre (assumed).
+- Q: (spec-reviewer) With which scope does it update or remove an installed plugin? → A: the CLI says: K27's `installed` carries `scope` and `projectPath`; the bar uses the `user` install, or the `local` one whose `projectPath` is the picked repo; if there are only others (`project`, `managed`, `local` of another repo), there are no buttons and it shows «Instalado en otro ámbito: se gestiona fuera de Atril.» (assumed: `installed_plugins.json` is not read for this).
+- Q: (spec-reviewer) How does the screen tell failures apart? → A: main does not reject: it answers `{ list }`/`{ catalog }` or `{ error, code }` with `code` `invalid`, `missing`, `timeout`, `busy` or `failed`; with `missing`, the `Problem` is «No encuentro Claude Code en este Mac.» with the doctor's fix for `claude` (`atril:doctor:install`) and without «Hacerlo en Terminal» (assumed).
+- Q: (spec-reviewer) Terminal with `user` scope and no repo? → A: no `cd`; with a repo, with `cd`; it answers `{ ok: true }` or `{ error }`, like `inTerminal` (assumed).
+- Q: (spec-reviewer) Two operations at once in main? → A: main prevents that too: a second K28/K29 while another runs answers `{ error, code: 'busy' }` without running anything (assumed: like `refine.ts`).
+- Q: (builder) Files outside Scope? → A: `bocetos/qa-final.html` (the step «Plugins desde Atril contra la CLI real», requested by the brief) and `src/renderer/App.tsx` (one line: the photo view `skills-plugins`); they enter Scope (assumed).
+- Q: (builder) Does K27 block with `busy`? → A: only while a K28/K29 runs; a catalog read does not block another, because the screen and the dialog ask for it at once (the photo uncovered it); a test covers it (assumed).
 
-### Skills: uso (skills-usage, 25 nov 2026)
+### Skills: usage (skills-usage, 25 nov 2026)
 
-- (2026-11-25, skills-usage) El uso sale de las sesiones de Claude Code en `claudeDir()/projects`, nunca de `~/.claude.json` ni de una llamada a Claude; una línea que no se entiende se salta.
-- (2026-11-25, skills-usage) Solo se miran 30 días y solo los archivos modificados en ellos; lo contado se guarda en memoria por archivo (`mtime` + tamaño) — ponytail: en memoria, persistir si la primera apertura es lenta.
-- (2026-11-25, skills-usage) Una invocación casa con la tarjeta por el nombre que esta enseña sin barra (`name` o `{plugin antes de @}:name`).
+- (2026-11-25, skills-usage) Usage comes from Claude Code's sessions in `claudeDir()/projects`, never from `~/.claude.json` or a call to Claude; a line that is not understood is skipped.
+- (2026-11-25, skills-usage) Only 30 days are looked at and only the files modified within them; what was counted is kept in memory per file (`mtime` + size) — ponytail: in memory, persist if the first open is slow.
+- (2026-11-25, skills-usage) An invocation matches the card by the name the card shows without the slash (`name` or `{plugin before @}:name`).
 
 #### Alternatives that lost
 
 | Considered | Why it lost |
 |---|---|
-| Leer `~/.claude.json` | prohibido tocarlo; y no sabemos que guarde fechas |
-| Hooks de Claude Code que apunten cada uso | escribe en los ajustes de la persona y solo cuenta desde hoy |
-| Persistir el recuento en `ATRIL_HOME` | más código y una caché que invalidar; en memoria basta hasta medir |
-| Releer todo cada vez | ~3,5 GB; aun con el filtro de 30 días, la caché ahorra casi todo |
+| Read `~/.claude.json` | touching it is forbidden; and we do not know that it stores dates |
+| Claude Code hooks that record each use | writes to the person's settings and only counts from today |
+| Persist the count in `ATRIL_HOME` | more code and a cache to invalidate; in memory is enough until measured |
+| Reread everything every time | ~3.5 GB; even with the 30-day filter, the cache saves almost everything |
 
 #### Decision log, answers as given (2026-11-25)
-- Q: ¿De dónde sale el uso? → A: de las sesiones que Claude Code guarda en `claudeDir()/projects/*/*.jsonl` (y sus `*/<sesión>/subagents/*.jsonl`): una línea con un `tool_use` `"name":"Skill"` cuenta `input.skill`; una línea de la persona con `<command-name>/x</command-name>` cuenta `x` (assumed: Claude Code no documenta otro registro de uso; `~/.claude.json` no se toca; el formato no está documentado, así que una línea que no se entiende se salta y nunca rompe la pantalla).
-- Q: ¿Cuánto hacia atrás? → A: 30 días, y solo se abren archivos modificados en esos 30 días (assumed: hay ~3,5 GB de sesiones; leer todo cada vez es inviable).
-- Q: ¿Cada vez que se abre Skills relee todo? → A: no: main guarda en memoria lo contado por archivo junto a su `mtime` y tamaño y solo relee los que cambiaron; una lectura a la vez (assumed: persistirlo en disco si la primera apertura resulta lenta).
-- Q: ¿Cómo se casa una invocación con una tarjeta? → A: por el nombre que la tarjeta enseña sin la barra: `name` para personal y proyecto, `{plugin antes de @}:name` para plugin y Atril (assumed: es lo que se teclea y lo que el `Skill` recibe).
-- Q: ¿Qué enseña? → A: en cada tarjeta, «usada hace {n} días» / «usada hoy» / «sin usar en 30 días»; un recuadro «Sin usar en 30 días» junto a Activas, Apagadas y Choques, que filtra; en el detalle, «Uso · últimos 14 días» con 14 barras, «{n} veces en 30 días» y «Según las sesiones de Claude Code en este Mac.» (assumed: como el boceto, sin el donut).
-- Q: ¿«Apagar todas» las sin usar? → A: fuera (assumed: son N escrituras de golpe y merecen su propio cambio con deshacer).
-- Q: (spec-reviewer) ¿Qué tarjetas dicen el uso y cuáles cuentan como «sin usar»? → A: dicen el uso todas menos las que no se cargan (`shadowedBy`), que no dicen nada; un nombre sin entrada es «sin usar en 30 días»; el recuadro y el filtro cuentan las que Claude puede usar: no `off`, no `shadowedBy` y `enabled` distinto de `false` (incluye «Solo si la llamas tú», que es justo la que solo cuenta si la tecleas) (assumed).
-- Q: (spec-reviewer) ¿Dos tarjetas con el mismo nombre en repos distintos? → A: comparten el recuento: las sesiones no dicen de qué repo venía una skill con ese nombre; uso por repo está fuera (assumed).
-- Q: (spec-reviewer) ¿Se vuelve a pedir el uso al cambiar de repo? → A: no: una vez por visita a la pantalla; el uso no depende del repo (assumed).
-- Q: (spec-reviewer) ¿Escala y fecha de las barras? → A: proporcionales al máximo de esos 14 días; con todo a 0, todas al mínimo (2 px); la etiqueta con día y mes cortos de la configuración regional, p. ej. «25 nov: 3» (assumed).
-- Q: (spec-reviewer) ¿Filtro «sin usar» vacío? → A: «No tienes ninguna sin usar.» (assumed).
-- Q: (foto) ¿Las de Atril cuentan como candidatas a apagar? → A: no: vienen con la app y no se apagan una a una; su tarjeta sí dice el uso (assumed).
-- Q: ¿Y si leer el uso falla o tarda? → A: la lista nunca espera al uso; si falla, las tarjetas no dicen nada del uso y no hay recuadro (assumed: el uso es un añadido, no la pantalla).
+- Q: Where does usage come from? → A: from the sessions Claude Code stores in `claudeDir()/projects/*/*.jsonl` (and their `*/<session>/subagents/*.jsonl`): a line with a `tool_use` `"name":"Skill"` counts `input.skill`; a line from the person with `<command-name>/x</command-name>` counts `x` (assumed: Claude Code documents no other usage record; `~/.claude.json` is not touched; the format is not documented, so a line that is not understood is skipped and never breaks the screen).
+- Q: How far back? → A: 30 days, and only files modified in those 30 days are opened (assumed: there are ~3.5 GB of sessions; reading everything every time is not viable).
+- Q: Does every opening of Skills reread everything? → A: no: main keeps in memory what was counted per file together with its `mtime` and size and only rereads those that changed; one read at a time (assumed: persist it to disk if the first open turns out slow).
+- Q: How is an invocation matched to a card? → A: by the name the card shows without the slash: `name` for personal and project, `{plugin before @}:name` for plugin and Atril (assumed: it is what is typed and what `Skill` receives).
+- Q: What does it show? → A: on each card, «usada hace {n} días» / «usada hoy» / «sin usar en 30 días»; a tile «Sin usar en 30 días» next to Activas, Apagadas and Choques, which filters; in the detail, «Uso · últimos 14 días» with 14 bars, «{n} veces en 30 días» and «Según las sesiones de Claude Code en este Mac.» (assumed: like the sketch, without the donut).
+- Q: «Apagar todas» the unused ones? → A: out (assumed: it is N writes at once and deserves its own change with undo).
+- Q: (spec-reviewer) Which cards state usage and which count as «sin usar»? → A: all state it except those that are not loaded (`shadowedBy`), which say nothing; a name with no entry is «sin usar en 30 días»; the tile and the filter count those Claude can use: not `off`, not `shadowedBy` and `enabled` other than `false` (includes «Solo si la llamas tú», which is exactly the one that only counts if you type it) (assumed).
+- Q: (spec-reviewer) Two cards with the same name in different repos? → A: they share the count: the sessions do not say which repo a skill with that name came from; per-repo usage is out (assumed).
+- Q: (spec-reviewer) Is usage requested again when changing repo? → A: no: once per visit to the screen; usage does not depend on the repo (assumed).
+- Q: (spec-reviewer) Scale and date of the bars? → A: proportional to the maximum of those 14 days; with everything at 0, all at the minimum (2 px); the label with short day and month from the locale, e.g. «25 nov: 3» (assumed).
+- Q: (spec-reviewer) Empty «sin usar» filter? → A: «No tienes ninguna sin usar.» (assumed).
+- Q: (photo) Do Atril's own count as candidates to turn off? → A: no: they come with the app and are not turned off one by one; their card does state usage (assumed).
+- Q: And if reading usage fails or is slow? → A: the list never waits for usage; if it fails, the cards say nothing about usage and there is no tile (assumed: usage is an extra, not the screen).
+
+### Skills: dense list (skills-dense, 26 nov 2026)
+
+- (2026-11-26, skills-dense) A row shows its state but does not change it; the detail and the plugin group's switch do (assumed).
+- (2026-11-26, skills-dense) While a search or filter narrows the list, groups with matches open and groups without hide; otherwise each group keeps its own fold, plugins and Atril starting folded (assumed).
+- (2026-11-26, skills-dense) The tiles and Todas/Activas/Apagadas are one filter; «Choques» is a fourth filter (assumed).
+- (2026-11-26, skills-dense) No virtualisation — ponytail: plain rows up to ~1000 items; window the list past that.
+
+#### Alternatives that lost
+
+| Considered | Why it lost |
+|---|---|
+| ARIA `grid`/`treegrid` with roving tabindex | more keyboard contract than asked (cells, Home/End, row vs cell focus); a list of buttons is what it is, and it reads better |
+| Keep `<details>`, controls outside the summary | a plugin's controls in two places; forcing `open` while narrowing fights the element's own toggle event |
+| Virtualised list (react-window or by hand) | a new dependency or a scroll engine for 170 rows that render in a few ms; named in Prior decisions with its ceiling |
+| Row as a `<table>` | columns are nice, but a table of buttons announces worse and fights the group headers |
+
+#### Decision log, answers as given (2026-11-26)
+- Q: Where does the Spanish go? → A: ~~the Spanish text is the `t()` key, English in `i18n-en.ts`~~ → wrong: that was read off a stale branch. Main had already made English the source (`16d8158`); the keys are English and the Spanish goes in `src/preload/i18n-es.ts`, as the brief said. Fixed when merging main.
+- Q: Does a row switch the skill on and off itself? → A: no: the row shows the state; changing it stays in the detail (K15) and in the plugin group's switch (assumed: an inline switch puts a settings write one stray click away in a list built for scanning; if wrong, it is one switch per row calling the same `setState`).
+- Q: Which marks does a row keep? → A: only what the group and the filter do not already say: «comando», a state other than «Activa», the clash («No se carga: …»), «Claude no la usa sola», «Cabecera ilegible». No origin and no «Activa». The plugin name is already in the row's `/plugin:name` (assumed).
+- Q: A collapsed plugin group while searching? → A: while a search or a filter narrows the list, every group with matches opens and every group without matches hides; clearing gives each group back the state it had (assumed: a search that finds a row inside a closed group and hides it reads as «nothing found»).
+- Q: The plugin controls (switch, Actualizar, Quitar) once each plugin is its own group? → A: in the group's header, beside the button that folds it; «Añadir plugin» and the plugin notes stay in a «Plugins» line above the plugin groups (assumed: a control inside `<summary>` is not reachable cleanly, so the header is a fold button plus its controls).
+- Q: «Recientes» before the usage answers? → A: by name until it answers; also when it fails (assumed: K37 already says nothing about use then).
+- Q: Is the fold state remembered across visits? → A: no: per visit, kept across repo picks (assumed: one more `ui.json` key for little gain).
+- Q: How do the tiles and the Todas/Activas/Apagadas buttons relate? → A: they are one filter: the «Activas» tile and the «Activas» button are pressed together; «Choques» adds a filter of its own (assumed).
+- Q: «20+ rows on a screen»? → A: rows are 36 px, and the tiles become one-line buttons so the header takes less room; checked in the real app at Pau's window size (1440×884) with a seeded catalog of 170 example skills, photos in `bocetos/novedades/skills-densa.png` and `skills-densa-lista.png` (assumed: «a screen» means the list once scrolled past the header).
+- Q: The seeded catalog? → A: ~~a scratchpad script~~ → `scripts/seed-skills.mjs` after the spec review: it writes a temporary `ATRIL_CLAUDE_DIR` (skills, two plugins, sessions for usage) and `ATRIL_HOME`, example names only (assumed).
+- Q: (phase 5) How to build it? → A: rows and fold groups inside the existing screen: `SkillCard` becomes `SkillRow`, a small `SkillGroup` (header button + controls slot + list) replaces `<details>`, one sort and one filter state in `Skills.tsx`, arrows handled on the list, «/» on the window while the screen is mounted. Lost: an ARIA `grid`/`treegrid` with roving tabindex (more keyboard contract than asked, and screen readers announce grids worse for a list of buttons); keeping `<details>` and putting the plugin controls outside the summary (two places for one plugin, and `<details>` cannot be forced open while narrowing without fighting its own toggle) (assumed).
+- Q: (spec-reviewer) K6, K15, K24, K33 still say card and bar? → A: amended in this change: «row» for card, «plugin group header» for bar; K6 keeps the Activas/Apagadas empty messages, K42 adds only Choques (assumed).
+- Q: (spec-reviewer) Which segmented button is pressed under «Choques» or «Sin usar»? → A: none (assumed: «Todas» pressed would say every item shows).
+- Q: (spec-reviewer) What is «narrowed», and what does a header do then? → A: narrowed = the search holds non-blank text or the filter is not «Todas»; the sort never narrows. While narrowed the headers are disabled (the groups are forced open) and the remembered folds do not change (assumed).
+- Q: (spec-reviewer) The two numbers on a plugin header? → A: the fold button counts the rows it shows now; «{n} skills» counts all of that plugin's items (assumed).
+- Q: (spec-reviewer) Footers while narrowed? → A: «Nueva skill» and the project's empty note show only when not narrowed; the «Plugins» line («Añadir plugin», notes, problems) always shows (assumed: they are actions, not results).
+- Q: (spec-reviewer) Sorting shadowed rows and ties? → A: a shadowed row sorts with the rows with no use; equal `last` goes by name (assumed).
+- Q: (spec-reviewer) Enter, the editor and leaving the search box? → A: Enter on a row opens its detail; «text field» includes the editor's textarea; ↓ in the search box moves to the first visible row (assumed).
+- Q: (spec-reviewer) K44 is a string check? → A: accepted ceiling: jsdom has no layout; the test also checks no other `.skr` rule sets a height, and the real-app photo carries the rest (assumed).
+- Q: (spec-reviewer) «20+ rows» has no threshold and its script is not committed? → A: the seed goes to `scripts/seed-skills.mjs` (example names only) so the drive can be repeated; the photo at 1440×884, scrolled into the list, must show at least 20 whole rows, counted in the report (assumed).
+- Q: (spec-reviewer) A row in a switched-off plugin? → A: dimmed, with no mark: a row is dimmed when `state` is `off`, `enabled` is false or it is shadowed; the header says «apagado entero» (assumed).
+- Q: (spec-reviewer) `i18n-es.ts` is governed by workspaces? → A: as in every skills change: new entries only, covered by the S16/S19 scans; no workspaces delta (assumed).
+- Q: (work-reviewer) The photo shows 15 rows, not 20? → A: the first photo is the top of the screen; a second, `bocetos/novedades/skills-densa-lista.png`, is scrolled past the header and shows 21 whole rows, counted by the drive script. Both are cropped above the bottom quota bar, which shows the real account's numbers (assumed).
+- Q: (work-reviewer) 171 or 203? → A: 171 seeded example items plus Atril's own 32 = 203 in the heading; the docs say both (assumed).
+- Q: (work-reviewer) The «Resumen» label on the tiles? → A: kept: the tiles and the Todas/Activas/Apagadas buttons share names, and the group label is what tells them apart for a screen reader and for the tests; in scope (assumed).
+- Q: Interview? → A: none: CLAUDE.md says to go on without asking and mark the recommended option `(assumed)`; every line above is that.
 
 ## Task breakdown
 
 ## Verification criteria
 
-### Skills: listado (skills-list, 20 nov 2026)
+### Skills: list (skills-list, 20 nov 2026)
 
 - **K1** When the window asks `atril:skills:list(repoId?)`, main shall answer `{ items, warnings }` with one item per skill (`skills/<n>/SKILL.md`) and per command (`commands/<n>.md`, top level only) found in: `claudeDir()` (origin `personal`); the `.claude` folder of the repo `repoId` from Atril's repo list (origin `project`; none when `repoId` is absent, unknown or the repo list fails, which adds one warning); each plugin in `claudeDir()/plugins/installed_plugins.json` by its `installPath` (origin `plugin`, `plugin` = its `name@marketplace`); and Atril's Libretto folder (origin `atril`, `plugin` = `libretto`). Each item shall carry `name` (frontmatter `name`, else the folder or file name), `kind` (`skill` | `command`), `origin`, `path`, `description`, `whenToUse`, `argumentHint`, `allowedTools`, `model`, `effort`, `disableModelInvocation`, `userInvocable`, and `body` (the text after the frontmatter).
   Proof: src/main/skills/skills.test.ts lists skills and commands from every origin with their header
@@ -244,18 +305,18 @@ En Skills la persona ve qué skills y comandos usa de verdad y cuáles llevan 30
   Proof: src/main/skills/skills.test.ts state comes from skillOverrides and plugins from enabledPlugins
 - **K4** Main shall set `shadowedBy` on a `personal` or `project` item to the first that applies: `'personal'` when it is a project item and a personal item has its `name`; `'skill'` when it is a command and a skill of its origin has its `name`. Plugin and Atril items are never shadowed; a shadowed item keeps its `state`.
   Proof: src/main/skills/skills.test.ts a personal skill wins over the repo's and a skill over a command
-- **K5** When the person opens «Skills» from the rail (after Avisos) or from ⌘K, the screen shall show the heading «Skills» with the number of items; the lead «Las skills y los comandos / que tu Claude Code tiene a mano en cada trabajo. Los lee de sus carpetas, sin gastar cuota.»; a repo selector of Atril's repos with the first picked (with none: no selector, no Proyecto group, and «Añade un repo en Ajustes → Repos para ver sus skills.»); the tiles «Activas» (items with `state` `on` or `name-only`, not shadowed, and `enabled` when they have it, with «~{n} tokens de contexto», n = characters of name + description + whenToUse of those items ÷ 3.2, rounded), «Apagadas» (`state` `off`, or `enabled` false) and «Choques» (shadowed items); and the groups «Personal», «Proyecto ({repo})», «Plugins» (one bar per plugin with «{plugin} · {n} skills · activo | apagado entero») and «Atril» (folded, «solo lectura»). Each card shall show `/name` (plugin and Atril items `/{plugin before @}:name`), its origin, «comando» for commands, its state as «Activa», «Solo el nombre», «Solo si la llamas tú» or «Apagada», the description on one line, and «No se carga: gana la personal» or «No se carga: gana la skill» when shadowed, «Claude no la usa sola» when `disableModelInvocation`, «Cabecera ilegible» when `broken`. One test holds every clause.
+- **K5** When the person opens «Skills» from the rail (after Avisos) or from ⌘K, the screen shall show the heading «Skills» with the number of items; the lead «Las skills y los comandos / que tu Claude Code tiene a mano en cada trabajo. Los lee de sus carpetas, sin gastar cuota.»; a repo selector of Atril's repos with the first picked (with none: no selector, no Proyecto group, and «Añade un repo en Ajustes → Repos para ver sus skills.»); the tiles «Activas» (items with `state` `on` or `name-only`, not shadowed, and `enabled` when they have it, with «~{n} tokens de contexto», n = characters of name + description + whenToUse of those items ÷ 3.2, rounded), «Apagadas» (`state` `off`, or `enabled` false) and «Choques» (shadowed items); a line «Plugins» with «Añadir plugin»; and the groups «Personal», «Proyecto ({repo})», one group per plugin and «Atril» («solo lectura»), each with a header button naming it and the number of rows it shows, a plugin's header also showing «{plugin} · {n} skills · activo | apagado entero» and its controls (K15, K33). Each row shall show `/name` (plugin and Atril items `/{plugin before @}:name`), the description on one line, and only these marks when they apply: «comando» for commands, the state when it is not `on` («Solo el nombre», «Solo si la llamas tú» or «Apagada»), «No se carga: gana la personal» or «No se carga: gana la skill» when shadowed, «Claude no la usa sola» when `disableModelInvocation`, «Cabecera ilegible» when `broken`; a row shall not show its origin nor «Activa»; a row shall be dimmed when its `state` is `off`, its `enabled` is false or it is shadowed. One test holds every clause.
   Proof: src/renderer/skills/skills.test.tsx the screen groups every skill by where it comes from
-- **K6** When the person types in «Buscar por nombre o descripción…» (matching name, description or whenToUse, case-insensitive) or picks «Todas», «Activas» or «Apagadas» (K5's definitions), the screen shall show only the matching cards; with a search and none it shall say «Nada se llama «{q}».» with «Borrar la búsqueda»; with no search and none, «No tienes ninguna activa.» or «No tienes ninguna apagada.»; a repo with no project items shall say «{repo} aún no tiene skills propias.».
+- **K6** When the person types in «Buscar por nombre o descripción…» (matching name, description or whenToUse, case-insensitive) or picks «Todas», «Activas» or «Apagadas» (K5's definitions), the screen shall show only the matching rows; with a search and none it shall say «Nada se llama «{q}».» with «Borrar la búsqueda»; with no search and none, «No tienes ninguna activa.» or «No tienes ninguna apagada.»; a repo with no project items shall say «{repo} aún no tiene skills propias.» while nothing narrows the list (K40).
   Proof: src/renderer/skills/skills.test.tsx search and filter narrow the cards
 - **K11** If the reply for a repo arrives after the person has picked another repo, then the screen shall drop it and show only the picked repo's items.
   Proof: src/renderer/skills/skills.test.tsx a late reply for the previous repo is dropped
-- **K7** When the person activates a card, a detail panel shall open with `/name`, origin, state, the description, the header fields that are set, the instructions as plain text (markup shown literally) and the path; Escape or «Cerrar» shall close it and return focus to the card.
+- **K7** When the person activates a row, a detail panel shall open with `/name`, origin, state, the description, the header fields that are set, the instructions as plain text (markup shown literally) and the path; Escape or «Cerrar» shall close it and return focus to the row.
   Proof: src/renderer/skills/skills.test.tsx a card opens its detail and escape closes it
 - **K8** If `atril:skills:list` rejects, then the screen shall show a `Problem` «No he podido leer tus skills.» with «Volver a intentar» and the error in its detail; each of `warnings` shall show as a note under the heading.
   Proof: src/renderer/skills/skills.test.tsx a failed read says why and offers to retry
 
-### Skills: encender y apagar (skills-toggle, 23 nov 2026)
+### Skills: turning on and off (skills-toggle, 23 nov 2026)
 
 - **K12** Main shall give each `personal`, `project` and `plugin` item `writesTo`, the absolute path of the file K13 writes its key to, and a `lockedBy` naming the settings file (path relative to the repo) that fixes its key when a file later in K3's merge than `writesTo` sets that key (`skillOverrides[name]`, or `enabledPlugins[plugin]` for a plugin item); otherwise no `lockedBy`. `atril` items shall have neither.
   Proof: src/main/skills/skills.test.ts a key fixed by a later file is locked
@@ -263,7 +324,7 @@ En Skills la persona ve qué skills y comandos usa de verdad y cuáles llevan 30
   Proof: src/main/skills/skills.test.ts set writes one key in the file that decides
 - **K14** If the file to write is not valid JSON or not an object, or its `skillOverrides`/`enabledPlugins` exists and is not an object, or the item is `atril` or `plugin` origin (a plugin is switched whole), or its `lockedBy` (computed with the call's repoId) is set, or the state is not one of K3's four, then main shall reject (and `atril:skills:reveal` shall reject an `atril` item) naming the file or the reason and leave every file byte-identical.
   Proof: src/main/skills/skills.test.ts set refuses and leaves the files alone
-- **K15** When the person opens a `personal` or `project` item's detail (K7), the panel shall show «Estado» with «Activa», «Solo el nombre», «Solo si la llamas tú» and «Apagada» (the current one picked); picking another shall call `atril:skills:set` and, when it answers, show the new state on the card and «Hecho. Las sesiones nuevas de Claude Code ya lo cargan así.», plus «También cambia {n} más con el mismo nombre.» when other personal or project items share the name and read the same file; each plugin bar shall have a switch «Activo» doing the same with `enabledPlugins`; with `lockedBy` the control shall be disabled with «Lo fija {file}»; an `atril` item shall have no control. One test holds every clause.
+- **K15** When the person opens a `personal` or `project` item's detail (K7), the panel shall show «Estado» with «Activa», «Solo el nombre», «Solo si la llamas tú» and «Apagada» (the current one picked); picking another shall call `atril:skills:set` and, when it answers, show the new state on the row and «Hecho. Las sesiones nuevas de Claude Code ya lo cargan así.», plus «También cambia {n} más con el mismo nombre.» when other personal or project items share the name and read the same file; each plugin group header shall have a switch «Activo» doing the same with `enabledPlugins`, shown whether the group is folded or not; with `lockedBy` the control shall be disabled with «Lo fija {file}»; an `atril` item shall have no control. One test holds every clause.
   Proof: src/renderer/skills/skills.test.tsx state and plugin switch write through set
 - **K18** While a write (K13) is pending, the repo selector shall be disabled, so the answer for one repo never lands under another (K11).
   Proof: src/renderer/skills/skills.test.tsx the repo cannot change while a write is pending
@@ -286,7 +347,7 @@ En Skills la persona ve qué skills y comandos usa de verdad y cuáles llevan 30
   Proof: src/renderer/skills/skills.test.tsx edit and save a skill from its detail
 - **K23** When the save answers `{ conflict: true, disk }`, the panel shall say «Este archivo ha cambiado fuera de Atril.» with «Cargar el de disco» (text and `base` become `disk`) and «Guardar el mío encima» (saves again with `force`); when it answers `{ brokenHeader: true }`, it shall ask «La cabecera no se entiende: Claude Code puede ignorar esta skill.» with «Guardar igual» (saves again with `allowBroken`, keeping any `force`) and «Seguir editando»; any rejection shall show the `Problem` «No he podido guardar la skill.» with the error in its detail and keep the text. One test holds every clause.
   Proof: src/renderer/skills/skills.test.tsx a save that conflicts or has a broken header asks first
-- **K24** While the editor holds text different from `base`, when the person presses Escape, «Cerrar», «Descartar», activates another card or changes repo, the screen shall ask «Tienes cambios sin guardar. ¿Descartarlos?» with «Descartar cambios» and «Seguir editando», and leave the editor only on «Descartar cambios»; with no changes it shall leave without asking; when the person leaves the Skills screen instead, the text shall be kept in memory per `path` and, on opening that item's «Editar» again in the same run, come back with «Tienes cambios sin guardar de antes.». One test holds every clause.
+- **K24** While the editor holds text different from `base`, when the person presses Escape, «Cerrar», «Descartar», activates another row or changes repo, the screen shall ask «Tienes cambios sin guardar. ¿Descartarlos?» with «Descartar cambios» and «Seguir editando», and leave the editor only on «Descartar cambios»; with no changes it shall leave without asking; when the person leaves the Skills screen instead, the text shall be kept in memory per `path` and, on opening that item's «Editar» again in the same run, come back with «Tienes cambios sin guardar de antes.». One test holds every clause.
   Proof: src/renderer/skills/skills.test.tsx leaving with unsaved changes asks first
 - **K25** When the person activates «Nueva skill» in Personal or Proyecto, a dialog shall ask «Nombre» (with the rule «Minúsculas, números y guiones.» shown) and «Crear»; «Crear» shall be disabled while the name does not match K21; on success the new skill's detail shall open in «Editar»; a rejection shall show its reason in the dialog. One test holds every clause.
   Proof: src/renderer/skills/skills.test.tsx new skill creates and opens it in the editor
@@ -305,12 +366,12 @@ En Skills la persona ve qué skills y comandos usa de verdad y cuáles llevan 30
   Proof: src/main/skills/plugins.test.ts doing it in terminal runs the same command visibly
 - **K32** When the person activates «Añadir plugin» in the Plugins group, a dialog shall load the catalog (K27) and list the not-installed plugins grouped by marketplace with name, description and «Instalar»; a search box «Buscar plugin» filters by name or description; «Instalar» offers «Para mí, en todos los repos» and «Solo para mí en {repo}» (only with a repo); while it runs every plugin button and the repo selector shall be disabled; on success the dialog closes, the list updates and «Instalado. Las sesiones nuevas de Claude Code ya lo cargan.» shows; the dialog also holds «Añadir marketplace» with a field «owner/repo o URL» and «Añadir», which reloads the catalog. One test holds every clause.
   Proof: src/renderer/skills/skills.test.tsx add plugin installs from the catalog
-- **K33** When the Skills screen shows, it shall load the catalog (K27) and give each plugin bar «Actualizar» and «Quitar» acting on its `user` install, or else on its `local` install whose `projectPath` is the picked repo's path; with neither, the bar shall show «Instalado en otro ámbito: se gestiona fuera de Atril.» and no buttons. «Actualizar» shall run K28's `update` with that scope; «Quitar» shall first ask «¿Quitar {plugin}? Sus skills dejan de cargarse.» with «Quitar» and «Cancelar», and only on «Quitar» run `uninstall`; success shows «Hecho.»; `atril` items have neither. One test holds every clause.
+- **K33** When the Skills screen shows, it shall load the catalog (K27) and give each plugin group header «Actualizar» and «Quitar» acting on its `user` install, or else on its `local` install whose `projectPath` is the picked repo's path; with neither, the header shall show «Instalado en otro ámbito: se gestiona fuera de Atril.» and no buttons. «Actualizar» shall run K28's `update` with that scope; «Quitar» shall first ask «¿Quitar {plugin}? Sus skills dejan de cargarse.» with «Quitar» and «Cancelar», and only on «Quitar» run `uninstall`; success shows «Hecho.»; `atril` items have neither. One test holds every clause.
   Proof: src/renderer/skills/skills.test.tsx update and remove a plugin from its bar
 - **K34** If a plugin action or marketplace add answers `{ error, code }`, then the screen shall show the `Problem` «No he podido completar la operación del plugin.» with `error` in its detail and «Hacerlo en Terminal» (K31, plugin actions only), except with `code` `missing`, where it shall show «No encuentro Claude Code en este Mac.» with the doctor's fix for `claude` and no Terminal button; if the catalog answers an error, the dialog shall show «No he podido leer los marketplaces.» with «Volver a intentar» (or the `missing` problem). One test holds every clause.
   Proof: src/renderer/skills/skills.test.tsx a failed plugin action offers terminal
 
-### Skills: uso (skills-usage, 25 nov 2026)
+### Skills: usage (skills-usage, 25 nov 2026)
 
 - **K35** When `atril:skills:usage` is called, main shall read every `*.jsonl` under `claudeDir()/projects/<dir>/` and `claudeDir()/projects/<dir>/<session>/subagents/` whose `mtime` is within the last 30 days, and answer `{ usage }` mapping each name to `{ last, days }` — `last` the newest ISO `timestamp` seen for it, `days` a 30-number array (index 0 today, local time) of uses per day — counting once per line an assistant line holding a `tool_use` named `Skill` (its `input.skill`) and once per line a user line whose content holds `<command-name>/x</command-name>` (as `x`); lines older than 30 days, unparsable lines and lines without `timestamp` shall count nothing; a file whose `mtime` is older than 30 days shall count nothing even when its lines carry recent timestamps (it is not opened). Day `k` is the number of local calendar days between today and the line's `timestamp`. One test holds every clause.
   Proof: src/main/skills/usage.test.ts "counts Skill tool uses and typed commands per day within 30 days"
@@ -318,7 +379,20 @@ En Skills la persona ve qué skills y comandos usa de verdad y cuáles llevan 30
   Proof: src/main/skills/usage.test.ts "reuses an unchanged file and rereads a changed one"
 - **K39** While one `atril:skills:usage` read runs, a second call shall get the same answer without starting another read; if `claudeDir()/projects` cannot be listed for a reason other than not existing, main shall answer `{ error }` and not reject, and with no `projects` folder it shall answer `{ usage: {} }`. One test holds every clause.
   Proof: src/main/skills/usage.test.ts "shares a running read and answers an error instead of rejecting"
-- **K37** When the Skills screen shows and the usage answers, each card not shadowed shall show «usada hoy», «usada hace 1 día», «usada hace {n} días» or (no entry for its name) «sin usar en 30 días», matching the card's name without the slash (K5), and a shadowed card shall say nothing about usage; a fourth tile «Sin usar en 30 días» shall count the items that are not `atril`, not `off`, not shadowed, not `enabled: false` and have no use, with «candidatas a apagar» (or «todas en uso» at 0), and activating it shall filter to those items as a pressed toggle that a second press, «Todas» or another filter undoes, showing «No tienes ninguna sin usar.» when none; the usage shall be asked once per visit to the screen, not again on a repo pick; while it has not answered, or it answered `{ error }`, cards shall say nothing about usage and the tile shall not show. One test holds every clause.
+- **K37** When the Skills screen shows and the usage answers, each row not shadowed shall show «usada hoy», «usada hace 1 día», «usada hace {n} días» or (no entry for its name) «sin usar en 30 días», matching the row's name without the slash (K5), and a shadowed row shall say nothing about usage; a fourth tile «Sin usar en 30 días» shall count the items that are not `atril`, not `off`, not shadowed, not `enabled: false` and have no use, with «candidatas a apagar» (or «todas en uso» at 0), and activating it shall filter to those items as a pressed toggle that a second press, «Todas» or another filter undoes, showing «No tienes ninguna sin usar.» when none; the usage shall be asked once per visit to the screen, not again on a repo pick; while it has not answered, or it answered `{ error }`, rows shall say nothing about usage and the tile shall not show. One test holds every clause.
   Proof: src/renderer/skills/skills.test.tsx "shows when each skill was last used and filters the unused ones"
 - **K38** When the detail (K7) opens and the usage has answered, it shall show «Uso · últimos 14 días» with 14 bars (oldest left, height proportional to that day's uses over the 14-day maximum, 2 px when 0, each with an accessible label «{día mes corto}: {n}», e.g. «25 nov: 3»), «{n} veces en 30 días» («1 vez en 30 días» for one, «Sin usar en 30 días.» for none) and «Según las sesiones de Claude Code en este Mac.»; without usage it shall show none of these. One test holds every clause.
   Proof: src/renderer/skills/skills.test.tsx "the detail shows the last 14 days of use"
+
+### Skills: dense list (skills-dense, 26 nov 2026)
+
+- **K40** The Skills screen shall show «Personal» and «Proyecto» unfolded and every plugin group and «Atril» folded when it opens; activating a group's header button shall fold or unfold it (`aria-expanded`), and that fold shall hold across repo picks for the visit; each header button shall count the rows its group shows now. While the list is narrowed — the search holds non-blank text or the filter is not «Todas»; the sort never narrows — every group with matching rows shall show unfolded, every group without one shall not show, the header buttons shall be disabled, and «Nueva skill» and the project's empty note shall not show; the «Plugins» line shall always show. When the search and filter are cleared each group shall return to the fold it had. One test holds every clause.
+  Proof: src/renderer/skills/skills.test.tsx "groups fold, plugins start folded, a search opens what matches"
+- **K41** The Skills screen shall offer «Orden» with «Recientes» (pressed when the screen opens) and «Nombre»; with «Recientes» and the usage answered, rows inside each group shall go by their `last` use, newest first, then the rows with no use (shadowed rows count as no use) by displayed name, equal `last` by displayed name; with «Nombre», or before the usage answers, or when it answered `{ error }`, by displayed name, case-insensitive. One test holds every clause.
+  Proof: src/renderer/skills/skills.test.tsx "rows go by most recent use, or by name"
+- **K42** When the person activates the «Activas», «Apagadas» or «Choques» tile, the screen shall show only those items (K5's definitions) with that tile pressed, and activating it again or «Todas» shall show every item; the «Activas» and «Apagadas» tiles and buttons shall be pressed together, and under «Choques» or «Sin usar en 30 días» no segmented button shall be pressed; with «Choques» and none it shall say «No tienes ningún choque.». One test holds every clause.
+  Proof: src/renderer/skills/skills.test.tsx "the tiles filter and a second press clears"
+- **K43** When focus is on a row, ↓ and ↑ shall move it to the next and previous visible row across groups, staying put at either end, and Enter shall open its detail (K7); ↓ in the search box shall move focus to the first visible row; when the person presses «/» while focus is not in a text field (an input or a textarea, the editor's included), a select or an open dialog, the search box shall take focus and no «/» shall be typed; inside a text field «/» shall type as usual. One test holds every clause.
+  Proof: src/renderer/skills/skills.test.tsx "arrows move between rows and slash goes to search"
+- **K44** Each row shall be one line 36 px high: the `.skr` rule in `styles.css` sets `height: 36px` and no other `.skr` rule sets a height, and the description does not wrap (`white-space: nowrap` with `text-overflow: ellipsis`).
+  Proof: src/renderer/skills/skills.test.tsx "a row is one 36 px line"

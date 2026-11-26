@@ -8,7 +8,7 @@ const CLI_MS = 120_000
 const ACTIONS: readonly string[] = ['install', 'uninstall', 'update']
 // First character alphanumeric: nothing shaped like a flag (`-y@x`) reaches the CLI.
 const PLUGIN = /^[A-Za-z0-9][A-Za-z0-9._-]*@[A-Za-z0-9][A-Za-z0-9._-]*$/
-const invalid = (): PluginFailure => ({ error: t('Petición no válida.'), code: 'invalid' })
+const invalid = (): PluginFailure => ({ error: t('Invalid request.'), code: 'invalid' })
 const str = (v: unknown): string | undefined => (typeof v === 'string' && v ? v : undefined)
 const obj = (v: unknown): Record<string, unknown> => (typeof v === 'object' && v !== null && !Array.isArray(v) ? (v as Record<string, unknown>) : {})
 
@@ -24,8 +24,8 @@ function lastJson(stdout: string): Record<string, unknown> | undefined {
 
 /** K30: the failure a result stands for, or the parsed JSON when the CLI succeeded. */
 function outcome(r: RunResult, needOk = true): PluginFailure | { json: Record<string, unknown> } {
-  if (r.code === 127) return { error: t('No encuentro Claude Code en este Mac.'), code: 'missing' }
-  if (r.code === 124) return { error: t('Claude Code no ha contestado a tiempo.'), code: 'timeout' }
+  if (r.code === 127) return { error: t('I cannot find Claude Code on this Mac.'), code: 'missing' }
+  if (r.code === 124) return { error: t('Claude Code did not answer in time.'), code: 'timeout' }
   const json = lastJson(r.stdout)
   const message = str(json?.['message'])
   if (r.code !== 0 || !json || json['outcome'] === 'failed' || (needOk && json['outcome'] !== 'ok')) return { error: message ?? r.stderr.trim().slice(-300), code: 'failed' }
@@ -70,12 +70,12 @@ export function createPlugins({ run, repos, libretto }: { run: Runner; repos: ()
 
   /** `hold` false: a read waits for no one but does not stop others, so two catalog reads can overlap. */
   async function exclusive<T>(work: () => Promise<T>, hold = true): Promise<T | PluginFailure> {
-    if (busy) return { error: t('Ya hay una operación de plugins en marcha.'), code: 'busy' }
+    if (busy) return { error: t('A plugin operation is already running.'), code: 'busy' }
     if (hold) busy = true
     try {
       return await work()
     } catch {
-      return { error: t('Claude Code ha fallado.'), code: 'failed' }
+      return { error: t('Claude Code failed.'), code: 'failed' }
     } finally {
       if (hold) busy = false
     }

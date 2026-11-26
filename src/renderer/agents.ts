@@ -59,7 +59,7 @@ export function overviewOrder(
   latest: Record<string, ActivityLine>,
   next: NextItem[]
 ): WorkspaceView[] {
-  const RANK: Record<AgentState, number> = { 'needs-you': 0, working: 1, paused: 2, stopped: 2 }
+  const RANK: Record<AgentState, number> = { 'needs-you': 0, working: 1, done: 1, paused: 2, stopped: 2 }
   const waited = (id: string): number => {
     const i = next.findIndex((n) => n.kind === 'agent' && n.id === id)
     return i < 0 ? Infinity : i

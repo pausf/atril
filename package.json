@@ -2,6 +2,7 @@
   "name": "atril",
   "version": "0.1.0",
   "private": true,
+  "license": "MIT",
   "description": "Atril: Jira, agents and the Libretto flow in one window",
   "main": "./out/main/index.js",
   "scripts": {

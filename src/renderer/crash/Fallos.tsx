@@ -17,15 +17,15 @@ function ConsentDialog({ onYes, onNo }: { onYes: () => void; onNo: () => void })
   }, [onNo])
   return (
     <div className="skw-back">
-      <div className="skw" role="dialog" aria-modal="true" aria-label={t('¿Enviar los fallos a GitHub?')}>
-        <h2>{t('¿Enviar los fallos a GitHub?')}</h2>
-        <p>{t('Se envía: el error, su traza, la versión de Atril y de macOS. Se quitan tus rutas, tokens, correos, direcciones de servidores, claves de Jira y lo que va entre comillas; la limpieza es automática y puede dejarse algo. Va con tu cuenta de GitHub como un issue en pausf/atril, que es público: cualquiera puede leerlo; el proyecto lo convierte en PR.')}</p>
+      <div className="skw" role="dialog" aria-modal="true" aria-label={t('Send failures to GitHub?')}>
+        <h2>{t('Send failures to GitHub?')}</h2>
+        <p>{t('What is sent: the error, its stack trace, the Atril and macOS versions. Your paths, tokens, e-mails, server addresses, Jira keys and anything in quotes are removed; the cleaning is automatic and may miss something. It goes with your GitHub account as an issue on pausf/atril, which is public: anyone can read it; the project turns it into a PR.')}</p>
         <div className="skw-act">
           <button type="button" className="btn" onClick={onNo}>
-            {t('Cancelar')}
+            {t('Cancel')}
           </button>
           <button ref={yes} type="button" className="btn primary" onClick={onYes}>
-            {t('Activar')}
+            {t('Turn on')}
           </button>
         </div>
       </div>
@@ -64,21 +64,21 @@ export function Fallos() {
 
   return (
     <section className="scard" aria-labelledby="fallos-h">
-      <h3 id="fallos-h">{t('Fallos')}</h3>
-      <p className="hint2">{t('Si Atril falla de una forma que no esperaba, puede abrir un PR en el proyecto con el error, sin tus datos.')}</p>
+      <h3 id="fallos-h">{t('Failures')}</h3>
+      <p className="hint2">{t('If Atril fails in a way it did not expect, it can open a PR on the project with the error, without your data.')}</p>
       <div className="arow">
-        <span id="fallos-sw">{t('Enviar los fallos a GitHub como PR')}</span>
+        <span id="fallos-sw">{t('Send failures to GitHub as a PR')}</span>
         <button type="button" role="switch" className="sw" aria-checked={on} aria-labelledby="fallos-sw" onClick={() => (on ? save(false) : setAsking(true))} />
       </div>
-      {github === false && <p className="hint2">{t('Conecta GitHub en Conexiones para enviarlos.')}</p>}
+      {github === false && <p className="hint2">{t('Connect GitHub in Connections to send them.')}</p>}
       {last && 'url' in last && (
         <p className="hint2">
           <button type="button" className="linklike" onClick={() => void window.atril.crash.openLast()}>
-            {t('Último fallo enviado: {hace}', { hace: ago(t, last.at / 1000, Date.now()) })}
+            {t('Last failure sent: {hace}', { hace: ago(t, last.at / 1000, Date.now()) })}
           </button>
         </p>
       )}
-      {last && 'error' in last && <Problem what={t('No he podido enviar el último fallo: {error}.', { error: last.error })} detail="" />}
+      {last && 'error' in last && <Problem what={t('I could not send the last failure: {error}.', { error: last.error })} detail="" />}
       {asking && <ConsentDialog onYes={() => save(true)} onNo={() => setAsking(false)} />}
     </section>
   )

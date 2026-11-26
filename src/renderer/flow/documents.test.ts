@@ -76,6 +76,13 @@ describe('flow documents', () => {
     expect(editor().value).toContain(' mío')
   })
 
+  it("a done agent's document is editable", async () => {
+    const { user } = await boot({ state: 'done' })
+    await user.click(await screen.findByRole('button', { name: /^Plan/ }))
+    await vi.waitFor(() => expect(editor().readOnly).toBe(false))
+    expect(screen.getByText('✎ editable · Claude ha terminado')).toBeTruthy()
+  })
+
   it('edit only while the agent waits', async () => {
     const working = await boot({ state: 'working' })
     await working.user.click(await screen.findByRole('button', { name: /^Plan/ }))

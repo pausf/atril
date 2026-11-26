@@ -44,13 +44,13 @@ export function SubagentModal({ workspaceId, entry, state, onClose }: Props) {
           </span>
           <span className="sp" />
           <button type="button" className="btn" onClick={onClose}>
-            {t('Cerrar')}
+            {t('Close')}
           </button>
         </div>
-        <div className="term sublog" role="log" aria-label={t('Registro de {name}', { name: title })} tabIndex={0}>
-          {lines?.length === 0 && <div className="s">{t('Sin registro de este subagente')}</div>}
+        <div className="term sublog" role="log" aria-label={t('Log of {name}', { name: title })} tabIndex={0}>
+          {lines?.length === 0 && <div className="s">{t('No log for this subagent')}</div>}
           {lines?.flatMap((l, i) => {
-            const [first = '', ...rest] = l.kind === 'thinking' ? [t('Pensando…')] : l.text.split('\n')
+            const [first = '', ...rest] = l.kind === 'thinking' ? [t('Thinking…')] : l.text.split('\n')
             return [
               <div key={i} className={`sl ${l.kind}`}>
                 <span className="slp">{PREFIX[l.kind]}</span>
@@ -61,7 +61,7 @@ export function SubagentModal({ workspaceId, entry, state, onClose }: Props) {
                   {r}
                 </div>
               )),
-              ...(l.more ? [<div key={`${i}+`} className="sl cont s">{t('… +{n} líneas', { n: l.more })}</div>] : [])
+              ...(l.more ? [<div key={`${i}+`} className="sl cont s">{t('… +{n} lines', { n: l.more })}</div>] : [])
             ]
           })}
         </div>

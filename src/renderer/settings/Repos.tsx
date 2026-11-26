@@ -35,7 +35,7 @@ export function Repos() {
     window.atril.repos
       .list()
       .then(show)
-      .catch((e: unknown) => setError(t('no se pudieron leer los repos: {detail}', { detail: String(e) })))
+      .catch((e: unknown) => setError(t('could not read the repos: {detail}', { detail: String(e) })))
   }, [])
 
   const settle = async (r: AddRepoResult, path: string): Promise<void> => {
@@ -47,12 +47,12 @@ export function Repos() {
       setPending(null)
       setProblem(r)
     } else if (r.error === 'id-taken') {
-      setPending({ path, id: r.suggested, note: t('Ya hay otro repo con ese nombre. Elige otro id.') })
+      setPending({ path, id: r.suggested, note: t('There is already a repo with that name. Pick another id.') })
     } else if (r.error === 'invalid-id') {
-      setError(t('No se pudo derivar un id válido: usa solo a-z, 0-9 y guiones.'))
+      setError(t('Could not derive a valid id: use only a-z, 0-9 and hyphens.'))
     } else {
       setPending(null)
-      setError(t('Esa carpeta no es un repositorio git.'))
+      setError(t('That folder is not a git repository.'))
     }
   }
 
@@ -87,17 +87,17 @@ export function Repos() {
   return (
     <section className="scard" aria-labelledby="repos-h" data-tour="repos">
       <h3 id="repos-h">{t('Repos')}</h3>
-      <p className="hint2">{t('Atril decide si cada trabajo va en un worktree o en la rama de tu copia. Puedes forzarlo.')}</p>
+      <p className="hint2">{t('Atril decides whether each workspace goes in a worktree or on the branch of your copy. You can force it.')}</p>
       {problem && (
         <Problem
           what={problem.error}
-          cant={t('Atril no toca el archivo: arréglalo o quítalo y vuelve aquí.')}
+          cant={t('Atril leaves the file alone: fix it or move it away and come back here.')}
           fix={fixLabel(t, problem.fix)}
           onFix={() => void window.atril.revealState(problem.file)}
           detail={problem.detail}
         />
       )}
-      {!problem && repos.length === 0 && <p className="hint2">{t('Aún no hay ninguno: añade la carpeta de un repo git.')}</p>}
+      {!problem && repos.length === 0 && <p className="hint2">{t('None yet: add the folder of a git repo.')}</p>}
       <ul className="repo-rows">
         {!problem && repos.map((repo) => (
           <li key={repo.id}>
@@ -110,23 +110,23 @@ export function Repos() {
             </div>
             {repo.health === 'missing' || repo.health === 'not-git' ? (
               <>
-                <span className="bad">{repo.health === 'missing' ? t('Carpeta no encontrada') : t('No es un repo de git')}</span>
+                <span className="bad">{repo.health === 'missing' ? t('Folder not found') : t('Not a git repo')}</span>
                 <button type="button" className="pill" onClick={() => void window.atril.repos.relocate(repo.id).then((r) => settleRow(repo.id, r))}>
-                  {t('Buscar la carpeta…')}
+                  {t('Find the folder…')}
                 </button>
               </>
             ) : (
-              <select aria-label={t('Modo de {id}', { id: repo.id })} title={repo.reason} value={repo.override ?? 'auto'} onChange={(e) => void choose(repo, e.target.value as Choice)}>
+              <select aria-label={t('Mode of {id}', { id: repo.id })} title={repo.reason} value={repo.override ?? 'auto'} onChange={(e) => void choose(repo, e.target.value as Choice)}>
                 <option value="auto">{t('Auto · {mode}', { mode: repo.mode })}</option>
                 <option value="worktree">Worktree</option>
                 <option value="in-place">In-place</option>
               </select>
             )}
             <button type="button" className="pill" onClick={() => void window.atril.repos.remove(repo.id).then((r) => settleRow(repo.id, r))}>
-              {t('Quitar el repo')}
+              {t('Remove the repo')}
             </button>
             {refusal?.id === repo.id && (
-              <Problem what={refusal.error} cant={t('{id} sigue como estaba.', { id: repo.id })} detail="" onClose={() => setRefusal(null)} />
+              <Problem what={refusal.error} cant={t('{id} stays as it was.', { id: repo.id })} detail="" onClose={() => setRefusal(null)} />
             )}
           </li>
         ))}
@@ -148,20 +148,20 @@ export function Repos() {
               onChange={(e) => setPending({ ...pending, id: e.target.value })}
             />
             <button type="submit" className="pill" disabled={!idValid}>
-              {t('Usar este id')}
+              {t('Use this id')}
             </button>
           </div>
-          {!idValid && <div className="bad">{t('Solo minúsculas, números y guiones.')}</div>}
+          {!idValid && <div className="bad">{t('Only lowercase letters, numbers and hyphens.')}</div>}
         </form>
       )}
       {error && <div className="bad">{error}</div>}
       {!problem && (
         <>
           <button type="button" className="pill add" onClick={() => void add()}>
-            {t('＋ Añadir repo…')}
+            {t('＋ Add repo…')}
           </button>{' '}
           <button type="button" className="pill add" onClick={() => setCreating(true)}>
-            {t('＋ Crear repo…')}
+            {t('＋ Create repo…')}
           </button>
         </>
       )}

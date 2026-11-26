@@ -35,7 +35,7 @@ export function useInbox(): InboxState {
     } catch (err) {
       // The bridge itself failed, not Jira: its message stays out, its name goes to the detail.
       const t = tr.current
-      setResult({ error: 'failed', message: t('No llego a {service}: ¿hay conexión?', { service: 'Jira' }), detail: err instanceof Error ? err.name : 'Error', fix: 'retry' })
+      setResult({ error: 'failed', message: t("I can't reach {service}: are you online?", { service: 'Jira' }), detail: err instanceof Error ? err.name : 'Error', fix: 'retry' })
     } finally {
       inFlight.current = false
       setLoading(false)
@@ -70,15 +70,15 @@ export function Inbox({ inbox, onStart, startError, onOpenWorkspace, onNewTask }
   return (
     <section className="tasks-screen" data-tour="tasks">
       <h1>
-        {t('Tareas')} <span className="n">{issues.length}</span>
+        {t('Tasks')} <span className="n">{issues.length}</span>
         <button className="refresh" onClick={() => void refresh()} disabled={loading}>
-          {loading ? t('Actualizando…') : t('Actualizar')}
+          {loading ? t('Updating…') : t('Refresh')}
         </button>
         <button className="refresh" onClick={onNewTask} data-tour="new-task">
-          {t('Nueva tarea')}
+          {t('New task')}
         </button>
       </h1>
-      <p className="lead">{t('Tus tareas abiertas de Jira en todos los proyectos.')}</p>
+      <p className="lead">{t('Your open Jira tasks across all projects.')}</p>
       {startError && (
         <p className="notice" role="alert">
           {startError}
@@ -98,12 +98,12 @@ export function JiraSummary({ inbox, onOpen }: { inbox: InboxState; onOpen: () =
   const inColumns = (first: boolean): number =>
     groups.filter((g) => g.id.startsWith('col-') && (g.id === 'col-0') === first).reduce((n, g) => n + g.keys.length, 0)
   const label = !inbox.result
-    ? t('Jira: cargando…')
+    ? t('Jira: loading…')
     : 'error' in inbox.result
-      ? t('Jira: sin conectar')
+      ? t('Jira: not connected')
       : board
-        ? t('Jira: {doing} en curso · {todo} por empezar', { doing: inColumns(false), todo: inColumns(true) })
-        : t('Jira: {doing} en curso · {todo} por empezar', { doing: count('doing'), todo: count('todo') })
+        ? t('Jira: {doing} in progress · {todo} to start', { doing: inColumns(false), todo: inColumns(true) })
+        : t('Jira: {doing} in progress · {todo} to start', { doing: count('doing'), todo: count('todo') })
   return (
     <button className="jira-summary" onClick={onOpen}>
       <Icon name="ticket" size={18} />
@@ -120,13 +120,13 @@ interface TaskActions {
 function Body({ result, issues, onStart, onOpenWorkspace, onRetry }: { result: InboxResult | null; issues: JiraIssue[]; onRetry: () => void } & TaskActions) {
   const { openSettings } = useContext(NavigationContext)
   const t = useT()
-  if (!result) return <div className="empty">{t('Cargando tus Jira…')}</div>
+  if (!result) return <div className="empty">{t('Loading your Jira tasks…')}</div>
   if ('error' in result) {
     if (result.error === 'failed')
       return (
         <Problem
           what={result.message}
-          cant={t('No puedo enseñarte tus tareas.')}
+          cant={t("I can't show you your tasks.")}
           fix={fixLabel(t, result.fix)}
           onFix={result.fix === 'settings' ? openSettings : onRetry}
           detail={result.detail}
@@ -138,7 +138,7 @@ function Body({ result, issues, onStart, onOpenWorkspace, onRetry }: { result: I
       </div>
     )
   }
-  if (issues.length === 0) return <div className="empty">{t('No tienes tareas abiertas.')}</div>
+  if (issues.length === 0) return <div className="empty">{t('You have no open tasks.')}</div>
   const byKey = new Map(issues.map((i) => [i.key, i]))
   return (
     <>
@@ -147,7 +147,7 @@ function Body({ result, issues, onStart, onOpenWorkspace, onRetry }: { result: I
           {result.notice.text}
           {result.notice.detail && (
             <details>
-              <summary>{t('Ver detalle')}</summary>
+              <summary>{t('Show detail')}</summary>
               <code>{result.notice.detail}</code>
             </details>
           )}
@@ -155,7 +155,7 @@ function Body({ result, issues, onStart, onOpenWorkspace, onRetry }: { result: I
             <>
               {' '}
               <button className="linklike" onClick={openSettings}>
-                {t('Ajustes')}
+                {t('Settings')}
               </button>
             </>
           )}
@@ -181,12 +181,12 @@ function Task({ i, onStart, onOpenWorkspace }: { i: JiraIssue } & TaskActions) {
       </span>
       <span className="tag">{i.status}</span>
       {i.workspaceId ? (
-        <button className="go" aria-label={t('Abrir trabajo de {key}', { key: i.key })} onClick={() => onOpenWorkspace(i.workspaceId!)}>
-          {t('Abrir trabajo ▸')}
+        <button className="go" aria-label={t('Open work for {key}', { key: i.key })} onClick={() => onOpenWorkspace(i.workspaceId!)}>
+          {t('Open work ▸')}
         </button>
       ) : (
-        <button className="go" aria-label={t('Empezar {key}', { key: i.key })} onClick={(e) => onStart(i, e.altKey)}>
-          {t('Empezar ▸')}
+        <button className="go" aria-label={t('Start {key}', { key: i.key })} onClick={(e) => onStart(i, e.altKey)}>
+          {t('Start ▸')}
         </button>
       )}
     </article>

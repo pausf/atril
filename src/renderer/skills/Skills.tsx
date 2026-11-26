@@ -1,21 +1,39 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
 import type { PluginCatalog, PluginCatalogResult, PluginFailure, PluginRequest, SkillItem, SkillRef, SkillSet, SkillsList, SkillState, SkillUse } from '../../preload/api'
 import { Problem } from '../components/Problem'
 import { useT } from '../ui'
 import { PluginAddDialog } from './PluginAddDialog'
 import { PluginProblem } from './PluginProblem'
 import { PluginRemoveDialog } from './PluginRemoveDialog'
-import { fullName, SkillCard } from './SkillCard'
+import { fullName, SkillRow } from './SkillRow'
 import { dropDraft, SkillDetail } from './SkillDetail'
 import { SkillLeaveDialog } from './SkillLeaveDialog'
 import { SkillNewDialog } from './SkillNewDialog'
 import { SkillWriteDialog } from './SkillWriteDialog'
 
-type Filter = 'all' | 'on' | 'off' | 'idle'
+type Filter = 'all' | 'on' | 'off' | 'idle' | 'clash'
 
 /** K5: what counts as loaded and what as off; `user-invocable-only` is neither. */
 export const isActive = (i: SkillItem): boolean => (i.state === 'on' || i.state === 'name-only') && !i.shadowedBy && i.enabled !== false
 export const isOff = (i: SkillItem): boolean => i.state === 'off' || i.enabled === false
+
+const byName = (a: SkillItem, b: SkillItem): number => fullName(a).localeCompare(fullName(b), undefined, { sensitivity: 'base' })
+
+/** K40: a group's header folds it; while the list is narrowed it is forced open and the header is disabled. */
+function SkillGroup({ label, title, count, open, narrowed, onFold, controls, children }: { label: string; title?: string; count: number; open: boolean; narrowed: boolean; onFold: () => void; controls?: ReactNode; children: ReactNode }) {
+  return (
+    <section className="skg" role="group" aria-label={label}>
+      <div className="skgh">
+        <button type="button" className="skg-fold" aria-expanded={open} disabled={narrowed} onClick={onFold}>
+          {title ?? label}
+          <span className="n">{count}</span>
+        </button>
+        {controls}
+      </div>
+      {open && children}
+    </section>
+  )
+}
 
 const matches = (i: SkillItem, q: string): boolean => {
   const needle = q.trim().toLowerCase()
@@ -32,6 +50,10 @@ export function Skills() {
   const [error, setError] = useState<string | null>(null)
   const [q, setQ] = useState('')
   const [filter, setFilter] = useState<Filter>('all')
+  const [sort, setSort] = useState<'recent' | 'name'>('recent')
+  // K40: per visit; plugins and Atril start folded. Not reset on a repo pick.
+  const [folded, setFolded] = useState<Record<string, boolean>>({})
+  const list = useRef<HTMLDivElement>(null)
   const [open, setOpen] = useState<SkillItem | null>(null)
   // K37: null until it answers, and when it fails: then nothing is said about use.
   const [usage, setUsage] = useState<Record<string, SkillUse> | null>(null)
@@ -84,6 +106,19 @@ export function Skills() {
     }
   }, [])
 
+  // K43: «/» goes to search unless a field, a select or a dialog has the keys.
+  useEffect(() => {
+    const onKey = (e: globalThis.KeyboardEvent): void => {
+      if (e.key !== '/' || e.metaKey || e.ctrlKey || e.altKey) return
+      const el = e.target instanceof Element ? e.target : null
+      if (el?.closest('input, textarea, select, [contenteditable="true"], [role="dialog"]') || document.querySelector('[role="dialog"][aria-modal="true"]')) return
+      e.preventDefault()
+      search.current?.focus()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
+
   const loadCatalog = useCallback(() => {
     if (repos === undefined) return
     const forRepo = repo
@@ -128,8 +163,8 @@ export function Skills() {
       const now = open && d.items.find((i) => same(i, open))
       if (now) setOpen(now)
       const sharing = now ? d.items.filter((i) => i.name === now.name && !same(i, now) && i.writesTo === now.writesTo && (i.origin === 'personal' || i.origin === 'project')).length : 0
-      const done = t('Hecho. Las sesiones nuevas de Claude Code ya lo cargan así.')
-      setNote(sharing > 0 ? `${done} ${t('También cambia {n} más con el mismo nombre.', { n: sharing })}` : done)
+      const done = t('Done. New Claude Code sessions already load it this way.')
+      setNote(sharing > 0 ? `${done} ${t('{n} more with the same name also change.', { n: sharing })}` : done)
     } catch (e) {
       setFail({ error: e instanceof Error ? e.message : String(e), ref })
     } finally {
@@ -163,7 +198,7 @@ export function Skills() {
     if (!r) return
     setData(r.list)
     setAdding(false)
-    setPluginNote(action === 'install' ? t('Instalado. Las sesiones nuevas de Claude Code ya lo cargan.') : t('Hecho.'))
+    setPluginNote(action === 'install' ? t('Installed. New Claude Code sessions already load it.') : t('Done.'))
     loadCatalog()
   }
   const inTerminal = async (req: PluginRequest): Promise<void> => {
@@ -227,24 +262,26 @@ export function Skills() {
   const useOf = (i: SkillItem): SkillUse | null | undefined => (usage ? (usage[fullName(i).slice(1)] ?? null) : undefined)
   // K37: what Claude could use and nobody used; «Solo si la llamas tú» counts.
   const isIdle = (i: SkillItem): boolean => i.origin !== 'atril' && !isOff(i) && !i.shadowedBy && useOf(i) === null
-  const pass: Record<Filter, (i: SkillItem) => boolean> = { all: () => true, on: isActive, off: isOff, idle: isIdle }
-  const shown = items.filter((i) => matches(i, q) && pass[filter](i))
+  const pass: Record<Filter, (i: SkillItem) => boolean> = { all: () => true, on: isActive, off: isOff, idle: isIdle, clash: (i) => i.shadowedBy !== undefined }
+  // K41: newest use first, then unused (shadowed counts as unused) by name; by name until the usage answers.
+  const lastOf = (i: SkillItem): string => (i.shadowedBy ? '' : (useOf(i)?.last ?? ''))
+  const order = (a: SkillItem, b: SkillItem): number => (sort === 'recent' && usage ? lastOf(b).localeCompare(lastOf(a)) : 0) || byName(a, b)
+  const shown = items.filter((i) => matches(i, q) && pass[filter](i)).sort(order)
   const idle = items.filter(isIdle).length
   const active = items.filter(isActive)
   const tokens = Math.round(active.reduce((n, i) => n + i.name.length + (i.description ?? '').length + (i.whenToUse ?? '').length, 0) / 3.2)
   const repoName = repo ?? ''
   const narrowed = q.trim() !== '' || filter !== 'all'
 
-  const cardsOf = (list: SkillItem[], group: string) => (
-    <ul className="skcards">
-      {list.map((i, n) => {
+  const rowsOf = (rows: SkillItem[], group: string) => (
+    <ul className="skrows">
+      {rows.map((i, n) => {
         const key = `${group}-${n}-${i.kind}-${i.name}`
         return (
-          <SkillCard
+          <SkillRow
             key={key}
             id={`sk-${key}`}
             item={i}
-            repo={repoName}
             use={useOf(i)}
             onOpen={(el) => {
               opener.current = el
@@ -260,9 +297,35 @@ export function Skills() {
       })}
     </ul>
   )
+  /** K40: forced open while narrowed (when it has rows), else its own fold; plugins and Atril start folded. */
+  const fold = (key: string, rows: SkillItem[], extra: { label: string; title?: string; controls?: ReactNode; footer?: ReactNode; empty?: ReactNode }) => {
+    if (narrowed && rows.length === 0) return null
+    const isOpen = narrowed || !(folded[key] ?? (key.startsWith('plugin:') || key === 'atril'))
+    return (
+      <SkillGroup key={key} label={extra.label} title={extra.title} count={rows.length} open={isOpen} narrowed={narrowed} controls={extra.controls} onFold={() => setFolded((f) => ({ ...f, [key]: isOpen }))}>
+        {rows.length === 0 && !narrowed ? extra.empty : rowsOf(rows, key)}
+        {!narrowed && extra.footer}
+      </SkillGroup>
+    )
+  }
+  /** K43: ↑/↓ walk the visible rows in order; from the search box ↓ enters the list. */
+  const onArrows = (e: KeyboardEvent<HTMLElement>): void => {
+    if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return
+    const rows = [...(list.current?.querySelectorAll<HTMLButtonElement>('button.skr') ?? [])]
+    const at = rows.indexOf(e.target as HTMLButtonElement)
+    if (e.target === search.current) {
+      if (e.key !== 'ArrowDown' || rows.length === 0) return
+      e.preventDefault()
+      rows[0]!.focus()
+      return
+    }
+    if (at < 0) return
+    e.preventDefault()
+    rows[Math.max(0, Math.min(rows.length - 1, at + (e.key === 'ArrowDown' ? 1 : -1)))]!.focus()
+  }
   const newButton = (origin: 'personal' | 'project') => (
     <button type="button" className="btn" onClick={() => guard(() => { setOpen(null); setCreating(origin) })}>
-      {t('Nueva skill')}
+      {t('New skill')}
     </button>
   )
   const of = (origin: SkillItem['origin']): SkillItem[] => shown.filter((i) => i.origin === origin)
@@ -275,20 +338,20 @@ export function Skills() {
         {t('Skills')}
         <span className="n">{items.length}</span>
       </h1>
-      <p className="lead">{t('Las skills y los comandos / que tu Claude Code tiene a mano en cada trabajo. Los lee de sus carpetas, sin gastar cuota.')}</p>
+      <p className="lead">{t('The skills and / commands your Claude Code has at hand in every workspace. Read from their folders, without spending quota.')}</p>
       {data?.warnings.map((w) => (
         <p key={w} className="notice" role="note">
           {w}
         </p>
       ))}
-      {repos?.length === 0 && <p className="notice">{t('Añade un repo en Ajustes → Repos para ver sus skills.')}</p>}
-      {error !== null && <Problem what={t('No he podido leer tus skills.')} cant={t('No puedo enseñarte qué tiene a mano tu Claude Code.')} fix={t('Volver a intentar')} onFix={load} detail={error} />}
+      {repos?.length === 0 && <p className="notice">{t('Add a repo in Settings → Repos to see its skills.')}</p>}
+      {error !== null && <Problem what={t('I could not read your skills.')} cant={t('I cannot show you what your Claude Code has at hand.')} fix={t('Try again')} onFix={load} detail={error} />}
 
       {fail && (
         <Problem
-          what={t('No he podido cambiar tus ajustes de Claude Code.')}
-          cant={t('El cambio no se ha guardado: sigue como estaba.')}
-          fix={t('Ver en Finder')}
+          what={t('I could not change your Claude Code settings.')}
+          cant={t('The change was not saved: it stays as it was.')}
+          fix={t('Show in Finder@@view')}
           onFix={() => void window.atril.skills.reveal(fail.ref)}
           onClose={() => setFail(null)}
           detail={fail.error}
@@ -296,13 +359,13 @@ export function Skills() {
       )}
 
       <div className="sk-bar">
-        <input ref={search} type="search" placeholder={t('Buscar por nombre o descripción…')} aria-label={t('Buscar por nombre o descripción…')} value={q} onChange={(e) => setQ(e.target.value)} />
-        <div className="seg" role="group" aria-label={t('Filtro')}>
+        <input ref={search} type="search" placeholder={t('Search by name or description…')} aria-label={t('Search by name or description…')} value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={onArrows} />
+        <div className="seg" role="group" aria-label={t('Filter')}>
           {(
             [
-              ['all', t('Todas')],
-              ['on', t('Activas')],
-              ['off', t('Apagadas')]
+              ['all', t('All@@fem')],
+              ['on', t('On@@femPl')],
+              ['off', t('Off@@pl')]
             ] as const
           ).map(([f, label]) => (
             <button key={f} type="button" aria-pressed={filter === f} onClick={() => setFilter(f)}>
@@ -310,8 +373,20 @@ export function Skills() {
             </button>
           ))}
         </div>
+        <div className="seg" role="group" aria-label={t('Order')}>
+          {(
+            [
+              ['recent', t('Recent')],
+              ['name', t('Name')]
+            ] as const
+          ).map(([o, label]) => (
+            <button key={o} type="button" aria-pressed={sort === o} onClick={() => setSort(o)}>
+              {label}
+            </button>
+          ))}
+        </div>
         {repos && repos.length > 0 && (
-          <select aria-label={t('Repo del proyecto')} value={repoName} disabled={busy || saving || pluginBusy} onChange={(e) => {
+          <select aria-label={t('Project repo')} value={repoName} disabled={busy || saving || pluginBusy} onChange={(e) => {
               const v = e.target.value
               guard(() => {
                 setOpen(null)
@@ -325,34 +400,28 @@ export function Skills() {
         )}
       </div>
 
-      <div className="sksum">
-        <div className="skct" role="group" aria-label={t('Activas')}>
-          <b>{active.length}</b>
-          <span>{t('Activas')}</span>
-          <small>{t('~{n} tokens de contexto', { n: tokens })}</small>
-        </div>
-        <div className="skct" role="group" aria-label={t('Apagadas')}>
-          <b>{items.filter(isOff).length}</b>
-          <span>{t('Apagadas')}</span>
-        </div>
-        <div className="skct" role="group" aria-label={t('Choques')}>
-          <b>{items.filter((i) => i.shadowedBy).length}</b>
-          <span>{t('Choques')}</span>
-        </div>
-        {usage && (
-          <button type="button" className="skct" aria-label={t('Sin usar en 30 días')} aria-pressed={filter === 'idle'} onClick={() => setFilter((f) => (f === 'idle' ? 'all' : 'idle'))}>
-            <b>{idle}</b>
-            <span>{t('Sin usar en 30 días')}</span>
-            <small>{idle === 0 ? t('todas en uso') : t('candidatas a apagar')}</small>
+      <div className="sksum" role="group" aria-label={t('Summary')}>
+        {(
+          [
+            ['on', t('On@@femPl'), active.length, <small key="s">{t('~{n} context tokens', { n: tokens })}</small>],
+            ['off', t('Off@@pl'), items.filter(isOff).length, null],
+            ['clash', t('Clashes'), items.filter((i) => i.shadowedBy).length, null],
+            ...(usage ? ([['idle', t('Unused in 30 days'), idle, <small key="s">{idle === 0 ? t('all in use') : t('candidates to turn off')}</small>]] as const) : [])
+          ] as const
+        ).map(([f, label, n, small]) => (
+          <button key={f} type="button" className="skct" aria-label={label} aria-pressed={filter === f} onClick={() => setFilter((now) => (now === f ? 'all' : f))}>
+            <b>{n}</b>
+            <span>{label}</span>
+            {small}
           </button>
-        )}
+        ))}
       </div>
 
-      {data && narrowed && shown.length === 0 ? (
+      {data && narrowed && shown.length === 0 && (
         <div className="empty" role="status">
           {q.trim() ? (
             <>
-              {t('Nada se llama «{q}».', { q: q.trim() })}{' '}
+              {t('Nothing is called “{q}”.', { q: q.trim() })}{' '}
               <button
                 type="button"
                 className="btn"
@@ -361,42 +430,42 @@ export function Skills() {
                   search.current?.focus()
                 }}
               >
-                {t('Borrar la búsqueda')}
+                {t('Clear the search')}
               </button>
             </>
           ) : filter === 'on' ? (
-            t('No tienes ninguna activa.')
+            t('You have none on.')
           ) : filter === 'idle' ? (
-            t('No tienes ninguna sin usar.')
+            t('You have none unused.')
+          ) : filter === 'clash' ? (
+            t('You have no clashes.')
           ) : (
-            t('No tienes ninguna apagada.')
+            t('You have none off.')
           )}
         </div>
-      ) : (
-        data && (
-          <>
-            <details className="skg" open aria-label={t('Personal')}>
-              <summary>{t('Personal')}</summary>
-              {cardsOf(of('personal'), 'p')}
-              {newButton('personal')}
-            </details>
-            {repos && repos.length > 0 && (
-              <details className="skg" open aria-label={t('Proyecto ({repo})', { repo: repoName })}>
-                <summary>{t('Proyecto ({repo})', { repo: repoName })}</summary>
-                {projectTotal === 0 ? <p className="empty">{t('{repo} aún no tiene skills propias.', { repo: repoName })}</p> : cardsOf(of('project'), 'j')}
-                {newButton('project')}
-              </details>
-            )}
+      )}
+      {data && (
+          <div ref={list} onKeyDown={onArrows}>
+            {fold('personal', of('personal'), { label: t('Personal'), footer: newButton('personal') })}
+            {repos &&
+              repos.length > 0 &&
+              fold('project', of('project'), {
+                label: t('Project ({repo})', { repo: repoName }),
+                empty: projectTotal === 0 ? <p className="empty">{t('{repo} has no skills of its own yet.', { repo: repoName })}</p> : null,
+                footer: newButton('project')
+              })}
             {repos === null && (
-              <details className="skg" open aria-label={t('Proyecto')}>
-                <summary>{t('Proyecto')}</summary>
+              <section className="skg" role="group" aria-label={t('Project')}>
                 <p className="notice" role="note">
-                  {t('No he podido leer tu lista de repos: no salen las skills del proyecto.')}
+                  {t('I could not read your repo list: the project skills are not shown.')}
                 </p>
-              </details>
+              </section>
             )}
-            <details className="skg" open aria-label={t('Plugins')}>
-              <summary>{t('Plugins')}</summary>
+            <div className="skpl" role="group" aria-label={t('Plugins')}>
+              <b>{t('Plugins')}</b>
+              <button type="button" className="btn" disabled={pluginBusy} onClick={() => setAdding(true)}>
+                {t('Add plugin')}
+              </button>
               {pluginNote && (
                 <p className="notice" role="status">
                   {pluginNote}
@@ -404,56 +473,46 @@ export function Skills() {
               )}
               {pluginFail && (
                 <PluginProblem
-                  what={t('No he podido completar la operación del plugin.')}
+                  what={t('I could not complete the plugin operation.')}
                   failure={pluginFail}
-                  fix={pluginFail.req ? t('Hacerlo en Terminal') : undefined}
+                  fix={pluginFail.req ? t('Do it in Terminal') : undefined}
                   onFix={() => pluginFail.req && void inTerminal(pluginFail.req)}
                   onClose={() => setPluginFail(null)}
                 />
               )}
-              <button type="button" className="btn" disabled={pluginBusy} onClick={() => setAdding(true)}>
-                {t('Añadir plugin')}
-              </button>
-              {plugins.map((p) => {
-                const all = items.filter((i) => i.plugin === p)
-                const vis = of('plugin').filter((i) => i.plugin === p)
-                if (narrowed && vis.length === 0) return null
-                const on = all[0]?.enabled !== false
-                const lock = all[0]?.lockedBy
-                const scope = scopeOf(p)
-                return (
-                  <div key={p} className="skp" role="group" aria-label={p}>
-                    <p className="skp-bar">
-                      <b>{p.split('@')[0]}</b> {t('{plugin} · {n} skills · {state}', { plugin: p, n: all.length, state: on ? t('activo') : t('apagado entero') })}
-                      <button type="button" role="switch" className="sw" aria-checked={on} aria-label={t('Activo')} aria-busy={busy} disabled={busy || pluginBusy || lock !== undefined} onClick={() => setPlugin(p, !on, all[0]?.writesTo)} />
-                      {lock && <span className="where">{t('Lo fija {file}', { file: lock })}</span>}
+            </div>
+            {plugins.map((p) => {
+              const all = items.filter((i) => i.plugin === p)
+              const on = all[0]?.enabled !== false
+              const lock = all[0]?.lockedBy
+              const scope = scopeOf(p)
+              return fold(`plugin:${p}`, of('plugin').filter((i) => i.plugin === p), {
+                label: p,
+                title: p.split('@')[0],
+                controls: (
+                  <span className="skp-bar">
+                    {t('{plugin} · {n} skills · {state}', { plugin: p, n: all.length, state: on ? t('on') : t('off entirely') })}
+                    <button type="button" role="switch" className="sw" aria-checked={on} aria-label={t('On')} aria-busy={busy} disabled={busy || pluginBusy || lock !== undefined} onClick={() => setPlugin(p, !on, all[0]?.writesTo)} />
+                    {lock && <span className="where">{t('Fixed by {file}', { file: lock })}</span>}
                     {installed !== null &&
                       (scope ? (
                         <>
                           <button type="button" className="btn" disabled={pluginBusy} onClick={() => void runPlugin('update', p, scope)}>
-                            {t('Actualizar')}
+                            {t('Refresh')}
                           </button>
                           <button type="button" className="btn" disabled={pluginBusy} onClick={() => setRemoving({ plugin: p, scope })}>
-                            {t('Quitar')}
+                            {t('Remove')}
                           </button>
                         </>
                       ) : (
-                        <span className="where">{t('Instalado en otro ámbito: se gestiona fuera de Atril.')}</span>
+                        <span className="where">{t('Installed in another scope: managed outside Atril.')}</span>
                       ))}
-                    </p>
-                    {cardsOf(vis, `g-${p}`)}
-                  </div>
+                  </span>
                 )
-              })}
-            </details>
-            <details className="skg" open={narrowed} aria-label={t('Atril')}>
-              <summary>
-                {t('Atril')} <span className="where">{t('solo lectura')}</span>
-              </summary>
-              {cardsOf(of('atril'), 'a')}
-            </details>
-          </>
-        )
+              })
+            })}
+            {fold('atril', of('atril'), { label: t('Atril'), controls: <span className="where">{t('read-only')}</span> })}
+          </div>
       )}
       {open && (
         <SkillDetail

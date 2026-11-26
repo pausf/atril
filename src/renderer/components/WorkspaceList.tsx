@@ -18,7 +18,7 @@ function RadarLine({ hits = [] }: { hits?: RadarHit[] }) {
   const vars = { branch: first.branch, file: first.files[0], n: hits.reduce((n, h) => n + h.files.length, 0) - 1 }
   return (
     <span className="ws-radar" title={hits.flatMap((h) => h.files.map((f) => `${h.branch}: ${f}`)).join('\n')}>
-      {vars.n > 0 ? t('Choca con {branch} en {file} y {n} más', vars) : t('Choca con {branch} en {file}', vars)}
+      {vars.n > 0 ? t('Clashes with {branch} in {file} and {n} more', vars) : t('Clashes with {branch} in {file}', vars)}
     </span>
   )
 }
@@ -75,7 +75,7 @@ export function WorkspaceList({ workspaces, problem, selected, onSelect, onRemov
   const damaged = problem && (
     <Problem
       what={problem.error}
-      cant={t('Tus agentes siguen en tmux, pero no puedo enseñártelos.')}
+      cant={t("Your agents are still running in tmux, but I can't show them to you.")}
       fix={fixLabel(t, 'reveal')}
       onFix={() => void window.atril.revealState(problem.file)}
       detail={problem.detail}
@@ -83,7 +83,7 @@ export function WorkspaceList({ workspaces, problem, selected, onSelect, onRemov
   )
   if (workspaces.length === 0) {
     if (damaged) return damaged
-    return <div className="empty">{t('Aquí verás cada trabajo con su estado. Crea uno con «＋ Nuevo trabajo», arriba.')}</div>
+    return <div className="empty">{t('Here you will see each workspace and its status. Create one with “＋ New work”, above.')}</div>
   }
   return (
     <div className="ws-list">
@@ -93,18 +93,18 @@ export function WorkspaceList({ workspaces, problem, selected, onSelect, onRemov
           <button type="button" className="ws-row" aria-pressed={selected === w.id} onClick={() => onSelect(w.id)}>
             <span className="ws-branch">{w.branch}</span>
             <span className="ws-meta">
-              {w.repoId} · {w.mode === 'review' ? `${t('Revisión')} · ` : ''}{w.agent}
+              {w.repoId} · {w.mode === 'review' ? `${t('Review@@noun')} · ` : ''}{w.agent}
               {w.model && w.model !== 'default' && ` · ${w.model}`}
               {w.auto === true && (
                 <>
                   {' · '}
-                  <span className="auto-badge">{t('Auto')}</span>
+                  <span className="auto-badge">{t('Auto@@short')}</span>
                 </>
               )}
             </span>
             <StateLabel state={stateOf(states, w)} />
             <RadarLine hits={radar[w.id]} />
-            {runningCount(subs[w.id]) > 0 && <span className="ws-subs">{runningCount(subs[w.id]) === 1 ? t('1 subagente') : t('{n} subagentes', { n: runningCount(subs[w.id]) })}</span>}
+            {runningCount(subs[w.id]) > 0 && <span className="ws-subs">{runningCount(subs[w.id]) === 1 ? t('1 subagent') : t('{n} subagents', { n: runningCount(subs[w.id]) })}</span>}
             {latest[w.id] && !asking.has(w.id) && (
               <span className="ws-act" title={latest[w.id] && localiseActivity(latest[w.id]!.text, t)}>
                 {latest[w.id] && localiseActivity(latest[w.id]!.text, t)}
@@ -117,26 +117,26 @@ export function WorkspaceList({ workspaces, problem, selected, onSelect, onRemov
           <button
             type="button"
             className="ws-remove"
-            aria-label={t('Quitar {branch}', { branch: w.branch })}
+            aria-label={t('Remove {branch}', { branch: w.branch })}
             onClick={() => (w.alive ? setConfirming(w.id) : close(w.id, onRemove))}
           >
-            {t('Quitar')}
+            {t('Remove')}
           </button>
           {confirming === w.id && (
             <div className="ws-confirm">
-              <p>{t('¿Cerrar {branch}? Su agente se para y el trabajo pasa a Terminados.', { branch: w.branch })}</p>
+              <p>{t('Close {branch}? Its agent stops and the work moves to Finished.', { branch: w.branch })}</p>
               <button type="button" className="btn p" disabled={closing === w.id} onClick={() => close(w.id, onRemove)}>
-                {closing === w.id ? t('Cerrando…') : t('Cerrar')}
+                {closing === w.id ? t('Closing…') : t('Close')}
               </button>
               <button type="button" className="btn" onClick={() => setConfirming(null)}>
-                {t('Cancelar')}
+                {t('Cancel')}
               </button>
             </div>
           )}
           {refusal?.id === w.id && (
             <Problem
               what={refusal.result.error}
-              cant={t('{branch} sigue en la lista.', { branch: w.branch })}
+              cant={t('{branch} is still in the list.', { branch: w.branch })}
               fix={fixLabel(t, refusal.result.fix)}
               onFix={() =>
                 sharedFix(refusal.result.fix, openSettings) ||

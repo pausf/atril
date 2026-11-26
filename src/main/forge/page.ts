@@ -98,9 +98,9 @@ export function createPage({ store, fetchImpl = fetch, target }: Deps) {
   return {
     async read(url: string): Promise<MrPage> {
       const tgt = target(url)
-      if (!tgt) return { error: t('Esta MR ya no está en la lista: actualiza') }
+      if (!tgt) return { error: t('This MR is no longer in the list: refresh') }
       const secret = await store.readSecret(tgt.forge).catch(() => null)
-      if (!secret?.['token']) return { error: t('Conecta GitHub o GitLab en Ajustes'), fix: 'settings' }
+      if (!secret?.['token']) return { error: t('Connect GitHub or GitLab in Settings'), fix: 'settings' }
       const name = FORGE_NAME[tgt.forge]
       const { base, headers } = forgeApi(tgt.forge, secret['site'] ?? 'https://gitlab.com', secret['token'])
       const get = async (path: string, accept?: string): Promise<Response> => {

@@ -37,9 +37,12 @@ const ANSWERED = 'atril-answered'
 // The same mark Automático picks by (W205).
 const RECOMMENDED = /\s*\((Recommended|Recomendado)\)\s*$/
 
+/** W294: «Pausar» on a looping turn end goes to the pause, not to the agent. */
+type Choice = QuickChoice | 'pause'
+
 interface Button {
   label: string
-  choice: QuickChoice
+  choice: Choice
   description?: string
   recommended?: boolean
 }
@@ -48,7 +51,7 @@ interface Button {
 export function AgentCard({ workspaceId, activityAt, onShown, focusComposer, skipMultiSelect }: Props) {
   const t = useT()
   const [wait, setWait] = useState<AgentWait | null>(null)
-  const [result, setResult] = useState<{ sent: boolean; text: string; choice?: QuickChoice } | null>(null)
+  const [result, setResult] = useState<{ sent: boolean; text: string; choice?: Choice } | null>(null)
 
   // The row and the strip above the terminal show the same wait: an answer in one moves both on.
   const [answers, setAnswers] = useState(0)
@@ -93,8 +96,8 @@ export function AgentCard({ workspaceId, activityAt, onShown, focusComposer, ski
   // Every question of the call answered: the agent takes it from here.
   if (wait.kind === 'question' && !question && wait.questions.length > 0)
     return (
-      <div className="ask" role="group" aria-label={t('Lo que espera el agente')}>
-        <span className="quick-sent">{t('Enviado')}</span>
+      <div className="ask" role="group" aria-label={t('What the agent is waiting for')}>
+        <span className="quick-sent">{t('Sent')}</span>
       </div>
     )
   const said = wait.text ? localiseActivity(wait.text, t) : ''
@@ -102,10 +105,10 @@ export function AgentCard({ workspaceId, activityAt, onShown, focusComposer, ski
   let buttons: Button[] = []
   if (wait.kind === 'permission') {
     const p = wait.permission
-    head = p?.summary ? t('Quiere ejecutar {summary}', { summary: p.summary }) : p ? t('Quiere usar {tool}', { tool: p.tool }) : t('Quiere permiso para seguir')
+    head = p?.summary ? t('Wants to run {summary}', { summary: p.summary }) : p ? t('Wants to use {tool}', { tool: p.tool }) : t('Wants permission to go on')
     buttons = [
-      { label: t('Permitir'), choice: { allow: true } },
-      { label: t('Denegar'), choice: { deny: true } }
+      { label: t('Allow'), choice: { allow: true } },
+      { label: t('Deny'), choice: { deny: true } }
     ]
   } else if (question) {
     head = question.question
@@ -117,17 +120,20 @@ export function AgentCard({ workspaceId, activityAt, onShown, focusComposer, ski
         choice: { option, question: wait.next }
       }))
   } else {
-    // An end of turn, or a wait the hook did not name: what it said and «Sigue».
+    // An end of turn, or a wait the hook did not name: why it stopped (W293), else what it said, and «Sigue».
     const words = wait.text?.startsWith('Claude dice: ') ? wait.text.slice('Claude dice: '.length) : ''
-    head = words ? t('Ha terminado: {text}', { text: words }) : wait.kind === 'turn-end' || !said ? t('Ha terminado su turno') : said
-    buttons = [{ label: t('Sigue'), choice: { continue: true } }]
+    head = words ? t('Finished: {text}', { text: words }) : wait.kind === 'turn-end' || !said ? t('Finished its turn') : said
+    if (wait.said) head = t('Stopped because: “{said}”', { said: wait.said })
+    if (wait.why === 'cap') head = t('Stopped 5 times with open boxes: it may be stuck')
+    if (wait.why === 'loop') head = t('It repeats itself: looks like a loop')
+    buttons = [{ label: t('Go on'), choice: { continue: true } }, ...(wait.why === 'loop' ? [{ label: t('Pause'), choice: 'pause' as const }] : [])]
   }
 
-  const press = (choice: QuickChoice): void => {
+  const press = (choice: Choice): void => {
     setResult({ sent: false, text: '' })
-    void window.atril.status.answer(workspaceId, choice).then((r) => {
+    void (choice === 'pause' ? window.atril.status.pause(workspaceId) : window.atril.status.answer(workspaceId, choice)).then((r) => {
       if (!('ok' in r)) return setResult({ sent: false, text: r.error, choice })
-      setResult({ sent: true, text: t('Enviado') })
+      setResult({ sent: true, text: t('Sent') })
       // Several questions in one call: the next one shows once main has moved on, here and in the other card.
       window.dispatchEvent(new CustomEvent(ANSWERED, { detail: workspaceId }))
     })
@@ -141,15 +147,16 @@ export function AgentCard({ workspaceId, activityAt, onShown, focusComposer, ski
   }
 
   return (
-    <div className="ask" role="group" aria-label={t('Lo que espera el agente')} tabIndex={0} onKeyDown={onKey}>
+    <div className="ask" role="group" aria-label={t('What the agent is waiting for')} tabIndex={0} onKeyDown={onKey}>
       {question?.header && <p className="ask-head">{question.header}</p>}
       <p className="ask-q">{head}</p>
+      {wait.why === 'cap' && wait.box && <p className="ask-note">{t('On: {box}', { box: wait.box })}</p>}
       {buttons.map((b, i) => (
         <button key={i} type="button" className="ask-opt" disabled={sent} aria-label={b.label} onClick={() => press(b.choice)}>
           <kbd aria-hidden="true">{i + 1}</kbd>
           <span className="ask-text">
             <span className="ask-label">{b.label}</span>
-            {b.recommended && <span className="ask-rec">{t('Recomendada')}</span>}
+            {b.recommended && <span className="ask-rec">{t('Recommended')}</span>}
             {b.description && <span className="ask-desc">{b.description}</span>}
           </span>
         </button>
@@ -164,13 +171,13 @@ export function AgentCard({ workspaceId, activityAt, onShown, focusComposer, ski
               </li>
             ))}
           </ul>
-          <p className="ask-note">{t('Contesta por escrito abajo')}</p>
+          <p className="ask-note">{t('Answer in writing below')}</p>
         </>
       )}
-      {wait.idle && <p className="ask-note">{t('Lleva un rato esperándote')}</p>}
+      {wait.idle && <p className="ask-note">{t('It has been waiting for you a while')}</p>}
       {result?.text && result.sent && <span className="quick-sent">{result.text}</span>}
       {result?.text && !result.sent && result.choice && (
-        <Problem what={result.text} cant={t('El agente sigue esperando tu respuesta.')} fix={t('Volver a intentar')} onFix={() => press(result.choice!)} detail="" />
+        <Problem what={result.text} cant={t('The agent is still waiting for your answer.')} fix={t('Try again')} onFix={() => press(result.choice!)} detail="" />
       )}
     </div>
   )
