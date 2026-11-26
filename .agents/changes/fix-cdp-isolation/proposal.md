@@ -101,6 +101,8 @@ Never scoped out: the gate and the driver check are a trust boundary (what a dri
   Proof: scripts/cdp-drive.test.ts attachVerified ignores the pages of another Atril
 - **W330** The query name `scripts/cdp-drive.mjs` looks for shall equal `LAUNCH_QUERY` of `src/main/cdp.ts` (the script repeats it, because a `.mjs` cannot import the `.ts`), so that a rename in one breaks a test, not a drive.
   Proof: scripts/cdp-drive.test.ts attachVerified uses the query name main writes
+- **W331** While the app has not yet created its first real window, closing the hidden probe of W327's gate shall not quit the app: `window-all-closed` quits only once `createWindow` has run. (Found by the real-app drive of box 1: destroying the probe, the only window, quit the app before the real window existed.)
+  Proof: src/main/cdp.test.ts index keeps running when the probe closes before the first real window
 
 ## Approach
 
@@ -156,6 +158,6 @@ The hidden probe window and `cdpGate` (about fifteen lines): without them the gu
 
 ## Checklist
 
-- [ ] `src/main/cdp.ts` (`cdpConfig`, `withLaunch`, `verifyOwnTarget`, `guardCdp`, `LAUNCH_QUERY`) with `src/main/cdp.test.ts` written first and seen red, wired in `src/main/index.ts` (switch, `cdpGate` first in `whenReady`, token in the window URL), and the real-app drive: a dev Atril on a port a throwaway server holds exits 1 with the one line and opens no window, and on a free port with a token starts and stays up · Closes: W320, W321, W322, W323, W324, W325, W326, W327
+- [x] `src/main/cdp.ts` (`cdpConfig`, `withLaunch`, `verifyOwnTarget`, `guardCdp`, `LAUNCH_QUERY`) with `src/main/cdp.test.ts` written first and seen red, wired in `src/main/index.ts` (switch, `cdpGate` first in `whenReady`, token in the window URL), and the real-app drive: a dev Atril on a port a throwaway server holds exits 1 with the one line and opens no window, and on a free port with a token starts and stays up · Closes: W320, W321, W322, W323, W324, W325, W326, W327, W331
 - [ ] `scripts/cdp-drive.mjs` (`attachVerified`) with `scripts/cdp-drive.test.ts` written first and seen red, plus a forced-red run with an `evaluate` on a foreign page · waits on box 1 · Closes: W328, W329, W330
 - [ ] Landing hygiene: `CLAUDE.md` «Photos» line shows the launch with the token and `attachVerified` and stays under the W235 cap, lessons entry, hand edit of `workspaces` `Governs:` to add `scripts/cdp-drive.mjs` (no criterion) · waits on boxes 1 and 2

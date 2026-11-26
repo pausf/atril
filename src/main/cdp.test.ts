@@ -138,4 +138,11 @@ describe('startup order', () => {
       .find((l) => l !== '' && !l.startsWith('//'))
     expect(first).toMatch(/^await cdpGate\(/)
   })
+
+  it('index keeps running when the probe closes before the first real window', () => {
+    // Seen in the real app: destroying the hidden probe, the only window, fired window-all-closed and quit the app.
+    const src = readFileSync(join(__dirname, 'index.ts'), 'utf8')
+    expect(src).toMatch(/app\.on\('window-all-closed', \(\) => \{\s*if \(!starting\) app\.quit\(\)\s*\}\)/)
+    expect(src).toMatch(/function createWindow\(\): void \{\n\s*starting = false/)
+  })
 })

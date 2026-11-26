@@ -83,6 +83,9 @@ if (CDP && 'error' in CDP) {
   app.exit(1)
 } else if (CDP) app.commandLine.appendSwitch('remote-debugging-port', String(CDP.port))
 
+// True until the first real window exists: closing cdpGate's probe must not fire window-all-closed's quit.
+let starting = true
+
 // ponytail: a hidden probe window so the guard runs before the rest of startup; a textual order test is the ceiling, a lint rule if it ever drifts
 async function cdpGate(): Promise<void> {
   if (!CDP || 'error' in CDP) return
@@ -315,6 +318,7 @@ function fakeBoardGroups(): InboxGroup[] {
 }
 
 function createWindow(): void {
+  starting = false
   const win = new BrowserWindow({
     width: 1440,
     height: 900,
@@ -1024,4 +1028,6 @@ app.whenReady().then(async () => {
 })
 
 app.on('before-quit', pty.detachAll)
-app.on('window-all-closed', () => app.quit())
+app.on('window-all-closed', () => {
+  if (!starting) app.quit()
+})
