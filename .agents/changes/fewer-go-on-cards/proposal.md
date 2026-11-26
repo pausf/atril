@@ -31,6 +31,7 @@ Durable decisions: the six in Prior decisions below
 - Q: Does keep-going apply in Manual too? → A: (assumed) yes, in every mode: the ask names no mode and the cards it removes are Manual's.
 - Q: (phase 5) Where is a stop classified? → A: (assumed, «No más preguntas») all in the hook, in a new pure `resources/keepgoing.mjs`; main only reads `state`/`kind`. Lost: main classifying `done` from the workspace path (two readers of the same boxes, and the block must be in the hook anyway); the block in `branchsize.mjs`'s style of side claims (a claim file main acts on cannot block a Stop, which is synchronous).
 - Q: Which changes count? → A: (assumed) every `.agents/changes/*/proposal.md` of the agent's repo whose `## Checklist` has an open box; the old `tasks.md`/`plan.md` layouts do not (none in flight here).
+- Q: (spec-reviewer) V11, W27, W199, W217's bounds, joined proofs, W223's head, W222's rank, other `AgentState` readers? → A: Pau: «Arreglar y construir». V11 amended in `spec-avisos.md` (entering `done` marks nothing read; leaving `done` for any other state does); W27 bounded by W221 and a missing `turn` never matches; W199 covers `done`; the search stops at the repo root (`.git`), every change of the worktree counts (an Atril workspace is one branch), and the reason drops «mark it»; one proof per clause (W225–W227 split out); W223 asserts q exactly; W224 ranks `done` with `working`; F51 for `DocModal`. Accepted: the double notice is not reproduced, so W221 guards the symptom only.
 
 ## Outcomes
 
@@ -41,7 +42,7 @@ Durable decisions: the six in Prior decisions below
 
 ## Scope boundaries
 
-**In:** `resources/claude-hook.mjs` and a new `resources/keepgoing.mjs` (box count, prose question, block decision); `src/main/status.ts` (`done` state, dedupe); `src/main/index.ts` (V11 expiry skips `done`); `src/preload/api.ts` (`AgentState` gains `done`); renderer pieces keyed by `AgentState` (`StateLabel`, `Icon`, `agents.ts` order, `styles.css`, `AgentCard` for a question without options); `src/preload/i18n-en.ts` («terminado»); tests; `bocetos/` per CLAUDE.md.
+**In:** `resources/claude-hook.mjs` and a new `resources/keepgoing.mjs` (box count, prose question, block decision); `src/main/status.ts` (`done` state, dedupe); `src/main/index.ts` (V11 expiry skips `done`); `src/preload/api.ts` (`AgentState` gains `done`); renderer pieces keyed by `AgentState` (`StateLabel`, `Icon`, `agents.ts` order, `styles.css`, `AgentCard` for a question without options); `src/renderer/flow/DocModal.tsx` (F51, in `spec-flow-status.md`); V11 amended in `spec-avisos.md`; read and left as they are: `src/main/flow/document.ts` (`done` is not `working`, so saving is allowed) and `AgentsOverview.tsx` (no card or pause button for `done`); `src/preload/i18n-en.ts` («terminado»); tests; `bocetos/` per CLAUDE.md.
 
 **Out:**
 - Background shells (issue #5).
@@ -50,7 +51,6 @@ Durable decisions: the six in Prior decisions below
 - Checklists in `tasks.md`/`plan.md`.
 - Any Claude call to classify a stop: rules only.
 - The hook command line in `src/main/agent.ts`: unchanged.
-- `flow-status`: it governs `src/main/flow/**`, which this change does not touch; nothing to amend there.
 
 ## Constraints
 
@@ -73,32 +73,46 @@ Durable decisions: the six in Prior decisions below
 
 - Hook: count open boxes per change from `cwd`; detect a prose question; decide block / question / turn-end / done on `Stop`; carry `turn` and `blocks`.
 - Main: `done` state, its notice, no expiry on entering it, Automático ignores it; dedupe of identical turn ends.
-- Renderer: «terminado» label and icon, order, the option-less question card.
+- Renderer: «terminado» label and icon, order, the option-less question card, the editor's status for `done`.
 - Sketch and novedades.
 
 ## Verification criteria
 
-- **W197** (amended) When the hook writes `needs-you`, it shall also write `kind`: `question` for a `PreToolUse` of `AskUserQuestion` or a `Stop` under W219, `permission` for a `Notification` with `notification_type` `permission_prompt` or a message starting «Claude needs your permission», and `turn-end` for a `Stop` under W218's fallback; a `Stop` otherwise follows W217 or W220; an idle reminder (`idle_prompt` or «waiting for your input») shall leave `kind` as it was and set `idle: true` (W195).
+- **W197** (amended) When the hook writes `needs-you`, it shall also write `kind`: `question` for a `PreToolUse` of `AskUserQuestion` or a `Stop` under W219, `permission` for a `Notification` with `notification_type` `permission_prompt` or a message starting «Claude needs your permission», and `turn-end` for a `Stop` under W218's fallback; a `Stop` otherwise follows W217 or W220; an idle reminder (`idle_prompt` or «waiting for your input») shall leave `kind` as it was and set `idle: true` (W195). Ceiling: one test walks every event kind, as before this change; the new `Stop` branches have their own proofs below.
   Proof: src/main/agent.test.ts the hook says what kind of wait it is
-- **W217** When the hook gets `Stop`, W219 does not hold, the session has no pause mark (W86), fewer than 5 blocks are in a row (W218), and some `.agents/changes/*/proposal.md` in the nearest folder at or above the payload's `cwd` that holds `.agents/changes` has at least one open box (a line matching `^\s*[-*]\s+\[ \]` outside a ``` fence) between its `## Checklist` heading and the next `## ` heading, then the hook shall print `{"decision":"block","reason":…}` whose reason names that change and its open-box count, and write `state: working` with no `kind`.
+- **W217** When the hook gets `Stop`, W219 does not hold, the session has no pause mark (W86), fewer than 5 blocks are in a row (W218), and at least one `.agents/changes/*/proposal.md` under the repo root has an open box, then the hook shall print `{"decision":"block","reason":…}` whose reason names every change with open boxes and its count, and write `state: working` with no `kind`. The repo root is the nearest folder at or above the payload's `cwd` that holds `.git` (a file or a folder); without one, nothing is open. An open box is a line matching `^\s*[-*]\s+\[ \]`, outside a ``` fence, between the `## Checklist` heading and the next `## ` heading.
   Proof: src/main/agent.test.ts a stop with open boxes keeps the agent going
-- **W218** The hook shall keep `blocks` in the state file, carried across events: `UserPromptSubmit` sets it to 0, a `Stop` whose payload has `stop_hook_active: false` counts from 0 (an absent field carries the count), and each block under W217 adds 1. If a `Stop` would block under W217 but 5 blocks are already in a row, or the session has a pause mark, then the hook shall print nothing and write `needs-you` with `kind: turn-end`, as before this change.
+  Proof: src/main/agent.test.ts only open boxes under the checklist of the repo count
+- **W218** The hook shall keep `blocks` in the state file, carried across events: `UserPromptSubmit` sets it to 0, a `Stop` whose payload has `stop_hook_active: false` counts from 0 (an absent field carries the count), and each block under W217 adds 1.
+  Proof: src/main/agent.test.ts a fresh stop or a prompt restarts the count
+- **W225** If a `Stop` would block under W217 but 5 blocks are already in a row, or the session has a pause mark, then the hook shall print nothing and write `needs-you` with `kind: turn-end`, as before this change.
   Proof: src/main/agent.test.ts keeping going stops after five blocks in a row
-- **W219** When the hook gets `Stop` and the newest assistant text in the transcript tail, after removing trailing whitespace and the characters `` *_`"'»”) ``, ends with `?`, the hook shall write `needs-you` with `kind: question`, `text` «Te pregunta: <q>» and `questions: [{ question: q, header: '', options: [], multiSelect: false }]`, where q is that text's last non-empty line with whitespace collapsed and clipped to 200 characters; it shall not block.
+  Proof: src/main/agent.test.ts a paused agent is never kept going
+- **W219** When the hook gets `Stop` and the newest assistant text in the transcript tail, after removing trailing whitespace and the characters `` *_`"'»”) ``, ends with `?`, the hook shall write `needs-you` with `kind: question`, `text` «Te pregunta: <q>» and `questions: [{ question: q, header: '', options: [], multiSelect: false }]`, where q is that text's last non-empty line with whitespace collapsed and clipped to 200 characters; it shall not block, whatever boxes are open.
   Proof: src/main/agent.test.ts a question in prose is a question wait
-- **W223** While a question wait's due question has no options, the card shall show the question as its head and no buttons; Automático shall not answer it and Atril shall add an `ask` notice as for any question (W15).
+- **W223** While a question wait's due question has no options, the card shall show q exactly as its head, no header and no buttons.
   Proof: src/renderer/components/agentcard.test.tsx a question in prose shows without buttons
+- **W226** While a workspace is in Automático, a question wait whose due question has no options shall not be answered by Atril, and Atril shall add one `ask` notice for it (W15).
   Proof: src/main/status.test.ts automatic leaves a question in prose to the person
-- **W220** When the hook gets `Stop` and none of W217, W218's fallback or W219 applies, it shall write `state: done` with the turn's text as today and no `kind`, and remove the pause mark as for `needs-you`. Atril shall report a session whose state file says `done` as `done` (W199's running-subagent rule makes it `working` as for a turn end), with no wait (`waitOf` null), outside «Siguiente» (N1), and Automático shall send nothing to it.
+- **W220** When the hook gets `Stop` and none of W217, W225 or W219 applies, it shall write `state: done` with the turn's text as today and no `kind`, and remove the pause mark as for `needs-you`.
   Proof: src/main/agent.test.ts a stop with nothing left is done
+- **W227** Atril shall report a session whose state file says `done` as `done`, with no wait (`waitOf` null) and outside «Siguiente» (N1), and Automático shall send nothing to it.
   Proof: src/main/status.test.ts a done agent is done, not a wait
-- **W15** (amended) When a session enters `needs-you` or `done`, Atril shall add one `ask` or `done` notice (V3) — `done` always for `done` — and show it on the Mac only when `route()` (V10) answers `mac`; no other `ask` or `done` notice for that session until it leaves the state, except W176; W180's `idle` is a different kind and is allowed; entering `done` shall not mark that session's notices read (V11 applies when it leaves `needs-you` for any state but `done`).
+- **W199** (amended) While a session is in `needs-you` with `kind` `turn-end`, or in `done`, and its subagents file holds an entry without `endedAt`, Atril shall show it as `working` with the activity «Esperando a un subagente» and add no notice; on the first poll after the last entry ends, the state counts as entering `needs-you` or `done` (W15). Background shells are out of this change (Scope).
+  Proof: src/main/status.test.ts a turn end with a subagent still running is working
+  Proof: src/main/status.test.ts a done agent waits for its subagents too
+- **W15** (amended) When a session enters `needs-you` or `done`, Atril shall add one `ask` or `done` notice (V3) — `done` always for `done` — and show it on the Mac only when `route()` (V10) answers `mac`; no other `ask` or `done` notice for that session until it leaves the state, except W176 and W221; W180's `idle` is a different kind and is allowed.
   Proof: src/main/status.test.ts notifies once per needs-you transition
-  Proof: src/main/status.test.ts a done agent is done, not a wait
-- **W221** The hook shall keep `turn` in the state file, set to the event's time on `UserPromptSubmit` and carried across every other event. If a session enters `needs-you` or `done` with the same `turn`, wait kind (or `done`) and text as the last entry Atril notified for that workspace, then Atril shall add no notice for it.
+  Proof: src/main/status.test.ts entering done adds one done notice
+- **W27** (amended) When a session leaves `needs-you` or `done` and enters either again, Atril shall notify again, except under W221.
+  Proof: src/main/status.test.ts re-entering needs-you notifies again
+- **W221** The hook shall keep `turn` in the state file, set to the event's time on `UserPromptSubmit` and carried across every other event. If a session enters `needs-you` or `done` with a `turn` present and equal to, and the same wait kind (or `done`) and text as, the last entry Atril notified for that workspace, then Atril shall add no notice for it; a state without `turn` never matches.
+  Proof: src/main/agent.test.ts a prompt starts a turn that every event carries
   Proof: src/main/status.test.ts the same turn end notifies once
-- **W222** Wherever an agent's state is shown with `StateLabel`, `done` shall read «terminado» with its own icon, and «Todos» shall order it with `working`.
+- **W222** Wherever an agent's state is shown with `StateLabel`, `done` shall read «terminado» with the `done` icon.
   Proof: src/renderer/components/statelabel.test.tsx a done agent reads terminado
+- **W224** «Todos» shall rank `done` equal to `working`, ties by latest activity as for `working` (W81).
+  Proof: src/renderer/agents.test.ts done sorts with working
 
 ## Approach
 
@@ -116,14 +130,14 @@ The Stop hook becomes the one place that classifies a turn end. A pure module, `
 ### The approach
 
 1. `keepgoing.mjs` exports:
-   - `openBoxes(cwd)` → `[{ change, open }]`: walk up from `cwd` to the first folder holding `.agents/changes` (stop at `/` or a folder with `.git`), read each `*/proposal.md` (`lstat`, regular files only), count lines matching `^\s*[-*]\s+\[ \]` outside ``` fences between `## Checklist` and the next `## `. Errors → `[]`.
+   - `openBoxes(cwd)` → `[{ change, open }]`: walk up from `cwd` to the first folder holding `.git` (none → `[]`), read each `.agents/changes/ `*/proposal.md` (`lstat`, regular files only), count lines matching `^\s*[-*]\s+\[ \]` outside ``` fences between `## Checklist` and the next `## `. Errors → `[]`.
    - `proseQuestion(text)` → the clipped last non-empty line when the trimmed text (minus trailing `` *_`"'»”) ``) ends with `?`, else `''`.
    - `decideStop({ open, question, active, blocks, paused })` → `{ outcome: 'block'|'question'|'turn-end'|'done', blocks }`. Order: question → if any open: (paused or blocks≥5 ? turn-end : block) → done. `blocks` restarts at 0 only when `active === false` (an absent field carries the count, so a payload without it still meets the cap).
-   - `REASON(change, n)` → English instruction: keep going with the next open box of `.agents/changes/<change>/proposal.md` (n open); if you need the person, ask with AskUserQuestion; if a box cannot be done, say why and mark it.
+   - `REASON(change, n)` → English instruction: keep going with the next open box of `.agents/changes/<change>/proposal.md` (n open); if a box cannot be done or you need the person, ask with AskUserQuestion.
 2. `summarise.mjs` exports `lastText(tail)` (the unflattened newest assistant text); `lastSaid` uses it.
 3. Hook, on `Stop` only: compute the outcome before the state write; for `block`, `stdout.write(JSON.stringify({ decision: 'block', reason }))` and write `{ state: 'working', at, turn, blocks }`; for `question`, `needs-you` with `kind: 'question'`, text «Te pregunta: q», `questions`; for `turn-end`, today's write; for `done`, `{ state: 'done', at, text, turn, blocks }`. Every write carries `turn` (`UserPromptSubmit` sets it to `at`) and `blocks` (`UserPromptSubmit` → 0). The pause mark is removed for `needs-you` and `done`, never for a block.
-4. Main: `AgentState` adds `'done'`. `hookState` passes `done` through (after W199's subagent check, which now also covers `done`). `waitOf` stays null (state ≠ needs-you). `createStatus`: `shouldNotify` → entry into `needs-you` or `done`; the notice kind is `done` for `done`; a per-workspace `lastNotified = turn|kind|text` skips an identical entry (W221). `automatic` returns early for anything but `needs-you` — `done` falls through untouched. Prose-question waits already fall out of Automático (`options.length === 0`). `index.ts:868` expires only when `state !== 'needs-you' && state !== 'done'`.
-5. Renderer: `StateLabel` «terminado», `Icon` a check for `done`, `overviewOrder` rank 1, `.state.done` colour from an existing token (grey/accent per Grafito; `rg "var(--"` before picking). `AgentCard` already renders a question with zero buttons; the test pins it.
+4. Main: `AgentState` adds `'done'`. `hookState` passes `done` through (after W199's subagent check, which now also covers `done`). `waitOf` stays null (state ≠ needs-you). `createStatus`: `shouldNotify` → entry into `needs-you` or `done`; the notice kind is `done` for `done`; a per-workspace `lastNotified = turn|kind|text` skips an identical entry (W221). `automatic` returns early for anything but `needs-you` — `done` falls through untouched. Prose-question waits already fall out of Automático (`options.length === 0`). `index.ts:868` expires only when `state !== 'needs-you' && state !== 'done'` (V11 amended). `DocModal` says «✎ editable · Claude ha terminado» for `done` (F51).
+5. Renderer: `StateLabel` «terminado», `Icon` a check for `done`, `overviewOrder` gives `done` `working`'s rank, `.state.done` colour from an existing token (grey/accent per Grafito; `rg "var(--"` before picking). `AgentCard` already renders a question with zero buttons; the test pins it.
 
 ### The alternatives it beat
 
@@ -155,8 +169,8 @@ New tests (red first): the four hook cases in `agent.test.ts`, three in `status.
 
 ## Checklist
 
-- [ ] Keep going on its own: `keepgoing.mjs` (`openBoxes`, `decideStop`, reason), the hook blocks a `Stop` with open boxes, carries `blocks` and `turn`, stops blocking after 5 or under a pause mark (today's turn-end otherwise) · Closes: W217, W218
-- [ ] A question in prose: `summarise.mjs` `lastText`, `proseQuestion`, the hook writes a question wait with one option-less question; the card shows it without buttons; Automático leaves it · waits on box 1 · Closes: W219, W223
-- [ ] Done: the hook writes `state: done` when nothing is open and nothing is asked; `AgentState` `done` through main (state, `done` notice, no V11 expiry, Automático ignores it, out of «Siguiente») and the renderer («terminado», icon, «Todos» order) · waits on box 2 · Closes: W220, W197, W15, W222
+- [ ] Keep going on its own: `keepgoing.mjs` (`openBoxes`, `decideStop`, reason), the hook blocks a `Stop` with open boxes, carries `blocks` and `turn`, stops blocking after 5 or under a pause mark (today's turn-end otherwise) · Closes: W217, W218, W225
+- [ ] A question in prose: `summarise.mjs` `lastText`, `proseQuestion`, the hook writes a question wait with one option-less question; the card shows it without buttons; Automático leaves it · waits on box 1 · Closes: W219, W223, W226
+- [ ] Done: the hook writes `state: done` when nothing is open and nothing is asked; `AgentState` `done` through main (state, `done` notice, no V11 expiry, Automático ignores it, out of «Siguiente») and the renderer («terminado», icon, «Todos» order) · waits on box 2 · Closes: W220, W227, W199, W197, W15, W27, W222, W224, V11, F51
 - [ ] One notice per turn end: main remembers the last notified `turn|kind|text` per workspace and skips an identical entry · waits on box 3 · Closes: W221
 - [ ] Shown in the real app and recorded: drive a fake hook state through `done` and a prose question in dev, photo of the window in `bocetos/novedades/`, `bocetos/novedades.html` and `bocetos/fase1-nucleo.html`, the real-Claude check under «Sin probar» in CLAUDE.md · waits on box 4
