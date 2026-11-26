@@ -68,9 +68,9 @@ as an English issue `Crash <sig>:` in pausf/atril with the person's GitHub token
 - **Photos:** `ATRIL_HOME=$(mktemp -d) ATRIL_SNAPSHOT=$PWD/bocetos/novedades/x.png ATRIL_SNAPSHOT_VIEW=<view>
   ATRIL_SNAPSHOT_DELAY_MS=6000 pnpm -s dev` in the background; wait for the PNG; stop it with `pkill -f "$PWD/node_modules"`
   (other worktrees run theirs). Never `screencapture` the whole screen: only Atril's window (`page.screenshot` over CDP, or
-  `screencapture -l <windowid>`). To drive it: pick an unlikely port and a fresh token, start with `ATRIL_CDP_PORT=<port>
-  ATRIL_LAUNCH_TOKEN=<token>` (16–128 chars of `A-Za-z0-9_-`; a busy port makes Atril exit 1), and attach only with
-  `attachVerified(connectOverCdp, port, token)` from `scripts/cdp-drive.mjs`; never raw `connectOverCDP`.
+  `screencapture -l <windowid>`). To drive it: an unlikely port and a fresh token (16–128 chars `A-Za-z0-9_-`) as
+  `ATRIL_CDP_PORT`/`ATRIL_LAUNCH_TOKEN` (a busy port makes Atril exit 1); attach only with `attachVerified` from
+  `scripts/cdp-drive.mjs`, never raw `connectOverCDP`.
 - **Fake `claude` in tests:** Atril puts your login shell's PATH first, so a fake only in `PATH` loses and the real one
   runs (spends quota). Launch with `SHELL` pointing at a fake shell that, with `-ilc`, prepends the doubles folder.
 - **Errors:** never a bare "error 500". Say what happened, what you can't do because of it, and one button that fixes
