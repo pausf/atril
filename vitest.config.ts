@@ -1,7 +1,9 @@
-import { defineConfig } from 'vitest/config'
+import { configDefaults, defineConfig } from 'vitest/config'
 
 export default defineConfig({
   test: {
+    // The evals' sample repo and hidden acceptance tests are node:test files for a throwaway repo, not ours.
+    exclude: [...configDefaults.exclude, 'evals/sample/**', 'evals/tasks/**'],
     // Tests that open a workspace must never touch the real ~/.claude.json.
     setupFiles: ['./test/setup.ts'],
     // ponytail: real git and tmux in tests are slow when the machine is busy; 5 s flaked under load.

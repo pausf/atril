@@ -12,16 +12,11 @@ below point at files on Pau's disk, not in the repo.
 (`--no-track`); size, panel and radar count from the merge-base with it; a merged PR (notice or ancestry) reads "Merged"
 and leaves the clash check; rows say when two works take the same new criterion ids.
 
-Before it, `pr-photos` (26 Nov, W240–W252): QA → "Publish on the MR" first shows a sheet with every capture exactly as it
-will leave and the blocked ones with why (on-device Vision OCR plus the crash scrubber, PNG metadata stripped, hash
-names, no Claude), then writes a block into the MR description with each criterion, its picture and Before/After
-from a merged MR of the same view. GitHub pictures go on orphan branch `atril-qa`, GitLab's to project uploads;
-untested against real forges.
+Before it, `fix-cdp-isolation` (26 Nov, W320–W331): a dev Atril on `ATRIL_CDP_PORT` owns that port by a launch token
+or exits; a drive attaches only through `attachVerified` in `scripts/cdp-drive.mjs`.
 
-Before it, `fewer-go-on-cards` (26 Nov, issues #7 and #5): the Stop hook keeps an agent going while its checklist has
-open boxes (5 in a row at most); a question in prose is a question card; nothing left reads "done"; one
-notice per turn end; a stop behind its own background shell stays working; a "Go on" card says why.
-
+Before that, `pr-photos` (26 Nov, W240–W252): QA's "Publish on the MR" previews scrubbed captures and writes them
+into the MR description; untested against real forges.
 
 ## Next
 
@@ -62,11 +57,15 @@ notice per turn end; a stop behind its own background shell stays working; a "Go
 - Never a folder called `secrets` (a global deny rule); never read `~/.atril/secrets.bin`. Tokens live only in main.
 - Don't touch Pau's real repos, his default tmux sessions or `~/.claude.json`. Tests use their own tmux socket and a temp `ATRIL_HOME`.
 - **Quota:** no automatic Claude calls, on demand only. Subagents scoped, Sonnet for mechanical work, never Fable.
+- **Evals (by hand only):** `node evals/run.mjs --model <m>` runs the Libretto flow headless on 3 fixed tasks and scores each run (spec: `.agents/specs/evals/spec.md`). It spends real quota: never start it from a hook, a test or CI, and never without Pau's go-ahead.
 - **Each function that lands** is driven in the real app (Playwright) first, then updates `bocetos/novedades.html`
   (section, real photo in `bocetos/novedades/*.png`, history) and `bocetos/fase1-nucleo.html`.
 - **Photos:** `ATRIL_HOME=$(mktemp -d) ATRIL_SNAPSHOT=$PWD/bocetos/novedades/x.png ATRIL_SNAPSHOT_VIEW=<view>
-  ATRIL_SNAPSHOT_DELAY_MS=6000 pnpm -s dev` in the background; wait for the PNG; `pkill -f "electron-vite dev"`. Never
-  `screencapture` the whole screen: only Atril's window (`page.screenshot` over CDP, or `screencapture -l <windowid>`).
+  ATRIL_SNAPSHOT_DELAY_MS=6000 pnpm -s dev` in the background; wait for the PNG; stop it with `pkill -f "$PWD/node_modules"`
+  (other worktrees run theirs). Never `screencapture` the whole screen: only Atril's window (`page.screenshot` over CDP, or
+  `screencapture -l <windowid>`). To drive it: an unlikely port and a fresh token (16–128 chars `A-Za-z0-9_-`) as
+  `ATRIL_CDP_PORT`/`ATRIL_LAUNCH_TOKEN` (a busy port makes Atril exit 1); attach only with `attachVerified` from
+  `scripts/cdp-drive.mjs`, never raw `connectOverCDP`.
 - **Fake `claude` in tests:** Atril puts your login shell's PATH first, so a fake only in `PATH` loses and the real one
   runs (spends quota). Launch with `SHELL` pointing at a fake shell that, with `-ilc`, prepends the doubles folder.
 - **Errors:** never a bare "error 500". Say what happened, what you can't do because of it, and one button that fixes
