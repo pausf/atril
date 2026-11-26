@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { scoreRun, summarize } from './score.mjs'
+import { mkdirSync, mkdtempSync, readFileSync, symlinkSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { basename, join } from 'node:path'
+import { parseTranscript, scoreRun, summarize, writeReport } from './score.mjs'
 
 const task = { id: 'add-coupon', expect: { files: ['src/coupon.js', 'test/coupon.test.js'] } }
 const good = [
@@ -75,5 +78,74 @@ describe('evals scoring', () => {
     expect(totals.total).toEqual({ passed: 2, of: 4 })
     expect(totals.tasks).toEqual({ 'add-coupon': { passed: 1, of: 3 }, 'fix-rounding': { passed: 1, of: 1 } })
     expect(totals.checks).toEqual({ acceptance: 3, files: 4, spec: 4, 'tests-first': 3, gates: 4 })
+  })
+})
+
+describe('evals transcript and report', () => {
+  it('reads the write order and the cost from a stream', () => {
+    const root = mkdtempSync(join(tmpdir(), 'evals-t-'))
+    const real = join(root, 'real')
+    mkdirSync(real)
+    symlinkSync(real, join(root, 'alias'))
+    const use = (name: string, input: object): string => JSON.stringify({ type: 'assistant', message: { content: [{ type: 'text', text: 'hi' }, { type: 'tool_use', name, input }] } })
+    const stream = [
+      'not json at all',
+      JSON.stringify({ type: 'system', subtype: 'init' }),
+      use('Skill', { skill: 'libretto:libretto-attacca' }),
+      use('Write', { file_path: join(root, 'alias', 'test', 'a.test.js') }),
+      use('Edit', { file_path: join(real, 'src', 'a.js') }),
+      use('MultiEdit', { file_path: join(real, 'src', 'b.js') }),
+      use('Write', { file_path: '/etc/outside.txt' }),
+      use('Read', { file_path: join(real, 'src', 'read.js') }),
+      '{"broken":',
+      JSON.stringify({ type: 'result', total_cost_usd: 0.42, num_turns: 7, duration_ms: 1234 })
+    ].join('\n')
+    expect(parseTranscript(stream, real)).toEqual({
+      writes: ['test/a.test.js', 'src/a.js', 'src/b.js'],
+      skills: ['libretto:libretto-attacca'],
+      cost: 0.42,
+      turns: 7,
+      durationMs: 1234
+    })
+    // A killed run has no result event.
+    expect(parseTranscript(use('Write', { file_path: join(real, 'x.js') }), real)).toEqual({ writes: ['x.js'], skills: [], cost: null, turns: null, durationMs: null })
+  })
+
+  it('writes JSON and Markdown that show x of N per task', () => {
+    const run = (task: string, ok: boolean) => ({
+      task,
+      passed: ok,
+      checks: {
+        acceptance: { ok, why: ok ? '' : 'the hidden acceptance test exited 1' },
+        files: { ok: true, why: '' },
+        spec: { ok: true, why: '' },
+        'tests-first': { ok: true, why: '' },
+        gates: { ok: true, why: '' }
+      },
+      cost: 0.5,
+      turns: 3,
+      durationMs: 900,
+      skills: ['libretto:libretto-attacca'],
+      timedOut: false,
+      exitCode: 0
+    })
+    const meta = { model: 'haiku', claude: '2.1.332 (Claude Code)', command: '/libretto:libretto-attacca', startedAt: '2026-11-26T16:40:00.123Z' }
+    const out = join(mkdtempSync(join(tmpdir(), 'evals-r-')), 'reports')
+    const { jsonPath, mdPath } = writeReport(out, meta, [run('add-coupon', true), run('add-coupon', false), run('fix-rounding', true)])
+    expect(basename(jsonPath)).toBe('2026-11-26T16-40-00Z-haiku.json')
+    expect(basename(mdPath)).toBe('2026-11-26T16-40-00Z-haiku.md')
+    const json = JSON.parse(readFileSync(jsonPath, 'utf8'))
+    expect(json.meta).toEqual(meta)
+    expect(json.runs).toHaveLength(3)
+    expect(json.runs[1]).toMatchObject({ cost: 0.5, durationMs: 900, skills: ['libretto:libretto-attacca'], timedOut: false })
+    expect(json.summary.total).toEqual({ passed: 2, of: 3 })
+    const md = readFileSync(mdPath, 'utf8')
+    expect(md).toMatch(/add-coupon \| 1 of 2/)
+    expect(md).toMatch(/fix-rounding \| 1 of 1/)
+    expect(md).toMatch(/acceptance \| 2 of 3/)
+    expect(md).toMatch(/add-coupon #2.*acceptance.*the hidden acceptance test exited 1/)
+    expect(md).toMatch(/haiku/)
+    // A model name with odd characters stays a safe file name.
+    expect(basename(writeReport(out, { ...meta, model: 'a/b c' }, [run('t', true)]).jsonPath)).toBe('2026-11-26T16-40-00Z-a-b-c.json')
   })
 })

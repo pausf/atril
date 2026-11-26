@@ -163,7 +163,7 @@ The pure/I-O split (it is what lets scoring be tested first), the hidden accepta
 ## Checklist
 
 - [x] the five checks and the verdict, tests first and red: `evals/score.mjs` with `scoreRun`, `summarize`, and `evals/score.test.ts` for the spec, tests-first, files/acceptance/gates and aggregate cases · Closes: E1, E2, E3, E4
-- [ ] the transcript reader and the report writer, tests first · waits on box 1 · Closes: E5, E6
+- [x] the transcript reader and the report writer, tests first · waits on box 1 · Closes: E5, E6
 - [ ] argument handling, the estimate and the confirmation in `evals/run.mjs`, tests first, nothing spawned · independent · Closes: E7, E8
 - [ ] the sample repo, the three tasks with their hidden acceptance tests, the vitest exclusion for the fixtures, and `evals/fixtures.test.ts` · independent · Closes: E13
 - [ ] one attempt end to end: fresh git repo, headless spawn with its flags and timeout, evidence from the final tree, scoring and the report files, proved with a fake claude · waits on boxes 1, 2, 3 and 4 · Closes: E9, E10, E11, E14
