@@ -120,14 +120,65 @@ function script(all: Record<string, unknown>[], id: 'lint' | 'typecheck' | 'test
   return gap(id, 'verification')
 }
 
+// ponytail: three fixed places, no `core.hooksPath` read (that needs git). A repo that points hooks
+// elsewhere reads as a gap; read the config here if that proves common.
+async function hookFile(root: string, id: 'precommit' | 'prepush', group: HarnessItem['group']): Promise<HarnessItem> {
+  const name = id === 'precommit' ? 'pre-commit' : 'pre-push'
+  for (const dir of ['.githooks', '.husky', '.git/hooks']) {
+    if (await fileIn(root, `${dir}/${name}`)) return { id, group, ok: true, detail: dir }
+  }
+  return gap(id, group)
+}
+
+async function ci(root: string): Promise<HarnessItem> {
+  const workflows = await dirIn(root, '.github/workflows')
+  const names = workflows ? await readdir(workflows.path).catch(() => [] as string[]) : []
+  const files = await Promise.all(names.filter((n) => /\.ya?ml$/.test(n)).map((n) => fileIn(root, `.github/workflows/${n}`)))
+  if (files.some(Boolean)) return { id: 'ci', group: 'verification', ok: true, detail: '.github/workflows' }
+  for (const file of ['.gitlab-ci.yml', '.circleci/config.yml']) {
+    if (await fileIn(root, file)) return { id: 'ci', group: 'verification', ok: true, detail: file }
+  }
+  return gap('ci', 'verification')
+}
+
+const nonEmpty = (v: unknown): boolean => Array.isArray(v) && v.length > 0
+
+/** `.claude/settings.json` only: settings.local.json is the person's own, not the repo's harness. */
+async function guardrails(root: string): Promise<[HarnessItem, HarnessItem]> {
+  const json = await readJson(root, '.claude/settings.json')
+  const hooks = gap('hooks', 'guardrails')
+  const permissions = gap('permissions', 'guardrails')
+  if (json.state === 'unreadable') return [{ ...hooks, detail: 'unreadable' }, { ...permissions, detail: 'unreadable' }]
+  if (json.state !== 'ok' || !isObject(json.value)) return [hooks, permissions]
+  const h = json.value['hooks']
+  const p = json.value['permissions']
+  return [
+    isObject(h) && Object.values(h).some(nonEmpty) ? { ...hooks, ok: true } : hooks,
+    isObject(p) && ['allow', 'deny', 'ask'].some((k) => nonEmpty(p[k])) ? { ...permissions, ok: true } : permissions
+  ]
+}
+
 /** W280–W284: what a repo already has of an agent harness, read from its files. No writes, no processes. */
 export async function detectHarness(root: string): Promise<HarnessItem[]> {
-  const [mem, skl, scripts] = await Promise.all([memory(root), skills(root), scriptsOf(root)])
+  const [mem, skl, scripts, pre, pipeline, [hooks, permissions], push] = await Promise.all([
+    memory(root),
+    skills(root),
+    scriptsOf(root),
+    hookFile(root, 'precommit', 'verification'),
+    ci(root),
+    guardrails(root),
+    hookFile(root, 'prepush', 'guardrails')
+  ])
   return [
     mem,
     skl,
     script(scripts, 'lint', ['lint']),
     script(scripts, 'typecheck', ['typecheck', 'type-check', 'tsc']),
-    script(scripts, 'test', ['test'])
+    script(scripts, 'test', ['test']),
+    pre,
+    pipeline,
+    hooks,
+    permissions,
+    push
   ]
 }

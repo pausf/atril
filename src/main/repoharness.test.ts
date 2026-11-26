@@ -159,4 +159,100 @@ describe('detectHarness', () => {
     symlinkSync(join(outside, 'skills'), join(out2, '.claude'))
     expect(get(await detectHarness(out2), 'skills').ok).toBe(false)
   })
+
+  it('reports ten items in three groups for a bare repo, all gaps', async () => {
+    const items = await detectHarness(tmp())
+    expect(items.map((i) => i.id)).toEqual(['memory', 'skills', 'lint', 'typecheck', 'test', 'precommit', 'ci', 'hooks', 'permissions', 'prepush'])
+    expect(items.map((i) => i.group)).toEqual(['context', 'context', 'verification', 'verification', 'verification', 'verification', 'verification', 'guardrails', 'guardrails', 'guardrails'])
+    expect(items.every((i) => !i.ok)).toBe(true)
+  })
+
+  // W282
+  it('hook files and CI workflows are found in their fixed places', async () => {
+    const githooks = tmp()
+    put(githooks, '.githooks/pre-commit', '#!/bin/sh\n')
+    put(githooks, '.githooks/pre-push', '#!/bin/sh\n')
+    const a = await detectHarness(githooks)
+    expect(get(a, 'precommit')).toMatchObject({ ok: true, detail: '.githooks' })
+    expect(get(a, 'prepush')).toMatchObject({ ok: true, detail: '.githooks' })
+
+    const husky = tmp() // not executable: the mode is not read
+    put(husky, '.husky/pre-commit', 'pnpm lint\n')
+    const b = await detectHarness(husky)
+    expect(get(b, 'precommit')).toMatchObject({ ok: true, detail: '.husky' })
+    expect(get(b, 'prepush').ok).toBe(false)
+
+    const gitdir = tmp()
+    put(gitdir, '.git/hooks/pre-commit', '#!/bin/sh\n')
+    put(gitdir, '.git/hooks/pre-push.sample', '#!/bin/sh\n')
+    const c = await detectHarness(gitdir)
+    expect(get(c, 'precommit')).toMatchObject({ ok: true, detail: '.git/hooks' })
+    expect(get(c, 'prepush').ok).toBe(false)
+
+    const worktree = tmp() // a worktree's .git is a file: its hooks are shared and not read
+    put(worktree, '.git', 'gitdir: /elsewhere\n')
+    expect(get(await detectHarness(worktree), 'precommit').ok).toBe(false)
+
+    const folder = tmp() // a folder named pre-commit is not a hook
+    mkdirSync(join(folder, '.githooks/pre-commit'), { recursive: true })
+    expect(get(await detectHarness(folder), 'precommit').ok).toBe(false)
+
+    const gha = tmp()
+    put(gha, '.github/workflows/ci.yml', 'on: push\n')
+    expect(get(await detectHarness(gha), 'ci')).toMatchObject({ ok: true, detail: '.github/workflows' })
+    const yaml = tmp()
+    put(yaml, '.github/workflows/build.yaml', 'on: push\n')
+    expect(get(await detectHarness(yaml), 'ci').ok).toBe(true)
+    const notyml = tmp()
+    put(notyml, '.github/workflows/README.md', 'docs\n')
+    expect(get(await detectHarness(notyml), 'ci').ok).toBe(false)
+    const gitlab = tmp()
+    put(gitlab, '.gitlab-ci.yml', 'stages: []\n')
+    expect(get(await detectHarness(gitlab), 'ci')).toMatchObject({ ok: true, detail: '.gitlab-ci.yml' })
+    const circle = tmp()
+    put(circle, '.circleci/config.yml', 'version: 2.1\n')
+    expect(get(await detectHarness(circle), 'ci')).toMatchObject({ ok: true, detail: '.circleci/config.yml' })
+    const several = tmp() // the first of the three that matches names it
+    put(several, '.gitlab-ci.yml', 'stages: []\n')
+    put(several, '.github/workflows/ci.yml', 'on: push\n')
+    expect(get(await detectHarness(several), 'ci').detail).toBe('.github/workflows')
+  })
+
+  // W283
+  it('guardrails read hooks and permissions from claude settings', async () => {
+    const settings = (value: unknown): string => {
+      const root = tmp()
+      put(root, '.claude/settings.json', typeof value === 'string' ? value : JSON.stringify(value))
+      return root
+    }
+    const full = await detectHarness(settings({ hooks: { PreToolUse: [{ matcher: 'Bash', hooks: [] }] }, permissions: { deny: ['Bash(rm:*)'] } }))
+    expect(get(full, 'hooks').ok).toBe(true)
+    expect(get(full, 'permissions').ok).toBe(true)
+    for (const key of ['allow', 'ask']) {
+      expect(get(await detectHarness(settings({ permissions: { [key]: ['Read'] } })), 'permissions').ok).toBe(true)
+    }
+
+    // empty shapes are gaps, without a detail
+    for (const value of [{}, { hooks: {}, permissions: {} }, { hooks: { Stop: [] }, permissions: { allow: [], deny: [] } }, { hooks: [1], permissions: [1] }, { hooks: 'x', permissions: 'x' }]) {
+      const items = await detectHarness(settings(value))
+      expect([get(items, 'hooks'), get(items, 'permissions')]).toEqual([
+        { id: 'hooks', group: 'guardrails', ok: false },
+        { id: 'permissions', group: 'guardrails', ok: false }
+      ])
+    }
+    expect(get(await detectHarness(tmp()), 'hooks')).toEqual({ id: 'hooks', group: 'guardrails', ok: false })
+
+    // a damaged or oversize file is `unreadable`, never an error
+    for (const text of ['{ nope', 'null', 'x'.repeat(1024 * 1024 + 1)]) {
+      const items = await detectHarness(settings(text))
+      const detail = text === 'null' ? {} : { detail: 'unreadable' }
+      expect(get(items, 'hooks')).toEqual({ id: 'hooks', group: 'guardrails', ok: false, ...detail })
+      expect(get(items, 'permissions')).toEqual({ id: 'permissions', group: 'guardrails', ok: false, ...detail })
+    }
+
+    // the personal settings file is not the repo's harness
+    const local = tmp()
+    put(local, '.claude/settings.local.json', JSON.stringify({ hooks: { Stop: [{}] }, permissions: { allow: ['Read'] } }))
+    expect(get(await detectHarness(local), 'hooks').ok).toBe(false)
+  })
 })
