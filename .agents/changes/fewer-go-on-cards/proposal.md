@@ -152,3 +152,11 @@ New tests (red first): the four hook cases in `agent.test.ts`, three in `status.
 
 - `turn` and `blocks` carried in every state write: the only per-session memory the hook has between processes.
 - Box parsing duplicated in `.mjs` (main has its own in `src/main/flow`): the hook cannot import TS, and it runs as Electron-as-Node without the app bundle.
+
+## Checklist
+
+- [ ] Keep going on its own: `keepgoing.mjs` (`openBoxes`, `decideStop`, reason), the hook blocks a `Stop` with open boxes, carries `blocks` and `turn`, stops blocking after 5 or under a pause mark (today's turn-end otherwise) · Closes: W217, W218
+- [ ] A question in prose: `summarise.mjs` `lastText`, `proseQuestion`, the hook writes a question wait with one option-less question; the card shows it without buttons; Automático leaves it · waits on box 1 · Closes: W219, W223
+- [ ] Done: the hook writes `state: done` when nothing is open and nothing is asked; `AgentState` `done` through main (state, `done` notice, no V11 expiry, Automático ignores it, out of «Siguiente») and the renderer («terminado», icon, «Todos» order) · waits on box 2 · Closes: W220, W197, W15, W222
+- [ ] One notice per turn end: main remembers the last notified `turn|kind|text` per workspace and skips an identical entry · waits on box 3 · Closes: W221
+- [ ] Shown in the real app and recorded: drive a fake hook state through `done` and a prose question in dev, photo of the window in `bocetos/novedades/`, `bocetos/novedades.html` and `bocetos/fase1-nucleo.html`, the real-Claude check under «Sin probar» in CLAUDE.md · waits on box 4
