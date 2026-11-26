@@ -50,7 +50,8 @@ import { createPlugins } from './skills/plugins'
 import { listSkills } from './skills/read'
 import { createUsage as createSkillUsage } from './skills/usage'
 import { revealFile, setSkill } from './skills/write'
-import { listRepos, readRepos, registerRepo, relocateRepo, removeRepo, setOverride } from './repos'
+import { harnessGet, openDoc } from './repoharness'
+import { listRepos, readRepos, registerRepo, relocateRepo, removeRepo, repoHealth, setOverride } from './repos'
 import { createRefiner } from './refine'
 import { orProblem, revealState } from './state'
 import { dropIdea, editIdea, ideaToJira, librettoCounts, librettoState, queueIdea, startQueued } from './libretto'
@@ -330,6 +331,8 @@ app.whenReady().then(async () => {
       : doctor(run)
   )
   ipcMain.handle('atril:doctor:install', (_e, tool: unknown) => installTool(tool, run))
+  ipcMain.handle('atril:harness:get', (_e, id: unknown) => harnessGet(id, { readRepos, health: (path) => repoHealth(path, run) }))
+  ipcMain.handle('atril:harness:doc', (_e, id: unknown) => openDoc(id, (url) => void shell.openExternal(url)))
   ipcMain.handle('atril:repos:list', () => listRepos(run))
   ipcMain.handle('atril:repos:add', async () => {
     const picked = await dialog.showOpenDialog({ properties: ['openDirectory'] })

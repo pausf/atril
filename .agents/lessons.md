@@ -506,3 +506,16 @@ The first drive connected over CDP to another session's Atril on the same port a
 
 ## 2026-11-26 · skills-dense · 1
 I told Pau his brief was wrong («there is no `i18n-es.ts`») after checking only this branch, which was 46 commits behind `origin/main`, where English had become the source language. The brief was right. Before contradicting a claim about the repo, `git fetch` and check `origin/main`, not the worktree.
+
+## 2026-11-26 · repo-harness · 6→7
+- `skills` counted at most 300 entries (a guard against a huge folder) but the contract said «the number of skills», so a repo with 301 showed 300 with no word about it. Fixed: the cap is in W280 and a 301-skill case asserts 300 (forced red by removing the slice). A guard the builder adds against hostile input goes into the criterion in the same edit.
+- The 1 MB cap was checked on `stat` and then the whole file was read, so a file that grew in between slipped past it. Fixed: read at most cap+1 bytes through the open handle and refuse when more came back. A size cap is on the bytes read, not on an earlier metadata call. Not provable by a test (a race): the oversize cases still cover the path.
+- A `CLAUDE.md` that exists but cannot be read made `memory` fall through to `AGENTS.md` or a gap, against «`CLAUDE.md` wins when both are files». Fixed: it is found with its name and no count (W280, test with a mode 000 file, forced red).
+
+## 2026-11-26 · repo-harness · real app
+- Port 9333 for `ATRIL_CDP_PORT` was already taken by another Electron (the person's own Atril, being driven by another session), so my dev app could not open its debugger and `connectOverCDP` attached to THAT window instead. I only read its text, but the next step would have been clicks. Before attaching, check `lsof -iTCP:<port> -sTCP:LISTEN` belongs to a process under this worktree's `node_modules`, pick an unlikely port, and confirm the page (`Sin conectar`, the sample repo ids) is yours. Stop your own app by `pkill -f '<this worktree>/node_modules'`, never a global `pkill -f "electron-vite dev"`: other worktrees run theirs too.
+
+## 2026-11-26 · repo-harness · 6
+- `spec-drift --anchors` read `Proof: file "name"` with the quotes as part of the name and called every citation broken; the working form is `Proof: file name` with no quotes (the form the older criteria use).
+- Main speaks Spanish by default (`lang.ts`), so a detail like «142 lines» built in main would have shown English-keyed text untranslated in tests and Spanish in the app. Items now carry names and numbers only and the window writes the sentences through `t()`.
+- A criterion that said «one test holds every clause» grew to five clauses once the card was built, and the tests followed the clauses rather than the criterion. Cut the criterion when the tests split (W286 → W286, W288, W289, W295) instead of citing a test that no longer holds them.

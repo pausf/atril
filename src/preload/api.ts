@@ -23,6 +23,25 @@ export interface RepoView {
   health: RepoHealth
 }
 
+/** W280–W285: one thing a repo's agent harness can have. Language-free: the window writes the sentences. */
+export type HarnessId = 'memory' | 'skills' | 'lint' | 'typecheck' | 'test' | 'precommit' | 'ci' | 'hooks' | 'permissions' | 'prepush'
+export interface HarnessItem {
+  id: HarnessId
+  group: 'context' | 'verification' | 'guardrails'
+  ok: boolean
+  /** A file, script or folder name; `unreadable` for a settings file that is damaged or too large. */
+  detail?: string
+  /** Lines of the memory file, or how many skills. */
+  n?: number
+  /** The memory file is over 1 MB and was not read. */
+  big?: true
+  /** Main has a docs page for this item. */
+  doc?: true
+}
+
+/** W285: what `harness.get` answers. */
+export type HarnessResult = { items: HarnessItem[] } | { error: 'unknown' | 'missing' }
+
 /** W144/W148: Atril's two state files; the window names one to reveal, never a path. */
 export type StateFile = 'workspaces' | 'repos'
 /** A state file that exists but cannot be used: nothing is written over it until the person fixes it. */
@@ -40,6 +59,12 @@ export type AddRepoResult =
   | { error: 'not-a-git-repo' }
   | { error: 'invalid-id' }
   | { error: 'id-taken'; suggested: string }
+
+/** W285 */
+export interface HarnessApi {
+  get(repoId: string): Promise<HarnessResult>
+  doc(id: string): Promise<boolean>
+}
 
 export interface ReposApi {
   list(): Promise<Listed<RepoView>>
@@ -1200,6 +1225,7 @@ export interface AtrilApi {
   doctor(): Promise<DoctorReport>
   installTool(tool: string): Promise<{ ok: true } | { error: string }>
   repos: ReposApi
+  harness: HarnessApi
   workspaces: WorkspacesApi
   /** W147: shows that state file in Finder (Atril's folder if it is missing); any other name shows nothing. */
   revealState(file: StateFile): Promise<boolean>
