@@ -792,6 +792,8 @@ export interface QaStep {
   /** A bare file name in the workspace's QA folder, with its mtime in `shotAt`. */
   shot?: string
   shotAt?: number
+  /** W240: the screen this step shows, as a slug the QA agent names. */
+  view?: string
 }
 
 export interface QaEntry {
@@ -827,8 +829,24 @@ export type QaBugResult = { key: string } | { ok: true } | { error: string }
 /** W174: the work's own MR, null when it has none. */
 export type QaMr = { url: string } | null
 
+/** W242/W243: why a picture does not go to the MR. */
+export type QaPictureReason = 'not-png' | 'too-big' | 'too-many' | 'unreadable' | 'token' | 'email' | 'host' | 'path' | 'machine'
+
+/** W241: one criterion's picture as main would send it; `src` is the cleaned PNG, only on a `send` row. */
+export interface QaPictureRow {
+  id: string
+  status: QaEntry['status']
+  view?: string
+  verdict: 'send' | 'blocked'
+  reason?: QaPictureReason
+  src?: string
+}
+
 /** W170/W171: the MR it reached, or W150's sentence with its fix and folded code. */
-export type QaPublishResult = { url: string } | { error: string; detail?: string; fix?: NetFix }
+export type QaPublishResult = { url: string } | { error: string; detail?: string; fix?: NetFix | 'recheck' }
+
+/** W241: no rows and no token when no criterion has a shot. */
+export type QaPrepared = { rows: QaPictureRow[]; token: string | null } | { error: string; detail?: string; fix?: NetFix | 'recheck' }
 
 export interface QaApi {
   /** null: no such workspace. */
@@ -851,7 +869,10 @@ export interface QaApi {
   /** W174: the work's MR among the person's own (Mías), by repo and branch. */
   mrFor(workspaceId: string): Promise<QaMr>
   /** W170: one general comment with the QA's result on that MR. */
-  publish(workspaceId: string): Promise<QaPublishResult>
+  /** W241: the pictures that would go, checked on this Mac; nothing is written anywhere. */
+  preparePublish(workspaceId: string): Promise<QaPrepared>
+  /** W170 without a token; W245–W249 with the token preparePublish gave. */
+  publish(workspaceId: string, token?: string): Promise<QaPublishResult>
 }
 
 export type StageName = 'sin-libretto' | 'entrada' | 'spec' | 'plan' | 'construir' | 'terminado' | 'aterrizado'

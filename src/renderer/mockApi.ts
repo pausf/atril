@@ -1,5 +1,5 @@
 import { vi } from 'vitest'
-import type { ActivityLine, SubagentEntry, SubagentLine, AddRepoResult, Aviso, FileChange, FlowBoxes, FlowDocs, ForgeId, ForgeStatus, Mode, MrDraft, MrDrafts, MrDraftsResult, MrFixCiResult, MrLists, MrMergeResult, MrPage, MrReply, MrScoreState, MrThreads, MrWork, NotifyPatch, RefineResult, NotifyPermission, SkillsList, SkillsUsage, NotifySettings, AgentState, StateProblem, QaBugResult, QaLaunchResult, QaManualRequest, QaMr, QaPublishResult, QaReport, QaResult, QaStatus, QaTargets, AtrilApi, HarnessResult, RemoveResult, QuickAnswer, AgentWait, RadarHit, FlowStage, HistoryEntry, IdeaJiraResult, IdeaResult, LibrettoCounts, LibrettoState, JiraIssue, JiraSettingsStatus, MenuAction, NextItem, StartProposalResult, StartRequest, StartResult, RepoResult, RepoView, ToolReport, UiState, WorkCost, WorkspaceResult, WorkspaceView } from '../preload/api'
+import type { ActivityLine, SubagentEntry, SubagentLine, AddRepoResult, Aviso, FileChange, FlowBoxes, FlowDocs, ForgeId, ForgeStatus, Mode, MrDraft, MrDrafts, MrDraftsResult, MrFixCiResult, MrLists, MrMergeResult, MrPage, MrReply, MrScoreState, MrThreads, MrWork, NotifyPatch, RefineResult, NotifyPermission, SkillsList, SkillsUsage, NotifySettings, AgentState, StateProblem, QaBugResult, QaLaunchResult, QaManualRequest, QaMr, QaPrepared, QaPublishResult, QaReport, QaResult, QaStatus, QaTargets, AtrilApi, RemoveResult, QuickAnswer, AgentWait, RadarHit, FlowStage, HistoryEntry, IdeaJiraResult, IdeaResult, LibrettoCounts, LibrettoState, JiraIssue, JiraSettingsStatus, MenuAction, NextItem, StartProposalResult, StartRequest, StartResult, RepoResult, RepoView, ToolReport, UiState, WorkCost, WorkspaceResult, WorkspaceView, HarnessResult } from '../preload/api'
 
 export const workspace = (id: string, branch: string, alive = true): WorkspaceView => ({
   id,
@@ -80,7 +80,9 @@ interface Options {
   /** What qa.mrFor answers per workspace id; missing means no MR. */
   qaMrs?: Record<string, QaMr>
   /** What qa.publish answers; by default it reaches the workspace's MR. */
-  qaPublish?: (id: string) => Promise<QaPublishResult>
+  qaPublish?: (id: string, token?: string) => Promise<QaPublishResult>
+  /** What qa.preparePublish answers; by default no shots (no rows, no token). */
+  qaPrepare?: (id: string) => Promise<QaPrepared>
   /** What subagents.log answers per subagent id. */
   subagentLogs?: Record<string, SubagentLine[]>
   /** What mr.list answers; missing means no forge connected. */
@@ -449,7 +451,8 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
       }),
       fix: vi.fn(async () => ({ ok: true as const })),
       mrFor: vi.fn(async (id: string): Promise<QaMr> => o.qaMrs?.[id] ?? null),
-      publish: vi.fn(async (id: string): Promise<QaPublishResult> => (o.qaPublish ? o.qaPublish(id) : { url: o.qaMrs?.[id]?.url ?? '' }))
+      preparePublish: vi.fn(async (id: string): Promise<QaPrepared> => (o.qaPrepare ? o.qaPrepare(id) : { rows: [], token: null })),
+      publish: vi.fn(async (id: string, token?: string): Promise<QaPublishResult> => (o.qaPublish ? o.qaPublish(id, token) : { url: o.qaMrs?.[id]?.url ?? '' }))
     },
     flow: {
       get: async (id: string | null) => (id && o.flows?.[id]) || o.flow || null,
