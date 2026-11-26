@@ -1,4 +1,4 @@
-import { lstatSync, mkdirSync, mkdtempSync, readdirSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
+import { chmodSync, lstatSync, mkdirSync, mkdtempSync, readdirSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -67,6 +67,19 @@ describe('detectHarness', () => {
     put(skills, '.claude/skills/loose.md', 'not a skill')
     expect(get(await detectHarness(skills), 'skills')).toMatchObject({ ok: true, n: 2 })
     expect(get(await detectHarness(tmp()), 'skills').ok).toBe(false)
+
+    // CLAUDE.md that exists but cannot be read still wins over AGENTS.md, without a count
+    const locked = tmp()
+    chmodSync(put(locked, 'CLAUDE.md', 'a\n'), 0o000)
+    put(locked, 'AGENTS.md', 'b\n')
+    const lockedItem = get(await detectHarness(locked), 'memory')
+    expect(lockedItem).toMatchObject({ ok: true, detail: 'CLAUDE.md' })
+    expect(lockedItem.n).toBeUndefined()
+
+    // at most 300 skills are counted
+    const many = tmp()
+    for (let i = 0; i < 301; i++) put(many, `.claude/skills/s${i}/SKILL.md`, '---\nname: s\n---\n')
+    expect(get(await detectHarness(many), 'skills')).toMatchObject({ ok: true, n: 300 })
 
     // a skill that is a link to a folder inside the repo counts (W284)
     const linked = tmp()

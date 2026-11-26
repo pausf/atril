@@ -46,7 +46,9 @@ async function readText(file: Found): Promise<string | undefined> {
   try {
     const h = await open(file.path)
     try {
-      return await h.readFile('utf8')
+      // The cap is on what is read, not on the earlier stat: a file that grew since then is still cut.
+      const { buffer, bytesRead } = await h.read(Buffer.alloc(MAX_BYTES + 1), 0, MAX_BYTES + 1, 0)
+      return bytesRead > MAX_BYTES ? undefined : buffer.toString('utf8', 0, bytesRead)
     } finally {
       await h.close()
     }
@@ -89,7 +91,7 @@ async function memory(root: string): Promise<HarnessItem> {
     const base = { id: 'memory', group: 'context', ok: true, detail: name } as const
     if (file.stat.size > MAX_BYTES) return { ...base, big: true }
     const text = await readText(file)
-    if (text === undefined) continue
+    if (text === undefined) return base // present but unreadable: it still wins, without a count
     const lines = text === '' ? [] : text.split('\n')
     if (lines.at(-1) === '') lines.pop()
     return { ...base, n: lines.length }
