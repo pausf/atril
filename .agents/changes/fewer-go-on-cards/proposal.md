@@ -20,6 +20,14 @@ Durable decisions: the six in Prior decisions below
 
 > Scope addition from Pau, in this same change so the two don't collide in status.ts: also fix issue #5. When the agent stops while one of its own background shells is still running (the status line says «1 shell still running»; you did this yourself several times today while waiting for the suite), that stop is not a wait: Claude Code resumes the agent by itself when the shell ends. Atril must show it as working (no card, no «Sigue», no notice), the same way W199 already treats a stop while a subagent runs. Find a deterministic signal (e.g. a run_in_background Bash tool_use in the transcript with no completion yet), add the criterion with its Proof to the contract (ids after your last one), write the test red first, then build it as one more box. Then carry on with the rest of the flow.
 
+## The ask, verbatim (second scope addition, 26 nov, after the work review)
+
+> One more box from Pau, in this same change (same files): whenever a «Sigue» card still shows, it must say WHY the agent stopped and what it needs, in plain words above the button, so the person can tell an important stop from a loop. Deterministic, no Claude calls. At least:
+> - the keep-going cap was hit: «Ha parado 5 veces con casillas abiertas: puede estar atascado» (name the box it is on if known);
+> - a loop: the same last message (or the same tool error) on 2+ consecutive stops reads «Se repite: parece un bucle» and offers «Pausar» next to «Sigue»;
+> - otherwise the agent's own last sentence, quoted, under «Para porque:».
+> Add the criteria (ids after your last one) with their Proof, test red first, drive it in the real app, then finish the flow.
+
 ## Observed vs expected (issue #7, reporter's words)
 
 - Observed: every Claude Code Stop event becomes a needs-you `turn-end` card. Most are not a real wait: the agent stopped mid-task with open boxes; the agent asks in prose ("Shall I push?") so it shows as a turn end with a plain «Go on»; the same turn end is notified twice in a row (dev log, two works).
@@ -35,6 +43,9 @@ Durable decisions: the six in Prior decisions below
 - Q: (phase 5) Where is a stop classified? → A: (assumed, «No más preguntas») all in the hook, in a new pure `resources/keepgoing.mjs`; main only reads `state`/`kind`. Lost: main classifying `done` from the workspace path (two readers of the same boxes, and the block must be in the hook anyway); the block in `branchsize.mjs`'s style of side claims (a claim file main acts on cannot block a Stop, which is synchronous).
 - Q: Which changes count? → A: (assumed) every `.agents/changes/*/proposal.md` of the agent's repo whose `## Checklist` has an open box; the old `tasks.md`/`plan.md` layouts do not (none in flight here).
 - Q: (issue #5, Pau) What signal says a background shell still runs? → A: (assumed, read off this session's own transcript) in the transcript tail, a `tool_result` block whose content starts «Command running in background with ID: <id>» with no later user entry whose content starts «<task-notification>» and holds `<task-id><id></task-id>`. Parsed entries only, never raw text: a transcript quoting those strings (this one does) must not count. Lost: the hook tracking `run_in_background` from PreToolUse/PostToolUse into its own file (a second store, and the end of a shell fires no hook event).
+- Q: (why-card) Which box is «the box it is on»? → A: (assumed) the first open box of the first change W217 lists, the next one the agent would take; its text after `[ ]`, clipped to 120.
+- Q: (why-card) Does a «Sigue» pressed between two stops break a loop? → A: (assumed) no: the count carries across prompts, because pressing «Sigue» on the same answer again is exactly the loop to show.
+- Q: (why-card) «Pausar» on a turn end: Escape too? → A: (assumed) no: the agent is already stopped; only the mark is written, so it reads «en pausa» and Automático leaves it.
 - Q: (spec-reviewer) V11, W27, W199, W217's bounds, joined proofs, W223's head, W222's rank, other `AgentState` readers? → A: Pau: «Arreglar y construir». V11 amended in `spec-avisos.md` (entering `done` marks nothing read; leaving `done` for any other state does); W27 bounded by W221 and a missing `turn` never matches; W199 covers `done`; the search stops at the repo root (`.git`), every change of the worktree counts (an Atril workspace is one branch), and the reason drops «mark it»; one proof per clause (W225–W227 split out); W223 asserts q exactly; W224 ranks `done` with `working`; F51 for `DocModal`. Accepted: the double notice is not reproduced, so W221 guards the symptom only.
 
 ## Outcomes
@@ -110,6 +121,17 @@ Durable decisions: the six in Prior decisions below
   Proof: src/main/agent.test.ts a stop while a background shell runs is working
 - **W230** While a session's state file says `working` with `waiting: 'shell'`, Atril shall show the activity «Esperando a una shell en segundo plano» on top, as W199 does for a subagent, and add no notice.
   Proof: src/main/status.test.ts a stop behind a background shell shows what it waits for
+- **W231** When the hook writes W225's fallback because 5 blocks are already in a row (not because of the pause mark), it shall also write `why: 'cap'` and `box`: the text after `[ ]` of the first open box of the first change W217 lists, whitespace collapsed and clipped to 120 characters.
+  Proof: src/main/agent.test.ts the keep-going cap names the box it is on
+- **W232** On every `Stop` the hook shall write `said`, the last sentence of the newest assistant text (its last non-empty line, whitespace collapsed, split after `.`, `!`, `?` or `…`, the last non-empty piece, clipped to 200), and keep, carried across every event, `fail` (the text of the newest failed-`Bash` line since the previous `Stop`, A-fail), `lastStop: { said, fail }` and `repeat`: the previous `repeat` plus 1 when this stop's `said` is non-empty and equals `lastStop.said`, or its `fail` is non-empty and equals `lastStop.fail`, else 0; each `Stop` then sets `lastStop` to its own pair and clears `fail`.
+  Proof: src/main/agent.test.ts stops that repeat themselves are counted
+- **W233** For a `turn-end` wait, main shall pass `why` (`loop` when `repeat` ≥ 1, else `cap` when the file says so, with its `box`) and `said` to the card, and the card shall head, first match: `loop` → «Se repite: parece un bucle» with «Pausar» after «Sigue»; `cap` → «Ha parado 5 veces con casillas abiertas: puede estar atascado» and, with a box, «Va por: {box}»; `said` → «Para porque: “{said}”»; otherwise W202's.
+  Proof: src/main/status.test.ts the wait carries why the agent stopped
+  Proof: src/renderer/components/agentcard.test.tsx a go-on card says why the agent stopped
+- **W234** When the person presses «Pausar» on a `turn-end` card, main shall write the pause mark (W86) without sending Escape, so the state reads `paused`; pausing shall still be refused in any other state but `working`.
+  Proof: src/main/pause.test.ts a looping turn end pauses without a key
+- **W202** (amended) For a `turn-end` without a W233 reason, the card shall show «Ha terminado: {last text}» with «Sigue» (`{ continue: true }`) and focus the composer; while `idle` is true it adds «Lleva un rato esperándote».
+  Proof: src/renderer/components/agentcard.test.tsx a turn end offers to continue
 - **W220** When the hook gets `Stop` and none of W228, W229, W217, W225 or W219 applies, it shall write `state: done` with the turn's text as today and no `kind`, and remove the pause mark as for `needs-you`.
   Proof: src/main/agent.test.ts a stop with nothing left is done
 - **W227** Atril shall report a session whose state file says `done` as `done`, with no wait (`waitOf` null) and outside «Siguiente» (N1), and Automático shall send nothing to it.
@@ -182,6 +204,10 @@ New tests (red first): the four hook cases in `agent.test.ts`, three in `status.
 
 `keepgoing.mjs` gains `shellsRunning(tail)`: parse each tail line as JSON (a cut first line is skipped); collect ids from `tool_result` blocks whose string content starts with the background prefix, drop ids named by a user entry whose `message.content` string starts with `<task-notification>` (`<task-id>(id)</task-id>`); true when any is left. The hook checks it on `Stop` right after W228's pending check and writes `{ state: 'working', waiting: 'shell', … }`. `waitingLine` in `status.ts` returns «Esperando a una shell en segundo plano» for that file, beside W199's subagent line; the string goes through `localiseActivity` like W199's.
 
+### Why the card says why (added after the work review)
+
+The hook, which already reads the transcript tail on `Stop`, computes `said` with `lastSentence` in `keepgoing.mjs` and keeps four carried fields (`fail`, `lastStop`, `repeat`, plus `why`/`box` on the cap write). A failed `Bash` PostToolUse sets `fail` from the activity line it already summarises. `waitOf` maps them to `AgentWait.why` and `AgentWait.said`; `AgentCard`'s turn-end branch picks the head and adds «Pausar» (calling `status.pause`) for a loop. `pauseAgent` accepts a `needs-you` `turn-end` and then skips the Escape.
+
 ### Complexity deliberately kept
 
 - `turn` and `blocks` carried in every state write: the only per-session memory the hook has between processes.
@@ -195,3 +221,4 @@ New tests (red first): the four hook cases in `agent.test.ts`, three in `status.
 - [x] One notice per turn end: main remembers the last notified `turn|kind|text` per workspace and skips an identical entry · waits on box 3 · Closes: W221
 - [x] A stop behind a background shell is working: `shellsRunning`, the hook writes `waiting: 'shell'`, main's activity line and its i18n · waits on box 4 · Closes: W229, W230
 - [x] Shown in the real app and recorded: drive a fake hook state through `done`, a prose question and a background shell in dev, photo of the window in `bocetos/novedades/`, `bocetos/novedades.html` and `bocetos/fase1-nucleo.html`, the real-Claude check under «Sin probar» in CLAUDE.md · waits on box 5
+- [ ] A «Sigue» card says why: the hook's `said`, `repeat`, `fail`, cap `why`/`box`; main's `why`/`said`; the card heads and «Pausar»; `pauseAgent` on a turn end; driven in the real app with its photo and novedades · waits on box 6 · Closes: W231, W232, W233, W234, W202
