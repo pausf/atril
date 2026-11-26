@@ -2,11 +2,35 @@ import { describe, expect, it } from 'vitest'
 import { ESLint } from 'eslint'
 import { join } from 'node:path'
 import { spawnSync } from 'node:child_process'
-import { chmodSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 
 const repoRoot = join(__dirname, '../..')
 const eslint = new ESLint({ cwd: repoRoot })
+
+const ZERO = '0'.repeat(40)
+const prePush = join(repoRoot, '.githooks/pre-push')
+const text = (r: { stdout: string; stderr: string }): string => r.stdout + r.stderr
+const pushLine = (sha: string): string => `refs/heads/main ${sha} refs/heads/main ${ZERO}\n`
+
+/** A temp HOME (with the private list when `list` is given) and a git repo whose first commit holds `files`. */
+function pushFixture(files: Record<string, string>, list?: string) {
+  const root = mkdtempSync(join(tmpdir(), 'atril-prepush-'))
+  const home = join(root, 'home')
+  mkdirSync(join(home, '.config/atril'), { recursive: true })
+  if (list !== undefined) writeFileSync(join(home, '.config/atril/work-identifiers.txt'), list)
+  const repo = join(root, 'repo')
+  mkdirSync(repo)
+  const env = { ...process.env, HOME: home }
+  const git = (...args: string[]) => spawnSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@t', ...args], { cwd: repo, encoding: 'utf8', env })
+  git('init', '-q', '-b', 'main')
+  for (const [name, body] of Object.entries(files)) writeFileSync(join(repo, name), body)
+  git('add', '.')
+  git('commit', '-q', '-m', 'x')
+  const sha = git('rev-parse', 'HEAD').stdout.trim()
+  const hook = (stdin: string) => spawnSync('sh', [prePush], { cwd: repo, input: stdin, encoding: 'utf8', env })
+  return { root, home, repo, git, sha, hook, clean: () => rmSync(root, { recursive: true, force: true }) }
+}
 
 /** The messages the repo's real config gives `code` as if it lived at `filePath`. */
 async function lint(code: string, filePath: string): Promise<string[]> {
@@ -87,6 +111,149 @@ describe('harness', () => {
       expect(run('none')).toBe(0)
     } finally {
       rmSync(bin, { recursive: true, force: true })
+    }
+  })
+
+  it('the pre-push hook refuses a work identifier', () => {
+    const fx = pushFixture({ 'a.txt': 'clean\n' }, 'acme-secret\n')
+    try {
+      // The identifier sits in another branch (case differs from the list); HEAD is clean.
+      fx.git('checkout', '-q', '-b', 'other')
+      writeFileSync(join(fx.repo, 'notes.txt'), 'talking about ACME-Secret here\n')
+      fx.git('add', '.')
+      fx.git('commit', '-q', '-m', 'y')
+      const other = fx.git('rev-parse', 'HEAD').stdout.trim()
+      fx.git('checkout', '-q', 'main')
+      const refused = fx.hook(pushLine(other))
+      expect(refused.status).not.toBe(0)
+      expect(text(refused)).toContain(`${other}:notes.txt:1:`)
+      expect(fx.hook(pushLine(fx.sha)).status).toBe(0)
+
+      // A lock line that is not an integrity line is scanned.
+      const lock = pushFixture({ 'pnpm-lock.yaml': 'x:\n  resolution: {tarball: https://r/acme-secret-1.tgz}\n' }, 'acme-secret\n')
+      try {
+        const r = lock.hook(pushLine(lock.sha))
+        expect(r.status).not.toBe(0)
+        expect(text(r)).toContain(`${lock.sha}:pnpm-lock.yaml:2:`)
+      } finally {
+        lock.clean()
+      }
+
+      // A real push: git must run the hook (executable bit, stdin format) and stop.
+      const bare = join(fx.root, 'remote.git')
+      spawnSync('git', ['init', '-q', '--bare', bare])
+      fx.git('remote', 'add', 'origin', bare)
+      const hooks = `core.hooksPath=${join(repoRoot, '.githooks')}`
+      fx.git('checkout', '-q', 'other')
+      const push = fx.git('-c', hooks, 'push', 'origin', 'other')
+      expect(push.status).not.toBe(0)
+      expect(spawnSync('git', ['--git-dir', bare, 'rev-parse', '--verify', '-q', 'refs/heads/other']).status).not.toBe(0)
+      // Control: the same push of a clean branch goes through, so the refusal above was the hook's.
+      expect(fx.git('-c', hooks, 'push', 'origin', 'main').status).toBe(0)
+    } finally {
+      fx.clean()
+    }
+  })
+
+  it('the pre-push hook lets clean pushes through', () => {
+    const body = { 'n.txt': 'acme-secret\n' }
+    const cases: [string, ReturnType<typeof pushFixture>, (fx: ReturnType<typeof pushFixture>) => string][] = [
+      ['no list', pushFixture(body), (fx) => pushLine(fx.sha)],
+      ['a list of blank lines', pushFixture(body, '\n  \n\t\n'), (fx) => pushLine(fx.sha)],
+      ['no match', pushFixture({ 'n.txt': 'fine\n' }, 'acme-secret\n'), (fx) => pushLine(fx.sha)],
+      ['a delete push', pushFixture(body, 'acme-secret\n'), (fx) => `(delete) ${ZERO} refs/heads/old ${fx.sha}\n`],
+      [
+        'an integrity line',
+        pushFixture({ 'pnpm-lock.yaml': '  resolution: {integrity: sha512-acme-secret=}\n' }, 'acme-secret\n'),
+        (fx) => pushLine(fx.sha)
+      ]
+    ]
+    try {
+      for (const [name, fx, stdin] of cases) expect(fx.hook(stdin(fx)).status, name).toBe(0)
+    } finally {
+      for (const [, fx] of cases) fx.clean()
+    }
+  })
+
+  it('the pre-push hook refuses when the scan itself fails', () => {
+    const SAID = 'work-identifier scan failed'
+    const bad = pushFixture({ 'a.txt': 'x\n' }, '(\n')
+    const locked = pushFixture({ 'a.txt': 'x\n' }, 'acme-secret\n')
+    const unknown = pushFixture({ 'a.txt': 'x\n' }, 'acme-secret\n')
+    try {
+      const r = bad.hook(pushLine(bad.sha))
+      expect(r.status).not.toBe(0)
+      expect(text(r)).toContain(SAID)
+      const list = join(locked.home, '.config/atril/work-identifiers.txt')
+      chmodSync(list, 0o000)
+      const l = locked.hook(pushLine(locked.sha))
+      chmodSync(list, 0o600)
+      expect(l.status).not.toBe(0)
+      expect(text(l)).toContain(SAID)
+      const u = unknown.hook(pushLine('1'.repeat(40)))
+      expect(u.status).not.toBe(0)
+      expect(text(u)).toContain(SAID)
+    } finally {
+      bad.clean()
+      locked.clean()
+      unknown.clean()
+    }
+  })
+
+  /** Runs the command that .claude/settings.json registers for Bash, the way Claude Code would. */
+  function guard(stdin: string): { status: number | null; stdout: string; stderr: string } {
+    const settings = JSON.parse(readFileSync(join(repoRoot, '.claude/settings.json'), 'utf8'))
+    const entry = settings.hooks.PreToolUse.find((e: { matcher: string }) => e.matcher === 'Bash')
+    expect(entry.hooks[0].type).toBe('command')
+    return spawnSync('sh', ['-c', entry.hooks[0].command], { input: stdin, encoding: 'utf8', env: { ...process.env, CLAUDE_PROJECT_DIR: repoRoot } })
+  }
+  const bash = (command: string): string => JSON.stringify({ tool_name: 'Bash', tool_input: { command } })
+
+  it('the build guard denies pnpm build', () => {
+    for (const command of [
+      'pnpm build',
+      'pnpm run build',
+      'pnpm -s build',
+      'pnpm  build',
+      'pnpm run -s build',
+      'pnpm build --mode x',
+      'cd x && pnpm build',
+      'pnpm test; pnpm build',
+      'false || pnpm build',
+      'cat f | pnpm build',
+      'echo hi\npnpm build'
+    ]) {
+      const r = guard(bash(command))
+      expect(r.status, command).toBe(2)
+      expect(r.stderr.trim(), command).toMatch(/^[^\n]*never built[^\n]*$/)
+    }
+  })
+
+  it('CLAUDE.md stays a short brief that points at the hooks', () => {
+    const raw = readFileSync(join(repoRoot, 'CLAUDE.md'))
+    const md = raw.toString('utf8')
+    expect(raw.length).toBeLessThanOrEqual(7000)
+    expect(md).toContain('.githooks/pre-push')
+    expect(md).toContain('.claude/settings.json')
+    for (const heading of ['## Last landed', '## Next', '## Untested with real data']) expect(md).toContain(`\n${heading}\n`)
+    for (const gone of ['git grep -niE', 'Where we left off', 'Dónde lo dejamos']) expect(md).not.toContain(gone)
+  })
+
+  it('the build guard lets everything else through', () => {
+    const payloads = [
+      bash('pnpm -s typecheck'),
+      bash('pnpm test'),
+      bash('pnpm builder'),
+      bash('git commit -m "never pnpm build"'),
+      bash('rg "pnpm build" CLAUDE.md'),
+      JSON.stringify({ tool_name: 'Edit', tool_input: { command: 'pnpm build' } }),
+      'not json',
+      '{}',
+      ''
+    ]
+    for (const p of payloads) {
+      const r = guard(p)
+      expect([r.status, r.stdout, r.stderr], p).toEqual([0, '', ''])
     }
   })
 })

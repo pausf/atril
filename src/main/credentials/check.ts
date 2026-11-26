@@ -31,10 +31,10 @@ async function fetchAvatar(url: string, site: URL, auth: string, fetchImpl: type
 
 /** S32: what failed, by cause; the code itself goes to the folded detail. */
 function unreachable(code: string, base: URL): string {
-  if (code === 'TimeoutError') return t('Jira no ha respondido en 10 s.')
-  if (code === 'ENOTFOUND' || code === 'EAI_AGAIN') return t('No encuentro {host}.', { host: base.host })
-  if (/^(CERT_|ERR_TLS_|SELF_SIGNED|UNABLE_TO_|DEPTH_ZERO)/.test(code)) return t('El certificado de {host} no es válido.', { host: base.host })
-  return t('No responde nada en {origin}.', { origin: base.origin })
+  if (code === 'TimeoutError') return t('Jira did not answer in 10 s.')
+  if (code === 'ENOTFOUND' || code === 'EAI_AGAIN') return t("I can't find {host}.", { host: base.host })
+  if (/^(CERT_|ERR_TLS_|SELF_SIGNED|UNABLE_TO_|DEPTH_ZERO)/.test(code)) return t('The certificate of {host} is not valid.', { host: base.host })
+  return t('Nothing answers at {origin}.', { origin: base.origin })
 }
 
 export async function checkJira(
@@ -45,9 +45,9 @@ export async function checkJira(
   try {
     base = new URL(site.trim())
   } catch {
-    return { error: t('La dirección de Jira no es válida. Usa algo como https://tuempresa.atlassian.net') }
+    return { error: t('The Jira address is not valid. Use something like https://yourcompany.atlassian.net') }
   }
-  if (base.protocol !== 'https:') return { error: t('La dirección de Jira debe empezar por https://') }
+  if (base.protocol !== 'https:') return { error: t('The Jira address must start with https://') }
 
   const auth = Buffer.from(`${email}:${token}`).toString('base64')
   try {
@@ -55,7 +55,7 @@ export async function checkJira(
       headers: { Authorization: `Basic ${auth}`, Accept: 'application/json' },
       signal: AbortSignal.timeout(10_000)
     })
-    if (!res.ok) return { error: t('Jira ha rechazado el token ({status}). No se ha guardado.', { status: res.status }) }
+    if (!res.ok) return { error: t('Jira rejected the token ({status}). It was not saved.', { status: res.status }) }
     const me = (await res.json()) as { displayName?: string; emailAddress?: string; avatarUrls?: Record<string, string> }
     const url = me.avatarUrls?.['48x48']
     const avatar = url ? await fetchAvatar(url, base, auth, fetchImpl) : undefined
@@ -66,6 +66,6 @@ export async function checkJira(
     const cause = (err as { cause?: { code?: unknown } }).cause?.code
     const code = typeof cause === 'string' && /^[A-Z0-9_]+$/.test(cause) ? cause : err instanceof Error ? err.name : 'Error'
     console.error(`[atril] Jira check failed: ${code}`)
-    return { error: `${unreachable(code, base)} ${t('Revisa la dirección: la de tu Jira suele ser https://tuempresa.atlassian.net.')}`, detail: code }
+    return { error: `${unreachable(code, base)} ${t('Check the address: yours is usually https://yourcompany.atlassian.net.')}`, detail: code }
   }
 }

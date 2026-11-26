@@ -73,7 +73,7 @@ function item(src: Source, kind: SkillItem['kind'], fallback: string, path: stri
 async function readSource(src: Source, warnings: string[]): Promise<SkillItem[]> {
   const out: SkillItem[] = []
   const cutWarning = (dir: string): void => {
-    warnings.push(t('{dir} tiene más de {n} entradas: solo se leen las primeras.', { dir, n: MAX_ENTRIES }))
+    warnings.push(t('{dir} has more than {n} entries: only the first ones are read.', { dir, n: MAX_ENTRIES }))
   }
   const skillsDir = join(src.root, 'skills')
   const skills = await entries(skillsDir)
@@ -98,7 +98,7 @@ async function readSource(src: Source, warnings: string[]): Promise<SkillItem[]>
     out.push(item(src, 'command', file.slice(0, -3), path, text))
   }
   for (const [big, dir] of [[bigSkill, skillsDir], [bigCommand, commandsDir]] as const) {
-    if (big) warnings.push(t('{dir} tiene archivos de más de 256 KB: no se leen.', { dir }))
+    if (big) warnings.push(t('{dir} has files over 256 KB: they are not read.', { dir }))
   }
   return out
 }
@@ -119,7 +119,7 @@ async function readJson(file: string, warnings: string[]): Promise<Settings> {
     if (typeof v !== 'object' || v === null || Array.isArray(v)) throw new Error()
     return v as Settings
   } catch {
-    warnings.push(t('No he podido leer {file}: lo trato como vacío.', { file }))
+    warnings.push(t('I could not read {file}: I treat it as empty.', { file }))
     return {}
   }
 }
@@ -175,10 +175,10 @@ export async function listSkills(repoId: string | undefined, repos: () => Promis
 export async function repoDirOf(repoId: string | undefined, repos: () => Promise<RepoList>, warnings: string[]): Promise<string | undefined> {
   if (!repoId) return undefined
   const list = await repos().catch(() => null)
-  if (!Array.isArray(list)) warnings.push(t('No he podido leer tu lista de repos: no salen las skills del proyecto.'))
+  if (!Array.isArray(list)) warnings.push(t('I could not read your repo list: the project skills are not shown.'))
   else {
     const dir = list.find((r) => r.id === repoId)?.path
-    if (!dir) warnings.push(t('{repo} ya no está en tu lista de repos.', { repo: repoId }))
+    if (!dir) warnings.push(t('{repo} is no longer in your repo list.', { repo: repoId }))
     return dir
   }
   return undefined

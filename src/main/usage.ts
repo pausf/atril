@@ -17,14 +17,14 @@ function windowOf(raw: unknown): UsageWindow | null {
 
 type UsageError = Extract<UsageResult, { error: string }>
 // W20: one sentence per cause; the status or failing step goes to the folded detail only.
-const noSession = (detail: string): UsageError => ({ error: t('Claude Code no tiene la sesión abierta en este Mac: no puedo leer tu cuota.'), detail, fix: 'claude' })
-const failed = (detail: string): UsageError => ({ error: t('No puedo leer tu cuota de Claude ahora: lo intento de nuevo en unos minutos.'), detail, fix: 'retry' })
+const noSession = (detail: string): UsageError => ({ error: t("Claude Code is not signed in on this Mac: I can't read your usage."), detail, fix: 'claude' })
+const failed = (detail: string): UsageError => ({ error: t("I can't read your Claude usage right now: I'll try again in a few minutes."), detail, fix: 'retry' })
 
 export function parseUsage(body: unknown): UsageResult {
   const b = body as { five_hour?: unknown; seven_day?: unknown } | null
   const fiveHour = windowOf(b?.five_hour)
   const sevenDay = windowOf(b?.seven_day)
-  if (!fiveHour || !sevenDay) return failed(t('respuesta de uso con formato desconocido'))
+  if (!fiveHour || !sevenDay) return failed(t('usage response in an unknown format'))
   return { fiveHour, sevenDay }
 }
 
@@ -32,15 +32,15 @@ export function parseUsage(body: unknown): UsageResult {
 // Every error reason is a fixed string or a status number, so none can carry it.
 export async function readUsage(run: Runner, doFetch: Fetch = fetch): Promise<UsageResult> {
   const kc = await run('security', ['find-generic-password', '-s', 'Claude Code-credentials', '-w'], { secret: true })
-  if (kc.code !== 0 || !kc.stdout.trim()) return noSession(t('llavero: código {code}', { code: kc.code }))
+  if (kc.code !== 0 || !kc.stdout.trim()) return noSession(t('keychain: code {code}', { code: kc.code }))
 
   let token: unknown
   try {
     token = (JSON.parse(kc.stdout) as { claudeAiOauth?: { accessToken?: unknown } }).claudeAiOauth?.accessToken
   } catch {
-    return noSession(t('las credenciales de Claude Code no son JSON válido'))
+    return noSession(t('the Claude Code credentials are not valid JSON'))
   }
-  if (typeof token !== 'string' || !token) return noSession(t('las credenciales de Claude Code no traen token'))
+  if (typeof token !== 'string' || !token) return noSession(t('the Claude Code credentials have no token'))
 
   let res: Response
   try {
@@ -49,15 +49,15 @@ export async function readUsage(run: Runner, doFetch: Fetch = fetch): Promise<Us
       signal: AbortSignal.timeout(10_000)
     })
   } catch (err) {
-    return { error: t('No llego a Claude para leer tu cuota: ¿hay conexión?'), detail: err instanceof Error ? err.name : 'Error', fix: 'retry' }
+    return { error: t("I can't reach Claude to read your usage: are you online?"), detail: err instanceof Error ? err.name : 'Error', fix: 'retry' }
   }
-  if (res.status === 401) return { error: t('Claude ha caducado tu sesión: ábrela otra vez en Claude Code.'), detail: 'HTTP 401', fix: 'claude' }
-  if (res.status === 429) return { error: t('Claude no me deja leer tu cuota ahora: demasiadas consultas. Lo intento solo más tarde.'), detail: 'HTTP 429', fix: 'retry' }
+  if (res.status === 401) return { error: t('Claude expired your session: sign in again in Claude Code.'), detail: 'HTTP 401', fix: 'claude' }
+  if (res.status === 429) return { error: t("Claude won't let me read your usage right now: too many requests. I'll try again later on my own."), detail: 'HTTP 429', fix: 'retry' }
   if (!res.ok) return failed(`HTTP ${res.status}`)
   try {
     return parseUsage(await res.json())
   } catch {
-    return failed(t('respuesta de uso ilegible'))
+    return failed(t('unreadable usage response'))
   }
 }
 
@@ -65,7 +65,7 @@ const POLL_MS = 60_000
 const MAX_WAIT_MS = 10 * 60_000
 
 export function createUsage(deps: { run: Runner; emit: (u: UsageResult) => void; fetch?: Fetch }) {
-  let last: UsageResult = failed(t('aún sin leer'))
+  let last: UsageResult = failed(t('not read yet'))
   let good: { value: UsageResult; at: number } | undefined
   let wait = POLL_MS
   let timer: NodeJS.Timeout | undefined

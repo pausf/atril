@@ -34,7 +34,7 @@ export type T = (es: string, vars?: Record<string, string | number>) => string
 /** Atril's own texts in the language main resolved; Spanish until ui.json is read. */
 export function useT(): T {
   const lang: Lang = useContext(UiContext).ui?.lang ?? 'es'
-  return useCallback((es: string, vars?: Record<string, string | number>) => translate(lang, es, vars), [lang])
+  return useCallback((text: string, vars?: Record<string, string | number>) => translate(lang, text, vars), [lang])
 }
 
 /** The locale dates and weekdays are written in. */

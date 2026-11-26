@@ -25,8 +25,8 @@ export const jiraSettings = (store: SecretStore, fetchImpl?: typeof fetch) => ({
   // Board id and name sit beside the account metadata, never in the token blob.
   async pickBoard(board: { id: number; name: string } | null): Promise<{ ok: true } | { error: string }> {
     if (board && !(Number.isInteger(board.id) && board.id > 0 && typeof board.name === 'string'))
-      return { error: t('Tablero no válido.') }
-    return (await store.setBoard('jira', board && { id: board.id, name: board.name })) ? { ok: true } : { error: t('Conecta Jira antes de elegir un tablero.') }
+      return { error: t('Invalid board.') }
+    return (await store.setBoard('jira', board && { id: board.id, name: board.name })) ? { ok: true } : { error: t('Connect Jira before picking a board.') }
   },
 
   delete: (): Promise<void> => store.deleteSecret('jira')

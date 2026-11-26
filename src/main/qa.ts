@@ -45,19 +45,19 @@ export async function detectQa(path: string): Promise<QaInfo | null> {
   const has = (n: string): boolean => names.includes(n)
 
   const expo = names.find((n) => n === 'app.json' || n.startsWith('app.config.'))
-  if (pkg && 'expo' in pkg.deps && expo) return { kind: 'expo', command: 'npx expo start', why: t('Hay un {file} de Expo', { file: expo }) }
+  if (pkg && 'expo' in pkg.deps && expo) return { kind: 'expo', command: 'npx expo start', why: t('There is an Expo {file}', { file: expo }) }
   if (pkg && 'react-native' in pkg.deps && (has('ios') || has('android')))
-    return { kind: 'react-native', command: 'npx react-native run-ios / npx react-native run-android', why: t('Hay un package.json con react-native') }
-  if (has('pubspec.yaml') && /^flutter:/m.test((await text(join(path, 'pubspec.yaml'))) ?? '')) return { kind: 'flutter', command: 'flutter run', why: t('Hay un pubspec.yaml de Flutter') }
+    return { kind: 'react-native', command: 'npx react-native run-ios / npx react-native run-android', why: t('There is a package.json with react-native') }
+  if (has('pubspec.yaml') && /^flutter:/m.test((await text(join(path, 'pubspec.yaml'))) ?? '')) return { kind: 'flutter', command: 'flutter run', why: t('There is a Flutter pubspec.yaml') }
   const gradle = names.find((n) => n.startsWith('settings.gradle'))
   if (gradle && (await exists(join(path, 'app', 'src', 'main', 'AndroidManifest.xml'))))
-    return { kind: 'android', command: './gradlew installDebug', why: t('Hay un {file} con una app Android', { file: gradle }) }
+    return { kind: 'android', command: './gradlew installDebug', why: t('There is a {file} with an Android app', { file: gradle }) }
   const xcode = names.find((n) => n.endsWith('.xcodeproj') || n.endsWith('.xcworkspace')) ?? (((await text(join(path, 'Package.swift'))) ?? '').includes('.iOS(') ? 'Package.swift' : null)
-  if (xcode) return { kind: 'ios', command: 'xcodebuild -scheme <scheme> -destination "platform=iOS Simulator,name=<simulator>"', why: t('Hay un {file} de iOS', { file: xcode }) }
+  if (xcode) return { kind: 'ios', command: 'xcodebuild -scheme <scheme> -destination "platform=iOS Simulator,name=<simulator>"', why: t('There is an iOS {file}', { file: xcode }) }
   const script = ['dev', 'start', 'preview'].find((s) => pkg && s in pkg.scripts)
   if (script) {
     const pm = has('pnpm-lock.yaml') ? 'pnpm' : has('yarn.lock') ? 'yarn' : 'npm'
-    return { kind: 'web', command: `${pm} run ${script}`, why: t('Hay un package.json con el script {script}', { script }) }
+    return { kind: 'web', command: `${pm} run ${script}`, why: t('There is a package.json with the {script} script', { script }) }
   }
   return null
 }
@@ -196,21 +196,21 @@ const REPORT_SHAPE = '{"criteria":[{"id":"W1","status":"pass","note":"one senten
 export async function qaPrompt(target: QaTarget, device: QaDevice | null, path: string, branch: string, base: string, shots: string, id: string, request?: string): Promise<string> {
   const { change, criteria } = await readCriteria(path)
   const what = change
-    ? t('lo que promete la spec del cambio en {proposal}', { proposal: join(path, '.agents', 'changes', change, 'proposal.md') })
-    : t('lo que cambia la rama {branch} respecto a su base ({base})', { branch, base })
+    ? t("what the change's spec in {proposal} promises", { proposal: join(path, '.agents', 'changes', change, 'proposal.md') })
+    : t('what branch {branch} changes against its base ({base})', { branch, base })
   const vars = { platform: PLATFORM_LABEL[target.platform], command: target.command, target: what, shots }
   const intro = !device
-    ? t('Eres el QA de este trabajo en {platform}. Arranca la app con «{command}» en un puerto libre, ábrela con el navegador de Playwright y recorre {target}. Guarda una captura de cada paso en {shots} (sin nombre de archivo, Playwright las deja ahí). No cambies código ni hagas commits; al terminar, resume qué funciona y qué no.', vars)
-    : t('Eres el QA de este trabajo en {platform}. Usa solo {device}, reservado para este trabajo (los demás son de otros QA); si no está en marcha, arráncalo con «{boot}». Arranca la app con «{command}» y recorre {target} con {tools}. Guarda una captura PNG de cada paso en {shots} con la herramienta de captura de mobile-mcp. No cambies código ni hagas commits; al terminar, resume qué funciona y qué no.', {
+    ? t("You are this workspace's QA on {platform}. Start the app with “{command}” on a free port, open it with Playwright's browser and go through {target}. Save a screenshot of every step in {shots} (no file name, Playwright leaves them there). Do not change code or commit; when done, sum up what works and what does not.", vars)
+    : t("You are this workspace's QA on {platform}. Use only {device}, reserved for this workspace (the others belong to other QA runs); if it is not running, start it with “{boot}”. Start the app with “{command}” and go through {target} with {tools}. Save a PNG screenshot of every step in {shots} with mobile-mcp's screenshot tool. Do not change code or commit; when done, sum up what works and what does not.", {
         ...vars,
         device: device.name,
         boot: device.boot,
-        tools: target.platform === 'ios' ? t('mobile-mcp y el MCP de Xcode') : 'mobile-mcp'
+        tools: target.platform === 'ios' ? t("mobile-mcp and Xcode's MCP") : 'mobile-mcp'
       })
   const parts = [intro]
   if (criteria.length > 0) {
     parts.push(
-      t('Al terminar cada criterio, escribe el informe en {report} y reescríbelo entero cada vez, con esta forma: {shape}. «status» es pass, fail o untested; «shot» es el nombre de una captura de {shots}, sin ruta. Los criterios:', {
+      t('After each criterion, write the report to {report} and rewrite it whole every time, in this shape: {shape}. "status" is pass, fail or untested; "shot" is the name of a screenshot in {shots}, with no path. The criteria:', {
         report: reportFile(id),
         shape: REPORT_SHAPE,
         shots
@@ -240,35 +240,35 @@ const fail = (what: string, cant: string, fix: QaFix, detail: string): QaLaunchR
 /** W125: the first problem in this order stops the launch, before anything starts. */
 async function problemOf(target: QaTarget, run: Runner): Promise<{ problem: QaLaunchResult } | { emulator: string | null }> {
   const { missing, emulator } = await tools(target.platform, run)
-  const detail = t('Falta: {tools}', { tools: missing.join(', ') })
-  if (missing.includes('node')) return { problem: fail(t('Falta Node'), t('No puedes probar en vivo: las herramientas de QA corren con Node'), 'install-node', detail) }
-  if (missing.length > 0 && target.platform === 'android') return { problem: fail(t('Falta el SDK de Android'), t('No puedes probar en Android'), 'install-android-studio', detail) }
-  if (missing.length > 0) return { problem: fail(t('Tu Xcode no trae su MCP'), t('No puedes probar en iOS: hace falta Xcode 26.3 o posterior'), 'update-xcode', detail) }
+  const detail = t('Missing: {tools}', { tools: missing.join(', ') })
+  if (missing.includes('node')) return { problem: fail(t('Node is missing'), t('You cannot test live: the QA tools run on Node'), 'install-node', detail) }
+  if (missing.length > 0 && target.platform === 'android') return { problem: fail(t('The Android SDK is missing'), t('You cannot test on Android'), 'install-android-studio', detail) }
+  if (missing.length > 0) return { problem: fail(t('Your Xcode does not ship its MCP'), t('You cannot test on iOS: it needs Xcode 26.3 or later'), 'update-xcode', detail) }
   return { emulator }
 }
 
 /** `request`: W116's ask, appended to the prompt when a retest has to start QA. `key`: the target; the repo's chosen one when absent. */
 export async function launchQa(id: string, run: Runner, request?: string, key?: string): Promise<QaLaunchResult> {
   const ws = (await readRecords()).find((r) => r.id === id && r.mode !== 'review')
-  if (!ws) return { error: t('Ese trabajo ya no existe') }
+  if (!ws) return { error: t('That work no longer exists') }
   const listed = await qaTargets(id)
   const target = listed?.targets.find((x) => x.key === (key ?? listed.chosen))
-  if (!target && key !== undefined) return { error: t('Ese objetivo no existe') }
+  if (!target && key !== undefined) return { error: t('That target does not exist') }
   if (!target)
     return fail(
-      t('No sé cómo abrir este proyecto'),
-      t('No puedes probarlo en vivo hasta que elijas cómo abrirlo'),
+      t('I do not know how to open this project'),
+      t('You cannot test it live until you choose how to open it'),
       'pick-manual',
-      t('Busqué package.json con dev, start o preview, app.json de Expo, pubspec.yaml, settings.gradle, .xcodeproj o Package.swift, en la raíz y dos niveles')
+      t("I looked for package.json with dev, start or preview, Expo's app.json, pubspec.yaml, settings.gradle, .xcodeproj or Package.swift, at the root and two levels down")
     )
-  if (starting.has(id)) return { error: t('Ya hay un QA en marcha en este trabajo') }
+  if (starting.has(id)) return { error: t('A QA is already running in this work') }
   starting.add(id)
   try {
-    if (await qaLive(id, run)) return { error: t('Ya hay un QA en marcha en este trabajo') }
+    if (await qaLive(id, run)) return { error: t('A QA is already running in this work') }
     const checked = await problemOf(target, run)
     if ('problem' in checked) return checked.problem
     if (!(await lstat(join(ws.path, target.dir)).then((st) => st.isDirectory(), () => false)))
-      return fail(t('La carpeta {dir} no existe en este trabajo', { dir: target.dir }), t('No puedes probarlo en vivo hasta que elijas cómo abrirlo'), 'pick-manual', join(ws.path, target.dir))
+      return fail(t('The folder {dir} does not exist in this workspace', { dir: target.dir }), t('You cannot test it live until you choose how to open it'), 'pick-manual', join(ws.path, target.dir))
     let device: QaDevice | null = null
     // A browser QA holds no device: one left from an earlier mobile run is freed here.
     if (target.platform !== 'android' && target.platform !== 'ios') await release(id)
@@ -277,17 +277,17 @@ export async function launchQa(id: string, run: Runner, request?: string, key?: 
       const list = await listDevices(target.platform, checked.emulator, run)
       if (list.length === 0)
         return android
-          ? fail(t('No tienes ningún emulador de Android'), t('No puedes probar en Android hasta que crees uno'), 'create-avd', t('emulator -list-avds no devolvió ninguno'))
-          : fail(t('No hay ningún simulador de iPhone'), t('No puedes probar en iOS hasta que tengas uno'), 'open-xcode', t('xcrun simctl list devices available no trajo ningún iPhone'))
+          ? fail(t('You have no Android emulator'), t('You cannot test on Android until you create one'), 'create-avd', t('emulator -list-avds returned none'))
+          : fail(t('There is no iPhone simulator'), t('You cannot test on iOS until you have one'), 'open-xcode', t('xcrun simctl list devices available listed no iPhone'))
       device = await reserve(id, list, run)
       if (!device) {
         const by = (await readHolds())[list[0]!.id]
         const branch = (await readRecords()).find((r) => r.id === by)?.branch ?? by ?? ''
         return fail(
-          android ? t('Todos los emuladores están ocupados por otro QA') : t('Todos los simuladores están ocupados por otro QA'),
-          t('No puedes probar este trabajo hasta que otro QA termine'),
+          android ? t('Every emulator is in use by another QA') : t('Every simulator is in use by another QA'),
+          t('You cannot test this workspace until another QA finishes'),
           'open-workspace',
-          t('{device} lo usa {branch}', { device: list[0]!.name, branch })
+          t('{branch} is using {device}', { device: list[0]!.name, branch })
         )
       }
     }
@@ -323,7 +323,7 @@ export async function deviceHolder(id: string, run: Runner): Promise<string | nu
 /** Kills only the QA pane and frees its device; its MCP file and screenshots stay. */
 export async function stopQa(id: string, run: Runner): Promise<QaResult> {
   // The id names files under qa/: only a recorded workspace's id gets that far.
-  if (!(await readRecords()).some((r) => r.id === id)) return { error: t('Ese trabajo ya no existe') }
+  if (!(await readRecords()).some((r) => r.id === id)) return { error: t('That work no longer exists') }
   const pane = (await text(paneFile(id)))?.trim()
   if (pane && (await hasPane(id, pane, run))) await killPane(pane, run)
   await rm(paneFile(id), { force: true })

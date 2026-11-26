@@ -19,10 +19,10 @@ export const ACTIVITY_ICON: Record<ActivityKind, IconName> = {
 
 export function ago(t: T, at: number, now: number): string {
   const s = Math.max(0, Math.floor(now / 1000 - at))
-  if (s < 60) return t('ahora')
-  if (s < 3600) return t('hace {n} min', { n: Math.floor(s / 60) })
-  if (s < 86400) return t('hace {n} h', { n: Math.floor(s / 3600) })
-  return t('hace {n} d', { n: Math.floor(s / 86400) })
+  if (s < 60) return t('now')
+  if (s < 3600) return t('{n} min ago', { n: Math.floor(s / 60) })
+  if (s < 86400) return t('{n} h ago', { n: Math.floor(s / 3600) })
+  return t('{n} d ago', { n: Math.floor(s / 86400) })
 }
 
 export function ActivityFeed({ workspaceId }: { workspaceId: string | null }) {
@@ -46,10 +46,10 @@ export function ActivityFeed({ workspaceId }: { workspaceId: string | null }) {
     return () => clearInterval(timer)
   }, [])
 
-  if (!workspaceId) return <div className="empty">{t('Elige un trabajo para ver lo que hace su agente.')}</div>
-  if (lines.length === 0) return <div className="empty">{t('Aún no hay actividad: aparece cuando el agente haga algo.')}</div>
+  if (!workspaceId) return <div className="empty">{t('Pick a workspace to see what its agent is doing.')}</div>
+  if (lines.length === 0) return <div className="empty">{t('No activity yet: it shows up when the agent does something.')}</div>
   return (
-    <ul className="feed" aria-label={t('Actividad del agente, la más reciente primero')}>
+    <ul className="feed" aria-label={t('Agent activity, most recent first')}>
       {lines.map((l, i) => (
         <li className={`act ${l.kind}`} key={`${l.at}-${i}`}>
           <Icon name={ACTIVITY_ICON[l.kind]} size={16} />

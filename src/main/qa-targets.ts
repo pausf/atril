@@ -67,12 +67,12 @@ const once = (ts: QaTarget[]): QaTarget[] => ts.filter((x, i) => ts.findIndex((y
 async function checkTarget(root: string, raw: unknown): Promise<QaManualRequest | string> {
   const v = (typeof raw === 'object' && raw !== null ? raw : {}) as Record<string, unknown>
   const platform = PLATFORMS.find((p) => p === v['platform'])
-  if (!platform) return t('La plataforma tiene que ser Chrome, Safari, Android o iOS')
-  if (typeof v['dir'] !== 'string') return t('La carpeta tiene que estar dentro del repo, sin «..»')
+  if (!platform) return t('The platform must be Chrome, Safari, Android or iOS')
+  if (typeof v['dir'] !== 'string') return t('The folder must be inside the repo, with no “..”')
   const dir = v['dir'].replace(/^(\.\/)+/, '').replace(/\/+$/, '')
   const clean = dir === '.' ? '' : dir
-  if (isAbsolute(clean) || /[\\\0]/.test(clean) || clean.split('/').includes('..')) return t('La carpeta tiene que estar dentro del repo, sin «..»')
-  const missing = t('La carpeta {dir} no existe en este trabajo', { dir: clean })
+  if (isAbsolute(clean) || /[\\\0]/.test(clean) || clean.split('/').includes('..')) return t('The folder must be inside the repo, with no “..”')
+  const missing = t('The folder {dir} does not exist in this workspace', { dir: clean })
   try {
     const [real, base] = await Promise.all([realpath(join(root, clean)), realpath(root)])
     // A link inside the repo may still point out of it.
@@ -80,8 +80,8 @@ async function checkTarget(root: string, raw: unknown): Promise<QaManualRequest 
   } catch {
     return missing
   }
-  if (typeof v['command'] !== 'string' || v['command'].trim() === '') return t('Falta el comando')
-  if (v['command'].length > MAX_COMMAND) return t('El comando pasa de {n} caracteres', { n: MAX_COMMAND })
+  if (typeof v['command'] !== 'string' || v['command'].trim() === '') return t('The command is missing')
+  if (v['command'].length > MAX_COMMAND) return t('The command is longer than {n} characters', { n: MAX_COMMAND })
   return { platform, dir: clean, command: v['command'].trim() }
 }
 
@@ -100,7 +100,7 @@ async function fileTargets(root: string): Promise<QaTarget[] | null> {
     return []
   }
   if (!Array.isArray(list)) return []
-  const why = t('Lo dice .atril/qa.json')
+  const why = t('.atril/qa.json says so')
   const ok = await Promise.all(list.map((raw) => checkTarget(root, raw)))
   return ok.flatMap((r) => (typeof r === 'string' ? [] : [make(r.platform, r.dir, r.command, why, 'file')]))
 }
@@ -109,7 +109,7 @@ async function fileTargets(root: string): Promise<QaTarget[] | null> {
 export async function findTargets(root: string): Promise<{ targets: QaTarget[]; note: string | null }> {
   const file = await fileTargets(root)
   if (file && file.length > 0) return { targets: once(file.sort(byFolder)), note: null }
-  return { targets: once((await detected(root)).sort(byFolder)), note: file ? t('.atril/qa.json no se entiende: uso lo que detecto') : null }
+  return { targets: once((await detected(root)).sort(byFolder)), note: file ? t('.atril/qa.json cannot be read: using what I detect') : null }
 }
 
 type Store = Record<string, { chosen?: string; manual: QaManualRequest[] }>
@@ -150,7 +150,7 @@ export async function qaTargets(id: string): Promise<QaTargets | null> {
   if (!ws) return null
   const [{ targets: found, note }, store] = await Promise.all([findTargets(ws.path), readStore()])
   const entry = store[ws.repoId]
-  const why = t('Lo elegiste a mano')
+  const why = t('You picked it by hand')
   const manual = (Array.isArray(entry?.manual) ? entry.manual : [])
     .filter((m) => PLATFORMS.includes(m?.platform) && typeof m.dir === 'string' && typeof m.command === 'string')
     .map((m) => make(m.platform, m.dir, m.command, why, 'manual'))
@@ -163,7 +163,7 @@ export async function qaTargets(id: string): Promise<QaTargets | null> {
 /** W122: a hand-picked target replaces any of the repo's with the same platform and folder. */
 export async function addManual(id: string, raw: unknown): Promise<QaTargets | { error: string }> {
   const ws = await recordOf(id)
-  if (!ws) return { error: t('Ese trabajo ya no existe') }
+  if (!ws) return { error: t('That work no longer exists') }
   const checked = await checkTarget(ws.path, raw)
   if (typeof checked === 'string') return { error: checked }
   await update(ws.repoId, (e) => {
@@ -174,7 +174,7 @@ export async function addManual(id: string, raw: unknown): Promise<QaTargets | {
 
 export async function removeManual(id: string, key: unknown): Promise<QaTargets | { error: string }> {
   const ws = await recordOf(id)
-  if (!ws) return { error: t('Ese trabajo ya no existe') }
+  if (!ws) return { error: t('That work no longer exists') }
   await update(ws.repoId, (e) => {
     e.manual = e.manual.filter((m) => `${m.platform}:${m.dir}` !== key)
   })
@@ -184,8 +184,8 @@ export async function removeManual(id: string, key: unknown): Promise<QaTargets 
 /** W123: the tab pressed, remembered for every workspace of the repo. */
 export async function chooseTarget(id: string, key: unknown): Promise<QaTargets | { error: string }> {
   const ws = await recordOf(id)
-  if (!ws) return { error: t('Ese trabajo ya no existe') }
-  if (typeof key !== 'string' || key.length > 300) return { error: t('Ese objetivo no existe') }
+  if (!ws) return { error: t('That work no longer exists') }
+  if (typeof key !== 'string' || key.length > 300) return { error: t('That target does not exist') }
   await update(ws.repoId, (e) => {
     e.chosen = key
   })

@@ -65,8 +65,8 @@ export function Terminal({ id }: { id: string }) {
         <div className="term-problem">
           <Problem
             what={problem.error}
-            cant={t('Tu agente sigue en tmux: solo falla esta vista.')}
-            fix={t('Volver a intentar')}
+            cant={t('Your agent is still running in tmux: only this view failed.')}
+            fix={t('Try again')}
             onFix={() => xterm.current && attach(xterm.current.cols, xterm.current.rows)}
             detail={problem.detail}
           />

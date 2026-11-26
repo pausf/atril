@@ -46,10 +46,10 @@ export function DoctorChip({ problems, openRequest = 0 }: { problems: ToolReport
   return (
     <span className="doctor-chip" ref={root} data-tour="doctor">
       <button className="chip bad" aria-haspopup="dialog" aria-expanded={open} onClick={() => setOpen(!open)}>
-        {problems.length === 1 ? t('{n} herramienta por instalar', { n: 1 }) : t('{n} herramientas por instalar', { n: problems.length })}
+        {problems.length === 1 ? t('{n} tool to install', { n: 1 }) : t('{n} tools to install', { n: problems.length })}
       </button>
       {open && (
-        <div className="popover" role="dialog" aria-label={t('Herramientas que faltan')}>
+        <div className="popover" role="dialog" aria-label={t('Missing tools')}>
           {problems.map((p) => (
             <div className="doctor-item" key={p.tool}>
               <b>{p.tool}</b>
@@ -58,16 +58,16 @@ export function DoctorChip({ problems, openRequest = 0 }: { problems: ToolReport
                 <span className="doctor-cmd">
                   <code>{p.install}</code>
                   <button className="btn" onClick={() => copy(p.install)}>
-                    {copied === p.install ? t('Copiado') : t('Copiar')}
+                    {copied === p.install ? t('Copied') : t('Copy')}
                   </button>
                   {installs[p.tool] !== 'running' && (
                     <button className="btn p" onClick={() => install(p.tool)}>
-                      {t('Instalar')}
+                      {t('Install')}
                     </button>
                   )}
                 </span>
               )}
-              {installs[p.tool] === 'running' && <span className="doctor-problem">{t('Instalando en Terminal…')}</span>}
+              {installs[p.tool] === 'running' && <span className="doctor-problem">{t('Installing in Terminal…')}</span>}
               {installs[p.tool] !== undefined && installs[p.tool] !== 'running' && <span className="doctor-error" role="alert">{installs[p.tool]}</span>}
             </div>
           ))}

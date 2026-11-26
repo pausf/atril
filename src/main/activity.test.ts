@@ -181,7 +181,7 @@ describe('activity', () => {
     const ws = await open(fire([['Stop', { transcript_path: path }]]), 'feat/s')
     const got = await until(() => lines(ws.session), (l) => l.length === 1)
     expect(got[0]?.text).toBe('Claude dice: Tests en verde, todo listo.')
-    expect(stateFile(ws.session)).toMatchObject({ state: 'needs-you', text: 'Claude dice: Tests en verde, todo listo.' })
+    expect(stateFile(ws.session)).toMatchObject({ state: 'done', text: 'Claude dice: Tests en verde, todo listo.' })
   })
 
   it('activity file stays bounded', async () => {
