@@ -3803,27 +3803,27 @@ Zero questions asked: the repo's autonomy rule says take the recommended option 
 ### CDP isolation (fix-cdp-isolation, 26 nov 2026)
 
 - **W320** While the app is not packaged, `ATRIL_CDP_PORT` is a whole number from 1024 to 65535 and `ATRIL_LAUNCH_TOKEN` is 16 to 128 characters of `A-Z a-z 0-9 _ -`, `cdpConfig` shall answer `{ port, token }`.
-  Proof: src/main/cdp.test.ts cdpConfig enables only in dev with a port and a token
+  Proof: src/main/cdp.test.ts enables only in dev with a port and a token
 - **W321** While the app is packaged, or `ATRIL_CDP_PORT` is unset or empty, `cdpConfig` shall answer nothing, whatever `ATRIL_LAUNCH_TOKEN` holds.
-  Proof: src/main/cdp.test.ts cdpConfig answers nothing when packaged or without a port
+  Proof: src/main/cdp.test.ts answers nothing when packaged or without a port
 - **W322** If `ATRIL_CDP_PORT` is set and not empty in a dev start and is not a whole number from 1024 to 65535, or `ATRIL_LAUNCH_TOKEN` is missing or not as W320 says, then `cdpConfig` shall answer an error that names the variable at fault and never contains the token.
-  Proof: src/main/cdp.test.ts cdpConfig refuses a bad port or token without echoing the token
+  Proof: src/main/cdp.test.ts refuses a bad port or token without echoing the token
 - **W323** When given a URL and a token, `withLaunch` shall answer that URL with the query parameter `launch` set to the token, keeping any other parameter, and shall answer the same value for a `file:` URL.
-  Proof: src/main/cdp.test.ts withLaunch sets the launch parameter and keeps the rest
+  Proof: src/main/cdp.test.ts sets the launch parameter and keeps the rest
 - **W324** When `/json/list` on `127.0.0.1:<port>` returns a page target whose `url`, parsed with `URL`, has the parameter `launch` equal to the token, `verifyOwnTarget(port, token)` shall answer true, whatever other targets it lists.
-  Proof: src/main/cdp.test.ts verifyOwnTarget finds its own page on a real server
+  Proof: src/main/cdp.test.ts finds its own page on a real server
 - **W325** If that list has no page with that exact parameter (another Atril's pages, a page whose token only starts with ours, a non-JSON body, an error status, or nothing answering), then `verifyOwnTarget` shall answer false.
-  Proof: src/main/cdp.test.ts verifyOwnTarget refuses a port another Atril holds
+  Proof: src/main/cdp.test.ts refuses a port another Atril holds
 - **W326** When `guardCdp` is given a `verify`, an attempt count, a delay and a `sleep`, it shall ask until `verify` answers true or the attempts are spent, printing nothing and not exiting on a true; if every attempt answers false, then it shall print one line on stderr naming the port and never the token, and call `exit(1)`.
-  Proof: src/main/cdp.test.ts guardCdp retries then exits on a port another Atril holds
+  Proof: src/main/cdp.test.ts retries then exits on a port another Atril holds
 - **W327** When CDP is enabled, the first statement in `src/main/index.ts`'s `app.whenReady().then(async () => {` callback shall be `await cdpGate(`, so that the guard passes before `loginPath`, any handler or any window.
   Proof: src/main/cdp.test.ts index runs the cdp gate before any other startup
 - **W328** If no page of any context of the browser has the parameter `launch` equal to the token, then `attachVerified(connect, port, token)` shall close the connection and throw an error that names the port, without calling `content`, `evaluate`, `title`, `screenshot` or any read other than `url()` on any page.
-  Proof: scripts/cdp-drive.test.ts attachVerified refuses a browser that is not ours without reading it
+  Proof: scripts/cdp-drive.test.ts refuses a browser that is not ours without reading it
 - **W329** While the browser also holds pages of another Atril, `attachVerified` shall never return or read them and shall return the one page carrying the token; if two pages carry it, then it shall close the connection and throw.
-  Proof: scripts/cdp-drive.test.ts attachVerified ignores the pages of another Atril
+  Proof: scripts/cdp-drive.test.ts ignores the pages of another Atril
 - **W330** The query name `scripts/cdp-drive.mjs` looks for shall equal `LAUNCH_QUERY` of `src/main/cdp.ts` (the script repeats it, because a `.mjs` cannot import the `.ts`), so that a rename in one breaks a test, not a drive.
-  Proof: scripts/cdp-drive.test.ts attachVerified uses the query name main writes
+  Proof: scripts/cdp-drive.test.ts uses the query name main writes
 - **W331** While the app has not yet created its first real window, closing the hidden probe of W327's gate shall not quit the app: `window-all-closed` quits only once `createWindow` has run. (Found by the real-app drive of box 1: destroying the probe, the only window, quit the app before the real window existed.)
   Proof: src/main/cdp.test.ts index keeps running when the probe closes before the first real window
 
