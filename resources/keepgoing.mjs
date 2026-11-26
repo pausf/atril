@@ -22,6 +22,7 @@ function repoRoot(cwd) {
 
 function countOpen(text) {
   let open = 0
+  let first
   let listed = false
   let fenced = false
   for (const line of text.split('\n')) {
@@ -34,9 +35,12 @@ function countOpen(text) {
       listed = /^##\s+Checklist\s*$/.test(line)
       continue
     }
-    if (listed && BOX.test(line)) open++
+    if (listed && BOX.test(line)) {
+      open++
+      first ??= line.replace(BOX, '').replace(/\s+/g, ' ').trim()
+    }
   }
-  return open
+  return { open, first }
 }
 
 /** W217: every change of the repo around `cwd` whose checklist has open boxes. */
@@ -56,8 +60,8 @@ export function openBoxes(cwd) {
     const file = join(dir, change, 'proposal.md')
     try {
       if (!lstatSync(file).isFile()) continue
-      const open = countOpen(readFileSync(file, 'utf8'))
-      if (open > 0) out.push({ change, open })
+      const { open, first } = countOpen(readFileSync(file, 'utf8'))
+      if (open > 0) out.push({ change, open, first })
     } catch {
       /* no proposal here */
     }
@@ -66,6 +70,18 @@ export function openBoxes(cwd) {
 }
 
 const EDGE = /^[\s*_`"'»”)]+|[\s*_`"'»”)]+$/g
+
+const clip = (s, n) => (s.length > n ? `${s.slice(0, n - 1)}…` : s)
+
+/** W232: the last sentence of the agent's words, for «Para porque:». */
+export function lastSentence(text) {
+  const last = (typeof text === 'string' ? text.split('\n').filter((l) => l.trim()).at(-1) : '') ?? ''
+  const pieces = last.replace(/\s+/g, ' ').trim().split(/(?<=[.!?…])\s+/).filter(Boolean)
+  return clip(pieces.at(-1) ?? '', 200)
+}
+
+/** W231: the box the agent is on, for the cap's card. */
+export const boxOf = (open) => clip(open[0]?.first ?? '', 120)
 
 /** W219: the last line of the agent's words when they end with a question to the person, else ''. */
 export function proseQuestion(text) {
@@ -115,6 +131,6 @@ export const reason = (open) =>
 export function decideStop({ open, active, blocks, paused }) {
   const prior = active === false ? 0 : Number.isInteger(blocks) ? blocks : 0
   if (open.length === 0) return { outcome: undefined, blocks: prior }
-  if (paused || prior >= MAX_BLOCKS) return { outcome: 'turn-end', blocks: prior }
+  if (paused || prior >= MAX_BLOCKS) return { outcome: 'turn-end', blocks: prior, cap: !paused }
   return { outcome: 'block', blocks: prior + 1 }
 }

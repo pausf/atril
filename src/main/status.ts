@@ -35,6 +35,10 @@ interface HookFile {
   idle?: unknown
   turn?: unknown
   waiting?: unknown
+  repeat?: unknown
+  why?: unknown
+  box?: unknown
+  said?: unknown
   /** Before W197: the first question's labels. */
   options?: unknown
   multiSelect?: unknown
@@ -138,7 +142,19 @@ export async function waitOf(session: string): Promise<AgentWait | null> {
     questions: questionsOf(file),
     next: nextQuestion(session, file),
     ...(kind === 'permission' && typeof p?.tool === 'string' && p.tool && { permission: { tool: p.tool, ...(typeof p.summary === 'string' && p.summary && { summary: p.summary }) } }),
-    idle: file.idle === true
+    idle: file.idle === true,
+    ...(kind === 'turn-end' && reasonOf(file))
+  }
+}
+
+/** W233: why a turn end shows, read from the hook's W231–W232 fields. */
+function reasonOf(file: HookFile): Pick<AgentWait, 'why' | 'box' | 'said'> {
+  const loop = Number.isInteger(file.repeat) && (file.repeat as number) >= 1
+  const cap = !loop && file.why === 'cap'
+  return {
+    ...(loop && { why: 'loop' as const }),
+    ...(cap && { why: 'cap' as const, ...(str(file.box) && { box: str(file.box) }) }),
+    ...(str(file.said) && { said: str(file.said) })
   }
 }
 
@@ -281,8 +297,11 @@ export async function pauseAgent(id: string, run: Runner = defaultRun): Promise<
   if ('error' in blocked) return { error: blocked.error }
   const ws = await liveWorkspace(id, run)
   if (!ws) return { error: replyGone() }
-  if ((await hookState(ws.session)) !== 'working') return { error: t('Ese agente no está trabajando.') }
-  if (!(await pressKey(ws.paneId, 'Escape', run))) return { error: replyGone() }
+  const state = await hookState(ws.session)
+  // W234: a turn end is already stopped: only the mark, no Escape.
+  const turnEnd = state === 'needs-you' && kindOfWait(await hookFile(ws.session)) === 'turn-end'
+  if (state !== 'working' && !turnEnd) return { error: t('Ese agente no está trabajando.') }
+  if (!turnEnd && !(await pressKey(ws.paneId, 'Escape', run))) return { error: replyGone() }
   await mkdir(join(atrilHome(), 'paused'), { recursive: true })
   await writeFile(pauseFile(ws.session), String(Math.floor(Date.now() / 1000)))
   return { ok: true }

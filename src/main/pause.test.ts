@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import type { WorkspaceView } from '../preload/api'
 import { hooksSettings } from './agent'
@@ -131,6 +131,25 @@ describe('pause', () => {
     expect(await removeWorkspace(b.id)).toEqual({ ok: true })
     expect(await pauseAgent(b.id, run)).toEqual({ error: replyGone() })
     expect(await pauseAgent('nosuchid', run)).toEqual({ error: replyGone() })
+    expect(sent).toEqual([])
+  })
+
+  it('a looping turn end pauses without a key', async () => {
+    makeRegisteredRepo(home)
+    const { pauseAgent, agentState } = await import('./status')
+    const a = await open('feat/loop')
+    mkdirSync(join(home, 'state'), { recursive: true })
+    const write = (body: object): void => writeFileSync(join(home, 'state', `${a.session}.json`), JSON.stringify({ state: 'needs-you', at: 2, ...body }))
+    write({ kind: 'turn-end', repeat: 1, said: 'Espero la suite.' })
+    const { run, sent } = await spied()
+    expect(await pauseAgent(a.id, run)).toEqual({ ok: true })
+    expect(sent).toEqual([])
+    expect(existsSync(join(home, 'paused', a.session))).toBe(true)
+    expect(await agentState(a, run)).toBe('paused')
+    // Any other wait is still refused.
+    rmSync(join(home, 'paused', a.session))
+    write({ kind: 'question', questions: [] })
+    expect(await pauseAgent(a.id, run)).toEqual({ error: 'Ese agente no está trabajando.' })
     expect(sent).toEqual([])
   })
 

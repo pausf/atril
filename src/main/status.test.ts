@@ -523,6 +523,22 @@ describe('answers', () => {
     expect(await waitingLine(ws.session)).toBeNull()
   }, 30_000)
 
+  it('the wait carries why the agent stopped', async () => {
+    const { waitOf } = await import('./status')
+    const ws = await open(SLEEP)
+    wait(ws.session, { kind: 'turn-end', text: 'Claude dice: x', said: 'Espero la suite.', repeat: 1, why: 'cap', box: 'B' })
+    expect(await waitOf(ws.session)).toMatchObject({ why: 'loop', said: 'Espero la suite.' })
+    wait(ws.session, { kind: 'turn-end', text: 'Claude dice: x', said: 'Sigo.', repeat: 0, why: 'cap', box: 'Apply the coupon' })
+    expect(await waitOf(ws.session)).toMatchObject({ why: 'cap', box: 'Apply the coupon', said: 'Sigo.' })
+    wait(ws.session, { kind: 'turn-end', text: 'Claude dice: x', said: 'Sigo.' })
+    const plain = await waitOf(ws.session)
+    expect(plain).toMatchObject({ said: 'Sigo.' })
+    expect(plain).not.toHaveProperty('why')
+    // Only a turn end carries a reason.
+    wait(ws.session, { kind: 'question', text: 'Te pregunta: ¿?', questions: [q('¿?', ['A'])], said: 'x', repeat: 3 })
+    expect(await waitOf(ws.session)).not.toHaveProperty('why')
+  }, 30_000)
+
   it('a done agent waits for its subagents too', async () => {
     const { createStatus } = await import('./status')
     const ws = await open(SLEEP)

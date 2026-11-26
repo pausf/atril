@@ -463,7 +463,7 @@ describe('subagents hook', () => {
     change('a', ['# a', '- [ ] above the checklist', '## Checklist', '- [ ] one', '  * [ ] two', '```', '- [ ] fenced', '```', '- [x] closed', '## After', '- [ ] after'].join('\n'))
     change('b', '# b\n\n## Checklist\n\n- [x] all done\n')
     change('c', '# c, a capture with no checklist\n- [ ] not a task\n')
-    expect(openBoxes(join(root, '.agents'))).toEqual([{ change: 'a', open: 2 }])
+    expect(openBoxes(join(root, '.agents'))).toEqual([{ change: 'a', open: 2, first: 'one' }])
     // A parent folder's changes are not this repo's.
     const inner = join(root, 'nested')
     mkdirSync(join(inner, '.git'), { recursive: true })
@@ -578,6 +578,38 @@ describe('subagents hook', () => {
     const q = { question: '¿Sigo?', header: 'Seguir', options: [{ label: 'Sí' }] }
     const pending = await fireIn([ask([q]), stopWith(repoWithBoxes(0), started('b3'))])
     expect(stateOf(pending.session)).toMatchObject({ state: 'needs-you', kind: 'turn-end' })
+  }, 90000)
+
+  it('the keep-going cap names the box it is on', async () => {
+    const root = tmp()
+    mkdirSync(join(root, '.git'))
+    mkdirSync(join(root, '.agents', 'changes', 'add-coupons'), { recursive: true })
+    writeFileSync(join(root, '.agents', 'changes', 'add-coupons', 'proposal.md'), `# a\n\n## Checklist\n\n- [x] done\n- [ ]   Apply   the coupon ${'x'.repeat(150)}\n- [ ] later\n`)
+    const capped = await fireIn([stopIn(root, false), ...Array.from({ length: 5 }, () => stopIn(root, true))])
+    const state = stateOf(capped.session)
+    expect(state).toMatchObject({ state: 'needs-you', kind: 'turn-end', why: 'cap' })
+    expect(state['box']).toBe(`Apply the coupon ${'x'.repeat(150)}`.slice(0, 119) + '…')
+    // A pause is no cap.
+    expect(stateOf((await fireIn([stopIn(root, false)], { paused: true })).session)).not.toHaveProperty('why')
+  }, 60000)
+
+  it('stops that repeat themselves are counted', async () => {
+    const said = (text: string): string => {
+      const path = join(tmp(), 't.jsonl')
+      writeFileSync(path, JSON.stringify({ type: 'assistant', message: { role: 'assistant', content: [{ type: 'text', text }] } }) + '\n')
+      return path
+    }
+    const stop = (text: string): [string, object] => ['Stop', { transcript_path: said(text) }]
+    const failed: [string, object] = ['PostToolUse', { tool_name: 'Bash', tool_input: { command: 'pnpm test' }, tool_response: { exit_code: 1 } }]
+    // The same last sentence twice, a «Sigue» in between included: a repeat.
+    const twice = stateOf((await fireIn([stop('Miro el fallo.\n\nEspero   la suite.'), ['UserPromptSubmit', { prompt: 'Sigue' }], stop('Otra cosa. Espero la suite.')])).session)
+    expect(twice).toMatchObject({ said: 'Espero la suite.', repeat: 1 })
+    expect(stateOf((await fireIn([stop('Uno.'), stop('Uno.'), stop('Uno.')])).session)).toMatchObject({ repeat: 2 })
+    expect(stateOf((await fireIn([stop('Uno.'), stop('Dos.')])).session)).toMatchObject({ said: 'Dos.', repeat: 0 })
+    // The same tool error on two stops in a row, whatever was said.
+    expect(stateOf((await fireIn([failed, stop('Uno.'), failed, stop('Dos.')])).session)).toMatchObject({ repeat: 1 })
+    // A stop clears the error: the next stop without one does not match.
+    expect(stateOf((await fireIn([failed, stop('Uno.'), stop('Dos.')])).session)).toMatchObject({ repeat: 0 })
   }, 90000)
 
   it('the hook says what kind of wait it is', async () => {
