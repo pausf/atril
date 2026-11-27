@@ -84,6 +84,10 @@ Governs: src/main/credentials/** src/renderer/settings/**
 - A test fails the day a key in code has no Spanish entry (and when an entry has no caller).
 - The flip is done by a script that reads the current catalog and rewrites call sites through the TypeScript AST; it ends with an equivalence check: for every old key, `old es` equals `ES[new key]` and `old EN[key]` equals the new key without its context suffix.
 
+### Carry ignored config into worktrees (#9) (carry-ignored-config, 27 nov 2026)
+
+In Ajustes → Repos each healthy repo row has a «Carried files» button. It opens a panel listing, one checkbox each, the repo's saved carry list (ticked) and the ignored files Atril suggests (unticked); ticking or unticking saves at once, and a field adds a typed path. A refusal says what happened and that nothing was saved.
+
 ## Scope boundaries
 
 **In:** storing, checking, replacing and deleting the Jira token, through a store and a card
@@ -177,6 +181,13 @@ Ownership: `src/preload/i18n-es.ts` is governed by the settings spec like `i18n-
 
 **Never scoped out:** the Spanish a person sees stays byte-identical, including punctuation and `{placeholders}`; a missing Spanish entry never shows an empty string (falls back to the English key).
 
+### Carry ignored config into worktrees (#9) (carry-ignored-config, 27 nov 2026)
+
+**In:** the button, the panel, its field and its `Problem` in `src/renderer/settings/Repos.tsx`; the mock in `src/renderer/mockApi.ts`; the panel's Spanish entries.
+**Out (named):** reordering the list; editing an entry in place (untick and type); showing a file's size or contents; a panel for a broken repo.
+
+**Never scoped out:** every control is a native, labelled checkbox, input or button, reachable by keyboard; the window never decides what is a valid path, main does (W480).
+
 ## Constraints
 
 - Electron `safeStorage` (macOS Keychain-backed key) encrypts each token; the ciphertext lives
@@ -243,6 +254,11 @@ Ownership: `src/preload/i18n-es.ts` is governed by the settings spec like `i18n-
 - A test that flakes under load (`openmr.test.ts`, `pause.test.ts`) and passes alone counts as green, and is reported as such.
 - Gates: `pnpm -s typecheck`, `pnpm -s lint`, `pnpm -s test` (the hook runs the first two). Never `pnpm build`.
 - Comment density as in neighbouring files; `ponytail:` comments in English.
+
+### Carry ignored config into worktrees (#9) (carry-ignored-config, 27 nov 2026)
+
+- The window sends ids and the list only; main answers the repos as listed or a refusal.
+- Texts through `useT()`, Spanish entries in `i18n-es.ts`.
 
 ## Prior decisions
 
@@ -467,6 +483,11 @@ Ownership: `src/preload/i18n-es.ts` is governed by the settings spec like `i18n-
 - Q: (phase 5 fork) how to keep both Spanish texts of a colliding pair → A: context suffix in the key (assumed). Rejected: a second `t(key, vars, ctx)` argument (every signature and the `useT` hook change for 17 keys), and accepting the loss (breaks «exactly today's Spanish»)
 - Q: `i18n-en.ts` → A: deleted at the end of the flip, nothing else imports it (assumed)
 
+### Carry ignored config into worktrees (#9) (carry-ignored-config, 27 nov 2026)
+
+- (2026-11-27, carry-ignored-config) An unticked typed entry leaves the panel; a refusal keeps the typed text; a refusal's `Problem` has only «Close» (assumed, from the cold review). If wrong: only `Repos.tsx` changes.
+- (2026-11-27, carry-ignored-config) Each change saves at once, no «Save» button (assumed: the mode select already saves on change). If wrong: only `Repos.tsx` changes.
+
 ## Task breakdown
 
 - Encrypted store with save / exists / delete.
@@ -665,3 +686,10 @@ Ownership: `src/preload/i18n-es.ts` is governed by the settings spec like `i18n-
   Proof: src/renderer/settings/repos.test.ts a typed path whose id is taken asks for another and registers the resolved path
 - **W447** If `repos.addPath` answers a `StateProblem` (`repos.json` damaged, W148), then the card shall show S33's problem with its detail folded and «Show in Finder», and shall show neither the field nor the button.
   Proof: src/renderer/settings/repos.test.ts a typed path while repos.json is damaged shows the damaged-file problem
+
+### Carry ignored config into worktrees (#9) (carry-ignored-config, 27 nov 2026)
+
+- **W488** When the person presses «Carried files» on a healthy repo row, the card shall ask main for that repo's suggestions and show one labelled checkbox per path in the union of the saved list (ticked) and the suggestions (unticked), sorted, names only; ticking or unticking one shall send the whole new list to main and show the repos main answers; typing a path in «Add a file» and pressing «Add» (or Enter) shall send the list with that path added and empty the field; an unticked entry that is not a suggestion shall leave the panel; with nothing saved and nothing suggested it shall say «No ignored files found here. Type one to carry it.». One test holds every clause.
+  Proof: src/renderer/settings/repos.test.ts the carried files of a repo are picked from suggestions or typed
+- **W489** If main refuses the list or cannot list the suggestions, then the panel shall show a `Problem` with main's sentence, «Nothing was saved.» (for a refused list) or «The suggestions are not shown.» (for the listing), git's detail folded when there is one, and only a «Close» button (the panel itself is the fix); the checkboxes shall show the list as last saved and a typed path shall stay in the field. If `repos.json` is damaged, then the card shall show its S33 problem, as the mode select does. One test holds every clause.
+  Proof: src/renderer/settings/repos.test.ts a refused carry list or suggestion failure says nothing was saved

@@ -1,5 +1,5 @@
 import { useContext, useEffect, useRef, useState, type ReactNode } from 'react'
-import type { FlowStage, RemoveResult, WorkspaceResult, WorkspaceView } from '../../preload/api'
+import type { Carried, CarryFail, FlowStage, RemoveResult, WorkspaceResult, WorkspaceView } from '../../preload/api'
 import { stateOf, useAgentStates, useLatestActivity } from '../agents'
 import { Steps } from '../flow/Steps'
 import { useT } from '../ui'
@@ -58,6 +58,27 @@ function Stopped({ ws, onReopened, onForget }: { ws: WorkspaceView; onReopened: 
   )
 }
 
+/** W487: names and reasons only; a carried file's contents never reach the window. */
+function CarriedLines({ carried }: { carried: Carried }) {
+  const t = useT()
+  const reason: Record<CarryFail, string> = {
+    missing: t('not found'),
+    'not-a-file': t('not a regular file'),
+    outside: t('outside the repo'),
+    exists: t('already there'),
+    'not-ignored': t('not ignored by git'),
+    failed: t('could not copy')
+  }
+  return (
+    <div className="m carried">
+      {carried.copied.length > 0 && <div>{t('Copied: {files}', { files: carried.copied.join(', ') })}</div>}
+      {carried.failed.length > 0 && (
+        <div className="bad">{t('Not copied: {files}', { files: carried.failed.map((f) => `${f.file} (${reason[f.why]})`).join(', ') })}</div>
+      )}
+    </div>
+  )
+}
+
 export function Workspace({
   ws,
   flow,
@@ -98,6 +119,7 @@ export function Workspace({
             <h1>{ws ? ws.branch : t('Pick a workspace')}</h1>
             {ws && <StateLabel state={stateOf(states, ws)} merged={ws.merged} />}
           </div>
+          {ws?.carried && <CarriedLines carried={ws.carried} />}
         </div>
         <span className="sp" />
         {switcher && <span className="wtools">{switcher}</span>}

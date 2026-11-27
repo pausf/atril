@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process'
-import { chmodSync, existsSync, mkdirSync, readFileSync } from 'node:fs'
+import { chmodSync, existsSync, mkdirSync, readdirSync, readFileSync } from 'node:fs'
 import { rmSync, symlinkSync, writeFileSync } from 'node:fs'
 import type { Effort } from '../preload/api'
 import { join } from 'node:path'
@@ -907,4 +907,123 @@ describe('a merged work', () => {
     if (!('workspace' in again)) throw new Error(again.error)
     expect((await readRecords()).some((x) => x.merged)).toBe(false)
   }, 40_000)
+})
+
+describe('carried files', () => {
+  /** Commits `.gitignore` (and `tracked`), then writes `files` (path → contents) untracked; the repo carries `carry`. */
+  function carrying(carry: string[], files: Record<string, string>, tracked: string[] = [], ignore = ['.env', '*.local', 'link.env', 'out']): void {
+    writeFileSync(join(repo, '.gitignore'), ignore.join('\n') + '\n')
+    for (const f of tracked) {
+      mkdirSync(join(repo, f, '..'), { recursive: true })
+      writeFileSync(join(repo, f), 'tracked')
+    }
+    git(repo, 'add', '-f', '.gitignore', ...tracked)
+    git(repo, 'commit', '-q', '-m', 'ignore')
+    for (const [f, body] of Object.entries(files)) {
+      mkdirSync(join(repo, f, '..'), { recursive: true })
+      writeFileSync(join(repo, f), body)
+    }
+    writeFileSync(join(home, 'repos.json'), JSON.stringify({ repos: [{ id: 'demo', path: repo, carry }] }))
+  }
+
+  it("a new worktree gets the repo's listed ignored files", async () => {
+    carrying(['.env', 'web/config.local'], { '.env': 'A=1\n', 'web/config.local': 'port=1\n' }, ['web/index.html'])
+    const r = await openWorktree({ repoId: 'demo', branch: 'feat/carry', agent: 'claude', argv: SLEEP })
+    if (!('workspace' in r)) throw new Error(r.error)
+    const path = r.workspace.path
+    expect(readFileSync(join(path, '.env'), 'utf8')).toBe('A=1\n')
+    expect(readFileSync(join(path, 'web/config.local'), 'utf8')).toBe('port=1\n')
+    expect(r.workspace.carried).toEqual({ copied: ['.env', 'web/config.local'], failed: [] })
+    expect((await readRecords())[0]!.carried).toEqual({ copied: ['.env', 'web/config.local'], failed: [] })
+    expect(git(path, 'status', '--porcelain')).toBe('')
+
+    // In-place and review works run in the checkout that already holds the files: nothing is copied or recorded.
+    writeFileSync(join(home, 'repos.json'), JSON.stringify({ repos: [{ id: 'demo', path: repo, carry: ['.env'], override: 'in-place' }] }))
+    const ip = await openWorktree({ repoId: 'demo', branch: 'feat/ip', agent: 'claude', argv: SLEEP })
+    if (!('workspace' in ip)) throw new Error(ip.error)
+    expect(ip.workspace.mode).toBe('in-place')
+    expect(ip.workspace).not.toHaveProperty('carried')
+    const rv = await openWorktree({ repoId: 'demo', branch: 'feat/rv', agent: 'claude', review: true, argv: SLEEP })
+    if (!('workspace' in rv)) throw new Error(rv.error)
+    expect(rv.workspace).not.toHaveProperty('carried')
+
+    // A repo with no list records nothing.
+    writeFileSync(join(home, 'repos.json'), JSON.stringify({ repos: [{ id: 'demo', path: repo }] }))
+    const plain = await openWorktree({ repoId: 'demo', branch: 'feat/plain', agent: 'claude', argv: SLEEP })
+    if (!('workspace' in plain)) throw new Error(plain.error)
+    expect(plain.workspace).not.toHaveProperty('carried')
+    expect(existsSync(join(plain.workspace.path, '.env'))).toBe(false)
+  })
+
+  it('a listed file is carried only when it is a regular ignored file inside the repo', async () => {
+    const outside = tmp()
+    writeFileSync(join(outside, 'x.local'), 'not yours')
+    carrying(
+      ['missing.local', 'link.env', 'dir.local', 'out/x.local', 'cfg/y.local', 'notes.txt', 'tracked.local', 'locked.local', '.env'],
+      { '.env': 'A=1', 'notes.txt': 'not ignored', 'locked.local': 'L', 'dir.local/inner': 'x' },
+      ['tracked.local']
+    )
+    // The branch tracks `cfg` as a link out; only the checkout has a real folder there.
+    const outside2 = tmp()
+    symlinkSync(outside2, join(repo, 'cfg'))
+    git(repo, 'add', 'cfg')
+    git(repo, 'commit', '-q', '-m', 'link')
+    rmSync(join(repo, 'cfg'))
+    mkdirSync(join(repo, 'cfg', 'sub'), { recursive: true })
+    writeFileSync(join(repo, 'cfg', 'y.local'), 'y')
+    symlinkSync(join(repo, '.env'), join(repo, 'link.env'))
+    symlinkSync(outside, join(repo, 'out'))
+    chmodSync(join(repo, 'locked.local'), 0o000)
+    try {
+      const r = await openWorktree({ repoId: 'demo', branch: 'feat/guards', agent: 'claude', argv: SLEEP })
+      if (!('workspace' in r)) throw new Error(r.error)
+      const path = r.workspace.path
+      expect(r.workspace.carried).toEqual({
+        copied: ['.env'],
+        failed: [
+          { file: 'missing.local', why: 'missing' },
+          { file: 'link.env', why: 'not-a-file' },
+          { file: 'dir.local', why: 'not-a-file' },
+          { file: 'out/x.local', why: 'outside' },
+          { file: 'cfg/y.local', why: 'outside' },
+          { file: 'notes.txt', why: 'not-ignored' },
+          { file: 'tracked.local', why: 'exists' },
+          { file: 'locked.local', why: 'failed' }
+        ]
+      })
+      for (const f of ['missing.local', 'link.env', 'dir.local', 'out', 'notes.txt', 'locked.local']) expect(existsSync(join(path, f))).toBe(false)
+      expect(readFileSync(join(path, 'tracked.local'), 'utf8')).toBe('tracked')
+      expect(readFileSync(join(outside, 'x.local'), 'utf8')).toBe('not yours')
+      expect(readdirSync(outside2)).toEqual([])
+      expect(git(path, 'status', '--porcelain')).toBe('')
+    } finally {
+      chmodSync(join(repo, 'locked.local'), 0o644)
+    }
+  })
+
+  it("a carried file's contents never reach the record or the log", async () => {
+    const MARK = 'SECRET-c4rry-7731'
+    carrying(['.env', 'gone.local'], { '.env': `TOKEN=${MARK}\n` })
+    const said: unknown[] = []
+    const spies = (['log', 'info', 'warn', 'error', 'debug'] as const).map((k) => vi.spyOn(console, k).mockImplementation((...a: unknown[]) => void said.push(...a)))
+    try {
+      const r = await openWorktree({ repoId: 'demo', branch: 'feat/secret', agent: 'claude', argv: SLEEP })
+      if (!('workspace' in r)) throw new Error(r.error)
+      expect(readFileSync(join(r.workspace.path, '.env'), 'utf8')).toContain(MARK)
+      expect(JSON.stringify(r)).not.toContain(MARK)
+      expect(readFileSync(join(home, 'workspaces.json'), 'utf8')).not.toContain(MARK)
+      expect(JSON.stringify(said.map(String))).not.toContain(MARK)
+    } finally {
+      for (const s of spies) s.mockRestore()
+    }
+  })
+
+  it('a work with carried files closes like a clean one', async () => {
+    carrying(['.env'], { '.env': 'A=1' })
+    const r = await openWorktree({ repoId: 'demo', branch: 'feat/close', agent: 'claude', argv: SLEEP })
+    if (!('workspace' in r)) throw new Error(r.error)
+    expect(existsSync(join(r.workspace.path, '.env'))).toBe(true)
+    expect(await removeWorkspace(r.workspace.id)).toEqual({ ok: true })
+    expect(existsSync(r.workspace.path)).toBe(false)
+  })
 })

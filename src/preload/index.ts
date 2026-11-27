@@ -169,7 +169,9 @@ const api: AtrilApi = {
     addPath: (text) => ipcRenderer.invoke('atril:repos:addPath', text),
     setOverride: (id, mode) => ipcRenderer.invoke('atril:repos:setOverride', id, mode),
     remove: (id) => ipcRenderer.invoke('atril:repos:remove', id),
-    relocate: (id) => ipcRenderer.invoke('atril:repos:relocate', id)
+    relocate: (id) => ipcRenderer.invoke('atril:repos:relocate', id),
+    setCarry: (id, files) => ipcRenderer.invoke('atril:repos:setCarry', id, files),
+    carrySuggest: (id) => ipcRenderer.invoke('atril:repos:carrySuggest', id)
   },
   workspaces: {
     list: () => ipcRenderer.invoke('atril:ws:list'),

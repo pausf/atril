@@ -4,7 +4,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, renameS
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { addRepoByPath, detectMode, listRepos, registerRepo, relocateRepo, rememberRepo, removeRepo, setOverride } from './repos'
+import { addRepoByPath, detectMode, listRepos, registerRepo, relocateRepo, rememberRepo, removeRepo, setCarry, setOverride, suggestCarry } from './repos'
 import { run, type Runner } from './run'
 
 const made: string[] = []
@@ -277,6 +277,86 @@ describe('repos', () => {
       expect(await addRepoByPath(second, run)).toEqual({ error: 'id-taken', suggested: 'shop-2', path: second })
       const odd = initAt(join(tmp(), '___'))
       expect(await addRepoByPath(odd, run)).toEqual({ error: 'invalid-id', path: odd })
+    })
+  })
+
+  describe('carried files', () => {
+    const saved = (): unknown => JSON.parse(readFileSync(join(process.env['ATRIL_HOME']!, 'repos.json'), 'utf8')).repos[0]
+
+    it('a carry list is saved only when every entry is a plain path inside the repo', async () => {
+      const root = makeRepo(['.env'], ['.env'])
+      const added = await registerRepo(root, run)
+      if (!('repo' in added)) throw new Error('register failed')
+      const id = added.repo.id
+
+      expect(await setCarry(id, ['.env', 'web/config.local', '.env'])).toEqual({ ok: true })
+      expect(saved()).toEqual({ id, path: root, carry: ['.env', 'web/config.local'] })
+      expect(((await listRepos(run)) as RepoView[])[0]!.carry).toEqual(['.env', 'web/config.local'])
+
+      const before = readFileSync(join(process.env['ATRIL_HOME']!, 'repos.json'), 'utf8')
+      const bad: [unknown, string][] = [
+        [['/etc/passwd'], '/etc/passwd no es la ruta de un archivo dentro del repo.'],
+        [['~/.ssh/id_rsa'], '~/.ssh/id_rsa no es la ruta de un archivo dentro del repo.'],
+        [['../outside'], '../outside no es la ruta de un archivo dentro del repo.'],
+        [['web/../../x'], 'web/../../x no es la ruta de un archivo dentro del repo.'],
+        [['./.env'], './.env no es la ruta de un archivo dentro del repo.'],
+        [['web//x'], 'web//x no es la ruta de un archivo dentro del repo.'],
+        [['web/'], 'web/ no es la ruta de un archivo dentro del repo.'],
+        [[''], ' no es la ruta de un archivo dentro del repo.'],
+        [['a\0b'], 'a\0b no es la ruta de un archivo dentro del repo.'],
+        [['x'.repeat(301)], `${'x'.repeat(301)} no es la ruta de un archivo dentro del repo.`],
+        [['.env', 42], '42 no es la ruta de un archivo dentro del repo.'],
+        ['.env', '.env no es la ruta de un archivo dentro del repo.'],
+        [Array.from({ length: 21 }, (_, n) => `f${n}`), 'Como mucho 20 archivos.']
+      ]
+      for (const [files, error] of bad) {
+        expect(await setCarry(id, files)).toEqual({ error })
+        expect(readFileSync(join(process.env['ATRIL_HOME']!, 'repos.json'), 'utf8')).toBe(before)
+      }
+      expect(await setCarry(id, ['x'.repeat(300)])).toEqual({ ok: true })
+      expect(await setCarry('nope', ['.env'])).toEqual({ error: 'No hay ningún repo «nope»' })
+
+      expect(await setCarry(id, [])).toEqual({ ok: true })
+      expect(saved()).toEqual({ id, path: root })
+    })
+
+    it('the mode override and the carry list never erase each other', async () => {
+      const root = makeRepo([], [])
+      const added = await registerRepo(root, run)
+      if (!('repo' in added)) throw new Error('register failed')
+      const id = added.repo.id
+      await setCarry(id, ['.env'])
+      await setOverride(id, 'in-place')
+      expect(saved()).toEqual({ id, path: root, override: 'in-place', carry: ['.env'] })
+      await setCarry(id, ['.env', 'b'])
+      expect(saved()).toEqual({ id, path: root, override: 'in-place', carry: ['.env', 'b'] })
+      await setOverride(id, null)
+      expect(saved()).toEqual({ id, path: root, carry: ['.env', 'b'] })
+    })
+
+    it('suggested carry files are ignored files outside dependency and build folders', async () => {
+      const deps = ['node_modules', 'vendor', 'dist', 'build', 'out', 'target', 'coverage', '.next', '.nuxt', '.svelte-kit', '.venv', 'venv', '__pycache__', '.cache', '.turbo', '.gradle', 'Pods', 'DerivedData']
+      // A tracked sibling in each folder keeps git from collapsing it into one `dir/` entry.
+      const inDeps = deps.map((d) => `app/${d}/conf.local`)
+      const root = makeRepo(
+        ['.env', '*.local', '.DS_Store', 'secretdir/', 'odd name.txt'],
+        ['.env', 'web/config.local', '.DS_Store', 'web/.DS_Store', 'secretdir/a', 'odd name.txt', ...inDeps],
+        ['web/index.html', ...deps.map((d) => `app/${d}/keep.txt`)]
+      )
+      const added = await registerRepo(root, run)
+      if (!('repo' in added)) throw new Error('register failed')
+      expect(await suggestCarry(added.repo.id, run)).toEqual(['.env', 'odd name.txt', 'web/config.local'])
+
+      const many = makeRepo(['*.local'], Array.from({ length: 25 }, (_, n) => `c${String(n).padStart(2, '0')}.local`))
+      const second = await registerRepo(many, run, { id: 'many' })
+      if (!('repo' in second)) throw new Error('register failed')
+      const list = (await suggestCarry('many', run)) as string[]
+      expect(list).toHaveLength(20)
+      expect(list[0]).toBe('c00.local')
+
+      const broken: Runner = async () => ({ code: 128, stdout: '', stderr: 'fatal: boom' })
+      expect(await suggestCarry('many', broken)).toEqual({ error: 'git no ha podido listar los archivos ignorados de many.', detail: 'fatal: boom' })
+      expect(await suggestCarry('nope', run)).toEqual({ error: 'No hay ningún repo «nope»', detail: '' })
     })
   })
 })

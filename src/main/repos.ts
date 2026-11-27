@@ -11,6 +11,8 @@ export interface Repo {
   id: string
   path: string
   override?: Mode
+  /** W480: ignored files copied into each new worktree, relative to the repo's root. */
+  carry?: string[]
 }
 export interface Detected {
   mode: Mode
@@ -166,13 +168,56 @@ export const setOverride = async (id: string, mode: Mode | null): Promise<StateP
     await writeRepos(
       repos.map((r) => {
         if (r.id !== id) return r
-        const next: Repo = { id: r.id, path: r.path }
-        if (mode) next.override = mode
-        return next
+        // W481: every other field (the carry list) survives a change of mode.
+        const next: Repo = { ...r }
+        delete next.override
+        return mode ? { ...next, override: mode } : next
       })
     )
     return undefined
   })
+
+const MAX_CARRY = 20
+/** W480: a plain relative path inside the repo; the reason in the window names the entry as given. */
+const carryEntryOk = (f: unknown): f is string =>
+  typeof f === 'string' && f.length >= 1 && f.length <= 300 && !f.includes('\0') && !f.startsWith('/') && !f.startsWith('~') &&
+  f.split('/').every((seg) => seg !== '' && seg !== '.' && seg !== '..')
+
+export const setCarry = (id: string, files: unknown): Promise<RepoResult> =>
+  orProblem(async () => {
+    if (!Array.isArray(files)) return { error: t('{entry} is not a file path inside the repo.', { entry: String(files) }) }
+    if (files.length > MAX_CARRY) return { error: t('Up to 20 files.') }
+    const bad = files.find((f) => !carryEntryOk(f))
+    if (bad !== undefined) return { error: t('{entry} is not a file path inside the repo.', { entry: String(bad) }) }
+    const repos = await readRepos()
+    if (!repos.some((r) => r.id === id)) return { error: t('There is no repo “{id}”', { id }) }
+    const carry = [...new Set(files as string[])]
+    await writeRepos(
+      repos.map((r) => {
+        if (r.id !== id) return r
+        const rest: Repo = { ...r }
+        delete rest.carry
+        return carry.length ? { ...rest, carry } : rest
+      })
+    )
+    return { ok: true as const }
+  })
+
+const BUILD_DIRS = new Set(['node_modules', 'vendor', 'dist', 'build', 'out', 'target', 'coverage', '.next', '.nuxt', '.svelte-kit', '.venv', 'venv', '__pycache__', '.cache', '.turbo', '.gradle', 'Pods', 'DerivedData'])
+
+/** W482: names only, from git's index of ignored files; no file is opened. */
+export async function suggestCarry(id: string, run: Runner): Promise<string[] | { error: string; detail: string }> {
+  const repo = (await readRepos()).find((r) => r.id === id)
+  if (!repo) return { error: t('There is no repo “{id}”', { id }), detail: '' }
+  const r = await run('git', ['-C', repo.path, 'ls-files', '-z', '--others', '--ignored', '--exclude-standard', '--directory'])
+  if (r.code !== 0) return { error: t('git could not list the ignored files of {repo}.', { repo: id }), detail: r.stderr.trim() }
+  return r.stdout
+    .split('\0')
+    .filter((e) => e !== '' && !e.endsWith('/'))
+    .filter((e) => segments(e).at(-1) !== '.DS_Store' && !segments(e).some((s) => BUILD_DIRS.has(s)))
+    .sort()
+    .slice(0, MAX_CARRY)
+}
 
 /** W157: only the entry goes; the folder, its branches and the Jira memory stay. */
 export const removeRepo = (id: string): Promise<RepoResult> =>

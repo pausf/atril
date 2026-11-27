@@ -47,6 +47,10 @@ interface Options {
   /** What repos.addPath answers for the typed text; missing means a repo added at that text. */
   addPath?: (text: string) => Promise<(AddRepoResult & { path: string }) | PathProblem>
   repos?: RepoView[]
+  /** What repos.carrySuggest answers per repo id; missing means none. */
+  carrySuggest?: Record<string, string[] | { error: string; detail: string }>
+  /** What repos.setCarry answers instead of saving (a refusal or a damaged file). */
+  setCarry?: { error: string } | { problem: StateProblem }
   /** What harness.get answers per repo id; a function lets a test hold a reply back. Missing means unknown. */
   harness?: Record<string, HarnessResult> | ((repoId: string) => Promise<HarnessResult>)
   nextup?: NextItem[]
@@ -275,7 +279,13 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
       ),
       setOverride: vi.fn(async (id: string, mode: Mode | null): Promise<RepoView[]> =>
         (o.repos ?? []).map((r) => (r.id === id ? { ...r, ...(mode ? { override: mode } : { override: undefined }) } : r))
-      )
+      ),
+      setCarry: vi.fn(async (id: string, files: string[]) => {
+        if (o.setCarry) return o.setCarry
+        o.repos = (o.repos ?? []).map((r) => (r.id === id ? { ...r, carry: files } : r))
+        return o.repos
+      }),
+      carrySuggest: vi.fn(async (id: string) => o.carrySuggest?.[id] ?? [])
     },
     nextup: { get: async () => o.nextup ?? [], onChange: () => off },
     jira: {
