@@ -595,3 +595,10 @@ Reviewer found nothing against the contract (W440–W447, the new «answer for t
 
 ## 2026-11-27 · add-repo-by-path · 8
 Merging `origin/main` kept both sides of «Last landed» in `CLAUDE.md` and took it to 7152 bytes; `harness.test.ts` caps the file at 7000. The cap only bites at a merge, because each branch alone is under it. «Last landed» keeps three entries: when a merge adds one, drop the oldest in the same merge (here `finished-means-finished`, still in `git log` and its spec).
+
+## 2026-11-27 · carry-ignored-config · 6→7
+Reviewer found nothing against the contract (9 proofs re-run, typecheck and lint green). It noted W480's text checked the count before the non-array case while the code does the reverse (no input reaches both, text aligned to the code) and `styles.css` missing from «In» (added). Before it, the cold spec review caught that `exists` and `not-ignored` had no precedence for a file tracked on the branch, that `mkdir` ran before the destination check (a symlinked folder tracked on the branch would have created folders outside the worktree) and that a throw other than the copy's would have rejected `openWorktree` with the worktree left behind. A guard that writes must check every path it will write through, not only the one it reads from.
+
+## 2026-11-27 · carry-ignored-config · real app
+- jsdom passed while the real window showed the panel's checkbox rows with the separator lines of `.repo-rows li` (a nested `li` inherits its parent list's row style) and an «Add a file» field labelled only by `aria-label`, directly above the «Path of a git repo» field. Fixed with a visible label and a scoped row rule. Second time this week a field sitting beside another prompt needed a visible label: give every new text field one from the start.
+- Opening a work through `window.atril.workspaces.open` from a drive does not refresh the sidebar; reload the page before looking for the new work.
