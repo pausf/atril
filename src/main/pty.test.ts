@@ -1,11 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const spawned: string[][] = []
+const sizes: Array<{ cols: number; rows: number }> = []
 const clients: Array<{ exit: () => void; resize: ReturnType<typeof vi.fn>; write: ReturnType<typeof vi.fn>; kill: ReturnType<typeof vi.fn> }> = []
 let refuse = false
 vi.mock('node-pty', () => ({
-  spawn: (_file: string, args: string[]) => {
+  spawn: (_file: string, args: string[], opts: { cols: number; rows: number }) => {
     spawned.push(args)
+    sizes.push({ cols: opts.cols, rows: opts.rows })
     if (refuse) throw new Error('posix_spawnp failed.')
     let onExit = (): void => undefined
     const dead = (): never => {
@@ -23,6 +25,7 @@ const { attach, detach, resize } = pty
 beforeEach(() => {
   clients.length = 0
   spawned.length = 0
+  sizes.length = 0
   refuse = false
 })
 
@@ -60,5 +63,16 @@ describe('pty', () => {
     // Main has no way to write to the client.
     expect('input' in pty).toBe(false)
     expect(clients.at(-1)!.write).not.toHaveBeenCalled()
+  })
+
+  it('the tmux client never goes under ten rows', () => {
+    // W338: a tall card once fitted xterm to one row and tmux resized the agent's window to 90x1 (issue #6).
+    attach('w5', '/tmp', 90, 1, () => undefined)
+    expect(sizes.at(-1)).toEqual({ cols: 90, rows: 10 })
+    const c = clients.at(-1)!
+    c.resize.mockImplementation(() => undefined)
+    resize('w5', 90, 1)
+    resize('w5', 120, 40)
+    expect(c.resize.mock.calls).toEqual([[90, 10], [120, 40]])
   })
 })

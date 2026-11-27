@@ -10,7 +10,7 @@ import { createQaDone, qaBug, qaReport, qaRetest } from './qa-report'
 import { runFix } from './qa-fix'
 import { addManual, chooseTarget, removeManual } from './qa-targets'
 import { createAvisos, NOTIFY_DEFAULTS, patchNotifySettings, readNotifySettings, workName } from './avisos'
-import { agentState, answerAgent, createStatus, leftWait, optionCount, pauseAgent, replyFromNotice, replyToAgent, resumeAgent, waitOf, composeAgent } from './status'
+import { agentState, answerLanded, createStatus, leftWait, optionCount, pauseAgent, replyFromNotice, replyToAgent, resumeAgent, waitOf, composeAgent } from './status'
 import { getLang, setLang, t } from './lang'
 import { resolveLang } from '../preload/i18n'
 import { readDocs, saveDoc } from './flow/document'
@@ -1020,8 +1020,8 @@ app.whenReady().then(async () => {
     return ws ? waitOf(ws.session) : null
   })
   ipcMain.handle('atril:status:compose', (_e, id: unknown, text: unknown) => composeAgent(String(id), typeof text === 'string' ? text : '', run))
-  // answerAgent checks the shape itself: the window's value is never trusted.
-  ipcMain.handle('atril:status:answer', (_e, id: unknown, choice: unknown) => answerAgent(String(id), choice as QuickChoice, run))
+  // answerAgent checks the shape itself: the window's value is never trusted. W339: ok only once the answer landed.
+  ipcMain.handle('atril:status:answer', (_e, id: unknown, choice: unknown) => answerLanded(String(id), choice as QuickChoice, run))
   // The mark is not watched: refresh at once so the row says «en pausa» without waiting for the poll.
   const paused = async (r: Promise<QuickAnswer>): Promise<QuickAnswer> => r.finally(() => void status.refresh())
   ipcMain.handle('atril:status:pause', (_e, id: unknown) => paused(pauseAgent(String(id), run)))

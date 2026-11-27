@@ -431,6 +431,48 @@ describe('answers', () => {
     expect(sent).toEqual([])
   }, 30_000)
 
+  it('a card answer counts only once the agent leaves the prompt', async () => {
+    // W339: «Sent» once the agent moved, not once tmux took the keys (issue #6: a 90x1 window ignored them).
+    const { answerLanded } = await import('./status')
+    const fast = { tries: 20, every: 50 }
+    const perm = { kind: 'permission', permission: { tool: 'Bash', summary: 'gh pr create' } }
+    const { run, sent } = await spied()
+
+    // A pane that takes no keys: nothing on screen moves and the hook stays put, so the answer did not arrive.
+    const deaf = await open(['sh', '-c', 'stty -echo; sleep 300'], 'feat/deaf')
+    await until(() => tmuxOut(sock, 'display', '-p', '-t', deaf.paneId, '#{pane_current_command}'), (c) => c.trim() === 'sleep')
+    wait(deaf.session, perm)
+    expect(await answerLanded(deaf.id, { allow: true }, run, fast)).toEqual({ error: 'La respuesta no llegó al agente: su pregunta sigue en pantalla.' })
+    expect(sent.map((x) => x.at(-1))).toEqual(['1', 'Enter'])
+
+    // The hook moved on: the agent left the prompt, whatever the pane shows.
+    for (const after of [{ state: 'working', at: 2 }, { state: 'needs-you', at: 3, kind: 'turn-end' }]) {
+      wait(deaf.session, perm)
+      const moved = setTimeout(() => wait(deaf.session, after), 120)
+      expect(await answerLanded(deaf.id, { allow: true }, run, fast)).toEqual({ ok: true })
+      clearTimeout(moved)
+    }
+
+    // The pane changed after the keys: the agent took them.
+    const echo = await open(['cat'], 'feat/echo')
+    wait(echo.session, perm)
+    expect(await answerLanded(echo.id, { allow: true }, run, fast)).toEqual({ ok: true })
+
+    // The row's card and the strip's card show one wait: a second answer while the first is landing sends nothing.
+    sent.length = 0
+    wait(deaf.session, perm)
+    const first = answerLanded(deaf.id, { allow: true }, run, fast)
+    expect(await answerLanded(deaf.id, { allow: true }, run, fast)).toEqual({ error: 'Ya va de camino una respuesta a ese agente.' })
+    await first
+    expect(sent.map((x) => x.at(-1))).toEqual(['1', 'Enter'])
+
+    // A refusal from answerAgent passes through at once, with nothing sent.
+    sent.length = 0
+    wait(echo.session, { ...perm, state: 'working' })
+    expect(await answerLanded(echo.id, { allow: true }, run, fast)).toEqual(NOT_WAITING)
+    expect(sent).toEqual([])
+  }, 30_000)
+
   it('allow and deny send their keys', async () => {
     const { answerAgent } = await import('./status')
     const a = await open(['cat'], 'feat/pa')

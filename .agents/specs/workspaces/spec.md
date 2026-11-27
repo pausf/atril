@@ -394,6 +394,13 @@ In Settings → Repos, each healthy repo row has a «Harness» button. Opening i
 - A merged work gets no idle reminder, Automático sends it nothing, and the merge itself raises no «finished» notice.
 - The «All agents» card and the work header of a merged work say «Merged», as its row does, with no «Go on».
 
+### Card answer lands (card-answer-lands, 27 nov 2026)
+
+- A tall question or permission card above the terminal scrolls inside itself; the terminal below keeps at least 180 px.
+- Whatever size the window asks for, main never attaches or resizes an agent's tmux client below 10 rows.
+- A card answer reads «Sent» only once the agent's hook state moved on or its pane changed after the keys; until then the card reads «Sending…» with its buttons disabled.
+- If neither happened 4 s after the keys, the card says the answer did not reach the agent and offers «Try again», which sends the same choice again.
+
 ### Ignored files never decide the mode (#2) (ignored-files-not-dirty, 27 nov 2026)
 
 - Registering a repo that holds a git-ignored file (`caso-1-stripe.gif` under `caso-*`, `web/config.local`, a `.env`) reads `worktree` with the «no signal» reason, never naming a file.
@@ -866,6 +873,20 @@ Never scoped out: the gate and the driver check are a trust boundary (what a dri
 - Expiring the work's stored notices on merge (V11, `avisos`).
 - The header's reopen panel for a dead merged work.
 
+### Card answer lands (card-answer-lands, 27 nov 2026)
+
+**In:** `src/renderer/styles.css` (`.term-ask`, `.xterm-host`); `src/main/pty.ts` (the row floor); `src/main/tmux.ts`
+(read a pane's text); `src/main/status.ts` (`answerLanded`, wrapping `answerAgent`); `src/main/index.ts` (the
+`atril:status:answer` handler); `src/renderer/components/AgentCard.tsx` («Sending…»); `src/preload/i18n-es.ts`; `CLAUDE.md` (W339 under «Untested with real data»);
+tests beside each.
+
+**Out:**
+- Recognising Claude Code's prompt by its text.
+- Automático and the numbered Mac reply waiting for the answer to land.
+- A column floor.
+- The row's card and the «All agents» card layout (they are not above a terminal).
+- Resizing an already-squeezed tmux window back up: the next fit after this change sends ≥ 10 rows anyway.
+
 ### Ignored files never decide the mode (#2) (ignored-files-not-dirty, 27 nov 2026)
 
 In: `detectMode` in `src/main/repos.ts`; W1 and W2 amended and W400, W401 added (W1 said «none of the three signals»; the ignored-file signal was one of them, so two remain); the now-unused «{path} is not versioned» text and its Spanish entry removed; the W2 test replaced.
@@ -1152,6 +1173,14 @@ Texts through `t()`.
 - W313 already holds in the window; main must agree with it, so the two never disagree on one work.
 - No new process per poll: `merged` is on the record `listWorkspaces` already reads.
 - Texts through `t()`; no new key.
+
+### Card answer lands (card-answer-lands, 27 nov 2026)
+
+- tmux's window follows the attached read-only client's size; nothing else resizes it from Atril.
+- `answerAgent` stays as it is: W75's proofs, Automático and N3 rely on its immediate answer.
+- No new process per poll; the extra `capture-pane` calls happen only during a card answer (at most 9).
+- Texts through `t()` with Spanish entries; colours untouched.
+- An IPC handler never throws (W149).
 
 ### Ignored files never decide the mode (#2) (ignored-files-not-dirty, 27 nov 2026)
 
@@ -2829,6 +2858,41 @@ Zero questions asked: the repo's autonomy rule says take the recommended option 
 - Q: (spec-reviewer) How does the real-app drive get a merged work? → A: a temp `ATRIL_HOME` seeded with a record `merged: true` and a state file `needs-you` turn-end; no forge (assumed).
 - Q: Does merge detection change? → A: no: W306 (notice) and W307 (ancestry after a new work's fetch) as they are (assumed; the ceilings in work-vs-main's prior decisions still hold).
 
+### Card answer lands (card-answer-lands, 27 nov 2026)
+
+- (2026-11-27, card-answer-lands) Main floors the read-only tmux client at 10 rows on attach and resize; columns pass as asked (assumed; if wrong, one constant, or the same clamp on columns).
+- (2026-11-27, card-answer-lands) The terminal keeps 180 px and the strip above it scrolls (assumed).
+- (2026-11-27, card-answer-lands) «Landed» = the hook's state file moved on, or the pane text changed, within 4 s (every 500 ms) after the keys. Ceiling: a key that changes the pane without leaving the prompt (text left typed in Claude Code's input, a cursor that moved), or a pane that changes on its own (a timer), reads as landed; the upgrade is reading Claude Code's prompt from the pane, which ties Atril to its wording (assumed).
+- (2026-11-27, card-answer-lands) While a card answer to a work is landing, main refuses another one to it; the strip keeps 64 px in a window too short for both (assumed).
+- (2026-11-27, card-answer-lands) Only the card's answer waits; Automático and N3 keep `answerAgent`'s immediate answer (assumed).
+
+#### Alternatives that lost
+
+| Considered | Why it lost |
+|---|---|
+| The window polls `status.wait` after an immediate ok and decides | Two round trips per check, and the pane text is only readable in main |
+| Recognise Claude Code's prompt («Do you want to proceed?», the `❯ 1.` selector) in the pane | Ties Atril to Claude Code's wording, which changes between releases |
+| Wait inside `answerAgent` itself | Automático's poll and N3 would block 4 s per answer, and W75's proofs would change |
+| Only the CSS fix | A window simply shorter than 10 rows (a small screen, a dragged divider) would still squeeze tmux |
+
+#### Decision log, answers as given (2026-11-27)
+- Q: What is the row floor? → A: 10 rows, the issue's own example, applied in main to both `attach` and `resize` of the read-only tmux client (assumed; if wrong, one constant).
+- Q: A column floor too? → A: no: the issue saw rows go to 1, columns stayed 90 (assumed; if wrong, the same clamp on `cols`).
+- Q: How tall does the terminal stay in the window? → A: `.xterm-host` keeps `min-height: 180px` (about ten 12.5 px rows plus padding) and the strip above it scrolls (`min-height: 0; overflow-y: auto`) (assumed; if wrong, one CSS value).
+- Q: What does «the agent left the prompt» mean, read by main? → A: after the keys go, the hook's state file moved on (state no longer `needs-you`, or a new `at`), or the pane's visible text (`capture-pane -p`) differs from what it was just before the keys (assumed; if wrong, main would have to recognise Claude Code's prompt text, which changes between releases).
+- Q: How many seconds is «a few»? → A: checked every 500 ms for up to 4 s (assumed; if wrong, two constants).
+- Q: Which senders wait for that? → A: only the card's answer (`atril:status:answer`); Automático (W205–W207) and the numbered Mac reply (N3) still call `answerAgent` and do not wait (assumed; if wrong, Automático's poll would block 4 s per answer).
+- Q: What does the card show while it waits? → A: «Sending…» with its buttons disabled, so a second click cannot send twice (assumed).
+- Q: (phase 5) How is «landed» checked? → A: a wrapper `answerLanded` in main around `answerAgent`, used only by the card's IPC handler: snapshot hook `at` and pane text, send, poll both (assumed; rejected: the window polling `status.wait` after an immediate ok; matching Claude Code's prompt text in the pane).
+- Q: (spec-reviewer) W340 contradicts W76's «show «Enviado»» on press? → A: W76 is amended here: «Enviado» once main confirms (W339), «Sending…» until then (assumed).
+- Q: (spec-reviewer) A pane that changes on its own (a timer, a spinner) reads as landed? → A: yes, reading A kept and named as a ceiling; Claude Code draws nothing moving while it waits at a prompt (assumed; if wrong, the check must compare only the prompt's lines).
+- Q: (spec-reviewer) The row's card and the strip's card show one wait; the one not pressed could send again during the 4 s? → A: main refuses a second card answer to a work while one is still landing, with «An answer to that agent is already on its way.»; the `ANSWERED` event (next question in the other card) fires after main's answer, as today (assumed).
+- Q: (spec-reviewer) In a window too short for both, which side wins? → A: the terminal keeps 180 px and the strip keeps 64 px (one option, scrolling); what does not fit is cut by `.pane`'s `overflow: hidden`, and main's floor (W338) still holds (assumed).
+- Q: (spec-reviewer) Does «Pausar» (W294) go through the wait? → A: no: it is `pauseAgent`, not a card answer; it keeps its immediate answer (assumed).
+- Q: (real-app drive) A 3 KB command pushed «Permitir» and the «did not arrive» problem below the strip's fold: is that in scope? → A: yes: the question text scrolls in its own box of 8 lines (`.term-ask .ask-q`), W337 grows that clause; the row's card in the sidebar is still out (assumed).
+- Q: (real-app drive) At 800 px the «did not arrive» problem landed under the strip's fold → A: the card scrolls the problem into view when it appears (W340) (assumed).
+- Q: «offers to send it again»? → A: the existing error shape (`Problem` with «Try again», W76), which presses the same choice again; the sentence is «The answer did not reach the agent: its prompt is still on screen.» (assumed).
+
 ### Ignored files never decide the mode (#2) (ignored-files-not-dirty, 27 nov 2026)
 
 - 2026-11-27 · W2 was a deliberate choice (ignored config files make a worktree lose them). It is reversed here on the issue's authority, **assumed** as the owner's intent from the invocation; what it costs is the `.env` case above, answered by W4's override. Ceiling: a repo whose work needs an ignored file in the checkout and is never overridden gets a worktree that lacks it; the upgrade path is copying a listed set of ignored files into the worktree, a separate change.
@@ -3260,8 +3324,8 @@ Zero questions asked: the repo's autonomy rule says take the recommended option 
 - **W75** When the window asks `atril:status:answer(workspaceId, choice)`, main shall re-read that workspace's state and, while it is needs-you, act by the choice: `{ option: n, question: i }` for a stored question i with option n — type n plus one then Enter, and after the last question of the call also Enter to submit; `{ allow: true }` while `kind` is `permission` — type `1` then Enter; `{ deny: true }` while `kind` is `permission` — press Escape; `{ continue: true }` — paste «Sigue con el plan; no hagas nada que no esté en él.» as a bracketed paste then Enter. Any other shape, a stale question index or option, or a state that is not needs-you, shall type nothing and answer «Ese agente ya no está esperando una respuesta.» or «Esa opción ya no existe.»; a gone workspace or pane answers W53's sentence. Main shall remember per session which question is next, starting at 0 on each entry into needs-you.
   Proof: src/main/status.test.ts each answer shape sends its own keys
   Proof: src/main/status.test.ts allow and deny send their keys
-- **W76** While a workspace is needs-you, its row and the strip above its terminal shall show one card by `kind` (W200–W202) instead of today's quick replies; pressing a button, by mouse or with keys 1–4 while the card has focus, shall send it (W75) and show «Enviado», disabling the card until the state changes, or show the error and keep it live.
-  Proof: src/renderer/components/agentcard.test.tsx a card answers by mouse and by number keys
+- **W76** While a workspace is needs-you, its row and the strip above its terminal shall show one card by `kind` (W200–W202) instead of today's quick replies; pressing a button, by mouse or with keys 1–4 while the card has focus, shall send it (W75, through W339) and show «Sending…» (W340) until main answers, then «Enviado», disabling the card until the state changes, or show the error and keep it live.
+  Proof: src/renderer/components/agentcard.test.tsx the card says sending until the answer lands and offers to send again
 ### Atomic writes (atomic-records, 10 nov 2026)
 
 - **W80** Atril shall replace `workspaces.json` and `repos.json` by writing a temporary file and renaming it,
@@ -3965,6 +4029,17 @@ Zero questions asked: the repo's autonomy rule says take the recommended option 
   Proof: src/main/status.test.ts a merge sends no finished notice
 - **W336** While a work's record is `merged`, the «All agents» card and the work header shall show «Merged» in place of its agent state.
   Proof: src/renderer/overview.test.ts a merged work's card and header read Merged
+
+### Card answer lands (card-answer-lands, 27 nov 2026)
+
+- **W337** The strip above the terminal (`.term-ask`) shall shrink down to `min-height: 64px` and scroll with `overflow-y: auto`, and the terminal (`.xterm-host`) shall keep `min-height: 180px`; inside the strip, the card's question text (`.term-ask .ask-q`) shall scroll on its own past `max-height: 8lh`, so its buttons and a problem stay in view under it. Ceiling: the proof reads the rules from `styles.css`; the layout they produce is watched in the real-app drive (box 5).
+  Proof: src/renderer/quickreplies.test.ts a tall card scrolls inside itself and the terminal keeps its height
+- **W338** Main shall attach and resize an agent's read-only tmux client with at least 10 rows, whatever rows the window asks for; columns pass unchanged.
+  Proof: src/main/pty.test.ts the tmux client never goes under ten rows
+- **W339** When the window answers a card (`atril:status:answer`) and `answerAgent` (W75) sent the keys, main shall answer `{ ok: true }` only once, within 4 s, the work's hook state file is no longer `needs-you` or carries a new `at`, or its pane's visible text differs from the text read just before the keys; if neither happens, main shall answer «The answer did not reach the agent: its prompt is still on screen.». A refusal from `answerAgent` passes through unchanged. If a card answer to the same work is still landing, main shall send nothing and answer «An answer to that agent is already on its way.».
+  Proof: src/main/status.test.ts a card answer counts only once the agent leaves the prompt
+- **W340** While a card answer is on its way, the card shall show «Sending…» and disable its buttons and number keys; when main says the answer did not arrive, the card shall show that sentence with «Try again», scrolled into view within its strip, and «Try again» shall send the same choice again.
+  Proof: src/renderer/components/agentcard.test.tsx the card says sending until the answer lands and offers to send again
 
 ### Ignored files never decide the mode (#2) (ignored-files-not-dirty, 27 nov 2026)
 

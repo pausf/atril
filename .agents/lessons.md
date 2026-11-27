@@ -553,5 +553,13 @@ Reviewer found nothing against the contract (5 proofs re-run, typecheck and lint
 ## 2026-11-27 · finished-means-finished · 1
 Issue #4 was filed before work-vs-main's W313, so half of what it describes (the card) was already fixed in the window; the rest lived in main, which read the stale state file. When an issue predates a landing that touched the same path, re-read the issue against `origin/main` and fix only what is still true.
 
+## 2026-11-27 · card-answer-lands · 6→7
+Reviewer found nothing against the contract (4 proofs re-run, typecheck and lint green). It noted `CLAUDE.md` changed outside the «In» list (one «Untested» line for W339): added to «In». It did not drive the app, so W337's layout rests on the builder's drive. Before it, the cold spec review caught W340 contradicting W76's «Enviado» on press (amended), the row and strip cards able to send twice during the wait (main now refuses a second answer while one lands), and no rule for a window too short for both (the strip keeps 64 px).
+
+## 2026-11-27 · card-answer-lands · real app
+- The first drive seeded the tmux session with `new-session -x 120 -y 40`, which pins the window size: tmux read 120x40 whatever the client asked, so the row floor could not be seen. Atril creates sessions with no size; a seed copies the app's own `new-session` arguments.
+- A fresh worktree's dev Atril could not open its terminal («No he podido abrir la terminal»): `pnpm install` leaves node-pty unbuilt for Electron (`allowBuilds: node-pty: false`). `pnpm run rebuild` (electron-rebuild) fixes it. Before reading a tmux size off a drive, check `tmux list-clients` shows the read-only client.
+- The unit proofs were green while a 3 KB command pushed «Permitir» and the «did not arrive» problem under the strip's fold: only the real window showed it. The question text now scrolls in its own 8-line box and a new problem scrolls into view (W337, W340 grew those clauses).
+
 ## 2026-11-27 · ignored-files-not-dirty · 6→7
 The work-reviewer was told `main...HEAD` and local `main` was behind origin, so it saw already-merged work as part of the diff. Give the reviewer `origin/main...HEAD` after a `git fetch`; the reviewer found nothing against the contract.
