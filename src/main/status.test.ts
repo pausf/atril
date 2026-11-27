@@ -776,3 +776,83 @@ describe('automatic', () => {
     expect(notify.mock.calls.map((c) => [c[1], c[2]])).toEqual([['ask', 'Te pregunta: ¿Puede usar Bash?']])
   }, 30_000)
 })
+
+describe('a merged work', () => {
+  // W306/W307 mark the record; the hook's file keeps the stale needs-you an older hook left (issue #4).
+  const stale = (session: string, at = 1): void => wait(session, { at, kind: 'turn-end', text: 'Claude dice: PR abierta.' })
+  async function merge(id: string): Promise<WorkspaceView> {
+    const { listWorkspaces, readRecords, writeRecords } = await import('./workspaces')
+    await writeRecords((await readRecords()).map((r) => (r.id === id ? { ...r, merged: true as const } : r)))
+    return (await listWorkspaces()).find((w) => w.id === id)!
+  }
+  async function openAuto(branch: string): Promise<WorkspaceView> {
+    makeRegisteredRepo(home)
+    const { openWorktree } = await import('./workspaces')
+    const r = await openWorktree({ repoId: 'demo', branch, agent: 'claude', argv: ['cat'], auto: true })
+    if (!('workspace' in r)) throw new Error(r.error)
+    return r.workspace
+  }
+
+  it('a merged work is done in main whatever its state file says', async () => {
+    const { agentState } = await import('./status')
+    const ws = await open(SLEEP)
+    stale(ws.session)
+    expect(await agentState(ws)).toBe('needs-you')
+    const merged = await merge(ws.id)
+    expect(await agentState(merged)).toBe('done')
+    // The pause mark does not outrank it either.
+    mkdirSync(join(home, 'paused'), { recursive: true })
+    writeFileSync(join(home, 'paused', ws.session), '1')
+    expect(await agentState(merged)).toBe('done')
+    // Nor a session that is gone.
+    expect(await agentState({ ...merged, alive: false })).toBe('done')
+  }, 30_000)
+
+  it('a merged work adds no up-next chip', async () => {
+    const { createStatus } = await import('./status')
+    const { nextUp } = await import('./nextup')
+    const [done, open_] = [await open(SLEEP, 'feat/merged'), await open(SLEEP, 'feat/open')]
+    stale(done.session)
+    stale(open_.session)
+    await merge(done.id)
+    const status = createStatus({ onChange: () => {}, notify: () => {} })
+    await status.refresh()
+    expect(status.states()[done.id]).toBe('done')
+    expect(nextUp(status.snapshot(), null, [])).toEqual([{ kind: 'agent', id: open_.id }])
+  }, 30_000)
+
+  it('a merged work gets no reminder and no automatic answer', async () => {
+    const { createStatus } = await import('./status')
+    // A manual work for the reminder: Automático alone would read as working and never be reminded.
+    const [a, manual] = [await openAuto('feat/merged-auto'), await open(SLEEP, 'feat/merged-manual')]
+    stale(a.session)
+    stale(manual.session)
+    await merge(a.id)
+    await merge(manual.id)
+    const { run, sent } = await spied()
+    const idle = vi.fn()
+    let now = 0
+    const status = createStatus({ run, onChange: () => {}, notify: () => {}, idle, idleMinutes: async () => 15, now: () => now })
+    await status.refresh()
+    now = 60 * 60_000
+    await status.refresh()
+    await status.refresh()
+    expect(idle).not.toHaveBeenCalled()
+    expect(sent).toEqual([])
+  }, 30_000)
+
+  it('a merge sends no finished notice', async () => {
+    const { createStatus } = await import('./status')
+    const ws = await open(SLEEP)
+    stale(ws.session)
+    const notify = vi.fn()
+    const status = createStatus({ onChange: () => {}, notify })
+    await status.refresh()
+    expect(status.states()[ws.id]).toBe('needs-you')
+    await merge(ws.id)
+    await status.refresh()
+    await status.refresh()
+    expect(status.states()[ws.id]).toBe('done')
+    expect(notify).not.toHaveBeenCalled()
+  }, 30_000)
+})

@@ -1,6 +1,5 @@
 import { useT } from '../ui'
 import { StateLabel } from './StateLabel'
-import { Icon } from './Icon'
 import { useContext, useEffect, useState } from 'react'
 import type { RadarHit, RemoveResult, StateProblem, WorkspaceView } from '../../preload/api'
 import { stateOf, useAgentStates, useLatestActivity } from '../agents'
@@ -113,14 +112,7 @@ export function WorkspaceList({ workspaces, problem, selected, onSelect, onRemov
                 </>
               )}
             </span>
-            {/* W309: a merged work says so instead of what its agent is doing. */}
-            {w.merged ? (
-              <span className="state done">
-                <Icon name="done" size={16} /> {t('Merged')}
-              </span>
-            ) : (
-              <StateLabel state={stateOf(states, w)} />
-            )}
+            <StateLabel state={stateOf(states, w)} merged={w.merged} />
             <RadarLine hits={radar[w.id]} />
             {runningCount(subs[w.id]) > 0 && <span className="ws-subs">{runningCount(subs[w.id]) === 1 ? t('1 subagent') : t('{n} subagents', { n: runningCount(subs[w.id]) })}</span>}
             {latest[w.id] && !asking.has(w.id) && (

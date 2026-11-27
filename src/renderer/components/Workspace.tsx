@@ -96,7 +96,7 @@ export function Workspace({
           <div className="m">{ws ? `${ws.repoId} · ${ws.agent}` : t('No work open')}</div>
           <div className="tline">
             <h1>{ws ? ws.branch : t('Pick a workspace')}</h1>
-            {ws && <StateLabel state={stateOf(states, ws)} />}
+            {ws && <StateLabel state={stateOf(states, ws)} merged={ws.merged} />}
           </div>
         </div>
         <span className="sp" />

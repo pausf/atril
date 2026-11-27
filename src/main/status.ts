@@ -174,6 +174,8 @@ export async function notificationBody(ws: WorkspaceView): Promise<string> {
 }
 
 export async function agentState(ws: WorkspaceView, run: Runner = defaultRun): Promise<AgentState> {
+  // W332: a merged PR outranks whatever an older hook left in the state file (issue #4), as W313 does in the window.
+  if (ws.merged) return 'done'
   if (!ws.alive || (await paneListedDead(ws.paneId, run))) return 'stopped'
   return hookState(ws.session)
 }
@@ -384,7 +386,8 @@ export function createStatus({ run = defaultRun, onChange, notify, stopped = () 
             if (seeded && shouldNotify(prev, next) && fresh(ws, file, next)) notify(ws, kindOf(text), text)
           } else {
             waits.delete(ws.id)
-            if (next === 'done' && seeded && shouldNotify(prev, next) && fresh(ws, file, next)) notify(ws, 'done', typeof file.text === 'string' ? file.text : undefined)
+            // W335: the merge itself is not a finished turn.
+            if (next === 'done' && !ws.merged && seeded && shouldNotify(prev, next) && fresh(ws, file, next)) notify(ws, 'done', typeof file.text === 'string' ? file.text : undefined)
           }
           if (seeded && next === 'stopped' && prev !== undefined && !closing(ws.id)) stops.push(ws)
           continue
