@@ -208,10 +208,10 @@ export function Repos() {
               void addTyped()
             }}
           >
+            <label htmlFor="repo-path">{t('Path of a git repo')}</label>
             <div className="idrow">
               <input
                 id="repo-path"
-                aria-label={t('Path of a git repo')}
                 placeholder="~/code/my-repo"
                 spellCheck={false}
                 value={text}
