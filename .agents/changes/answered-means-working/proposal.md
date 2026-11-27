@@ -137,4 +137,4 @@ Box 2's closing outcome and `CLAUDE.md`'s byte ceiling are now stated in the che
 ## Checklist
 
 - [x] the answered-wait memory and its three reads (`hookState`, `waitOf`, `answerAgent`), tests first and red · Closes: W460, W461, W462, W463, W464
-- [ ] drive the real app: a hand-written needs-you permission wait in an automatic work, Allow pressed on its card, the row reads working and no card shows (seen in a photo or a snapshot); add the `CLAUDE.md` «Untested» line (under 250 bytes) for what only real Claude Code can show · waits on box 1 · Closes: W460
+- [x] drive the real app: a hand-written needs-you permission wait in an automatic work, Allow pressed on its card, the row reads working and no card shows (seen in a photo or a snapshot); add the `CLAUDE.md` «Untested» line (under 250 bytes) for what only real Claude Code can show · waits on box 1 · Closes: W460

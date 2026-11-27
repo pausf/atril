@@ -38,6 +38,7 @@ hook left in its state file; its card and header say «Merged».
   `/libretto:write-spec <name>`; "Pass to Jira"; the Jira board; auto mode asking before a push; replying from a Mac notice.
 - Fewer go-on cards: real Claude Code honouring `{"decision":"block"}` on Stop and sending `stop_hook_active` and
   `cwd`; the cap of 5 cutting for real; the last transcript text written before Stop arrives.
+- Answered means working (W460): real Claude Code firing no hook between a permission grant and the end of its tool; what an Escape-deny leaves behind (W463).
 - `pnpm dist` and the installed `.dmg` (`bocetos/instalar.html` §4).
 - `openmr.test.ts` and `pause.test.ts` sometimes fail in the full suite under git load: look in the QA round.
 
