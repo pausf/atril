@@ -53,7 +53,7 @@ Claude Code took them. Owner: `workspaces` (`src/main/pty.ts`, `src/main/status.
 
 **In:** `src/renderer/styles.css` (`.term-ask`, `.xterm-host`); `src/main/pty.ts` (the row floor); `src/main/tmux.ts`
 (read a pane's text); `src/main/status.ts` (`answerLanded`, wrapping `answerAgent`); `src/main/index.ts` (the
-`atril:status:answer` handler); `src/renderer/components/AgentCard.tsx` («Sending…»); `src/preload/i18n-es.ts`;
+`atril:status:answer` handler); `src/renderer/components/AgentCard.tsx` («Sending…»); `src/preload/i18n-es.ts`; `CLAUDE.md` (W339 under «Untested with real data»);
 tests beside each.
 
 **Out:**
