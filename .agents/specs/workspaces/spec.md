@@ -422,6 +422,10 @@ In Settings → Repos, each healthy repo row has a «Harness» button. Opening i
 
 In Ajustes → Repos the person can type or paste a folder's path (a leading `~` meaning their home), press «Add this path» or Enter, and get the repo registered exactly as if the picker had returned that folder. A path that cannot be added says what happened, that nothing was added, and offers one button that fixes it, with the technical detail folded; nothing is written to `repos.json` on a refusal. The picker stays.
 
+### Carry ignored config into worktrees (#9) (carry-ignored-config, 27 nov 2026)
+
+A repo can hold a short list of ignored files (`.env`, `web/config.local`). In Ajustes → Repos the person opens «Carried files» on a repo, sees the ignored files Atril found outside dependency and build folders, ticks the ones each work needs or types one, and the list is saved in `repos.json`. Every new worktree of that repo gets those files copied from the person's checkout before the agent starts. A file is copied only when it is a regular file inside the repo, is ignored by git in the new worktree, and nothing is at its destination. The work's header names what was copied and what was not, and why; no file's contents are ever read into Atril, logged, shown or written anywhere but the copy.
+
 ## Scope boundaries
 
 **In:** the three columns and footer of `bocetos/fase1-nucleo.html` (boceto 8), the
@@ -940,6 +944,13 @@ Out, named:
 
 **Never scoped out:** the path crosses the IPC boundary as an untrusted value (a non-string, empty text and a NUL byte are refused in main, before any git or file write); a refusal changes nothing on disk; the field is a native `<input>` with a label and the button a native `<button>`, so both are keyboard-reachable.
 
+### Carry ignored config into worktrees (#9) (carry-ignored-config, 27 nov 2026)
+
+**In:** `Repo.carry`, `setCarry`, `suggestCarry` and the carry-preserving `setOverride` in `src/main/repos.ts`; `carryFiles` and the `carried` record field in `src/main/workspaces.ts`; the handlers `atril:repos:setCarry` and `atril:repos:carrySuggest` in `src/main/index.ts`; types and `repos.setCarry`/`repos.carrySuggest` in `src/preload/{api,index}.ts`; the header lines in `src/renderer/components/Workspace.tsx`; the card panel in `src/renderer/settings/Repos.tsx` (spec-settings.md); `mockApi.ts`; the panel and header styles in `src/renderer/styles.css`; Spanish entries in `src/preload/i18n-es.ts`; the tests; this change's criteria.
+**Out (named):** copying folders; carrying into in-place or review works; syncing changes back from a worktree to the checkout, or later edits of the source into open works; templates or per-work lists; a content diff or preview of a carried file; ticking suggestions automatically; re-copying on «Reopen»; the `bocetos/` pages; a tour step.
+
+**Never scoped out:** the list crosses IPC as untrusted input and is validated in main before `repos.json` is written; the copy refuses symlinks, paths escaping the checkout or the worktree and files git would not ignore; no file content is read into JS, logged or shown; tests never touch Pau's repos or `~/.atril/secrets.bin`; the panel's controls are native checkboxes, inputs and buttons with labels.
+
 ## Constraints
 
 - Electron (current stable) + TypeScript in strict mode, pnpm, Node 24 (installed:
@@ -1252,6 +1263,15 @@ Texts through `t()`.
 - Errors follow the rule in CLAUDE.md: what happened, what Atril can't do because of it, one button that fixes it, the code only under «Show detail» (`Problem`).
 - No new dependency, no Claude call; tests use a temp `ATRIL_HOME` and a temp `HOME`, never the person's repos.
 - `repos.json` is written only through `registerRepo` (atomic, W148 refuses to overwrite a damaged file).
+
+### Carry ignored config into worktrees (#9) (carry-ignored-config, 27 nov 2026)
+
+- `repos.json` is written only through `writeRepos` (atomic, refuses over a damaged file, W148); `setOverride` today rebuilds the record with only `id`, `path`, `override` and would drop `carry`.
+- Git runs through the injected `Runner`; English messages; paths go to git after `--` or as `-C` arguments only.
+- The copy uses `fs.copyFile` with `COPYFILE_EXCL`, so the bytes never enter the JS heap and nothing is overwritten.
+- Main stays language-free for the reasons: codes (`missing`, `not-a-file`, `outside`, `not-ignored`, `exists`, `failed`); the window writes the sentences through `t()` with Spanish entries in `i18n-es.ts`.
+- Errors in the card follow CLAUDE.md: what happened, what Atril can't do because of it, detail folded (`Problem`).
+- Tests: real git in temp dirs, a temp `ATRIL_HOME`, their own tmux socket.
 
 ## Prior decisions
 
@@ -3069,6 +3089,50 @@ Zero questions asked: the repo's autonomy rule says take the recommended option 
 - Q: `bocetos/novedades.html`, `bocetos/fase1-nucleo.html` and a photo? → A: not in this change: `bocetos/` is local-only and absent from this worktree (assumed: CLAUDE.md says it lives on Pau's disk; the real-app drive is still done and reported; if wrong, Pau adds the section from the drive's screenshot).
 - Q: a tour step (W23) for the new field? → A: none: the field lives inside the Repos card that the `repos` step already points at, and no rail screen or primary control is added (assumed; if wrong, W23's proof lists the target).
 
+### Carry ignored config into worktrees (#9) (carry-ignored-config, 27 nov 2026)
+
+- (2026-11-27, carry-ignored-config) Only new worktrees are carried into (assumed). If wrong: nothing to add; in-place already works in the checkout.
+- (2026-11-27, carry-ignored-config) Suggestions are never ticked for the person (assumed). If wrong: save the suggestions on first open.
+- (2026-11-27, carry-ignored-config) The dependency/build folder set is fixed in code (assumed); ceiling: a project with another build folder name sees it suggested and simply does not tick it.
+- (2026-11-27, carry-ignored-config) «Never committed» is enforced by `git check-ignore` in the new worktree; a file not ignored there is refused (assumed).
+- (2026-11-27, carry-ignored-config) A failed carry never blocks the open; the header says so (assumed). If wrong: return the failure from `prepare`.
+- (2026-11-27, carry-ignored-config) At most 20 entries, 300 characters each (assumed); ceiling: a repo needing more is setting up an environment, not carrying config.
+- (2026-11-27, carry-ignored-config) ponytail: the realpath checks and the copy are two steps, not one atomic open; a file swapped for a symlink between them in the person's own checkout is a race against the person, not an attacker. Upgrade path: open with `O_NOFOLLOW` and copy from the handle.
+
+#### Alternatives that lost
+
+| Considered | Why it lost |
+|---|---|
+| A git `post-checkout` hook installed in the repo | Writes into the person's repo config and fires on their own checkouts and other tools' worktrees. |
+| The copy as `openWorktree`'s `prepare` callback | `prepare` belongs to the caller (W102) and its error undoes the open; W484 says a failed carry never blocks the work. |
+| Read the file and write it with `writeFile` | Pulls the secret into the JS heap, one log line away from leaking (W485); `copyFile` never does. |
+| Save the list from `git status --ignored` instead of `ls-files` | Same data, a second parser; the issue names `ls-files`, and `detectMode` already runs it. |
+
+#### Decision log, answers as given (2026-11-27)
+- Q: which works get the files? → A: only a new worktree (`openWorktree` in worktree mode, `existing` MR branches included); in-place and review works already run in the checkout that holds them (assumed; if wrong, nothing to add: in-place has the files by construction).
+- Q: are suggestions ticked by default? → A: no; suggestions are shown unticked and only what the person ticks is copied (assumed: a media file or a 2 GB dump is ignored too, and copying it unasked is worse than one click; if wrong, `suggestCarry` results are saved on first open).
+- Q: what is «outside dependency/build folders»? → A: a fixed set of folder names, any segment of the path: `node_modules`, `vendor`, `dist`, `build`, `out`, `target`, `coverage`, `.next`, `.nuxt`, `.svelte-kit`, `.venv`, `venv`, `__pycache__`, `.cache`, `.turbo`, `.gradle`, `Pods`, `DerivedData`; plus `.DS_Store` files (assumed; if wrong, only the set changes).
+- Q: a wholly ignored folder (`config/` holding only ignored files)? → A: `--directory` lists it as `config/`, a folder, which is never suggested and never copied; the person can type a file inside it (assumed; if wrong, expand folders with a second `ls-files` per folder, bounded).
+- Q: how many entries, how long? → A: at most 20 entries of at most 300 characters; suggestions also cap at 20 (assumed: «a short list», and every entry costs a `check-ignore` on each open).
+- Q: «never commit them»: how is it guaranteed? → A: a file is copied only when git in the new worktree reports it ignored (`git check-ignore -q`), so it never shows as a change and `git add -A` skips it (assumed; a file not ignored there is refused as `not-ignored`).
+- Q: what if something is already at the destination (tracked on that branch, or a leftover)? → A: never overwritten; the file is reported `exists`, which is checked before `not-ignored`, so a file tracked on the branch reads `exists` (assumed).
+- Q: does a failed copy stop the work? → A: no; the work opens and its header says what failed (assumed: the issue's own workaround is a work without the file; if wrong, the failure becomes a `prepare` error that undoes the open).
+- Q: where does the work say it? → A: in the work's header, one line «Copied: …» and one «Not copied: … (reason)», from a `carried` field of the workspace record; names and reason codes only (assumed; a notice or activity line would be a second place to keep in sync).
+- Q: the edit UI? → A: a «Carried files» button per healthy repo row, like «Harness», opening a panel with one checkbox per path (saved list ticked, suggestions unticked) and a field to type a path; each change saves at once (assumed; if wrong, only `Repos.tsx` changes).
+- Q: a tour step (W23)? → A: none: the button lives in the Repos card the `repos` step already points at (assumed).
+- Q: `bocetos/` pages and photo? → A: `bocetos/` is local-only and absent from this worktree; the real-app drive is still done and its screenshot attached to the PR (assumed, same as add-repo-by-path).
+- Q: criterion ids? → A: W480 onward, both specs (Pau).
+- Q: (cold review, run as the author) `exists` against `not-ignored` for a file tracked on the branch? → A: the first failing check in W484's order wins; `exists` comes before `not-ignored` (acted on).
+- Q: (cold review) `mkdir` of the destination folder before its check could create folders outside the worktree through a tracked symlinked folder? → A: the nearest existing ancestor of the destination is resolved and checked before any write; a proof plants a symlinked folder in the branch only (acted on).
+- Q: (cold review) throws other than the copy's (`lstat` EACCES, `realpath` ELOOP, `mkdir`)? → A: every step of one file sits in one catch: ENOENT on the source is `missing`, any other throw is `failed`; `carryFiles` never rejects (acted on).
+- Q: (cold review) `config/`, a non-array, and a 21-entry list holding a bad entry? → A: a trailing `/` is an empty segment and refused; a non-array is refused naming the value as text; the count is checked first (acted on).
+- Q: (cold review) W485's window half and «never read into the process» had no failing run? → A: W485 promises the record and main's console only; the window shows names by W487; `copyFile` stays an approach rule (acted on).
+- Q: (cold review) the separator of «Copied: {files}»? → A: `, ` (acted on).
+- Q: (cold review, settings) an unticked typed entry, the field after a refusal, the damaged file and the `Problem`'s button? → A: an unticked entry that is not a suggestion leaves the panel; the field keeps its text on a refusal; a damaged `repos.json` shows the card's S33 problem, as the mode select does; a refusal is a `Problem` with only «Close», because the fix is the panel itself (acted on, assumed).
+- Q: (work review) the check order in W480 read «count first» while the code checks «non-array» first; and `styles.css` was missing from «In»? → A: the text now follows the code (the two cases cannot overlap) and `styles.css` is listed (acted on).
+- Q: (the stop before code) → A: answered by the invocation (`/libretto-attacca`): the document is written, cold-reviewed, committed and carried into phase 6; the run acted on every finding above and rejected none. Box 1 and 2's tests were written red while the reviewer read, then adjusted to the amended criteria.
+- Q: which approach (the fork)? → A: a `carryFiles(repoPath, worktree, list, run)` in `workspaces.ts` called inline by `openWorktree` right after `git worktree add`, its result stored on the record (assumed, the recommended one: one place, before `prepare` and the agent, inside the same undo). Rejected: a git `post-checkout` hook in the repo (writes into the person's repo config and runs on their own checkouts too); passing it as the `prepare` callback (that callback belongs to the caller, W102, and its error undoes the open, which W484 forbids).
+
 ## Task breakdown
 
 - App shell: Electron main, preload bridge, renderer with sidebar / centre / right panel /
@@ -4226,3 +4290,22 @@ Zero questions asked: the repo's autonomy rule says take the recommended option 
   Proof: src/main/repos.test.ts a typed folder git cannot read is refused with its own fix and writes nothing
 - **W443** When the typed path is a folder inside a git repository, main shall register that repository's top level through `registerRepo` and answer its result unchanged with `path` added, `path` being the typed text resolved (`path.resolve` of the expanded text — for a subfolder the subfolder, never the top level); an already registered top level shall come back as that repo with nothing written, a taken or invalid id as `registerRepo`'s own `id-taken` or `invalid-id`, and any other answer of `registerRepo` (`not-a-git-repo`, a `StateProblem` for a damaged `repos.json`) as it is. One test holds every clause except the damaged file, which W447 proves from the window.
   Proof: src/main/repos.test.ts a typed path registers the git top level like the picker does
+
+### Carry ignored config into worktrees (#9) (carry-ignored-config, 27 nov 2026)
+
+- **W480** When main is asked to set a repo's carry list, it shall accept only an array of at most 20 strings, each 1–300 characters, holding no NUL byte, not starting with `/` or `~`, and with no empty, `.` or `..` segment when split on `/` (so a leading, doubled or trailing `/` is refused); it shall save the list with duplicates removed in first-seen order, remove `carry` for an empty list, and answer the repos as listed. If the value is not such an array, then main shall refuse the whole list, checking in this order: a non-array → «{entry} is not a file path inside the repo.» with the value as text; more than 20 entries → «Up to 20 files.»; the first bad entry → the same sentence naming it, and leave `repos.json` unchanged; an unknown repo id is refused with «There is no repo “{id}”». One test holds every clause.
+  Proof: src/main/repos.test.ts a carry list is saved only when every entry is a plain path inside the repo
+- **W481** When the mode override of a repo is set or cleared, main shall keep its carry list; when its carry list is set, main shall keep its override.
+  Proof: src/main/repos.test.ts the mode override and the carry list never erase each other
+- **W482** When the window asks for a repo's suggestions, main shall run `git -C <repo> ls-files -z --others --ignored --exclude-standard --directory` and answer, sorted and at most 20, the entries that do not end in `/`, are not named `.DS_Store` and have no path segment in the dependency/build set (`node_modules`, `vendor`, `dist`, `build`, `out`, `target`, `coverage`, `.next`, `.nuxt`, `.svelte-kit`, `.venv`, `venv`, `__pycache__`, `.cache`, `.turbo`, `.gradle`, `Pods`, `DerivedData`), opening no file. If git fails, then main shall answer «git could not list the ignored files of {repo}.» with git's stderr as detail.
+  Proof: src/main/repos.test.ts suggested carry files are ignored files outside dependency and build folders
+- **W483** When a work opens in a new worktree of a repo with a carry list, main shall copy each listed file from the repo's checkout to the same relative path in the worktree after `git worktree add` and before the agent starts, and the workspace record shall hold `carried: { copied, failed }` in list order; when the work is in-place or a review, or the repo has no list, main shall copy nothing and the record shall have no `carried`.
+  Proof: src/main/workspaces.test.ts a new worktree gets the repo's listed ignored files
+- **W484** If a listed file is missing in the checkout (`missing`), is not a regular file, a symlink or a folder (`not-a-file`), resolves through a symlinked folder to a path outside the checkout, or its destination's nearest existing folder resolves outside the worktree (`outside`), already exists at its destination, tracked on the branch included (`exists`), is not ignored by git in the new worktree (`not-ignored`), or any step for it throws otherwise (`failed`), then main shall not copy it, shall record it in `failed` with the first of these codes in this order, shall write nothing for it (no folder created outside the worktree, nothing at the destination changed), and shall still open the work. One test holds every clause.
+  Proof: src/main/workspaces.test.ts a listed file is carried only when it is a regular ignored file inside the repo
+- **W485** The workspace record and main's console output shall never contain a carried file's contents, for a copied or a failed file: only its relative path and a reason code.
+  Proof: src/main/workspaces.test.ts a carried file's contents never reach the record or the log
+- **W486** When a clean work whose worktree holds carried files is closed, main shall close it as any clean work (the carried files are ignored, so they are neither changes nor a reason to refuse).
+  Proof: src/main/workspaces.test.ts a work with carried files closes like a clean one
+- **W487** Where a work's record has `carried`, its header shall show «Copied: {files}» when any file was copied and «Not copied: {file} ({reason}), …» when any failed, entries joined by `, `, the reasons reading «not found», «not a regular file», «outside the repo», «not ignored by git», «already there» and «could not copy»; it shall show neither line for a work without `carried`, and never any file's contents.
+  Proof: src/renderer/components/workspace.test.tsx a work says which ignored files it carried and which failed
