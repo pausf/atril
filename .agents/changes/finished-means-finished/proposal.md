@@ -148,4 +148,4 @@ None.
 
 - [x] 1. main reads a merged work as done: W332–W335 tests in `src/main/status.test.ts` seen red, then the `agentState` check and the notice guard in `src/main/status.ts`, gates green · Closes: W332, W333, W334, W335
 - [x] 2. «Merged» on the «All agents» card and the header: W336 test in `src/renderer/overview.test.ts` seen red, then `StateLabel`'s `merged` and its three callers, gates green · independent of box 1 · Closes: W336
-- [ ] 3. Drive the real app (own CDP port and token, `attachVerified`, temp `ATRIL_HOME` seeded with a record `merged: true` and a `needs-you` turn-end state file, no forge): no «Up next» chip, no card, card and header read «Merged»; the project's real-app rule, the unit proofs stay the evidence · waits on boxes 1 and 2 · Closes: none
+- [x] 3. Drive the real app (own CDP port and token, `attachVerified`, temp `ATRIL_HOME` seeded with a record `merged: true` and a `needs-you` turn-end state file, no forge): no «Up next» chip, no card, card and header read «Merged»; the project's real-app rule, the unit proofs stay the evidence · waits on boxes 1 and 2 · Closes: none
