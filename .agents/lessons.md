@@ -563,3 +563,6 @@ Reviewer found nothing against the contract (4 proofs re-run, typecheck and lint
 
 ## 2026-11-27 · ignored-files-not-dirty · 6→7
 The work-reviewer was told `main...HEAD` and local `main` was behind origin, so it saw already-merged work as part of the diff. Give the reviewer `origin/main...HEAD` after a `git fetch`; the reviewer found nothing against the contract.
+
+## 2026-11-27 · push-guard-heredoc · 6→7
+Reviewer finding: the quote pass paired an unquoted escaped apostrophe (`echo don\'t; git push; echo 'x'`) with a later `'` and emptied the real `git push` between them, against the Constraint «failing towards asking»; no W422 case had a stray quote. Fixed: a `\x` outside quotes is skipped, so an escaped quote opens nothing; new W422 row seen red before the fix. A text-stripping guard needs a case where the thing it strips is mis-paired, not only where it is well-formed.
