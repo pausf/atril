@@ -220,4 +220,26 @@ describe('agents overview', () => {
     expect(await screen.findByRole('heading', { name: 'PF-4' })).toBeTruthy()
     expect(overview()).toBeNull()
   })
+  it("a merged work's card and header read Merged", async () => {
+    const user = userEvent.setup()
+    const base = data()
+    const wait = { kind: 'turn-end' as const, text: 'Claude dice: PR abierta.', questions: [], next: 0, idle: true }
+    mockApi({
+      ...base,
+      workspaces: base.workspaces.map((w) => (w.id === 'aaaaaaa4' ? { ...w, merged: true as const } : w)),
+      waits: { aaaaaaa4: wait, aaaaaaa3: wait }
+    })
+    render(createElement(App))
+    await screen.findByText('PF-5')
+    await user.click(screen.getByRole('button', { name: 'Todos' }))
+    // Its state file still says needs-you (an older hook): the card reads Merged, not done or needs you.
+    await waitFor(() => expect(card('PF-3').querySelector('.ask')).not.toBeNull())
+    expect(card('PF-4').querySelector('.ov-top .state')?.textContent?.trim()).toBe('Fusionada')
+    expect(card('PF-4').querySelector('.ask')).toBeNull()
+
+    // The header of the opened work says the same.
+    await user.click(within(card('PF-4')).getAllByRole('button')[0]!)
+    expect(await screen.findByRole('heading', { name: 'PF-4' })).toBeTruthy()
+    expect(document.querySelector('.whead .tline .state')?.textContent?.trim()).toBe('Fusionada')
+  })
 })

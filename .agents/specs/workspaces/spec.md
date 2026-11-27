@@ -387,6 +387,13 @@ In Settings → Repos, each healthy repo row has a «Harness» button. Opening i
 - A work whose PR has been merged reads «Merged», shows no «needs you» card, drops out of every clash, and can be removed as before.
 - Two open works of one repo that define the same new criterion id say so on their rows.
 
+### A merged work is finished (finished-means-finished, 27 nov 2026)
+
+- A work whose record is `merged` reads `done` in main whatever its state file says, so `status.list` and every `onChange` carry `done`.
+- «Up next» shows no chip for a merged work.
+- A merged work gets no idle reminder, Automático sends it nothing, and the merge itself raises no «finished» notice.
+- The «All agents» card and the work header of a merged work say «Merged», as its row does, with no «Go on».
+
 ## Scope boundaries
 
 **In:** the three columns and footer of `bocetos/fase1-nucleo.html` (boceto 8), the
@@ -839,6 +846,20 @@ Never scoped out: the gate and the driver check are a trust boundary (what a dri
 - Re-basing records made before this change: they keep `baseCommit` and no `baseRef`.
 - `stageOf`, history, QA prompts: keep `baseCommit`.
 
+### A merged work is finished (finished-means-finished, 27 nov 2026)
+
+**In:** `src/main/status.ts` (`agentState`, the poll's done notice); `src/renderer/components/StateLabel.tsx`
+(a `merged` prop), `AgentsOverview.tsx`, `Workspace.tsx`, `WorkspaceList.tsx` (pass it); tests beside each.
+
+**Out:**
+- Guessing «finished» from a turn end's words (see the decision log).
+- Changing how a merge is detected (W306, W307), or asking the forge on a timer.
+- Rewriting stale state files on disk: main reads past them.
+- `closed` (not merged) PRs: unchanged.
+- A new label text: «Merged» is reused.
+- Expiring the work's stored notices on merge (V11, `avisos`).
+- The header's reopen panel for a dead merged work.
+
 ## Constraints
 
 - Electron (current stable) + TypeScript in strict mode, pnpm, Node 24 (installed:
@@ -1109,6 +1130,12 @@ Texts through `t()`.
 - `src/main/flow/**` belongs to flow-status and does not change: the base is resolved before calling it.
 - Texts through `t()` with the English key; Spanish in `src/preload/i18n-es.ts`.
 - Reading `.agents/changes/*/*.md` of a worktree: `lstat`, no links followed, files over 1 MB skipped.
+
+### A merged work is finished (finished-means-finished, 27 nov 2026)
+
+- W313 already holds in the window; main must agree with it, so the two never disagree on one work.
+- No new process per poll: `merged` is on the record `listWorkspaces` already reads.
+- Texts through `t()`; no new key.
 
 ## Prior decisions
 
@@ -2750,6 +2777,36 @@ Zero questions asked: the repo's autonomy rule says take the recommended option 
 - Q: (spec-reviewer) W166/W168 contradicted? → A: both amended in this change; the hook-equals-panel equality gets W312 through one helper `panelBoxes`/`panelBoxDiff` that index.ts calls; `stateOf` gets W313 (assumed).
 - Q: (spec-reviewer) Muted merged notices, reopening a merged work, a failed fetch? → A: ceilings, named in Prior decisions; no extra code (assumed).
 
+### A merged work is finished (finished-means-finished, 27 nov 2026)
+
+- (2026-11-27, finished-means-finished) A `merged` record outranks the hook's state file and the pause mark in main's `agentState`: it reads `done`, alive or not (assumed; if wrong, a dead merged work would read «stopped»).
+- (2026-11-27, finished-means-finished) Becoming `done` because of a merge sends no notice (assumed).
+- (2026-11-27, finished-means-finished) Ceilings: a dead merged work still offers reopen in its header (read from `alive`); its `ask`/`idle` notices stored before the merge stay unread (V11) (assumed).
+- (2026-11-27, finished-means-finished) No «final report» heuristic: W220 already writes `done` for new Stops. Ceiling: a `needs-you` written by a hook older than W220, on a work that is finished but not merged, keeps reading «needs you» until its next Stop or its merge (assumed).
+- (2026-11-27, finished-means-finished) A merged work's card and header say «Merged» (W309's text) (assumed).
+
+#### Alternatives that lost
+
+| Considered | Why it lost |
+|---|---|
+| Filter `merged` in `nextUp`, the idle timer and Automático separately | Three checks that can drift; `agentState` is the one reader they share |
+| Rewrite stale state files to `done` when a merge is seen | Two writers of the hook's file (main and the hook); the record already says it |
+| Guess «finished» from a turn end's last words | A second W220 from prose; W220 already covers new Stops (see Decision log) |
+
+#### Decision log, answers as given (2026-11-27)
+- Q: Where is «merged outranks the hook» decided? → A: in main's `agentState`, the one reader every main consumer (N1, idle reminder, Automático, notices, `status.list`) goes through; `stateOf` in the window already does it (W313) (assumed; if wrong, each consumer would filter `merged` itself).
+- Q: A merged work whose tmux session died: `done` or `stopped`? → A: `done`, the same as W313 «whatever its agent's state», and no «stopped» notice for it; the header's reopen panel (`Workspace.tsx`, read from `alive`) stays as it is (assumed; if wrong, a dead merged work would read «stopped»).
+- Q: Does the switch from `needs-you` to `done` caused by the merge send a «finished its turn» notice? → A: no: the forge already sent «merged», and the agent did nothing (assumed; if wrong, one extra notice per merged work).
+- Q: What does the card say? → A: «Merged», the label the row already shows (W309), on the «All agents» card and the work header too; no new text «finished · PR merged» (assumed; if wrong, a new key and its Spanish entry).
+- Q: A turn end whose last text is a final report reads as finished? → A: not built here: the current hook already writes `done` for a Stop with no question and no open box (W220); only state files from older hooks keep `needs-you`, and a merged PR now outranks them. Reading the report's words in main would be a second W220 that guesses from prose (assumed; if wrong, a stale `needs-you` on an unmerged, finished work stays until its next Stop or its merge).
+- Q: (phase 5) How is it built? → A: one check at the top of main's `agentState` (`ws.merged` → `done`), the poll skips the done notice for a merged work, and `StateLabel` takes `merged` (assumed; rejected: filtering `merged` in `nextUp`, the idle timer and Automático one by one; rewriting stale state files to `done`).
+- Q: (spec-reviewer) W334 joins two promises on one proof? → A: kept joined; the one test asserts both, the reminder on a manual work and the silence on an Automático one (assumed).
+- Q: (spec-reviewer) W336's «no Go on» cannot fail (W313 already hides the card)? → A: dropped from W336; W336 is the label only (assumed).
+- Q: (spec-reviewer) W335, only the merge switch or every later turn end? → A: the same code: under W332 a merged work's state never changes again, so W335 reads «while merged, no done notice» (assumed).
+- Q: (spec-reviewer) The work's unread `ask`/`idle` notices stored before the merge? → A: out: they are V11's (`avisos`), and entering `done` marks nothing read; they stay until read or removed (assumed; if wrong, an `avisos` delta that expires them on merge).
+- Q: (spec-reviewer) How does the real-app drive get a merged work? → A: a temp `ATRIL_HOME` seeded with a record `merged: true` and a state file `needs-you` turn-end; no forge (assumed).
+- Q: Does merge detection change? → A: no: W306 (notice) and W307 (ancestry after a new work's fetch) as they are (assumed; the ceilings in work-vs-main's prior decisions still hold).
+
 ## Task breakdown
 
 - App shell: Electron main, preload bridge, renderer with sidebar / centre / right panel /
@@ -3857,3 +3914,16 @@ Zero questions asked: the repo's autonomy rule says take the recommended option 
   Proof: src/main/radar.test.ts two works defining the same new criterion ids clash on those ids
 - **W311** When a row's hits share ids, the row shall show, under the file line, «Criterion id {id} also in {branch}» for the first hit with ids and its first id, or «Criterion ids {id} and {n} more also in {branch}» where n is that hit's ids minus one, the id before the branch so a cut line keeps it, with every «{branch}: {id}» of every hit as the line's title.
   Proof: src/renderer/radar.test.ts a row with shared criterion ids says which and with whom
+
+### A merged work is finished (finished-means-finished, 27 nov 2026)
+
+- **W332** `agentState` shall answer `done` for a work whose record is `merged`, whatever its state file, its pause mark or its tmux session say.
+  Proof: src/main/status.test.ts a merged work is done in main whatever its state file says
+- **W333** While a work's record is `merged`, «Up next» (N1) shall hold no `agent` item for it, even when its state file says `needs-you`.
+  Proof: src/main/status.test.ts a merged work adds no up-next chip
+- **W334** While a work's record is `merged`, the status poll shall send it no idle reminder (W180) and Automático (W205–W207) shall send nothing to its pane, even when its state file says `needs-you`. Ceiling: one test asserts both clauses, the reminder on a manual work and the silence on an Automático one.
+  Proof: src/main/status.test.ts a merged work gets no reminder and no automatic answer
+- **W335** While a work's record is `merged`, the status poll shall send no «done» notice for it, including on the poll where its record became `merged`.
+  Proof: src/main/status.test.ts a merge sends no finished notice
+- **W336** While a work's record is `merged`, the «All agents» card and the work header shall show «Merged» in place of its agent state.
+  Proof: src/renderer/overview.test.ts a merged work's card and header read Merged

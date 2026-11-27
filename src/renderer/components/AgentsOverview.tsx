@@ -76,7 +76,7 @@ export function AgentsOverview({ workspaces, next, switcher, onOpen }: Props) {
               >
                 <span className="ov-top">
                   <span className="ov-branch">{w.branch}</span>
-                  <StateLabel state={state} />
+                  <StateLabel state={state} merged={w.merged} />
                 </span>
                 <span className="ov-meta">{w.repoId}</span>
                 {flow?.stage === 'sin-libretto' ? (

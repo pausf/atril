@@ -546,3 +546,9 @@ The shared-ids line passed its test and, at the sidebar's width, cut the id itse
 
 ## 2026-11-26 · work-vs-main · 1
 This work was itself created from a stale local checkout (the bug it fixes, #11): reset onto origin/main before anything else. Until this change lands, a work started from «New work» should `git fetch` and check `git log origin/main..HEAD` before building.
+
+## 2026-11-27 · finished-means-finished · 6→7
+Reviewer found nothing against the contract (5 proofs re-run, typecheck and lint green). Before it, the cold spec review caught that «no Go on» in W336 could never fail (W313 already hid the card) and that W334 joined two promises on one proof; and the builder found the W334 test passing for the wrong reason: an Automático work is turned `working` by its own «Sigue», so it is never reminded and the idle clause was untested. A manual work now carries the reminder clause (seen red). When one test holds a clause per mode, each clause needs a work in the mode that reaches it.
+
+## 2026-11-27 · finished-means-finished · 1
+Issue #4 was filed before work-vs-main's W313, so half of what it describes (the card) was already fixed in the window; the rest lived in main, which read the stale state file. When an issue predates a landing that touched the same path, re-read the issue against `origin/main` and fix only what is still true.

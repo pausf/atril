@@ -8,15 +8,15 @@ below point at files on Pau's disk, not in the repo.
 
 ## Last landed
 
-`work-vs-main` (26 Nov, issues #11, #10, #8, W300–W313): a new work fetches and branches from origin's default branch
+`finished-means-finished` (27 Nov, issue #4, W332–W336): a merged work reads `done` in main whatever an older hook
+left in its state file: no Up next chip, no idle reminder, no automatic Go on, no notice on the merge; its card and header say «Merged».
+
+Before it, `work-vs-main` (26 Nov, issues #11, #10, #8, W300–W313): a new work fetches and branches from origin's default branch
 (`--no-track`); size, panel and radar count from the merge-base with it; a merged PR (notice or ancestry) reads "Merged"
 and leaves the clash check; rows say when two works take the same new criterion ids.
 
-Before it, `fix-cdp-isolation` (26 Nov, W320–W331): a dev Atril on `ATRIL_CDP_PORT` owns that port by a launch token
+Before that, `fix-cdp-isolation` (26 Nov, W320–W331): a dev Atril on `ATRIL_CDP_PORT` owns that port by a launch token
 or exits; a drive attaches only through `attachVerified` in `scripts/cdp-drive.mjs`.
-
-Before that, `pr-photos` (26 Nov, W240–W252): QA's "Publish on the MR" previews scrubbed captures and writes them
-into the MR description; untested against real forges.
 
 ## Next
 
