@@ -1,8 +1,8 @@
 import { randomInt } from 'node:crypto'
-import { existsSync } from 'node:fs'
-import { mkdir, rename, rm as unlink, writeFile } from 'node:fs/promises'
-import { join } from 'node:path'
-import type { Agent, Aviso, Effort, FlowBoxes, Model, RemoveResult, WorkRefusal, WorkspaceRecord, WorkspaceResult, WorkspaceView } from '../preload/api'
+import { constants, existsSync } from 'node:fs'
+import { copyFile, lstat, mkdir, realpath, rename, rm as unlink, writeFile } from 'node:fs/promises'
+import { dirname, join, sep } from 'node:path'
+import type { Agent, Aviso, Carried, CarryFail, Effort, FlowBoxes, Model, RemoveResult, WorkRefusal, WorkspaceRecord, WorkspaceResult, WorkspaceView } from '../preload/api'
 import { boxDiff, boxRanges } from './flow/boxes'
 import { quietly } from './flow/quiet'
 import { agentArgv, hasLessons, EFFORTS } from './agent'
@@ -166,6 +166,51 @@ function unwritable(err: unknown, other?: string): WorkRefusal | undefined {
 const dropFiles = (id: string): Promise<unknown> =>
   Promise.all([autoMarker(id), join(home(), 'subagents', `${sessionName(id)}.json`), join(home(), 'paused', sessionName(id)), join(home(), 'transcripts', sessionName(id))].map((f) => unlink(f, { force: true })))
 
+const inside = (root: string, p: string): boolean => p === root || p.startsWith(root + sep)
+
+/** Real path of `p`, or of its nearest existing ancestor when `p` is not there yet. */
+async function nearestReal(p: string): Promise<string> {
+  for (;;) {
+    try {
+      return await realpath(p)
+    } catch (err) {
+      if ((err as NodeJS.ErrnoException).code !== 'ENOENT' || dirname(p) === p) throw err
+      p = dirname(p)
+    }
+  }
+}
+
+/**
+ * W483–W485: copies each listed ignored file from the checkout into a new worktree. The first failing check names the
+ * reason; nothing is written before every check passed. Bytes go through copyFile only, never into this process.
+ */
+export async function carryFiles(checkout: string, worktree: string, files: string[], run: Runner): Promise<Carried> {
+  const carried: Carried = { copied: [], failed: [] }
+  const realCheckout = await realpath(checkout)
+  const realWorktree = await realpath(worktree)
+  for (const file of files) {
+    const src = join(checkout, file)
+    const dest = join(worktree, file)
+    const why = await (async (): Promise<CarryFail | null> => {
+      try {
+        if (!(await lstat(src)).isFile()) return 'not-a-file'
+        if (!inside(realCheckout, await realpath(src))) return 'outside'
+        if (!inside(realWorktree, await nearestReal(dirname(dest)))) return 'outside'
+        if (await lstat(dest).then(() => true, () => false)) return 'exists'
+        if ((await run('git', ['-C', worktree, 'check-ignore', '-q', '--', file])).code !== 0) return 'not-ignored'
+        await mkdir(dirname(dest), { recursive: true })
+        await copyFile(src, dest, constants.COPYFILE_EXCL)
+        return null
+      } catch (err) {
+        return (err as NodeJS.ErrnoException).code === 'ENOENT' && !(await lstat(src).then(() => true, () => false)) ? 'missing' : 'failed'
+      }
+    })()
+    if (why) carried.failed.push({ file, why })
+    else carried.copied.push(file)
+  }
+  return carried
+}
+
 /**
  * `prepare` runs in the new folder after the branch exists and before the agent starts (W102); an error it returns
  * undoes the folder and the branch it just made.
@@ -206,6 +251,7 @@ export async function openWorktree(
   let fetched: string | undefined
   let madeBranch = !review && input.existing !== true
   let base = madeBranch ? await defaultRef(repo.path, run) : null
+  let carried: Carried | undefined
   if (review) {
     path = repo.path
   } else if (inPlace) {
@@ -268,6 +314,7 @@ export async function openWorktree(
       const held = /already (checked out|used by worktree)/.test(add.stderr)
       return gitFailed(add, held ? t('Branch {branch} is already open in another folder.', { branch }) : t('git could not create the work folder.'))
     }
+    if (repo.carry?.length) carried = await carryFiles(repo.path, path, repo.carry, run)
   }
 
   // Undoes only what this attempt made: the folder and the branch it created.
@@ -318,6 +365,7 @@ export async function openWorktree(
     ...(input.effort && EFFORTS.includes(input.effort) && { effort: input.effort }),
     ...(input.jiraKey && { jiraKey: input.jiraKey }),
     ...(auto && { auto }),
+    ...(carried && { carried }),
     session: sessionName(id),
     paneId,
     createdAt: Math.floor(Date.now() / 1000)
