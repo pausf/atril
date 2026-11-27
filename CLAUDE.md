@@ -8,15 +8,15 @@ below point at files on Pau's disk, not in the repo.
 
 ## Last landed
 
-`card-answer-lands` (27 Nov, issue #6, W337–W340, W76 amended): a tall card scrolls above the terminal, which keeps
+`push-guard-heredoc` (27 Nov, issue #7, W420–W422, W59 amended): the auto-mode push guard reads the command without
+heredoc bodies and quoted strings (`sh|bash|zsh -c` arguments stay), so only a real `git push`, `gh pr create` or `glab mr create` asks.
+
+Before it, `card-answer-lands` (27 Nov, issue #6, W337–W340, W76 amended): a tall card scrolls above the terminal, which keeps
 180 px; main never sizes the tmux client under 10 rows; a card answer reads «Sent» only once the hook or the pane moved,
 else «did not arrive» with Try again.
 
-Before it, `finished-means-finished` (27 Nov, issue #4, W332–W336): a merged work reads `done` in main whatever an older
+Before that, `finished-means-finished` (27 Nov, issue #4, W332–W336): a merged work reads `done` in main whatever an older
 hook left in its state file; its card and header say «Merged».
-
-Before that, `work-vs-main` (26 Nov, issues #11, #10, #8, W300–W313): a new work fetches and branches from origin's
-default branch (`--no-track`); size, panel and radar count from the merge-base with it; a merged PR reads "Merged".
 
 ## Next
 
