@@ -250,4 +250,84 @@ describe('repos card', () => {
       expect(within(card).queryByRole('button', { name: 'Añadir esta ruta' })).toBeNull()
     })
   })
+
+  describe('carried files', () => {
+    const row = (card: HTMLElement, id: string) => within(card).getByText(id).closest('li') as HTMLElement
+    const boxes = (panel: HTMLElement) =>
+      within(panel).queryAllByRole('checkbox').map((b) => `${(b as HTMLInputElement).checked ? 'x' : ' '} ${b.closest('label')!.textContent!.trim()}`)
+
+    it('the carried files of a repo are picked from suggestions or typed', async () => {
+      const api = mockApi({ repos: [{ ...repos[0]!, carry: ['web/config.local'] }, repos[1]!], carrySuggest: { web: ['.env', 'web/config.local', 'z.local'], cms: [] } })
+      const { user, card } = await openCard()
+      const button = within(row(card, 'web')).getByRole('button', { name: 'Archivos que se copian de web' })
+      expect(button.getAttribute('aria-expanded')).toBe('false')
+      await user.click(button)
+      expect(button.getAttribute('aria-expanded')).toBe('true')
+      expect(api.reposApi.carrySuggest).toHaveBeenCalledWith('web')
+      const panel = await within(row(card, 'web')).findByRole('group', { name: 'Archivos que se copian de web' })
+      await vi.waitFor(() => expect(boxes(panel)).toEqual(['  .env', 'x web/config.local', '  z.local']))
+
+      await user.click(within(panel).getByRole('checkbox', { name: '.env' }))
+      expect(api.reposApi.setCarry).toHaveBeenLastCalledWith('web', ['web/config.local', '.env'])
+      await vi.waitFor(() => expect(boxes(panel)).toEqual(['x .env', 'x web/config.local', '  z.local']))
+      await user.click(within(panel).getByRole('checkbox', { name: 'web/config.local' }))
+      expect(api.reposApi.setCarry).toHaveBeenLastCalledWith('web', ['.env'])
+      // A suggestion stays, unticked.
+      await vi.waitFor(() => expect(boxes(panel)).toEqual(['x .env', '  web/config.local', '  z.local']))
+
+      const field = within(panel).getByLabelText('Añadir un archivo')
+      await user.type(field, 'secrets/app.yml{Enter}')
+      expect(api.reposApi.setCarry).toHaveBeenLastCalledWith('web', ['.env', 'secrets/app.yml'])
+      await vi.waitFor(() => expect(boxes(panel)).toEqual(['x .env', 'x secrets/app.yml', '  web/config.local', '  z.local']))
+      expect((field as HTMLInputElement).value).toBe('')
+      await user.type(field, 'b.local')
+      await user.click(within(panel).getByRole('button', { name: 'Añadir' }))
+      expect(api.reposApi.setCarry).toHaveBeenLastCalledWith('web', ['.env', 'secrets/app.yml', 'b.local'])
+
+      // A typed entry unticked leaves the panel: it is no suggestion.
+      await vi.waitFor(() => expect(within(panel).getByRole('checkbox', { name: 'secrets/app.yml' })).toBeTruthy())
+      await user.click(within(panel).getByRole('checkbox', { name: 'secrets/app.yml' }))
+      await vi.waitFor(() => expect(boxes(panel)).toEqual(['x .env', 'x b.local', '  web/config.local', '  z.local']))
+
+      // Nothing saved, nothing suggested.
+      await user.click(within(row(card, 'cms')).getByRole('button', { name: 'Archivos que se copian de cms' }))
+      expect(await within(row(card, 'cms')).findByText('No hay archivos ignorados aquí. Escribe uno para copiarlo.')).toBeTruthy()
+    })
+
+    it('a refused carry list or suggestion failure says nothing was saved', async () => {
+      const api = mockApi({
+        repos: [{ ...repos[0]!, carry: ['.env'] }, repos[1]!],
+        carrySuggest: { web: ['.env'], cms: { error: 'git no ha podido listar los archivos ignorados de cms.', detail: 'fatal: boom' } },
+        setCarry: { error: '../x no es la ruta de un archivo dentro del repo.' }
+      })
+      const { user, card } = await openCard()
+      await user.click(within(row(card, 'web')).getByRole('button', { name: 'Archivos que se copian de web' }))
+      const panel = await within(row(card, 'web')).findByRole('group', { name: 'Archivos que se copian de web' })
+      const field = within(panel).getByLabelText('Añadir un archivo')
+      await user.type(field, '../x{Enter}')
+      expect(api.reposApi.setCarry).toHaveBeenLastCalledWith('web', ['.env', '../x'])
+      const alert = await within(panel).findByRole('alert')
+      expect(alert.textContent).toContain('../x no es la ruta de un archivo dentro del repo.')
+      expect(alert.textContent).toContain('No se ha guardado nada.')
+      expect(within(alert).getAllByRole('button').map((b) => b.textContent)).toEqual(['Cerrar aviso'])
+      expect(alert.querySelector('details')).toBeNull()
+      expect((field as HTMLInputElement).value).toBe('../x')
+      expect(boxes(panel)).toEqual(['x .env'])
+      await user.click(within(alert).getByRole('button', { name: 'Cerrar aviso' }))
+      expect(within(panel).queryByRole('alert')).toBeNull()
+
+      await user.click(within(row(card, 'cms')).getByRole('button', { name: 'Archivos que se copian de cms' }))
+      const cms = await within(row(card, 'cms')).findByRole('group', { name: 'Archivos que se copian de cms' })
+      const failed = await within(cms).findByRole('alert')
+      expect(failed.textContent).toContain('git no ha podido listar los archivos ignorados de cms.')
+      expect(failed.textContent).toContain('No se muestran las sugerencias.')
+      expect(failed.querySelector('details code')?.textContent).toBe('fatal: boom')
+
+      // A damaged repos.json: the card's own problem, as the mode select shows it.
+      vi.mocked(api.reposApi.setCarry).mockResolvedValueOnce({ problem: { error: 'No puedo leer repos.json: está dañado.', detail: 'x', fix: 'reveal', file: 'repos' } })
+      await user.click(within(panel).getByRole('checkbox', { name: '.env' }))
+      expect(await within(card).findByText('No puedo leer repos.json: está dañado.')).toBeTruthy()
+    })
+  })
 })
+

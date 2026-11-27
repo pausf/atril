@@ -6,6 +6,67 @@ import { HarnessCard } from '../harness/HarnessCard'
 import { useT } from '../ui'
 
 const ID_RE = /^[a-z0-9-]+$/
+
+/** W488–W489: the saved list ticked, the suggestions unticked; every change sends the whole list to main. */
+function CarryPanel({ repo, onSaved, onDamaged }: { repo: RepoView; onSaved: (r: Listed<RepoView>) => void; onDamaged: (p: StateProblem) => void }) {
+  const t = useT()
+  const [suggested, setSuggested] = useState<string[]>([])
+  const [listFail, setListFail] = useState<{ error: string; detail: string } | null>(null)
+  const [refused, setRefused] = useState<string | null>(null)
+  const [text, setText] = useState('')
+  useEffect(() => {
+    void window.atril.repos.carrySuggest(repo.id).then((r) => (Array.isArray(r) ? setSuggested(r) : setListFail(r)))
+  }, [repo.id])
+  const saved = repo.carry ?? []
+  const all = [...new Set([...saved, ...suggested])].sort()
+
+  const save = async (next: string[]): Promise<boolean> => {
+    const r = await window.atril.repos.setCarry(repo.id, next)
+    if (!Array.isArray(r) && 'problem' in r) {
+      onDamaged(r.problem)
+      return false
+    }
+    if (!Array.isArray(r)) {
+      setRefused(r.error)
+      return false
+    }
+    setRefused(null)
+    onSaved(r)
+    return true
+  }
+  const label = t('Carried files of {id}', { id: repo.id })
+
+  return (
+    <div className="carry" role="group" aria-label={label}>
+      {all.length === 0 && !listFail && <p className="hint2">{t('No ignored files found here. Type one to carry it.')}</p>}
+      <ul>
+        {all.map((f) => (
+          <li key={f}>
+            <label>
+              <input type="checkbox" checked={saved.includes(f)} onChange={() => void save(saved.includes(f) ? saved.filter((s) => s !== f) : [...saved, f])} />{' '}
+              <bdi>{f}</bdi>
+            </label>
+          </li>
+        ))}
+      </ul>
+      <form
+        className="idrow"
+        onSubmit={(e) => {
+          e.preventDefault()
+          if (text.trim() === '') return
+          void save([...saved, text.trim()]).then((ok) => ok && setText(''))
+        }}
+      >
+        <input id={`carry-${repo.id}`} aria-label={t('Add a file')} placeholder=".env" spellCheck={false} value={text} onChange={(e) => setText(e.target.value)} />
+        <button type="submit" className="pill" disabled={text.trim() === ''}>
+          {t('Add')}
+        </button>
+      </form>
+      {refused && <Problem what={refused} cant={t('Nothing was saved.')} detail="" onClose={() => setRefused(null)} />}
+      {listFail && <Problem what={listFail.error} cant={t('The suggestions are not shown.')} detail={listFail.detail} onClose={() => setListFail(null)} />}
+    </div>
+  )
+}
 type Choice = Mode | 'auto'
 
 interface Pending {
@@ -26,6 +87,13 @@ export function Repos() {
   const ticket = useRef(0)
   // W286: each row owns its card; the ids whose card is open.
   const [harness, setHarness] = useState<ReadonlySet<string>>(new Set())
+  const [carrying, setCarrying] = useState<ReadonlySet<string>>(new Set())
+  const flipCarry = (id: string): void =>
+    setCarrying((open) => {
+      const next = new Set(open)
+      if (!next.delete(id)) next.add(id)
+      return next
+    })
   const flip = (id: string): void =>
     setHarness((open) => {
       const next = new Set(open)
@@ -168,9 +236,15 @@ export function Repos() {
                 {t('Harness')}
               </button>
             )}
+            {repo.health === 'ok' && (
+              <button type="button" className="pill" aria-expanded={carrying.has(repo.id)} aria-label={t('Carried files of {id}', { id: repo.id })} onClick={() => flipCarry(repo.id)}>
+                {t('Carried files')}
+              </button>
+            )}
             {refusal?.id === repo.id && (
               <Problem what={refusal.error} cant={t('{id} stays as it was.', { id: repo.id })} detail="" onClose={() => setRefusal(null)} />
             )}
+            {repo.health === 'ok' && carrying.has(repo.id) && <CarryPanel repo={repo} onSaved={show} onDamaged={setProblem} />}
             {repo.health === 'ok' && harness.has(repo.id) && <HarnessCard repoId={repo.id} />}
           </li>
         ))}

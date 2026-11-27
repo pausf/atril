@@ -5387,6 +5387,18 @@ button.skct[aria-pressed='true'] {
   flex-basis: 100%;
   font-size: 13px;
 }
+.repo-rows .carry {
+  flex-basis: 100%;
+  font-size: 13px;
+}
+.carry ul {
+  list-style: none;
+  margin: 0 0 8px;
+  padding: 0;
+}
+.carry li {
+  padding: 2px 0;
+}
 .harness h4 {
   margin: 10px 0 4px;
   font-size: 12px;
