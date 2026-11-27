@@ -412,6 +412,12 @@ In Settings → Repos, each healthy repo row has a «Harness» button. Opening i
 - An automatic work running `python3 - <<'EOF' … git push … EOF` or `git commit -m "… git push …"` gets no question.
 - A real `git push`, `gh pr create` or `glab mr create` still asks, wherever it sits: after a heredoc, after a quote, inside `sh -c "…"`.
 
+### Answered means working (answered-means-working, 27 nov 2026)
+
+- After «Allow» or the last question of a card lands, the row, the chip, the strip and the sidebar read `working` and show no card, for as long as the approved command runs.
+- The first hook write after that (PostToolUse, Stop, a new Notification) takes over again, as W15 and W221 already decide notices on the states main reads.
+- An answer that did not land, a Deny, an answer to a question that is not the last, and a go-on read as before.
+
 ### Add a repo by its path (#1) (add-repo-by-path, 27 nov 2026)
 
 In Ajustes → Repos the person can type or paste a folder's path (a leading `~` meaning their home), press «Add this path» or Enter, and get the repo registered exactly as if the picker had returned that folder. A path that cannot be added says what happened, that nothing was added, and offers one button that fixes it, with the technical detail folded; nothing is written to `repos.json` on a refusal. The picker stays.
@@ -916,6 +922,17 @@ Out, named:
 - Telling a command substitution (`$(git push)`) from text inside double quotes or an unquoted heredoc body.
 - The wording or language of the question.
 
+### Answered means working (answered-means-working, 27 nov 2026)
+
+**In:** `src/main/status.ts` (the memory of the answered wait, read by `hookState`, `waitOf` and `answerAgent`, written by `answerLanded`); new cases in `src/main/status.test.ts`; the criteria and W75's amendment in `.agents/specs/workspaces/spec.md`; one line (under 250 bytes) in `CLAUDE.md` under «Untested with real data».
+
+**Out:**
+- The hook (`resources/claude-hook.mjs`) and the state file format.
+- A new hook event, or reading Claude Code's screen to know the command runs.
+- Surviving an Atril restart (the memory is not persisted).
+- Deny: what an Escape-deny produces in Claude Code is unverified, so it reads as before.
+- The renderer: it reads main's state and needs no change unless a proof shows otherwise.
+
 ### Add a repo by its path (#1) (add-repo-by-path, 27 nov 2026)
 
 **In:** `addRepoByPath` and the path expansion in `src/main/repos.ts`; the handler `atril:repos:addPath` in `src/main/index.ts`; `repos.addPath` and the `PathProblem` type in `src/preload/{api,index}.ts`; the field, the button and the problem in `src/renderer/settings/Repos.tsx`; `repos.addPath` in `src/renderer/mockApi.ts`; the Spanish entries in `src/preload/i18n-es.ts`; the tests; this change's criteria.
@@ -1219,6 +1236,13 @@ Texts through `t()`.
 - The hook runs as `ELECTRON_RUN_AS_NODE=1 claude-hook.mjs`: plain Node, no dependency.
 - The hook's other outputs, its state file and the ASK text stay byte for byte.
 - Failing towards asking: anything the cleaning cannot read (an unbalanced quote, a heredoc opener with no delimiter line) stays in the text.
+
+### Answered means working (answered-means-working, 27 nov 2026)
+
+- The notification rules (W15, W27, W221) are unchanged: they run on the states main reads, so a new wait after `working` is an entry into needs-you and W221 may still suppress an identical one.
+- Pause (W86) still outranks everything in `hookState`; W199 and W332 keep their precedence.
+- `CLAUDE.md` stays within W235's 7000 bytes (6627 today).
+- Failing towards asking: when the file has no numeric `at`, nothing is hidden.
 
 ### Add a repo by its path (#1) (add-repo-by-path, 27 nov 2026)
 
@@ -2977,6 +3001,29 @@ Zero questions asked: the repo's autonomy rule says take the recommended option 
 - Q: (invocation) What did `/libretto-attacca` answer? → A: it carried this document past the stop into phase 6 and the push of the branch plus a PR against main, never a merge; the fresh reader's findings the run acted on are listed under «Reviewer findings acted on» at the end of this document (assumed).
 - Q: Where does the helper live? → A: in `claude-hook.mjs` beside `UPLOAD`, covered through the hook cases in `agent.test.ts`; no new file (assumed; if wrong, move it next to `keepgoing.mjs`).
 
+### Answered means working (answered-means-working, 27 nov 2026)
+
+- (2026-11-27, answered-means-working) The answered wait is kept in main, keyed by session, `at` and kind; the hook's state file is untouched (assumed). Ceiling: not persisted, so a restart of Atril reads the stale `needs-you` again; a second wait in the same second with the same kind is not told apart; the upgrade is a hook that writes `working` on its own, which has no event to hang on today.
+- (2026-11-27, answered-means-working) Only Allow and the last question mark the wait as answered; Deny, an earlier question and a go-on do not (assumed). Deny is the one to revisit once a real Claude Code shows what follows an Escape-deny.
+- (2026-11-27, answered-means-working) W75's «while it is needs-you» now reads the state as main reads it, so an answered wait is not needs-you (W75 amended); W76's «disabling the card until the state changes» is unchanged: the state now changes at once.
+
+#### Alternatives that lost
+
+| Considered | Why it lost |
+|---|---|
+| The hook writes `working` itself on the answer | No hook event fires at the grant (issue #11); Atril would have to tell the hook, and the hook is out of scope |
+| Mark answered in `answerAgent` (on keys sent) | W339 exists because keys sent is not landed (issue #6); a deaf pane would read `working` |
+| Mark by session only, clear on any file change | Needs a watcher or a poll compare; the `at`+kind key is stateless to read and mirrors `progress` |
+| Write `working` into the state file from main | Two writers of one file; races the hook's own write and loses the Notification text the card shows |
+| Mark Deny too | An Escape-deny interrupts the turn and no Stop follows, so `working` would stick on an idle agent |
+
+#### Decision log, answers as given (2026-11-27)
+- Q: Where does «answered» live: in the hook's state file or in main's memory? → A: in main's memory, keyed by session and by the wait's `at` and kind; the hook and its state file stay byte for byte (assumed; if wrong, an Atril restart during the command reads needs-you again until the next hook write, and the state file would need a hook change instead).
+- Q: Which answers turn the work to working? → A: Allow and the last question of a question call. Not Deny (Escape interrupts the turn and no Stop follows, so `working` would stick on an agent that sits idle), not a non-final question (the next one is still due), not a go-on (its own message fires UserPromptSubmit) (assumed; if wrong, a deny would read needs-you until the agent speaks, or a multi-question call would hide its remaining questions).
+- Q: When does it read needs-you again? → A: when the hook writes a wait with another `at` or another kind, or any other state; a same-second, same-kind wait is not told apart (assumed ceiling; human latency plus the 500 ms landing poll makes it improbable).
+- Q: (phase 5) Which approach? → A: a Map in main keyed by `at` and kind, read by `hookState`, `waitOf` and `answerAgent` (assumed; rejected: the hook writing `working`, marking on keys sent, writing `working` into the state file from main). If wrong, the memory is replaced behind the same three reads.
+- Q: (invocation) What did `/libretto-attacca` answer? → A: it carried this document past the stop into phase 6 and the push of the branch plus a PR against main, never a merge; the fresh reader's findings the run acted on are listed under «Reviewer findings acted on» at the end (assumed).
+
 ### Add a repo by its path (#1) (add-repo-by-path, 27 nov 2026)
 
 - (2026-11-27, add-repo-by-path) The typed path ends in `registerRepo`: same git top level, same id derivation, same `id-taken` and `invalid-id` answers as the picker. Nothing about registering is duplicated.
@@ -3421,9 +3468,8 @@ Zero questions asked: the repo's autonomy rule says take the recommended option 
 
 - **W74** When the hook gets a PreToolUse for `AskUserQuestion`, it shall add to the needs-you state every question of the call in order as `{ question, header, options: [{ label, description }], multiSelect }`, labels and descriptions whole with whitespace collapsed; the stored questions shall stay while the state stays needs-you (a later Notification or Stop included) and go when it leaves needs-you.
   Proof: src/main/agent.test.ts the hook keeps every question and what a permission is for
-- **W75** When the window asks `atril:status:answer(workspaceId, choice)`, main shall re-read that workspace's state and, while it is needs-you, act by the choice: `{ option: n, question: i }` for a stored question i with option n — type n plus one then Enter, and after the last question of the call also Enter to submit; `{ allow: true }` while `kind` is `permission` — type `1` then Enter; `{ deny: true }` while `kind` is `permission` — press Escape; `{ continue: true }` — paste «Sigue con el plan; no hagas nada que no esté en él.» as a bracketed paste then Enter. Any other shape, a stale question index or option, or a state that is not needs-you, shall type nothing and answer «Ese agente ya no está esperando una respuesta.» or «Esa opción ya no existe.»; a gone workspace or pane answers W53's sentence. Main shall remember per session which question is next, starting at 0 on each entry into needs-you.
-  Proof: src/main/status.test.ts each answer shape sends its own keys
-  Proof: src/main/status.test.ts allow and deny send their keys
+- **W75** When the window asks `atril:status:answer(workspaceId, choice)`, main shall re-read that workspace's state and, while it is needs-you and its wait is not one whose answer landed (W460), act by the choice: `{ option: n, question: i }` for a stored question i with option n — type n plus one then Enter, and after the last question of the call also Enter to submit; `{ allow: true }` while `kind` is `permission` — type `1` then Enter; `{ deny: true }` while `kind` is `permission` — press Escape; `{ continue: true }` — paste «Sigue con el plan; no hagas nada que no esté en él.» as a bracketed paste then Enter. Any other shape, a stale question index or option, or a state that is not needs-you, shall type nothing and answer «Ese agente ya no está esperando una respuesta.» or «Esa opción ya no existe.»; a gone workspace or pane answers W53's sentence. Main shall remember per session which question is next, starting at 0 on each entry into needs-you.
+  Proof: src/main/status.test.ts an answered card takes no second answer
 - **W76** While a workspace is needs-you, its row and the strip above its terminal shall show one card by `kind` (W200–W202) instead of today's quick replies; pressing a button, by mouse or with keys 1–4 while the card has focus, shall send it (W75, through W339) and show «Sending…» (W340) until main answers, then «Enviado», disabling the card until the state changes, or show the error and keep it live.
   Proof: src/renderer/components/agentcard.test.tsx the card says sending until the answer lands and offers to send again
 ### Atomic writes (atomic-records, 10 nov 2026)
@@ -4156,6 +4202,19 @@ Zero questions asked: the repo's autonomy rule says take the recommended option 
   Proof: src/main/agent.test.ts the hook ignores a push inside a quoted string
 - **W422** If a real `git push`, `gh pr create` or `glab mr create` stands outside every heredoc body and quoted string, including after a heredoc has ended, after a quoted string has closed, after a fake opener with no delimiter line, after an escaped quote (`\'`) outside any quote, or inside the `-c` argument of `sh`, `bash` or `zsh`, then the hook shall still print W59's question.
   Proof: src/main/agent.test.ts the hook still asks for a real push around heredocs and quotes
+
+### Answered means working (answered-means-working, 27 nov 2026)
+
+- **W460** When `answerLanded` (W339) answers `{ ok: true }` to an Allow, or to the last question of a question call (the one whose index is the count of questions less one), then main shall read that work's state as `working` and `waitOf` shall return null, until the hook's state file carries another `at` or another kind of wait, or a state other than needs-you.
+  Proof: src/main/status.test.ts an answered card reads working until the hook writes again
+- **W461** While W460 holds, `answerAgent` (W75) shall type nothing and answer «Ese agente ya no está esperando una respuesta.».
+  Proof: src/main/status.test.ts an answered card takes no second answer
+- **W462** If the answer did not land (W339's «did not reach the agent»), then main shall keep reading the wait as the file says: `agentState` needs-you and `waitOf` with its card.
+  Proof: src/main/status.test.ts an answer that did not land keeps the wait
+- **W463** When a Deny, an answer to a question that is not the last of its call, or a go-on lands, then main shall keep reading the wait as the file says.
+  Proof: src/main/status.test.ts a deny, an early question and a go-on keep the wait
+- **W464** When the hook writes a wait with another `at`, or another kind, or a state other than needs-you after W460 took effect, then main shall read the hook's state as written.
+  Proof: src/main/status.test.ts a newer wait after an answer reads needs-you again
 
 ### Add a repo by its path (#1) (add-repo-by-path, 27 nov 2026)
 

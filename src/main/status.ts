@@ -86,6 +86,16 @@ const nextQuestion = (session: string, file: HookFile): number => {
   return p && p.at === file.at ? p.next : 0
 }
 
+/**
+ * W460 (issue #11): the wait whose answer landed, by session. No hook fires between a grant and the end of the tool, so the
+ * file keeps its needs-you; a wait with another `at` or kind stops matching and the file speaks for itself again.
+ */
+const answered = new Map<string, { at: number; kind: WaitKind | undefined }>()
+const isAnswered = (session: string, file: HookFile): boolean => {
+  const a = answered.get(session)
+  return file.state === 'needs-you' && a !== undefined && file.at === a.at && kindOfWait(file) === a.kind
+}
+
 /** W199: an end of turn, or done, while one of its subagents still runs is not a wait yet. */
 async function behindSubagent(session: string, file: HookFile): Promise<boolean> {
   if (file.state !== 'done' && (file.state !== 'needs-you' || kindOfWait(file) !== 'turn-end')) return false
@@ -126,14 +136,14 @@ async function hookState(session: string): Promise<AgentState> {
   // W86: the mark outranks the hook's state until the hook removes it (UserPromptSubmit or needs-you) or Reanudar does.
   if (existsSync(pauseFile(session))) return 'paused'
   const file = await hookFile(session)
-  if (await behindSubagent(session, file)) return 'working'
+  if (isAnswered(session, file) || (await behindSubagent(session, file))) return 'working'
   return file.state === 'needs-you' || file.state === 'done' || file.state === 'working' ? file.state : 'working'
 }
 
 /** What a needs-you agent waits for (W200–W202); null otherwise. */
 export async function waitOf(session: string): Promise<AgentWait | null> {
   const file = await hookFile(session)
-  if (file.state !== 'needs-you' || (await behindSubagent(session, file))) return null
+  if (file.state !== 'needs-you' || isAnswered(session, file) || (await behindSubagent(session, file))) return null
   const kind = kindOfWait(file)
   const p = file.permission as { tool?: unknown; summary?: unknown } | undefined
   return {
@@ -262,7 +272,7 @@ export async function answerAgent(id: string, choice: QuickChoice, run: Runner =
   const ws = await actingWorkspace(id, run)
   if (!ws?.alive || !/^%\d+$/.test(ws.paneId) || (await paneDead(ws.paneId, run))) return { error: replyGone() }
   const file = await hookFile(ws.session)
-  if (file.state !== 'needs-you') return { error: t('That agent is no longer waiting for an answer.') }
+  if (file.state !== 'needs-you' || isAnswered(ws.session, file)) return { error: t('That agent is no longer waiting for an answer.') }
   const sent = (ok: boolean): QuickAnswer => (ok ? { ok: true } : { error: replyGone() })
   if ('continue' in choice) return sent(await pasteText(ws.paneId, CONTINUE, run))
   if ('allow' in choice || 'deny' in choice) {
@@ -290,14 +300,22 @@ export async function answerLanded(id: string, choice: QuickChoice, run: Runner 
   landing.add(id)
   try {
     const ws = await actingWorkspace(id, run)
-    const before = ws && { at: (await hookFile(ws.session)).at, text: await paneText(ws.paneId, run) }
+    const asked = ws && (await hookFile(ws.session))
+    const before = ws && asked && { at: asked.at, text: await paneText(ws.paneId, run) }
     const r = await answerAgent(id, choice, run)
-    if (!('ok' in r) || !ws || !before) return r
+    if (!('ok' in r) || !ws || !asked || !before) return r
+    // W460: Allow and a call's last question start work the hook will not report; Deny (Escape interrupts, no Stop follows), an earlier question and a go-on do not (W463).
+    const final = 'allow' in choice || ('option' in choice && choice.question + 1 >= questionsOf(asked).length)
+    const landed = (file: HookFile): QuickAnswer => {
+      // Only while the file still shows the answered wait: a hook that already moved on needs no memory.
+      if (final && typeof asked.at === 'number' && file.state === 'needs-you' && file.at === asked.at) answered.set(ws.session, { at: asked.at, kind: kindOfWait(asked) })
+      return r
+    }
     // ponytail: any change of the pane counts, so text left typed in the input or a ticking timer reads as landed; reading Claude Code's prompt would tie Atril to its wording.
     for (let i = 0; i < tries; i++) {
       await new Promise((done) => setTimeout(done, every))
       const file = await hookFile(ws.session)
-      if (file.state !== 'needs-you' || file.at !== before.at || (await paneText(ws.paneId, run)) !== before.text) return r
+      if (file.state !== 'needs-you' || file.at !== before.at || (await paneText(ws.paneId, run)) !== before.text) return landed(file)
     }
     return { error: t('The answer did not reach the agent: its prompt is still on screen.') }
   } finally {

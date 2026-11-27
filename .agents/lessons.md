@@ -567,6 +567,14 @@ The work-reviewer was told `main...HEAD` and local `main` was behind origin, so 
 ## 2026-11-27 · push-guard-heredoc · 6→7
 Reviewer finding: the quote pass paired an unquoted escaped apostrophe (`echo don\'t; git push; echo 'x'`) with a later `'` and emptied the real `git push` between them, against the Constraint «failing towards asking»; no W422 case had a stray quote. Fixed: a `\x` outside quotes is skipped, so an escaped quote opens nothing; new W422 row seen red before the fix. A text-stripping guard needs a case where the thing it strips is mis-paired, not only where it is well-formed.
 
+## 2026-11-27 · answered-means-working · 6→7
+Reviewer found nothing against the contract (5 proofs re-run, typecheck and lint green). Finding 1: W460–W464 and W75's amendment live only in `proposal.md` until landing: not a defect, `land.py` moves them in phase 8 (done there, not before). Finding 2: box 2's drive left no trace in the diff (`bocetos/` is local-only): the drive is recorded in the PR description, and here: a hand-written needs-you permission wait in a dev Atril on a private tmux socket, «Permitir» clicked, the row read «trabajando» with no card and no «Qué me toca» chip while the state file still said needs-you.
+
+## 2026-11-27 · answered-means-working · 6
+- Before the cold spec review the builder's own mutation runs forced W462 and W463 red (mark always, mark on failure): guardrail tests that pass today need a mutation, not only a green run. The cold spec review caught that Deny would stick on `working`: an Escape-deny interrupts the turn and no Stop follows. Before marking a state as «the agent is busy», ask which hook ends it.
+- The first version marked the wait even when the hook had already moved on; the older W339 test reuses `at: 1` for every wait and went red. A memory keyed by a value tests reuse must be written only while the file still shows that wait.
+- Driving the real app: a hand-seeded work needs its tmux session named `atril-<id>` (`sessionName`) and its record's `session` the same, or the row reads «parado»; the welcome tour's scrim blocks clicks until «Saltar». A fresh worktree needs `pnpm install` before the pre-commit typecheck can run.
+
 ## 2026-11-27 · add-repo-by-path · 6→7
 Reviewer found nothing against the contract (W440–W447, the new «answer for text edited after it was sent is dropped» case and the edited `settings.test.ts` re-run, 30/30). It did not re-run the real-app drive; the builder's mutation checks (each of the ten clauses watched red) are the proof that the tests can fail.
 
@@ -584,3 +592,6 @@ Reviewer found nothing against the contract (W440–W447, the new «answer for t
 
 ## 2026-11-27 · add-repo-by-path · 6
 `src/renderer/focus.test.ts` «focus keeps only the chosen workspace» failed once in the full run after merging `origin/main` (`findByRole('heading', { name: 'WEB-1' })` not found), as it had once on another branch. Measured rather than assumed: alone it takes ~180 ms (3/3 and 5/5 green); in the failed run its file took 1578 ms at load ~7.8, so the 1 s `findBy` default ran out; the next full run was green (144 files, 686 tests). The test never opens Ajustes, so the Repos card is not involved. Not patched here: a change of its own would raise that wait or stop the suite from running at that load.
+
+## 2026-11-27 · add-repo-by-path · 8
+Merging `origin/main` kept both sides of «Last landed» in `CLAUDE.md` and took it to 7152 bytes; `harness.test.ts` caps the file at 7000. The cap only bites at a merge, because each branch alone is under it. «Last landed» keeps three entries: when a merge adds one, drop the oldest in the same merge (here `finished-means-finished`, still in `git log` and its spec).
