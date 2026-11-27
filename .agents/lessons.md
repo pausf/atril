@@ -560,3 +560,6 @@ Reviewer found nothing against the contract (4 proofs re-run, typecheck and lint
 - The first drive seeded the tmux session with `new-session -x 120 -y 40`, which pins the window size: tmux read 120x40 whatever the client asked, so the row floor could not be seen. Atril creates sessions with no size; a seed copies the app's own `new-session` arguments.
 - A fresh worktree's dev Atril could not open its terminal («No he podido abrir la terminal»): `pnpm install` leaves node-pty unbuilt for Electron (`allowBuilds: node-pty: false`). `pnpm run rebuild` (electron-rebuild) fixes it. Before reading a tmux size off a drive, check `tmux list-clients` shows the read-only client.
 - The unit proofs were green while a 3 KB command pushed «Permitir» and the «did not arrive» problem under the strip's fold: only the real window showed it. The question text now scrolls in its own 8-line box and a new problem scrolls into view (W337, W340 grew those clauses).
+
+## 2026-11-27 · ignored-files-not-dirty · 6→7
+The work-reviewer was told `main...HEAD` and local `main` was behind origin, so it saw already-merged work as part of the diff. Give the reviewer `origin/main...HEAD` after a `git fetch`; the reviewer found nothing against the contract.

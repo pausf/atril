@@ -401,6 +401,12 @@ In Settings → Repos, each healthy repo row has a «Harness» button. Opening i
 - A card answer reads «Sent» only once the agent's hook state moved on or its pane changed after the keys; until then the card reads «Sending…» with its buttons disabled.
 - If neither happened 4 s after the keys, the card says the answer did not reach the agent and offers «Try again», which sends the same choice again.
 
+### Ignored files never decide the mode (#2) (ignored-files-not-dirty, 27 nov 2026)
+
+- Registering a repo that holds a git-ignored file (`caso-1-stripe.gif` under `caso-*`, `web/config.local`, a `.env`) reads `worktree` with the «no signal» reason, never naming a file.
+- A repo whose `node_modules`/`vendor` weigh over 2 GB still reads `in-place` (W3), also when ignored files sit beside them.
+- A person who wants in-place for a repo with an ignored `.env` still chooses it (W4).
+
 ## Scope boundaries
 
 **In:** the three columns and footer of `bocetos/fase1-nucleo.html` (boceto 8), the
@@ -881,6 +887,16 @@ tests beside each.
 - The row's card and the «All agents» card layout (they are not above a terminal).
 - Resizing an already-squeezed tmux window back up: the next fit after this change sends ≥ 10 rows anyway.
 
+### Ignored files never decide the mode (#2) (ignored-files-not-dirty, 27 nov 2026)
+
+In: `detectMode` in `src/main/repos.ts`; W1 and W2 amended and W400, W401 added (W1 said «none of the three signals»; the ignored-file signal was one of them, so two remain); the now-unused «{path} is not versioned» text and its Spanish entry removed; the W2 test replaced.
+
+Out, named:
+- Untracked, not-ignored files as a signal (never read today; not added).
+- Copying ignored files (`.env`) into a new worktree: a different feature, not asked.
+- W8's refusal on uncommitted changes in an in-place checkout: correct as it is.
+- Any heuristic that tells «config» from «media» among ignored files.
+
 ## Constraints
 
 - Electron (current stable) + TypeScript in strict mode, pnpm, Node 24 (installed:
@@ -1165,6 +1181,12 @@ Texts through `t()`.
 - No new process per poll; the extra `capture-pane` calls happen only during a card answer (at most 9).
 - Texts through `t()` with Spanish entries; colours untouched.
 - An IPC handler never throws (W149).
+
+### Ignored files never decide the mode (#2) (ignored-files-not-dirty, 27 nov 2026)
+
+- Same `Runner` seam and `git ls-files` call stay: W3 still needs the ignored folders for its size count.
+- Texts through `t()`; a removed text leaves no orphan in `src/preload/i18n-es.ts` (checked by `rg` for the key in `src`).
+- No new dependency.
 
 ## Prior decisions
 
@@ -2871,6 +2893,28 @@ Zero questions asked: the repo's autonomy rule says take the recommended option 
 - Q: (real-app drive) At 800 px the «did not arrive» problem landed under the strip's fold → A: the card scrolls the problem into view when it appears (W340) (assumed).
 - Q: «offers to send it again»? → A: the existing error shape (`Problem` with «Try again», W76), which presses the same choice again; the sentence is «The answer did not reach the agent: its prompt is still on screen.» (assumed).
 
+### Ignored files never decide the mode (#2) (ignored-files-not-dirty, 27 nov 2026)
+
+- 2026-11-27 · W2 was a deliberate choice (ignored config files make a worktree lose them). It is reversed here on the issue's authority, **assumed** as the owner's intent from the invocation; what it costs is the `.env` case above, answered by W4's override. Ceiling: a repo whose work needs an ignored file in the checkout and is never overridden gets a worktree that lacks it; the upgrade path is copying a listed set of ignored files into the worktree, a separate change.
+- 2026-11-27 · The criterion ids are W400+ because `card-answer-lands` runs in parallel and takes the next free ids (invocation).
+- 2026-11-27 · Acted on the fresh reader's findings: W1 amended (signals count), W2's internals clause dropped, W400's reason tied to W1, `NOISE` settled, landing named as phase 8. Left as they are: W400/W401 overlap with W2 (each fails alone in its own test), W401's faked `du` (the real size path is W3's own test).
+- 2026-11-27 · Bug order: the proofs are written and seen red before `detectMode` changes.
+
+#### Alternatives that lost
+
+| Considered | Why it lost |
+|---|---|
+| Filter ignored files by extension (media out, config in) | A guess about names; fails on the next file, and the issue says an ignored file should never decide. |
+| `git check-ignore` to tell pattern-ignored from listed-ignored | Both kinds are equally ignored; the distinction is not what separates `.env` from a gif. |
+| Ask the person at registration | A new stop in Settings for what the issue calls a bug; W4 already is the person's lever. |
+
+#### Decision log, answers as given (2026-11-27)
+- Q: the invocation says "dirty tree", the code has no such check on this path: which rule changes? → A: W2, the ignored-file signal of `detectMode`; W8's porcelain check is correct and stays (assumed). If wrong: nothing else reads ignored files, so only W2 moves.
+- Q: drop the ignored-file signal entirely, or narrow it (e.g. skip media extensions)? → A: drop it entirely, as the issue's Expected says; a name-based narrowing is a guess that fails on the next filename (assumed). If wrong: a repo with an ignored `.env` now gets a worktree without it, and the person sets in-place by hand (W4).
+- Q: should untracked, not-ignored files count, as the issue's Expected allows? → A: no; `detectMode` never looked at them and the issue's repro does not need it (assumed). If wrong: a new criterion, not a change to these.
+- Q: approach fork: delete the ignored-file branch, vs keep it behind a filter (extension or `git check-ignore` on pattern kind), vs ask the person at registration? → A: delete the branch (assumed). The filter loses on the next filename; the prompt adds a stop to a registration flow the issue calls a bug. If wrong: the `.env` case returns as a regression the person feels in a worktree without it.
+- Q: the invocation ran through the Libretto flow with no stop before code → A: the document was carried into phase 6; the fresh reader's findings acted on are named below once `review-spec` has run (assumed).
+
 ## Task breakdown
 
 - App shell: Electron main, preload bridge, renderer with sidebar / centre / right panel /
@@ -2888,16 +2932,10 @@ Zero questions asked: the repo's autonomy rule says take the recommended option 
 
 ## Verification criteria
 
-- **W1** When a repo is registered and none of the three signals is found, Atril shall set
-  its mode to `worktree`.
+- **W1** When a repo is registered and no signal (W3) is found, Atril shall set its mode to `worktree`.
   Proof: src/main/repos.test.ts chooses worktree when no signal
-- **W2** If the checkout holds a git-ignored file outside dependency, build and editor
-  noise (`node_modules`, `vendor`, `dist`, `build`, `.cache`, `.next`, `coverage`, `tmp`,
-  `.idea`, `.vscode`, `.DS_Store`, `*.log`), then Atril shall set the mode to `in-place` and
-  name that file as the reason. Only files count — entries of `git ls-files --others
-  --ignored --exclude-standard --directory` that do not end in `/`; ignored folders (build
-  output, tool caches) are never a signal. Noise names match at any depth.
-  Proof: src/main/repos.test.ts chooses in-place when an ignored config file exists
+- **W2** If the checkout holds git-ignored files, then Atril shall not take any of them as a reason for `in-place`, whatever their names (a config file, a `.env`, a media file); the mode is decided by W3 and W4 alone, and with no other signal it is `worktree`.
+  Proof: src/main/repos.test.ts an ignored file never chooses in-place
 - **W3** If every `node_modules` and `vendor` directory, at any depth, together exceed 2 GB, then Atril shall set the mode to
   `in-place` and say so.
   Proof: src/main/repos.test.ts chooses in-place when dependencies are heavy
@@ -4002,3 +4040,10 @@ Zero questions asked: the repo's autonomy rule says take the recommended option 
   Proof: src/main/status.test.ts a card answer counts only once the agent leaves the prompt
 - **W340** While a card answer is on its way, the card shall show «Sending…» and disable its buttons and number keys; when main says the answer did not arrive, the card shall show that sentence with «Try again», scrolled into view within its strip, and «Try again» shall send the same choice again.
   Proof: src/renderer/components/agentcard.test.tsx the card says sending until the answer lands and offers to send again
+
+### Ignored files never decide the mode (#2) (ignored-files-not-dirty, 27 nov 2026)
+
+- **W400** When a repo whose root holds a file matched by a `.gitignore` pattern (`caso-1-stripe.gif` under `caso-*`) is registered, Atril shall set its mode to `worktree` with W1's «no signal» reason (in the Spanish locale the tests run in, «ninguna señal: cada trabajo en su propio worktree»), naming no file.
+  Proof: src/main/repos.test.ts a media file ignored by pattern leaves the repo in worktree
+- **W401** While an ignored file sits beside `node_modules` or `vendor` directories that together exceed 2 GB, Atril shall set `in-place` and name the dependencies (W3), not the file.
+  Proof: src/main/repos.test.ts heavy dependencies still win beside an ignored file

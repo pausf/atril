@@ -388,7 +388,6 @@ export const ES: Record<string, string> = {
   'Dismiss': 'Cerrar aviso',
   'Close {branch}? Its agent stops and the work moves to Finished.': '¿Cerrar {branch}? Su agente se para y el trabajo pasa a Terminados.',
   'detached HEAD': 'HEAD suelto',
-  '{path} is not versioned': '{path} no está versionado',
   'node_modules and vendor weigh {gb} GB': 'node_modules y vendor pesan {gb} GB',
   'no signal: each workspace in its own worktree': 'ninguna señal: cada trabajo en su propio worktree',
   'chosen by you': 'elegido por ti',
