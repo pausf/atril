@@ -8,15 +8,16 @@ below point at files on Pau's disk, not in the repo.
 
 ## Last landed
 
-`card-answer-lands` (27 Nov, issue #6, W337–W340, W76 amended): a tall card scrolls above the terminal, which keeps
-180 px; main never sizes the tmux client under 10 rows; a card answer reads «Sent» only once the hook or the pane moved,
-else «did not arrive» with Try again.
+`add-repo-by-path` (27 Nov, issue #1, W440–W447): Settings → Repos has a path field beside the folder picker; main
+expands `~`, refuses what is not a folder or not a git repo with a `Problem` («Nothing was added.», one fix button,
+detail folded), then registers through `registerRepo`. Driven in the real app with a temp `ATRIL_HOME` and `HOME`.
 
-Before it, `finished-means-finished` (27 Nov, issue #4, W332–W336): a merged work reads `done` in main whatever an older
+Before it, `card-answer-lands` (27 Nov, issue #6, W337–W340, W76 amended): a tall card scrolls above the terminal, which
+keeps 180 px; main never sizes the tmux client under 10 rows; a card answer reads «Sent» only once the hook or the pane
+moved, else «did not arrive» with Try again.
+
+Before that, `finished-means-finished` (27 Nov, issue #4, W332–W336): a merged work reads `done` in main whatever an older
 hook left in its state file; its card and header say «Merged».
-
-Before that, `work-vs-main` (26 Nov, issues #11, #10, #8, W300–W313): a new work fetches and branches from origin's
-default branch (`--no-track`); size, panel and radar count from the merge-base with it; a merged PR reads "Merged".
 
 ## Next
 

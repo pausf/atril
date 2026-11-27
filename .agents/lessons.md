@@ -563,3 +563,18 @@ Reviewer found nothing against the contract (4 proofs re-run, typecheck and lint
 
 ## 2026-11-27 · ignored-files-not-dirty · 6→7
 The work-reviewer was told `main...HEAD` and local `main` was behind origin, so it saw already-merged work as part of the diff. Give the reviewer `origin/main...HEAD` after a `git fetch`; the reviewer found nothing against the contract.
+
+## 2026-11-27 · add-repo-by-path · 6→7
+Reviewer found nothing against the contract (W440–W447, the new «answer for text edited after it was sent is dropped» case and the edited `settings.test.ts` re-run, 30/30). It did not re-run the real-app drive; the builder's mutation checks (each of the ten clauses watched red) are the proof that the tests can fail.
+
+## 2026-11-27 · add-repo-by-path · real app
+- jsdom passed while the real window was ambiguous: with the id prompt open, a path field named only by `aria-label` sat right under the id field and read as part of that prompt. Found by looking at the screenshot, not by a test. Fixed with a visible label in the id prompt's own style. A new control that can land beside another prompt gets a visible label.
+- Adding one `<input>` to the Repos card broke `settings.test.ts` («no inputs left but the board search»), a test of another card that counts every input on the screen. After adding a control to a screen, run the full suite, not just the card's file.
+
+## 2026-11-27 · add-repo-by-path · 6
+- A fresh worktree had no `node_modules`: my first vitest runs silently used the stable Atril copy's, and `typecheck` and `lint` could not resolve `node` types. `pnpm install --frozen-lockfile --offline --ignore-scripts` fixed it in seconds. Check `ls node_modules` before the first gate in a new worktree.
+- `sd` with a multi-line pattern exits 0 and changes nothing. Four edits looked applied and were not (the state declarations, the id-prompt test selector, a mutation); only a failing typecheck and a failing test showed it. After every `sd`, `rg` for the new text, or use `Edit`.
+- `src/main/activity.test.ts` «a burst of activity writes refreshes once» failed once in a full run (0 refreshes within `pause(900)`) at machine load 7–8, and passed 5/5 alone and in the next full run. A timing assertion under contention; not patched, same family as the entries of 2026-11-10.
+
+## 2026-11-27 · add-repo-by-path · 8
+`spec-drift --anchors` called all eight new citations broken: I copied the quoted `Proof: file "name"` shape from `crash-reports`, and a quoted name only resolves against a test written with double quotes (`it("…")`); this repo's tests use single quotes. The citations everywhere else are unquoted and resolve for either style. Cite a test name unquoted, and run `--anchors` before staging the landing, not after.
