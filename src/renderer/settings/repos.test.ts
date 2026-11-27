@@ -3,7 +3,7 @@ import { createElement } from 'react'
 import { cleanup, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { RepoView } from '../../preload/api'
+import type { AddRepoResult, PathProblem, RepoView, StateProblem } from '../../preload/api'
 import { App } from '../App'
 import { mockApi, mockSystemTheme } from '../mockApi'
 
@@ -91,7 +91,7 @@ describe('repos card', () => {
     const api = mockApi({ repos, addRepo: { error: 'id-taken', suggested: 'web-2', path: '/x' } })
     const { user, card } = await openCard()
     await user.click(within(card).getByRole('button', { name: /Añadir repo/ }))
-    const id = await within(card).findByRole('textbox')
+    const id = await within(card).findByLabelText('Ya hay otro repo con ese nombre. Elige otro id.')
     expect((id as HTMLInputElement).value).toBe('web-2')
     await user.clear(id)
     await user.type(id, 'shop')
@@ -105,5 +105,149 @@ describe('repos card', () => {
     await user.click(within(card).getByRole('button', { name: /Añadir repo/ }))
     expect(await within(card).findByText('Esa carpeta no es un repositorio git.')).toBeTruthy()
     expect(api.reposApi.addWithId).not.toHaveBeenCalled()
+  })
+
+  describe('adding by a typed path', () => {
+    const field = (card: HTMLElement) => within(card).getByLabelText('Ruta de un repo de git') as HTMLInputElement
+    const addBtn = (card: HTMLElement) => within(card).getByRole('button', { name: 'Añadir esta ruta' }) as HTMLButtonElement
+    const view = (id: string, path: string): RepoView => ({ id, path, mode: 'worktree', reason: '', health: 'ok' })
+    const refused = (what: string, fix: PathProblem['fix'] = 'pick'): PathProblem => ({ error: 'bad-path', what, detail: '/nope', fix })
+    const damaged: StateProblem = { error: 'No puedo leer repos.json: está dañado.', detail: 'Unexpected end of JSON input', fix: 'reveal', file: 'repos' }
+
+    it('a repo can be added by typing its path', async () => {
+      const list = [...repos]
+      const api = mockApi({
+        repos: list,
+        addRepo: { error: 'not-a-git-repo', path: '/x' },
+        addPath: async (text) => {
+          const repo = view(`r${list.length}`, `/home/me/${text.replace(/\W+/g, '')}`)
+          list.push(repo)
+          return { repo, path: repo.path }
+        }
+      })
+      const { user, card } = await openCard()
+      expect(field(card).placeholder).toBe('~/code/my-repo')
+      expect(addBtn(card).disabled).toBe(true)
+      await user.type(field(card), '   ')
+      expect(addBtn(card).disabled).toBe(true)
+      await user.clear(field(card))
+
+      // The picker's own error line does not take the field away.
+      await user.click(within(card).getByRole('button', { name: /Añadir repo/ }))
+      expect(await within(card).findByText('Esa carpeta no es un repositorio git.')).toBeTruthy()
+      await user.type(field(card), '~/code/new')
+      expect(addBtn(card).disabled).toBe(false)
+      await user.click(addBtn(card))
+      expect(api.reposApi.addPath).toHaveBeenLastCalledWith('~/code/new')
+      expect(await within(card).findByText('/home/me/codenew')).toBeTruthy()
+      expect(field(card).value).toBe('')
+
+      await user.type(field(card), '~/other{Enter}')
+      expect(api.reposApi.addPath).toHaveBeenLastCalledWith('~/other')
+      expect(await within(card).findByText('/home/me/other')).toBeTruthy()
+
+      // A damaged repos.json takes the field and the button away with the other buttons.
+      cleanup()
+      mockApi({ reposProblem: damaged })
+      const again = await openCard()
+      await within(again.card).findByText(damaged.error)
+      expect(within(again.card).queryByLabelText('Ruta de un repo de git')).toBeNull()
+      expect(within(again.card).queryByRole('button', { name: 'Añadir esta ruta' })).toBeNull()
+    })
+
+    it('a typed path that cannot be added says what happened and offers one fix', async () => {
+      const answers: Array<AddRepoResult & { path: string } | PathProblem> = []
+      const api = mockApi({ repos, addRepo: { error: 'not-a-git-repo', path: '/x' }, addPath: async () => answers.shift()! })
+      const install = vi.spyOn(window.atril, 'installTool')
+      const { user, card } = await openCard()
+      const type = async (text: string) => {
+        await user.clear(field(card))
+        await user.type(field(card), text)
+        await user.click(addBtn(card))
+      }
+
+      // What happened, what it stops, one button, the detail folded.
+      answers.push(refused('No hay ninguna carpeta en /nope.'))
+      await type('/nope')
+      const alert = await within(card).findByRole('alert')
+      expect(within(alert).getByText('No hay ninguna carpeta en /nope.')).toBeTruthy()
+      expect(within(alert).getByText('No se ha añadido nada.')).toBeTruthy()
+      expect(within(alert).getAllByRole('button').map((b) => b.textContent)).toEqual(['Elegir una carpeta…'])
+      expect(within(alert).getByText('Ver detalle').closest('details')?.open).toBe(false)
+      expect(within(alert).getByText('/nope')).toBeTruthy()
+      expect(field(card).value).toBe('/nope')
+
+      // Typing removes it.
+      await user.type(field(card), 'x')
+      expect(within(card).queryByRole('alert')).toBeNull()
+
+      // «Elegir una carpeta…» is the picker, and starting it removes the problem.
+      answers.push(refused('No hay ninguna carpeta en /nope.'))
+      await type('/nope')
+      await user.click(within(await within(card).findByRole('alert')).getByRole('button', { name: 'Elegir una carpeta…' }))
+      expect(api.reposApi.add).toHaveBeenCalledTimes(1)
+      expect(within(card).queryByRole('alert')).toBeNull()
+
+      // The git fix runs the git install.
+      answers.push(refused('git no funciona en este Mac.', 'git'))
+      await type('/nope')
+      await user.click(await within(await within(card).findByRole('alert')).findByRole('button', { name: 'Instalar herramientas de Xcode' }))
+      expect(install).toHaveBeenCalledWith('git')
+
+      // Starting an add by the typed path removes the picker's own error line, and a repo coming back removes the problem.
+      await user.click(within(card).getByRole('button', { name: /Añadir repo/ }))
+      expect(await within(card).findByText('Esa carpeta no es un repositorio git.')).toBeTruthy()
+      answers.push(refused('{path} sigue sin ser una carpeta.'))
+      await user.click(addBtn(card))
+      await within(card).findByText('{path} sigue sin ser una carpeta.')
+      expect(within(card).queryByText('Esa carpeta no es un repositorio git.')).toBeNull()
+      answers.push({ repo: view('ok', '/home/me/ok'), path: '/home/me/ok' })
+      await user.click(addBtn(card))
+      await vi.waitFor(() => expect(within(card).queryByRole('alert')).toBeNull())
+    })
+
+    it('an answer for text edited after it was sent is dropped', async () => {
+      let release!: (p: PathProblem) => void
+      const held = new Promise<PathProblem>((resolve) => (release = resolve))
+      mockApi({ repos, addPath: () => held })
+      const { user, card } = await openCard()
+      await user.type(field(card), 'a')
+      await user.click(addBtn(card))
+      await user.type(field(card), 'b')
+      release(refused('No hay ninguna carpeta en /nope.'))
+      await held
+      await new Promise((resolve) => setTimeout(resolve, 30))
+      expect(within(card).queryByRole('alert')).toBeNull()
+      expect(field(card).value).toBe('ab')
+    })
+
+    it('a typed path whose id is taken asks for another and registers the resolved path', async () => {
+      const api = mockApi({ repos, addPath: async () => ({ error: 'id-taken', suggested: 'shop-2', path: '/resolved/shop' }) })
+      const { user, card } = await openCard()
+      await user.type(field(card), '~/shop')
+      await user.click(addBtn(card))
+      const id = await within(card).findByLabelText('Ya hay otro repo con ese nombre. Elige otro id.')
+      expect((id as HTMLInputElement).value).toBe('shop-2')
+      // The field and its button stay beside the id prompt.
+      expect(addBtn(card)).toBeTruthy()
+      await user.clear(id)
+      await user.type(id, 'mine')
+      await user.click(within(card).getByRole('button', { name: 'Usar este id' }))
+      expect(api.reposApi.addWithId).toHaveBeenCalledWith('/resolved/shop', 'mine')
+      await vi.waitFor(() => expect(field(card).value).toBe(''))
+    })
+
+    it('a typed path while repos.json is damaged shows the damaged-file problem', async () => {
+      mockApi({ repos, addPath: async () => ({ ...damaged, path: '/x' }) })
+      const { user, card } = await openCard()
+      await user.type(field(card), '/x')
+      await user.click(addBtn(card))
+      const alert = await within(card).findByRole('alert')
+      expect(within(alert).getByText(damaged.error)).toBeTruthy()
+      expect(within(alert).getByRole('button', { name: 'Mostrar en Finder' })).toBeTruthy()
+      expect(within(alert).getByText('Ver detalle').closest('details')?.open).toBe(false)
+      expect(within(card).queryByLabelText('Ruta de un repo de git')).toBeNull()
+      expect(within(card).queryByRole('button', { name: 'Añadir esta ruta' })).toBeNull()
+    })
   })
 })

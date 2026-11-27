@@ -46,8 +46,8 @@ describe('settings screen', () => {
     await screen.findByText('Conectado · Pau Sánchez · x.atlassian.net')
     expect(document.body.innerHTML).not.toContain(TOKEN)
     expect(screen.queryAllByDisplayValue(TOKEN)).toHaveLength(0)
-    // The saved row has no credential fields left; the board search is the only input.
-    expect(document.querySelectorAll('input:not(#jira-board)')).toHaveLength(0)
+    // The saved row has no credential fields left; the board search and the Repos card's path field are the only inputs.
+    expect(document.querySelectorAll('input:not(#jira-board):not(#repo-path)')).toHaveLength(0)
     expect(within(screen.getByRole('region', { name: 'Jira' })).getAllByRole('button').map((b) => b.textContent)).toEqual(['Gestionar', 'Reemplazar', 'Borrar'])
 
     // S5 (amended): a saved row opens with Gestionar, whose body offers only Reemplazar and Borrar.

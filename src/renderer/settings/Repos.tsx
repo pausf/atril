@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { CreateRepoDialog } from './CreateRepo'
-import type { AddRepoResult, Listed, Mode, RepoResult, RepoView, StateProblem } from '../../preload/api'
+import type { AddRepoResult, Listed, Mode, PathProblem, RepoResult, RepoView, StateProblem } from '../../preload/api'
 import { fixLabel, Problem } from '../components/Problem'
 import { HarnessCard } from '../harness/HarnessCard'
 import { useT } from '../ui'
@@ -20,6 +20,10 @@ export function Repos() {
   const [pending, setPending] = useState<Pending | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [creating, setCreating] = useState(false)
+  // W444–W446: the typed path, the refusal of its last add, and a ticket that dates every send and every edit.
+  const [text, setText] = useState('')
+  const [pathProblem, setPathProblem] = useState<PathProblem | null>(null)
+  const ticket = useRef(0)
   // W286: each row owns its card; the ids whose card is open.
   const [harness, setHarness] = useState<ReadonlySet<string>>(new Set())
   const flip = (id: string): void =>
@@ -59,6 +63,7 @@ export function Repos() {
     if ('repo' in r) {
       setPending(null)
       setError(null)
+      setText('')
       show(await window.atril.repos.list())
     } else if ('fix' in r) {
       setPending(null)
@@ -74,11 +79,27 @@ export function Repos() {
   }
 
   const add = async (): Promise<void> => {
+    setPathProblem(null)
     try {
       const r = await window.atril.repos.add()
       if (r) await settle(r, r.path)
     } catch (e) {
       setError(String(e))
+    }
+  }
+
+  // W444–W446: the window sends the text as typed; main decides what it is. An answer for text edited since is dropped.
+  const addTyped = async (): Promise<void> => {
+    const mine = ++ticket.current
+    setError(null)
+    setPathProblem(null)
+    try {
+      const r = await window.atril.repos.addPath(text)
+      if (mine !== ticket.current) return
+      if ('what' in r) return setPathProblem(r)
+      await settle(r, r.path)
+    } catch (e) {
+      if (mine === ticket.current) setError(String(e))
     }
   }
 
@@ -180,6 +201,40 @@ export function Repos() {
       {error && <div className="bad">{error}</div>}
       {!problem && (
         <>
+          <form
+            className="idask"
+            onSubmit={(e) => {
+              e.preventDefault()
+              void addTyped()
+            }}
+          >
+            <div className="idrow">
+              <input
+                id="repo-path"
+                aria-label={t('Path of a git repo')}
+                placeholder="~/code/my-repo"
+                spellCheck={false}
+                value={text}
+                onChange={(e) => {
+                  ticket.current++
+                  setText(e.target.value)
+                  setPathProblem(null)
+                }}
+              />
+              <button type="submit" className="pill" disabled={text.trim() === ''}>
+                {t('Add this path')}
+              </button>
+            </div>
+          </form>
+          {pathProblem && (
+            <Problem
+              what={pathProblem.what}
+              cant={t('Nothing was added.')}
+              fix={pathProblem.fix === 'pick' ? t('Choose a folder…') : fixLabel(t, 'git')}
+              onFix={() => (pathProblem.fix === 'pick' ? void add() : void window.atril.installTool('git'))}
+              detail={pathProblem.detail}
+            />
+          )}
           <button type="button" className="pill add" onClick={() => void add()}>
             {t('＋ Add repo…')}
           </button>{' '}
