@@ -128,7 +128,7 @@ The `sh -c` exception in the quote pass: without it W59's `sh -c "git push"` cas
 
 ## Checklist
 
-- [ ] hook cases for heredoc bodies, quoted strings, `<<-`, an unterminated heredoc and real pushes after each, seen red; then `commandText()` in `claude-hook.mjs` makes them green · Closes: W420, W421, W422, W59
+- [x] hook cases for heredoc bodies, quoted strings, `<<-`, an unterminated heredoc and real pushes after each, seen red; then `commandText()` in `claude-hook.mjs` makes them green · Closes: W420, W421, W422, W59
 
 ## Reviewer findings acted on
 

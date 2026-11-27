@@ -270,9 +270,9 @@ describe('automatic mode', () => {
     bash('git log; echo push', false)
   ]
 
-  async function runHooks(auto: boolean): Promise<string[]> {
+  async function runHooks(auto: boolean, cases: Case[] = CASES): Promise<string[]> {
     const dir = tmp()
-    const steps = CASES.map(([event, payload], i) => {
+    const steps = cases.map(([event, payload], i) => {
       writeFileSync(join(dir, `in-${i}.json`), JSON.stringify(payload))
       const command = hooksSettings().hooks[event]?.[0]?.hooks[0]?.command ?? ''
       return `${command} <'${join(dir, `in-${i}.json`)}' >'${join(dir, `out-${i}`)}'`
@@ -287,8 +287,48 @@ describe('automatic mode', () => {
     if (!('workspace' in r)) throw new Error(r.error)
     const end = Date.now() + 15000
     while (!existsSync(join(dir, 'done')) && Date.now() < end) await new Promise((ok) => setTimeout(ok, 100))
-    return CASES.map((_, i) => readFileSync(join(dir, `out-${i}`), 'utf8'))
+    return cases.map((_, i) => readFileSync(join(dir, `out-${i}`), 'utf8'))
   }
+
+  // W420: a word inside a heredoc body is text, not a command.
+  const HEREDOCS: Case[] = [
+    bash("python3 - <<'EOF'\nassert 'git push' in t\nEOF\npnpm vitest", false),
+    bash('cat <<EOF\ngit push\nEOF', false),
+    bash('cat <<"EOF"\ngh pr create\nEOF', false),
+    bash('cat << EOF\nglab mr create\nEOF', false),
+    bash('cat <<-EOF\n\tgit push\n\tEOF', false)
+  ]
+  // W421: nor is a word inside a quoted string.
+  const QUOTES: Case[] = [
+    bash('git commit -m "docs: mention git push"', false),
+    bash("git commit -m 'gh pr create now asks'", false),
+    bash('git commit -m "first line\n\ngit push in the body"', false)
+  ]
+  // W422: a real upload around them still asks.
+  const AROUND: Case[] = [
+    bash('cat <<EOF\nnotes\nEOF\ngit push', true),
+    bash('git commit -m "x" && git push', true),
+    bash('cat <<-EOF\n\tnotes\n\tEOF\ngit push origin x', true),
+    bash('echo "a <<EOF"; git push', true),
+    bash('cat <<EOF\ngit push', true),
+    bash('cat <<<EOF; git push', true),
+    bash('echo $((1 << 2)); git push', true),
+    bash('bash -lc "git push"', true),
+    bash("sh -ec 'gh pr create'", true)
+  ]
+  const ASKED = (cases: Case[]): string[] => cases.map(([, , asks]) => (asks ? ASK : ''))
+
+  it('the hook ignores a push inside a heredoc body', async () => {
+    expect(await runHooks(true, HEREDOCS)).toEqual(ASKED(HEREDOCS))
+  }, 30000)
+
+  it('the hook ignores a push inside a quoted string', async () => {
+    expect(await runHooks(true, QUOTES)).toEqual(ASKED(QUOTES))
+  }, 30000)
+
+  it('the hook still asks for a real push around heredocs and quotes', async () => {
+    expect(await runHooks(true, AROUND)).toEqual(ASKED(AROUND))
+  }, 30000)
 
   it('the hook asks before an automatic push', async () => {
     const outs = await runHooks(true)

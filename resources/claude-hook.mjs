@@ -14,6 +14,22 @@ import { boxOf, decideStop, lastSentence, openBoxes, proseQuestion, reason, shel
 // W59: pushes and request creation in an automatic workspace need the person.
 // ponytail: any git … push in one command segment; a `push` word in a commit message only adds a question.
 const UPLOAD = /\bgit\b[^;&|\n]*?\spush\b|\bgh\b[^;&|\n]*?\spr\s+create\b|\bglab\b[^;&|\n]*?\smr\s+create\b/
+// W420/W421: heredoc bodies and quoted strings are text, not commands; the argument of `sh|bash|zsh -c` is a command.
+// ponytail: line loop + one regex, no parser; an opener with no delimiter line strips nothing, so it can only add a question.
+const OPENER = /(?<!<)<<(-?)[ \t]*(['"]?)([A-Za-z_]\w*)\2/
+const SHELL_C = /\b(?:ba|z)?sh\s+(?:-\S+\s+)*-\w*c\s+$/
+function commandText(command) {
+  const lines = command.split('\n')
+  const kept = []
+  for (let i = 0; i < lines.length; i++) {
+    kept.push(lines[i])
+    const m = OPENER.exec(lines[i])
+    if (!m) continue
+    const end = lines.findIndex((l, j) => j > i && (m[1] ? l.replace(/^\t+/, '') : l) === m[3])
+    if (end > 0) i = end
+  }
+  return kept.join('\n').replace(/'[^']*'|"(?:\\.|[^"\\])*"/g, (q, at, all) => (SHELL_C.test(all.slice(0, at)) ? q : q[0] + q[0]))
+}
 const ASK = {
   hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'ask', permissionDecisionReason: 'Modo automático: confirma antes de subir' }
 }
@@ -200,7 +216,7 @@ try {
     process.exit(0)
   }
   const command = payload?.tool_input?.command
-  if (event === 'PreToolUse' && payload?.tool_name === 'Bash' && typeof command === 'string' && UPLOAD.test(command) && existsSync(join(home, 'auto', name))) {
+  if (event === 'PreToolUse' && payload?.tool_name === 'Bash' && typeof command === 'string' && UPLOAD.test(commandText(command)) && existsSync(join(home, 'auto', name))) {
     process.stdout.write(JSON.stringify(ASK))
   }
   const line = summarise(event, payload, readTail)
