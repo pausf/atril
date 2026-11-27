@@ -368,6 +368,7 @@ const wait = (session: string, body: object): void => {
 }
 const q = (question: string, labels: string[], multiSelect = false) => ({ question, header: question, multiSelect, options: labels.map((label) => ({ label, description: '' })) })
 const NOT_WAITING = { error: 'Ese agente ya no está esperando una respuesta.' }
+const FAST = { tries: 20, every: 50 }
 const NO_OPTION = { error: 'Esa opción ya no existe.' }
 
 describe('answers', () => {
@@ -471,6 +472,87 @@ describe('answers', () => {
     wait(echo.session, { ...perm, state: 'working' })
     expect(await answerLanded(echo.id, { allow: true }, run, fast)).toEqual(NOT_WAITING)
     expect(sent).toEqual([])
+  }, 30_000)
+
+  it('an answered card reads working until the hook writes again', async () => {
+    // W460 (issue #11): no hook fires between the grant and the end of the tool, so the landed answer must read working.
+    const { answerLanded, agentState, waitOf } = await import('./status')
+    const perm = { kind: 'permission', permission: { tool: 'Bash', summary: 'pnpm test' } }
+    const ask = { kind: 'question', questions: [q('¿Cuál?', ['A', 'B'])] }
+    const { run } = await spied()
+    const a = await open(['cat'], 'feat/ans-a')
+    let at = 10
+    for (const [choice, body] of [[{ allow: true }, perm], [{ option: 1, question: 0 }, ask]] as const) {
+      wait(a.session, { at: ++at, ...body })
+      expect(await agentState(a)).toBe('needs-you')
+      expect(await answerLanded(a.id, choice, run, FAST)).toEqual({ ok: true })
+      expect(await agentState(a)).toBe('working')
+      expect(await waitOf(a.session)).toBeNull()
+    }
+  }, 30_000)
+
+  it('an answered card takes no second answer', async () => {
+    // W461: a notice reply «1» must not retype into the command that is running.
+    const { answerLanded, answerAgent } = await import('./status')
+    const { run, sent } = await spied()
+    const a = await open(['cat'], 'feat/ans-twice')
+    wait(a.session, { at: 12, kind: 'permission', permission: { tool: 'Bash', summary: 'pnpm test' } })
+    expect(await answerLanded(a.id, { allow: true }, run, FAST)).toEqual({ ok: true })
+    sent.length = 0
+    expect(await answerAgent(a.id, { allow: true }, run)).toEqual(NOT_WAITING)
+    expect(sent).toEqual([])
+  }, 30_000)
+
+  it('an answer that did not land keeps the wait', async () => {
+    // W462: the pane takes no keys, so nothing moved and the prompt is still there.
+    const { answerLanded, agentState, waitOf } = await import('./status')
+    const { run } = await spied()
+    const deaf = await open(['sh', '-c', 'stty -echo; sleep 300'], 'feat/ans-deaf')
+    await until(() => tmuxOut(sock, 'display', '-p', '-t', deaf.paneId, '#{pane_current_command}'), (c) => c.trim() === 'sleep')
+    wait(deaf.session, { at: 20, kind: 'permission', permission: { tool: 'Bash', summary: 'ls' } })
+    expect(await answerLanded(deaf.id, { allow: true }, run, FAST)).toEqual({ error: 'La respuesta no llegó al agente: su pregunta sigue en pantalla.' })
+    expect(await agentState(deaf)).toBe('needs-you')
+    expect(await waitOf(deaf.session)).not.toBeNull()
+  }, 30_000)
+
+  it('a deny, an early question and a go-on keep the wait', async () => {
+    // W463: each case on a pane that takes the keys, so the landing succeeds and only the kind of answer decides.
+    const { answerLanded, agentState, waitOf } = await import('./status')
+    const { run } = await spied()
+    const echo = await open(['cat'], 'feat/ans-echo')
+    wait(echo.session, { at: 30, kind: 'permission', permission: { tool: 'Bash', summary: 'rm x' } })
+    expect(await answerLanded(echo.id, { deny: true }, run, FAST)).toEqual({ ok: true })
+    expect(await agentState(echo)).toBe('needs-you')
+
+    wait(echo.session, { at: 31, kind: 'question', questions: [q('¿Una?', ['A', 'B']), q('¿Dos?', ['C', 'D'])] })
+    expect(await answerLanded(echo.id, { option: 0, question: 0 }, run, FAST)).toEqual({ ok: true })
+    expect(await agentState(echo)).toBe('needs-you')
+    expect(await waitOf(echo.session)).toMatchObject({ next: 1 })
+
+    wait(echo.session, { at: 32, kind: 'turn-end', text: 'Claude dice: listo' })
+    expect(await answerLanded(echo.id, { continue: true }, run, FAST)).toEqual({ ok: true })
+    expect(await agentState(echo)).toBe('needs-you')
+  }, 30_000)
+
+  it('a newer wait after an answer reads needs-you again', async () => {
+    // W464: the memory matches one wait (its at and kind); the hook's next write speaks for itself.
+    const { answerLanded, agentState } = await import('./status')
+    const { run } = await spied()
+    const a = await open(['cat'], 'feat/ans-new')
+    const answer = async (at: number): Promise<void> => {
+      wait(a.session, { at, kind: 'permission', permission: { tool: 'Bash', summary: 'pnpm test' } })
+      expect(await answerLanded(a.id, { allow: true }, run, FAST)).toEqual({ ok: true })
+      expect(await agentState(a)).toBe('working')
+    }
+    await answer(50)
+    wait(a.session, { at: 51, kind: 'permission', permission: { tool: 'Bash', summary: 'pnpm lint' } })
+    expect(await agentState(a)).toBe('needs-you')
+    await answer(60)
+    wait(a.session, { at: 60, kind: 'turn-end', text: 'Claude dice: listo' })
+    expect(await agentState(a)).toBe('needs-you')
+    await answer(70)
+    wait(a.session, { state: 'working', at: 70 })
+    expect(await agentState(a)).toBe('working')
   }, 30_000)
 
   it('allow and deny send their keys', async () => {
