@@ -200,6 +200,37 @@ describe('agent card', () => {
     expect(buttons()).toEqual(['Permitir', 'Denegar'])
   })
 
+  it('the card says sending until the answer lands and offers to send again', async () => {
+    // W340, W76: «Enviado» only once main says the answer landed (W339); until then the card cannot send twice (issue #6).
+    const user = userEvent.setup()
+    const replies: Array<(r: QuickAnswer) => void> = []
+    answer.mockImplementation(() => new Promise<QuickAnswer>((done) => replies.push(done)))
+    wait = { kind: 'permission', questions: [], next: 0, permission: { tool: 'Bash', summary: 'gh pr create' }, idle: false }
+    render(createElement(AgentCard, { workspaceId: 'w1', activityAt: 1 }))
+    await screen.findByText('Quiere ejecutar gh pr create')
+
+    await user.click(screen.getByRole('button', { name: 'Permitir' }))
+    expect(await screen.findByText('Enviando…')).toBeTruthy()
+    expect(screen.queryByText('Enviado')).toBeNull()
+    expect(within(card()).getAllByRole('button').every((b) => (b as HTMLButtonElement).disabled)).toBe(true)
+    card().focus()
+    await user.keyboard('1')
+    expect(answer).toHaveBeenCalledTimes(1)
+
+    // The prompt stayed: the card says so and «Volver a intentar» sends the same choice again.
+    await act(async () => replies[0]!({ error: 'La respuesta no llegó al agente: su pregunta sigue en pantalla.' }))
+    const alert = within(card()).getByRole('alert')
+    expect(alert.textContent).toContain('La respuesta no llegó al agente: su pregunta sigue en pantalla.')
+    expect(screen.queryByText('Enviando…')).toBeNull()
+    await user.click(within(alert).getByRole('button', { name: 'Volver a intentar' }))
+    expect(answer).toHaveBeenCalledTimes(2)
+    expect(answer).toHaveBeenLastCalledWith('w1', { allow: true })
+    expect(await screen.findByText('Enviando…')).toBeTruthy()
+    await act(async () => replies[1]!({ ok: true }))
+    expect(await screen.findByText('Enviado')).toBeTruthy()
+    expect(screen.queryByText('Enviando…')).toBeNull()
+  })
+
   it('a go-on card says why the agent stopped', async () => {
     const user = userEvent.setup()
     const pause = vi.fn(async () => ({ ok: true as const }))

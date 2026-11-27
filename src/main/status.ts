@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import type { AgentState, AgentWait, QuickAnswer, QuickChoice, QuickReplies, WaitKind, WaitQuestion, WorkspaceView } from '../preload/api'
 import { atrilHome } from './paths'
 import { run as defaultRun, type Runner } from './run'
-import { hasSession, paneDead, paneListedDead, pasteText, pressKey, sendKey, sendText } from './tmux'
+import { hasSession, paneDead, paneListedDead, paneText, pasteText, pressKey, sendKey, sendText } from './tmux'
 import { readSubagents } from './subagents'
 import type { AgentSnapshot } from './nextup'
 import { listWorkspaces, readRecords } from './workspaces'
@@ -277,6 +277,32 @@ export async function answerAgent(id: string, choice: QuickChoice, run: Runner =
   progress.set(ws.session, { at: file.at, next: choice.question + 1 })
   // After the call's last question, Claude Code waits for its answers to be submitted.
   return choice.question === questions.length - 1 ? sent(await pressKey(ws.paneId, 'Enter', run)) : { ok: true }
+}
+
+const landing = new Set<string>()
+
+/**
+ * W339: a card's answer counts once the agent left the prompt: its hook moved on, or its pane changed after the keys.
+ * Issue #6: keys sent to a 90x1 window were taken by tmux and ignored by Claude Code, and the card said «Sent».
+ */
+export async function answerLanded(id: string, choice: QuickChoice, run: Runner = defaultRun, { tries = 8, every = 500 } = {}): Promise<QuickAnswer> {
+  if (landing.has(id)) return { error: t('An answer to that agent is already on its way.') }
+  landing.add(id)
+  try {
+    const ws = await actingWorkspace(id, run)
+    const before = ws && { at: (await hookFile(ws.session)).at, text: await paneText(ws.paneId, run) }
+    const r = await answerAgent(id, choice, run)
+    if (!('ok' in r) || !ws || !before) return r
+    // ponytail: any change of the pane counts, so text left typed in the input or a ticking timer reads as landed; reading Claude Code's prompt would tie Atril to its wording.
+    for (let i = 0; i < tries; i++) {
+      await new Promise((done) => setTimeout(done, every))
+      const file = await hookFile(ws.session)
+      if (file.state !== 'needs-you' || file.at !== before.at || (await paneText(ws.paneId, run)) !== before.text) return r
+    }
+    return { error: t('The answer did not reach the agent: its prompt is still on screen.') }
+  } finally {
+    landing.delete(id)
+  }
 }
 
 /** W204: the composer's trimmed text as a bracketed paste, then Enter, into that workspace's own pane. */

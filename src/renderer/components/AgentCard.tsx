@@ -139,9 +139,12 @@ export function AgentCard({ workspaceId, activityAt, onShown, focusComposer, ski
     })
   }
   const sent = result?.sent === true
+  // W340: pressed and main has not answered yet; it waits for the answer to land (W339).
+  const sending = result !== null && !result.sent && !result.text
+  const busy = sent || sending
   const onKey = (e: KeyboardEvent): void => {
     const n = Number(e.key)
-    if (sent || !Number.isInteger(n) || n < 1 || n > 4 || !buttons[n - 1]) return
+    if (busy || !Number.isInteger(n) || n < 1 || n > 4 || !buttons[n - 1]) return
     e.preventDefault()
     press(buttons[n - 1]!.choice)
   }
@@ -152,7 +155,7 @@ export function AgentCard({ workspaceId, activityAt, onShown, focusComposer, ski
       <p className="ask-q">{head}</p>
       {wait.why === 'cap' && wait.box && <p className="ask-note">{t('On: {box}', { box: wait.box })}</p>}
       {buttons.map((b, i) => (
-        <button key={i} type="button" className="ask-opt" disabled={sent} aria-label={b.label} onClick={() => press(b.choice)}>
+        <button key={i} type="button" className="ask-opt" disabled={busy} aria-label={b.label} onClick={() => press(b.choice)}>
           <kbd aria-hidden="true">{i + 1}</kbd>
           <span className="ask-text">
             <span className="ask-label">{b.label}</span>
@@ -175,6 +178,7 @@ export function AgentCard({ workspaceId, activityAt, onShown, focusComposer, ski
         </>
       )}
       {wait.idle && <p className="ask-note">{t('It has been waiting for you a while')}</p>}
+      {sending && <span className="quick-sent">{t('Sending…')}</span>}
       {result?.text && result.sent && <span className="quick-sent">{result.text}</span>}
       {result?.text && !result.sent && result.choice && (
         <Problem what={result.text} cant={t('The agent is still waiting for your answer.')} fix={t('Try again')} onFix={() => press(result.choice!)} detail="" />

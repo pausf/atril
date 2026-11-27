@@ -116,6 +116,12 @@ export async function paneDead(paneId: string, run: Runner = defaultRun): Promis
   return r.code !== 0 || r.stdout.trim() === '1'
 }
 
+/** W339: what the pane shows now; '' when tmux cannot say. */
+export async function paneText(paneId: string, run: Runner = defaultRun): Promise<string> {
+  const r = await tmux(run, ['capture-pane', '-p', '-t', paneId])
+  return r.code === 0 ? r.stdout : ''
+}
+
 export async function killPane(paneId: string, run: Runner = defaultRun): Promise<void> {
   await tmux(run, ['kill-pane', '-t', paneId])
 }

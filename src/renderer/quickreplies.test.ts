@@ -37,4 +37,18 @@ describe('quick replies', () => {
     // Each theme and palette block owns its own tint.
     for (const b of [light, dark, grafito, grafitoDark]) expect(b['ask-bg']).toBeTruthy()
   })
+
+  it('a tall card scrolls inside itself and the terminal keeps its height', () => {
+    // W337: in the column of `.pane`, the strip shrinks to one option and scrolls; the terminal never gives up its last rows (issue #6).
+    const css = readFileSync(join(__dirname, 'styles.css'), 'utf8')
+    const rule = (selector: string): Record<string, string> =>
+      Object.assign(
+        {},
+        ...[...css.matchAll(new RegExp(`^${selector.replace('.', '\\.')} \\{([^}]*)\\}`, 'gm'))].map((m) =>
+          Object.fromEntries([...m[1]!.matchAll(/([a-z-]+):\s*([^;]+);/g)].map((d) => [d[1]!, d[2]!.trim()]))
+        )
+      )
+    expect(rule('.term-ask')).toMatchObject({ 'min-height': '64px', 'overflow-y': 'auto' })
+    expect(rule('.xterm-host')).toMatchObject({ flex: '1', 'min-height': '180px' })
+  })
 })

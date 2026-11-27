@@ -1169,6 +1169,11 @@ kbd {
   color: var(--sub);
   margin: 6px 0 0;
 }
+/* W337: a tall card scrolls inside the strip instead of squeezing the terminal under it (issue #6); one option stays in view. */
+.term-ask {
+  min-height: 64px;
+  overflow-y: auto;
+}
 /* Above the terminal the card stands alone, not joined to a row. */
 .term-ask .ask {
   border-top: 1px solid color-mix(in oklch, var(--you) 50%, var(--line));
@@ -1252,7 +1257,7 @@ kbd {
 }
 .xterm-host {
   flex: 1;
-  min-height: 0;
+  min-height: 180px;
   padding: 8px 10px;
 }
 .idrow select {
