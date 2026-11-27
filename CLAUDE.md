@@ -8,15 +8,15 @@ below point at files on Pau's disk, not in the repo.
 
 ## Last landed
 
-`finished-means-finished` (27 Nov, issue #4, W332–W336): a merged work reads `done` in main whatever an older hook
-left in its state file: no Up next chip, no idle reminder, no automatic Go on, no notice on the merge; its card and header say «Merged».
+`card-answer-lands` (27 Nov, issue #6, W337–W340, W76 amended): a tall card scrolls above the terminal, which keeps
+180 px; main never sizes the tmux client under 10 rows; a card answer reads «Sent» only once the hook or the pane moved,
+else «did not arrive» with Try again.
 
-Before it, `work-vs-main` (26 Nov, issues #11, #10, #8, W300–W313): a new work fetches and branches from origin's default branch
-(`--no-track`); size, panel and radar count from the merge-base with it; a merged PR (notice or ancestry) reads "Merged"
-and leaves the clash check; rows say when two works take the same new criterion ids.
+Before it, `finished-means-finished` (27 Nov, issue #4, W332–W336): a merged work reads `done` in main whatever an older
+hook left in its state file; its card and header say «Merged».
 
-Before that, `fix-cdp-isolation` (26 Nov, W320–W331): a dev Atril on `ATRIL_CDP_PORT` owns that port by a launch token
-or exits; a drive attaches only through `attachVerified` in `scripts/cdp-drive.mjs`.
+Before that, `work-vs-main` (26 Nov, issues #11, #10, #8, W300–W313): a new work fetches and branches from origin's
+default branch (`--no-track`); size, panel and radar count from the merge-base with it; a merged PR reads "Merged".
 
 ## Next
 
