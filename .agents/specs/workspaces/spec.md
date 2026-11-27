@@ -407,6 +407,11 @@ In Settings → Repos, each healthy repo row has a «Harness» button. Opening i
 - A repo whose `node_modules`/`vendor` weigh over 2 GB still reads `in-place` (W3), also when ignored files sit beside them.
 - A person who wants in-place for a repo with an ignored `.env` still chooses it (W4).
 
+### Push guard reads commands, not text (push-guard-heredoc, 27 nov 2026)
+
+- An automatic work running `python3 - <<'EOF' … git push … EOF` or `git commit -m "… git push …"` gets no question.
+- A real `git push`, `gh pr create` or `glab mr create` still asks, wherever it sits: after a heredoc, after a quote, inside `sh -c "…"`.
+
 ### Add a repo by its path (#1) (add-repo-by-path, 27 nov 2026)
 
 In Ajustes → Repos the person can type or paste a folder's path (a leading `~` meaning their home), press «Add this path» or Enter, and get the repo registered exactly as if the picker had returned that folder. A path that cannot be added says what happened, that nothing was added, and offers one button that fixes it, with the technical detail folded; nothing is written to `repos.json` on a refusal. The picker stays.
@@ -901,6 +906,16 @@ Out, named:
 - W8's refusal on uncommitted changes in an in-place checkout: correct as it is.
 - Any heuristic that tells «config» from «media» among ignored files.
 
+### Push guard reads commands, not text (push-guard-heredoc, 27 nov 2026)
+
+**In:** the cleaning of the command text before `UPLOAD` is tested, in `resources/claude-hook.mjs`; W59's text in the spec; new hook cases in `src/main/agent.test.ts`.
+
+**Out:**
+- A shell parser or a new dependency.
+- Scripts the command runs (already W59's ceiling).
+- Telling a command substitution (`$(git push)`) from text inside double quotes or an unquoted heredoc body.
+- The wording or language of the question.
+
 ### Add a repo by its path (#1) (add-repo-by-path, 27 nov 2026)
 
 **In:** `addRepoByPath` and the path expansion in `src/main/repos.ts`; the handler `atril:repos:addPath` in `src/main/index.ts`; `repos.addPath` and the `PathProblem` type in `src/preload/{api,index}.ts`; the field, the button and the problem in `src/renderer/settings/Repos.tsx`; `repos.addPath` in `src/renderer/mockApi.ts`; the Spanish entries in `src/preload/i18n-es.ts`; the tests; this change's criteria.
@@ -1198,6 +1213,12 @@ Texts through `t()`.
 - Same `Runner` seam and `git ls-files` call stay: W3 still needs the ignored folders for its size count.
 - Texts through `t()`; a removed text leaves no orphan in `src/preload/i18n-es.ts` (checked by `rg` for the key in `src`).
 - No new dependency.
+
+### Push guard reads commands, not text (push-guard-heredoc, 27 nov 2026)
+
+- The hook runs as `ELECTRON_RUN_AS_NODE=1 claude-hook.mjs`: plain Node, no dependency.
+- The hook's other outputs, its state file and the ASK text stay byte for byte.
+- Failing towards asking: anything the cleaning cannot read (an unbalanced quote, a heredoc opener with no delimiter line) stays in the text.
 
 ### Add a repo by its path (#1) (add-repo-by-path, 27 nov 2026)
 
@@ -2935,6 +2956,27 @@ Zero questions asked: the repo's autonomy rule says take the recommended option 
 - Q: approach fork: delete the ignored-file branch, vs keep it behind a filter (extension or `git check-ignore` on pattern kind), vs ask the person at registration? → A: delete the branch (assumed). The filter loses on the next filename; the prompt adds a stop to a registration flow the issue calls a bug. If wrong: the `.env` case returns as a regression the person feels in a worktree without it.
 - Q: the invocation ran through the Libretto flow with no stop before code → A: the document was carried into phase 6; the fresh reader's findings acted on are named below once `review-spec` has run (assumed).
 
+### Push guard reads commands, not text (push-guard-heredoc, 27 nov 2026)
+
+- (2026-11-27, push-guard-heredoc) Quoted strings are emptied except the argument of `sh|bash|zsh` with a `-…c` flag cluster; heredoc bodies are removed only when a delimiter line closes them (assumed). Ceiling: `"$(git push)"` and an unquoted heredoc body's `$(git push)` are expanded by the shell and are no longer seen; `sh -c "git commit -m 'git push'"` still asks; an unterminated heredoc body mentioning push asks; `\EOF` openers are not recognised; the upgrade is a real tokenizer.
+- (2026-11-27, push-guard-heredoc) W59's earlier ceiling about a `push` word in a commit message (the spec's Q line near «Does the push stop in Automatic…» keeps the history) is superseded for quoted messages: at landing W59's text is replaced, not appended.
+
+#### Alternatives that lost
+
+| Considered | Why it lost |
+|---|---|
+| A tokenizer / shell parser | The ask forbids a parser dependency; a hand-rolled one is far more code than the bug |
+| Test `UPLOAD` per line | Fixes the issue's heredoc, but not a one-line `git commit -m "… git push …"` |
+| Blank every quote, `-c` included | `sh -c "git push"` and `bash -c 'git push origin x'` are W59's own cases and must keep asking |
+
+#### Decision log, answers as given (2026-11-27)
+- Q: A quoted string is not a command, but `sh -c "git push"` and `bash -c 'git push origin x'` are (W59's own cases)? → A: the quoted argument that follows a `sh`, `bash` or `zsh` command and its flags, the last flag cluster ending in `c` (`-c`, `-lc`, `-ec`), is kept; every other quoted string is emptied (assumed; if wrong, `sh -c "git push"` stops asking, or a commit message mentioning push asks again).
+- Q: Which `<<` opens a heredoc? → A: `<<` or `<<-` (never `<<<`), optional spaces, an optional quote and a delimiter starting with a letter or `_`; it only counts when a delimiter line follows (exactly the delimiter, leading tabs allowed for `<<-` only): then the lines between the opener's line and the delimiter line, delimiter included, are dropped. With no delimiter line nothing is dropped, so an unterminated or fake opener (`echo "a <<EOF"; git push`, `$((a << b))`) can never hide a push (assumed; if wrong, an unterminated heredoc body mentioning push asks, which fails towards asking). `\EOF` is not recognised.
+- Q: Does `gh pr create` / `glab mr create` get the same treatment? → A: yes, one cleaned text for the one regex (assumed).
+- Q: (phase 5) Which approach? → A: two `String.replace` passes over the command (heredoc bodies, then quotes), then the unchanged `UPLOAD` (assumed; rejected: a tokenizer, which the ask forbids as a parser dependency and is more code; testing the regex per line only, which fixes heredocs but not `git commit -m "… git push …"`). If wrong, the helper is replaced behind the same function.
+- Q: (invocation) What did `/libretto-attacca` answer? → A: it carried this document past the stop into phase 6 and the push of the branch plus a PR against main, never a merge; the fresh reader's findings the run acted on are listed under «Reviewer findings acted on» at the end of this document (assumed).
+- Q: Where does the helper live? → A: in `claude-hook.mjs` beside `UPLOAD`, covered through the hook cases in `agent.test.ts`; no new file (assumed; if wrong, move it next to `keepgoing.mjs`).
+
 ### Add a repo by its path (#1) (add-repo-by-path, 27 nov 2026)
 
 - (2026-11-27, add-repo-by-path) The typed path ends in `registerRepo`: same git top level, same id derivation, same `id-taken` and `invalid-id` answers as the picker. Nothing about registering is duplicated.
@@ -3281,14 +3323,7 @@ Zero questions asked: the repo's autonomy rule says take the recommended option 
   `auto: true` in the workspace record (a new field; `mode` stays `in-place | worktree`) and carry it
   in `WorkspaceView`; without it, or with any value but `true`, nothing changes.
   Proof: src/main/agent.test.ts automatic mode starts attacca and is recorded
-- **W59** While the marker `$ATRIL_HOME/auto/<session>` exists, the hook shall answer a PreToolUse for
-  Bash whose command matches `/\bgit\b[^;&|\n]*?\spush\b|\bgh\b[^;&|\n]*?\spr\s+create\b|\bglab\b[^;&|\n]*?\smr\s+create\b/`
-  by printing exactly `{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"ask",
-  "permissionDecisionReason":"Modo automático: confirma antes de subir"}}`; for any other command or
-  tool, or without the marker, it shall print nothing. Ceiling: a push inside a script the command
-  calls is not seen; a `push` word after `git` in the same segment (a commit message) only adds a
-  question; whether a person's own
-  bypass mode or allow rule overrides «ask» is the host's (unverified).
+- **W59** While the marker `$ATRIL_HOME/auto/<session>` exists, the hook shall answer a PreToolUse for Bash whose command, once W420's heredoc bodies and W421's quoted strings are left out, matches `/\bgit\b[^;&|\n]*?\spush\b|\bgh\b[^;&|\n]*?\spr\s+create\b|\bglab\b[^;&|\n]*?\smr\s+create\b/` by printing exactly `{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"ask","permissionDecisionReason":"Modo automático: confirma antes de subir"}}`; for any other command or tool, or without the marker, it shall print nothing. Ceiling: a push inside a script the command calls is not seen; a `push` word after `git` in the same unquoted segment, a push word inside a `sh -c` argument, or in a heredoc with no delimiter line, only adds a question; `$(…)` inside double quotes or an unquoted heredoc body is not seen; whether a person's own bypass mode or allow rule overrides «ask» is the host's (unverified).
   Proof: src/main/agent.test.ts the hook asks before an automatic push
 - **W60** An automatic workspace's marker shall be written with its record, before its tmux session
   starts, and deleted when the workspace is removed or its session fails to start.
@@ -4112,6 +4147,15 @@ Zero questions asked: the repo's autonomy rule says take the recommended option 
   Proof: src/main/repos.test.ts a media file ignored by pattern leaves the repo in worktree
 - **W401** While an ignored file sits beside `node_modules` or `vendor` directories that together exceed 2 GB, Atril shall set `in-place` and name the dependencies (W3), not the file.
   Proof: src/main/repos.test.ts heavy dependencies still win beside an ignored file
+
+### Push guard reads commands, not text (push-guard-heredoc, 27 nov 2026)
+
+- **W420** While the marker exists, the hook shall not read a heredoc body as part of the command W59 tests: for a `<<DELIM`, `<<-DELIM`, `<< DELIM`, `<<'DELIM'` or `<<"DELIM"` opener (DELIM starting with a letter or `_`, never `<<<`) followed by a line that is exactly DELIM (leading tabs allowed for `<<-` only), the lines between the opener's line and that delimiter line, and the delimiter line, are left out; an opener with no such line leaves the text as it is.
+  Proof: src/main/agent.test.ts the hook ignores a push inside a heredoc body
+- **W421** While the marker exists, the hook shall not read the inside of a quoted string (`'…'` or `"…"`) as part of the command W59 tests, except a quoted string that directly follows `sh`, `bash` or `zsh` (optionally by path) with any flags whose last cluster ends in `c`, such as `-c`, `-lc` or `-ec`.
+  Proof: src/main/agent.test.ts the hook ignores a push inside a quoted string
+- **W422** If a real `git push`, `gh pr create` or `glab mr create` stands outside every heredoc body and quoted string, including after a heredoc has ended, after a quoted string has closed, after a fake opener with no delimiter line, after an escaped quote (`\'`) outside any quote, or inside the `-c` argument of `sh`, `bash` or `zsh`, then the hook shall still print W59's question.
+  Proof: src/main/agent.test.ts the hook still asks for a real push around heredocs and quotes
 
 ### Add a repo by its path (#1) (add-repo-by-path, 27 nov 2026)
 

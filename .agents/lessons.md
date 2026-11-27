@@ -564,6 +564,9 @@ Reviewer found nothing against the contract (4 proofs re-run, typecheck and lint
 ## 2026-11-27 · ignored-files-not-dirty · 6→7
 The work-reviewer was told `main...HEAD` and local `main` was behind origin, so it saw already-merged work as part of the diff. Give the reviewer `origin/main...HEAD` after a `git fetch`; the reviewer found nothing against the contract.
 
+## 2026-11-27 · push-guard-heredoc · 6→7
+Reviewer finding: the quote pass paired an unquoted escaped apostrophe (`echo don\'t; git push; echo 'x'`) with a later `'` and emptied the real `git push` between them, against the Constraint «failing towards asking»; no W422 case had a stray quote. Fixed: a `\x` outside quotes is skipped, so an escaped quote opens nothing; new W422 row seen red before the fix. A text-stripping guard needs a case where the thing it strips is mis-paired, not only where it is well-formed.
+
 ## 2026-11-27 · add-repo-by-path · 6→7
 Reviewer found nothing against the contract (W440–W447, the new «answer for text edited after it was sent is dropped» case and the edited `settings.test.ts` re-run, 30/30). It did not re-run the real-app drive; the builder's mutation checks (each of the ten clauses watched red) are the proof that the tests can fail.
 
@@ -578,3 +581,6 @@ Reviewer found nothing against the contract (W440–W447, the new «answer for t
 
 ## 2026-11-27 · add-repo-by-path · 8
 `spec-drift --anchors` called all eight new citations broken: I copied the quoted `Proof: file "name"` shape from `crash-reports`, and a quoted name only resolves against a test written with double quotes (`it("…")`); this repo's tests use single quotes. The citations everywhere else are unquoted and resolve for either style. Cite a test name unquoted, and run `--anchors` before staging the landing, not after.
+
+## 2026-11-27 · add-repo-by-path · 6
+`src/renderer/focus.test.ts` «focus keeps only the chosen workspace» failed once in the full run after merging `origin/main` (`findByRole('heading', { name: 'WEB-1' })` not found), as it had once on another branch. Measured rather than assumed: alone it takes ~180 ms (3/3 and 5/5 green); in the failed run its file took 1578 ms at load ~7.8, so the 1 s `findBy` default ran out; the next full run was green (144 files, 686 tests). The test never opens Ajustes, so the Repos card is not involved. Not patched here: a change of its own would raise that wait or stop the suite from running at that load.
