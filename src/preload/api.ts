@@ -20,6 +20,8 @@ export interface RepoView {
   mode: Mode
   reason: string
   override?: Mode
+  /** W480: ignored files copied into each new worktree. */
+  carry?: string[]
   health: RepoHealth
 }
 
@@ -86,6 +88,10 @@ export interface ReposApi {
   remove(id: string): Promise<RepoResult>
   /** W158: main opens the folder picker; null when the person cancels. */
   relocate(id: string): Promise<RepoResult | null>
+  /** W480: main validates the whole list; `{ error }` when it refuses it. */
+  setCarry(id: string, files: string[]): Promise<Listed<RepoView> | { error: string }>
+  /** W482: names of ignored files outside dependency and build folders. */
+  carrySuggest(id: string): Promise<string[] | { error: string; detail: string }>
 }
 
 export type RepoResult = { ok: true } | { error: string } | StateProblem
@@ -95,6 +101,13 @@ export type Agent = 'claude'
 export type Model = 'default' | 'opus' | 'sonnet' | 'haiku'
 /** Claude Code's `--effort`; 'default' adds no flag (W137). */
 export type Effort = 'default' | 'low' | 'medium' | 'high' | 'xhigh'
+
+/** W484: why a listed file was not carried, in check order. */
+export type CarryFail = 'missing' | 'not-a-file' | 'outside' | 'exists' | 'not-ignored' | 'failed'
+export interface Carried {
+  copied: string[]
+  failed: { file: string; why: CarryFail }[]
+}
 
 export interface WorkspaceRecord {
   id: string
@@ -120,6 +133,8 @@ export interface WorkspaceRecord {
   paneId: string
   /** Epoch seconds; records older than W95 have none. */
   createdAt?: number
+  /** W483: set only when the repo had a carry list and the work got a new worktree. */
+  carried?: Carried
 }
 
 export interface WorkspaceView extends WorkspaceRecord {

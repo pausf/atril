@@ -55,7 +55,7 @@ import { listSkills } from './skills/read'
 import { createUsage as createSkillUsage } from './skills/usage'
 import { revealFile, setSkill } from './skills/write'
 import { harnessGet, openDoc } from './repoharness'
-import { addRepoByPath, listRepos, readRepos, registerRepo, relocateRepo, removeRepo, repoHealth, setOverride } from './repos'
+import { addRepoByPath, listRepos, readRepos, registerRepo, relocateRepo, removeRepo, repoHealth, setCarry, setOverride, suggestCarry } from './repos'
 import { createRefiner } from './refine'
 import { orProblem, revealState } from './state'
 import { dropIdea, editIdea, ideaToJira, librettoCounts, librettoState, queueIdea, startQueued } from './libretto'
@@ -403,6 +403,12 @@ app.whenReady().then(async () => {
     const problem = await setOverride(id, mode)
     return problem ? { problem } : listRepos(run)
   })
+  // W480: the list is untrusted until setCarry has checked every entry.
+  ipcMain.handle('atril:repos:setCarry', async (_e, id: unknown, files: unknown) => {
+    const r = await setCarry(String(id), files)
+    return 'ok' in r ? listRepos(run) : 'fix' in r ? { problem: r } : r
+  })
+  ipcMain.handle('atril:repos:carrySuggest', (_e, id: unknown) => suggestCarry(String(id), run))
   // The window sends an id only: main opens the picker (W158).
   ipcMain.handle('atril:repos:remove', (_e, id: unknown) => removeRepo(String(id)))
   ipcMain.handle('atril:repos:relocate', (_e, id: unknown) =>
