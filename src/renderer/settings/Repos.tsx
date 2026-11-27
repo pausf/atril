@@ -50,17 +50,20 @@ function CarryPanel({ repo, onSaved, onDamaged }: { repo: RepoView; onSaved: (r:
         ))}
       </ul>
       <form
-        className="idrow"
+        className="idask"
         onSubmit={(e) => {
           e.preventDefault()
           if (text.trim() === '') return
           void save([...saved, text.trim()]).then((ok) => ok && setText(''))
         }}
       >
-        <input id={`carry-${repo.id}`} aria-label={t('Add a file')} placeholder=".env" spellCheck={false} value={text} onChange={(e) => setText(e.target.value)} />
-        <button type="submit" className="pill" disabled={text.trim() === ''}>
-          {t('Add')}
-        </button>
+        <label htmlFor={`carry-${repo.id}`}>{t('Add a file')}</label>
+        <div className="idrow">
+          <input id={`carry-${repo.id}`} placeholder=".env" spellCheck={false} value={text} onChange={(e) => setText(e.target.value)} />
+          <button type="submit" className="pill" disabled={text.trim() === ''}>
+            {t('Add')}
+          </button>
+        </div>
       </form>
       {refused && <Problem what={refused} cant={t('Nothing was saved.')} detail="" onClose={() => setRefused(null)} />}
       {listFail && <Problem what={listFail.error} cant={t('The suggestions are not shown.')} detail={listFail.detail} onClose={() => setListFail(null)} />}
