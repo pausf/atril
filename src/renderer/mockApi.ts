@@ -1,5 +1,5 @@
 import { vi } from 'vitest'
-import type { ActivityLine, SubagentEntry, SubagentLine, AddRepoResult, Aviso, FileChange, FlowBoxes, FlowDocs, ForgeId, ForgeStatus, Mode, MrDraft, MrDrafts, MrDraftsResult, MrFixCiResult, MrLists, MrMergeResult, MrPage, MrReply, MrScoreState, MrThreads, MrWork, NotifyPatch, RefineResult, NotifyPermission, SkillsList, SkillsUsage, NotifySettings, AgentState, StateProblem, QaBugResult, QaLaunchResult, QaManualRequest, QaMr, QaPrepared, QaPublishResult, QaReport, QaResult, QaStatus, QaTargets, AtrilApi, RemoveResult, QuickAnswer, AgentWait, RadarHit, FlowStage, HistoryEntry, IdeaJiraResult, IdeaResult, LibrettoCounts, LibrettoState, JiraIssue, JiraSettingsStatus, MenuAction, NextItem, StartProposalResult, StartRequest, StartResult, RepoResult, RepoView, ToolReport, UiState, WorkCost, WorkspaceResult, WorkspaceView, HarnessResult } from '../preload/api'
+import type { ActivityLine, SubagentEntry, SubagentLine, AddRepoResult, Aviso, FileChange, FlowBoxes, FlowDocs, ForgeId, ForgeStatus, Mode, MrDraft, PathProblem, MrDrafts, MrDraftsResult, MrFixCiResult, MrLists, MrMergeResult, MrPage, MrReply, MrScoreState, MrThreads, MrWork, NotifyPatch, RefineResult, NotifyPermission, SkillsList, SkillsUsage, NotifySettings, AgentState, StateProblem, QaBugResult, QaLaunchResult, QaManualRequest, QaMr, QaPrepared, QaPublishResult, QaReport, QaResult, QaStatus, QaTargets, AtrilApi, RemoveResult, QuickAnswer, AgentWait, RadarHit, FlowStage, HistoryEntry, IdeaJiraResult, IdeaResult, LibrettoCounts, LibrettoState, JiraIssue, JiraSettingsStatus, MenuAction, NextItem, StartProposalResult, StartRequest, StartResult, RepoResult, RepoView, ToolReport, UiState, WorkCost, WorkspaceResult, WorkspaceView, HarnessResult } from '../preload/api'
 
 export const workspace = (id: string, branch: string, alive = true): WorkspaceView => ({
   id,
@@ -44,6 +44,8 @@ interface Options {
   forges?: Partial<Record<ForgeId, ForgeStatus>>
   /** What the folder picker answers when the person adds a repo. */
   addRepo?: (AddRepoResult & { path: string }) | null
+  /** What repos.addPath answers for the typed text; missing means a repo added at that text. */
+  addPath?: (text: string) => Promise<(AddRepoResult & { path: string }) | PathProblem>
   repos?: RepoView[]
   /** What harness.get answers per repo id; a function lets a test hold a reply back. Missing means unknown. */
   harness?: Record<string, HarnessResult> | ((repoId: string) => Promise<HarnessResult>)
@@ -268,6 +270,9 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
       }),
       add: vi.fn(async () => o.addRepo ?? null),
       addWithId: vi.fn(async (path: string, id: string): Promise<AddRepoResult> => ({ repo: { id, path, mode: 'worktree', reason: '', health: 'ok' } })),
+      addPath: vi.fn(async (text: string) =>
+        o.addPath ? o.addPath(text) : { repo: { id: 'added', path: text, mode: 'worktree' as const, reason: '', health: 'ok' as const }, path: text }
+      ),
       setOverride: vi.fn(async (id: string, mode: Mode | null): Promise<RepoView[]> =>
         (o.repos ?? []).map((r) => (r.id === id ? { ...r, ...(mode ? { override: mode } : { override: undefined }) } : r))
       )

@@ -574,3 +574,24 @@ Reviewer found nothing against the contract (5 proofs re-run, typecheck and lint
 - Before the cold spec review the builder's own mutation runs forced W462 and W463 red (mark always, mark on failure): guardrail tests that pass today need a mutation, not only a green run. The cold spec review caught that Deny would stick on `working`: an Escape-deny interrupts the turn and no Stop follows. Before marking a state as «the agent is busy», ask which hook ends it.
 - The first version marked the wait even when the hook had already moved on; the older W339 test reuses `at: 1` for every wait and went red. A memory keyed by a value tests reuse must be written only while the file still shows that wait.
 - Driving the real app: a hand-seeded work needs its tmux session named `atril-<id>` (`sessionName`) and its record's `session` the same, or the row reads «parado»; the welcome tour's scrim blocks clicks until «Saltar». A fresh worktree needs `pnpm install` before the pre-commit typecheck can run.
+
+## 2026-11-27 · add-repo-by-path · 6→7
+Reviewer found nothing against the contract (W440–W447, the new «answer for text edited after it was sent is dropped» case and the edited `settings.test.ts` re-run, 30/30). It did not re-run the real-app drive; the builder's mutation checks (each of the ten clauses watched red) are the proof that the tests can fail.
+
+## 2026-11-27 · add-repo-by-path · real app
+- jsdom passed while the real window was ambiguous: with the id prompt open, a path field named only by `aria-label` sat right under the id field and read as part of that prompt. Found by looking at the screenshot, not by a test. Fixed with a visible label in the id prompt's own style. A new control that can land beside another prompt gets a visible label.
+- Adding one `<input>` to the Repos card broke `settings.test.ts` («no inputs left but the board search»), a test of another card that counts every input on the screen. After adding a control to a screen, run the full suite, not just the card's file.
+
+## 2026-11-27 · add-repo-by-path · 6
+- A fresh worktree had no `node_modules`: my first vitest runs silently used the stable Atril copy's, and `typecheck` and `lint` could not resolve `node` types. `pnpm install --frozen-lockfile --offline --ignore-scripts` fixed it in seconds. Check `ls node_modules` before the first gate in a new worktree.
+- `sd` with a multi-line pattern exits 0 and changes nothing. Four edits looked applied and were not (the state declarations, the id-prompt test selector, a mutation); only a failing typecheck and a failing test showed it. After every `sd`, `rg` for the new text, or use `Edit`.
+- `src/main/activity.test.ts` «a burst of activity writes refreshes once» failed once in a full run (0 refreshes within `pause(900)`) at machine load 7–8, and passed 5/5 alone and in the next full run. A timing assertion under contention; not patched, same family as the entries of 2026-11-10.
+
+## 2026-11-27 · add-repo-by-path · 8
+`spec-drift --anchors` called all eight new citations broken: I copied the quoted `Proof: file "name"` shape from `crash-reports`, and a quoted name only resolves against a test written with double quotes (`it("…")`); this repo's tests use single quotes. The citations everywhere else are unquoted and resolve for either style. Cite a test name unquoted, and run `--anchors` before staging the landing, not after.
+
+## 2026-11-27 · add-repo-by-path · 6
+`src/renderer/focus.test.ts` «focus keeps only the chosen workspace» failed once in the full run after merging `origin/main` (`findByRole('heading', { name: 'WEB-1' })` not found), as it had once on another branch. Measured rather than assumed: alone it takes ~180 ms (3/3 and 5/5 green); in the failed run its file took 1578 ms at load ~7.8, so the 1 s `findBy` default ran out; the next full run was green (144 files, 686 tests). The test never opens Ajustes, so the Repos card is not involved. Not patched here: a change of its own would raise that wait or stop the suite from running at that load.
+
+## 2026-11-27 · add-repo-by-path · 8
+Merging `origin/main` kept both sides of «Last landed» in `CLAUDE.md` and took it to 7152 bytes; `harness.test.ts` caps the file at 7000. The cap only bites at a merge, because each branch alone is under it. «Last landed» keeps three entries: when a merge adds one, drop the oldest in the same merge (here `finished-means-finished`, still in `git log` and its spec).

@@ -55,7 +55,7 @@ import { listSkills } from './skills/read'
 import { createUsage as createSkillUsage } from './skills/usage'
 import { revealFile, setSkill } from './skills/write'
 import { harnessGet, openDoc } from './repoharness'
-import { listRepos, readRepos, registerRepo, relocateRepo, removeRepo, repoHealth, setOverride } from './repos'
+import { addRepoByPath, listRepos, readRepos, registerRepo, relocateRepo, removeRepo, repoHealth, setOverride } from './repos'
 import { createRefiner } from './refine'
 import { orProblem, revealState } from './state'
 import { dropIdea, editIdea, ideaToJira, librettoCounts, librettoState, queueIdea, startQueued } from './libretto'
@@ -398,6 +398,7 @@ app.whenReady().then(async () => {
     return { ...(await registerRepo(path, run)), path }
   })
   ipcMain.handle('atril:repos:addWithId', (_e, path: string, id: string) => registerRepo(path, run, { id }))
+  ipcMain.handle('atril:repos:addPath', (_e, text: unknown) => addRepoByPath(text, run))
   ipcMain.handle('atril:repos:setOverride', async (_e, id: string, mode: Mode | null) => {
     const problem = await setOverride(id, mode)
     return problem ? { problem } : listRepos(run)

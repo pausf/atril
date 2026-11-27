@@ -4,7 +4,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, renameS
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { detectMode, listRepos, registerRepo, relocateRepo, rememberRepo, removeRepo, setOverride } from './repos'
+import { addRepoByPath, detectMode, listRepos, registerRepo, relocateRepo, rememberRepo, removeRepo, setOverride } from './repos'
 import { run, type Runner } from './run'
 
 const made: string[] = []
@@ -186,5 +186,97 @@ describe('repos', () => {
     expect(await relocateRepo('shop', async () => join(moved, 'sub'), run)).toEqual({ ok: true })
     const shop = (await listRepos(run) as RepoView[]).find((r) => r.id === 'shop')!
     expect(shop).toMatchObject({ id: 'shop', path: moved, override: 'in-place', health: 'ok' })
+  })
+
+  describe('adding by a typed path', () => {
+    const reposFile = (): string => join(process.env['ATRIL_HOME']!, 'repos.json')
+    const never: Runner = async () => {
+      throw new Error('git must not run')
+    }
+    let prevUserHome: string | undefined
+    let home: string
+    beforeEach(() => {
+      prevUserHome = process.env['HOME']
+      home = tmp()
+      process.env['HOME'] = home
+    })
+    afterEach(() => {
+      if (prevUserHome === undefined) delete process.env['HOME']
+      else process.env['HOME'] = prevUserHome
+    })
+    const initAt = (dir: string): string => {
+      mkdirSync(dir, { recursive: true })
+      git(dir, 'init', '-q')
+      return dir
+    }
+
+    it('a typed path is trimmed, ~ expanded and anything not absolute refused', async () => {
+      const root = initAt(join(home, 'code', 'shop'))
+      const added = await addRepoByPath('  ~/code/shop  ', run)
+      expect(root.startsWith(home)).toBe(true)
+      expect(added).toMatchObject({ repo: { id: 'shop', path: root }, path: root })
+
+      const before = readFileSync(reposFile(), 'utf8')
+      for (const text of ['code/shop', './shop', '~shop/code', '~other', '  rel/x ']) {
+        const clean = text.trim()
+        expect(await addRepoByPath(text, never)).toEqual({ error: 'bad-path', what: `${clean} no es una ruta completa: empieza por / o por ~/.`, detail: clean, fix: 'pick' })
+      }
+      // A lone ~ is the home itself: it expands, and the home is no repo.
+      const lone = await addRepoByPath('~', run)
+      expect(lone).toMatchObject({ error: 'bad-path', what: `${home} no es un repositorio git.`, fix: 'pick' })
+      expect(readFileSync(reposFile(), 'utf8')).toBe(before)
+    })
+
+    it('a typed path that is not a folder is refused before git and writes nothing', async () => {
+      const file = join(home, 'notes.txt')
+      writeFileSync(file, 'x')
+      const missing = join(home, 'nope')
+      for (const raw of [undefined, null, 42, {}, '', '   ', '/x\0y']) {
+        expect(await addRepoByPath(raw, never)).toEqual({ error: 'bad-path', what: 'Escribe antes la ruta de una carpeta.', detail: '', fix: 'pick' })
+      }
+      expect(await addRepoByPath(missing, never)).toEqual({ error: 'bad-path', what: `No hay ninguna carpeta en ${missing}.`, detail: missing, fix: 'pick' })
+      // A path that goes through a file has no folder either.
+      const through = join(file, 'x')
+      expect(await addRepoByPath(through, never)).toEqual({ error: 'bad-path', what: `No hay ninguna carpeta en ${through}.`, detail: through, fix: 'pick' })
+      expect(await addRepoByPath(file, never)).toEqual({ error: 'bad-path', what: `${file} es un archivo, no una carpeta.`, detail: file, fix: 'pick' })
+      expect(existsSync(reposFile())).toBe(false)
+    })
+
+    it('a typed folder git cannot read is refused with its own fix and writes nothing', async () => {
+      const plain = join(home, 'plain')
+      mkdirSync(plain)
+      const refused = await addRepoByPath(plain, run)
+      expect(refused).toMatchObject({ error: 'bad-path', what: `${plain} no es un repositorio git.`, fix: 'pick' })
+      expect((refused as { detail: string }).detail).toContain('not a git repository')
+
+      const failing = (code: number, stderr: string): Runner => async () => ({ code, stdout: '', stderr })
+      const broken = await addRepoByPath(plain, failing(127, 'env: git: No such file or directory'))
+      expect(broken).toEqual({ error: 'bad-path', what: 'git no funciona en este Mac.', detail: 'env: git: No such file or directory', fix: 'git' })
+      const xcode = 'xcode-select: note: No developer tools were found, requesting install.'
+      expect(await addRepoByPath(plain, failing(1, xcode))).toEqual({ error: 'bad-path', what: 'git no funciona en este Mac.', detail: xcode, fix: 'git' })
+      const unsafe = 'fatal: detected dubious ownership in repository at /x'
+      expect(await addRepoByPath(plain, failing(128, unsafe))).toEqual({ error: 'bad-path', what: `git no ha podido leer ${plain}.`, detail: unsafe, fix: 'pick' })
+      expect(existsSync(reposFile())).toBe(false)
+    })
+
+    it('a typed path registers the git top level like the picker does', async () => {
+      const root = makeRepo(NOISE, [], ['sub/x.txt'])
+      const sub = join(root, 'sub')
+      const added = await addRepoByPath(sub, run)
+      expect(added).toMatchObject({ repo: { path: root, health: 'ok' }, path: sub })
+
+      // The same top level again: that repo comes back and nothing is written.
+      const before = readFileSync(reposFile(), 'utf8')
+      expect(await addRepoByPath(root, run)).toMatchObject({ repo: { path: root }, path: root })
+      expect(readFileSync(reposFile(), 'utf8')).toBe(before)
+
+      // Another folder with the same name: registerRepo's own answers, with the resolved path.
+      const first = initAt(join(tmp(), 'shop'))
+      const second = initAt(join(tmp(), 'shop'))
+      expect(await addRepoByPath(first, run)).toMatchObject({ repo: { id: 'shop' } })
+      expect(await addRepoByPath(second, run)).toEqual({ error: 'id-taken', suggested: 'shop-2', path: second })
+      const odd = initAt(join(tmp(), '___'))
+      expect(await addRepoByPath(odd, run)).toEqual({ error: 'invalid-id', path: odd })
+    })
   })
 })

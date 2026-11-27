@@ -418,6 +418,10 @@ In Settings → Repos, each healthy repo row has a «Harness» button. Opening i
 - The first hook write after that (PostToolUse, Stop, a new Notification) takes over again, as W15 and W221 already decide notices on the states main reads.
 - An answer that did not land, a Deny, an answer to a question that is not the last, and a go-on read as before.
 
+### Add a repo by its path (#1) (add-repo-by-path, 27 nov 2026)
+
+In Ajustes → Repos the person can type or paste a folder's path (a leading `~` meaning their home), press «Add this path» or Enter, and get the repo registered exactly as if the picker had returned that folder. A path that cannot be added says what happened, that nothing was added, and offers one button that fixes it, with the technical detail folded; nothing is written to `repos.json` on a refusal. The picker stays.
+
 ## Scope boundaries
 
 **In:** the three columns and footer of `bocetos/fase1-nucleo.html` (boceto 8), the
@@ -929,6 +933,13 @@ Out, named:
 - Deny: what an Escape-deny produces in Claude Code is unverified, so it reads as before.
 - The renderer: it reads main's state and needs no change unless a proof shows otherwise.
 
+### Add a repo by its path (#1) (add-repo-by-path, 27 nov 2026)
+
+**In:** `addRepoByPath` and the path expansion in `src/main/repos.ts`; the handler `atril:repos:addPath` in `src/main/index.ts`; `repos.addPath` and the `PathProblem` type in `src/preload/{api,index}.ts`; the field, the button and the problem in `src/renderer/settings/Repos.tsx`; `repos.addPath` in `src/renderer/mockApi.ts`; the Spanish entries in `src/preload/i18n-es.ts`; the tests; this change's criteria.
+**Out (named):** drag-and-drop; `~name` expansion; changing the picker's own error line (S13); changing «Find the folder…» (relocate); relative paths resolved against some working directory; autocompletion of the path; the `bocetos/` pages and a photo of them; a tour step.
+
+**Never scoped out:** the path crosses the IPC boundary as an untrusted value (a non-string, empty text and a NUL byte are refused in main, before any git or file write); a refusal changes nothing on disk; the field is a native `<input>` with a label and the button a native `<button>`, so both are keyboard-reachable.
+
 ## Constraints
 
 - Electron (current stable) + TypeScript in strict mode, pnpm, Node 24 (installed:
@@ -1232,6 +1243,15 @@ Texts through `t()`.
 - Pause (W86) still outranks everything in `hookState`; W199 and W332 keep their precedence.
 - `CLAUDE.md` stays within W235's 7000 bytes (6627 today).
 - Failing towards asking: when the file has no numeric `at`, nothing is hidden.
+
+### Add a repo by its path (#1) (add-repo-by-path, 27 nov 2026)
+
+- Main reads the home only through `userHome()` (`paths.ts`); `pnpm lint` forbids `homedir()` elsewhere (W210/W212).
+- The window and main talk through preload only; the window sends the typed text and nothing else (W158's rule: it never decides what is a folder).
+- Texts go through `t()`/`useT()`, the key is the English text, its Spanish entry lives in `src/preload/i18n-es.ts` (S16/S19 scan for it).
+- Errors follow the rule in CLAUDE.md: what happened, what Atril can't do because of it, one button that fixes it, the code only under «Show detail» (`Problem`).
+- No new dependency, no Claude call; tests use a temp `ATRIL_HOME` and a temp `HOME`, never the person's repos.
+- `repos.json` is written only through `registerRepo` (atomic, W148 refuses to overwrite a damaged file).
 
 ## Prior decisions
 
@@ -3004,6 +3024,51 @@ Zero questions asked: the repo's autonomy rule says take the recommended option 
 - Q: (phase 5) Which approach? → A: a Map in main keyed by `at` and kind, read by `hookState`, `waitOf` and `answerAgent` (assumed; rejected: the hook writing `working`, marking on keys sent, writing `working` into the state file from main). If wrong, the memory is replaced behind the same three reads.
 - Q: (invocation) What did `/libretto-attacca` answer? → A: it carried this document past the stop into phase 6 and the push of the branch plus a PR against main, never a merge; the fresh reader's findings the run acted on are listed under «Reviewer findings acted on» at the end (assumed).
 
+### Add a repo by its path (#1) (add-repo-by-path, 27 nov 2026)
+
+- (2026-11-27, add-repo-by-path) The typed path ends in `registerRepo`: same git top level, same id derivation, same `id-taken` and `invalid-id` answers as the picker. Nothing about registering is duplicated.
+- (2026-11-27, add-repo-by-path) Path field, not drag-and-drop (assumed). If wrong: a drop handler sends the dropped path to the same `atril:repos:addPath`; nothing in main changes.
+- (2026-11-27, add-repo-by-path) Only `~` and `~/…` expand (assumed). If wrong: `~name` is added in `expandPath` only.
+- (2026-11-27, add-repo-by-path) A subfolder registers its git top level; an already registered folder returns the existing repo (assumed). If wrong: refuse in `addRepoByPath` before `registerRepo`.
+- (2026-11-27, add-repo-by-path) The picker's S13 line stays as it is (assumed). If wrong: amend S13 and give `settle`'s picker branch the same `Problem`.
+- (2026-11-27, add-repo-by-path) `bocetos/` and the tour are untouched (assumed, see the decision log).
+- (2026-11-27, add-repo-by-path) The window shows nothing for a failed git install started from the card's fix, as `sharedFix` does elsewhere (assumed). If wrong: show a second `Problem` from `installTool`'s `{ error }`.
+- (2026-11-27, add-repo-by-path) Starting an add by one route clears the other route's message; field and button stay visible while the id prompt shows (assumed). If wrong: only `Repos.tsx` changes.
+- (2026-11-27, add-repo-by-path) ponytail: one extra `git rev-parse` per typed path (about 125 ms on Pau's Mac) so the refusal can carry git's own stderr, instead of widening `registerRepo`'s answer; ceiling: if a second caller wants git's stderr, move it into `registerRepo`.
+
+#### Alternatives that lost
+
+| Considered | Why it lost |
+|---|---|
+| Overload `atril:repos:add` with an optional path | The handler's contract is «main opens the picker» (W158); one channel meaning two things hides the trust boundary. |
+| Validate and expand in the window, send a «checked» path to `addWithId` | The window must never decide what is a folder, and only main knows the home (`userHome()`); `addWithId` would also skip the id-taken answer for the typed path. |
+| Drag-and-drop onto the card | Needs `webUtils.getPathForFile` in preload, a second way across the boundary; the invocation asked for typing or pasting. Kept as a later add on the same IPC. |
+| Widen `registerRepo` to return git's stderr and drop the pre-check | Touches the picker's path and `create.ts`, which also call it; one extra `rev-parse` is cheaper than that blast radius (ponytail, ceiling in Prior decisions). |
+
+#### Decision log, answers as given (2026-11-27)
+- Q: path field or drag-and-drop onto the card? → A: the path field, as the invocation says «type or paste a path»; drag-and-drop is out (assumed: the issue says «or», and a drop needs `webUtils.getPathForFile` in preload, a second path through the trust boundary; if wrong, a drop handler calls the same `atril:repos:addPath`).
+- Q: which `~` forms expand? → A: `~` alone and `~/…`, to the person's own home; `~name/…` is not expanded and is refused as not absolute (assumed: resolving another user's home needs the user database and nobody asked; if wrong, expand it in main only).
+- Q: a path inside a repo, not at its root? → A: registers the git top level, exactly as the picker does through `registerRepo` (assumed: one rule for both ways in).
+- Q: an already registered folder? → A: no error, the existing repo comes back, as the picker does today (assumed).
+- Q: does the picker's own bare «not a git repository» line (S13) become a `Problem` too? → A: no, out of this change; S13 stays as it is (assumed: the invocation scopes the error rules to the new path; if wrong, amend S13 and the picker branch of `settle`).
+- Q: whose is the home when a test runs? → A: main reads it through `userHome()` (the one place allowed to, W210/W212); main tests give it their own `HOME` (assumed: lesson «a check that reads the user's home needs the test to own that home»).
+- Q: which approach (the fork)? → A: a new `atril:repos:addPath` and `addRepoByPath` in main, ending in `registerRepo` (assumed, the recommended one: it keeps «the window sends text, main decides» and reuses every registering rule; if wrong, nothing user-visible changes, only where the check sits). Rejected: overloading `atril:repos:add` with an optional path (the handler is «main opens the picker», W158, and one channel would then mean two things); validating in the window and sending a «checked» path to `addWithId` (the window must never decide what is a folder, and `~` needs main's home).
+- Q: (cold review, run as the author) W440 against W441 for blank text? → A: W441's check runs first and W440 is scoped to what it lets through (acted on).
+- Q: (cold review) `detail` when there is no text, or a NUL byte? → A: empty for that first sentence, in both cases (acted on; if wrong, show the text for NUL).
+- Q: (cold review) is «There is no folder» also for an unreadable folder? → A: yes, any `stat` failure: the message names the path and Atril cannot add what it cannot examine (acted on, assumed).
+- Q: (cold review) what do `StateProblem` and `not-a-git-repo` from `registerRepo` do in W443? → A: come back unchanged with `path`; the card shows the S33 problem for the first (W447) (acted on).
+- Q: (cold review) what is `path` for a subfolder? → A: the typed text resolved, never the top level (acted on).
+- Q: (cold review) does the field empty after the id prompt? → A: yes, whenever a repo is registered by either route (acted on).
+- Q: (cold review) do field and button stay while the id prompt or the picker error shows, and do the two messages coexist? → A: they stay; starting an add by either route clears the other's message (acted on, assumed; if wrong, only the card changes).
+- Q: (cold review) the «Choose a folder…» label and a failing git install? → A: the label lives in the card, `fixLabel` is left alone; the install's answer is ignored as `sharedFix` does everywhere (acted on, assumed; if wrong, the card shows a second `Problem`).
+- Q: (cold review) which box owns the mock default and the Spanish entries, and what closes box 3? → A: box 1 owns the default and main's keys, box 2 the override and the card's keys; box 3 closes no criterion and passes only on its listed observations (acted on).
+- Q: (the stop before code) → A: answered by the invocation (`/libretto-attacca`): the document is written, cold-reviewed, committed and carried into phase 6; the run acted on every finding above and rejected none. The reviewer also noted the box-1 tests already existed, written red while it read; they were written against the contract before its report and adjusted where it asked.
+- Q: (while building box 2) the existing test «adding a repo asks for a free id» looked for the only `textbox` in the card, and the new field makes two. → A: its selector now names the id prompt by its label («Ya hay otro repo con ese nombre. Elige otro id.»); the assertions are untouched (S12 stays proved as it was).
+- Q: (while building box 2) `settings.test.ts` «saved token cannot be seen again» counts every `input` in Ajustes except `#jira-board`; the Repos card now has one. → A: the path field gets `id="repo-path"` and the test's selector excludes it too (`input:not(#jira-board):not(#repo-path)`); its intent — no credential field is left once the token is saved — and its other assertions are unchanged.
+- Q: criterion ids? → A: W440 onward in both specs, the card's too, as the invocation says; no `S` ids (Pau).
+- Q: `bocetos/novedades.html`, `bocetos/fase1-nucleo.html` and a photo? → A: not in this change: `bocetos/` is local-only and absent from this worktree (assumed: CLAUDE.md says it lives on Pau's disk; the real-app drive is still done and reported; if wrong, Pau adds the section from the drive's screenshot).
+- Q: a tour step (W23) for the new field? → A: none: the field lives inside the Repos card that the `repos` step already points at, and no rail screen or primary control is added (assumed; if wrong, W23's proof lists the target).
+
 ## Task breakdown
 
 - App shell: Electron main, preload bridge, renderer with sidebar / centre / right panel /
@@ -4150,3 +4215,14 @@ Zero questions asked: the repo's autonomy rule says take the recommended option 
   Proof: src/main/status.test.ts a deny, an early question and a go-on keep the wait
 - **W464** When the hook writes a wait with another `at`, or another kind, or a state other than needs-you after W460 took effect, then main shall read the hook's state as written.
   Proof: src/main/status.test.ts a newer wait after an answer reads needs-you again
+
+### Add a repo by its path (#1) (add-repo-by-path, 27 nov 2026)
+
+- **W440** When main is asked to add a repo by text that W441's first check lets through (a string, not blank, no NUL byte), it shall trim the text, expand a leading `~` alone or `~/` to the person's home, and refuse any text that is still not an absolute path (a relative path and `~name/…` included) with «{text} is not a full path: start it with / or ~/.», `fix: 'pick'` and the text as `detail`, before running git or writing anything. One test holds every clause.
+  Proof: src/main/repos.test.ts a typed path is trimmed, ~ expanded and anything not absolute refused
+- **W441** This check runs first, before W440's. If the text is not a string, is empty after trimming or holds a NUL byte, then main shall refuse with «Type the path of a folder first.» and `detail: ''`; if the resolved path does not exist or cannot be examined (any `stat` failure, a path through a file and an unreadable parent included), with «There is no folder at {path}.»; if it is a file, with «{path} is a file, not a folder.»; each answer shall be `{ error: 'bad-path', what, detail, fix: 'pick' }` with the resolved path as `detail` (except the first, whose `detail` is empty), shall run no git command and shall leave `repos.json` as it was. One test holds every clause.
+  Proof: src/main/repos.test.ts a typed path that is not a folder is refused before git and writes nothing
+- **W442** If `git -C <path> rev-parse --show-toplevel` fails with «not a git repository» in its stderr, then main shall refuse with «{path} is not a git repository.» and `fix: 'pick'`; if it exits 127 or has «xcode-select» in its stderr, with «git does not work on this Mac.» and `fix: 'git'`; for any other failure, with «git could not read {path}.» and `fix: 'pick'`; each with git's stderr as `detail`, and none shall write `repos.json`. One test holds every clause.
+  Proof: src/main/repos.test.ts a typed folder git cannot read is refused with its own fix and writes nothing
+- **W443** When the typed path is a folder inside a git repository, main shall register that repository's top level through `registerRepo` and answer its result unchanged with `path` added, `path` being the typed text resolved (`path.resolve` of the expanded text — for a subfolder the subfolder, never the top level); an already registered top level shall come back as that repo with nothing written, a taken or invalid id as `registerRepo`'s own `id-taken` or `invalid-id`, and any other answer of `registerRepo` (`not-a-git-repo`, a `StateProblem` for a damaged `repos.json`) as it is. One test holds every clause except the damaged file, which W447 proves from the window.
+  Proof: src/main/repos.test.ts a typed path registers the git top level like the picker does

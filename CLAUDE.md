@@ -8,15 +8,16 @@ below point at files on Pau's disk, not in the repo.
 
 ## Last landed
 
-`push-guard-heredoc` (27 Nov, issue #7, W420–W422, W59 amended): the auto-mode push guard reads the command without
+`add-repo-by-path` (27 Nov, issue #1, W440–W447): Settings → Repos has a path field beside the folder picker; main
+expands `~`, refuses what is not a folder or not a git repo with a `Problem` («Nothing was added.», one fix button,
+detail folded), then registers through `registerRepo`. Driven in the real app with a temp `ATRIL_HOME` and `HOME`.
+
+Before it, `push-guard-heredoc` (27 Nov, issue #7, W420–W422, W59 amended): the auto-mode push guard reads the command without
 heredoc bodies and quoted strings (`sh|bash|zsh -c` arguments stay), so only a real `git push`, `gh pr create` or `glab mr create` asks.
 
-Before it, `card-answer-lands` (27 Nov, issue #6, W337–W340, W76 amended): a tall card scrolls above the terminal, which keeps
+Before that, `card-answer-lands` (27 Nov, issue #6, W337–W340, W76 amended): a tall card scrolls above the terminal, which keeps
 180 px; main never sizes the tmux client under 10 rows; a card answer reads «Sent» only once the hook or the pane moved,
 else «did not arrive» with Try again.
-
-Before that, `finished-means-finished` (27 Nov, issue #4, W332–W336): a merged work reads `done` in main whatever an older
-hook left in its state file; its card and header say «Merged».
 
 ## Next
 
