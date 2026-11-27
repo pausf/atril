@@ -1180,6 +1180,11 @@ kbd {
   border-radius: var(--r);
   margin: 0 0 8px;
 }
+/* W337: a long command scrolls in its own box, so the buttons and a problem stay in view under it. */
+.term-ask .ask-q {
+  max-height: 8lh;
+  overflow-y: auto;
+}
 /* W204: «Escribe al agente», under the terminal. */
 .composer {
   display: flex;

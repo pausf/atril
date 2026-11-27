@@ -86,6 +86,13 @@ export function AgentCard({ workspaceId, activityAt, onShown, focusComposer, ski
     return () => tell.current?.(false)
   }, [shown])
 
+  // W340: above the terminal the strip scrolls (W337), so a problem that arrives under its fold is brought into view.
+  const box = useRef<HTMLDivElement>(null)
+  const failed = result !== null && !result.sent && result.text !== ''
+  useEffect(() => {
+    if (failed) box.current?.querySelector('[role=alert]')?.scrollIntoView?.({ block: 'nearest' })
+  }, [failed, result])
+
   const turnEnd = wait !== null && wait.kind !== 'question' && wait.kind !== 'permission'
   useEffect(() => {
     if (turnEnd && focusComposer) document.getElementById(composerId(workspaceId))?.focus()
@@ -150,7 +157,7 @@ export function AgentCard({ workspaceId, activityAt, onShown, focusComposer, ski
   }
 
   return (
-    <div className="ask" role="group" aria-label={t('What the agent is waiting for')} tabIndex={0} onKeyDown={onKey}>
+    <div ref={box} className="ask" role="group" aria-label={t('What the agent is waiting for')} tabIndex={0} onKeyDown={onKey}>
       {question?.header && <p className="ask-head">{question.header}</p>}
       <p className="ask-q">{head}</p>
       {wait.why === 'cap' && wait.box && <p className="ask-note">{t('On: {box}', { box: wait.box })}</p>}

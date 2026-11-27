@@ -217,9 +217,14 @@ describe('agent card', () => {
     await user.keyboard('1')
     expect(answer).toHaveBeenCalledTimes(1)
 
-    // The prompt stayed: the card says so and «Volver a intentar» sends the same choice again.
+    // The prompt stayed: the card says so, brings it into view in its scrolling strip, and «Volver a intentar» sends the same choice again.
+    const seen: Element[] = []
+    Element.prototype.scrollIntoView = function (this: Element) {
+      seen.push(this)
+    }
     await act(async () => replies[0]!({ error: 'La respuesta no llegó al agente: su pregunta sigue en pantalla.' }))
     const alert = within(card()).getByRole('alert')
+    expect(seen.some((e) => e.contains(alert))).toBe(true)
     expect(alert.textContent).toContain('La respuesta no llegó al agente: su pregunta sigue en pantalla.')
     expect(screen.queryByText('Enviando…')).toBeNull()
     await user.click(within(alert).getByRole('button', { name: 'Volver a intentar' }))

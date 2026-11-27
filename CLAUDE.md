@@ -32,7 +32,7 @@ or exits; a drive attaches only through `attachVerified` in `scripts/cdp-drive.m
 - A real forge: listing MRs, a score, Libretto drafts, publishing a draft on its line, merging (GitHub
   squash, GitLab), GitLab fields (`detailed_merge_status`, `has_conflicts`, `target_branch`), reviewers, old-side threads.
 - Crash reports against real GitHub; plugin commands against the real `claude` CLI; refine-request with real Claude.
-- Claude Code's option selector taking a typed digit + Enter (quick replies, "Allow" = 1); Esc pausing Claude
+- Claude Code's option selector taking a typed digit + Enter (quick replies, "Allow" = 1); a card answer reading Sent within 4 s (W339); Esc pausing Claude
   cleanly; "Pick up where you left off." read as a new message; a lens review reading the request as context.
 - Live QA with a real agent, browser and emulator (only doubles so far); "Start" sending
   `/libretto:write-spec <name>`; "Pass to Jira"; the Jira board; auto mode asking before a push; replying from a Mac notice.

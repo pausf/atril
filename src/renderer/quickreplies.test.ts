@@ -44,11 +44,13 @@ describe('quick replies', () => {
     const rule = (selector: string): Record<string, string> =>
       Object.assign(
         {},
-        ...[...css.matchAll(new RegExp(`^${selector.replace('.', '\\.')} \\{([^}]*)\\}`, 'gm'))].map((m) =>
+        ...[...css.matchAll(new RegExp(`^${selector.replaceAll('.', '\\.')} \\{([^}]*)\\}`, 'gm'))].map((m) =>
           Object.fromEntries([...m[1]!.matchAll(/([a-z-]+):\s*([^;]+);/g)].map((d) => [d[1]!, d[2]!.trim()]))
         )
       )
     expect(rule('.term-ask')).toMatchObject({ 'min-height': '64px', 'overflow-y': 'auto' })
     expect(rule('.xterm-host')).toMatchObject({ flex: '1', 'min-height': '180px' })
+    // A 3 KB command scrolls in its own box, so «Permitir» and a problem stay in view under it.
+    expect(rule('.term-ask .ask-q')).toMatchObject({ 'max-height': '8lh', 'overflow-y': 'auto' })
   })
 })
