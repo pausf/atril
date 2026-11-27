@@ -16,7 +16,6 @@ export interface Detected {
   reason: string
 }
 
-const NOISE = new Set(['node_modules', 'vendor', 'dist', 'build', '.cache', '.next', 'coverage', 'tmp', '.idea', '.vscode', '.DS_Store'])
 const DEP_DIRS = new Set(['node_modules', 'vendor'])
 // ponytail: 2 GB of node_modules + vendor is a guess, not a measurement. Wrong for a repo whose
 // install is slow but small; the per-repo override covers it until a better signal exists.
@@ -65,10 +64,7 @@ export async function detectMode(path: string, run: Runner): Promise<Detected> {
   const r = await run('git', ['-C', path, 'ls-files', '--others', '--ignored', '--exclude-standard', '--directory'])
   const ignored = r.stdout.split('\n').filter(Boolean)
 
-  // Only files are a signal (.env, web/config.local); ignored folders are build output and caches.
-  const survivor = ignored.find((e) => !e.endsWith('/') && !segments(e).some((s) => NOISE.has(s)) && !e.endsWith('.log'))
-  if (survivor) return { mode: 'in-place', reason: t('{path} is not versioned', { path: survivor }) }
-
+  // W2: an ignored file never decides the mode; the ignored list is read only to size dependency folders (W3).
   const depDirs = ignored.filter((e) => DEP_DIRS.has(segments(e).at(-1) ?? '')).map((e) => join(path, e))
   if (depDirs.length > 0) {
     const du = await run('du', ['-sk', ...depDirs])
