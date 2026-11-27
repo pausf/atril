@@ -15,7 +15,7 @@ import { boxOf, decideStop, lastSentence, openBoxes, proseQuestion, reason, shel
 // ponytail: any git … push in one command segment; a `push` word in a commit message only adds a question.
 const UPLOAD = /\bgit\b[^;&|\n]*?\spush\b|\bgh\b[^;&|\n]*?\spr\s+create\b|\bglab\b[^;&|\n]*?\smr\s+create\b/
 // W420/W421: heredoc bodies and quoted strings are text, not commands; the argument of `sh|bash|zsh -c` is a command.
-// ponytail: line loop + one regex, no parser; an opener with no delimiter line strips nothing, so it can only add a question.
+// ponytail: line loop + one regex, no parser (a `\x` is skipped so an escaped quote opens nothing); an opener with no delimiter line strips nothing, so it can only add a question.
 const OPENER = /(?<!<)<<(-?)[ \t]*(['"]?)([A-Za-z_]\w*)\2/
 const SHELL_C = /\b(?:ba|z)?sh\s+(?:-\S+\s+)*-\w*c\s+$/
 function commandText(command) {
@@ -28,7 +28,7 @@ function commandText(command) {
     const end = lines.findIndex((l, j) => j > i && (m[1] ? l.replace(/^\t+/, '') : l) === m[3])
     if (end > 0) i = end
   }
-  return kept.join('\n').replace(/'[^']*'|"(?:\\.|[^"\\])*"/g, (q, at, all) => (SHELL_C.test(all.slice(0, at)) ? q : q[0] + q[0]))
+  return kept.join('\n').replace(/\\.|'[^']*'|"(?:\\.|[^"\\])*"/g, (q, at, all) => (q[0] === '\\' || SHELL_C.test(all.slice(0, at)) ? q : q[0] + q[0]))
 }
 const ASK = {
   hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'ask', permissionDecisionReason: 'Modo automático: confirma antes de subir' }

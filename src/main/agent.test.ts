@@ -313,6 +313,7 @@ describe('automatic mode', () => {
     bash('cat <<EOF\ngit push', true),
     bash('cat <<<EOF; git push', true),
     bash('echo $((1 << 2)); git push', true),
+    bash("echo don\\'t; git push; echo 'x'", true),
     bash('bash -lc "git push"', true),
     bash("sh -ec 'gh pr create'", true)
   ]
