@@ -1,7 +1,8 @@
 import { existsSync } from 'node:fs'
-import { mkdir, rename, writeFile } from 'node:fs/promises'
-import { basename, join } from 'node:path'
-import type { AddRepoResult, Listed, Mode, RepoHealth, RepoResult, RepoView, StateProblem } from '../preload/api'
+import { mkdir, rename, stat, writeFile } from 'node:fs/promises'
+import { basename, isAbsolute, join, resolve } from 'node:path'
+import type { AddRepoResult, Listed, Mode, PathProblem, RepoHealth, RepoResult, RepoView, StateProblem } from '../preload/api'
+import { userHome } from './paths'
 import type { Runner } from './run'
 import { orProblem, readState as readStrict, statePath } from './state'
 import { t } from './lang'
@@ -105,6 +106,36 @@ async function view(repo: Repo, run: Runner): Promise<RepoView> {
 }
 
 export const registerRepo = (path: string, run: Runner, opts: { id?: string } = {}): Promise<AddRepoResult> => orProblem(() => register(path, run, opts))
+
+const badPath = (what: string, detail: string, fix: PathProblem['fix'] = 'pick'): PathProblem => ({ error: 'bad-path', what, detail, fix })
+
+/** W440: `~` and `~/x` are the person's home; `~name` stays as typed and fails the absolute check. */
+function expandPath(text: string): string {
+  const s = text.trim()
+  return s === '~' ? userHome() : s.startsWith('~/') ? join(userHome(), s.slice(2)) : s
+}
+
+/** W440–W443: the window sends text only; everything it means is decided here, before git writes anything. */
+export async function addRepoByPath(raw: unknown, run: Runner): Promise<(AddRepoResult & { path: string }) | PathProblem> {
+  if (typeof raw !== 'string' || raw.trim() === '' || raw.includes('\0')) return badPath(t('Type the path of a folder first.'), '')
+  const text = raw.trim()
+  const expanded = expandPath(text)
+  if (!isAbsolute(expanded)) return badPath(t('{text} is not a full path: start it with / or ~/.', { text }), text)
+  const path = resolve(expanded)
+  const info = await stat(path).catch(() => null)
+  if (!info) return badPath(t('There is no folder at {path}.', { path }), path)
+  if (!info.isDirectory()) return badPath(t('{path} is a file, not a folder.', { path }), path)
+  // ponytail: one more rev-parse than registerRepo needs, so the refusal carries git's own stderr; if a second caller wants it, move it into registerRepo.
+  const top = await run('git', ['-C', path, 'rev-parse', '--show-toplevel'])
+  if (top.code !== 0) {
+    const detail = top.stderr.trim()
+    if (gitBroken(top)) return badPath(t('git does not work on this Mac.'), detail, 'git')
+    return top.stderr.includes('not a git repository')
+      ? badPath(t('{path} is not a git repository.', { path }), detail)
+      : badPath(t('git could not read {path}.', { path }), detail)
+  }
+  return { ...(await registerRepo(path, run)), path }
+}
 
 async function register(path: string, run: Runner, opts: { id?: string }): Promise<AddRepoResult> {
   const top = await run('git', ['-C', path, 'rev-parse', '--show-toplevel'])

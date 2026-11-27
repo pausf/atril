@@ -60,6 +60,14 @@ export type AddRepoResult =
   | { error: 'invalid-id' }
   | { error: 'id-taken'; suggested: string }
 
+/** W440–W442: a typed path that cannot be added; `fix` names the one button that helps. */
+export interface PathProblem {
+  error: 'bad-path'
+  what: string
+  detail: string
+  fix: 'pick' | 'git'
+}
+
 /** W285 */
 export interface HarnessApi {
   get(repoId: string): Promise<HarnessResult>
@@ -71,6 +79,8 @@ export interface ReposApi {
   /** Opens the folder picker in main; null when the person cancels. */
   add(): Promise<(AddRepoResult & { path: string }) | null>
   addWithId(path: string, id: string): Promise<AddRepoResult>
+  /** W440–W443: adds the folder the person typed; main expands `~` and decides what it is. */
+  addPath(text: string): Promise<(AddRepoResult & { path: string }) | PathProblem>
   setOverride(id: string, mode: Mode | null): Promise<Listed<RepoView>>
   /** W157: forgets the repo; its folder is never touched. */
   remove(id: string): Promise<RepoResult>

@@ -268,6 +268,7 @@ export function mockApi(o: Options = {}, stored: UiState = { tutorialSeen: true,
       }),
       add: vi.fn(async () => o.addRepo ?? null),
       addWithId: vi.fn(async (path: string, id: string): Promise<AddRepoResult> => ({ repo: { id, path, mode: 'worktree', reason: '', health: 'ok' } })),
+      addPath: vi.fn(async (text: string) => ({ repo: { id: 'added', path: text, mode: 'worktree' as const, reason: '', health: 'ok' as const }, path: text })),
       setOverride: vi.fn(async (id: string, mode: Mode | null): Promise<RepoView[]> =>
         (o.repos ?? []).map((r) => (r.id === id ? { ...r, ...(mode ? { override: mode } : { override: undefined }) } : r))
       )
