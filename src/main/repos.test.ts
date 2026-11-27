@@ -63,11 +63,30 @@ describe('repos', () => {
     expect(d.reason).toContain('ninguna señal')
   })
 
-  it('chooses in-place when an ignored config file exists', async () => {
-    const root = makeRepo([...NOISE, 'web/config.local'], [...NOISE_FILES, 'web/config.local'], ['web/index.html'])
+  it('an ignored file never chooses in-place', async () => {
+    const root = makeRepo([...NOISE, 'web/config.local', '.env'], [...NOISE_FILES, 'web/config.local', '.env'], ['web/index.html'])
     const d = await detectMode(root, run)
+    expect(d.mode).toBe('worktree')
+    expect(d.reason).not.toContain('config.local')
+  })
+
+  it('a media file ignored by pattern leaves the repo in worktree', async () => {
+    const root = makeRepo(['caso-*'], ['caso-1-stripe.gif'])
+    const d = await detectMode(root, run)
+    expect(d.mode).toBe('worktree')
+    expect(d.reason).toBe('ninguna señal: cada trabajo en su propio worktree')
+  })
+
+  it('heavy dependencies still win beside an ignored file', async () => {
+    const root = makeRepo([...NOISE, 'caso-*'], ['packages/a/node_modules/x', 'caso-1-stripe.gif'], ['packages/a/index.js'])
+    const fakeDu: Runner = (cmd, args, opts) =>
+      cmd === 'du'
+        ? Promise.resolve({ code: 0, stdout: `${3 * 1024 * 1024}\t${args[args.length - 1]}\n`, stderr: '' })
+        : run(cmd, args, opts)
+    const d = await detectMode(root, fakeDu)
     expect(d.mode).toBe('in-place')
-    expect(d.reason).toContain('web/config.local')
+    expect(d.reason).toContain('node_modules y vendor pesan')
+    expect(d.reason).not.toContain('caso-1')
   })
 
   it('chooses in-place when dependencies are heavy', async () => {

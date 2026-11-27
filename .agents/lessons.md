@@ -552,3 +552,6 @@ Reviewer found nothing against the contract (5 proofs re-run, typecheck and lint
 
 ## 2026-11-27 · finished-means-finished · 1
 Issue #4 was filed before work-vs-main's W313, so half of what it describes (the card) was already fixed in the window; the rest lived in main, which read the stale state file. When an issue predates a landing that touched the same path, re-read the issue against `origin/main` and fix only what is still true.
+
+## 2026-11-27 · ignored-files-not-dirty · 6→7
+The work-reviewer was told `main...HEAD` and local `main` was behind origin, so it saw already-merged work as part of the diff. Give the reviewer `origin/main...HEAD` after a `git fetch`; the reviewer found nothing against the contract.

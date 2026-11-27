@@ -354,8 +354,8 @@ Governs: `src/main/jira/** src/renderer/inbox/**`
 
 Governs: `src/main/** src/preload/** src/renderer/** resources/** electron-builder.config.cjs build/** eslint.config.mjs .githooks/** .claude/** scripts/cdp-drive.mjs CLAUDE.md !src/main/jira/** !src/renderer/inbox/** !src/main/flow/** !src/renderer/flow/** !src/main/credentials/** !src/renderer/settings/** !src/main/forge/mrs.ts !src/main/forge/page.ts !src/main/forge/merge.ts !src/renderer/mr/** !src/main/forge/scores.ts !src/main/forge/threads.ts !src/main/forge/lenses.ts !src/main/forge/openmr.ts !src/main/forge/linecomments.ts !src/main/avisos.ts !src/renderer/avisos/** !src/main/skills/** !src/renderer/skills/** !src/main/crash/** !src/renderer/crash/**`
 
-- {**W1** When a repo is registered and none of the three signals is found, Atril shall set its mode to `worktree`. src/main/repos.test.ts chooses}
-- {**W2** If the checkout holds a git-ignored file outside dependency, build and editor noise (`node_modules`, `vendor`, `dist`, `build`, `.cache`, `.next`, `coverage`, `tmp`, `.idea`, `.vscode`, `.DS_Store`, `*.log`), then Atril shall set the mode to `in-place` and name that file as the reason. Only files count — entries of `git ls-files --others --ignored --exclude-standard --directory` that do not end in `/`; ignored folders (build output, tool caches) are never a signal. Noise names match at any depth. src/main/repos.test.ts chooses}
+- {**W1** When a repo is registered and no signal (W3) is found, Atril shall set its mode to `worktree`. src/main/repos.test.ts chooses}
+- {**W2** If the checkout holds git-ignored files, then Atril shall not take any of them as a reason for `in-place`, whatever their names (a config file, a `.env`, a media file); the mode is decided by W3 and W4 alone, and with no other signal it is `worktree`. src/main/repos.test.ts an}
 - {**W3** If every `node_modules` and `vendor` directory, at any depth, together exceed 2 GB, then Atril shall set the mode to `in-place` and say so. src/main/repos.test.ts chooses}
 - {**W4** Where the person has set a repo's mode, Atril shall use it instead of detection, across restarts. src/main/repos.test.ts person}
 - {**W5** When a workspace opens in `worktree` mode, Atril shall run `git worktree add` at `~/.atril/wt/<repo>/<branch>` on a new branch. src/main/workspaces.test.ts creates}
@@ -656,5 +656,7 @@ Governs: `src/main/** src/preload/** src/renderer/** resources/** electron-build
 - {**W334** While a work's record is `merged`, the status poll shall send it no idle reminder (W180) and Automático (W205–W207) shall send nothing to its pane, even when its state file says `needs-you`. Ceiling: one test asserts both clauses, the reminder on a manual work and the silence on an Automático one. src/main/status.test.ts a}
 - {**W335** While a work's record is `merged`, the status poll shall send no «done» notice for it, including on the poll where its record became `merged`. src/main/status.test.ts a}
 - {**W336** While a work's record is `merged`, the «All agents» card and the work header shall show «Merged» in place of its agent state. src/renderer/overview.test.ts a}
+- {**W400** When a repo whose root holds a file matched by a `.gitignore` pattern (`caso-1-stripe.gif` under `caso-*`) is registered, Atril shall set its mode to `worktree` with W1's «no signal» reason (in the Spanish locale the tests run in, «ninguna señal: cada trabajo en su propio worktree»), naming no file. src/main/repos.test.ts a}
+- {**W401** While an ignored file sits beside `node_modules` or `vendor` directories that together exceed 2 GB, Atril shall set `in-place` and name the dependencies (W3), not the file. src/main/repos.test.ts heavy}
 
 [full spec](workspaces/spec.md)
